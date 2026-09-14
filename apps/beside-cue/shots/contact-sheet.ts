@@ -1,5 +1,5 @@
 // ============================================================
-// Store-shot contact sheet — both devices side by side, with pixel sizes
+// Store-shot contact sheet — capture targets side by side, with pixel sizes
 // ============================================================
 //
 // Runs once after the shots (globalTeardown in ../playwright.shots.config.ts)
@@ -7,7 +7,12 @@
 // failed shot shows up as a gap instead of silently dropping out.
 
 import type { FullConfig } from '@playwright/test'
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chromium } from '@playwright/test'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
+import { SHOT_NOW, LIVED_IN_PLAN } from './fixtures'
 import { join } from 'node:path'
 
 export interface PngFacts {
@@ -63,6 +68,17 @@ interface Device {
   readonly height: number
 }
 
+const SCREENS = [
+  '01-home.png',
+  '02-cue-moment.png',
+  '03-choose-pull.png',
+  '04-choose-b-side.png',
+  '05-reflection.png',
+  '06-onboarding-corky.png',
+  '07-settings.png',
+  '08-daily-reminder.png',
+] as const
+
 const IMAGE_HEIGHT_PX = 560
 
 function escapeHtml(value: string): string {
@@ -96,14 +112,7 @@ function cell(shotDir: string, device: Device, screen: string): string {
 }
 
 function sheet(shotDir: string, devices: readonly Device[]): string {
-  const screens = new Set<string>()
-  for (const device of devices) {
-    const folder = join(shotDir, device.name)
-    if (!existsSync(folder)) continue
-    for (const file of readdirSync(folder)) {
-      if (/^\d\d-[a-z0-9-]+\.png$/u.test(file)) screens.add(file)
-    }
-  }
+  const screens = new Set(SCREENS)
   const rows = [...screens]
     .sort()
     .map((screen) =>
@@ -149,7 +158,7 @@ figcaption, .caption { margin: 8px 0 0; font: 0.8rem/1.4 ui-monospace, monospace
 <body>
 <header>
 <h1>Beside Cue store shots</h1>
-<p>${screens.size} screens from <code>pnpm shots</code> in apps/beside-cue, written ${escapeHtml(new Date().toLocaleString('en-GB'))}. Raw app screens, flattened to 8-bit RGB. Open an image for full size.</p>
+<p>${screens.size} screens from <code>pnpm shots</code> in apps/beside-cue, written ${escapeHtml(new Date().toLocaleString('en-GB'))}. Raw app screens, flattened to 8-bit RGB. Browser captures of shared core UI; native purchase surfaces are excluded. See <a href="manifest.json">capture provenance</a>. Open an image for full size.</p>
 </header>
 <div class="scroll">
 <table>
@@ -166,7 +175,8 @@ ${rows.join('\n')}
 
 export default function writeContactSheet(config: FullConfig): void {
   const shotDir = process.env.BESIDE_CUE_SHOTS_DIR
-  if (shotDir === undefined || !existsSync(shotDir)) return
+  if (shotDir === undefined) return
+  mkdirSync(shotDir, { recursive: true })
 
   const devices = config.projects.flatMap((project): Device[] => {
     const viewport = project.use.viewport
@@ -180,6 +190,53 @@ export default function writeContactSheet(config: FullConfig): void {
       },
     ]
   })
+  const appRoot = fileURLToPath(new URL('../', import.meta.url))
+  const git = (...args: string[]): string =>
+    execFileSync('git', args, { cwd: appRoot, encoding: 'utf8' }).trim()
+  const sha256 = (file: string): string =>
+    createHash('sha256').update(readFileSync(file)).digest('hex')
+  const captures = devices.flatMap((device) => {
+    return SCREENS.map((name) => {
+      const relative = `${device.name}/${name}`
+      const file = join(shotDir, relative)
+      return {
+        file: relative,
+        captured: existsSync(file),
+        ...(existsSync(file)
+          ? { ...readPngFacts(file), sha256: sha256(file) }
+          : {}),
+      }
+    })
+  })
+  const manifest = {
+    capturedAt: new Date().toISOString(),
+    commit: git('rev-parse', 'HEAD'),
+    browserVersion: execFileSync(chromium.executablePath(), ['--version'], {
+      encoding: 'utf8',
+    }).trim(),
+    workingTreeDirty: git('status', '--porcelain') !== '',
+    fixtureClock: SHOT_NOW,
+    fixture: { fictional: true, plan: LIVED_IN_PLAN, resolvedTurns: 12 },
+    runtime:
+      'Chromium browser; production web bundle with release presentation, games off',
+    nativeLimitations:
+      'Native system bars, safe areas, purchase sheets and platform-specific redemption rows are not captured. iPad is diagnostic only.',
+    presentation:
+      'Unaltered app layout; reduced motion except J2 greeting movie held at 1.25 seconds. Screenshot API finishes CSS animations and hides the caret. RGB conversion only; no resizing, overlays or removed UI.',
+    harness: Object.fromEntries(
+      [
+        'playwright.shots.config.ts',
+        'shots/vite.config.ts',
+        'shots/store.shots.ts',
+        'shots/fixtures.ts',
+      ].map((file) => [file, sha256(join(appRoot, file))]),
+    ),
+    captures,
+  }
+  writeFileSync(
+    join(shotDir, 'manifest.json'),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  )
   const file = join(shotDir, 'index.html')
   writeFileSync(file, sheet(shotDir, devices))
   console.log(`Contact sheet: ${file}`)

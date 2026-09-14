@@ -1,5 +1,5 @@
 // ============================================================
-// Store shots — eight App Store screens, reached the way a person reaches them
+// Store shots — eight raw app screens, reached the way a person reaches them
 // ============================================================
 //
 // Each test seeds a device (fixtures.ts), walks to its screen with real
@@ -16,9 +16,6 @@ import type { ShotOptions } from '../playwright.shots.config'
 import { readPngFacts } from './contact-sheet'
 import { LIVED_IN_PLAN, livedInWeek, livedInWeekTotals, onboardingSeenNoPlan, seedDevice, SHOT_NOW, } from './fixtures'
 
-/** src/purchases/revenuecat-config.ts, PRO_DISPLAY_NAME */
-const PRO_NAME = 'BeSideCue Pro'
-
 /** Every face main.tsx ships; each must be loaded before a capture. */
 const FONT_FACES = [
   '400 1em Coiny',
@@ -29,24 +26,9 @@ const FONT_FACES = [
 
 const test = base.extend<ShotOptions>({
   shotDir: ['', { option: true }],
-  shotCss: ['', { option: true }],
-  page: async ({ page, shotCss }, use) => {
-    // A fixed calendar keeps Reflection's weekdays and counts the same on
-    // every run. install() lets page time flow from SHOT_NOW; 06 pauses it.
-    await page.clock.install({ time: new Date(SHOT_NOW) })
-    await page.addInitScript((css: string) => {
-      const inject = (): void => {
-        const style = document.createElement('style')
-        style.dataset.storeShots = ''
-        style.textContent = css
-        document.head.append(style)
-      }
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', inject, { once: true })
-      } else {
-        inject()
-      }
-    }, shotCss)
+  page: async ({ page }, use) => {
+    // The fictional calendar is fixed; browser/media clocks otherwise run normally.
+    await page.clock.setFixedTime(new Date(SHOT_NOW))
     await use(page)
   },
 })
@@ -97,7 +79,29 @@ async function expectCleanFrame(page: Page): Promise<void> {
   await expect(page.locator('.build-stamp')).toBeHidden()
   await expect(page.locator('.storage-alert')).toHaveCount(0)
   await expect(page.locator('[role="alert"]:visible')).toHaveCount(0)
-  const visibleText = await page.locator('body').innerText()
+  const visibleText = await page.evaluate(() => {
+    const text: string[] = []
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+    )
+    while (walker.nextNode()) {
+      const node = walker.currentNode
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      const box = range.getBoundingClientRect()
+      if (
+        box.width > 0 &&
+        box.height > 0 &&
+        box.bottom > 0 &&
+        box.top < innerHeight &&
+        box.right > 0 &&
+        box.left < innerWidth
+      )
+        text.push(node.textContent ?? '')
+    }
+    return text.join(' ')
+  })
   for (const forbidden of [
     // "Daily reminders are not available on this device." never shows on
     // these screens: restoring a saved reminder on the web platform skips the
@@ -121,13 +125,14 @@ async function capture(
   shotDir: string,
   name: string,
   landmark: Locator,
+  reducedMotion = true,
 ): Promise<void> {
   expect(
     await page.evaluate(
       () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     ),
-    'reduced motion is emulated',
-  ).toBe(true)
+    'the documented motion preference is active',
+  ).toBe(reducedMotion)
   await expect(landmark).toBeVisible()
   await settle(page)
   await expectCleanFrame(page)
@@ -174,14 +179,12 @@ async function capture(
 
 async function openHome(page: Page, path = '/'): Promise<void> {
   await seedDevice(page, livedInWeek(), path)
+  await expect(page.getByRole('button', { name: /^Cue me now/u })).toBeVisible()
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Your current pressing' }),
+    page.getByText(LIVED_IN_PLAN.pullText, { exact: true }),
   ).toBeVisible()
-  // The pressing shows Side A until the record is turned over.
-  const plan = page.getByRole('region', { name: 'Your current plan' })
-  await expect(plan).toContainText(LIVED_IN_PLAN.pullText)
-  await expect(page.getByRole('region', { name: 'Your cue' })).toContainText(
-    LIVED_IN_PLAN.cueContextText,
+  await expect(page.getByRole('button', { name: /B-side games/u })).toHaveCount(
+    0,
   )
 }
 
@@ -202,38 +205,12 @@ async function openPullPicker(page: Page): Promise<Locator> {
   return heading
 }
 
-// Without a fake store the browser's Pro section says only "Purchases need
-// the Android or iOS app." ?mockPurchases gives it the section a phone shows,
-// plus two things a store build never shows: the beta-testing note and the
-// "Test an offer" row, where iOS has "Redeem App Store code". Hide exactly
-// those two; if either text changes, this fails instead of letting it through.
-async function hideMockStoreChrome(pro: Locator): Promise<void> {
-  for (const mockOnly of [
-    pro.getByText(/^Beta purchase testing\./u),
-    pro.getByRole('button', { name: /^Test an offer/u }),
-  ]) {
-    await expect(mockOnly).toHaveCount(1)
-    await mockOnly.evaluate((element) =>
-      element.style.setProperty('display', 'none', 'important'),
-    )
-    await expect(mockOnly).toBeHidden()
-  }
-}
-
-async function openSettings(page: Page): Promise<Locator> {
-  await openHome(page, '/?mockPurchases')
+async function openSettings(page: Page): Promise<void> {
+  await openHome(page)
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(
     page.getByRole('heading', { level: 1, name: 'Keep only what helps.' }),
   ).toBeVisible()
-  const pro = page.getByRole('region', { name: PRO_NAME })
-  // Settled on "not Pro": the section has to read as optional support.
-  await expect(
-    pro.getByRole('button', { name: `Unlock ${PRO_NAME}` }),
-  ).toBeVisible()
-  await expect(pro.getByText('Active', { exact: true })).toHaveCount(0)
-  await hideMockStoreChrome(pro)
-  return pro
 }
 
 test('01-home', async ({ page, shotDir }, info) => {
@@ -243,7 +220,7 @@ test('01-home', async ({ page, shotDir }, info) => {
     info,
     shotDir,
     '01-home',
-    page.getByRole('heading', { level: 1, name: 'Your current pressing' }),
+    page.getByRole('button', { name: /^Cue me now/u }),
   )
 })
 
@@ -312,53 +289,32 @@ test('05-reflection', async ({ page, shotDir }, info) => {
 })
 
 test('06-onboarding-corky', async ({ page, shotDir }, info) => {
-  // No seed: a first launch without an onboarding preference opens V2.
+  // Capture the current J2 movie, not the reduced-motion poster fallback.
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
   const director = page.locator('main[data-phase]')
-  await expect(director).toHaveAttribute('data-phase', 'B00_BEGIN_HOLD', {
-    timeout: 30_000,
-  })
-  // The greeting is an automatic beat. Under reduced motion it dwells 650 ms
-  // on a setTimeout (REDUCED_AUTOMATIC_DURATION_MS in V2OnboardingDirector),
-  // so pause the page clock before starting it: the beat then holds however
-  // long the capture takes. Page time is advanced by hand below, well inside
-  // that dwell, only so its still (Corky beside the record player) can take
-  // over the stage.
-  const pageNow = await page.evaluate(() => Date.now())
-  await page.clock.pauseAt(pageNow + 1_000)
+  await expect(director).toHaveAttribute('data-phase', 'B00_BEGIN_HOLD')
   await page.getByRole('button', { name: 'Tap to begin' }).click()
-  await expect(director).toHaveAttribute('data-phase', 'B01_CORKY_GREETING')
-
-  let advancedMs = 0
-  await expect
-    .poll(
-      async () => {
-        if (advancedMs < 400) {
-          await page.clock.runFor(50)
-          advancedMs += 50
-        }
-        return page.locator('[data-v2-media-token]').evaluateAll((layers) =>
-          layers.map((layer) => {
-            const element = layer as HTMLElement
-            const image = element.querySelector('img')
-            const decoded =
-              image !== null && image.complete && image.naturalWidth > 0
-            return `${element.dataset.v2MediaKind}:${element.dataset.v2MediaPhase}:${decoded ? 'decoded' : 'pending'}`
-          }),
-        )
-      },
-      { message: 'the greeting still owns the stage', timeout: 20_000 },
-    )
-    .toEqual(['still:current:decoded'])
-
-  await capture(
-    page,
-    info,
-    shotDir,
-    '06-onboarding-corky',
-    page.getByRole('heading', { level: 1, name: 'Meet Corky.' }),
+  const video = page.locator(
+    'video[src*="b01-corky-greeting-j2-direct-to-p02"]',
   )
+  await expect(video).toBeVisible()
+  await expect
+    .poll(() =>
+      video.evaluate((element: HTMLVideoElement) => element.currentTime),
+    )
+    .toBeGreaterThan(1.1)
+  // A real decoded frame at 1.25 s, held for capture. No pixel replacement.
+  await video.evaluate(async (element: HTMLVideoElement) => {
+    element.pause()
+    element.currentTime = 1.25
+    await new Promise<void>((resolve) =>
+      element.addEventListener('seeked', () => resolve(), { once: true }),
+    )
+  })
   await expect(director).toHaveAttribute('data-phase', 'B01_CORKY_GREETING')
+  await capture(page, info, shotDir, '06-onboarding-corky', video, false)
+  await expect(video).toHaveJSProperty('currentTime', 1.25)
 })
 
 test('07-settings', async ({ page, shotDir }, info) => {
@@ -373,23 +329,22 @@ test('07-settings', async ({ page, shotDir }, info) => {
   )
 })
 
-test('08-settings-support', async ({ page, shotDir }, info) => {
-  const pro = await openSettings(page)
-  await expect(pro).toContainText('stay free')
-  await pro.evaluate((section) => {
+test('08-daily-reminder', async ({ page, shotDir }, info) => {
+  await openSettings(page)
+  const reminder = page.getByRole('region', {
+    name: 'Daily reminder',
+    exact: true,
+  })
+  await reminder.evaluate((section) => {
     const top = section.getBoundingClientRect().top + window.scrollY
-    window.scrollTo(0, Math.max(0, top - 32))
+    window.scrollTo(0, Math.max(0, top - 16))
   })
-  const onScreen = await pro.evaluate((section) => {
-    const box = section.getBoundingClientRect()
-    return box.top >= 0 && box.bottom <= window.innerHeight
-  })
-  expect(onScreen, 'the whole Pro section is on screen').toBe(true)
+  await expect(reminder).toContainText(LIVED_IN_PLAN.reminderTime)
   await capture(
     page,
     info,
     shotDir,
-    '08-settings-support',
-    pro.getByRole('heading', { level: 2, name: PRO_NAME }),
+    '08-daily-reminder',
+    reminder.getByRole('heading', { name: 'Daily reminder', exact: true }),
   )
 })

@@ -27,6 +27,8 @@
   },
   "include": [
     "scripts/**/*.ts",
+    "shots/**/*.ts",
+    "playwright.shots.config.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
     "vite.config.ts",

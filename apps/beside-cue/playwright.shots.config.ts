@@ -1,15 +1,15 @@
 // ============================================================
-// Beside Cue store shots — App Store screenshots from the running app
+// Beside Cue store shots — raw store screenshots from the running app
 // ============================================================
 //
 // Run from apps/beside-cue:
 //
-//   pnpm shots                        # both devices, all eight screens
-//   pnpm shots --project ipad-13      # one device
+//   pnpm shots                        # iPhone + Android, all eight screens
+//   BESIDE_CUE_SHOTS_IPAD=1 pnpm shots --project ipad-13 # diagnostic
 //   pnpm shots -g settings            # matching screens only
 //
 // Each screen is written as a PNG flattened to 8-bit RGB (store uploads
-// reject alpha) to ~/agent-out/beside-cue/<YYYY-MM-DD>/shots/<project>/, with
+// reject alpha) to ~/agent-out/beside-cue/<YYYY-MM-DD>/shots/<run>/<project>/, with
 // a contact sheet, index.html, beside them. BESIDE_CUE_SHOTS_DIR overrides
 // the folder. Nothing is written into the repository: a failed shot leaves
 // its trace in $TMPDIR/beside-cue-shots-<port>/.
@@ -29,8 +29,6 @@ const APP_ROOT = fileURLToPath(new URL('.', import.meta.url))
 export interface ShotOptions {
   /** Folder that receives <project>/<nn-screen>.png. */
   readonly shotDir: string
-  /** Stylesheet injected into every document before capture. */
-  readonly shotCss: string
 }
 
 // The same per-checkout port as playwright.config.ts, so parallel worktrees
@@ -58,34 +56,18 @@ function localDate(date: Date): string {
 // sheet, so a run that crosses midnight still writes one folder.
 const shotDir =
   process.env.BESIDE_CUE_SHOTS_DIR ||
-  join(homedir(), 'agent-out', 'beside-cue', localDate(new Date()), 'shots')
+  join(
+    homedir(),
+    'agent-out',
+    'beside-cue',
+    localDate(new Date()),
+    'shots',
+    new Date().toISOString().replaceAll(':', '-'),
+  )
 process.env.BESIDE_CUE_SHOTS_DIR = shotDir
 
-// Reduced motion is emulated too, but not every motion rule in the app sits
-// behind that query, and a half-finished transition must never be the
-// picture. Durations go to zero rather than `animation: none`, so an element
-// that animates into its resting state still ends up there.
-const SHOT_CSS = `
-*, *::before, *::after {
-  animation-delay: 0s !important;
-  animation-duration: 0s !important;
-  animation-iteration-count: 1 !important;
-  transition-delay: 0s !important;
-  transition-duration: 0s !important;
-  scroll-behavior: auto !important;
-  caret-color: transparent !important;
-}
-/* Build identity: the corner chip on every non-release build, and the
-   version line at the foot of Settings, which reads "dev · 0.1.0 · <sha>"
-   on a dev server. A release shows neither. */
-.build-stamp,
-.settings-screen__version {
-  display: none !important;
-}
-`
-
-// A phone and a tablet as far as the page can tell: touch, the mobile
-// viewport rules, reduced motion. Viewport x DPR is the store's pixel size.
+// Touch viewports render the shared web UI. Native store/payment surfaces
+// are deliberately excluded; these captures do not emulate a native shell.
 const DEVICE = {
   isMobile: true,
   hasTouch: true,
@@ -115,7 +97,6 @@ export default defineConfig<ShotOptions>({
     baseURL: `http://127.0.0.1:${shotsPort}`,
     trace: 'retain-on-failure',
     shotDir,
-    shotCss: SHOT_CSS,
   },
   projects: [
     {
@@ -128,21 +109,39 @@ export default defineConfig<ShotOptions>({
       },
     },
     {
-      // 1032 x 1376 at 2x = 2064 x 2752, the 13-inch iPad size. The app ships
-      // for iPad (TARGETED_DEVICE_FAMILY 1,2), so the store requires this set.
-      name: 'ipad-13',
+      // 360 x 640 at 3x = 1080 x 1920, Google Play's portrait 9:16 target.
+      name: 'android-phone',
       use: {
         ...DEVICE,
-        viewport: { width: 1032, height: 1376 },
-        deviceScaleFactor: 2,
+        viewport: { width: 360, height: 640 },
+        deviceScaleFactor: 3,
       },
     },
+    ...(process.env.BESIDE_CUE_SHOTS_IPAD === '1'
+      ? [
+          {
+            // Layout diagnostic only: the native app currently targets iPhone.
+            name: 'ipad-13',
+            use: {
+              ...DEVICE,
+              viewport: { width: 1032, height: 1376 },
+              deviceScaleFactor: 2,
+            },
+          },
+        ]
+      : []),
   ],
   webServer: {
-    command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${shotsPort} --strictPort`,
+    command: `pnpm shots:serve --host 127.0.0.1 --port ${shotsPort} --strictPort`,
     cwd: APP_ROOT,
     url: `http://127.0.0.1:${shotsPort}`,
-    reuseExistingServer: true,
+    // A fresh production bundle is mandatory; never reuse a games-on/dev server.
+    reuseExistingServer: false,
+    env: {
+      VITE_BESIDE_CUE_GAMES: '0',
+      VITE_MOCK_PURCHASES: '0',
+      VITE_REVIEW_UNLOCK_SHA256: '',
+    },
     timeout: 120_000,
   },
 })
