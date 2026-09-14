@@ -27,11 +27,12 @@ import { micApiBlocker } from '@/platform/device-support'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import type { ShelfLevel } from '../levels/shelf'
-import { groundFor, MITT_SPAN, riserWallAt, SHELF_1, topsOf, } from '../levels/shelf'
+import { CATCH, groundFor, MAX_LEAP, MITT_SPAN, RISE_PER_SEMI, riserWallAt, SHELVES, topsOf, } from '../levels/shelf'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { createLocomotion, leapVelocity, stepLocomotion, } from '../sim/locomotion3d'
 import { emptyVoice, intervalLabel, voiceStep } from '../sim/shelf-voice'
 import { CHAMBER_CONFIG } from '../world3d-config'
+import { ShapeGauge } from './ShapeGauge'
 import type { ShelfView } from './Shelf3D'
 import { createShelf3D } from './Shelf3D'
 import { TouchControls } from './TouchControls'
@@ -49,9 +50,30 @@ const CROUCH_RATE = 12
 /** A silence this long lets the crouch go. Shorter than a breath would
  * flicker him on every consonant; longer reads as not listening. */
 const CROUCH_BREATH = 0.25
+const GAUGE_KEY = 'beside-cue:games:shelf-gauge'
+/** The interval gauge's glass, in semitones: his spring, the most any
+ * one leap is (§6, D2). */
+const SPRING_SEMIS = Math.round(MAX_LEAP / RISE_PER_SEMI)
+/** The catch in semitones: how far under an ask still lands. */
+const CATCH_SEMIS = CATCH / RISE_PER_SEMI
 
-/** The rooms this build plays, in order. */
-const ROOMS: readonly ShelfLevel[] = [SHELF_1]
+const readToggle = (key: string): boolean => {
+  try {
+    return window.localStorage.getItem(key) !== 'off'
+  } catch {
+    return true
+  }
+}
+const writeToggle = (key: string, on: boolean): void => {
+  try {
+    window.localStorage.setItem(key, on ? 'on' : 'off')
+  } catch {
+    // the preference just lives for the session when storage is denied
+  }
+}
+
+/** The rooms, in the order they teach (§4). */
+const ROOMS: readonly ShelfLevel[] = SHELVES
 
 const roomAfter = (id: string): ShelfLevel | null => {
   const i = ROOMS.findIndex((r) => r.id === id)
@@ -88,7 +110,16 @@ export const ShelfStage = (props: ShelfStageProps) => {
   const [above, setAbove] = createSignal<number | null>(null)
   const [standing, setStanding] = createSignal(0)
   const [climbed, setClimbed] = createSignal<readonly string[]>([])
+  /** The next shelf's rise, in semitones, or null on the top shelf. */
+  const [ask, setAsk] = createSignal<number | null>(null)
+  const [showGauge, setShowGauge] = createSignal(readToggle(GAUGE_KEY))
   const [dials, setDials] = createSignal(false)
+
+  const toggleGauge = (): void => {
+    const on = !showGauge()
+    setShowGauge(on)
+    writeToggle(GAUGE_KEY, on)
+  }
 
   let driver: InteractionDriver | null = null
   let stopLoop: (() => void) | null = null
@@ -161,6 +192,10 @@ export const ShelfStage = (props: ShelfStageProps) => {
        * for the dev hook: what a test checks a stop did. */
       let leaps = 0
       let apex = 0
+      /** The leap in the air: what was sung, and at which riser, for the
+       * flash at its apex (§6). Null on the ground. */
+      let flight: { interval: number; riser: number; flashed: boolean } | null =
+        null
       let wallSeconds = 0
       let clearedAtWall = 0
       let lastHeard = false
@@ -220,6 +255,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
         crouch = 0
         leaps = 0
         apex = 0
+        flight = null
       }
 
       const enterRoom = (next: ShelfLevel): void => {
@@ -238,16 +274,25 @@ export const ShelfStage = (props: ShelfStageProps) => {
       }
       goToRoom = enterRoom
 
-      const launch = (height: number): void => {
+      const launch = (leap: { height: number; interval: number }): void => {
         // The loop's own step, so the stepped apex is the height the
         // interval asked for to a twentieth of a millimetre (6a).
-        loco.vy = leapVelocity(height, cfg.locomotion, cfg.loop.stepSeconds)
+        loco.vy = leapVelocity(
+          leap.height,
+          cfg.locomotion,
+          cfg.loop.stepSeconds,
+        )
         loco.grounded = false
         carrying = true
         boardTo = null
         readying = false
         leaps += 1
         apex = loco.y
+        flight = {
+          interval: leap.interval,
+          riser: standingOn + 1,
+          flashed: false,
+        }
       }
 
       /** The room is climbed. */
@@ -304,7 +349,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
           lastHeard = forcedMidi !== null || pitch !== null
           lastMidi = sure
           const heardStop = voiceStep(voice, sure, dt, loco.grounded)
-          if (heardStop?.kind === 'leap') launch(heardStop.height)
+          if (heardStop?.kind === 'leap') launch(heardStop)
           else if (heardStop?.kind === 'ready') readying = true
           silentFor = sure === null ? silentFor + dt : 0
           if (voice.slide.moving || silentFor > CROUCH_BREATH) {
@@ -317,12 +362,28 @@ export const ShelfStage = (props: ShelfStageProps) => {
           // and on across the lip of the one it lands him on.
           const move = carrying || boardTo !== null ? 1 : input.read(now).move
           stepLocomotion(loco, { move, jump: false }, ground, dt, walls)
+          if (flight !== null) {
+            apex = Math.max(apex, loco.y)
+            // The apex is the step his climb stopped on -- or the one the
+            // catch took him on, which for a leap that lands is the same
+            // step (§11, 6b).
+            if (!flight.flashed && loco.vy <= 0) {
+              flight.flashed = true
+              const riser = live.shelves[flight.riser]
+              r.flash(
+                riser === undefined ? loco.x + HALF : riser.from,
+                apex,
+                intervalLabel(flight.interval),
+              )
+            }
+          }
           if (loco.grounded) {
             const on = shelfAt(loco.y)
             if (carrying && on > standingOn) {
               boardTo = live.shelves[on]!.from + HALF
             }
             carrying = false
+            flight = null
             standingOn = on
             if (
               boardTo !== null &&
@@ -332,7 +393,6 @@ export const ShelfStage = (props: ShelfStageProps) => {
             }
           } else {
             readying = false
-            if (carrying) apex = Math.max(apex, loco.y)
           }
 
           if (
@@ -355,6 +415,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
           setHeard(lastHeard)
           setLevel(lastLevel)
           setStanding(standingOn)
+          setAsk(live.shelves[standingOn + 1]?.rise ?? null)
           setAbove(
             lastMidi === null || voice.reference === null
               ? null
@@ -401,6 +462,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
           reference: voice.reference,
           leaps,
           apex,
+          mercScreenBox: () => r.mercScreenBox(),
           move: (m: number) => input.setMove(m),
           warpTo: (x: number) => {
             closeWalls()
@@ -511,6 +573,24 @@ export const ShelfStage = (props: ShelfStageProps) => {
 
   const top = (): number => room().shelves.length - 1
 
+  // The interval gauge (§6): the Line's tube, reading the voice above
+  // the reference instead of a place in the range. The glass is his
+  // spring, and the band is the next shelf's ask from the catch below
+  // it to the ask itself -- the stretch that lands for free.
+  const gaugeT = (): number =>
+    Math.min(1, Math.max(0, (above() ?? 0) / SPRING_SEMIS))
+  const gaugeBand = (): { lo: number; hi: number } | null => {
+    const a = ask()
+    return a === null
+      ? null
+      : { lo: (a - CATCH_SEMIS) / SPRING_SEMIS, hi: a / SPRING_SEMIS }
+  }
+  const inBandNow = (): boolean => {
+    const a = ask()
+    const v = above()
+    return a !== null && v !== null && v >= a - CATCH_SEMIS && v <= a
+  }
+
   return (
     <div class="stage3d" classList={{ 'has-controls': started() }}>
       <canvas class="stage3d__canvas" ref={canvas} />
@@ -541,6 +621,16 @@ export const ShelfStage = (props: ShelfStageProps) => {
       </Show>
 
       <Show when={started() && phase() !== 'done'}>
+        <Show when={showGauge()}>
+          <ShapeGauge
+            t={gaugeT()}
+            heard={heard()}
+            band={gaugeBand()}
+            inBand={inBandNow()}
+            semis={SPRING_SEMIS}
+          />
+        </Show>
+
         <div class="chamber-hud">
           <p class="chamber-hud__line">
             <Show
@@ -575,6 +665,16 @@ export const ShelfStage = (props: ShelfStageProps) => {
             {' · '}
             {standing()} of {top()} up
           </p>
+          <div class="chamber-hud__toggles">
+            <button
+              type="button"
+              class="chamber-hud__toggle"
+              aria-pressed={showGauge()}
+              onClick={toggleGauge}
+            >
+              gauge
+            </button>
+          </div>
         </div>
 
         <TouchControls source={input} jump={false} />
