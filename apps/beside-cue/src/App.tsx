@@ -31,6 +31,7 @@ import type { AppLocale } from './i18n/locale'
 import { resolveAppLocale } from './i18n/locale'
 import type { CopyParams } from './i18n/ui-copy'
 import { createCopy } from './i18n/ui-copy'
+import { subscribeAppForeground } from './infrastructure/app-foreground'
 import { getLocalizedAppConfig } from './localized-app-config'
 import { validateCinematicOnboardingMediaManifest } from './onboarding'
 import type { CinematicOnboardingPreferenceStore } from './onboarding/cinematic-onboarding-preference'
@@ -343,9 +344,7 @@ export function App(props: AppProps) {
   let stateLoaded = false
   let disposed = false
   let midnightTimer: ReturnType<typeof setTimeout> | undefined
-  let visibilityListener: (() => void) | undefined
-  let pageHideListener: (() => void) | undefined
-  let pageShowListener: (() => void) | undefined
+  let stopForegroundListener: (() => void) | undefined
   let pendingDailyCue: DailyCueNotificationPayload | undefined
   let notificationListener: LocalNotificationListenerHandle | undefined
   let pullPreviewRequest = 0
@@ -2123,54 +2122,35 @@ export function App(props: AppProps) {
     void proAccess().start()
     listenForDailyCues(appServices)
     refreshLocalDay(appServices)
-    visibilityListener = () => {
-      if (document.visibilityState !== 'visible') {
-        characterVoiceForeground = false
+    stopForegroundListener = subscribeAppForeground((foreground) => {
+      characterVoiceForeground = foreground
+      if (!foreground) {
         setV2OnboardingForeground(false)
         stopCharacterVoice('hidden')
         onboardingAudioSession.setForeground(false)
         return
       }
-      characterVoiceForeground = true
       onboardingAudioSession.setForeground(true)
       setV2OnboardingForeground(true)
       refreshLocalDay(appServices)
       restoreDailyCue(latestState, untrack(config))
-    }
-    pageHideListener = () => {
-      characterVoiceForeground = false
-      setV2OnboardingForeground(false)
-      stopCharacterVoice('hidden')
-      onboardingAudioSession.setForeground(false)
-    }
-    pageShowListener = () => visibilityListener?.()
-    document.addEventListener('visibilitychange', visibilityListener)
+    })
     document.addEventListener('pointerdown', ambientMusic.unlock, {
       passive: true,
     })
     document.addEventListener('keydown', ambientMusic.unlock)
-    window.addEventListener('pagehide', pageHideListener)
-    window.addEventListener('pageshow', pageShowListener)
     load()
   })
 
   onCleanup(() => {
     disposed = true
+    stopForegroundListener?.()
     characterVoicePlayer.dispose()
     ambientMusic.dispose()
     onboardingAudioSession.dispose()
     document.removeEventListener('pointerdown', ambientMusic.unlock)
     document.removeEventListener('keydown', ambientMusic.unlock)
     if (midnightTimer !== undefined) clearTimeout(midnightTimer)
-    if (visibilityListener !== undefined) {
-      document.removeEventListener('visibilitychange', visibilityListener)
-    }
-    if (pageHideListener !== undefined) {
-      window.removeEventListener('pagehide', pageHideListener)
-    }
-    if (pageShowListener !== undefined) {
-      window.removeEventListener('pageshow', pageShowListener)
-    }
     if (notificationListener !== undefined) {
       void notificationListener.remove()
     }
