@@ -19,6 +19,7 @@ import { foldIntoLoop } from '@/lib/guitar/loop-span'
 import type { MidiProgramFamily } from '@/lib/midi-program-family'
 import type { MidiTempoChange } from '@/lib/midi-song'
 import { createBeatClock } from '@/lib/midi-song'
+import { scoreSynthVelocityGain } from '@/lib/score-synth-velocity'
 import { sliderToGain } from '@/lib/volume-curve'
 import type { GuitarRoomDrumPlayerPort } from './guitar-room-drum-player'
 import { createLazyGuitarRoomDrumPlayer } from './guitar-room-drum-player'
@@ -495,20 +496,7 @@ function soundNote(
  * Preserve authored dynamics without turning a quiet score marking into
  * silence. Legacy and synthetic notes have no velocity and retain unity.
  */
-export function guitarRoomBandVelocityGain(
-  velocity: number | undefined,
-): number {
-  if (
-    velocity === undefined ||
-    !Number.isInteger(velocity) ||
-    velocity < 1 ||
-    velocity > 127
-  ) {
-    return 1
-  }
-  const normalized = velocity / 127
-  return 0.12 + 0.88 * normalized ** 1.4
-}
+export const guitarRoomBandVelocityGain = scoreSynthVelocityGain
 
 function guitarVariantForFamily(
   family: MidiProgramFamily | undefined,

@@ -47,11 +47,11 @@ import type { DrumProjectCapture, DrumProjectController, DrumProjectControllerOp
 import type { DrumTakeHistoryController, DrumTakeHistoryControllerOptions, } from './persistence/drum-take-history-controller'
 import type { DrumTakeSummary } from './persistence/drum-take-summary'
 import type { DrumPlayAlongBusId, DrumPlayAlongMixPreset, DrumPlayAlongSnapshot, DrumStemPlayAlongSnapshot, } from './play-along'
-import { createDrumArrangementBackingPlayer } from './play-along/drum-arrangement-player'
 import { createDrumPlayAlongController } from './play-along/drum-play-along-controller'
 import { readDrumPlayAlongSession, withDrumPlayAlongSession, } from './play-along/drum-play-along-link'
 import { createDrumStemPlayAlongController } from './play-along/drum-stem-play-along'
 import { DrumPlayLoadMeter } from './play-along/DrumPlayLoadMeter'
+import { createLazyDrumArrangementBackingPlayer } from './play-along/lazy-drum-arrangement-player'
 import type { DrumKitAuthoredFamily, DrumKitPrewarmHit, DrumNightRuntimeOptions, DrumTransportState, EssentialDrumPadId, } from './runtime'
 import { DRUM_KIT_AUTHORED_FAMILIES, ESSENTIAL_DRUM_PADS, useDrumNightLoopRange, useDrumNightRuntime, } from './runtime'
 import type { DrumCapturedHit, DrumCoachingOptions, DrumRecoveryLoop, DrumScoreIndex, DrumSeatLiveHit, DrumSessionDocument, DrumSessionImportController, DrumSessionImportState, FirstPocketVariantId, PreparedPocketProjection, } from './session'
@@ -665,7 +665,7 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       return humanizer(hit)
     },
   })
-  const arrangementBackingPlayer = createDrumArrangementBackingPlayer({
+  const arrangementBackingPlayer = createLazyDrumArrangementBackingPlayer({
     getAudioContext: audioSession.activeContext,
     getOutput: audioSession.activeOutput,
   })

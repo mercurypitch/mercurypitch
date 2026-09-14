@@ -7,6 +7,7 @@
 // owns the AudioContext, output, transport, activation gesture, and teardown.
 
 import type { GuitarVariant, GuitarVoice } from '@/lib/guitar/guitar-synth'
+import { scoreSynthVelocityGain } from '@/lib/score-synth-velocity'
 import { sliderToGain } from '@/lib/volume-curve'
 
 export const DEFAULT_DRUM_BACKING_MAX_VOICES = 48
@@ -20,6 +21,12 @@ const RELEASE_SECONDS = 0.09
 const RELEASE_SLACK_SECONDS = 0.03
 const LIVE_GAIN_TIME_CONSTANT_SECONDS = 0.012
 const MAXIMUM_NOTE_DURATION_SECONDS = 12
+// Peak-normalized plucks are much hotter than one recorded acoustic kit when
+// several authored parts overlap. Native mixed-MIDI renders require this bus
+// trim in addition to note dynamics. Leave the kit's soft/hard layers, user
+// faders and separated-audio stems untouched; do not drive the master limiter
+// harder to compensate for an unbalanced ensemble.
+const BACKING_REFERENCE_GAIN = 10 ** (-12 / 20)
 
 export type DrumArrangementBackingVoice = GuitarVariant
 
@@ -27,6 +34,7 @@ export interface DrumArrangementBackingTrigger {
   readonly trackId: string
   readonly sourceId: string
   readonly midi: number
+  readonly velocity?: number
   readonly atContextTime: number
   readonly durationSeconds: number
   readonly voice: DrumArrangementBackingVoice
@@ -228,7 +236,7 @@ export function createDrumArrangementBackingPlayer(
     releaseAll()
     retireGraph()
     const master = context.createGain()
-    master.gain.setValueAtTime(1, context.currentTime)
+    master.gain.setValueAtTime(BACKING_REFERENCE_GAIN, context.currentTime)
     master.connect(output)
     graph = { context, output, master, tracks: new Map() }
     return graph
@@ -326,6 +334,7 @@ export function createDrumArrangementBackingPlayer(
       if (!Number.isFinite(frequency) || frequency <= 0) return 'dropped'
 
       let voice: GuitarVoice
+      const strikeGain = scoreSynthVelocityGain(note.velocity)
       try {
         const voiceFactory = createVoice
         if (voiceFactory === null) return 'dropped'
@@ -339,11 +348,11 @@ export function createDrumArrangementBackingPlayer(
         voice.gain.gain.cancelScheduledValues(note.atContextTime)
         voice.gain.gain.setValueAtTime(MINIMUM_GAIN, note.atContextTime)
         voice.gain.gain.exponentialRampToValueAtTime(
-          1,
+          strikeGain,
           note.atContextTime + ATTACK_SECONDS,
         )
         const releaseAt = note.atContextTime + durationSeconds
-        voice.gain.gain.setValueAtTime(1, releaseAt)
+        voice.gain.gain.setValueAtTime(strikeGain, releaseAt)
         voice.gain.gain.setTargetAtTime(0, releaseAt, RELEASE_SECONDS / 5)
         voice.gain.connect(trackOutput(note.trackId, current))
       } catch {
