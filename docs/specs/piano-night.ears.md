@@ -531,9 +531,11 @@ separate Guitar Night surface. The bundled study remains the silent fallback.
   failure-bearing project catalog, but the MIDI importer module and its Worker
   shall load only after a file-selection gesture.
 - **REQ-PN-MUSIC-003 — Canonical catalog:** WHEN Music opens, Piano Night shall
-  list valid canonical Piano projects in deterministic library order and may
-  run the existing non-destructive legacy MIDI migration so older device-local
-  imports become discoverable.
+  list imported MIDI projects, including legacy and session-only imports,
+  before the included study and composition library. Each group shall retain
+  deterministic library order, including during search and pagination. Music
+  may run the existing non-destructive legacy MIDI migration so older
+  device-local imports become discoverable.
 - **REQ-PN-MUSIC-004 — Composition projection:** Valid, pitched, non-empty
   melodies from the MercuryPitch composition library shall project through a
   pure, bounded adapter into the same beat-native performance stage without
@@ -564,6 +566,10 @@ separate Guitar Night surface. The bundled study remains the silent fallback.
   notation, dynamics, pedal, key, and bar copy shall appear only for the
   bundled study. Other sources shall use factual project sections, dynamic
   title/duration/note metadata, and an explicit not-analysed coach state.
+  Long source titles shall wrap without horizontal scrolling: the coach source
+  summary shall show at most three lines and library titles at most two,
+  with an ellipsis and the complete title available on hover. Authored coaching
+  guidance shall remain unabridged.
 - **REQ-PN-MUSIC-012 — Playback limits:** WHILE Piano Night performs only the
   selected score lane at one initial tempo, it shall identify additional
   tracks as saved rather than audible and shall not claim tempo-map-aware,
@@ -575,6 +581,9 @@ separate Guitar Night surface. The bundled study remains the silent fallback.
 - **REQ-PN-MUSIC-014 — Compact reachability:** At compact widths the Music tab,
   import action, current selection, retry/error copy, transport, and playable
   key horizon shall remain reachable without horizontal page overflow.
+  The explicit stop-practice recovery action shall use a styled, keyboard-
+  accessible button at least 44 CSS pixels high; opening Music shall not
+  silently discard an unfinished take.
 - **REQ-PN-MUSIC-015 — Guitar isolation:** Slice 5 shall not change Guitar
   Night or replace its in-flight picker work; only route-neutral canonical
   project/import foundations may be shared.

@@ -158,7 +158,10 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
               <span class={styles.previewLabel}>
                 No authored prompt · results measured separately
               </span>
-              <p class={styles.coachGuidance}>
+              <p
+                class={`${styles.coachGuidance} ${styles.coachSourceSummary}`}
+                title={props.sourceTitle()}
+              >
                 No authored coaching prompt exists for {props.sourceTitle()}.
               </p>
               <section class={styles.coachSection}>
@@ -170,7 +173,9 @@ function PhraseCoach(props: PhraseCoachProps): JSX.Element {
                   </div>
                   <div>
                     <dt>Practice track</dt>
-                    <dd>{props.practiceTrackLabel()}</dd>
+                    <dd title={props.practiceTrackLabel()}>
+                      {props.practiceTrackLabel()}
+                    </dd>
                   </div>
                   <div>
                     <dt>Score notes</dt>

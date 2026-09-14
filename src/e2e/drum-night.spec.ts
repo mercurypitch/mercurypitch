@@ -898,7 +898,17 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
   page,
 }) => {
   const pageErrors: Error[] = []
+  const seatRequests: string[] = []
+  const kitRequests: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error))
+  page.on('request', (request) => {
+    if (/\/DrummerSeatView-[^/]+\.js$/.test(request.url())) {
+      seatRequests.push(request.url())
+    }
+    if (/\/DrumKitWorkspace-[^/]+\.js$/.test(request.url())) {
+      kitRequests.push(request.url())
+    }
+  })
   await instrumentFirstPaint(page)
 
   const response = await page.goto('/drum-night', {
@@ -933,6 +943,25 @@ test('opens the standalone Pocket Console without activating runtime capabilitie
     raf: 0,
     timeout: 0,
     workers: 0,
+  })
+  expect(seatRequests).toEqual([])
+  expect(kitRequests).toEqual([])
+  await page.getByRole('button', { name: 'Drummer Seat view' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Playable drummer’s seat' }),
+  ).toBeVisible()
+  expect(seatRequests).toHaveLength(1)
+  const rail = page.getByRole('complementary', { name: 'Drum Night sections' })
+  await rail.getByRole('button', { name: 'Groove', exact: true }).click()
+  await page.getByRole('tab', { name: 'Kit', exact: true }).click()
+  await expect(
+    page.getByRole('radiogroup', { name: 'Drum sound' }),
+  ).toBeVisible()
+  expect(kitRequests).toHaveLength(1)
+  expect(await boundaryCounts(page)).toMatchObject({
+    audio: 0,
+    midi: 0,
+    mic: 0,
   })
   expect(pageErrors).toEqual([])
 })

@@ -35,6 +35,8 @@ const FORBIDDEN_SOURCES = [
   /(?:^|\/)src\/db\/(?:local-database|adapters\/dexie-adapter)/,
   /(?:^|\/)src\/lib\/(?:midi-song|piano-project-parser)\./,
   /(?:^|\/)src\/lib\/tab\/(?:gp-import|gp-to-midi-song)\./,
+  /(?:^|\/)src\/features\/drum-night\/session\/DrummerSeatView\.tsx$/,
+  /(?:^|\/)src\/features\/drum-night\/DrumKitWorkspace\.tsx$/,
   /(?:^|\/)node_modules\/.*\/(?:dexie|mediabunny)\//,
   /(?:^|\/)node_modules\/@coderline\/alphatab\//,
 ]
