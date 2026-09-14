@@ -213,12 +213,12 @@ before using it to judge startup latency.
 The files are the small part: Merc and the glass load side by side in
 about 20 ms. The first draw is the large one, 100-140 ms in the Merc
 worlds (in the Cabinet the shader work shows under `compile` instead),
-then building the scene at about 45. The largest wait on the list comes
-after the gate: half a second from a live stream to the first detector
-frame, on a machine where the stream itself took 18 ms (a fake device,
-so no prompt). That, not Merc's glb, is where 5d looks first. (5d found
-the half second to be the fake device's own: it is silent but for a
-beep every half second, and `f0` waits for the first beep. §2.7.)
+then building the scene at about 45. The largest historical wait was
+after the gate: half a second from a live stream to the first nonzero
+detector level, on a machine where the stream itself took 18 ms (a fake
+device, so no prompt). 5d traced it to the fake microphone's periodic
+beep (§2.7). The corrected counter includes silent detector results and
+does not wait for that beep.
 
 **The Cabinet's lens (P8).** `render/fov.ts` holds a composition's
 horizontal angle on a narrower screen, only ever widening, and capped.
@@ -276,8 +276,9 @@ to 1215 ms after the crack, in every world.
 **Haptics (P5)** go through the app's own haptics port
 (`@irchiinnuss/mobile-runtime`): `@capacitor/haptics` in the app,
 `navigator.vibrate` in a browser -- Android Chrome buzzes, iOS Safari has
-no vibration and stays silent -- loaded the first time glass breaks. The
-Cabinet has the chamber's pattern, and there is no switch of the games'
+no vibration and stays silent. The helper imports the shared runtime on
+its first tap request; ordinary app startup may already have loaded it.
+The Cabinet has the chamber's pattern, and there is no switch of the games'
 own. An e2e records what reaches `navigator.vibrate`: 35, 10, 10 and 10
 ms, in that order.
 
@@ -353,16 +354,18 @@ drop reaches `navigator.vibrate` as its 20 ms.
 
 ### 2.7 What 5d landed
 
-**Measured first, and the half second was the microphone's.** 5a's
-largest wait, `f0` at 530-550 ms in every world, was not the pitch
-engine's. Chromium's fake microphone, which every headless run uses, is
-silent but for a short beep every half second -- sound at 517, 1016 and
-1520 ms after the stream opens -- and `f0` ends at the first detector
-frame with any level in it: the first beep. Fed a continuous sung tone
-instead (`--use-file-for-fake-audio-capture`), the same path takes 48 ms
-in every world, and 43 of those are the first 2048-sample window filling
-at 48 kHz, which nothing done before the microphone can shorten. `mic`
-is 17 ms, a fake device with no prompt.
+**The initial measurements separated microphone input from detector
+startup.** 5a's historical `f0` wait of 530-550 ms included the silence
+before Chromium's default fake microphone beep: sound arrived at 517,
+1016 and 1520 ms after the stream opened, and the old metric waited for
+a nonzero level. With a continuous sung tone instead
+(`--use-file-for-fake-audio-capture`), those measurements were 48 ms in
+every world, including 43 ms to fill the first 2048-sample window at
+48 kHz. `mic` was 17 ms, a fake device with no permission prompt.
+
+The current metric counts the first accepted detector result, including
+silence. The tables below preserve the original measurements; remeasure
+startup and warm/cold differences with that counter during the device pass.
 
 **Where a card tap's wait went before 5d.** The 5c build, production,
 headless Chromium, 390 × 844 at DPR 3, the desktop GPU through ANGLE
