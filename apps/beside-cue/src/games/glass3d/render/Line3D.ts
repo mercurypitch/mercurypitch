@@ -404,7 +404,11 @@ export const createLine3D = (
         () => renderer.init(),
         (ms) => mark('gpu', ms),
       )
-      if (disposed) return
+      if (disposed) {
+        // Three cannot free its backend until init has finished.
+        renderer.dispose()
+        return
+      }
       const actor = await timed(
         () => createMerc(0.55, environment),
         (ms) => mark('merc', ms),

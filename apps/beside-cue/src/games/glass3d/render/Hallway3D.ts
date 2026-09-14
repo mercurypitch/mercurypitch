@@ -229,7 +229,11 @@ export const createHallway3D = (
         () => renderer.init(),
         (ms) => mark('gpu', ms),
       )
-      if (disposed) return
+      if (disposed) {
+        // Three cannot free its backend until init has finished.
+        renderer.dispose()
+        return
+      }
 
       // Timed apart although they load together: which of the two a
       // slow open is waiting on is the question P7 asks.

@@ -319,7 +319,11 @@ export const createRenderer3D = (
         () => renderer.init(),
         (ms) => mark('gpu', ms),
       )
-      if (disposed) return
+      if (disposed) {
+        // Three cannot free its backend until init has finished.
+        renderer.dispose()
+        return
+      }
 
       const [glass, shards] = await timed(
         () => Promise.all([loadGlass(), loadShards()]),

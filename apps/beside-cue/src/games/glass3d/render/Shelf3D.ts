@@ -244,7 +244,11 @@ export const createShelf3D = (
   return {
     async init(): Promise<void> {
       await renderer.init()
-      if (disposed) return
+      if (disposed) {
+        // Three cannot free its backend until init has finished.
+        renderer.dispose()
+        return
+      }
       const actor = await createMerc(0.55, environment)
       if (disposed) {
         actor.dispose()
