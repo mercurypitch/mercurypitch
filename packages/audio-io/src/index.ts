@@ -17,6 +17,7 @@ export {
   acquireSharedAudioContext,
   cancelSharedAudioContextSuspension,
   resetSharedAudioContext,
+  resumeSharedAudioContext,
   sharedAudioContextOwners,
   suspendSharedAudioContext,
 } from './shared-audio-context'

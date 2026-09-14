@@ -2,7 +2,7 @@
 // App foreground — native inactivity and page visibility share one gate
 // ============================================================
 
-import { cancelSharedAudioContextSuspension, suspendSharedAudioContext, } from '@irchiinnuss/audio-io/shared-audio-context'
+import { cancelSharedAudioContextSuspension, resumeSharedAudioContext, suspendSharedAudioContext, } from '@irchiinnuss/audio-io/shared-audio-context'
 import { onAppState } from '@irchiinnuss/mobile-runtime/platform'
 
 /** A visible WebView cannot overrule an inactive native app or a hidden page. */
@@ -18,10 +18,14 @@ export function subscribeAppForeground(
     if (disposed) return
     const next =
       nativeActive && !pageHidden && document.visibilityState === 'visible'
-    if (next && !foreground) cancelSharedAudioContextSuspension()
+    const returned = next && !foreground
+    if (returned) cancelSharedAudioContextSuspension()
     foreground = next
     // Repeated visible events also refresh the local day after a long sleep.
     onForeground(next)
+    // Games keep a clock lease without an ambient score to resume it for them.
+    // App cancellation has already retired one-shots from the previous visit.
+    if (returned) resumeSharedAudioContext()
   }
   const hidePage = (): void => {
     pageHidden = true

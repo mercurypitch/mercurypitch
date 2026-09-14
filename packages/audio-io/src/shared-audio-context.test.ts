@@ -9,7 +9,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { acquireSharedAudioContext, resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from './shared-audio-context'
+import { acquireSharedAudioContext, cancelSharedAudioContextSuspension, resetSharedAudioContext, resumeSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from './shared-audio-context'
 
 class FakeAudioContext {
   state = 'suspended'
@@ -85,6 +85,46 @@ afterEach(() => {
 })
 
 describe('the shared audio context', () => {
+  it('does not build a context just because the app returns', () => {
+    const { built } = useFakeContexts()
+    acquireSharedAudioContext('idle-output')
+    resumeSharedAudioContext()
+    expect(built).toHaveLength(0)
+  })
+
+  it.each(['no owner', 'hidden page', 'native inactive'] as const)(
+    'keeps foreground recovery parked with %s',
+    async (reason) => {
+      const { built } = useFakeContexts()
+      const lease = acquireSharedAudioContext('game')
+      lease.ensure()
+      if (reason === 'no owner') lease.release()
+      else if (reason === 'hidden page') setPageHidden(true)
+      else suspendSharedAudioContext()
+      resumeSharedAudioContext()
+      await settle()
+      expect(built[0].resumeCount).toBe(0)
+      expect(built[0].state).toBe('suspended')
+    },
+  )
+
+  it('keeps cancellation separate from resume and retries a refused recovery on a gesture', async () => {
+    const { built } = useFakeContexts()
+    const lease = acquireSharedAudioContext('game')
+    await lease.unlock()
+    suspendSharedAudioContext()
+    cancelSharedAudioContextSuspension()
+    expect(built[0].state).toBe('suspended')
+    vi.spyOn(built[0], 'resume').mockRejectedValueOnce(
+      new Error('Gesture required'),
+    )
+    resumeSharedAudioContext()
+    await settle()
+    expect(built[0].state).toBe('suspended')
+    await expect(lease.unlock()).resolves.toBe(true)
+    expect(built[0].state).toBe('running')
+  })
+
   it('builds nothing until an owner asks for the clock', () => {
     const { built } = useFakeContexts()
 

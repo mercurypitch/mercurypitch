@@ -28,6 +28,7 @@ const appLifecycle = vi.hoisted(() => ({
   unsubscribe: vi.fn(),
   suspend: vi.fn(),
   cancelSuspension: vi.fn(),
+  resume: vi.fn(),
 }))
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', async (importOriginal) => ({
@@ -44,6 +45,7 @@ vi.mock(
     ...(await importOriginal<typeof SharedAudioContextModule>()),
     suspendSharedAudioContext: appLifecycle.suspend,
     cancelSharedAudioContextSuspension: appLifecycle.cancelSuspension,
+    resumeSharedAudioContext: appLifecycle.resume,
   }),
 )
 
@@ -778,6 +780,7 @@ beforeEach(() => {
   appLifecycle.unsubscribe.mockClear()
   appLifecycle.suspend.mockClear()
   appLifecycle.cancelSuspension.mockClear()
+  appLifecycle.resume.mockClear()
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   Object.defineProperty(Element.prototype, 'scrollIntoView', {
     configurable: true,
@@ -1358,6 +1361,7 @@ describe('Beside Cue character voice integration', () => {
 
     appLifecycle.handler!('active')
     expect(appLifecycle.cancelSuspension).toHaveBeenCalledOnce()
+    expect(appLifecycle.resume).toHaveBeenCalledOnce()
     expect(voice.playbacks).toHaveLength(1)
     fireEvent.click(pull)
     expect(voice.playbacks).toHaveLength(2)

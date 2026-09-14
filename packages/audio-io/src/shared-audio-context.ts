@@ -314,6 +314,27 @@ export function cancelSharedAudioContextSuspension(): void {
   cancelPendingSuspension()
 }
 
+/**
+ * Recovers an already-owned foreground clock without creating audio or
+ * replaying stopped sources. Call after clearing native suspension intent.
+ * A platform refusal remains retryable through the next gesture's unlock().
+ */
+export function resumeSharedAudioContext(): void {
+  const audioContext = context
+  if (
+    audioContext === undefined ||
+    owners.size === 0 ||
+    isPageHidden() ||
+    explicitlySuspended ||
+    audioContext.state === 'closed'
+  ) {
+    return
+  }
+  cancelPendingSuspension()
+  suspendedByPage = false
+  if (audioContext.state !== 'running') resumeQuietly(audioContext)
+}
+
 /** The names currently holding a lease, for tests and DEV readouts. */
 export function sharedAudioContextOwners(): readonly string[] {
   return [...owners.values()].map(({ owner }) => owner)
