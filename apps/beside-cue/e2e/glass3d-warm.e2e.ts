@@ -13,7 +13,7 @@
 //
 // The microphone is Chromium's fake one, so the gate can be tapped.
 
-import type { Page } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 test.use({
@@ -39,6 +39,9 @@ interface Warmth {
 /** What the page does, recorded from before its first script runs. */
 const recordWarmth = (page: Page): Promise<void> =>
   page.addInitScript(() => {
+    // Vite can fill the resource-timing history before Merc loads. Keep it
+    // tiny so these ownership checks cannot accidentally rely on that log.
+    performance.setResourceTimingBufferSize(1)
     const log: Warmth = {
       gum: 0,
       audioContexts: [],
@@ -80,13 +83,21 @@ const recordWarmth = (page: Page): Promise<void> =>
 const warmth = (page: Page): Promise<Warmth> =>
   page.evaluate(() => (window as unknown as { __warmth: Warmth }).__warmth)
 
-const mercFetches = (page: Page): Promise<number> =>
-  page.evaluate(
-    () =>
-      performance
-        .getEntriesByType('resource')
-        .filter((r) => r.name.includes('merc.glb')).length,
-  )
+/** Observe actual requests and successful completed downloads, even when
+ * the page's resource-timing history has filled up. Install before navigation. */
+const recordMercFetches = (page: Page) => {
+  const fetches = { requested: 0, completed: 0 }
+  const isMerc = (request: Request): boolean =>
+    new URL(request.url()).pathname === '/games/glass3d/merc.glb'
+  page.on('request', (request) => {
+    if (isMerc(request)) fetches.requested += 1
+  })
+  page.on('requestfinished', async (request) => {
+    if (isMerc(request) && (await request.response())?.ok())
+      fetches.completed += 1
+  })
+  return fetches
+}
 
 const hallwayLoad = (page: Page): Promise<Record<string, number> | null> =>
   page.evaluate(() => {
@@ -99,12 +110,13 @@ const hallwayLoad = (page: Page): Promise<Record<string, number> | null> =>
 test('the list warms Merc and the detector after its first frame, and the Hallway takes both', async ({
   page,
 }) => {
+  const mercFetches = recordMercFetches(page)
   await recordWarmth(page)
   await page.goto('/?devSeed')
   await page.getByRole('button', { name: /B-side games/ }).click()
 
   await expect.poll(async () => (await warmth(page)).workers.length).toBe(1)
-  await expect.poll(() => mercFetches(page)).toBe(1)
+  await expect.poll(() => mercFetches).toEqual({ requested: 1, completed: 1 })
   const onList = await warmth(page)
   expect(onList.workers[0]!.url).toContain('f0-detector')
   // After the frame the list was first drawn in, never inside it.
@@ -133,10 +145,11 @@ test('the list warms Merc and the detector after its first frame, and the Hallwa
   const inGame = await warmth(page)
   expect(inGame.gum).toBeGreaterThan(0)
   expect(inGame.workers).toHaveLength(1)
-  expect(await mercFetches(page)).toBe(1)
+  expect(mercFetches).toEqual({ requested: 1, completed: 1 })
 })
 
 test('?cold warms nothing', async ({ page }) => {
+  const mercFetches = recordMercFetches(page)
   await recordWarmth(page)
   await page.goto('/?devSeed&cold')
   await page.getByRole('button', { name: /B-side games/ }).click()
@@ -145,5 +158,5 @@ test('?cold warms nothing', async ({ page }) => {
   // was going to run would have.
   await page.waitForTimeout(2_500)
   expect((await warmth(page)).workers).toHaveLength(0)
-  expect(await mercFetches(page)).toBe(0)
+  expect(mercFetches).toEqual({ requested: 0, completed: 0 })
 })
