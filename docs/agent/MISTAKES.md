@@ -1024,6 +1024,13 @@ selects the destination by its exact accessible name.
 keep the test's timing buffer small so a history-based counter cannot return unnoticed.
 **See:** `apps/beside-cue/e2e/glass3d-warm.e2e.ts`.
 
+### Ignore host libvips when hydrating the pinned Sharp binary
+
+**Symptom:** frozen pnpm install fails in Sharp's postinstall asking for `node-gyp`.
+**Cause:** a globally installed libvips makes Sharp attempt a source build instead of its prebuilt binary.
+**Rule:** retry with `SHARP_IGNORE_GLOBAL_LIBVIPS=1 pnpm install --frozen-lockfile`; do not change the lockfile or add build dependencies for the host's optional library.
+**See:** `pnpm-lock.yaml` (Sharp install dependencies).
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

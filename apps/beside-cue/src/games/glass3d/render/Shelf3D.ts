@@ -25,6 +25,8 @@ import { ACESFilmicToneMapping, AdditiveBlending, AmbientLight, Box3, BoxGeometr
 import { WebGPURenderer } from 'three/webgpu'
 import type { ShelfLevel } from '../levels/shelf'
 import { CATCH, MAX_LEAP, RISE_PER_SEMI, topsOf } from '../levels/shelf'
+import type { LoadMark } from '../runtime/perf'
+import { NO_MARK, timed } from '../runtime/perf'
 import { intervalName } from '../sim/shelf-voice'
 import type { World3DConfig } from '../world3d-config'
 import { aimFromRig, buildCabinetEnvironment, buildRadialFalloff, createBackdrop, RIG, } from './environment'
@@ -211,10 +213,14 @@ export interface ShelfView {
   crouch: number
   /** Whether he is on the top shelf, which lights the way out. */
   exitOpen: boolean
+  /** 1..0 as a landing settles, timed by the stage even in calm mode. */
+  landing: number
+  /** Suppress decorative motion while preserving the leap and its ruler. */
+  reduced: boolean
 }
 
 export interface Shelf3D {
-  init(): Promise<void>
+  init(mark?: LoadMark): Promise<void>
   /** Put a different room in front of him, keeping everything that is
    * not the room -- the renderer, the environment, Merc, the mic. */
   load(room: ShelfLevel): void
@@ -459,14 +465,20 @@ export const createShelf3D = (
   place(room.startX, 0)
 
   return {
-    async init(): Promise<void> {
-      await renderer.init()
+    async init(mark = NO_MARK): Promise<void> {
+      await timed(
+        () => renderer.init(),
+        (ms) => mark('gpu', ms),
+      )
       if (disposed) {
         // Three cannot free its backend until init has finished.
         renderer.dispose()
         return
       }
-      const actor = await createMerc(0.55, environment)
+      const actor = await timed(
+        () => createMerc(0.55, environment),
+        (ms) => mark('merc', ms),
+      )
       if (disposed) {
         actor.dispose()
         return
@@ -545,6 +557,7 @@ export const createShelf3D = (
     render(view: ShelfView, dt: number): void {
       if (disposed) return
       clock += Math.min(dt, 0.1)
+      const landing = view.reduced ? 0 : view.landing ** 2
 
       const actor = mercActor
       if (actor !== null) {
@@ -554,16 +567,18 @@ export const createShelf3D = (
         actor.root.position.y = view.mercY + actor.metrics().feetBelowRoot
         actor.root.rotation.y = TURN * view.mercFacing
         actor.setShape(
-          1 + CROUCH_WIDTH * view.crouch,
-          1 - CROUCH_HEIGHT * view.crouch,
+          1 + CROUCH_WIDTH * view.crouch + 0.06 * landing,
+          1 - CROUCH_HEIGHT * view.crouch - 0.06 * landing,
         )
         actor.update(dt)
       }
       rig.position.set(view.mercX, view.mercY, 0)
 
       pool.position.set(view.mercX, view.surfaceY + 0.001, 0)
+      pool.scale.set(1 + 0.16 * landing, 0.5, 1)
       poolMaterial.opacity =
-        0.12 * Math.max(0, Math.min(1, 1 - (view.mercY - view.surfaceY) * 1.6))
+        (0.12 + 0.14 * landing) *
+        Math.max(0, Math.min(1, 1 - (view.mercY - view.surfaceY) * 1.6))
 
       if (flashMesh.visible) {
         flashAge += Math.min(dt, 0.1)
@@ -587,7 +602,7 @@ export const createShelf3D = (
         0,
       )
 
-      const breath = 0.5 + 0.5 * Math.sin(clock * 2.2)
+      const breath = view.reduced ? 0.5 : 0.5 + 0.5 * Math.sin(clock * 2.2)
       exitMaterial.color.setHex(view.exitOpen ? CUSTARD : TURQUOISE)
       exitMaterial.opacity = view.exitOpen ? 0.26 + breath * 0.2 : 0.15
 

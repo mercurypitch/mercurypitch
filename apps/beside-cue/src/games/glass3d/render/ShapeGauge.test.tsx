@@ -1,4 +1,5 @@
 import { render } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { describe, expect, it } from 'vitest'
 import { GAUGE, ShapeGauge, TUBE_HEIGHT, yFor } from './ShapeGauge'
 
@@ -14,6 +15,30 @@ const liftOf = (c: HTMLElement): number => {
 }
 
 describe('the shape gauge', () => {
+  it('names the quantity measured by its stage, with range as the default', () => {
+    const [label, setLabel] = createSignal<string | undefined>()
+    const c = render(() => (
+      <ShapeGauge
+        label={label()}
+        t={0}
+        heard
+        band={null}
+        inBand={false}
+        semis={9}
+      />
+    ))
+    expect(
+      c.getByRole('img', { name: 'Where your voice sits in your range' }),
+    ).toBeTruthy()
+    setLabel('Interval above your held note')
+    expect(
+      c.getByRole('img', { name: 'Interval above your held note' }),
+    ).toBeTruthy()
+    expect(
+      c.queryByRole('img', { name: 'Where your voice sits in your range' }),
+    ).toBeNull()
+  })
+
   it('sits the column at the bottom for t = 0 and at the top for t = 1', () => {
     const low = render(() => (
       <ShapeGauge t={0} heard band={null} inBand={false} semis={24} />

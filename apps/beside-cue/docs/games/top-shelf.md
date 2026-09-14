@@ -303,9 +303,8 @@ Decided here, where the plan was silent:
   is the voice above the reference over nine, the band the next shelf's
   ask from half a semitone under it to the ask, ticks every semitone,
   and no band on the top shelf. Its own toggle key,
-  `beside-cue:games:shelf-gauge`. Its aria-label still reads "Where your
-  voice sits in your range", which is wrong here; the file is the polish
-  slice's.
+  `beside-cue:games:shelf-gauge`. The range aria-label inherited here was
+  corrected to "Interval above your held note" in 6e.
 - **Rooms follow one another in memory**, within a visit; the track that
   keeps them arrives in 6d.
 
@@ -404,3 +403,48 @@ Five fixes from the review of 6a to 6d. The stage's step moved to
   lifted him onto.
 - Clearing a room lets his crouch go, so he no longer stays squashed
   behind the room card.
+
+### What 6e landed
+
+Top Shelf now uses Slice 5's shared frame meter, calm rendering, load
+timings and haptics port. The diagnostic corner is visible in development
+or with the explicit `?perf` opt-in, as in the other worlds; regular
+production play has no backend chip. Detector throughput counts actual
+completed frames, including silence, independently of the render loop.
+The gauge's accessible name identifies the interval above the held note.
+
+Each transition from airborne to grounded sends one light haptic and
+settles Merc with a small squash and a brighter, wider floor glow over
+220 ms. The feedback does not stop simulation or delay the next note.
+Reduced motion keeps the haptic and the educational crouch, leap, ruler
+and apex label; it holds the idle clip and removes the decorative landing
+squash, floor pulse and exit breathing. The preference is read live.
+
+Browser verification covers the first drawn frame and diagnostic values,
+idle rendering at the shared 30 fps calm cadence with simulation still
+running, immediate wake on input, one tap per landing, and the actual
+rendered height with and
+without reduced motion. A synthesized microphone stream also travels
+through Web Audio, the worklet, detector, driver and slide tracker: silence
+produces detector frames without a leap, then a held note and a fifth
+above it climb the first shelf. Leaving releases that capture. This is
+separate from the `sing(midi)` hook used to climb the rooms deterministically.
+
+### 6f remains a device measurement
+
+The software integration does not close the "felt on the phone" part of
+6e or the M1-M3 device pass. Keep `RISE_PER_SEMI`, `CATCH`, `MAX_LEAP` and
+the slide hold unchanged until those measurements exist. On the target
+phone, record:
+
+- M1: Maff and one first-time singer's fifths, with cents past the ask,
+  first-try landings and misses against the existing catch and grade.
+- M2: whether settling a note feels immediate; record the phone, OS,
+  audio route and diagnostic detector rate with the perceived delay.
+- M3: room 3's four landings in portrait, including the 2.4 m top shelf,
+  with controls visible and Merc's torso clear of the viewport edges.
+- 6e: one light landing tap where the platform supports it, comfortable
+  motion, and the same climb with the OS reduced-motion preference on.
+
+Browser automation establishes repeatable behavior and framing; it does
+not supply a singer's accuracy, device latency or the strength of a motor.
