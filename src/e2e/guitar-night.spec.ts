@@ -1582,18 +1582,26 @@ test('keeps the beginner preview and local song choice honest @smoke', async ({
     buffer: Buffer.from('RIFF'),
   })
 
-  await expect(page.getByText('practice-room.wav')).toBeVisible()
+  const dialog = page.getByTestId('night-music-import')
+  await expect(dialog.getByText('practice-room.wav')).toBeVisible()
   await expect(
-    page.getByRole('progressbar', {
-      name: 'Preparing practice-room.wav',
-    }),
-  ).toBeVisible()
-  await page
-    .getByRole('button', { name: 'Cancel preparation', exact: true })
-    .click()
+    dialog.getByRole('button', { name: /^Prepare vocals/ }),
+  ).toBeEnabled()
   await expect(
-    page.getByText('Preparation cancelled', { exact: true }),
-  ).toBeVisible()
+    dialog.getByRole('checkbox', { name: 'Automatically separate new songs' }),
+  ).not.toBeChecked()
+  await expect(dialog.getByRole('progressbar')).toHaveCount(0)
+  // Choosing a file is only a queueing gesture, not consent to start a model,
+  // another audio context, playback, or microphone access.
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __guitarNightAudioContexts: number })
+          .__guitarNightAudioContexts,
+    ),
+  ).toBe(1)
+  await dialog.getByRole('button', { name: 'Back to session' }).click()
+  await expect(dialog).toHaveCount(0)
   await expect(page).toHaveURL(/\/guitar-night$/)
 
   const microphoneRequests = await page.evaluate(
