@@ -9,6 +9,30 @@ import { PREMIUM_PULL_OPTIONS } from '@/content/premium-pulls'
 import { PremiumPullChoices } from './PremiumPullChoices'
 
 describe('Premium Pull shelf', () => {
+  it('reports each unlocked selection tap, including a repeated selected radio', async () => {
+    const [selected, setSelected] = createSignal<string>()
+    const select = vi.fn((id: string) => setSelected(id))
+    render(() => (
+      <PremiumPullChoices
+        options={PREMIUM_PULL_OPTIONS}
+        selectedId={selected()}
+        isPro
+        radioName="test-pull"
+        artFor={(id) => findPullCharacter(DEFAULT_CONTENT_PACK, id)!.token}
+        onSelect={select}
+      />
+    ))
+    fireEvent.click(screen.getByText('Show Deluxe'))
+    const tape = await screen.findByRole('radio', { name: 'Another quick fix' })
+    fireEvent.click(tape)
+    fireEvent.click(tape)
+    expect(select.mock.calls).toEqual([['the-tape'], ['the-tape']])
+    expect(tape).toBeChecked()
+    fireEvent.keyDown(tape, { key: ' ' })
+    fireEvent.keyDown(tape, { key: ' ', repeat: true })
+    expect(select).toHaveBeenCalledTimes(3)
+  })
+
   it('loads no previews until expanded, then shows all eight without permitting selection', async () => {
     const select = vi.fn()
     const view = render(() => (

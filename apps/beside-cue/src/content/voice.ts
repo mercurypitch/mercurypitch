@@ -356,7 +356,14 @@ export function createElementAudioPort(): VoiceAudioPort | undefined {
 
     const handle: VoiceAudioHandle = {
       started: Promise.resolve()
-        .then(() => element.play())
+        .then(() => {
+          // A newer selection or route exit can retire this handle before
+          // its queued start reaches the media element.
+          if (settled || disposed) {
+            throw new Error('Voice playback was cancelled before start.')
+          }
+          return element.play()
+        })
         .then(() => undefined)
         .catch((error: unknown) => {
           settle('failed')

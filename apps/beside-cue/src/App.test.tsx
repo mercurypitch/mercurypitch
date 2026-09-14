@@ -523,6 +523,7 @@ function valueDeferred<T>(): ValueDeferred<T> {
 
 interface RecordedVoicePlayback {
   readonly source: AudioSourceVariant
+  readonly started: Deferred
   readonly finished: ValueDeferred<VoiceAudioFinish>
   stopCalls: number
 }
@@ -533,22 +534,25 @@ interface VoiceAudioProbe {
   finish(index: number, result?: VoiceAudioFinish): void
 }
 
-function createVoiceAudioProbe(): VoiceAudioProbe {
+function createVoiceAudioProbe(pendingStarts = false): VoiceAudioProbe {
   const playbacks: RecordedVoicePlayback[] = []
 
   const port: VoiceAudioPort = {
     supportsMimeType: () => true,
     play(source) {
+      const started = deferred()
+      if (!pendingStarts) started.resolve()
       const finished = valueDeferred<VoiceAudioFinish>()
       const playback: RecordedVoicePlayback = {
         source,
+        started,
         finished,
         stopCalls: 0,
       }
       playbacks.push(playback)
 
       return {
-        started: Promise.resolve(),
+        started: started.promise,
         finished: finished.promise,
         stop: () => {
           playback.stopCalls += 1
@@ -823,7 +827,7 @@ describe('Beside Cue character voice integration', () => {
     expect(repository.saveCalls()).toBe(0)
   })
 
-  it('attempts a delivered Pull introduction once and leaves replay explicit', async () => {
+  it('plays a Pull introduction on every selection tap, including the selected Pull', async () => {
     const repository = createMemoryRepository()
     const voice = createVoiceAudioProbe()
     render(() => (
@@ -842,24 +846,101 @@ describe('Beside Cue character voice integration', () => {
     expect(voice.playbacks[0]?.source.src).toContain('en__the-scroll__meet.m4a')
     await screen.findByText('Voice playing.')
 
-    voice.finish(0)
+    fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
+    await waitFor(() => expect(voice.playbacks).toHaveLength(2))
+    expect(voice.playbacks[0]?.stopCalls).toBe(1)
+
+    voice.finish(1)
     await screen.findByRole('button', {
       name: /replay voice/iu,
     })
     fireEvent.click(screen.getByRole('radio', { name: /automatic snacking/iu }))
     fireEvent.click(screen.getByRole('radio', { name: /endless scrolling/iu }))
-    expect(voice.playbacks).toHaveLength(1)
+    await waitFor(() => expect(voice.playbacks).toHaveLength(3))
+    voice.finish(2)
 
     fireEvent.click(
-      screen.getByRole('button', {
+      await screen.findByRole('button', {
         name: /replay voice/iu,
       }),
     )
-    await waitFor(() => expect(voice.playbacks).toHaveLength(2))
-    expect(voice.playbacks[1]?.source.src).toContain('en__the-scroll__meet.m4a')
+    await waitFor(() => expect(voice.playbacks).toHaveLength(4))
+    expect(voice.playbacks[3]?.source.src).toContain('en__the-scroll__meet.m4a')
     expect(repository.saveCalls()).toBe(0)
     expect(repository.snapshot()).toBeNull()
   })
+
+  it('keeps only the latest A-to-B-to-A Pull preview when earlier loads finish late', async () => {
+    const voice = createVoiceAudioProbe(true)
+    render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(createMemoryRepository(), {
+          voiceAudio: voice.port,
+        })}
+        contentPack={packWithRecordedLines(
+          'pull.scrolling.meet',
+          'pull.snacking.meet',
+        )}
+      />
+    ))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    for (const name of [
+      /endless scrolling/iu,
+      /automatic snacking/iu,
+      /endless scrolling/iu,
+    ]) {
+      fireEvent.click(screen.getByRole('radio', { name }))
+    }
+    expect(voice.playbacks).toHaveLength(3)
+    expect(
+      voice.playbacks.slice(0, 2).every((playback) => playback.stopCalls === 1),
+    ).toBe(true)
+    expect(screen.getByText('Voice loading.')).toBeVisible()
+    voice.playbacks[2]!.started.resolve()
+    await screen.findByText('Voice playing.')
+    voice.playbacks[0]!.started.resolve()
+    voice.playbacks[1]!.started.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(voice.playbacks[2]!.stopCalls).toBe(0)
+    expect(screen.getByText('Voice playing.')).toBeVisible()
+    expect(
+      screen.getByRole('radio', { name: /endless scrolling/iu }),
+    ).toBeChecked()
+  })
+
+  it.each(['route exit', 'unmount'])(
+    'cancels a pending Pull preview on %s',
+    async (exit) => {
+      const voice = createVoiceAudioProbe(true)
+      const view = render(() => (
+        <App
+          config={WELCOME_ONLY_TEST_CONFIG}
+          services={createTestServices(createMemoryRepository(), {
+            voiceAudio: voice.port,
+          })}
+          contentPack={packWithRecordedLines('pull.scrolling.meet')}
+        />
+      ))
+      fireEvent.click(
+        await screen.findByRole('button', { name: /set up my first plan/iu }),
+      )
+      fireEvent.click(
+        screen.getByRole('radio', { name: /endless scrolling/iu }),
+      )
+      expect(voice.playbacks).toHaveLength(1)
+      if (exit === 'unmount') view.unmount()
+      else fireEvent.click(screen.getByRole('button', { name: /go back/iu }))
+      expect(voice.playbacks[0]!.stopCalls).toBe(1)
+      voice.playbacks[0]!.started.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(screen.queryByText('Voice playing.')).not.toBeInTheDocument()
+    },
+  )
 
   it('keeps the delivered caption truthful and silent when voice is muted', async () => {
     const repository = createMemoryRepository(stateWithVoiceEnabled(false))

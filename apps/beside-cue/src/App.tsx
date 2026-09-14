@@ -354,7 +354,6 @@ export function App(props: AppProps) {
   const [v2OnboardingForeground, setV2OnboardingForeground] = createSignal(
     characterVoiceForeground,
   )
-  const attemptedPullPreviews = new Set<string>()
   let cueResolutionInFlight = false
   let timerCompletionHapticPlayed = false
   let onboardingPlanSavePromise:
@@ -872,7 +871,6 @@ export function App(props: AppProps) {
     setSetupMode(nextMode)
     setSelectedPullId(undefined)
     stopCharacterVoice('route-exit')
-    attemptedPullPreviews.clear()
     setPlayedPullPreviewIds([])
     setCustomPullText('')
     setCueContextSelection(undefined)
@@ -1250,11 +1248,7 @@ export function App(props: AppProps) {
     }
     setSelectedPullId(pullId)
     setSetupError(undefined)
-    if (selectionChanged) stopCharacterVoice('replaced')
-    if (selectionChanged && !attemptedPullPreviews.has(pullId)) {
-      attemptedPullPreviews.add(pullId)
-      playPullPreview(pullId)
-    }
+    playPullPreview(pullId)
   }
 
   function stopCharacterVoice(
@@ -1911,7 +1905,6 @@ export function App(props: AppProps) {
     // The selector is available in Settings and before Tap to start only.
     // Cancel any legacy preview request without interrupting the music session.
     stopCharacterVoice('replaced')
-    attemptedPullPreviews.clear()
     setPlayedPullPreviewIds([])
     persist({
       ...enqueuedState,
