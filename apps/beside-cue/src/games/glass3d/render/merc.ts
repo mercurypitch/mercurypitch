@@ -102,8 +102,14 @@ export interface MercActor {
    */
   metrics(): { height: number; feetBelowRoot: number }
   /** Play a clip by name. Unknown names are ignored, deliberately —
-   * a missing clip should degrade to stillness, not to a crash. */
-  play(name: string, opts?: { loop?: boolean; fade?: number }): void
+   * a missing clip should degrade to stillness, not to a crash.
+   * `still` fades the clip in and holds its first frame: his idle
+   * breathing under reduced motion (P6), reached without freezing the
+   * pose he was leaving halfway through the fade. */
+  play(
+    name: string,
+    opts?: { loop?: boolean; fade?: number; still?: boolean },
+  ): void
   /** Advance the mixer. */
   update(dt: number): void
   dispose(): void
@@ -235,10 +241,15 @@ export const createMerc = async (
       return { height: height * shape.height, feetBelowRoot: restFeet }
     },
     play(name, opts = {}): void {
-      if (current === name) return
       const clip = byName.get(name)
       if (clip === undefined) return
       const action = mixer.clipAction(clip)
+      // Held or moving is the clip's own clock. The fade is weighed on
+      // the mixer's, so a held clip still fades in all the way.
+      action.timeScale = opts.still === true ? 0 : 1
+      // The same clip asked to hold or to move again: no restart, or
+      // the fade would be seen twice.
+      if (current === name) return
       action.reset()
       action.setLoop(
         opts.loop === false ? LoopOnce : LoopRepeat,
