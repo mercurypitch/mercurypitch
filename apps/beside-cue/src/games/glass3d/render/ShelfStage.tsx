@@ -24,12 +24,14 @@ import { createSingDriver } from '@/games/glass/drivers/sing'
 import type { InteractionDriver } from '@/games/glass/drivers/types'
 import { micErrorLine } from '@/games/glass/mic-error'
 import { micApiBlocker } from '@/platform/device-support'
+import { createReducedMotion } from '@/platform/reduced-motion'
 import type { DevAction } from '../dev/DevDials'
 import { bindKeyboard, createIntentSource } from '../input/pad-intent'
 import type { ShelfLevel } from '../levels/shelf'
 import { CATCH, MAX_LEAP, MIN_LEAP_SEMIS, RISE_PER_SEMI } from '../levels/shelf'
 import { keepBest, readStats, writeStats } from '../levels/shelf-stats'
 import { shelfTrack } from '../levels/shelf-track'
+import { tap } from '../runtime/haptics'
 import { createLoopState, runLoop } from '../runtime/loop'
 import { medalFor } from '../sim/line-grade'
 import type { ShelfStats } from '../sim/shelf-grade'
@@ -40,12 +42,16 @@ import { CHAMBER_CONFIG } from '../world3d-config'
 import { ShapeGauge } from './ShapeGauge'
 import type { ShelfView } from './Shelf3D'
 import { createShelf3D } from './Shelf3D'
+import { createStageFrame } from './stage-frame'
+import { StageCorner } from './StageCorner'
 import { TouchControls } from './TouchControls'
 
 const MIC_ID = 'glass3d-shelf'
 const TEXT_INTERVAL = 0.1
 /** The beat between rooms. */
 const CLEARED_SECONDS = 1.4
+/** A landing settles visually; it never pauses the voice or the body. */
+const LANDING_SECONDS = 0.22
 const GAUGE_KEY = 'beside-cue:games:shelf-gauge'
 /** The interval gauge's glass, in semitones: his spring, the most any
  * one leap is (§6, D2). */
@@ -104,6 +110,8 @@ export const ShelfStage = (props: ShelfStageProps) => {
   const [micError, setMicError] = createSignal<string | null>(noMicApi)
   const [started, setStarted] = createSignal(false)
   const [backend, setBackend] = createSignal('…')
+  const pace = createStageFrame({ calm: () => cfg.calm, backend })
+  const reduced = createReducedMotion()
   const [phase, setPhase] = createSignal<Phase>(
     shelfTrack.isFinished(shelfTrack.readTrack()) ? 'done' : 'climbing',
   )
@@ -140,7 +148,9 @@ export const ShelfStage = (props: ShelfStageProps) => {
   }
 
   onMount(() => {
+    const sceneFrom = performance.now()
     const r = createShelf3D(canvas, cfg, room())
+    pace.mark('scene', performance.now() - sceneFrom)
     const unbindKeys = bindKeyboard(input, window)
 
     const fit = (): void => {
@@ -169,6 +179,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
       let lastLevel = 0
       let lastMidi: number | null = null
       let sinceText = TEXT_INTERVAL
+      let landedAt = -Infinity
 
       const go = (p: Phase): void => {
         phaseNow = p
@@ -177,9 +188,11 @@ export const ShelfStage = (props: ShelfStageProps) => {
 
       let pose = ''
       const setPose = (name: string, loop = true): void => {
-        if (pose === name) return
-        pose = name
-        r.merc()?.play(name, { loop })
+        const still = name === 'listen' && reduced()
+        const key = still ? `${name}:still` : name
+        if (pose === key) return
+        pose = key
+        r.merc()?.play(name, { loop, still })
       }
       const poseNow = (): void => {
         const { loco } = climb
@@ -202,6 +215,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
         // A new room starts from its door, with no reference: a note held
         // across the handover settles as the first stop and readies him.
         climb = createClimb(next, cfg.locomotion)
+        landedAt = -Infinity
         setRoom(next)
         r.load(next)
         setStanding(0)
@@ -238,6 +252,8 @@ export const ShelfStage = (props: ShelfStageProps) => {
         surfaceY: 0,
         crouch: 0,
         exitOpen: false,
+        landing: 0,
+        reduced: reduced(),
       }
 
       const loopState = createLoopState()
@@ -245,6 +261,8 @@ export const ShelfStage = (props: ShelfStageProps) => {
       let frame = 0
 
       const tick = (now: number): void => {
+        pace.begin(now)
+        pace.detectorFrames(driver, driver?.pitchFrameCount?.() ?? 0)
         const frameSeconds = (now - last) / 1000
         last = now
         wallSeconds += frameSeconds
@@ -267,7 +285,12 @@ export const ShelfStage = (props: ShelfStageProps) => {
             (pitch !== null && pitch.conf >= 0.5 ? pitch.midi : null)
           lastHeard = forcedMidi !== null || pitch !== null
           lastMidi = sure
+          const wasGrounded = climb.loco.grounded
           const step = stepShelf(climb, sure, input.read(now).move, dt)
+          if (!wasGrounded && climb.loco.grounded) {
+            landedAt = wallSeconds
+            tap('light')
+          }
           if (step.flash !== null) {
             r.flash(step.flash.x, step.flash.y, step.flash.label)
           }
@@ -300,7 +323,22 @@ export const ShelfStage = (props: ShelfStageProps) => {
         view.surfaceY = surfaceUnder(loco.x, loco.y)
         view.crouch = climb.crouch
         view.exitOpen = climb.standingOn === climb.room.shelves.length - 1
-        r.render(view, frameSeconds)
+        view.landing = Math.max(
+          0,
+          1 - (wallSeconds - landedAt) / LANDING_SECONDS,
+        )
+        view.reduced = reduced()
+        const drawn = pace.draw({
+          input: input.read(now).move !== 0,
+          voiced: forcedMidi !== null || driver?.latestPitch() != null,
+          moving:
+            phaseNow === 'cleared' ||
+            !loco.grounded ||
+            Math.abs(loco.vx) > 0.06 ||
+            view.landing > 0,
+        })
+        if (drawn !== null) r.render(view, drawn)
+        pace.end()
         frame = requestAnimationFrame(tick)
       }
 
@@ -332,6 +370,14 @@ export const ShelfStage = (props: ShelfStageProps) => {
           leaps: climb.leaps,
           apex: climb.apex,
           grades: climb.grades.map((g) => ({ ...g })),
+          perf: pace.stats(),
+          presentation: {
+            landing: view.landing,
+            crouch: view.crouch,
+            reduced: view.reduced,
+            height: r.merc()?.metrics().height ?? null,
+            pose,
+          },
           mercScreenBox: () => r.mercScreenBox(),
           move: (m: number) => input.setMove(m),
           warpTo: (x: number) => {
@@ -351,15 +397,17 @@ export const ShelfStage = (props: ShelfStageProps) => {
     }
 
     void r
-      .init()
+      .init(pace.mark)
       .then(() => {
         fit()
         setBackend(r.backend())
+        pace.refresh()
         begin()
         setReady(true)
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
+        pace.refresh()
         setMicError(err instanceof Error ? err.message : String(err))
       })
 
@@ -369,6 +417,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
       unbindKeys()
       stopLoop?.()
       driver?.stop()
+      pace.dispose()
       r.dispose()
       goToRoom = null
       delete (window as unknown as Record<string, unknown>).__w3s
@@ -390,6 +439,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
     if (micStarting) return
     micStarting = true
     setMicError(null)
+    pace.micAsked()
     try {
       await applyPreferredInput()
       if (left) return
@@ -401,6 +451,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
         driver = null
         return
       }
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -416,6 +467,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
     driver?.stop()
     driver = null
     setMicError(null)
+    pace.micAsked()
     try {
       driver = createSingDriver(MIC_ID)
       await driver.start()
@@ -424,6 +476,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
         driver = null
         return
       }
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -467,17 +520,11 @@ export const ShelfStage = (props: ShelfStageProps) => {
     <div class="stage3d" classList={{ 'has-controls': started() }}>
       <canvas class="stage3d__canvas" ref={canvas} />
 
-      <span class="stage3d__chip">{backend()}</span>
-
-      <Show when={DevDials !== null}>
-        <button
-          type="button"
-          class="dev-dials__open"
-          onClick={() => setDials((on) => !on)}
-        >
-          dials
-        </button>
-      </Show>
+      <StageCorner
+        chipOn={pace.chipOn}
+        lines={pace.lines()}
+        onDials={DevDials === null ? undefined : () => setDials((on) => !on)}
+      />
       <Show when={DevDials !== null && dials()}>
         {(() => {
           const Panel = DevDials!
@@ -495,6 +542,7 @@ export const ShelfStage = (props: ShelfStageProps) => {
       <Show when={started() && phase() !== 'done'}>
         <Show when={showGauge()}>
           <ShapeGauge
+            label="Interval above your held note"
             t={gaugeT()}
             heard={heard()}
             band={gaugeBand()}

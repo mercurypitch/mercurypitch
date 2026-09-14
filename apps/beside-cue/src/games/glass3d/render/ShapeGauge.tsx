@@ -27,6 +27,8 @@
 import { For, Show } from 'solid-js'
 
 export interface ShapeGaugeProps {
+  /** What this stage measures; Top Shelf measures an interval, not range. */
+  label?: string
   /** Where the voice is in the range, 0..1, already smoothed. */
   t: number
   /** Whether a voice is being heard right now. */
@@ -101,7 +103,7 @@ export const ShapeGauge = (props: ShapeGaugeProps) => {
     <div
       class="shape-gauge"
       classList={{ 'is-lost': !props.heard, 'is-lit': props.inBand }}
-      aria-label="Where your voice sits in your range"
+      aria-label={props.label ?? 'Where your voice sits in your range'}
       role="img"
     >
       <svg

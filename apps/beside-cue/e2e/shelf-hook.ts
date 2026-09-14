@@ -14,6 +14,7 @@ import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 import type { ShelfLevel } from '../src/games/glass3d/levels/shelf'
 import { MITT_SPAN } from '../src/games/glass3d/levels/shelf'
+import type { StageFrameStats } from '../src/games/glass3d/render/stage-frame'
 
 export interface ShelfState {
   phase: string
@@ -45,6 +46,14 @@ export interface ShelfGradeState {
 }
 
 interface ShelfHook extends ShelfState {
+  perf: StageFrameStats
+  presentation: {
+    landing: number
+    crouch: number
+    reduced: boolean
+    height: number | null
+    pose: string
+  }
   /** Riser k's grade at k - 1, this room. */
   grades: ShelfGradeState[]
   move(m: number): void
