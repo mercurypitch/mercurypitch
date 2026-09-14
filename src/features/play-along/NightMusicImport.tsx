@@ -1,5 +1,5 @@
 // Night music import presents one focus-managed, room-skinned action sheet and drop veil.
-import { createUniqueId, For, Show } from 'solid-js'
+import { createUniqueId, For, lazy, Show, Suspense } from 'solid-js'
 import { Portal } from 'solid-js/web'
 import { FileUpload, X } from '@/components/icons'
 import { AUDIO_UPLOAD_ACCEPT, formatFileSize, } from '@/lib/audio-upload-contract'
@@ -9,6 +9,12 @@ import { NIGHT_MUSIC_FORMATS } from './night-music-import'
 import styles from './NightMusicImport.module.css'
 import { songImportAcceptForDevice } from './song-import'
 import type { NightMusicImportController } from './useNightMusicImport'
+
+const NightAudioChoices = lazy(() =>
+  import('./NightAudioChoices').then((module) => ({
+    default: module.NightAudioChoices,
+  })),
+)
 
 export function NightMusicImport(props: {
   controller: NightMusicImportController
@@ -112,9 +118,7 @@ export function NightMusicImport(props: {
                   {(title) => (
                     <p class={styles.current}>
                       On stage <strong>{title()}</strong>
-                      <span>
-                        Replacement changes this session, not your saved music.
-                      </span>
+                      <span>Saved music stays in your library.</span>
                     </p>
                   )}
                 </Show>
@@ -171,23 +175,57 @@ export function NightMusicImport(props: {
                 <Show
                   when={props.controller.running()}
                   fallback={
-                    <div class={styles.actions}>
-                      <For each={props.controller.actions()}>
-                        {(action) => (
-                          <button
-                            type="button"
-                            disabled={Boolean(
-                              action.unavailable !== undefined ||
-                              props.controller.blockedReason() !== null,
-                            )}
-                            onClick={() => void props.controller.run(action)}
+                    <>
+                      <Show
+                        when={props.controller
+                          .actions()
+                          .some((action) => action.audio)}
+                      >
+                        <Suspense
+                          fallback={
+                            <p class={styles.notice} role="status">
+                              Opening audio preparation options…
+                            </p>
+                          }
+                        >
+                          <Show
+                            when={
+                              props.controller.file() ??
+                              props.controller.currentTitle() ??
+                              'current'
+                            }
+                            keyed
                           >
-                            <strong>{action.label}</strong>
-                            <span>{action.unavailable ?? action.detail}</span>
-                          </button>
-                        )}
-                      </For>
-                    </div>
+                            {(_source) => (
+                              <NightAudioChoices
+                                controller={props.controller}
+                              />
+                            )}
+                          </Show>
+                        </Suspense>
+                      </Show>
+                      <div class={styles.actions}>
+                        <For
+                          each={props.controller
+                            .actions()
+                            .filter((action) => !action.audio)}
+                        >
+                          {(action) => (
+                            <button
+                              type="button"
+                              disabled={Boolean(
+                                action.unavailable !== undefined ||
+                                props.controller.blockedReason() !== null,
+                              )}
+                              onClick={() => void props.controller.run(action)}
+                            >
+                              <strong>{action.label}</strong>
+                              <span>{action.unavailable ?? action.detail}</span>
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                    </>
                   }
                 >
                   <div class={styles.progress} role="status">

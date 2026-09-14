@@ -544,6 +544,15 @@ ones; `src/features/path/PlainPathView.module.css` restates it across five orb s
 `.displayNamePill` in `src/components/account/AccountSection.module.css` (the two-layer
 `background` at line 52) is the ring that needs the split.
 
+### Publish one-shot intent before mounting its lazy consumer
+
+**Symptom:** automatic import either missed the new file or ran after reopening.
+**Cause:** the modal mounted before its pending intent was assigned; a lazy mount
+could also leave that intent unclaimed when the user closed it.
+**Rule:** assign intent first, batch the selected file and open state, and clear
+unclaimed intent on close. Account recovery and reopening are not new consent.
+**See:** `NightMusicImport.test.tsx` and `NightAudioChoices.test.tsx` cover both races.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

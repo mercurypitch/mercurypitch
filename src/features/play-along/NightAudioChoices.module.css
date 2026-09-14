@@ -1,0 +1,98 @@
+/* Audio-only choices load with the import dialog, not the room's first paint. */
+.audioChoices {
+  margin-top: 1.5rem;
+}
+.audioChoices h3 {
+  margin: 0 0 0.65rem;
+  font-size: 1rem;
+}
+.method {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.audioChoices .method button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: left;
+  padding: 0.85rem 0.7rem;
+  min-width: 0;
+}
+.method svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+.method span {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.method small {
+  color: var(--import-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.audioChoices .method button[aria-pressed='true'] {
+  border-color: var(--import-accent);
+  background: #382d21;
+  box-shadow: inset 0 0 0 1px var(--import-accent);
+}
+.methodNote,
+.accessNote,
+.autoChoice p {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--import-muted);
+  margin: 0.6rem 0;
+}
+.audioActions {
+  display: grid;
+}
+.audioAction {
+  padding: 1rem 0;
+  border-bottom: 1px solid #433a2e;
+}
+.audioChoices .audioAction > button:first-child {
+  display: grid;
+  gap: 0.3rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.8rem;
+}
+.audioAction strong {
+  color: var(--import-accent);
+}
+.audioAction button span {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--import-muted);
+}
+.audioChoices .audioAction > button:disabled {
+  opacity: 1;
+  border-color: #433a2e;
+  background: transparent;
+}
+.audioAction button:disabled strong {
+  color: var(--import-muted);
+}
+.accessNote {
+  margin: 0.6rem 0.2rem 0;
+}
+.audioChoices .recovery {
+  margin-top: 0.5rem;
+  color: var(--import-accent);
+  background: transparent;
+}
+.autoChoice {
+  padding-top: 1rem;
+}
+.autoChoice p {
+  padding-left: 2rem;
+}
+@media (max-width: 360px) {
+  .method svg {
+    display: none;
+  }
+}

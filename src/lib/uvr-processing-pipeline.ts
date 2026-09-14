@@ -9,6 +9,9 @@ import { saveStemBlobDurable } from '@/db/services/uvr-service'
 import type { UvrProcessingMode, UvrSession } from '@/stores/uvr-store'
 import { clearUvrSessionApiId, getAllUvrSessions, saveAllUvrSessions, setFinalizingUvrSession, setUvrModelError, setUvrModelStatus, setUvrSessionApiIdDurable, setUvrSessionProvider, updateUvrSessionProgress, uvrForceWebGpu, } from '@/stores/uvr-store'
 import { computeChunkRanges, UVR_CHUNK_CONFIG } from './audio-chunker'
+import { audioDurationSecs } from './audio-duration'
+
+export { audioDurationSecs } from './audio-duration'
 import { UVR_MODEL_PATH } from './defaults'
 import type { OutputFile } from './uvr-api'
 import { DEFAULT_PROCESS_REQUEST, deleteSession, getOutputFile, pollForCompletion, processAudio, TerminalPollError, } from './uvr-api'
@@ -226,27 +229,6 @@ async function processLocal(
 // ---------------------------------------------------------------------------
 // Server helpers
 // ---------------------------------------------------------------------------
-
-/** Song duration via an off-DOM audio element — cheap metadata-only load.
- *  null when the browser can't parse the container (fall back to defaults). */
-export function audioDurationSecs(file: File): Promise<number | null> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file)
-    const audio = new Audio()
-    let settled = false
-    const done = (v: number | null) => {
-      if (settled) return
-      settled = true
-      URL.revokeObjectURL(url)
-      resolve(v)
-    }
-    audio.onloadedmetadata = () =>
-      done(Number.isFinite(audio.duration) ? audio.duration : null)
-    audio.onerror = () => done(null)
-    setTimeout(() => done(null), 3000)
-    audio.src = url
-  })
-}
 
 // Duration-scaled ETA per model, plus fixed overhead. Divisors from the
 // 2026-07-06 11-song RTX-4090 measurements (handler wall vs song length):

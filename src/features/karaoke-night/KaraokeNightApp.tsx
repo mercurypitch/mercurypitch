@@ -126,9 +126,10 @@ export function KaraokeNightApp() {
         ? [
             {
               id: 'prepare-karaoke',
+              audio: { source: file, target: 'vocals' },
               label: 'Prepare this song for singing',
               detail:
-                'Separate vocals and backing on this device. Reuse an already prepared song when possible. No cloud credits.',
+                'Separate vocals and backing with your selected method. Reuse an already prepared song when possible.',
               run: async (task) => {
                 const id = await prepareNightMusicAudio(file, task)
                 const [sessions, runner, playlist] = await Promise.all([

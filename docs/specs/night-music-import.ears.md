@@ -15,7 +15,8 @@ adapters keep the existing players, parsers, storage and score clocks.
   the room shall show a drop veil without processing, uploading, playing audio
   or requesting input permission.
 - **NIGHT-IMPORT-2** — WHEN a file is dropped or chosen using Add music, the
-  room shall present explicit applicable actions before changing staged music.
+  room shall queue it and present applicable actions before changing staged music,
+  unless the player previously opted into automatic audio preparation in this room.
 - **NIGHT-IMPORT-3** — IF a drop contains zero, multiple, empty, unsupported or
   oversized files, THEN the sheet shall explain recovery and supported types.
 - **NIGHT-IMPORT-4** — Internal timeline, note and slider drags shall retain
@@ -30,15 +31,19 @@ adapters keep the existing players, parsers, storage and score clocks.
 
 - **NIGHT-IMPORT-7** — WHILE a temporary take is capturing, processing, saving or
   awaiting keep/discard, replacement shall be blocked with a reason. The selected
-  file shall remain pending when the player returns to the session.
+  file shall remain pending when the player returns to the session. Piano shall
+  offer an explicit stop-and-import action for unfinished practice, explaining
+  that it dismisses the unsaved take; an in-progress durable save remains protected.
 - **NIGHT-IMPORT-8** — A candidate shall be validated/hydrated before replacing
   the current source. Failure, cancellation and stale completion shall preserve
   the previous staged music and URL and release candidate-owned resources.
 - **NIGHT-IMPORT-9** — WHEN a Drum project is staged, its durable save shall
   succeed before the project is detached for imported audio or an arrangement.
 - **NIGHT-IMPORT-10** — WHEN full-band separation is selected, the system shall
-  reuse saved parts before checking paid-job admission. A new cloud job shall
-  require existing auth/credit preflight and a still-current uncancelled intent.
+  reuse saved parts before requiring paid-job admission. A new cloud job shall
+  require sign-in, known pricing and a sufficient current balance for every needed
+  stage, including the duration multiplier, before either stage starts. Unknown
+  billing shall show Retry rather than promise a run. The server remains authoritative.
   A blocked request shall retain its Sign in/Get credits action when available;
   recovery shall not automatically retry a billable job or discard the pending file.
 - **NIGHT-IMPORT-11** — Replacement shall never autoplay. Storage warnings shall
@@ -60,9 +65,19 @@ adapters keep the existing players, parsers, storage and score clocks.
   until a valid project/track selection is ready.
 - **NIGHT-IMPORT-17** — Karaoke shall accept supported audio and reuse durable
   vocal/backing preparation and hydration, without representing scores as audio.
-- **NIGHT-IMPORT-18** — Guitar and Drum shall offer explicit local vocal/backing
-  preparation and cloud full-band separation for audio; a staged eligible song
-  shall also expose separation without another file pick.
+- **NIGHT-IMPORT-18** — Guitar, Drum and Karaoke shall place the saved Local/Cloud
+  method before audio actions. Vocals/backing shall support either method; new
+  full-band separation shall require Cloud. Unavailable actions shall remain
+  visible with reasons and applicable Sign in/Get credits/Retry recovery. Piano
+  remains MIDI-only. A staged eligible song shall expose band separation without
+  another file pick.
+- **NIGHT-IMPORT-19** — Automatic audio preparation shall default off and be an
+  explicit per-room preference, using the shared saved processing method and the
+  last selected output. An unavailable preferred action shall leave the song
+  queued. Reopening, changing a preference, signing in, topping up, or clearing a
+  capture blocker shall never retry automatically. Pending files remain in memory.
+- **NIGHT-IMPORT-20** — A valid replacement selection shall clear prior validation
+  errors. Reopening an empty sheet shall not retain an unsupported-file warning.
 
 ## Deliberate boundaries
 

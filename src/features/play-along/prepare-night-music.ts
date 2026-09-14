@@ -6,6 +6,7 @@ export interface NightAudioPreparationPort {
   prepare(
     file: File,
     options: {
+      mode?: 'local' | 'server'
       signal: AbortSignal
       onUpdate: (update: UvrSongPreparationUpdate) => void
       onWarning: (message: string) => void
@@ -20,14 +21,21 @@ export async function prepareNightMusicAudio(
 ): Promise<string> {
   task.assertCurrent()
   const options = {
+    mode: task.audioMode ?? 'local',
     signal: task.signal,
     onUpdate: (update: UvrSongPreparationUpdate) =>
       task.report(
         {
           'checking-library': 'Checking for an already prepared song…',
           'saving-original': 'Saving your original on this device…',
-          preparing: 'Preparing on this device…',
-          separating: 'Separating vocals and backing on this device…',
+          preparing:
+            task.audioMode === 'server'
+              ? 'Preparing for cloud separation…'
+              : 'Preparing on this device…',
+          separating:
+            task.audioMode === 'server'
+              ? 'Separating vocals and backing in the cloud…'
+              : 'Separating vocals and backing on this device…',
           finalizing: 'Saving the prepared song…',
         }[update.phase],
         update.progress === null ? undefined : update.progress / 100,
@@ -39,7 +47,6 @@ export async function prepareNightMusicAudio(
     : async (source: File, preparation: typeof options) =>
         (await import('@/lib/uvr-song-preparation')).prepareUvrSong(source, {
           ...preparation,
-          mode: 'local',
           focus: false,
           onWarning: (warning) => preparation.onWarning(warning.message),
         })

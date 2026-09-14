@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
-import { ChevronLeft, MoreHorizontal, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, RotateCcw, ScoreDocument, Settings, SkipBack, SkipForward, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
+import { ChevronLeft, MoreHorizontal, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, ScoreDocument, Settings, SkipBack, SkipForward, Square, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { NightMusicImport, NightMusicImportButton, } from '@/features/play-along/DeferredNightMusicImport'
 import { performanceTakeImportBlocker } from '@/features/play-along/night-music-import'
@@ -361,25 +361,34 @@ export function PianoNightApp(): JSX.Element {
   const [requestedMusicFile, setRequestedMusicFile] = createSignal<File | null>(
     null,
   )
+  const unfinishedMusicTake = () =>
+    ['capturing', 'processing', 'ready'].includes(
+      controller.performanceTakeState(),
+    )
   const musicImport = useNightMusicImport({
     room: 'piano',
     sourceKey: () => controller.source().id,
     currentTitle: () => controller.stage().title,
     blockedReason: () =>
-      performanceTakeImportBlocker(controller.performanceTakeState()) ??
-      (musicNavigationLocked()
-        ? 'Finish the current track assignment before importing another file.'
-        : null),
+      controller.performanceTakeState() === 'saving'
+        ? 'Your take is being saved. Music can be replaced when the save finishes.'
+        : musicNavigationLocked()
+          ? 'Finish the current track assignment before importing another file.'
+          : null,
     actions: (file) =>
       file
         ? [
             {
               id: 'import-midi',
-              label: 'Import MIDI and choose tracks',
-              detail:
-                'Use the existing Music editor to select the score and backing tracks. The current piece stays on stage until the import is ready.',
+              label: unfinishedMusicTake()
+                ? 'Stop practice and import MIDI'
+                : 'Import MIDI and choose tracks',
+              detail: unfinishedMusicTake()
+                ? 'Stop playback and dismiss the unfinished take, then choose score and backing tracks. Saved takes stay in Hear Yourself; the current score stays until the new one is ready.'
+                : 'Choose score and backing tracks. The current piece stays on stage until the import is ready.',
               run: async (task) => {
                 task.assertCurrent()
+                if (unfinishedMusicTake()) controller.stop()
                 setRequestedMusicFile(file)
                 openDrawer('music')
               },
@@ -1037,7 +1046,7 @@ export function PianoNightApp(): JSX.Element {
               title="Stop and return to the practice start"
               data-testid="piano-night-stop"
             >
-              <RotateCcw />
+              <Square />
             </button>
             <i class={styles.transportDivider} aria-hidden="true" />
             <button
@@ -1875,6 +1884,9 @@ export function PianoNightApp(): JSX.Element {
             }
           >
             <PianoNightMusicPanel
+              stopForImport={
+                unfinishedMusicTake() ? { run: controller.stop } : undefined
+              }
               beforeSelect={() =>
                 performanceTakeImportBlocker(controller.performanceTakeState())
               }

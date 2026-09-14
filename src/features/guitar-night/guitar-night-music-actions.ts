@@ -109,6 +109,7 @@ export function guitarNightMusicActions(options: {
       ? [
           {
             id: 'separate-current',
+            audio: { source: backing.sessionId, target: 'guitar' },
             label: 'Separate guitar + band from this song',
             detail:
               'Saved parts are reused first; a new cloud split uses credits. The current song stays ready until the new mix opens.',

@@ -1,5 +1,5 @@
 // Night music import coordinates explicit intent, cancellation and route-wide external drops.
-import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { registerVoiceCommandBlocker } from '@/features/voice-control/voice-command-blockers'
 import type { NightMusicAction, NightMusicRoom } from './night-music-import'
 import { isExternalFileDrag, NightMusicActionError, validateNightMusicFiles, } from './night-music-import'
@@ -16,6 +16,7 @@ export interface NightMusicImportOptions {
   blockedReason?: () => string | null
   actions?: NightMusicActions
   loadActions?: () => Promise<NightMusicActions>
+  onResolveAccess?: (section: 'account' | 'credits') => void
 }
 
 export function useNightMusicImport(options: NightMusicImportOptions) {
@@ -37,6 +38,7 @@ export function useNightMusicImport(options: NightMusicImportOptions) {
   let generation = 0
   let active: AbortController | null = null
   let disposed = false
+  let autoImportPending = false
   const [actions, setActions] = createSignal<NightMusicActions>(
     options.actions ?? (() => []),
   )
@@ -78,24 +80,39 @@ export function useNightMusicImport(options: NightMusicImportOptions) {
     setStatus('Cancelled. Your current music has not been replaced.')
   }
   const close = () => {
+    autoImportPending = false
     if (running()) cancel()
     setIsOpen(false)
     resetDrag()
   }
   const receive = (files: readonly File[]) => {
     resetDrag()
-    setIsOpen(true)
-    if (running()) return // Do not supersede a running job with an accidental second drop.
+    if (running()) {
+      setIsOpen(true)
+      return // Do not supersede a running job with an accidental second drop.
+    }
     const result = validateNightMusicFiles(options.room, files)
-    setStatus('')
-    setWarnings([])
-    setRecovery(undefined)
-    setError(result.ok ? null : result.message)
-    setFile(result.ok ? result.file : null)
-    setKind(result.ok ? result.kind : null)
+    autoImportPending = result.ok && result.kind === 'audio'
+    batch(() => {
+      setStatus('')
+      setWarnings([])
+      setRecovery(undefined)
+      setError(result.ok ? null : result.message)
+      setFile(result.ok ? result.file : null)
+      setKind(result.ok ? result.kind : null)
+      setIsOpen(true)
+    })
     ensureActions()
   }
-  const run = async (action: NightMusicAction) => {
+  const resolveAccess = (section: 'account' | 'credits') => {
+    close()
+    if (options.onResolveAccess) options.onResolveAccess(section)
+    else window.open(`/#/settings/${section}`, '_blank', 'noopener,noreferrer')
+  }
+  const run = async (
+    action: NightMusicAction,
+    audioMode?: 'local' | 'server',
+  ) => {
     if (running() || action.unavailable !== undefined) return
     const blocked = options.blockedReason?.()
     if (blocked != null && blocked !== '') {
@@ -112,35 +129,27 @@ export function useNightMusicImport(options: NightMusicImportOptions) {
     setWarnings([])
     setStatus('Getting ready…')
     setProgress(undefined)
-    const assertCurrent = () => {
-      if (disposed || abort.signal.aborted || intent !== generation)
-        throw new DOMException('Cancelled', 'AbortError')
-      if (sourceKey !== options.sourceKey())
-        throw new Error(
-          'The music on stage changed. Choose the action again for the current session.',
-        )
-      const reason = options.blockedReason?.()
-      if (reason != null && reason !== '') throw new Error(reason)
-    }
+    const isCurrent = () =>
+      !disposed && !abort.signal.aborted && intent === generation
     try {
-      await action.run({
+      const { runNightMusicAction } = await import('./run-night-music-action')
+      await runNightMusicAction(action, {
+        audioMode,
         signal: abort.signal,
-        assertCurrent,
+        isCurrent,
+        initialSourceKey: sourceKey,
+        sourceKey: options.sourceKey,
+        blockedReason: options.blockedReason,
+        resolveAccess,
         warn: (message) => {
-          if (!disposed && !abort.signal.aborted && intent === generation)
-            setWarnings((previous) => [...new Set([...previous, message])])
+          setWarnings((previous) => [...new Set([...previous, message])])
         },
         report: (message, value) => {
-          if (disposed || abort.signal.aborted || intent !== generation) return
           setStatus(message)
-          setProgress(
-            value === undefined || !Number.isFinite(value)
-              ? undefined
-              : Math.max(0, Math.min(1, value)),
-          )
+          setProgress(value)
         },
       })
-      if (disposed || abort.signal.aborted || intent !== generation) return
+      if (!isCurrent()) return
       setFile(null)
       setKind(null)
       if (warnings().length)
@@ -149,7 +158,7 @@ export function useNightMusicImport(options: NightMusicImportOptions) {
         )
       else setIsOpen(false)
     } catch (caught) {
-      if (!disposed && !abort.signal.aborted && intent === generation) {
+      if (isCurrent()) {
         setRecovery(
           caught instanceof NightMusicActionError ? caught.recovery : undefined,
         )
@@ -227,6 +236,13 @@ export function useNightMusicImport(options: NightMusicImportOptions) {
     isOpen,
     dragging,
     file,
+    resolveAccess,
+    // Claim once per newly selected file, not on reopening, sign-in or preference changes.
+    claimAutoImport: () => {
+      const pending = autoImportPending
+      autoImportPending = false
+      return pending
+    },
     error,
     recovery,
     recover: () => {
@@ -243,6 +259,11 @@ export function useNightMusicImport(options: NightMusicImportOptions) {
     warnings,
     reportError: (message: string) => setError(message),
     open: () => {
+      if (!file()) {
+        setError(null)
+        setRecovery(undefined)
+        setStatus('')
+      }
       setIsOpen(true)
       ensureActions()
     },

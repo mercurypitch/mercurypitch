@@ -29,6 +29,7 @@ interface PianoNightMusicPanelProps {
   requestedFile?: File | null
   onFileReceived?(): void
   beforeSelect?(): string | null
+  stopForImport?: { run(): void }
   panelClass?: string
   currentSourceId: Accessor<string>
   legacyPianoPath: string
@@ -195,6 +196,7 @@ export function PianoNightMusicPanel(
   }
 
   const chooseRow = (row: MusicRow): void => {
+    setImportError(null)
     if (row.source.id === props.currentSourceId()) return
     const blocked = props.beforeSelect?.()
     if (blocked != null && blocked !== '') {
@@ -210,6 +212,7 @@ export function PianoNightMusicPanel(
     project: PianoProject,
     origin: TrackAssignmentTarget['origin'],
   ): void => {
+    setImportError(null)
     setSelectionError(null)
     assignmentReturnProjectId = origin === 'library' ? project.id : null
     setAssignmentTarget({ project, origin })
@@ -303,6 +306,7 @@ export function PianoNightMusicPanel(
 
   const openImporter = (): void => {
     if (importingName() !== null) return
+    setImportError(null)
     fileInput?.click()
   }
 
@@ -444,6 +448,27 @@ export function PianoNightMusicPanel(
             <div class={styles.errorBox} role="alert">
               <strong>Music could not be staged</strong>
               <span>{message()}</span>
+            </div>
+          )}
+        </Show>
+        <Show when={props.stopForImport}>
+          {(action) => (
+            <div class={styles.issueBox} role="status">
+              <strong>Changing music during practice</strong>
+              <p>
+                Pausing keeps your take open. Stop practice to dismiss the
+                unfinished take and change music. Saved takes stay in Hear
+                Yourself.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setImportError(null)
+                  action().run()
+                }}
+              >
+                Stop practice to change music
+              </button>
             </div>
           )}
         </Show>

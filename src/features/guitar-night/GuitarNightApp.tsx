@@ -1127,6 +1127,10 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     createSignal<NightMusicSessionGuard | null>(null)
   const musicImport = useNightMusicImport({
     room: 'guitar',
+    onResolveAccess: (section) => {
+      if (section === 'account') openTopbarSignIn()
+      else window.open('/#/settings/credits', '_blank', 'noopener,noreferrer')
+    },
     sourceKey: () =>
       `${view()}:${activeBacking()?.sessionId ?? ''}:${attachedReference()?.songId ?? ''}:${attachedReference()?.trackId ?? ''}`,
     currentTitle: () =>
@@ -1191,11 +1195,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
         setFileImportError(GUITAR_NIGHT_IMPORT_AUDIO_BUSY_ERROR)
         return
       }
-      bandPreparationController.clear()
-      const accepted = preparationController.start(file)
-      if (accepted) songController.clearSession('push')
-      setView('song')
-      focusDetail()
+      musicImport.receive([file])
       return
     }
     if (kind === 'midi' || kind === 'guitar-pro') {
@@ -1819,7 +1819,7 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
                         </Show>
                         <small>
                           {preparation().warning ??
-                            'Your audio stays on this device. Nothing will play automatically.'}
+                            'Choose Local or Cloud before separation. Playback starts only when you press Play.'}
                         </small>
                       </div>
                     )}

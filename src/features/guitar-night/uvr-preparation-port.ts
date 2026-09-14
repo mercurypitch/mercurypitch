@@ -1,5 +1,5 @@
 // ============================================================
-// UVR preparation port gives Guitar Night a lazy, on-device preparation adapter
+// UVR preparation port gives Guitar Night a lazy adapter for the selected processing method
 // ============================================================
 
 import { prepareUvrSong } from '@/lib/uvr-song-preparation'
@@ -9,7 +9,7 @@ export function createUvrGuitarNightPreparationPort(): GuitarNightPreparationPor
   return {
     prepare: async (file, options) => {
       const result = await prepareUvrSong(file, {
-        mode: 'local',
+        mode: options.mode ?? 'local',
         focus: false,
         signal: options.signal,
         onUpdate: options.onUpdate,
