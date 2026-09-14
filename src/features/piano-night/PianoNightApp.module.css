@@ -2702,7 +2702,7 @@
 
   .sessionHud {
     height: 60px;
-    grid-template-columns: 42px minmax(90px, 1fr) 52px 132px;
+    grid-template-columns: 44px minmax(90px, 1fr) 52px 132px;
     border-radius: 16px;
   }
 
@@ -3101,7 +3101,7 @@
   .sessionHud {
     right: 8px;
     left: 8px;
-    grid-template-columns: 42px minmax(88px, 1fr) 132px;
+    grid-template-columns: 44px minmax(88px, 1fr) 132px;
   }
 
   .sessionHud > .sessionMetric {
