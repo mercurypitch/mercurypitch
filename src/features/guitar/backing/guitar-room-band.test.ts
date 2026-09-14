@@ -237,6 +237,107 @@ describe('createGuitarRoomBand', () => {
     await disposeBand(band)
   })
 
+  it.each([
+    { withDrums: false, borrowed: false },
+    { withDrums: true, borrowed: false },
+    { withDrums: false, borrowed: true },
+    { withDrums: true, borrowed: true },
+  ])(
+    'trims only mixed-score guide output without changing drums or faders ($withDrums, borrowed: $borrowed)',
+    async ({ withDrums, borrowed }) => {
+      vi.useFakeTimers()
+      const gains: Array<
+        ReturnType<typeof fakeAudioNode> & {
+          gain: ReturnType<typeof fakeAudioParam>
+        }
+      > = []
+      const context = fakeAudioContext(gains)
+      const voice = {
+        gain: { ...fakeAudioNode(), gain: fakeAudioParam() },
+        dispose: vi.fn(),
+      }
+      guitarVoices.createBassVoice.mockReturnValue(voice)
+      const kit = {
+        activate: vi.fn(() => true),
+        setKit: vi.fn(),
+        trigger: vi.fn(() => 'sampled' as const),
+        panic: vi.fn(),
+        dispose: vi.fn(),
+      }
+      const owner = borrowed ? createGuitarSessionAudioGraph(context) : null
+      const band = createGuitarRoomBand({
+        contextFactory: () => context,
+        activateContext: async () => undefined,
+        createPercussionPlayer: () => kit,
+        ...(owner === null
+          ? {}
+          : {
+              borrowedAudioGraph: { activate: async () => owner },
+            }),
+      })
+      const graph = await band.activate()
+      const beforeRun = gains.length
+      band.setMelodyChannelGain?.('bass', 1.5)
+      await band.start({
+        tempoBpm: 120,
+        countInBeats: 0,
+        exerciseBeats: 1,
+        exercisePulse: false,
+        melody: [
+          {
+            midi: 40,
+            startBeat: 0,
+            durationBeats: 0.5,
+            channelId: 'bass',
+            variant: 'bass',
+            velocity: 76,
+          },
+        ],
+        percussion: withDrums
+          ? [{ trackId: 'drums', gmKey: 36, startBeat: 0, velocity: 89 }]
+          : [],
+      })
+
+      const runGates = gains.slice(beforeRun)
+      const guide = runGates.find((gain) =>
+        gain.connect.mock.calls.some(
+          ([target]) => target === graph?.guideInputs.clean,
+        ),
+      )
+      const drums = runGates.find((gain) =>
+        gain.connect.mock.calls.some(
+          ([target]) => target === graph?.buses.drums,
+        ),
+      )
+      const reference = withDrums ? 10 ** (-6 / 20) : 1
+      const runGain = borrowed ? sliderToGain(0.76) : 1
+      expect(guide?.gain.value).toBeCloseTo(runGain * reference)
+      expect(drums?.gain.value).toBe(runGain)
+      expect(graph?.buses.drums.gain.value).toBe(1)
+      const trackFader = voice.gain.connect.mock.calls[0]?.[0] as GainNode
+      expect(trackFader.gain.value).toBe(1.5)
+      expect(voice.gain.gain.setValueAtTime).toHaveBeenCalledWith(
+        guitarRoomBandVelocityGain(76),
+        expect.any(Number),
+      )
+      band.setMasterLevel(0.5)
+      if (borrowed) {
+        expect(guide?.gain.setTargetAtTime).toHaveBeenCalledWith(
+          sliderToGain(0.5) * reference,
+          expect.any(Number),
+          0.012,
+        )
+        expect(drums?.gain.setTargetAtTime).toHaveBeenCalledWith(
+          sliderToGain(0.5),
+          expect.any(Number),
+          0.012,
+        )
+        expect(graph?.master.gain.setTargetAtTime).not.toHaveBeenCalled()
+      }
+      await disposeBand(band)
+    },
+  )
+
   it('broadcasts a same-time hat close across track players after the open strike', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)

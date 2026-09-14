@@ -1057,6 +1057,11 @@ listening` or the first-use `Allow microphone` action, the tuner shall use an
   shall restore track levels to unity without changing Mute or Solo. The
   downstream room limiter shall remain the final safety boundary, and the
   phone dialog shall preserve 44px controls without horizontal overflow.
+  WHERE an authored percussion part accompanies the score, a fixed guide-output
+  reference trim shall balance synthesized parts against the kit, after track
+  amps and independently of retained fader values. Master changes shall retain
+  that calibration; solo guides, generated lessons, stems, live monitoring,
+  drum velocities and kit gains shall remain unchanged.
 - **REQ-GN-SONG-029 — Authored cymbal choke truth:** WHEN Guitar Pro retains a
   supported choked-cymbal articulation, Guitar Night shall sound its mapped GM
   strike at the authored time and schedule a lane-scoped release exactly 110ms
