@@ -80,6 +80,7 @@ const settle = (): Promise<void> => Promise.resolve().then(() => undefined)
 
 afterEach(() => {
   resetSharedAudioContext()
+  vi.useRealTimers()
   vi.restoreAllMocks()
 })
 
@@ -162,6 +163,51 @@ describe('the shared audio context', () => {
     expect(built[0].resumeCount).toBe(2)
   })
 
+  it('lets an opted-in output release before parking, without extending duplicate requests', async () => {
+    vi.useFakeTimers()
+    const { built } = useFakeContexts()
+    const prepare = vi.fn(() => 240)
+    await acquireSharedAudioContext('asset-output', {
+      prepareToSuspend: prepare,
+    }).unlock()
+
+    setPageHidden(true)
+    expect(prepare).toHaveBeenCalledOnce()
+    expect(built[0].state).toBe('running')
+    await vi.advanceTimersByTimeAsync(100)
+    setPageHidden(true)
+    await vi.advanceTimersByTimeAsync(139)
+    expect(built[0].suspendCount).toBe(0)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(built[0].suspendCount).toBe(1)
+  })
+
+  it('cancels a pending release suspension when the page returns', async () => {
+    vi.useFakeTimers()
+    const { built } = useFakeContexts()
+    const lease = acquireSharedAudioContext('asset-output', {
+      prepareToSuspend: () => 240,
+    })
+    await lease.unlock()
+    setPageHidden(true)
+    await vi.advanceTimersByTimeAsync(100)
+    setPageHidden(false)
+    await lease.unlock()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(built[0].state).toBe('running')
+    expect(built[0].suspendCount).toBe(0)
+  })
+
+  it('does not resume an explicitly backgrounded app when its document still looks visible', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('asset-output').unlock()
+    suspendSharedAudioContext()
+    built[0].interrupt()
+    await settle()
+    expect(built[0].state).toBe('interrupted')
+    expect(built[0].resumeCount).toBe(1)
+  })
+
   it('leaves the hardware parked when nobody holds a lease', async () => {
     const { built } = useFakeContexts()
     const lease = acquireSharedAudioContext('tap-driver')
@@ -175,6 +221,65 @@ describe('the shared audio context', () => {
 
     expect(built[0].state).toBe('suspended')
     expect(built[0].resumeCount).toBe(1)
+  })
+
+  it.each(['native background', 'last owner released'] as const)(
+    'parks a late resume after %s',
+    async (transition) => {
+      const { built } = useFakeContexts()
+      const lease = acquireSharedAudioContext('asset-output')
+      lease.ensure()
+      let finishResume!: () => void
+      vi.spyOn(built[0], 'resume').mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishResume = () => {
+              built[0].state = 'running'
+              resolve()
+            }
+          }),
+      )
+      const unlocking = lease.unlock()
+      if (transition === 'native background') suspendSharedAudioContext()
+      else lease.release()
+      finishResume()
+      await expect(unlocking).resolves.toBe(false)
+      expect(built[0].state).toBe('suspended')
+    },
+  )
+
+  it('does not let an old resume completion park a newer foreground gesture', async () => {
+    const { built } = useFakeContexts()
+    const lease = acquireSharedAudioContext('asset-output')
+    lease.ensure()
+    let finishResume!: () => void
+    vi.spyOn(built[0], 'resume').mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishResume = () => {
+            built[0].state = 'running'
+            resolve()
+          }
+        }),
+    )
+    const firstUnlock = lease.unlock()
+    suspendSharedAudioContext()
+    await lease.unlock()
+    finishResume()
+    await firstUnlock
+    expect(built[0].state).toBe('running')
+    expect(built[0].suspendCount).toBe(0)
+  })
+
+  it('lets outputs observe an interruption before attempting an automatic resume', async () => {
+    const { built } = useFakeContexts()
+    await acquireSharedAudioContext('asset-output').unlock()
+    const seen: string[] = []
+    built[0].addEventListener('statechange', () => seen.push(built[0].state))
+    built[0].interrupt()
+    expect(seen[0]).toBe('interrupted')
+    await settle()
+    expect(built[0].state).toBe('running')
   })
 
   it('resumes an interrupted context while the page is in front', async () => {

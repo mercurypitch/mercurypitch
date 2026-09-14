@@ -64,6 +64,15 @@ export interface SharedAudioContextOptions {
   readonly createContext?: () => AudioContext | undefined
 }
 
+export interface SharedAudioLeaseOptions {
+  /**
+   * Cancel pending playback synchronously, then return the remaining release
+   * time in milliseconds. The clock grants at most 250 ms before suspension.
+   * Owners without a release keep the existing immediate-suspend behavior.
+   */
+  readonly prepareToSuspend?: () => number
+}
+
 function defaultContext(): AudioContext | undefined {
   if (typeof AudioContext === 'undefined') return undefined
   return new AudioContext()
@@ -74,7 +83,58 @@ let context: AudioContext | undefined
 let constructionFailed = false
 let suspendedByPage = false
 let pageListenerAttached = false
-const owners = new Map<symbol, string>()
+let explicitlySuspended = false
+let suspendTimer: ReturnType<typeof setTimeout> | undefined
+let suspendDeadline = 0
+let suspendGeneration = 0
+const owners = new Map<
+  symbol,
+  SharedAudioLeaseOptions & { readonly owner: string }
+>()
+
+function cancelPendingSuspension(): void {
+  suspendGeneration += 1
+  if (suspendTimer !== undefined) clearTimeout(suspendTimer)
+  suspendTimer = undefined
+  suspendDeadline = 0
+}
+
+function requestSuspension(audioContext: AudioContext): void {
+  let grace = 0
+  // A callback can release its own lease; don't iterate a live ownership map.
+  for (const owner of [...owners.values()]) {
+    try {
+      const remaining = owner.prepareToSuspend?.() ?? 0
+      if (Number.isFinite(remaining))
+        grace = Math.max(grace, Math.min(250, remaining))
+    } catch {
+      // One output must not prevent the shared clock from being parked.
+    }
+  }
+  if (audioContext.state !== 'running') return
+  const deadline = Date.now() + grace
+  // Repeated native/page events must never prolong a release already underway.
+  if (suspendTimer !== undefined && suspendDeadline <= deadline) return
+  cancelPendingSuspension()
+  const generation = suspendGeneration
+  const suspend = (): void => {
+    if (generation !== suspendGeneration || context !== audioContext) return
+    suspendTimer = undefined
+    suspendDeadline = 0
+    if (audioContext.state !== 'running') return
+    try {
+      void Promise.resolve(audioContext.suspend()).catch(() => undefined)
+    } catch {
+      // The OS can suspend or close it before this bounded release finishes.
+    }
+  }
+  if (grace <= 0) {
+    suspend()
+  } else {
+    suspendDeadline = deadline
+    suspendTimer = setTimeout(suspend, grace)
+  }
+}
 
 /** iOS-only state; the DOM's AudioContextState union does not name it. */
 function isInterrupted(audioContext: AudioContext): boolean {
@@ -89,10 +149,21 @@ function isPageHidden(): boolean {
 
 function resumeQuietly(audioContext: AudioContext): void {
   try {
-    void Promise.resolve(audioContext.resume()).catch(() => undefined)
+    void Promise.resolve(audioContext.resume())
+      .then(() => {
+        parkIfNoLongerActive(audioContext)
+      })
+      .catch(() => undefined)
   } catch {
     // A closed context rejects synchronously in some engines. Nothing to do.
   }
+}
+
+function parkIfNoLongerActive(audioContext: AudioContext): boolean {
+  if (context !== audioContext) return true
+  if (owners.size > 0 && !isPageHidden() && !explicitlySuspended) return false
+  requestSuspension(audioContext)
+  return true
 }
 
 function handleStateChange(): void {
@@ -100,8 +171,14 @@ function handleStateChange(): void {
   if (audioContext === undefined || !isInterrupted(audioContext)) return
   // Only reach for it while the page is in front — a resume from the
   // background is refused anyway, and the visibility handler will retry.
-  if (owners.size === 0 || isPageHidden()) return
-  resumeQuietly(audioContext)
+  if (owners.size === 0 || isPageHidden() || explicitlySuspended) return
+  // Outputs must observe the interruption before a resume can make their
+  // disconnected sources' audio clocks advance again.
+  queueMicrotask(() => {
+    if (context !== audioContext || !isInterrupted(audioContext)) return
+    if (owners.size === 0 || isPageHidden() || explicitlySuspended) return
+    resumeQuietly(audioContext)
+  })
 }
 
 function handleVisibilityChange(): void {
@@ -109,17 +186,15 @@ function handleVisibilityChange(): void {
   if (audioContext === undefined) return
 
   if (isPageHidden()) {
-    if (audioContext.state !== 'running') return
-    suspendedByPage = true
-    try {
-      void Promise.resolve(audioContext.suspend()).catch(() => {
-        suspendedByPage = false
-      })
-    } catch {
-      suspendedByPage = false
-    }
+    if (audioContext.state === 'running' && !explicitlySuspended)
+      suspendedByPage = true
+    requestSuspension(audioContext)
     return
   }
+
+  // A native inactive event can arrive while the document still says visible.
+  if (explicitlySuspended) return
+  cancelPendingSuspension()
 
   // Nobody is listening: leave the hardware parked rather than waking it,
   // and keep the flag so the next lease still gets its clock back.
@@ -159,9 +234,12 @@ function ensureContext(): AudioContext | null {
  * build anything: the context appears on the first ensure()/unlock(), which
  * the owner is expected to make from a user gesture.
  */
-export function acquireSharedAudioContext(owner: string): SharedAudioLease {
+export function acquireSharedAudioContext(
+  owner: string,
+  options: SharedAudioLeaseOptions = {},
+): SharedAudioLease {
   const token = Symbol(owner)
-  owners.set(token, owner)
+  owners.set(token, { owner, ...options })
   let released = false
 
   return {
@@ -173,6 +251,7 @@ export function acquireSharedAudioContext(owner: string): SharedAudioLease {
 
     async unlock() {
       if (released) return false
+      cancelSharedAudioContextSuspension()
       const audioContext = ensureContext()
       if (audioContext === null) return false
       try {
@@ -180,6 +259,9 @@ export function acquireSharedAudioContext(owner: string): SharedAudioLease {
       } catch {
         return false
       }
+      // Native/page transitions can arrive while resume() is pending. Inspect
+      // current intent: a newer gesture may have brought the app back already.
+      if (parkIfNoLongerActive(audioContext) || released) return false
       suspendedByPage = false
       return audioContext.state !== 'closed'
     },
@@ -194,6 +276,7 @@ export function acquireSharedAudioContext(owner: string): SharedAudioLease {
       const audioContext = context
       if (owners.size > 0 || audioContext === undefined) return
       if (audioContext.state !== 'running') return
+      cancelPendingSuspension()
       try {
         void Promise.resolve(audioContext.suspend()).catch(() => undefined)
       } catch {
@@ -213,29 +296,27 @@ export function acquireSharedAudioContext(owner: string): SharedAudioLease {
  * app switcher, a screen lock — and a context left running through that keeps
  * an output stream open behind an app nobody can see.
  *
- * Coming back is not this call's job, and it is not always left to the next
- * gesture either. The page handler above stays installed: a WebView the OS
- * takes away usually fires `visibilitychange` as well, and where that handler
- * is the one that parked the clock (`suspendedByPage`), or where iOS moved
- * the context to `'interrupted'`, it resumes quietly on the way back in for
- * as long as a room still holds a lease. Where it did not — nobody holds a
- * lease, or this call got there first and so parked the clock without arming
- * that resume — the next `unlock()` from inside a user gesture is what
- * returns the sound, which is the only resume iOS accepts anyway.
+ * Outputs may request a bounded release before the clock parks. Native intent
+ * blocks automatic page/interruption resumes until foreground handling calls
+ * cancelSharedAudioContextSuspension(), or a fresh gesture calls unlock().
+ * Cancelling intent alone does not resume the clock or replay stopped sound.
  */
 export function suspendSharedAudioContext(): void {
+  explicitlySuspended = true
+  suspendedByPage = false
   const audioContext = context
-  if (audioContext === undefined || audioContext.state !== 'running') return
-  try {
-    void Promise.resolve(audioContext.suspend()).catch(() => undefined)
-  } catch {
-    // Already suspended, interrupted or closed. Nothing to park.
-  }
+  if (audioContext !== undefined) requestSuspension(audioContext)
+}
+
+/** Clears a native suspension intent without resuming playback or the clock. */
+export function cancelSharedAudioContextSuspension(): void {
+  explicitlySuspended = false
+  cancelPendingSuspension()
 }
 
 /** The names currently holding a lease, for tests and DEV readouts. */
 export function sharedAudioContextOwners(): readonly string[] {
-  return [...owners.values()]
+  return [...owners.values()].map(({ owner }) => owner)
 }
 
 /**
@@ -245,6 +326,7 @@ export function sharedAudioContextOwners(): readonly string[] {
 export function resetSharedAudioContext(
   options: SharedAudioContextOptions = {},
 ): void {
+  cancelSharedAudioContextSuspension()
   const audioContext = context
   if (audioContext !== undefined) {
     if (typeof audioContext.removeEventListener === 'function') {

@@ -130,17 +130,19 @@ function terminateSuspendedGraph(graph: PlaybackGraph): void {
   disconnectGraph(graph)
 }
 
-function releaseGraph(context: AudioContext, graph: PlaybackGraph): void {
+function releaseGraph(
+  context: AudioContext,
+  graph: PlaybackGraph,
+  onReleased: () => void,
+): void {
   const now = context.currentTime
-  graph.source.onended = () => {
-    disconnectGraph(graph)
-  }
+  graph.source.onended = onReleased
   holdAtCurrentValue(graph.envelope.gain, now)
   graph.envelope.gain.setTargetAtTime(0, now, RELEASE_SECONDS / 5)
   try {
     graph.source.stop(now + RELEASE_SECONDS + RELEASE_SLACK_SECONDS)
   } catch {
-    disconnectGraph(graph)
+    onReleased()
   }
 }
 
@@ -165,7 +167,7 @@ export function createWebAudioOutput(
   const ownContext = dependencies.createContext
   const lease =
     ownContext === undefined
-      ? acquireSharedAudioContext('asset-output')
+      ? acquireSharedAudioContext('asset-output', { prepareToSuspend })
       : undefined
   const readBytes = dependencies.fetchArrayBuffer ?? defaultFetchArrayBuffer
   const supports = dependencies.supportsMimeType ?? createMimeTypeProbe()
@@ -176,22 +178,47 @@ export function createWebAudioOutput(
   )
   const cache = new Map<string, CacheEntry>()
   const handles = new Set<AudioOutputPlayback>()
+  const releasingGraphs = new Map<PlaybackGraph, number>()
 
   let context: AudioContext | undefined
   let cachedBytes = 0
   let disposed = false
 
+  function finishRelease(graph: PlaybackGraph, interrupted = false): void {
+    if (!releasingGraphs.delete(graph)) return
+    if (interrupted) terminateSuspendedGraph(graph)
+    else disconnectGraph(graph)
+  }
+
+  function handleContextStateChange(): void {
+    if (context === undefined || context.state === 'running') return
+    // Rendering may be taken away before our release finishes. Audio-clock
+    // onended cannot run while suspended, so retire these graphs now.
+    for (const handle of [...handles]) handle.stop()
+    for (const graph of [...releasingGraphs.keys()]) finishRelease(graph, true)
+  }
+
+  function prepareToSuspend(): number {
+    for (const handle of [...handles]) handle.stop()
+    const now = Date.now()
+    return Math.max(
+      0,
+      ...[...releasingGraphs.values()].map((deadline) => deadline - now),
+    )
+  }
+
   function ensureContext(): AudioContext | undefined {
     if (context !== undefined) return context
     if (lease !== undefined) {
       context = lease.ensure() ?? undefined
-      return context
+    } else {
+      try {
+        context = ownContext?.()
+      } catch {
+        return undefined
+      }
     }
-    try {
-      context = ownContext?.()
-    } catch {
-      return undefined
-    }
+    context?.addEventListener('statechange', handleContextStateChange)
     return context
   }
 
@@ -274,7 +301,11 @@ export function createWebAudioOutput(
         graph = undefined
         if (activeGraph !== undefined && context !== undefined) {
           if (context.state === 'running') {
-            releaseGraph(context, activeGraph)
+            releasingGraphs.set(
+              activeGraph,
+              Date.now() + RELEASE_CLOSE_DELAY_MS,
+            )
+            releaseGraph(context, activeGraph, () => finishRelease(activeGraph))
           } else {
             // Suspended/interrupted context time cannot advance a release.
             // Disconnect now so a future unlock cannot revive stale audio.
@@ -306,7 +337,12 @@ export function createWebAudioOutput(
     // invoke play directly from the permitting pointer/keyboard gesture.
     let resume: Promise<void>
     try {
-      resume = audioContext.resume()
+      resume =
+        lease === undefined
+          ? audioContext.resume()
+          : lease.unlock().then((ready) => {
+              if (!ready) throw new Error('Audio context could not resume.')
+            })
     } catch {
       resume = Promise.reject(new Error('Audio context could not resume.'))
     }
@@ -424,22 +460,20 @@ export function createWebAudioOutput(
       cache.clear()
       cachedBytes = 0
       const audioContext = context
-      context = undefined
-      if (lease !== undefined) {
-        // Same delay the owned context gets: the handles above scheduled
-        // release tails, and parking the clock under them would freeze a
-        // graph mid-fade. The shared context outlives this output, so only
-        // the claim ends.
-        globalThis.setTimeout(() => {
-          lease.release()
-        }, RELEASE_CLOSE_DELAY_MS)
-        return
-      }
-      if (audioContext !== undefined) {
-        globalThis.setTimeout(() => {
+      // Keep the state listener through the release: disposal followed by OS
+      // suspension must not leave an old tail connected to the shared clock.
+      globalThis.setTimeout(() => {
+        for (const graph of [...releasingGraphs.keys()])
+          finishRelease(graph, true)
+        audioContext?.removeEventListener(
+          'statechange',
+          handleContextStateChange,
+        )
+        context = undefined
+        if (lease !== undefined) lease.release()
+        else if (audioContext !== undefined)
           void audioContext.close().catch(() => undefined)
-        }, RELEASE_CLOSE_DELAY_MS)
-      }
+      }, RELEASE_CLOSE_DELAY_MS)
     },
   }
 }
