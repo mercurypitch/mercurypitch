@@ -1009,7 +1009,7 @@
 
 .stageRecord .copyHeading {
   width: min(calc(100% - 2rem), 24rem);
-  justify-self: start;
+  justify-self: center;
 }
 
 .stageRecord .copyControls {
