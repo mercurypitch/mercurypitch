@@ -119,6 +119,29 @@ export const createLocomotion = (
 export const jumpVelocity = (cfg: LocomotionConfig): number =>
   Math.sqrt(2 * cfg.gravity * Math.max(0, cfg.jumpHeight))
 
+/**
+ * The upward velocity whose apex is `height` above where he leaves the
+ * ground: `jumpVelocity` for a height that is not the config's. The Top
+ * Shelf's leap is as high as the interval sung (docs/games/top-shelf.md
+ * §3.2), so the height arrives per leap, and a stage sets `vy` to this.
+ *
+ * Pass the loop's step and it is the apex `stepLocomotion` actually
+ * reaches, not the textbook one. A step takes gravity off before it
+ * moves him, so a launch at the continuous speed tops out half a step's
+ * travel short -- 1.2 cm on a fifth at 120 Hz, a quarter of the Top
+ * Shelf's catch, and that leap is judged to the centimetre. Half a step
+ * of gravity back puts the stepped apex within g*dt^2/8 of `height`, a
+ * twentieth of a millimetre.
+ */
+export const leapVelocity = (
+  height: number,
+  cfg: LocomotionConfig,
+  stepSeconds = 0,
+): number =>
+  height > 0
+    ? Math.sqrt(2 * cfg.gravity * height) + (cfg.gravity * stepSeconds) / 2
+    : 0
+
 const clamp = (v: number, lo: number, hi: number): number =>
   v < lo ? lo : v > hi ? hi : v
 

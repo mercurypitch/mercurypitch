@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shelf probe</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0b0d10;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+      #hud {
+        position: fixed;
+        left: 8px;
+        top: 8px;
+        max-width: calc(100vw - 32px);
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(11, 13, 16, 0.72);
+        color: #cfd6dc;
+        font: 12px/1.4 monospace;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas></canvas>
+    <div id="hud"></div>
+    <script type="module" src="/src/dev/shelf-probe.ts"></script>
+  </body>
+</html>
