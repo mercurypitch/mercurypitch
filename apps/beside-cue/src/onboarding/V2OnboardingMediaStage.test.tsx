@@ -8,7 +8,7 @@ import { resolve } from 'node:path'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { V2OnboardingMediaMode, V2OnboardingMediaPresentationRequest, } from './v2-onboarding-media-presenter'
-import type { V2OnboardingMediaCorrelation, V2OnboardingMediaSettledEvent, } from './V2OnboardingMediaStage'
+import type { V2OnboardingMediaCorrelation, V2OnboardingMediaSettledEvent, V2OnboardingMediaStageProps, } from './V2OnboardingMediaStage'
 import { V2OnboardingMediaStage } from './V2OnboardingMediaStage'
 
 const mediaStageCss = readFileSync(
@@ -70,6 +70,7 @@ function renderStage(options: {
   readonly request?: V2OnboardingMediaPresentationRequest
   readonly mode?: V2OnboardingMediaMode
   readonly foreground?: boolean
+  readonly onVideoDialogueCue?: V2OnboardingMediaStageProps['onVideoDialogueCue']
 }): StageHarness {
   const [request, setRequest] = createSignal(options.request)
   const [mode, setMode] = createSignal<V2OnboardingMediaMode>(
@@ -88,6 +89,7 @@ function renderStage(options: {
       transitionDurationMs={0}
       onPresentationSettled={onPresentationSettled}
       onVideoEnded={onVideoEnded}
+      onVideoDialogueCue={options.onVideoDialogueCue}
     />
   ))
 
@@ -546,5 +548,203 @@ describe('V2OnboardingMediaStage', () => {
     expect(reloadedElements).toContain(element)
     expect(harness.onPresentationSettled).not.toHaveBeenCalled()
     expect(harness.onVideoEnded).not.toHaveBeenCalled()
+  })
+})
+
+describe('dialogue cues on the video clock', () => {
+  function requestAt(seconds = 0.85): V2OnboardingMediaPresentationRequest {
+    const request = automaticRequest('greeting')
+    return {
+      ...request,
+      primary: {
+        kind: 'video',
+        src: '/greeting.mp4',
+        alt: 'Greeting',
+        dialogueStartSeconds: seconds,
+      },
+    }
+  }
+
+  function cueProbe() {
+    let resolve!: () => void
+    let reject!: () => void
+    const ready = new Promise<void>((yes, no) => {
+      resolve = yes
+      reject = () => no(new Error('audio failed'))
+    })
+    const cancel = vi.fn()
+    const onCue = vi.fn(() => ({ ready, cancel }))
+    return { onCue, cancel, resolve, reject }
+  }
+
+  it('ignores wall time and unplayed progress, then holds once at the media cue until audio is ready', async () => {
+    const cue = cueProbe()
+    renderStage({ request: requestAt(), onVideoDialogueCue: cue.onCue })
+    const video = currentVideo()
+    video.currentTime = 1
+    fireEvent.timeUpdate(video)
+    expect(cue.onCue).not.toHaveBeenCalled()
+    video.currentTime = 0.84
+    startVideo(video)
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(cue.onCue).not.toHaveBeenCalled()
+    const plays = playedElements.length
+    video.currentTime = 0.85
+    fireEvent.timeUpdate(video)
+    expect(cue.onCue).toHaveBeenCalledExactlyOnceWith({
+      targetId: 'greeting',
+      token: layerFor(video).dataset.v2MediaToken,
+    })
+    expect(pausedElements).toContain(video)
+    fireEvent.timeUpdate(video)
+    fireEvent.playing(video)
+    expect(playedElements).toHaveLength(plays)
+    cue.resolve()
+    await Promise.resolve()
+    expect(playedElements).toHaveLength(plays + 1)
+    fireEvent.timeUpdate(video)
+    expect(cue.onCue).toHaveBeenCalledTimes(1)
+    expect(cue.cancel).not.toHaveBeenCalled()
+  })
+
+  it('observes currentTime on animation frames even without a timeupdate or video-frame callback', async () => {
+    const cue = cueProbe()
+    renderStage({ request: requestAt(), onVideoDialogueCue: cue.onCue })
+    const video = currentVideo()
+    startVideo(video)
+    video.currentTime = 0.85
+    await vi.advanceTimersByTimeAsync(17)
+    expect(cue.onCue).toHaveBeenCalledTimes(1)
+    expect(requestedFrames).not.toHaveBeenCalled()
+  })
+
+  it('cancels a three-second startup before resuming and ignores its late resolution', async () => {
+    const cue = cueProbe()
+    renderStage({ request: requestAt(), onVideoDialogueCue: cue.onCue })
+    const video = currentVideo()
+    startVideo(video)
+    video.currentTime = 0.85
+    fireEvent.timeUpdate(video)
+    const plays = playedElements.length
+    cue.cancel.mockImplementation(() =>
+      expect(playedElements).toHaveLength(plays),
+    )
+    await vi.advanceTimersByTimeAsync(2_999)
+    expect(cue.cancel).not.toHaveBeenCalled()
+    expect(playedElements).toHaveLength(plays)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(cue.cancel).toHaveBeenCalledTimes(1)
+    expect(playedElements).toHaveLength(plays + 1)
+    cue.resolve()
+    await Promise.resolve()
+    expect(playedElements).toHaveLength(plays + 1)
+  })
+
+  it('can reach its first cue after a background pause without firing while hidden', async () => {
+    const cue = cueProbe()
+    const harness = renderStage({
+      request: requestAt(),
+      onVideoDialogueCue: cue.onCue,
+    })
+    const video = currentVideo()
+    startVideo(video)
+    harness.setForeground(false)
+    video.currentTime = 0.85
+    fireEvent.timeUpdate(video)
+    fireEvent.playing(video)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(cue.onCue).not.toHaveBeenCalled()
+    harness.setForeground(true)
+    fireEvent.playing(video)
+    expect(cue.onCue).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not let foreground resumption bypass pending audio readiness', async () => {
+    const cue = cueProbe()
+    const harness = renderStage({
+      request: requestAt(),
+      onVideoDialogueCue: cue.onCue,
+    })
+    const video = currentVideo()
+    startVideo(video)
+    video.currentTime = 0.85
+    fireEvent.timeUpdate(video)
+    const plays = playedElements.length
+    harness.setForeground(false)
+    harness.setForeground(true)
+    expect(playedElements).toHaveLength(plays)
+    cue.resolve()
+    await Promise.resolve()
+    expect(playedElements).toHaveLength(plays + 1)
+    fireEvent.playing(video)
+    expect(cue.onCue).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps a ready cue paused while hidden and never replays it on return', async () => {
+    const cue = cueProbe()
+    const harness = renderStage({
+      request: requestAt(),
+      onVideoDialogueCue: cue.onCue,
+    })
+    const video = currentVideo()
+    startVideo(video)
+    video.currentTime = 0.85
+    fireEvent.timeUpdate(video)
+    const plays = playedElements.length
+    harness.setForeground(false)
+    cue.resolve()
+    await Promise.resolve()
+    expect(playedElements).toHaveLength(plays)
+    harness.setForeground(true)
+    expect(playedElements).toHaveLength(plays + 1)
+    fireEvent.playing(video)
+    expect(cue.onCue).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['request', 'reduced', 'unmount'] as const)(
+    'cancels pending audio on %s retirement and ignores stale work',
+    async (retirement) => {
+      const cue = cueProbe()
+      const harness = renderStage({
+        request: requestAt(),
+        onVideoDialogueCue: cue.onCue,
+      })
+      const video = currentVideo()
+      startVideo(video)
+      video.currentTime = 0.85
+      fireEvent.timeUpdate(video)
+      const plays = playedElements.length
+      if (retirement === 'request') harness.setRequest(automaticRequest('next'))
+      else if (retirement === 'reduced') harness.setMode('reduced')
+      else harness.unmount()
+      expect(cue.cancel).toHaveBeenCalledTimes(1)
+      cue.resolve()
+      await Promise.resolve()
+      fireEvent.timeUpdate(video)
+      await vi.advanceTimersByTimeAsync(3_000)
+      expect(playedElements).toHaveLength(plays)
+      expect(cue.onCue).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it('releases the video on silent or rejected audio readiness', async () => {
+    const cue = cueProbe()
+    renderStage({ request: requestAt(), onVideoDialogueCue: cue.onCue })
+    const video = currentVideo()
+    startVideo(video)
+    video.currentTime = 0.85
+    fireEvent.timeUpdate(video)
+    const plays = playedElements.length
+    cue.reject()
+    await Promise.resolve()
+    expect(playedElements).toHaveLength(plays + 1)
+    expect(cue.cancel).not.toHaveBeenCalled()
+  })
+
+  it('gives a changed authored offset a new video identity', () => {
+    const harness = renderStage({ request: requestAt() })
+    const first = currentVideo()
+    harness.setRequest(requestAt(1.2))
+    expect(currentVideo()).not.toBe(first)
   })
 })

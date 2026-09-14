@@ -22,6 +22,8 @@ export interface V2OnboardingVideoResource {
   readonly kind: 'video'
   readonly src: string
   readonly alt: string
+  /** Start separate dialogue at this video time, never at phase entry. */
+  readonly dialogueStartSeconds?: number
 }
 
 export interface V2OnboardingStillResource {
@@ -117,7 +119,7 @@ export type V2OnboardingMediaPresenterEvent =
 function resourceKey(resource: V2OnboardingMediaResource): string {
   return resource.kind === 'brand'
     ? `brand:${resource.alt}`
-    : `${resource.kind}:${resource.src}`
+    : `${resource.kind}:${resource.src}:${resource.kind === 'video' ? (resource.dialogueStartSeconds ?? '') : ''}`
 }
 
 function appendLastKnownGood(

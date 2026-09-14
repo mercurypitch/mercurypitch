@@ -8,9 +8,13 @@
 // may withhold them while continuing valid H.264 playback.
 
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack, } from 'solid-js'
+import type { V2OnboardingMediaCue } from './v2-onboarding-media-cue'
+import { createV2OnboardingMediaCue } from './v2-onboarding-media-cue'
 import type { V2OnboardingMediaMode, V2OnboardingMediaPresentationEvidence, V2OnboardingMediaPresentationRequest, V2OnboardingMediaPresenterEvent, V2OnboardingMediaPresenterState, V2OnboardingMediaRecoveryStage, V2OnboardingMediaResource, } from './v2-onboarding-media-presenter'
 import { createV2OnboardingMediaPresenterState, requestV2OnboardingMediaPresentation, updateV2OnboardingMediaPresenter, } from './v2-onboarding-media-presenter'
 import styles from './V2OnboardingMediaStage.module.css'
+
+export type { V2OnboardingMediaCue } from './v2-onboarding-media-cue'
 
 const DEFAULT_TRANSITION_DURATION_MS = 180
 const TRANSITION_FALLBACK_SLACK_MS = 34
@@ -36,6 +40,9 @@ export interface V2OnboardingMediaStageProps {
     event: V2OnboardingMediaSettledEvent,
   ) => void
   readonly onVideoEnded?: (event: V2OnboardingMediaCorrelation) => void
+  readonly onVideoDialogueCue?: (
+    event: V2OnboardingMediaCorrelation,
+  ) => V2OnboardingMediaCue | undefined
 }
 
 type LayerPhase = 'current' | 'loading' | 'revealed'
@@ -57,6 +64,8 @@ interface MediaLayerProps {
   readonly onFailed: (token: string) => void
   readonly onTransitionCompleted: (token: string) => void
   readonly onVideoEnded: (token: string) => void
+  readonly onVideoTimeUpdate: (token: string) => void
+  readonly onVideoPaused: (token: string) => void
   readonly onVideoMounted: (token: string, element: HTMLVideoElement) => void
   readonly onVideoUnmounted: (token: string, element: HTMLVideoElement) => void
 }
@@ -64,7 +73,7 @@ interface MediaLayerProps {
 function resourceIdentity(resource: V2OnboardingMediaResource): string {
   return resource.kind === 'brand'
     ? `brand:${resource.alt}`
-    : `${resource.kind}:${resource.src}:${resource.alt}`
+    : `${resource.kind}:${resource.src}:${resource.alt}:${resource.kind === 'video' ? (resource.dialogueStartSeconds ?? '') : ''}`
 }
 
 function requestIdentity(
@@ -224,6 +233,8 @@ function V2OnboardingMediaLayer(props: MediaLayerProps) {
             onLoadedMetadata={() => props.onMetadataReady(props.token)}
             onLoadedData={markVideoDataReady}
             onPlaying={markPlaybackStarted}
+            onTimeUpdate={() => props.onVideoTimeUpdate(props.token)}
+            onPause={() => props.onVideoPaused(props.token)}
             onEnded={() => props.onVideoEnded(props.token)}
             onError={() => {
               cancelLoadWatchdog()
@@ -270,6 +281,10 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
       createV2OnboardingMediaPresenterState(untrack(() => props.mode)),
     )
   const videoElements = new Map<string, HTMLVideoElement>()
+  const dialogueCues = new Map<
+    string,
+    ReturnType<typeof createV2OnboardingMediaCue>
+  >()
   const metadataReadyTokens = new Set<string>()
   const playAttempts = new Map<string, number>()
   const releasedVideoElements = new WeakSet<HTMLVideoElement>()
@@ -342,12 +357,15 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
 
   function pauseVideo(token: string, element: HTMLVideoElement): void {
     invalidatePlayAttempt(token)
+    dialogueCues.get(token)?.pause()
     element.pause()
   }
 
   function releaseVideo(token: string, element: HTMLVideoElement): void {
     if (releasedVideoElements.has(element)) return
     releasedVideoElements.add(element)
+    dialogueCues.get(token)?.dispose()
+    dialogueCues.delete(token)
     pauseVideo(token, element)
     // WebKit retains hardware decoder resources for a paused element. Removing
     // the source and reloading explicitly relinquishes those resources when a
@@ -357,7 +375,12 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
   }
 
   function playVideo(token: string, element: HTMLVideoElement): void {
-    if (!mounted || !foregroundActive || videoElements.get(token) !== element) {
+    if (
+      !mounted ||
+      !foregroundActive ||
+      videoElements.get(token) !== element ||
+      dialogueCues.get(token)?.isWaiting() === true
+    ) {
       return
     }
     const attempt = (playAttempts.get(token) ?? 0) + 1
@@ -412,6 +435,11 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
     const mode = props.mode
     const request = props.request
     const identity = request === undefined ? '' : requestIdentity(request)
+
+    if (synchronizedMode !== mode || synchronizedRequestIdentity !== identity) {
+      for (const cue of dialogueCues.values()) cue.dispose()
+      dialogueCues.clear()
+    }
 
     if (synchronizedMode !== mode) {
       synchronizedMode = mode
@@ -492,6 +520,7 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
     mounted = false
     if (transitionFallback !== undefined) clearTimeout(transitionFallback)
     for (const [token, element] of videoElements) releaseVideo(token, element)
+    dialogueCues.clear()
     videoElements.clear()
     metadataReadyTokens.clear()
     foregroundPausedTokens.clear()
@@ -527,11 +556,18 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
                 playVideo(eventToken, element)
               }
             }}
-            onPlaying={(eventToken) =>
+            onPlaying={(eventToken) => {
               sendPresenterEvent({
                 type: 'INCOMING_PLAYING',
                 token: eventToken,
               })
+              dialogueCues.get(eventToken)?.playing()
+            }}
+            onVideoTimeUpdate={(eventToken) =>
+              dialogueCues.get(eventToken)?.timeupdate()
+            }
+            onVideoPaused={(eventToken) =>
+              dialogueCues.get(eventToken)?.pause()
             }
             onPresented={(eventToken, evidence) =>
               sendPresenterEvent({
@@ -565,6 +601,43 @@ export function V2OnboardingMediaStage(props: V2OnboardingMediaStageProps) {
             }}
             onVideoMounted={(eventToken, element) => {
               videoElements.set(eventToken, element)
+              const layer = renderedLayer(eventToken)
+              const resource = layer?.candidate.resource
+              const startSeconds =
+                resource?.kind === 'video'
+                  ? resource.dialogueStartSeconds
+                  : undefined
+              if (
+                startSeconds !== undefined &&
+                Number.isFinite(startSeconds) &&
+                startSeconds >= 0
+              ) {
+                const canRun = () => {
+                  const current = presenter()
+                  return (
+                    mounted &&
+                    foregroundActive &&
+                    videoElements.get(eventToken) === element &&
+                    (current.incoming?.token ?? current.current?.token) ===
+                      eventToken
+                  )
+                }
+                dialogueCues.set(
+                  eventToken,
+                  createV2OnboardingMediaCue({
+                    element,
+                    startSeconds,
+                    canRun,
+                    pause: () => pauseVideo(eventToken, element),
+                    resume: () => playVideo(eventToken, element),
+                    cue: () =>
+                      props.onVideoDialogueCue?.({
+                        targetId: layer!.targetId,
+                        token: eventToken,
+                      }),
+                  }),
+                )
+              }
               metadataReadyTokens.delete(eventToken)
               reportedEndedTokens.delete(eventToken)
               if (!props.foreground) {
