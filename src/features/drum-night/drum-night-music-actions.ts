@@ -136,6 +136,7 @@ export function createDrumNightMusicActions(options: {
       ? [
           {
             id: 'separate-current',
+            audio: { source: id, target: 'drums' },
             label: 'Separate drums + band from this song',
             detail:
               'Reuse saved parts, or run a new cloud split using credits.',

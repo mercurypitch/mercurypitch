@@ -93,10 +93,13 @@ function apiBase(base?: string): string {
 }
 
 /** Public pricing. Returns null when no cloud API is configured. */
-export async function fetchPricing(base?: string): Promise<Pricing | null> {
+export async function fetchPricing(
+  base?: string,
+  signal?: AbortSignal,
+): Promise<Pricing | null> {
   const b = apiBase(base)
   if (b === '') return null
-  const res = await fetch(`${b}/api/billing/pricing`)
+  const res = await fetch(`${b}/api/billing/pricing`, { signal })
   if (!res.ok) throw new Error(`Failed to load pricing: ${res.statusText}`)
   return withModelCredits((await res.json()) as Pricing)
 }
@@ -181,12 +184,16 @@ export function formatSupporterExpiry(
 }
 
 /** Signed-in user's credit balance + entitlements. Null when no API / unreachable. */
-export async function fetchBillingMe(base?: string): Promise<BillingMe | null> {
+export async function fetchBillingMe(
+  base?: string,
+  signal?: AbortSignal,
+): Promise<BillingMe | null> {
   const b = apiBase(base)
   if (b === '') return null
   try {
     const res = await fetch(`${b}/api/billing/me`, {
       headers: getAuthHeaders(),
+      signal,
     })
     if (!res.ok) return null
     const data = (await res.json()) as unknown

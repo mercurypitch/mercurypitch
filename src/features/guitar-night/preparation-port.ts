@@ -29,6 +29,7 @@ export interface GuitarNightPreparationPort {
   prepare(
     file: File,
     options: {
+      mode?: 'local' | 'server'
       signal: AbortSignal
       onUpdate(update: GuitarNightPreparationUpdate): void
       onWarning(message: string): void

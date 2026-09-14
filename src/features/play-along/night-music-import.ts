@@ -49,6 +49,7 @@ export function validateNightMusicFiles(
 }
 
 export interface NightMusicTask {
+  audioMode?: 'local' | 'server'
   signal: AbortSignal
   report: (message: string, progress?: number) => void
   warn?: (message: string) => void
@@ -61,7 +62,14 @@ export interface NightMusicAction {
   label: string
   detail: string
   unavailable?: string
+  /** The shared admission gate checks this before any preparation begins. */
+  audio?: NightAudioRequest
   run: (task: NightMusicTask) => Promise<void>
+}
+
+export interface NightAudioRequest {
+  source: File | string
+  target: 'vocals' | 'guitar' | 'drums'
 }
 
 /** Recoverable admission errors retain an explicit user action, never an automatic retry. */

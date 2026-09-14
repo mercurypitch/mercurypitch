@@ -52,6 +52,8 @@
 .body {
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--import-accent) transparent;
   overscroll-behavior: contain;
   /* Keep focus rings inside the scrollport without narrowing the content. */
   padding: 4px;

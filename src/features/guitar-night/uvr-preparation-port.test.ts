@@ -33,7 +33,7 @@ describe('createUvrGuitarNightPreparationPort', () => {
     dependencies.refreshUvrSessionFromDb.mockResolvedValue(true)
   })
 
-  it('always prepares new Guitar Night files on this device', async () => {
+  it('defaults to on-device preparation when no method was passed', async () => {
     dependencies.prepareUvrSong.mockResolvedValue({
       status: 'completed',
       sessionId: 'session-room',
@@ -59,6 +59,22 @@ describe('createUvrGuitarNightPreparationPort', () => {
     )
     expect(dependencies.autoResumeServerSessions).not.toHaveBeenCalled()
     expect(dependencies.refreshUvrSessionFromDb).not.toHaveBeenCalled()
+  })
+  it('honours an explicitly selected cloud method', async () => {
+    dependencies.prepareUvrSong.mockResolvedValue({
+      status: 'completed',
+      sessionId: 'cloud-song',
+    })
+    await createUvrGuitarNightPreparationPort().prepare(sourceFile(), {
+      mode: 'server',
+      signal: new AbortController().signal,
+      onUpdate: vi.fn(),
+      onWarning: vi.fn(),
+    })
+    expect(dependencies.prepareUvrSong).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.objectContaining({ mode: 'server', focus: false }),
+    )
   })
 
   it('re-attaches a matching recoverable server job instead of duplicating it', async () => {

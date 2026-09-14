@@ -104,6 +104,17 @@ describe('night music file contract', () => {
 })
 
 describe('NightMusicImport', () => {
+  it('drops automatic intent when closed before lazy audio controls can claim it', () => {
+    const { controller } = harness()
+    controller.receive([audio()])
+    controller.close()
+    controller.open()
+    expect(controller.claimAutoImport()).toBe(false)
+    expect(controller.file()?.name).toBe('song.wav')
+    controller.receive([audio()])
+    expect(controller.claimAutoImport()).toBe(true)
+    expect(controller.claimAutoImport()).toBe(false)
+  })
   it('offers account recovery after a blocked action, closes its own modal and retains the file', async () => {
     const recover = vi.fn(() => {
       expect(screen.queryByRole('dialog')).toBeNull()
@@ -163,6 +174,18 @@ describe('NightMusicImport', () => {
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.getByTestId('night-music-file')).toHaveValue('')
   })
+  it('does not carry an unsupported-file warning into a fresh empty dialog', () => {
+    const { controller } = harness({ room: 'piano' })
+    controller.receive([gp()])
+    expect(screen.getByRole('alert')).toHaveTextContent('MIDI')
+    controller.close()
+    controller.open()
+    expect(controller.file()).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+    controller.receive([audio()])
+    controller.receive([midi()])
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
   it('keeps a file pending while the player returns to finish a take', () => {
     const [blocked, setBlocked] = createSignal<string | null>(
       'Stop recording first.',
@@ -194,6 +217,7 @@ describe('NightMusicImport', () => {
     })
     controller.receive([midi()])
     fireEvent.click(screen.getByRole('button', { name: /Load this score/ }))
+    await waitFor(() => expect(signal).toBeDefined())
     controller.close()
     expect(signal.aborted).toBe(true)
     controller.receive([gp()])

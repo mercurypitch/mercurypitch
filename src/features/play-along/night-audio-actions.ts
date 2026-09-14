@@ -26,16 +26,16 @@ export function nightAudioActions(
   return [
     {
       id: 'prepare-song',
+      audio: { source: file, target: 'vocals' },
       label: 'Prepare vocals + backing',
-      detail:
-        'On this device, with no cloud credits. Reuse a prepared copy when available. The backing still contains its original instruments.',
+      detail: 'Vocals and original backing, ready to sing or play along.',
       run: async (task) => options.openSong(await prepare(task), task),
     },
     {
       id: 'prepare-band',
+      audio: { source: file, target: options.target },
       label: `Separate ${options.target} + band`,
-      detail:
-        'Isolate guitar, bass, drums and keys for the mixer. A new cloud split uses credits; saved parts are reused first.',
+      detail: 'Separate guitar, drums, bass and keys for the mixer.',
       run: async (task) => options.separateBand(await prepare(task), task),
     },
   ]
