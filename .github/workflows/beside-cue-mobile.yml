@@ -86,9 +86,13 @@ jobs:
       verify-assets: |
         test -f "$DIST_DIR/onboarding/corky-v2.4/SHA256SUMS"
         test -f "$DIST_DIR/onboarding/corky-v2.5/SHA256SUMS"
+        test -f "$DIST_DIR/onboarding/corky-v2.6/SHA256SUMS"
+        test -s "$DIST_DIR/onboarding/corky-v2.6/picture/b01-corky-greeting-j2-direct-to-p02-v0_1.mp4"
         if [ "$STAGE" = synced ]; then
           test -f "$ANDROID_ASSETS_DIR/onboarding/corky-v2.4/SHA256SUMS"
           test -f "$ANDROID_ASSETS_DIR/onboarding/corky-v2.5/SHA256SUMS"
+          test -f "$ANDROID_ASSETS_DIR/onboarding/corky-v2.6/SHA256SUMS"
+          test -s "$ANDROID_ASSETS_DIR/onboarding/corky-v2.6/picture/b01-corky-greeting-j2-direct-to-p02-v0_1.mp4"
         fi
     secrets:
       keystore-base64: ${{ secrets.BESIDE_CUE_KEYSTORE_BASE64 }}

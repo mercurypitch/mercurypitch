@@ -51,7 +51,8 @@ describe technical provenance, not legal clearance or exclusive voice ownership.
 - Existing continuous score and Foley bytes are unchanged. Recorded lines use
   the existing dialogue lane and cancellation. The selected silent J2 greeting
   movie cues its line at media time 0.85 seconds, with picture held briefly until
-  audio starts; all other dialogue keeps its existing trigger.
+  audio starts. Other scripted onboarding dialogue keeps its existing phase
+  trigger; character previews replay on explicit selection taps.
 
 Private source/selection ledgers and reproduction scripts live under
 `<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-v1-selected/`
