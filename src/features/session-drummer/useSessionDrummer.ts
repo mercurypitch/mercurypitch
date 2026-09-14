@@ -71,7 +71,7 @@ export function useSessionDrummer(host: SessionDrummerHost) {
     const unavailable = host.unavailableReason?.()
     if (blocked === true || (unavailable ?? null) !== null) untrack(stop)
   })
-  const start = async (next = settings()) => {
+  const start = async () => {
     if (
       disposed ||
       busy() ||
@@ -100,11 +100,15 @@ export function useSessionDrummer(host: SessionDrummerHost) {
         onBar: setBar,
         onApplied: setActive,
       })
-      const started = await engine.start(next, clock !== null)
+      const started = await engine.start(settings(), clock !== null)
       if (disposed || operation !== generation) return
       if (!started)
         throw new Error('The drum player could not start. Please try again.')
       setArmed(true)
+      // Picker changes during kit activation must not leave the sound behind
+      // the visible selection. The engine coalesces these at the next bar.
+      if (JSON.stringify(active()) !== JSON.stringify(settings()))
+        engine.update(settings())
       if (shouldStartHost && !host.running()) {
         // Yield the modal before the host requests Listening or mic consent.
         setOpen(false)
@@ -144,19 +148,20 @@ export function useSessionDrummer(host: SessionDrummerHost) {
     changed: () =>
       armed() && JSON.stringify(active()) !== JSON.stringify(settings()),
     snapshot: () => engine?.snapshot() ?? null,
-    change: (patch: Partial<SessionDrummerSettings>) =>
-      save({ ...settings(), ...patch }),
+    change: (patch: Partial<SessionDrummerSettings>) => {
+      const next = save({ ...settings(), ...patch })
+      if (armed()) engine?.update(next)
+    },
     setLevel: (level: number) => {
       const next = save({ ...settings(), level })
       engine?.setLevel(next.level)
       setActive((current) => current && { ...current, level: next.level })
     },
     start: () => start(),
-    apply: () => engine?.update(settings()),
     surprise: () => {
       const next = save(surpriseDrummer(settings()))
       if (armed()) engine?.update(next)
-      else void start(next)
+      else void start()
     },
   }
 }

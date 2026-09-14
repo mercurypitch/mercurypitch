@@ -14,7 +14,13 @@ export function DrummerWheel(props: {
 }) {
   const id = createUniqueId()
   let viewport!: HTMLDivElement
-  let origin: { y: number; index: number; pointerId: number } | null = null
+  let origin: {
+    x: number
+    y: number
+    index: number
+    pointerId: number
+    optionIndex: number | null
+  } | null = null
   let dragged = false
   let lastWheel = -Infinity
   const [offset, setOffset] = createSignal(0)
@@ -40,9 +46,10 @@ export function DrummerWheel(props: {
     viewport.addEventListener('wheel', scroll, { passive: false })
     onCleanup(() => viewport.removeEventListener('wheel', scroll))
   })
-  const finish = (cancel = false) => {
+  const finish = (cancel = false, tapped: number | null = null) => {
     if (!origin) return
     if (!cancel && dragged) select(origin.index - Math.round(offset() / 44))
+    else if (!cancel && tapped !== null) select(tapped)
     origin = null
     setOffset(0)
   }
@@ -74,27 +81,54 @@ export function DrummerWheel(props: {
           select(next)
         }}
         onPointerDown={(event) => {
-          if (event.button !== 0) return
+          if (event.button !== 0 || !event.isPrimary || origin) return
           dragged = false
+          const option = (event.target as Element).closest<HTMLButtonElement>(
+            'button[data-option-index]',
+          )
           origin = {
+            x: event.clientX,
             y: event.clientY,
             index: index(),
             pointerId: event.pointerId,
+            optionIndex: option ? Number(option.dataset.optionIndex) : null,
           }
           viewport.focus({ preventScroll: true })
         }}
         onPointerMove={(event) => {
           if (!origin || origin.pointerId !== event.pointerId) return
           const delta = event.clientY - origin.y
-          if (Math.abs(delta) > 7) {
+          if (!dragged && Math.abs(delta) > 7) {
             dragged = true
             viewport.setPointerCapture(event.pointerId)
           }
           if (dragged) setOffset(Math.max(-132, Math.min(132, delta)))
         }}
-        onPointerUp={() => finish()}
-        onPointerCancel={() => finish(true)}
-        onLostPointerCapture={() => finish(true)}
+        onPointerUp={(event) => {
+          if (event.pointerId !== origin?.pointerId) return
+          const touch = event.pointerType !== 'mouse'
+          const tapped =
+            touch &&
+            Math.hypot(event.clientX - origin.x, event.clientY - origin.y) <= 7
+              ? origin.optionIndex
+              : null
+          finish(false, tapped)
+          // Chrome can omit the compatibility click immediately after a swipe.
+          // Commit a touch tap on release, and suppress any duplicate click.
+          if (touch) dragged = true
+        }}
+        onPointerCancel={(event) => {
+          if (event.pointerId === origin?.pointerId) finish(true)
+        }}
+        onLostPointerCapture={(event) => {
+          // Touch initially captures the option button. Its loss bubbles when
+          // the wheel takes over: that transfer is not a cancelled gesture.
+          if (
+            event.target === viewport &&
+            event.pointerId === origin?.pointerId
+          )
+            finish(true)
+        }}
       >
         <div class={styles.wheelSelection} aria-hidden="true" />
         <div
@@ -111,10 +145,11 @@ export function DrummerWheel(props: {
                 role="option"
                 tabIndex={-1}
                 id={`${id}-${optionIndex()}`}
+                data-option-index={optionIndex()}
                 aria-selected={props.value === option.value}
                 title={option.label}
-                onClick={() => {
-                  if (!dragged) select(optionIndex())
+                onClick={(event) => {
+                  if (!dragged || event.detail === 0) select(optionIndex())
                   dragged = false
                 }}
               >

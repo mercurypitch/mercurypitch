@@ -65,6 +65,8 @@ export function SessionDrummer(props: {
           aria-label={`Session drummer${drummer().armed() ? (drummer().waiting() ? ' · ready' : ' · playing') : ''}`}
           aria-haspopup="dialog"
           aria-expanded={drummer().open()}
+          data-armed={drummer().armed()}
+          title="Session drummer"
           disabled={props.disabled}
           onClick={() => drummer().setOpen(true)}
           data-tour="session-drummer"
@@ -293,11 +295,6 @@ export function SessionDrummer(props: {
                 >
                   Surprise me
                 </button>
-                <Show when={drummer().changed()}>
-                  <button type="button" onClick={() => drummer().apply()}>
-                    Apply next bar
-                  </button>
-                </Show>
                 <button
                   type="button"
                   class={styles.primary}
@@ -329,9 +326,11 @@ export function SessionDrummer(props: {
               <span class={styles.state} role="status">
                 {drummer().waiting()
                   ? 'Ready — joins when the score plays'
-                  : drummer().armed()
-                    ? `${drummerPattern(drummer().active()?.patternId ?? pattern().id).name} · playing`
-                    : '16 original grooves · choose your pocket'}
+                  : drummer().changed()
+                    ? `${pattern().name} · changing next bar`
+                    : drummer().armed()
+                      ? `${drummerPattern(drummer().active()?.patternId ?? pattern().id).name} · playing`
+                      : '16 original grooves · choose your pocket'}
               </span>
             </GuitarNightMixerDialog>
           </div>

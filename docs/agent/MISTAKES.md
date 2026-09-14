@@ -581,6 +581,24 @@ could also leave that intent unclaimed when the user closed it.
 unclaimed intent on close. Account recovery and reopening are not new consent.
 **See:** `NightMusicImport.test.tsx` and `NightAudioChoices.test.tsx` cover both races.
 
+### Keep extracted controls styled in their actual host
+
+**Symptom:** Drummer looked like a browser-default button and obscured the mixer.
+**Cause:** a wrapper bypassed `.roomTools > button`, including its phone sizing;
+the extra width also made the song eyebrow wrap and shrink the stage.
+**Rule:** own the full control chrome and responsive size; check the closed host
+with long names and active-state additions, not only the open dialog.
+**See:** `session-drummer-touch.spec.ts` and the Guitar Night responsive specs.
+
+### Ignore a child's lost capture when a drag parent takes over
+
+**Symptom:** wheel dragging worked with a mouse but never committed on tablets.
+**Cause:** the touched option implicitly captured the pointer; transferring it
+to the wheel bubbled the child's `lostpointercapture`, cancelling the gesture.
+**Rule:** handle loss only for the capture-owning target and active pointer ID.
+**See:** `DrummerWheel.tsx`; native touch swipe/tap/cancel regressions in
+`session-drummer-touch.spec.ts` reproduce the otherwise-missed path.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

@@ -151,6 +151,28 @@ describe('session drummer clock ownership', () => {
     expect(vi.getTimerCount()).toBe(0)
     await f.engine.dispose()
   })
+  it('coalesces live edits until the next bar and discards pending edits on Stop', async () => {
+    const f = fixture()
+    await f.engine.start(DEFAULT_DRUMMER_SETTINGS, true)
+    f.engine.accept(f.window(0, 0.1))
+    f.engine.update({ ...DEFAULT_DRUMMER_SETTINGS, kitId: 'crocell' })
+    const latest = {
+      ...DEFAULT_DRUMMER_SETTINGS,
+      kitId: 'muldjord' as const,
+      bars: 16,
+    }
+    f.engine.update(latest)
+    f.engine.accept(f.window(3, 0.5))
+    expect(f.onApplied).toHaveBeenCalledTimes(1)
+    f.engine.accept(f.window(4, 1))
+    expect(f.onApplied).toHaveBeenLastCalledWith(latest)
+    expect(f.player.setKit).not.toHaveBeenCalledWith('crocell')
+    f.engine.update({ ...latest, kitId: 'crocell' })
+    f.engine.stop()
+    f.engine.accept(f.window(8, 1.5))
+    expect(f.onApplied).toHaveBeenCalledTimes(2)
+    await f.engine.dispose()
+  })
   it('cannot resurrect playback when kit activation resolves after Stop', async () => {
     const f = fixture()
     let resolve!: (ready: boolean) => void
