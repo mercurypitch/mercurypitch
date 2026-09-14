@@ -72,6 +72,8 @@ export interface F0Stream {
   latestSmoothed: () => PitchFrame | null
   /** RMS input level of the most recent analysed window (0..1). */
   latestLevel: () => number
+  /** Accepted detector results over this stream's lifetime, including silence. */
+  frameCount: () => number
   /** Highest RMS level observed since the last startTask(). */
   maxLevel: () => number
   /** Tear down the audio graph (does not stop the MediaStream itself). */
@@ -98,6 +100,13 @@ export function createF0Stream(
   const assembler = createFrameAssembler(FRAME_HOP_SECONDS)
   let takeStart = audioContext.currentTime
   let disposed = false
+  let frameCount = 0
+
+  const ingest = (frame: PitchFrame): void => {
+    if (disposed || !assembler.isRecording()) return
+    frameCount += 1
+    assembler.ingest(frame)
+  }
 
   // --- the audio-clock path -------------------------------------------
 
@@ -179,7 +188,7 @@ export function createF0Stream(
 
       detectorWorker.onmessage = (event: MessageEvent<F0WorkerResult>) => {
         const { atFrame, rms, f0, conf } = event.data
-        assembler.ingest({
+        ingest({
           t: atFrame / audioContext.sampleRate - takeStart,
           f0,
           conf,
@@ -243,7 +252,7 @@ export function createF0Stream(
       if (!assembler.isRecording()) return
 
       const detected = detector.detect(buffer)
-      assembler.ingest({
+      ingest({
         t: audioContext.currentTime - takeStart,
         f0: detected.frequency,
         conf: detected.clarity,
@@ -271,6 +280,7 @@ export function createF0Stream(
     latest: () => assembler.latest(),
     latestSmoothed: () => assembler.latestSmoothed(),
     latestLevel: () => assembler.latestLevel(),
+    frameCount: () => frameCount,
     maxLevel: () => assembler.maxLevel(),
     dispose: () => {
       disposed = true

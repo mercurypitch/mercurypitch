@@ -46,6 +46,8 @@ export interface InteractionDriver {
   latestPitch(): PitchSample | null
   /** Latest input level regardless of voicing (0 when unavailable). */
   latestLevel(): number
+  /** Cumulative detector results, including silence; absent for non-pitch inputs. */
+  pitchFrameCount?(): number
   /** Drain queued discrete intents since the last call. */
   drainIntents(): DiscreteIntent[]
   /** The app's shared audio context (@irchiinnuss/audio-io), so

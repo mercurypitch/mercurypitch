@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => {
     startTask: vi.fn(),
     dispose: vi.fn(),
     latestSmoothed: vi.fn(() => null),
+    frameCount: vi.fn(() => 0),
   }
   return {
     f0,
@@ -59,6 +60,20 @@ beforeEach(() => {
 })
 
 describe('createSingDriver', () => {
+  it('exposes actual detector throughput even while pitch is unvoiced', async () => {
+    mocks.acquire.mockResolvedValue({} as MediaStream)
+    const driver = createSingDriver('mic')
+    expect(driver.pitchFrameCount?.()).toBe(0)
+    await driver.start()
+    mocks.f0.frameCount.mockReturnValueOnce(47).mockReturnValueOnce(47)
+    expect(driver.latestPitch()).toBeNull()
+    expect(driver.latestLevel()).toBe(0)
+    expect(driver.pitchFrameCount?.()).toBe(47)
+    expect(driver.pitchFrameCount?.()).toBe(47)
+    driver.stop()
+    expect(driver.pitchFrameCount?.()).toBe(0)
+  })
+
   it('runs the stream after a normal start and tears it down once', async () => {
     mocks.acquire.mockResolvedValue({} as MediaStream)
     const driver = createSingDriver('mic')

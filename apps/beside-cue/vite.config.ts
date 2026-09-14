@@ -72,6 +72,12 @@ const channel = (mode: string): 'dev' | 'ci' | 'release' => {
 //
 // Every device test that does not need the microphone should just use
 // http -- `vite --host`, no certificate, nothing to accept.
+//
+// `pnpm preview:lan` is the same thing for a PRODUCTION build: it builds,
+// then serves dist on https://<lan-ip>:4173 with the same certificate,
+// because `preview.https` falls back to `server.https`. Frame times are
+// measured on that, not on the dev server, whose unbundled modules and
+// DEV-only checks are not what a player runs.
 const devCert = (): { key: Buffer; cert: Buffer } | undefined => {
   const dir = fileURLToPath(new URL('./.dev-cert', import.meta.url))
   const key = resolve(dir, 'key.pem')

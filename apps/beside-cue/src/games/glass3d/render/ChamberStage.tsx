@@ -41,13 +41,15 @@ import { groundIn, isExciting, isFloorSafe, modeMidi, nearestMode, standingAmpli
 import { createLocomotion, stepLocomotion } from '../sim/locomotion3d'
 import { accuracy, createResonance, stepResonance } from '../sim/resonance3d'
 import type { ShardLaunch } from '../sim/shatter3d'
-import { solveShatter } from '../sim/shatter3d'
+import { shatterDuration, solveShatter } from '../sim/shatter3d'
 import { canShift, shiftOctaves, voiceCentre, writeVoiceCentre, } from '../voice-range'
 import { CHAMBER_CONFIG } from '../world3d-config'
 import type { ChamberView } from './Chamber3D'
 import { createChamber3D } from './Chamber3D'
 import { ChamberGuide, guideSeen } from './ChamberGuide'
 import { ModeLadder } from './ModeLadder'
+import { createStageFrame } from './stage-frame'
+import { StageCorner } from './StageCorner'
 import { TouchControls } from './TouchControls'
 
 const MIC_ID = 'glass3d-chamber'
@@ -221,6 +223,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
    * rather than a signal per verb. */
   let devActions: readonly DevAction[] = []
   const [dials, setDials] = createSignal(false)
+  /** The chip and calm mode (render/stage-frame.ts). */
+  const pace = createStageFrame({
+    calm: () => cfg.calm,
+    backend: () => backend(),
+  })
   /**
    * Set while a room is being re-walked from the end card.
    *
@@ -265,7 +272,9 @@ export const ChamberStage = (props: ChamberStageProps) => {
   }
 
   onMount(() => {
+    const sceneFrom = performance.now()
     const r = createChamber3D(canvas, cfg, room())
+    pace.mark('scene', performance.now() - sceneFrom)
     const unbindKeys = bindKeyboard(input, window)
 
     const fit = (): void => {
@@ -551,16 +560,17 @@ export const ChamberStage = (props: ChamberStageProps) => {
       let frame = 0
 
       const tick = (now: number): void => {
+        pace.begin(now)
         const frameSeconds = (now - last) / 1000
         last = now
         wallSeconds += frameSeconds
+        pace.detectorFrames(driver, driver?.pitchFrameCount?.() ?? 0)
 
         // An octave button was pressed since the last frame.
         if (fundamental() !== tunedRoom) retuneRoom()
 
         runLoop(loopState, frameSeconds, cfg.loop, (dt) => {
           elapsed += dt
-
           if (phaseNow === 'cleared') {
             // The beat between rooms. He is still standing in the room
             // he finished, and the next one arrives under him.
@@ -728,7 +738,23 @@ export const ChamberStage = (props: ChamberStageProps) => {
                 launches: breaking.launches,
               }
 
-        r.render(view, frameSeconds)
+        // Calm (P3): full rate while he walks or falls, while glass is in
+        // the air and while one room hands over to the next.
+        const intent = input.read(now)
+        const drawn = pace.draw({
+          input: intent.move !== 0 || intent.jump,
+          voiced: (driver?.latestPitch() ?? null) !== null,
+          moving:
+            (breaking !== null &&
+              wallSeconds - breakAtWall <
+                shatterDuration(breaking.launches, cfg.shatter)) ||
+            phaseNow === 'falling' ||
+            phaseNow === 'cleared' ||
+            !loco.grounded ||
+            Math.abs(loco.vx) > 0.06,
+        })
+        if (drawn !== null) r.render(view, drawn)
+        pace.end()
         frame = requestAnimationFrame(tick)
       }
 
@@ -778,6 +804,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
           fundamental: fundamental(),
           broken: targets.map((t) => t.broken),
           charges: targets.map((t) => t.ring.res),
+          perf: pace.stats(),
           move: (m: number) => input.setMove(m),
           jump: () => input.pulseJump(performance.now()),
           warpTo: (x: number) => {
@@ -801,15 +828,17 @@ export const ChamberStage = (props: ChamberStageProps) => {
     }
 
     void r
-      .init()
+      .init(pace.mark)
       .then(() => {
         fit()
         setBackend(r.backend())
+        pace.refresh()
         begin()
         setReady(true)
       })
       .catch((err: unknown) => {
         setBackend('no GPU')
+        pace.refresh()
         setRenderError(err instanceof Error ? err.message : String(err))
       })
 
@@ -821,6 +850,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       driver?.stop()
       tone.dispose()
       r.dispose()
+      pace.dispose()
       goToRoom = null
       delete (window as unknown as Record<string, unknown>).__w3c
     })
@@ -841,6 +871,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
     if (micStarting) return
     micStarting = true
     setMicError(null)
+    pace.micAsked()
     tone.start()
     try {
       await applyPreferredInput()
@@ -858,6 +889,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
         driver = null
         return
       }
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -873,6 +905,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
     driver?.stop()
     driver = null
     setMicError(null)
+    pace.micAsked()
     // The switch may be the first way in: the game's tone starts with it.
     if (!started()) tone.start()
     try {
@@ -885,6 +918,7 @@ export const ChamberStage = (props: ChamberStageProps) => {
       }
       // The switch IS the retry. Leaving the gate up after a device that
       // works is what put two drivers on the same capture.
+      pace.micLive()
       setStarted(true)
     } catch (err) {
       setMicError(micErrorLine(err))
@@ -898,17 +932,11 @@ export const ChamberStage = (props: ChamberStageProps) => {
     <div class="stage3d" classList={{ 'has-controls': started() }}>
       <canvas class="stage3d__canvas" ref={canvas} />
 
-      <span class="stage3d__chip">{backend()}</span>
-
-      <Show when={DevDials !== null}>
-        <button
-          type="button"
-          class="dev-dials__open"
-          onClick={() => setDials((on) => !on)}
-        >
-          dials
-        </button>
-      </Show>
+      <StageCorner
+        chipOn={pace.chipOn}
+        lines={pace.lines()}
+        onDials={DevDials === null ? undefined : () => setDials((on) => !on)}
+      />
       <Show when={DevDials !== null && dials()}>
         {(() => {
           const Panel = DevDials!

@@ -103,6 +103,10 @@ export const createSingDriver = (micId: string): InteractionDriver => {
       return f0?.latestSmoothed()?.rms ?? 0
     },
 
+    pitchFrameCount(): number {
+      return f0?.frameCount() ?? 0
+    },
+
     drainIntents(): DiscreteIntent[] {
       return []
     },
