@@ -129,9 +129,17 @@ test.describe('the Top Shelf, every room', () => {
       }
       await shoot(page, info, `${room.id}-top`)
       await move(page, 1)
+      // The cleared beat is brief; the next room may already be climbing
+      // by the time this poll runs. Wait for the lasting transition instead.
       await expect
-        .poll(async () => (await read(page)).phase, { timeout: 15_000 })
-        .not.toBe('climbing')
+        .poll(
+          async () => {
+            const state = await read(page)
+            return state.room !== room.id || state.phase === 'done'
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true)
       await move(page, 0)
     }
     await expect
