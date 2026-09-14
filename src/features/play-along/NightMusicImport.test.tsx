@@ -159,6 +159,11 @@ describe('NightMusicImport', () => {
     controller.receive([midi()])
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Add music')
     expect(screen.getByText('The existing song')).toBeInTheDocument()
+    expect(screen.getAllByText('melody.mid')).toHaveLength(1)
+    expect(
+      screen.queryByText(/Nothing starts playing automatically/),
+    ).toBeNull()
+    expect(screen.queryByText(/Saved music stays in your library/)).toBeNull()
     expect(run).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: /Load this score/ }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())

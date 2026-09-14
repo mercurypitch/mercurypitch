@@ -7,7 +7,7 @@ import { authVersion } from '@/db/services/user-service'
 import { balanceVersion } from '@/stores/billing-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/uvr-store'
 import { loadNightAudioFacts } from './night-audio-access'
-import type { NightAudioFacts } from './night-audio-eligibility'
+import type { NightAudioEligibility, NightAudioFacts, } from './night-audio-eligibility'
 import { nightAudioEligibility } from './night-audio-eligibility'
 import { readNightAudioPreferences, saveNightAudioPreferences, } from './night-audio-preferences'
 import type { NightMusicAction } from './night-music-import'
@@ -81,6 +81,21 @@ export function NightAudioChoices(props: {
       action.audio.target,
     )
   }
+  const sharedAccess = createMemo(() => {
+    const choices = actions().map((action) =>
+      action.unavailable === undefined ? access(action) : null,
+    )
+    const first = choices[0]
+    return choices.length > 1 &&
+      first &&
+      choices.every(
+        (choice) =>
+          choice?.message === first.message &&
+          choice?.recovery === first.recovery,
+      )
+      ? first
+      : null
+  })
   const chooseMode = (mode: 'local' | 'server') => {
     auto = false
     try {
@@ -106,6 +121,12 @@ export function NightAudioChoices(props: {
     })
     void props.controller.run(action, uvrProcessingMode())
   }
+  const recover = (section: NonNullable<NightAudioEligibility['recovery']>) => {
+    auto = false
+    if (section === 'retry') refresh()
+    else if (section === 'cloud') chooseMode('server')
+    else props.controller.resolveAccess(section)
+  }
   createEffect(() => {
     if (!auto || !facts()) return
     auto = false
@@ -124,14 +145,11 @@ export function NightAudioChoices(props: {
     )
       void props.controller.run(action, automaticMode)
     else
-      setPreferenceNotice(
-        'Queued for you: the preferred preparation is unavailable. Choose an available option when you are ready.',
-      )
+      setPreferenceNotice('Auto-separation unavailable. Choose another option.')
   })
 
   return (
     <section class={styles.audioChoices} aria-label="Audio preparation options">
-      <h3>Where to separate</h3>
       <div class={styles.method} role="group" aria-label="Processing method">
         <button
           type="button"
@@ -160,8 +178,8 @@ export function NightAudioChoices(props: {
       </div>
       <p class={styles.methodNote}>
         {uvrProcessingMode() === 'local'
-          ? 'Audio processing stays on this device. The first run downloads the separation model.'
-          : 'Audio is sent to our cloud GPU for separation. Check the estimate below before starting.'}
+          ? 'First use downloads the separation model.'
+          : 'Audio uploads to our cloud GPU for processing.'}
       </p>
       <Show when={failure()}>
         <p class={shared.error} role="alert">
@@ -175,6 +193,18 @@ export function NightAudioChoices(props: {
         <p class={shared.notice} role="status">
           Checking saved parts and preparation options…
         </p>
+      </Show>
+      <Show when={sharedAccess()}>
+        {(choice) => (
+          <div class={styles.accessNote} role="status">
+            <span>{choice().message}</span>
+            <Show when={choice().recovery}>
+              {(recovery) => (
+                <RecoveryButton recovery={recovery()} onRecover={recover} />
+              )}
+            </Show>
+          </div>
+        )}
       </Show>
       <div class={styles.audioActions}>
         <For each={actions()}>
@@ -190,36 +220,16 @@ export function NightAudioChoices(props: {
                 onClick={() => run(action)}
               >
                 <strong>{action.label}</strong>
-                <span>{action.unavailable ?? action.detail}</span>
+                <span>
+                  {action.unavailable ??
+                    (sharedAccess()
+                      ? action.detail
+                      : (access(action)?.message ?? action.detail))}
+                </span>
               </button>
-              <Show when={access(action)}>
-                {(choice) => (
-                  <>
-                    <p class={styles.accessNote}>{choice().message}</p>
-                    <Show when={choice().recovery}>
-                      {(recovery) => (
-                        <button
-                          class={styles.recovery}
-                          type="button"
-                          onClick={() => {
-                            auto = false
-                            const section = recovery()
-                            if (section === 'retry') refresh()
-                            else if (section === 'cloud') chooseMode('server')
-                            else props.controller.resolveAccess(section)
-                          }}
-                        >
-                          {recovery() === 'account'
-                            ? 'Sign in'
-                            : recovery() === 'credits'
-                              ? 'Get credits'
-                              : recovery() === 'cloud'
-                                ? 'Use Cloud'
-                                : 'Retry check'}
-                        </button>
-                      )}
-                    </Show>
-                  </>
+              <Show when={!sharedAccess() && access(action)?.recovery}>
+                {(recovery) => (
+                  <RecoveryButton recovery={recovery()} onRecover={recover} />
                 )}
               </Show>
             </div>
@@ -237,10 +247,7 @@ export function NightAudioChoices(props: {
           >
             Automatically separate new songs
           </MercuryCheckbox>
-          <p>
-            Use this method and the last separation you choose in this room. If
-            unavailable, keep the song queued. Playback stays paused.
-          </p>
+          <p>Reuse this method and separation choice.</p>
         </div>
       </Show>
       <Show when={preferenceNotice()}>
@@ -249,5 +256,26 @@ export function NightAudioChoices(props: {
         </p>
       </Show>
     </section>
+  )
+}
+
+function RecoveryButton(props: {
+  recovery: NonNullable<NightAudioEligibility['recovery']>
+  onRecover: (recovery: NonNullable<NightAudioEligibility['recovery']>) => void
+}) {
+  return (
+    <button
+      class={styles.recovery}
+      type="button"
+      onClick={() => props.onRecover(props.recovery)}
+    >
+      {props.recovery === 'account'
+        ? 'Sign in'
+        : props.recovery === 'credits'
+          ? 'Get credits'
+          : props.recovery === 'cloud'
+            ? 'Use Cloud'
+            : 'Retry check'}
+    </button>
   )
 }
