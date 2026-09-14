@@ -39,6 +39,7 @@ test('a break drops the pixel ratio for its burst and taps the hand in order', a
       },
     })
   })
+  await page.clock.install()
   await page.goto('/?devSeed')
   await page.getByRole('button', { name: /B-side games/ }).click()
   await page.getByRole('button', { name: /The Cabinet/ }).click()
@@ -54,6 +55,10 @@ test('a break drops the pixel ratio for its burst and taps the hand in order', a
       { timeout: 25_000 },
     )
     .toBeGreaterThan(0)
+  // This checks a timely sequence. Software GPU frames can take longer
+  // than the production 100 ms haptic deadline, which correctly drops
+  // stale taps; wall-clock stalls are covered by impact/haptics tests.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100)
 
   // Every width the canvas is given from here on, once each.
   const css = await page.evaluate(() => {
@@ -84,6 +89,12 @@ test('a break drops the pixel ratio for its burst and taps the hand in order', a
       const w = window as unknown as { __widths: number[]; __felt: unknown[] }
       return { widths: [...w.__widths], felt: [...w.__felt] }
     })
+  await page.clock.runFor(16)
+  expect((await probe()).widths).toEqual([Math.floor(css)])
+  // Let the initial port import settle before advancing the virtual
+  // clock beyond the crack's deadline. The motor must already feel it.
+  await expect.poll(async () => (await probe()).felt).toEqual([35])
+  await page.clock.runFor(1_250)
   // Down at the crack and back when the burst is over: two scripted
   // steps, never a controller hunting over frames.
   await expect
