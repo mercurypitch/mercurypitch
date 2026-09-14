@@ -1,12 +1,12 @@
 {
-  "revision": "besidecue-v1-selected-voices-01",
+  "revision": "besidecue-v1-selected-voices-03",
   "language": "en",
   "selectedDesigns": {
-    "corky": "02-I",
+    "corky": "Flow J2 (2026-09-14)",
     "sugarlump": "02-E",
     "the-scroll": "02-F"
   },
-  "sourceNote": "Greeting and six Pull clips are edited from selected auditions; 24 additional Corky clips generated with the saved selected design.",
+  "sourceNote": "Greeting and six Pull clips are edited from selected auditions. Corky was recast on 2026-09-14: his greeting is cut from audition J2 and his other 24 clips are generated with the saved J2 design. J2 was designed from the Google Flow Corky voice description with the Flow greeting take as reference audio.",
   "independentTranscription": {
     "method": "Local whisper.cpp1.9.1 base.en; no expected-text prompt. Post-recognition sequence alignment maps word comparisons to canonical line IDs.",
     "modelSha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
@@ -21,669 +21,633 @@
     {
       "lineId": "corky.onboarding.greeting",
       "speaker": "corky",
-      "sourceKind": "cut from user-approved audition",
-      "durationMs": 1869.021,
-      "integratedLufs": -21.75,
-      "truePeakDbtp": -7.02,
+      "sourceKind": "cut from user-approved audition J2",
+      "durationMs": 2660,
+      "integratedLufs": -25.4,
+      "truePeakDbtp": -4.59,
       "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
+      "captionBinding": "canonical request; speech-energy cut of the approved preview",
       "captionSha256": "4d74d9080a6e32473f9a83d5956dae4e47dfc8861f0fae159e8a4e4c9febd805",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-greeting__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-greeting__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "d13be42cec087cec140e4ddc5f4d700f54df0de59103210799beb3e535ca03f9",
-          "byteLength": 31003,
-          "durationMs": 1869.021,
+          "sha256": "96246c3ee6c42efff200b7dd7bbe6e022af610a84e7963ff9b2c0e612f580759",
+          "byteLength": 45326,
+          "durationMs": 2660,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match-with-disclosed-asr-ambiguity",
-        "ambiguities": [
-          {
-            "observed": "korky",
-            "comparison_form": "corky",
-            "reason": "Character-name ASR spelling; not a missing or extra word."
-          }
-        ]
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.onboarding.pull-choice",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 7500,
-      "integratedLufs": -17.45,
-      "truePeakDbtp": -2.94,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 7740,
+      "integratedLufs": -22.2,
+      "truePeakDbtp": -4.97,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "4fe141a27c26ba96b3eea66681e7249ce6bd5d8888549412f63248fbd2e7aa23",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-pull-choice__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-pull-choice__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "cb6d032d24d566e175f262bf13c5b0a06bdc0fa0c5d0b8737a4abd081ed53939",
-          "byteLength": 120634,
-          "durationMs": 7500,
+          "sha256": "9e2744ba86ffb7e9f4306953ac3b65035432fc369e72302d4130184ef27615a2",
+          "byteLength": 126704,
+          "durationMs": 7740,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match-with-disclosed-asr-ambiguity",
-        "ambiguities": [
-          {
-            "observed": "pole",
-            "comparison_form": "pull",
-            "reason": "ASR lexical ambiguity for the product term Pull; pronunciation still needs listening approval."
-          }
-        ]
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.onboarding.cue-context",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 7180,
-      "integratedLufs": -19.41,
-      "truePeakDbtp": -3.01,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 7820,
+      "integratedLufs": -22.19,
+      "truePeakDbtp": -4.35,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "2996fcb0665b33eda5d12c259104ef7171804f608a98f83f4ee0f05c213dafe8",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-cue-context__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-cue-context__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "92e86dfb0749db6a1b903520d255495ca73f2774a1a8821a1dd0db9225b4648c",
-          "byteLength": 116548,
-          "durationMs": 7180,
+          "sha256": "5b6d002cbb7262984ba15db4b9fbac011b8b5159806e1648fae972e3bf4f07ff",
+          "byteLength": 125841,
+          "durationMs": 7820,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match-with-disclosed-asr-ambiguity",
-        "ambiguities": [
-          {
-            "observed": "pole",
-            "comparison_form": "pull",
-            "reason": "ASR lexical ambiguity for the product term Pull; pronunciation still needs listening approval."
-          }
-        ]
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.onboarding.sides",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 8140.000000000001,
-      "integratedLufs": -18.75,
-      "truePeakDbtp": -2.9,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 6860,
+      "integratedLufs": -21.13,
+      "truePeakDbtp": -2.99,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "240e4e4671d760c953b737d81ae18e867aeeb92fec6ceba424e5452475dab82a",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-sides__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-sides__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "e363d2832b7d400fb1eaa2cde28fbf33e2d5f8d4ae2be0466e75c598ad57c2c8",
-          "byteLength": 132366,
-          "durationMs": 8140.000000000001,
+          "sha256": "83cca8fc0b3d023666515815dc652d5e7dec24751400ff5bf198f5282d71a824",
+          "byteLength": 108402,
+          "durationMs": 6860,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.onboarding.spin",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 4700,
-      "integratedLufs": -18.7,
-      "truePeakDbtp": -2.52,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 4940,
+      "integratedLufs": -21.62,
+      "truePeakDbtp": -3.07,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "c3ea3b7ac8211bcd9562632e563e17de326c6222c99f81dfa94c0e96311497b3",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-spin__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-spin__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "2e743d26b6538cac8f801e76183d94b04f643be75428964fd23875dae87bd1cb",
-          "byteLength": 75664,
-          "durationMs": 4700,
+          "sha256": "a4609d07da8a8e0fa4280b827e9fd3de87d09c5ec9564e1892ba634961fc8918",
+          "byteLength": 79725,
+          "durationMs": 4940,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.onboarding.saved",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 2780,
-      "integratedLufs": -20.48,
-      "truePeakDbtp": -4.75,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 2540,
+      "integratedLufs": -22.92,
+      "truePeakDbtp": -5.14,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "ca21f3ce0b484c0c6c7c060ebe0f3f8aa51d023a1719d0e637efded841557f06",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-saved__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-saved__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "9d8f099244e081d575255f61d2f33d31f54c9a3b6967828ae125e546c7c3f124",
-          "byteLength": 43884,
-          "durationMs": 2780,
+          "sha256": "7248b6a5bfee2bd90c7a088c92ccbc5e82a4ffff65911547c98769da2d41c138",
+          "byteLength": 38374,
+          "durationMs": 2540,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.onboarding.reminder",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 5340,
-      "integratedLufs": -17.51,
-      "truePeakDbtp": -2.7,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 6140,
+      "integratedLufs": -21.14,
+      "truePeakDbtp": -2.92,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "bc7389a56856a5b26b3570f2286199fefce9b27b27667b7ed0987919ca9e6c71",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-reminder__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-reminder__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "fc7b1a7bbaab0d1e031e18ce5c54022fbd9d186f2a5049dd31feabd6fffc0823",
-          "byteLength": 84821,
-          "durationMs": 5340,
+          "sha256": "0b8a5f508286fac2c3eae1e472146b4f19ad747efc1852dac6bcf76096502f09",
+          "byteLength": 98406,
+          "durationMs": 6140,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.onboarding.close",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 3100,
-      "integratedLufs": -19.72,
-      "truePeakDbtp": -3.94,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 3500,
+      "integratedLufs": -20.54,
+      "truePeakDbtp": -2.86,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "d729954f914357bc4c1e3aef9b5c2341230ce66e4a7e031ba8a435dd97a806ba",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__onboarding-close__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__onboarding-close__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "8047ed6bb97d6357c90fb9e128fb1902eaf31d98901b4d8df1db9220da67547b",
-          "byteLength": 47368,
-          "durationMs": 3100,
+          "sha256": "400ff1ed41ea73d221bbde1b8b79a81df680fd0d51a52a524536ddd85c3030d5",
+          "byteLength": 53335,
+          "durationMs": 3500,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.cue-open.01",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 2190,
-      "integratedLufs": -19.55,
-      "truePeakDbtp": -3.68,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 2300,
+      "integratedLufs": -21.43,
+      "truePeakDbtp": -5.25,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "e15171581fc255f3685a05add36880a8437799cecdd480e25255a4f832343523",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__cue-open-01__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__cue-open-01__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "6f5a9006df77fde7d0f0591ff1bae2c6249451ab5de9f45c8736d96b066c22b9",
-          "byteLength": 35640,
-          "durationMs": 2190,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.cue-open.02",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 2380,
-      "integratedLufs": -16.53,
-      "truePeakDbtp": -2.69,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "5daa5af9afa8dad71937238f88c2802a276125cef93e7efc67cc110aacc0d6cd",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__cue-open-02__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "909af2f565e2e49e868610c75734063b879e3587da6496967266bee80e835061",
-          "byteLength": 38003,
-          "durationMs": 2380,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.cue-open.03",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 1180,
-      "integratedLufs": -15.23,
-      "truePeakDbtp": -2.89,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "5fb720560eb852dba1a22ce7b5c28818a5900e0fcbfe409fd4d05409cc3f9a21",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__cue-open-03__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "60701135fee3d220fba19d679beb161315b11c5f395a3eac1693c3b7ee302159",
-          "byteLength": 17633,
-          "durationMs": 1180,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.side-b.01",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 1980,
-      "integratedLufs": -20.48,
-      "truePeakDbtp": -6.98,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "88d037855c0da7e0291b1a7073649c31534d220bfd0d8da2ec20bb9a47fa3f17",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__side-b-01__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "ec5f022c9c7153411882b2c16f9798c5984e4413d47430e20b2a97dc62f3d556",
-          "byteLength": 29904,
-          "durationMs": 1980,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.side-b.02",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 4059.9999999999995,
-      "integratedLufs": -21.14,
-      "truePeakDbtp": -3.75,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "57a912f4e9c2120d6cb2f3f8664e5d1ad5d49dbe17af809636fd9d48314d884b",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__side-b-02__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "073b60a15152eb3da2a117ad7423502d4cf97e74bbd83ede642e9c06d0bca299",
-          "byteLength": 64249,
-          "durationMs": 4059.9999999999995,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.side-b.03",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 1630,
-      "integratedLufs": -19.57,
-      "truePeakDbtp": -3.42,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "451f8a415308e917f0d008b827bb28ddbfbbb4d76f20b4491467dbf96d54583d",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__side-b-03__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "d4ff3145913d768e6dc16185db622f276afb2b02012834653715ca553d3c0835",
-          "byteLength": 27003,
-          "durationMs": 1630,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.not-now.01",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 1840,
-      "integratedLufs": -19.15,
-      "truePeakDbtp": -3.18,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "9c94366367bc59672c971c209f985ee7853c2e9c70aa9dfeba9eaed760a2158f",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__not-now-01__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "d4b5e9040feb8fe4ca8867e64d6f000a529e806b1b2559f839f7aa18aa29645b",
-          "byteLength": 30391,
-          "durationMs": 1840,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.not-now.02",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 3820,
-      "integratedLufs": -17.81,
-      "truePeakDbtp": -2.85,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "cafe5658d3858c30c42c61d534473a4dfe06c07e767266bd7b10e4e09387ffb2",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__not-now-02__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "7dbe6f5c436a98e1455bbfecd5a4b7ca37107005a19c57deaadf22fae368fbf1",
-          "byteLength": 59776,
-          "durationMs": 3820,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.not-now.03",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 4140,
-      "integratedLufs": -19.6,
-      "truePeakDbtp": -3.18,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "005c598da489f0160c529b659a88ef396d624d9e7ea12ca07fbbaa506d8ec8e7",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__not-now-03__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "800f5f0a0105b5c230a94cff6d4ec88331a1c00b555729f50251af72b0f5d1e7",
-          "byteLength": 65522,
-          "durationMs": 4140,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.return.01",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 3580,
-      "integratedLufs": -19.61,
-      "truePeakDbtp": -4.5,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "db91e3420f647779f4385be19b82070ef9705602b013be9b194972272cccee04",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__return-01__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "7930a96f18dd9698d2e16f4914ee58f8f98997fb00753208e75de687207c1adb",
-          "byteLength": 55131,
-          "durationMs": 3580,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.return.02",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 3340,
-      "integratedLufs": -20.01,
-      "truePeakDbtp": -4.09,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "9c1e31ec76e02d254ef2b8ea0bfb1bdb23cec43c67855c5861567a9da52058aa",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__return-02__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "5e1389b43ecd7d8fbf05996b4923bfcc6cb03f76debac06644c132b79c238ab1",
-          "byteLength": 52104,
-          "durationMs": 3340,
-          "sampleRateHz": 48000,
-          "channels": 1
-        }
-      ],
-      "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
-      }
-    },
-    {
-      "lineId": "corky.return.03",
-      "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 2300,
-      "integratedLufs": -18.41,
-      "truePeakDbtp": -4.88,
-      "fullDecode": true,
-      "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "1c01926781b38c6023bc8f79aea888a9e277c337a508d0a0e9e66c925975e2f1",
-      "sources": [
-        {
-          "src": "/audio/voice/en/corky/en__corky__return-03__v1_01.m4a",
-          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "42d88161966d4938bada13a6b8080002002062d50f78533c52e3a7b4c422e93d",
-          "byteLength": 34393,
+          "sha256": "540342f6ddcbc7302de07794fa9afe9456c6ee9207f9434eae57c01b32c410e9",
+          "byteLength": 36226,
           "durationMs": 2300,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
-      "lineId": "corky.reminder-set.01",
+      "lineId": "corky.cue-open.02",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 2140,
-      "integratedLufs": -17.01,
-      "truePeakDbtp": -3.22,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 2860,
+      "integratedLufs": -22.4,
+      "truePeakDbtp": -3.38,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
-      "captionSha256": "ffb6bade1a07f2793fb0de99847ad7c257bedf478981535b7b28941d7ffc756f",
+      "captionSha256": "5daa5af9afa8dad71937238f88c2802a276125cef93e7efc67cc110aacc0d6cd",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__reminder-set-01__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__cue-open-02__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "866d162d7155a8517001076635586b6c3bcd475210eb130a7be4bb19eab55b5e",
-          "byteLength": 31960,
+          "sha256": "8c0aae66c99bb470da1356b9e8ee178b4290cf7ad94e077c60439dd5585acab6",
+          "byteLength": 44719,
+          "durationMs": 2860,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.cue-open.03",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 1260,
+      "integratedLufs": -22.27,
+      "truePeakDbtp": -5.73,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "5fb720560eb852dba1a22ce7b5c28818a5900e0fcbfe409fd4d05409cc3f9a21",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__cue-open-03__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "a9c508e1deeee70d5bf292f059d24f32d5a7a6f67cc76dbb57ce777afc9c1dda",
+          "byteLength": 18585,
+          "durationMs": 1260,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.side-b.01",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 1980,
+      "integratedLufs": -22.19,
+      "truePeakDbtp": -3.71,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "88d037855c0da7e0291b1a7073649c31534d220bfd0d8da2ec20bb9a47fa3f17",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__side-b-01__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "8355779a724257db51bc3507873448dfa92e6cb147b1b1b3e022f71db257fe31",
+          "byteLength": 30562,
+          "durationMs": 1980,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.side-b.02",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 3740,
+      "integratedLufs": -21.35,
+      "truePeakDbtp": -4.33,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "57a912f4e9c2120d6cb2f3f8664e5d1ad5d49dbe17af809636fd9d48314d884b",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__side-b-02__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "6d7ba8fd2a7ff6f2a2ce7338bd39a9a6ce0e34250f1f9e3da93dd31308f9052a",
+          "byteLength": 58335,
+          "durationMs": 3740,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.side-b.03",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 1580,
+      "integratedLufs": -21.57,
+      "truePeakDbtp": -5.72,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "451f8a415308e917f0d008b827bb28ddbfbbb4d76f20b4491467dbf96d54583d",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__side-b-03__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "62edd1f2bbc4c11e70c73ab5a478d156de9a099da4f27b1032dafbbd3c5853ba",
+          "byteLength": 25005,
+          "durationMs": 1580,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.not-now.01",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 2140,
+      "integratedLufs": -20.13,
+      "truePeakDbtp": -3.41,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "9c94366367bc59672c971c209f985ee7853c2e9c70aa9dfeba9eaed760a2158f",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__not-now-01__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "d310a5429009214ff204241b63cba53ddeace8ebf85ea8990c335b2a1fce60fb",
+          "byteLength": 32483,
           "durationMs": 2140,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.not-now.02",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 3980,
+      "integratedLufs": -22.03,
+      "truePeakDbtp": -3.49,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "cafe5658d3858c30c42c61d534473a4dfe06c07e767266bd7b10e4e09387ffb2",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__not-now-02__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "6a46222078232ec36e503ba643cd2986923c39f2056dfa01c7e837bf8ed51461",
+          "byteLength": 60664,
+          "durationMs": 3980,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.not-now.03",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 3980,
+      "integratedLufs": -22.13,
+      "truePeakDbtp": -3.95,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "005c598da489f0160c529b659a88ef396d624d9e7ea12ca07fbbaa506d8ec8e7",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__not-now-03__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "dbddbb0d3a8b6e2ee653812dd489dea891494560a59478fe59146a71bd154e0e",
+          "byteLength": 62100,
+          "durationMs": 3980,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.return.01",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 3420,
+      "integratedLufs": -21.93,
+      "truePeakDbtp": -3.89,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "db91e3420f647779f4385be19b82070ef9705602b013be9b194972272cccee04",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__return-01__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "338b6fb134c3b00bdf71b15672adc26ed057f91270bcdd70f9ee5520f553129a",
+          "byteLength": 55011,
+          "durationMs": 3420,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.return.02",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 3420,
+      "integratedLufs": -22.49,
+      "truePeakDbtp": -4.97,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "9c1e31ec76e02d254ef2b8ea0bfb1bdb23cec43c67855c5861567a9da52058aa",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__return-02__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "e38b13159de610f5531317f902bf7bacd4d0e81a84a50f3243cfe24d5ca435f9",
+          "byteLength": 53039,
+          "durationMs": 3420,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.return.03",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 2300,
+      "integratedLufs": -20.55,
+      "truePeakDbtp": -2.69,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "1c01926781b38c6023bc8f79aea888a9e277c337a508d0a0e9e66c925975e2f1",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__return-03__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "8fe738816c69e65f66f3327d4870d04f82f5a7eb2f4afdaad14d9db9036df592",
+          "byteLength": 35276,
+          "durationMs": 2300,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
+      }
+    },
+    {
+      "lineId": "corky.reminder-set.01",
+      "speaker": "corky",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 2300,
+      "integratedLufs": -18.94,
+      "truePeakDbtp": -3.26,
+      "fullDecode": true,
+      "captionBinding": "canonical request and provider alignment",
+      "captionSha256": "ffb6bade1a07f2793fb0de99847ad7c257bedf478981535b7b28941d7ffc756f",
+      "sources": [
+        {
+          "src": "/audio/voice/en/corky/en__corky__reminder-set-01__v1_02.m4a",
+          "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
+          "sha256": "09e788e4b04dd6199e043c47f02e5215d9094ed4094803c533ff2ba003fb1ad4",
+          "byteLength": 36015,
+          "durationMs": 2300,
+          "sampleRateHz": 48000,
+          "channels": 1
+        }
+      ],
+      "independentWordScreening": {
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.reminder-set.02",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 3820,
-      "integratedLufs": -17.3,
-      "truePeakDbtp": -3.1,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 4380,
+      "integratedLufs": -21.61,
+      "truePeakDbtp": -4.95,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "7ee0dfe2563956875bff10bec3e1407c57fbee66160c512a753ac0d00423f02e",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__reminder-set-02__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__reminder-set-02__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "0a72e4a906bc99cb112c591f0341e6f5a1d839337c39093ec55607935d4f0a19",
-          "byteLength": 60378,
-          "durationMs": 3820,
+          "sha256": "c70542b74547272d4322f122ffd6221c8735227ce57fa8e69fe58e96a0616aa9",
+          "byteLength": 69235,
+          "durationMs": 4380,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.pressing.01",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
+      "sourceKind": "new exact-caption take in the saved J2 voice",
       "durationMs": 3180,
-      "integratedLufs": -18.13,
-      "truePeakDbtp": -2.97,
+      "integratedLufs": -21.63,
+      "truePeakDbtp": -2.88,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "eca2248625d308c5e663101f70ca4375e777f5aa162ca87b8d831308a3945c05",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__pressing-01__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__pressing-01__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "f6cb8a5381b188bc9fec230c6ab3990a5ee6394b6fed3f3d5700e7876f233e5b",
-          "byteLength": 49225,
+          "sha256": "4393cdf8c6fbbadbb8468e209898658de7e9ef01685ff1c8325bf1888299d77f",
+          "byteLength": 49432,
           "durationMs": 3180,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match-with-disclosed-asr-ambiguity",
+        "ambiguities": [
+          {
+            "observed": "oppressing",
+            "comparison_form": "a pressing",
+            "reason": "whisper.cpp small merges the article; medium hears the exact caption"
+          }
+        ]
       }
     },
     {
       "lineId": "corky.pressing.02",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 3180,
-      "integratedLufs": -16.29,
-      "truePeakDbtp": -2.75,
+      "sourceKind": "new exact-caption take in the saved J2 voice (retake 02)",
+      "durationMs": 3500,
+      "integratedLufs": -22.88,
+      "truePeakDbtp": -5.64,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "cc73823ece290cc5a60b5ff11625e89e9b2c8e9d5dcabe406180f0503025e0f4",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__pressing-02__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__pressing-02__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "9d6d96634883a1a05d359cd81319a019a4ef283264650abb5b147ecde6467b78",
-          "byteLength": 51681,
-          "durationMs": 3180,
+          "sha256": "3cc485ff5c469697f7093fda3df2d2a23c4e4742f97f7887f3ac294a7947d4db",
+          "byteLength": 53398,
+          "durationMs": 3500,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
       "lineId": "corky.pressing.03",
       "speaker": "corky",
-      "sourceKind": "new exact-caption take in user-approved saved voice",
-      "durationMs": 2620,
-      "integratedLufs": -17.42,
-      "truePeakDbtp": -2.6,
+      "sourceKind": "new exact-caption take in the saved J2 voice",
+      "durationMs": 2380,
+      "integratedLufs": -19.78,
+      "truePeakDbtp": -4.42,
       "fullDecode": true,
       "captionBinding": "canonical request and provider alignment",
       "captionSha256": "e9116fbf1e494f4396304eb6975f982fc1cd492cc35330535017e97be98e0b9f",
       "sources": [
         {
-          "src": "/audio/voice/en/corky/en__corky__pressing-03__v1_01.m4a",
+          "src": "/audio/voice/en/corky/en__corky__pressing-03__v1_02.m4a",
           "mimeType": "audio/mp4; codecs=\"mp4a.40.2\"",
-          "sha256": "dccb6b6f380cb23f7bc78b8315b534c7e101da9b9a7d09e9dd1cbd1926f23d25",
-          "byteLength": 40828,
-          "durationMs": 2620,
+          "sha256": "818d920ad54cb6010fbf0d0c34ca69f90130a1f3ef3b9b768700541a027f1a2d",
+          "byteLength": 35730,
+          "durationMs": 2380,
           "sampleRateHz": 48000,
           "channels": 1
         }
       ],
       "independentWordScreening": {
-        "status": "screening-match",
-        "ambiguities": []
+        "status": "screening-match"
       }
     },
     {
@@ -848,5 +812,14 @@
         ]
       }
     }
-  ]
+  ],
+  "corkyRecastScreening": {
+    "date": "2026-09-14",
+    "method": "Local whisper.cpp small on every delivered Corky clip, medium for disagreements; no expected-text prompt.",
+    "linesChecked": 25,
+    "plainScreeningMatches": 24,
+    "matchesWithDisclosedAmbiguity": 1,
+    "linesWithUnexplainedDifferences": 0,
+    "note": "pressing.02 was retaken once because take 01 opened with an extra \"But\"."
+  }
 }

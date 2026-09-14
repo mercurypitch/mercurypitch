@@ -30,7 +30,7 @@ function packageRoot(): string {
 describe('selected V1 character voice delivery', () => {
   it('registers exactly the selected 25 Corky and 42 pull captions once each', () => {
     expect(SELECTED_CHARACTER_VOICE_REVISION).toBe(
-      'besidecue-v1-selected-voices-02',
+      'besidecue-v1-selected-voices-03',
     )
     expect(
       SELECTED_LINES.filter((line) => line.speakerId === 'corky'),
@@ -59,8 +59,10 @@ describe('selected V1 character voice delivery', () => {
           .update(line.text.normalize('NFC'), 'utf8')
           .digest('hex'),
       )
+      // Corky was recast on 2026-09-14 (the Flow J2 voice): his files are take 02.
+      const take = line.speakerId === 'corky' ? 'v1_02' : 'v1_01'
       expect(asset?.sources[0].src, line.id).toBe(
-        `/audio/voice/en/${line.speakerId}/${line.fileStem}__v1_01.m4a`,
+        `/audio/voice/en/${line.speakerId}/${line.fileStem}__${take}.m4a`,
       )
     }
   })

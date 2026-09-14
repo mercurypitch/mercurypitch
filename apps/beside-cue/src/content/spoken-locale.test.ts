@@ -51,7 +51,7 @@ describe('spoken audio locales', () => {
 
       await expect(cue.started).resolves.toEqual({ kind: 'started' })
       expect(played.map((source) => source.src)).toEqual([
-        '/audio/voice/en/corky/en__corky__onboarding-greeting__v1_01.m4a',
+        '/audio/voice/en/corky/en__corky__onboarding-greeting__v1_02.m4a',
       ])
       const translated = getVoiceLines(locale).find(
         (line) => line.id === 'corky.onboarding.greeting',

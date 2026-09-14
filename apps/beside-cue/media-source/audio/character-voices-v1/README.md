@@ -6,7 +6,7 @@ still require Pro. Locked previews do not gain autoplay or selection privileges.
 
 | Character                                           | Selected design                     | Clips                  |
 | --------------------------------------------------- | ----------------------------------- | ---------------------- |
-| Corky                                               | Batch 02 I                          | 25 canonical app lines |
+| Corky                                               | Flow J2 (2026-09-14)                | 25 canonical app lines |
 | Sugarlump                                           | Batch 02 E                          | Meet, Present, Recede  |
 | The Scroll                                          | Batch 02 F                          | Meet, Present, Recede  |
 | The Fog                                             | Basic C                             | Meet, Present, Recede  |
@@ -29,7 +29,7 @@ is registered in this app. Male Pillow comparison takes remain unselected.
 
 `delivery-audit.json` preserves the first 31 deliveries; the additive
 `remaining-pulls-delivery-audit.json` records the other 36. Together they match
-runtime registration revision `besidecue-v1-selected-voices-02`. Both reports
+runtime registration revision `besidecue-v1-selected-voices-03`. Both reports
 describe technical provenance, not legal clearance or exclusive voice ownership.
 
 ## Delivery contract
