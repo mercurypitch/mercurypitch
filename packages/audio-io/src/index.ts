@@ -11,10 +11,13 @@ export {
 export type {
   SharedAudioContextOptions,
   SharedAudioLease,
+  SharedAudioLeaseOptions,
 } from './shared-audio-context'
 export {
   acquireSharedAudioContext,
+  cancelSharedAudioContextSuspension,
   resetSharedAudioContext,
+  resumeSharedAudioContext,
   sharedAudioContextOwners,
   suspendSharedAudioContext,
 } from './shared-audio-context'

@@ -1,7 +1,9 @@
+import type * as SharedAudioContextModule from '@irchiinnuss/audio-io/shared-audio-context'
 import type { BesideCueStateV1, Cue } from '@irchiinnuss/beside-cue-core'
 import { createInitialState } from '@irchiinnuss/beside-cue-core'
 import type { MobileRuntime } from '@irchiinnuss/mobile-runtime'
 import { notificationId } from '@irchiinnuss/mobile-runtime'
+import type * as MobilePlatformModule from '@irchiinnuss/mobile-runtime/platform'
 import { createCustomerSnapshot, createMobileRuntimeProbe, } from '@irchiinnuss/mobile-runtime/testing'
 import { serializeReviewGrant } from '@irchiinnuss/purchase-kit'
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
@@ -20,6 +22,32 @@ import { createCinematicOnboardingPreferenceStore } from './onboarding/cinematic
 import type { V2OnboardingMediaPack } from './onboarding/v2-onboarding-media-pack'
 import type { V2OnboardingPlanDraft, V2OnboardingSessionKind, } from './onboarding/v2-onboarding-runtime'
 import { REVIEW_UNLOCK_STORAGE_KEY } from './purchases/review-access'
+
+const appLifecycle = vi.hoisted(() => ({
+  handler: undefined as ((state: 'active' | 'background') => void) | undefined,
+  unsubscribe: vi.fn(),
+  suspend: vi.fn(),
+  cancelSuspension: vi.fn(),
+  resume: vi.fn(),
+}))
+
+vi.mock('@irchiinnuss/mobile-runtime/platform', async (importOriginal) => ({
+  ...(await importOriginal<typeof MobilePlatformModule>()),
+  onAppState: (handler: (state: 'active' | 'background') => void) => {
+    appLifecycle.handler = handler
+    return appLifecycle.unsubscribe
+  },
+}))
+
+vi.mock(
+  '@irchiinnuss/audio-io/shared-audio-context',
+  async (importOriginal) => ({
+    ...(await importOriginal<typeof SharedAudioContextModule>()),
+    suspendSharedAudioContext: appLifecycle.suspend,
+    cancelSharedAudioContextSuspension: appLifecycle.cancelSuspension,
+    resumeSharedAudioContext: appLifecycle.resume,
+  }),
+)
 
 interface DirectorHarnessProps {
   readonly bSideOptions: readonly {
@@ -748,6 +776,11 @@ async function saveFirstPlanFromWelcome(): Promise<void> {
 }
 
 beforeEach(() => {
+  appLifecycle.handler = undefined
+  appLifecycle.unsubscribe.mockClear()
+  appLifecycle.suspend.mockClear()
+  appLifecycle.cancelSuspension.mockClear()
+  appLifecycle.resume.mockClear()
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   Object.defineProperty(Element.prototype, 'scrollIntoView', {
     configurable: true,
@@ -1298,6 +1331,48 @@ describe('Beside Cue character voice integration', () => {
 
     await waitFor(() => expect(voice.playbacks[0]?.stopCalls).toBe(1))
   })
+
+  it('cancels pending character speech on native background without replaying it on return', async () => {
+    const repository = createMemoryRepository()
+    const voice = createVoiceAudioProbe(true)
+    const view = render(() => (
+      <App
+        config={WELCOME_ONLY_TEST_CONFIG}
+        services={createTestServices(repository, { voiceAudio: voice.port })}
+        contentPack={packWithRecordedLines('pull.scrolling.meet')}
+      />
+    ))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /set up my first plan/iu }),
+    )
+    const pull = screen.getByRole('radio', { name: /endless scrolling/iu })
+    fireEvent.click(pull)
+    await waitFor(() => expect(voice.playbacks).toHaveLength(1))
+
+    expect(appLifecycle.handler).toBeDefined()
+    appLifecycle.handler!('background')
+    expect(voice.playbacks[0]?.stopCalls).toBe(1)
+    expect(appLifecycle.suspend).toHaveBeenCalledOnce()
+    voice.playbacks[0]!.started.resolve()
+    await Promise.resolve()
+    document.dispatchEvent(new Event('visibilitychange'))
+    window.dispatchEvent(new Event('pageshow'))
+    expect(appLifecycle.cancelSuspension).not.toHaveBeenCalled()
+
+    appLifecycle.handler!('active')
+    expect(appLifecycle.cancelSuspension).toHaveBeenCalledOnce()
+    expect(appLifecycle.resume).toHaveBeenCalledOnce()
+    expect(voice.playbacks).toHaveLength(1)
+    fireEvent.click(pull)
+    expect(voice.playbacks).toHaveLength(2)
+    voice.playbacks[1]!.started.resolve()
+    await Promise.resolve()
+    const retiredHandler = appLifecycle.handler!
+    view.unmount()
+    expect(appLifecycle.unsubscribe).toHaveBeenCalledOnce()
+    retiredHandler('background')
+    expect(appLifecycle.suspend).toHaveBeenCalledOnce()
+  })
 })
 
 describe('Beside Cue V2 onboarding integration', () => {
@@ -1746,6 +1821,57 @@ describe('Beside Cue V2 onboarding integration', () => {
     })
     view.unmount()
     expect(output.calls.dispose).toBe(1)
+  })
+
+  it('keeps native inactivity authoritative until both the app and document return', async () => {
+    const output = createAudioOutputProbe()
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    render(() => (
+      <App
+        services={createTestServices(createMemoryRepository(), {
+          audioOutput: output.output,
+        })}
+        contentPack={packWithV2Score()}
+      />
+    ))
+    fireEvent.click(
+      await screen.findByRole('button', { name: /start v2 audio/iu }),
+    )
+    await waitFor(() => expect(output.playbacks).toHaveLength(1))
+    const harness = screen.getByLabelText('V2 onboarding test harness')
+
+    expect(appLifecycle.handler).toBeDefined()
+    appLifecycle.handler!('background')
+    expect(harness).toHaveAttribute('data-foreground', 'false')
+    expect(output.playbacks[0]?.stopCalls).toBe(1)
+    window.dispatchEvent(new Event('pageshow'))
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(harness).toHaveAttribute('data-foreground', 'false')
+    expect(output.playbacks).toHaveLength(1)
+
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    appLifecycle.handler!('active')
+    expect(appLifecycle.cancelSuspension).not.toHaveBeenCalled()
+    expect(harness).toHaveAttribute('data-foreground', 'false')
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(appLifecycle.cancelSuspension).toHaveBeenCalledOnce()
+    expect(harness).toHaveAttribute('data-foreground', 'true')
+    await waitFor(() => expect(output.playbacks).toHaveLength(2))
+
+    window.dispatchEvent(new Event('pagehide'))
+    appLifecycle.handler!('background')
+    appLifecycle.handler!('active')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(harness).toHaveAttribute('data-foreground', 'false')
+    expect(appLifecycle.cancelSuspension).toHaveBeenCalledOnce()
+    window.dispatchEvent(new Event('pageshow'))
+    expect(harness).toHaveAttribute('data-foreground', 'true')
+    expect(appLifecycle.cancelSuspension).toHaveBeenCalledTimes(2)
+    await waitFor(() => expect(output.playbacks).toHaveLength(3))
   })
 })
 

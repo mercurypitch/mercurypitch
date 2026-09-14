@@ -245,6 +245,13 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Rule:** preserve authored note dynamics and calibrate the synth bus against a mixed arrangement. Master makeup cannot fix relative balance, and per-hit sample normalization destroys the kit's soft/hard dynamics. Verify isolated buses and final output with native Web Audio, not only sample readiness or mocked node counts.
 **See:** `src/features/drum-night/play-along/drum-arrangement-player.ts`, `src/lib/score-synth-velocity.ts`
 
+### Finish the release before parking its audio clock
+
+**Symptom:** switching apps cut audio sharply despite an existing release envelope.
+**Cause:** a separate visibility handler suspended the context before its gain automation could finish; an unfinished tail could remain connected until a later resume.
+**Rule:** cancel playback logically at once, grant a bounded audio-clock release through the shared lease, and disconnect cancelled tails if the OS interrupts that release. A foreground route interruption must still preserve active playback. Native events also need the App plugin registered in each consuming app.
+**See:** `packages/audio-io/src/shared-audio-context.ts`, `apps/beside-cue/src/audio/web-audio-output.ts`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

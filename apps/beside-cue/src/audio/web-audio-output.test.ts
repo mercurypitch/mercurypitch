@@ -132,6 +132,10 @@ function createFakeContext(
   let resumeCount = 0
   let closeCount = 0
   let decodeCount = 0
+  const listeners = new Set<() => void>()
+  const emitState = () => {
+    for (const listener of [...listeners]) listener()
+  }
   const context = {
     currentTime: 10,
     destination: {},
@@ -145,11 +149,17 @@ function createFakeContext(
     async resume() {
       resumeCount += 1
       state = 'running'
+      emitState()
     },
     async close() {
       closeCount += 1
       state = 'closed'
+      emitState()
     },
+    addEventListener: (_type: string, listener: () => void) =>
+      listeners.add(listener),
+    removeEventListener: (_type: string, listener: () => void) =>
+      listeners.delete(listener),
     createBufferSource() {
       const source = new FakeSource(operations)
       sources.push(source)
@@ -168,6 +178,7 @@ function createFakeContext(
     operations,
     suspend: () => {
       state = 'suspended'
+      emitState()
     },
     resumeCount: () => resumeCount,
     closeCount: () => closeCount,
@@ -342,6 +353,75 @@ describe('web audio output', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(fake.sources).toHaveLength(0)
+  })
+
+  it('retires a fade interrupted by context suspension before a new voice starts', async () => {
+    const fake = createFakeContext()
+    const output = createWebAudioOutput({
+      createContext: () => fake.context,
+      fetchArrayBuffer: async () => new ArrayBuffer(8),
+      supportsMimeType: () => true,
+    })
+    const first = output.play(request())
+    await first.started
+    first.stop()
+    const staleEnd = fake.sources[0]!.onended
+    expect(fake.sources[0]!.disconnectCount).toBe(0)
+
+    fake.suspend()
+    expect(fake.sources[0]!.disconnectCount).toBe(1)
+    expect(fake.gains.slice(0, 2).map((gain) => gain.disconnectCount)).toEqual([
+      1, 1,
+    ])
+
+    const latest = output.play(request())
+    await latest.started
+    staleEnd?.()
+    first.stop()
+    expect(fake.sources[0]!.disconnectCount).toBe(1)
+    expect(fake.sources[1]!.disconnectCount).toBe(0)
+    fake.sources[1]!.end()
+    await expect(latest.finished).resolves.toBe('ended')
+  })
+
+  it('keeps fade cleanup alive when disposal is followed by OS suspension', async () => {
+    vi.useFakeTimers()
+    const fake = createFakeContext()
+    const output = createWebAudioOutput({
+      createContext: () => fake.context,
+      fetchArrayBuffer: async () => new ArrayBuffer(8),
+      supportsMimeType: () => true,
+    })
+    await output.play(request()).started
+    output.dispose()
+    fake.suspend()
+    expect(fake.sources[0]!.disconnectCount).toBe(1)
+    await vi.advanceTimersByTimeAsync(240)
+    expect(fake.sources[0]!.disconnectCount).toBe(1)
+    expect(fake.closeCount()).toBe(1)
+  })
+
+  it('preserves an active foreground score through a temporary route interruption', async () => {
+    const fake = createFakeContext()
+    const output = createWebAudioOutput({
+      createContext: () => fake.context,
+      fetchArrayBuffer: async () => new ArrayBuffer(8),
+      supportsMimeType: () => true,
+    })
+    const playback = output.play(
+      request({ kind: 'loop', loopStartMs: 0, loopEndMs: 8_000 }),
+    )
+    await playback.started
+    // No app/page exit occurred. Only already-stopped tails need retiring;
+    // an ongoing score keeps the pre-existing pause/resume behavior.
+    fake.suspend()
+    await output.unlock()
+    expect(fake.sources[0]!.stops).toEqual([])
+    expect(fake.sources[0]!.disconnectCount).toBe(0)
+    expect(fake.sources).toHaveLength(1)
+    playback.stop()
+    fake.suspend()
+    expect(fake.sources[0]!.disconnectCount).toBe(1)
   })
 
   it('reports decode and invalid loop failures without starting sound', async () => {

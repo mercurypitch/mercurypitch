@@ -6,17 +6,32 @@ test('replays each character tap and keeps radio keyboard activation working @sm
 }) => {
   await page.setViewportSize({ width: 390, height: 664 })
   await page.addInitScript(() => {
-    const previews: { src: string; element: HTMLMediaElement }[] = []
+    const previews: {
+      bufferId: number
+      source: AudioBufferSourceNode
+      startedAt: number
+      ended: boolean
+    }[] = []
+    const buffers = new Map<AudioBuffer, number>()
     Object.assign(window, { characterPreviews: previews })
-    const play = HTMLMediaElement.prototype.play
-    HTMLMediaElement.prototype.play = function () {
-      if (
-        this instanceof HTMLAudioElement &&
-        this.src.includes('/audio/voice/')
-      ) {
-        previews.push({ src: this.src, element: this })
+    const start = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      // Character previews are one-shots; the onboarding ambience loops.
+      // Observe real decoded playback without replacing its audio graph.
+      if (!this.loop && this.buffer !== null) {
+        if (!buffers.has(this.buffer)) buffers.set(this.buffer, buffers.size)
+        const preview = {
+          bufferId: buffers.get(this.buffer)!,
+          source: this,
+          startedAt: this.context.currentTime,
+          ended: false,
+        }
+        this.addEventListener('ended', () => {
+          preview.ended = true
+        })
+        previews.push(preview)
       }
-      return play.call(this)
+      return start.apply(this, args)
     }
   })
 
@@ -34,8 +49,8 @@ test('replays each character tap and keeps radio keyboard activation working @sm
   const previewSources = () =>
     page.evaluate(() =>
       (
-        window as unknown as { characterPreviews: { src: string }[] }
-      ).characterPreviews.map((preview) => preview.src),
+        window as unknown as { characterPreviews: { bufferId: number }[] }
+      ).characterPreviews.map((preview) => preview.bufferId),
     )
 
   // A card tap activates the native radio, including when it is already checked.
@@ -69,10 +84,19 @@ test('replays each character tap and keeps radio keyboard activation working @sm
       page.evaluate(() => {
         const latest = (
           window as unknown as {
-            characterPreviews: { element: HTMLMediaElement }[]
+            characterPreviews: {
+              source: AudioBufferSourceNode
+              startedAt: number
+              ended: boolean
+            }[]
           }
-        ).characterPreviews.at(-1)?.element
-        return latest !== undefined && !latest.paused && latest.currentTime > 0
+        ).characterPreviews.at(-1)
+        return (
+          latest !== undefined &&
+          !latest.ended &&
+          latest.source.context.state === 'running' &&
+          latest.source.context.currentTime > latest.startedAt
+        )
       }),
     )
     .toBe(true)
@@ -81,11 +105,11 @@ test('replays each character tap and keeps radio keyboard activation working @sm
       page.evaluate(() =>
         (
           window as unknown as {
-            characterPreviews: { element: HTMLMediaElement }[]
+            characterPreviews: { ended: boolean }[]
           }
         ).characterPreviews
           .slice(0, -1)
-          .every((preview) => preview.element.paused),
+          .every((preview) => preview.ended),
       ),
     )
     .toBe(true)
@@ -96,9 +120,9 @@ test('replays each character tap and keeps radio keyboard activation working @sm
       page.evaluate(() =>
         (
           window as unknown as {
-            characterPreviews: { element: HTMLMediaElement }[]
+            characterPreviews: { ended: boolean }[]
           }
-        ).characterPreviews.every((preview) => preview.element.paused),
+        ).characterPreviews.every((preview) => preview.ended),
       ),
     )
     .toBe(true)

@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultAppServices } from './app-services'
 
-class TestAudioContext {
+class TestAudioContext extends EventTarget {
   readonly state = 'running'
 
   async resume(): Promise<void> {}
@@ -36,7 +36,10 @@ describe('Beside Cue app services', () => {
     expect(first.audioOutput).toBeDefined()
     expect(second.audioOutput).toBeDefined()
     expect(first.audioOutput).not.toBe(second.audioOutput)
+    expect(first.voiceAudio).toBeDefined()
+    expect(first.voiceAudio).not.toBe(second.voiceAudio)
     expect(contextsCreated).toBe(0)
+    first.voiceAudio?.dispose()
     await expect(first.audioOutput?.unlock()).resolves.toBe(true)
     await expect(first.audioOutput?.unlock()).resolves.toBe(true)
     expect(contextsCreated).toBe(1)
