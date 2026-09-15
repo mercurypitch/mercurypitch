@@ -348,10 +348,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.beside == 'true'
     runs-on: ubuntu-latest
-    # The complete browser suite alone took 17 minutes on PR #807; all
-    # checks/builds passed before the old 20-minute cap killed cache cleanup.
-    # Leave room for the voice/audio/collision cases and runner variation.
-    timeout-minutes: 35
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
@@ -361,12 +358,6 @@ jobs:
 
       - name: Test Beside Cue
         run: pnpm beside-cue:test
-
-      - name: Install Chromium for Beside Cue browser tests
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Test Beside Cue browser paths
-        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts
 
       - name: Build Beside Cue store app
         # beside-cue:check already typechecks every package, including the app.
@@ -381,6 +372,45 @@ jobs:
       # The Android and iOS native builds live in beside-cue-mobile.yml, which
       # runs the same Gradle gate and additionally publishes an installable APK
       # per pull request. Keeping them here too would build Android twice.
+
+  beside-cue-browser:
+    name: Beside Cue browser tests (${{ matrix.shard }}/2)
+    needs: scope
+    if: needs.scope.outputs.beside == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - name: Install Chromium for Beside Cue browser tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The suite includes real software-rendered 3D scenes. Sharing a job
+      # deadline with checks, units and builds exhausted the old serial gate.
+      # Shard the complete suite, including games-off, but retain one browser
+      # worker per runner so concurrent WebGL contexts do not fight for CPU.
+      - name: Test Beside Cue browser paths
+        timeout-minutes: 25
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --shard=${{ matrix.shard }}/2 --reporter=line,html
+
+      # Keep a step deadline below the job deadline so even a stuck browser
+      # leaves traces. The line reporter also prints each failure immediately.
+      - name: Upload Beside Cue browser failure reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-playwright-shard-${{ matrix.shard }}
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
 
   mercurypitch:
     name: Mercury Pitch
@@ -426,7 +456,17 @@ jobs:
     # matrix's individual jobs stably, and a job skipped by `scope` reports
     # `skipped` rather than `success`, so neither can be required directly.
     needs:
-      [scope, validate, lint, units, e2e, workers, beside-cue, mercurypitch]
+      [
+        scope,
+        validate,
+        lint,
+        units,
+        e2e,
+        workers,
+        beside-cue,
+        beside-cue-browser,
+        mercurypitch,
+      ]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
