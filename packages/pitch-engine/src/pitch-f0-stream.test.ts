@@ -71,6 +71,56 @@ afterEach(() => {
 })
 
 describe('createF0Stream', () => {
+  it('publishes raw capture identity and audio time independently of renderer polling', async () => {
+    const { createF0Stream } = await import('./pitch-f0-stream')
+    const { ctx } = fakeContext(true)
+    Object.defineProperty(ctx, 'currentTime', { value: 10, writable: true })
+    const stream = createF0Stream(ctx, {} as MediaStream)
+    await flush()
+    stream.startTask()
+    const listener = vi.fn()
+    const unsubscribe = stream.subscribeCaptured(listener)
+    const worker = FakeWorker.instances[0]
+    const deliver = (seconds: number, f0: number): void => {
+      worker.onmessage?.(
+        new MessageEvent('message', {
+          data: {
+            atFrame: seconds * 48000,
+            rms: f0 === 0 ? 0 : 0.1,
+            f0,
+            conf: f0 === 0 ? 0 : 0.9,
+          },
+        }),
+      )
+    }
+    // These queued worker results arrive 500 ms after capture, without an rAF.
+    Object.defineProperty(ctx, 'currentTime', { value: 10.6, writable: true })
+    deliver(10.1, 220)
+    deliver(10.125, 220)
+    deliver(10.15, 0)
+    expect(listener).toHaveBeenCalledTimes(3)
+    expect(listener.mock.calls[0][0]).toMatchObject({
+      sequence: 1,
+      capturedAudioSeconds: 10.1,
+      frame: { f0: 220 },
+    })
+    expect(listener.mock.calls[2][0]).toMatchObject({
+      sequence: 3,
+      capturedAudioSeconds: 10.15,
+      frame: { f0: 0, conf: 0 },
+    })
+    const latest = stream.latestCaptured()
+    for (let n = 0; n < 30; n++) expect(stream.latestCaptured()).toBe(latest)
+    expect(listener).toHaveBeenCalledTimes(3)
+    unsubscribe()
+    deliver(10.175, 220)
+    expect(listener).toHaveBeenCalledTimes(3)
+    stream.subscribeCaptured(listener)
+    stream.dispose()
+    deliver(10.2, 220)
+    expect(listener).toHaveBeenCalledTimes(3)
+  })
+
   it('counts every accepted worker result, including equal levels and silence', async () => {
     const { createF0Stream } = await import('./pitch-f0-stream')
     const { ctx } = fakeContext(true)

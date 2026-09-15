@@ -125,7 +125,7 @@ jobs:
                     # so a change here cannot break the web build.
                     mercurypitch=true
                     ;;
-                  apps/beside-cue/*|packages/beside-cue-core/*)
+                  apps/beside-cue/*|packages/beside-cue-core/*|packages/glass-game/*)
                     beside=true
                     ;;
                   packages/audio-io/*|packages/mobile-runtime/*|packages/pitch-engine/*|packages/purchase-kit/*)
