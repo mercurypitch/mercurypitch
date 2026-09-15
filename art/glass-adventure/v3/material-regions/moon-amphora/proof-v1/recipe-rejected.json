@@ -1,0 +1,51 @@
+{
+  "targetBlend": "art/glass-adventure/v3/donors/moon-amphora/prepared.blend",
+  "targetObjects": [
+    "vase_amphora_intact"
+  ],
+  "heightMetres": 0.55,
+  "sampleCoordinatesTopLeft": {
+    "gold": [
+      [
+        1190,
+        166
+      ],
+      [
+        1069,
+        358
+      ],
+      [
+        1453,
+        1549
+      ]
+    ],
+    "glass": [
+      [
+        1280,
+        691
+      ],
+      [
+        1485,
+        1382
+      ]
+    ]
+  },
+  "family": "moon-amphora",
+  "status": "provisional source-region recipe; topology and material boundaries not accepted",
+  "texturedSource": "art/glass-adventure/v2/meshy/moon-amphora-01/donor.glb",
+  "output": "proof-v1",
+  "limits": {
+    "maxDistanceMetres": 0.006,
+    "minMargin": 0.007,
+    "maxChromaDistance": 0.06
+  },
+  "reviewedSamples": "Gold samples lie in visible beige trim islands; gray samples in neutral glass-guide islands. Source atlas annotations must be inspected after extraction.",
+  "normalization": {
+    "uniformScale": 0.28901058851931744,
+    "sourceFootCentre": [
+      -0.00044345855712890625,
+      0.0001398921012878418,
+      -0.952040433883667
+    ]
+  }
+}

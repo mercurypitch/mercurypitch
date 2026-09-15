@@ -1,0 +1,97 @@
+{
+  "status": "passed",
+  "stem": "garden-arcade-01-final-v1",
+  "glbSha256": "72714424b213c2d4d9c094f9b55f5257f7ee18163f7bcbd096f4066d1c872885",
+  "bytes": 6829416,
+  "triangles": 28161,
+  "primitives": 1,
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "meshy_garden_arcade_atlas",
+      "normalTexture": {
+        "index": 0
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 1
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      }
+    }
+  ],
+  "runtimeImages": [
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1683616,
+      "sha256": "be3d065eebbd550b370b7bce5db3f0851b8477ae9f123f993591ee70155216b5"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 2011357,
+      "sha256": "c8963d85bb49b5f6e7b49353ab82111da8562dd6547caeb1026bcd502b55d75c"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1446774,
+      "sha256": "6adff792aa9fff5404b2d9be986742420a4cb5f034b8dbe53f0864f0af7a7973"
+    }
+  ],
+  "packedSourceImages": [
+    {
+      "name": "Image_0",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "sRGB"
+    },
+    {
+      "name": "Image_1",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "Non-Color"
+    },
+    {
+      "name": "Image_2",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "Non-Color"
+    }
+  ],
+  "sourceMissingExternalDependencies": [],
+  "reimportBlenderBounds": {
+    "min": [
+      -2.8317337036132812,
+      -0.4091845750808716,
+      0.0
+    ],
+    "max": [
+      2.8317337036132812,
+      0.4091845452785492,
+      3.0
+    ]
+  },
+  "note": "Structural validation and actual fresh GLB reimport. Visual comparison is a separate gate."
+}

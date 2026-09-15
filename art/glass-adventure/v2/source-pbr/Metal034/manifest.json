@@ -1,0 +1,202 @@
+{
+  "assetId": "Metal034",
+  "role": "brushed-brass",
+  "maps": [
+    {
+      "channel": "basecolor",
+      "providerFile": "Metal034_1K-PNG_Color.png",
+      "variant": "1K-PNG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Color.png",
+        "bytes": 125306,
+        "sha256": "46712eb6b19970d00ac0f35a26035045521531bdd40c415382f7338ab8dd10ea",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "P"
+      },
+      "runtime": {
+        "assetId": "brushed-brass-basecolor",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-basecolor.png",
+        "bytes": 125306,
+        "sha256": "46712eb6b19970d00ac0f35a26035045521531bdd40c415382f7338ab8dd10ea",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "P"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Metal034_1K-PNG_NormalGL.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_NormalGL.png",
+        "bytes": 2692053,
+        "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      },
+      "runtime": {
+        "assetId": "brushed-brass-normal",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-normal.png",
+        "bytes": 2692053,
+        "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Metal034_1K-PNG_Roughness.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Roughness.png",
+        "bytes": 193213,
+        "sha256": "8fe69c25a7dbf2d593ea192d49b756cb60900a8917bcfe7ec4525d5ad44e149e",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "P"
+      },
+      "runtime": {
+        "assetId": "brushed-brass-roughness",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-roughness.png",
+        "bytes": 193213,
+        "sha256": "8fe69c25a7dbf2d593ea192d49b756cb60900a8917bcfe7ec4525d5ad44e149e",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "P"
+      }
+    },
+    {
+      "channel": "metalness",
+      "providerFile": "Metal034_1K-PNG_Metalness.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Metalness.png",
+        "bytes": 798,
+        "sha256": "218dc8075081832ce2b9466d33e82d745508eeffed758cd110789b24989c7086",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "1"
+      },
+      "runtime": {
+        "assetId": "brushed-brass-metalness",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-metalness.png",
+        "bytes": 798,
+        "sha256": "218dc8075081832ce2b9466d33e82d745508eeffed758cd110789b24989c7086",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "1"
+      }
+    },
+    {
+      "channel": "basecolor",
+      "providerFile": "Metal034_2K-JPG_Color.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Color.jpg",
+        "bytes": 387086,
+        "sha256": "6081cee1f5f79feb15264b1ec12726be9d4a2f9950e37411f3cb137b20436fef",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Metal034_2K-JPG_NormalGL.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_NormalGL.jpg",
+        "bytes": 1366956,
+        "sha256": "e3d541476b30d1645bf0857f54b68338486c48202fa4da285f26d1d4f28e72c1",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Metal034_2K-JPG_Roughness.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Roughness.jpg",
+        "bytes": 968605,
+        "sha256": "db38a0b751700bfa56e317e81311bcca4da6f94d598ec84c5da313e220d711fd",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "L"
+      }
+    },
+    {
+      "channel": "metalness",
+      "providerFile": "Metal034_2K-JPG_Metalness.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Metalness.jpg",
+        "bytes": 16545,
+        "sha256": "b65d6b9091747bd81ee58adedcb6209d8ee21b2bde9298d7216989ada85ef622",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "L"
+      }
+    }
+  ],
+  "materialSlot": "museum_brass",
+  "label": "Smooth satin gold",
+  "matchNote": "Project brushed-brass ID is a role alias; source is smooth gold, not a brass scan or strongly directional brushed material. Do not claim otherwise.",
+  "tileMeters": 0.25,
+  "scaleProvenance": "Project fine-grain starting value; provider does not publish a physical size.",
+  "provider": "ambientCG",
+  "providerUrl": "https://ambientcg.com/view?id=Metal034",
+  "license": {
+    "spdx": "CC0-1.0",
+    "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "verifiedUtc": "2026-09-15",
+    "commercialUse": true,
+    "redistribution": true,
+    "attributionRequired": false,
+    "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+  },
+  "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+  "textureRepeatPerMetre": 4.0,
+  "downloads": [
+    {
+      "assetId": "Metal034",
+      "file": "Metal034/Metal034_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Metal034_Kn28jRDr/Metal034_1K-PNG.zip",
+      "bytesExpected": 9007048,
+      "sha256": "1b9e6359607618bd3d07ea2faa881ad3e59555adc244ca4eade215adeb323165",
+      "bytes": 9007048
+    },
+    {
+      "assetId": "Metal034",
+      "file": "Metal034/Metal034_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Metal034_Kn28jRDr/Metal034_2K-JPG.zip",
+      "bytesExpected": 8750881,
+      "sha256": "baede071b0300f0e2d698fa8e122a3e76909389b48d61e34d1a5c8ae7cf2b2c9",
+      "bytes": 8750881
+    }
+  ],
+  "preview": {
+    "path": "art/glass-adventure/v2/source-pbr/_previews/Metal034.webp",
+    "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Metal034.webp",
+    "purpose": "Provider material preview render only, not a runtime channel.",
+    "bytes": 674464,
+    "sha256": "d8f23868ec640588fcf5ad32212d702a41a50510d573f6999b8dd568113ccd1b"
+  },
+  "metalness": {
+    "observedMinimum": 255,
+    "observedMaximum": 255,
+    "recommendedRuntime": "Use scalar metalness=1; loading the constant metalness texture is unnecessary."
+  }
+}

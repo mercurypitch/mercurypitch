@@ -1,0 +1,510 @@
+{
+  "version": 1,
+  "intakeDate": "2026-09-15",
+  "source": "Owner-provided Suno WAV downloads, corresponding to SUNO-AUDIO-PROMPTS.md; exact generation settings not embedded/verified",
+  "status": "Original WAVs archived with byte-identical hashes; no game integration yet",
+  "mastersBytes": 157040798,
+  "tracks": [
+    {
+      "file": "A01_Non-musical Environmental Soundscape For An Open-air Marble Museum High Above....wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "12.400000",
+        "size": "2394638"
+      },
+      "loudness": {
+        "input_i": "-21.64",
+        "input_tp": "-5.66",
+        "input_lra": "9.40",
+        "input_thresh": "-31.93",
+        "output_i": "-18.65",
+        "output_tp": "-4.78",
+        "output_lra": "4.40",
+        "output_thresh": "-29.12",
+        "normalization_type": "dynamic",
+        "target_offset": "-1.35"
+      },
+      "fullDecode": "passed",
+      "id": "A01",
+      "take": "v1",
+      "title": "Air Between the Columns",
+      "originalDirectory": "~/Music",
+      "master": "masters/A01_Non-musical Environmental Soundscape For An Open-air Marble Museum High Above....wav",
+      "sha256": "73722439d53831ccf04d840a8f27914a9c6ee8dc42ced50b044f73a3990ff1e0",
+      "bytes": 2394638,
+      "moveCompleted": true,
+      "preview": "previews/a01-v1.mp3",
+      "audition": {
+        "gainDb": -6.36,
+        "targetLufs": -28,
+        "measuredLufs": -28.01,
+        "truePeakDbTP": -12.05,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 270044,
+        "sha256": "37e5524a58609cc4bd58fbd13a323f44214a58e7ea420ec22cd4efc0b07a227d",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "A02_Quiet Non-musical Ambience Beside A Small Ornamental Water Basin In A Floatin....wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "13.600000",
+        "size": "2625038"
+      },
+      "loudness": {
+        "input_i": "-15.28",
+        "input_tp": "-4.29",
+        "input_lra": "23.60",
+        "input_thresh": "-29.47",
+        "output_i": "-21.67",
+        "output_tp": "-3.52",
+        "output_lra": "10.30",
+        "output_thresh": "-32.51",
+        "normalization_type": "dynamic",
+        "target_offset": "1.67"
+      },
+      "fullDecode": "passed",
+      "id": "A02",
+      "take": "v1",
+      "title": "Garden Water and Stone",
+      "originalDirectory": "~/Music",
+      "master": "masters/A02_Quiet Non-musical Ambience Beside A Small Ornamental Water Basin In A Floatin....wav",
+      "sha256": "7a360fd45d345c8ce5cabfb6ad5c5284bf8e135bda097b70d5a3af813a3f75bd",
+      "bytes": 2625038,
+      "moveCompleted": true,
+      "preview": "previews/a02-v1.mp3",
+      "audition": {
+        "gainDb": -12.72,
+        "targetLufs": -28,
+        "measuredLufs": -27.92,
+        "truePeakDbTP": -17.06,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 276548,
+        "sha256": "30f2464164c3bc12de6377c2dc61840ad80615e375b0a0113ebc5a1c8a99ab40",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "A03_V2_Very Sparse Non-musical Atmospheric Soundscape Inside An Open Marble Pavilion....wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "14.360000",
+        "size": "2770958"
+      },
+      "loudness": {
+        "input_i": "-16.42",
+        "input_tp": "-8.03",
+        "input_lra": "20.50",
+        "input_thresh": "-29.11",
+        "output_i": "-20.21",
+        "output_tp": "-5.51",
+        "output_lra": "8.80",
+        "output_thresh": "-31.07",
+        "normalization_type": "dynamic",
+        "target_offset": "0.21"
+      },
+      "fullDecode": "passed",
+      "id": "A03",
+      "take": "v2",
+      "title": "Quiet Glass Gallery",
+      "originalDirectory": "~/Music",
+      "master": "masters/A03_V2_Very Sparse Non-musical Atmospheric Soundscape Inside An Open Marble Pavilion....wav",
+      "sha256": "606082d874bf26f21b7db985a0b7588d5cd84861f75d7c82ab03071eb74fd30a",
+      "bytes": 2770958,
+      "moveCompleted": true,
+      "preview": "previews/a03-v2.mp3",
+      "audition": {
+        "gainDb": -11.58,
+        "targetLufs": -28,
+        "measuredLufs": -28.01,
+        "truePeakDbTP": -19.61,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 299756,
+        "sha256": "cee0a0c472324f5dd5115bc7c0298fdef6222653281c3a24ddac8a0d1b8457e7",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "A03_Very Sparse Non-musical Atmospheric Soundscape Inside An Open Marble Pavilion....wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "14.600000",
+        "size": "2817038"
+      },
+      "loudness": {
+        "input_i": "-25.10",
+        "input_tp": "-9.83",
+        "input_lra": "14.10",
+        "input_thresh": "-36.40",
+        "output_i": "-19.06",
+        "output_tp": "-3.56",
+        "output_lra": "7.30",
+        "output_thresh": "-29.77",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.94"
+      },
+      "fullDecode": "passed",
+      "id": "A03",
+      "take": "v1",
+      "title": "Quiet Glass Gallery",
+      "originalDirectory": "~/Music",
+      "master": "masters/A03_Very Sparse Non-musical Atmospheric Soundscape Inside An Open Marble Pavilion....wav",
+      "sha256": "3cd382151c30583c9b6b0c68d5e8b153549a4b402260e07e720f6d41b9773577",
+      "bytes": 2817038,
+      "moveCompleted": true,
+      "preview": "previews/a03-v1.mp3",
+      "audition": {
+        "gainDb": -2.9,
+        "targetLufs": -28,
+        "measuredLufs": -28.0,
+        "truePeakDbTP": -12.81,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 320252,
+        "sha256": "706340ea70d50b6fd7405394ac21534e31e3bdcb6fdee757838e5d13714198b3",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "M01_Crystal Light.wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "152.040000",
+        "size": "29205520"
+      },
+      "loudness": {
+        "input_i": "-15.78",
+        "input_tp": "-3.60",
+        "input_lra": "8.00",
+        "input_thresh": "-26.02",
+        "output_i": "-19.93",
+        "output_tp": "-6.06",
+        "output_lra": "7.10",
+        "output_thresh": "-30.06",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.07"
+      },
+      "fullDecode": "passed",
+      "id": "M01",
+      "take": "v1",
+      "title": "Crystal Light",
+      "originalDirectory": "~/Music",
+      "master": "masters/M01_Crystal Light.wav",
+      "sha256": "73c2541111441285644c5525272db146ba5b8e11cb338c83cef87e31c2f6dae0",
+      "bytes": 29205520,
+      "moveCompleted": true,
+      "preview": "previews/m01-v1.mp3",
+      "audition": {
+        "gainDb": -4.22,
+        "targetLufs": -20,
+        "measuredLufs": -20.0,
+        "truePeakDbTP": -7.73,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 3407060,
+        "sha256": "4f9d85c485bcd462b9850bfedaf6b9edc4bd58ce30804d38eb9c9aa185169aaf",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "M02_Museum Quiet.wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "179.880000",
+        "size": "34550812"
+      },
+      "loudness": {
+        "input_i": "-15.98",
+        "input_tp": "-1.99",
+        "input_lra": "6.80",
+        "input_thresh": "-26.16",
+        "output_i": "-19.85",
+        "output_tp": "-5.75",
+        "output_lra": "7.00",
+        "output_thresh": "-29.94",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.15"
+      },
+      "fullDecode": "passed",
+      "id": "M02",
+      "take": "v1",
+      "title": "Museum Quiet",
+      "originalDirectory": "~/Music",
+      "master": "masters/M02_Museum Quiet.wav",
+      "sha256": "8709ad711a0c750618800e848c03253a6f6433a7bd7d91c11a192922b48a9d96",
+      "bytes": 34550812,
+      "moveCompleted": true,
+      "preview": "previews/m02-v1.mp3",
+      "audition": {
+        "gainDb": -4.02,
+        "targetLufs": -20,
+        "measuredLufs": -19.99,
+        "truePeakDbTP": -6.02,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 4024364,
+        "sha256": "386ecc6e376434d5c719f25815cc2a2e8345390d6e120d725de133c5f2a194e2",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "M03_Curious Garden.wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "119.880000",
+        "size": "23030800"
+      },
+      "loudness": {
+        "input_i": "-16.35",
+        "input_tp": "-3.58",
+        "input_lra": "6.30",
+        "input_thresh": "-26.57",
+        "output_i": "-20.05",
+        "output_tp": "-7.23",
+        "output_lra": "6.00",
+        "output_thresh": "-30.17",
+        "normalization_type": "dynamic",
+        "target_offset": "0.05"
+      },
+      "fullDecode": "passed",
+      "id": "M03",
+      "take": "v1",
+      "title": "Curious Garden",
+      "originalDirectory": "~/Music",
+      "master": "masters/M03_Curious Garden.wav",
+      "sha256": "03c16631a2029d74f83f569c46407eaf5d2927caff175665f5fbd6821a387b3f",
+      "bytes": 23030800,
+      "moveCompleted": true,
+      "preview": "previews/m03-v1.mp3",
+      "audition": {
+        "gainDb": -3.65,
+        "targetLufs": -20,
+        "measuredLufs": -20.01,
+        "truePeakDbTP": -7.25,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 2783228,
+        "sha256": "6be3a1de15460542ef1b282abede6bf42114f9420a1d4ebb026c07864182bc4e",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "M04_Welcome to the Tutorial.wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "112.800000",
+        "size": "21671440"
+      },
+      "loudness": {
+        "input_i": "-16.65",
+        "input_tp": "-3.52",
+        "input_lra": "7.30",
+        "input_thresh": "-26.89",
+        "output_i": "-19.31",
+        "output_tp": "-7.11",
+        "output_lra": "6.50",
+        "output_thresh": "-29.42",
+        "normalization_type": "dynamic",
+        "target_offset": "-0.69"
+      },
+      "fullDecode": "passed",
+      "id": "M04",
+      "take": "v1",
+      "title": "Welcome to the Tutorial",
+      "originalDirectory": "~/Music",
+      "master": "masters/M04_Welcome to the Tutorial.wav",
+      "sha256": "7af1ddd3cb693c9cce555a16bd4dfda835f943655c83f1e2e1f1e2fb17735596",
+      "bytes": 21671440,
+      "moveCompleted": true,
+      "preview": "previews/m04-v1.mp3",
+      "audition": {
+        "gainDb": -3.35,
+        "targetLufs": -20,
+        "measuredLufs": -20.0,
+        "truePeakDbTP": -6.85,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 2561708,
+        "sha256": "5fad45b10a381ec6e83821b477285ed6410c54b48b7e8ed615239d1f3123d57b",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "M05_Earned Delight.wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "17.760000",
+        "size": "3423754"
+      },
+      "loudness": {
+        "input_i": "-17.17",
+        "input_tp": "-4.15",
+        "input_lra": "9.00",
+        "input_thresh": "-27.78",
+        "output_i": "-20.13",
+        "output_tp": "-7.50",
+        "output_lra": "4.20",
+        "output_thresh": "-30.46",
+        "normalization_type": "dynamic",
+        "target_offset": "0.13"
+      },
+      "fullDecode": "passed",
+      "id": "M05",
+      "take": "v1",
+      "title": "Earned Delight",
+      "originalDirectory": "~/Music",
+      "master": "masters/M05_Earned Delight.wav",
+      "sha256": "3d437a2134c29dc668313a13846ac5889f014882914cbe00d8c1be31407f2e87",
+      "bytes": 3423754,
+      "moveCompleted": true,
+      "preview": "previews/m05-v1.mp3",
+      "audition": {
+        "gainDb": -2.83,
+        "targetLufs": -20,
+        "measuredLufs": -20.0,
+        "truePeakDbTP": -6.98,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 391964,
+        "sha256": "4575847810ab94cb5cca84c3717fd9abc0d5be79fc45a0ddd9a45de7be0b4af8",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    },
+    {
+      "file": "M06_Nocturnal Puzzle.wav",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "pcm_s16le",
+          "sample_rate": "48000",
+          "channels": 2,
+          "bits_per_sample": 16
+        }
+      ],
+      "format": {
+        "duration": "179.880000",
+        "size": "34550800"
+      },
+      "loudness": {
+        "input_i": "-16.94",
+        "input_tp": "-3.94",
+        "input_lra": "10.30",
+        "input_thresh": "-27.31",
+        "output_i": "-20.26",
+        "output_tp": "-6.43",
+        "output_lra": "7.40",
+        "output_thresh": "-30.38",
+        "normalization_type": "dynamic",
+        "target_offset": "0.26"
+      },
+      "fullDecode": "passed",
+      "id": "M06",
+      "take": "v1",
+      "title": "Nocturnal Puzzle",
+      "originalDirectory": "~/Music",
+      "master": "masters/M06_Nocturnal Puzzle.wav",
+      "sha256": "b89acae56ab63cb7320f9e2e1bb7fbcf7d70bcacbf8efeb2a2a38b42024f0003",
+      "bytes": 34550800,
+      "moveCompleted": true,
+      "preview": "previews/m06-v1.mp3",
+      "audition": {
+        "gainDb": -3.06,
+        "targetLufs": -20,
+        "measuredLufs": -20.0,
+        "truePeakDbTP": -6.98,
+        "codec": "MP3 VBR q2, stereo48kHz",
+        "bytes": 3932828,
+        "sha256": "739dbe32d5fe1e2ac89bb54836f95edac49f50f4dce9051c39e7545f91a785d3",
+        "loopPrepared": false,
+        "gameIntegrated": false
+      }
+    }
+  ],
+  "previewsBytes": 18267752
+}

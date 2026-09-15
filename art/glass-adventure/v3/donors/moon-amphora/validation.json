@@ -1,0 +1,64 @@
+{
+  "status": "passed",
+  "scope": "authoring geometry, physical-material and matched-fracture visual gates; owner approval and runtime audition pending",
+  "ownerApproved": false,
+  "runtimeActivated": false,
+  "geometryReport": "geometry-validation.json",
+  "bundle": {
+    "file": "exports/moon-amphora.glb",
+    "bytes": 11461724,
+    "sha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251"
+  },
+  "intactTriangles": 99976,
+  "fragments": 23,
+  "triangleTotalIncludingShards": 223688,
+  "volumeRelativeError": 7.378036456978628e-10,
+  "visualReview": {
+    "intact": "Inspected actual physical render: clear fluted shell and open mouth; gold handles, collar, laurel and foot follow original donor regions; no visible magenta gaps or detached substitute decoration.",
+    "fracture": "Inspected actual expanded23piece assembly: matching silhouette and gold decoration split with source; glass cut faces exposed; complete foot visible with corrected studio floor; no unrelated confetti.",
+    "fidelity": "Matched high-source/clay views preserve overall shape/handles/cavity/fluting/major relief. Tiny foot beading and narrow recesses are softer; source deviation p95 .509mm,p99 1.992mm,max10.176mm is retained in report."
+  },
+  "proofImages": {
+    "finalized-intact.png": {
+      "size": [
+        1000,
+        1200
+      ],
+      "sha256": "d5499b6381a2a1b4429106239a26f1d3108ecec746e97b7be6d7b686f0ab1b8f"
+    },
+    "finalized-fracture.png": {
+      "size": [
+        1000,
+        1200
+      ],
+      "sha256": "382837be68586909b2003cf3f080782d7b9c810da752ed8ed7b30e24cff28d63"
+    },
+    "high-source-three-quarter.png": {
+      "size": [
+        800,
+        1000
+      ],
+      "sha256": "a9940007802a9db3553b6bb9fb8975835dc1822d50eec8692d67e049128becf4"
+    },
+    "fine-060-lod100k-three-quarter.png": {
+      "size": [
+        800,
+        1000
+      ],
+      "sha256": "af2beb7a2bb9a33bd8e32307365d7e21e576fa8f644b4db1f9f2f40a0c48ea40"
+    },
+    "fine-060-lod100k-mouth.png": {
+      "size": [
+        800,
+        1000
+      ],
+      "sha256": "4ac3bdfe78f168a93fca172747e529f4a5faaed8f93fab5d14ee5b271503a054"
+    }
+  },
+  "limitations": [
+    "99,976-triangle intact and11.46MB fullbundle are not yet accepted as a mobile runtime budget.",
+    "No in-game lighting/reflection or fracture motion audition performed; source preview is unchanged.",
+    "Raw high-detail source and rejected1.2mm preparation remain preserved."
+  ],
+  "glbSha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251"
+}

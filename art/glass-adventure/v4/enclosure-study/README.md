@@ -1,0 +1,15 @@
+# Separate enclosure study
+
+`review.html` presents the two actual bays and the room. `viewer.html?asset=room` provides orbit, pan, zoom and three viewpoints without gameplay or collision; `asset=window` and `asset=screen` inspect the individual exports. `enclosure-study-v1.blend` is the packed editable room. `enclosure-study-v1.glb` is a self-contained authoring preview with shared meshes and three named cameras.
+
+Nine linked bays make an 8.894 × 6.048 m room, 3.6 m high. Four windows alternate with five solid screens; the south side deliberately leaves a 2.491 m entrance. No roof is added. The floor and two plinths reuse the authored V2 kit; glass exhibits, distant columns and pavilion reuse V3 Meshy assets. These surrounding references establish scale and outside glimpses; they do not form a walkable connected course.
+
+Actual scene geometry is **441,851 instanced triangles / 269,663 unique triangles**, including the reference exhibits and backdrop. The exported room is **57,286,688 bytes**, with 26 mesh nodes sharing 14 mesh references and 24 embedded images. This larger authoring bundle is not a proposed shipping room budget. `export-receipt.json` contains its hash and dependency gate; `manifest.json` records all placements and source hashes.
+
+Blender Cycles proofs use 24 samples at 1280×800. Existing CC0 Golden Coast HDRI supplies light; the previously generated museum cloud panorama supplies the camera-visible environment. Source marble PBR uses one UV unit per metre, 1.2 m stone tiles and 0.25 m brass tiles on the study floor. Bay donor atlases retain their original UVs and appearance. Browser lighting is an approximation of this studio setup; screenshots are not live gameplay captures.
+
+The measured window sill is about 0.95 m. This gives a framed outside glimpse to the 1.18–1.45 m study cameras, but a low mascot eye line would be obscured. Keep this visible limitation in the design review. The nominal 60 mm overlaps hide most module joints; irregular donor cornices and right-angle junctions still need production joint and camera-clearance work. No invisible wall or camera clipping workaround is included.
+
+To reproduce, run `build_study.main()` through the Blender MCP background entry using `../architecture/bootstrap.blend`; then open the saved study through the same API and call `build_study.render('Interior')`, `build_study.render('Window sightline')`, or `build_study.render('Room overview')`. `export_study.run()` exports the selected meshes/cameras and checks instance reuse. Scripts create only this study, using immutable source models.
+
+The viewer uses the already running local HTTPS development server, via `/@fs/<absolute-worktree>/art/glass-adventure/v4/enclosure-study/review.html`. No server was started or changed by this task. Its owner controls restart and lifetime. The bounded `browser-check.mjs` uses that server to load all three real models and verify orbit/pan change rendered pixels. Run from this directory with `STUDY_ORIGIN=https://localhost:5187` if the existing server uses that port.

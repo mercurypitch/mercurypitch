@@ -1,0 +1,11 @@
+{
+  "outcome": "SUCCEEDED",
+  "task_id": "01a0a515-0553-772c-b728-8ccf5608bdad",
+  "status": "SUCCEEDED",
+  "progress": 100,
+  "model_urls": {
+    "glb": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a515-0553-772c-b728-8ccf5608bdad/output/model.glb?signed-parameters-omitted",
+    "pre_remeshed_glb": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a515-0553-772c-b728-8ccf5608bdad/output/pre_remeshed_model.glb?signed-parameters-omitted"
+  },
+  "consumed_credits": 30
+}

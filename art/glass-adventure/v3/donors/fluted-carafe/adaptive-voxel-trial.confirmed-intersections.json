@@ -1,0 +1,138 @@
+{
+  "source": "adaptive-voxel-trial.blend",
+  "epsilonMetres": 1e-09,
+  "bvhPairs": 16,
+  "counts": {
+    "crossing": 16
+  },
+  "pairs": [
+    {
+      "pair": [
+        312813,
+        312816
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 5.294628048363448e-05
+    },
+    {
+      "pair": [
+        306622,
+        650052
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 4.384721450623186e-05
+    },
+    {
+      "pair": [
+        502410,
+        502423
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 5.583624424709832e-05
+    },
+    {
+      "pair": [
+        139341,
+        535409
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00013554041437291442
+    },
+    {
+      "pair": [
+        171426,
+        557834
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 3.073120743540825e-05
+    },
+    {
+      "pair": [
+        562423,
+        563210
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00023403090742624144
+    },
+    {
+      "pair": [
+        226742,
+        596113
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 5.504832551636585e-05
+    },
+    {
+      "pair": [
+        190614,
+        571135
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 5.4915081360656925e-05
+    },
+    {
+      "pair": [
+        198198,
+        576487
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 2.4644391321881898e-05
+    },
+    {
+      "pair": [
+        234375,
+        601179
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 6.151115378723315e-05
+    },
+    {
+      "pair": [
+        256193,
+        616349
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 3.4098791365816394e-05
+    },
+    {
+      "pair": [
+        640773,
+        640776
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 7.079544907251378e-05
+    },
+    {
+      "pair": [
+        295746,
+        295970
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 8.958531313509044e-05
+    },
+    {
+      "pair": [
+        90927,
+        499510
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 9.344136291500327e-06
+    },
+    {
+      "pair": [
+        13145,
+        449341
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00042709734855128634
+    },
+    {
+      "pair": [
+        113433,
+        516239
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0001536374055571832
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "method": "OpenVDB isosurface of real high-detail Meshy donor; no adaptivity, pole fixing, source projection or subsequent edge-collapse",
+  "voxelMetres": 0.0012,
+  "adaptivity": 0,
+  "normalization": {
+    "uniformScale": 0.28901058851931744,
+    "sourceFootCentre": [
+      -0.00044345855712890625,
+      0.0001398921012878418,
+      -0.952040433883667
+    ]
+  },
+  "sourceTriangles": 1960452,
+  "triangles": 1637760,
+  "nonManifoldEdges": 0,
+  "selfIntersectionPairs": 0,
+  "signedVolume": 0.007089426360727974,
+  "sampledMaxDistanceToSourceMetres": 0.0012076223501935601,
+  "sampledMaxDistanceFromSourceMetres": 0.011692680418491364,
+  "vertices": 818868,
+  "edges": 2456640,
+  "eulerCharacteristic": -12,
+  "rays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09164261061370954,
+          "normalZ": 0.9999979734420776,
+          "face": 702820
+        },
+        {
+          "heightMetres": 3.098143138323757e-05,
+          "normalZ": -0.999999463558197,
+          "face": 721035
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09179177404015142,
+          "normalZ": 0.9998589754104614,
+          "face": 1521690
+        },
+        {
+          "heightMetres": 3.097397917368312e-05,
+          "normalZ": -0.9999998807907104,
+          "face": 721045
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09179183365782785,
+          "normalZ": 0.9998533725738525,
+          "face": 788698
+        },
+        {
+          "heightMetres": 3.263582190432545e-05,
+          "normalZ": -0.9999998807907104,
+          "face": 1623921
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09171898085722355,
+          "normalZ": 0.999809980392456,
+          "face": 532206
+        },
+        {
+          "heightMetres": 3.061627311506952e-05,
+          "normalZ": -0.999999463558197,
+          "face": 1363172
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09173895277882947,
+          "normalZ": 0.9999289512634277,
+          "face": 1521585
+        },
+        {
+          "heightMetres": 3.066843858195067e-05,
+          "normalZ": -0.9999998807907104,
+          "face": 1539532
+        }
+      ]
+    }
+  ]
+}

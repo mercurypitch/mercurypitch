@@ -1,0 +1,10 @@
+{
+  "voxelMetres": 0.0006,
+  "remeshedPolygons": 3823756,
+  "triangles": 50000,
+  "badEdges": 0,
+  "overlaps": 208,
+  "sampledMaxDistanceToOriginal": 0.0006292033358477056,
+  "sampledMaxDistanceFromOriginal": 0.002579106017947197,
+  "volume": 0.0016138063899323314
+}

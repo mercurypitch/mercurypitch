@@ -1,0 +1,106 @@
+{
+  "version": 3,
+  "assetId": "gilded-column-01",
+  "status": "reimport-validated-awaiting-owner-art-review",
+  "sourceBlend": "sources/gilded-column-01-imported.blend",
+  "sourceRawSha256": "28745214840c9903badc944268ee1feed18c7041207e76a4d8b173a7a87e7312",
+  "normalization": {
+    "uniformScale": 1.5764349700523181,
+    "sourceBlenderPivot": [
+      -0.0006830021739006042,
+      0.0005424171686172485,
+      -0.9519820213317871
+    ],
+    "canonicalHeightMetres": 3,
+    "gltfUp": "+Y",
+    "gltfFront": "+Z",
+    "pivot": "foot-center"
+  },
+  "geometry": {
+    "sourceTriangles": 23148,
+    "targetTriangles": 24000,
+    "finalTriangles": 23148,
+    "distanceMetric": {
+      "sourceToFinal": {
+        "sampledVertices": 5746,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      },
+      "finalToSource": {
+        "sampledVertices": 5746,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      }
+    }
+  },
+  "materials": {
+    "strategy": "Preserved combined donor PBR atlas; ivory/gold/verde regions are not globally replaced by palette aliases",
+    "slot": "meshy_gilded_column_atlas",
+    "packedSourceResolution": 2048,
+    "runtimeResolution": 1024,
+    "estimatedDecodedMiBWithMipmaps": 16,
+    "textureMemoryNote": "Three 1K RGBA8 maps + full mip chain, shared by all column instances; excludes driver overhead"
+  },
+  "edits": [
+    "Uniform fit and foot-center origin",
+    "Original donor triangles and UVs retained; no decimation or synthesized replacement geometry",
+    "Shared 1K PNG runtime derivatives of original donor PBR atlas"
+  ],
+  "textures": [
+    {
+      "name": "Image_0",
+      "path": "exports/gilded-column-01-final-v2-textures/atlas-0.png",
+      "colorSpace": "sRGB",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "c54d2b1454c3e191458268e45a23a9cffc63f0c32772c11cd1975704dcd06c1e"
+    },
+    {
+      "name": "Image_1",
+      "path": "exports/gilded-column-01-final-v2-textures/atlas-1.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "39f472a0c87147d012e84d1c531af974849e06c38b877310b684fa6120129874"
+    },
+    {
+      "name": "Image_2",
+      "path": "exports/gilded-column-01-final-v2-textures/atlas-2.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "b909623e3b6132c913c88f7f146d3d4ef4fd0d472770cd1bcfd9975fa930d161"
+    }
+  ],
+  "blend": {
+    "path": "sources/gilded-column-01-final-v2.blend",
+    "sha256": "30317e0c10ddcbf82945a37ff53c554115dedeec2a5dd2ab4e2f6dd06ec471b3",
+    "bytes": 9157850
+  },
+  "glb": {
+    "path": "exports/gilded-column-01-final-v2.glb",
+    "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946",
+    "bytes": 6031316
+  },
+  "visualApproval": "Agent comparison passed: original form and restrained champagne-gold regions retained. Owner art approval and in-game placement pending.",
+  "runtimeActivated": false,
+  "proofs": [
+    "proofs/gilded-column-01-final-v2-three-quarter.png",
+    "proofs/gilded-column-01-final-v2-capital.png",
+    "proofs/gilded-column-01-final-v2-back.png"
+  ],
+  "knownLimitations": [
+    "Original Meshy small capital irregularities retained; no synthetic carving replacement",
+    "One combined donor atlas, not separate ivory/gold/verde material groups; must preserve authored map",
+    "1K derivatives slightly soften close-up relief relative to 2K source",
+    "23,148 triangles intentionally retained because 12k audition damaged appearance",
+    "Canonical 3m height; requires explicit uniform scene fit and clearance checks",
+    "No runtime activation or physical-device performance claim"
+  ]
+}

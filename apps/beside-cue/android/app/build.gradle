@@ -10,6 +10,14 @@ ext.debugKeystoreName = "beside-cue-debug.jks"
 ext.fallbackVersionName = "0.1.0"
 apply from: "$rootDir/../../../gradle/signing.gradle"
 
+// The store keeps microphone access off. Opt in for a matching games
+// web bundle; no flavors or CI task/output names change.
+def gamesProperty = providers.gradleProperty('besideCueGames').getOrElse('0')
+if (!(gamesProperty in ['0', '1'])) {
+    throw new GradleException('besideCueGames must be 0 (store) or 1 (games)')
+}
+def gamesEnabled = gamesProperty == '1'
+
 android {
     namespace = "com.irchiinnuss.besidecue"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -30,6 +38,46 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    if (gamesEnabled) {
+        sourceSets {
+            debug.manifest.srcFile 'src/games/AndroidManifest.xml'
+            release.manifest.srcFile 'src/games/AndroidManifest.xml'
+        }
+    }
+}
+
+// Check at asset merge (not configuration or manifest inspection), so a stale
+// Capacitor copy cannot silently pair game code with the store permissions.
+android.applicationVariants.all { variant ->
+    variant.mergeAssetsProvider.configure {
+        inputs.property('besideCueGames', gamesEnabled)
+        doFirst {
+            def publicDir = file('src/main/assets/public')
+            def marker = new File(publicDir, 'native-games-profile.json')
+            def hasGameAssets = ['games', 'models', 'ort'].any { new File(publicDir, it).exists() }
+            if (!gamesEnabled) {
+                if (marker.exists() || hasGameAssets) {
+                    throw new GradleException('Store profile contains games assets. Rebuild with VITE_BESIDE_CUE_GAMES=0 and run cap sync, or use native:games.')
+                }
+            } else {
+                if (!marker.isFile()) {
+                    throw new GradleException('Games profile needs a verified web bundle. Run pnpm native:games --platform android first.')
+                }
+                def profile = new groovy.json.JsonSlurper().parse(marker)
+                def index = new File(publicDir, 'index.html')
+                def indexHash = index.isFile() ? java.security.MessageDigest.getInstance('SHA-256').digest(index.bytes).encodeHex().toString() : ''
+                if (profile.schema != 1 || profile.profile != 'games' || profile.platform != 'android' || profile.indexSha256 != indexHash) {
+                    throw new GradleException('Games web bundle provenance does not match this Android package. Run native:games again.')
+                }
+                for (asset in ['models/swiftf0.onnx', 'ort/ort-wasm-simd-threaded.mjs', 'ort/ort-wasm-simd-threaded.wasm', 'games/glass3d/merc.glb', 'games/adventure/manifest.json', 'games/adventure/platform-kit.glb', 'games/adventure/vessels.glb', 'games/adventure/legend-slab.glb', 'games/adventure/floor-marble.webp', 'games/adventure/legend-johnny-cash.webp', 'games/adventure/museum-sky.webp']) {
+                    def required = new File(publicDir, asset)
+                    if (!required.isFile() || required.length() == 0) {
+                        throw new GradleException("Games native bundle is missing ${asset}")
+                    }
+                }
+            }
         }
     }
 }

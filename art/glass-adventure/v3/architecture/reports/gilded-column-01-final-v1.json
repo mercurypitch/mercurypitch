@@ -1,0 +1,92 @@
+{
+  "version": 3,
+  "assetId": "gilded-column-01",
+  "status": "rejected-after-reimport-visual-comparison",
+  "sourceBlend": "sources/gilded-column-01-imported.blend",
+  "sourceRawSha256": "28745214840c9903badc944268ee1feed18c7041207e76a4d8b173a7a87e7312",
+  "normalization": {
+    "uniformScale": 1.5764349700523181,
+    "sourceBlenderPivot": [
+      -0.0006830021739006042,
+      0.0005424171686172485,
+      -0.9519820213317871
+    ],
+    "canonicalHeightMetres": 3,
+    "gltfUp": "+Y",
+    "gltfFront": "+Z",
+    "pivot": "foot-center"
+  },
+  "geometry": {
+    "sourceTriangles": 23148,
+    "targetTriangles": 12000,
+    "finalTriangles": 11999,
+    "distanceMetric": {
+      "sourceToFinal": {
+        "sampledVertices": 5746,
+        "maxMetres": 0.012235159985721111,
+        "p95Metres": 0.002189327497035265
+      },
+      "finalToSource": {
+        "sampledVertices": 6545,
+        "maxMetres": 0.011179795488715172,
+        "p95Metres": 0.0030563240870833397
+      }
+    }
+  },
+  "materials": {
+    "strategy": "Preserved combined donor PBR atlas; ivory/gold/verde regions are not globally replaced by palette aliases",
+    "slot": "meshy_gilded_column_atlas",
+    "packedSourceResolution": 2048,
+    "runtimeResolution": 1024
+  },
+  "edits": [
+    "Uniform fit and foot-center origin",
+    "Decimate collapse on donor triangles; no synthesized replacement geometry",
+    "Shared 1K PNG runtime derivatives of original donor PBR atlas"
+  ],
+  "textures": [
+    {
+      "name": "Image_0",
+      "path": "exports/gilded-column-01-final-v1-textures/atlas-0.png",
+      "colorSpace": "sRGB",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "c54d2b1454c3e191458268e45a23a9cffc63f0c32772c11cd1975704dcd06c1e"
+    },
+    {
+      "name": "Image_1",
+      "path": "exports/gilded-column-01-final-v1-textures/atlas-1.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "39f472a0c87147d012e84d1c531af974849e06c38b877310b684fa6120129874"
+    },
+    {
+      "name": "Image_2",
+      "path": "exports/gilded-column-01-final-v1-textures/atlas-2.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "b909623e3b6132c913c88f7f146d3d4ef4fd0d472770cd1bcfd9975fa930d161"
+    }
+  ],
+  "blend": {
+    "path": "sources/gilded-column-01-final-v1.blend",
+    "sha256": "8df33ac68e4aca329378d0b3fa8a63fd0f7beea5d50eacb4e1d943dce98bd367",
+    "bytes": 8657030
+  },
+  "glb": {
+    "path": "exports/gilded-column-01-final-v1.glb",
+    "sha256": "985abff1fbacc134f327be84a006d8336d554b9633878528c5babb2fc941eb4b",
+    "bytes": 5495932
+  },
+  "visualApproval": "rejected: 12k decimation visibly facets flutes, cornice and capital; do not activate",
+  "runtimeActivated": false,
+  "supersededBy": "gilded-column-01-final-v2"
+}

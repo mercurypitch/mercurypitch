@@ -1,0 +1,41 @@
+{
+  "id": "01a0a50c-a548-77e0-ae7b-04a264ef258d",
+  "type": "image-to-3d",
+  "name": "",
+  "art_style": "",
+  "object_prompt": "",
+  "style_prompt": "",
+  "negative_prompt": "",
+  "texture_prompt": "",
+  "texture_image_url": "",
+  "text_style_prompt": "",
+  "image_style_url": "",
+  "status": "SUCCEEDED",
+  "created_at": 1789475466601,
+  "progress": 100,
+  "started_at": 1789475466605,
+  "finished_at": 1789475610148,
+  "expires_at": 1789734810148,
+  "task_error": null,
+  "model_url": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/model.glb?signed-parameters-omitted",
+  "model_urls": {
+    "glb": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/model.glb?signed-parameters-omitted",
+    "pre_remeshed_glb": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/pre_remeshed_model.glb?signed-parameters-omitted"
+  },
+  "thumbnail_url": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/preview.png?signed-parameters-omitted",
+  "thumbnail_urls": {
+    "back": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/preview_back.png?signed-parameters-omitted",
+    "front": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/preview_front.png?signed-parameters-omitted",
+    "left": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/preview_left.png?signed-parameters-omitted",
+    "right": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/preview_right.png?signed-parameters-omitted"
+  },
+  "texture_urls": [
+    {
+      "base_color": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/texture_0.png?signed-parameters-omitted",
+      "metallic": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/texture_0_metallic.png?signed-parameters-omitted",
+      "roughness": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/texture_0_roughness.png?signed-parameters-omitted",
+      "normal": "https://assets.meshy.ai/c7aac1c3-31ac-44b6-9cf4-c98a0f8c21df/tasks/01a0a50c-a548-77e0-ae7b-04a264ef258d/output/texture_0_normal.png?signed-parameters-omitted"
+    }
+  ],
+  "consumed_credits": 30
+}

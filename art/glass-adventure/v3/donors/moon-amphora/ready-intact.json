@@ -1,0 +1,23 @@
+{
+  "status": "prepared; physical material and fracture proof pending",
+  "mesh": {
+    "triangles": 99976,
+    "vertices": 49942,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.007074068864131597
+  },
+  "materialFaceCounts": {
+    "glass_shell": 61451,
+    "gold_trim": 38525
+  },
+  "sourceProjection": "material-regions/moon-amphora/proof-v3",
+  "boundaryDecision": "Reviewed diagnostic front/back: preserve closest source color only for weak-color boundary faces. No low-confidence geometric correspondence is accepted, and all confident faces remain unchanged.",
+  "resolvedWeakColorFaces": 690,
+  "unresolvedFaces": 0,
+  "footTranslationMetres": -4.5115248212823644e-05,
+  "geometryChanged": "Only recorded standing offset; no source vertices or UV charts modified for material assignment."
+}

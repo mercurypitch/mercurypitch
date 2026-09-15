@@ -1,0 +1,161 @@
+{
+  "assetId": "Marble012",
+  "role": "warm-carrara",
+  "maps": [
+    {
+      "channel": "basecolor",
+      "providerFile": "Marble012_1K-PNG_Color.png",
+      "variant": "1K-PNG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_Color.png",
+        "bytes": 2046204,
+        "sha256": "c3a903a10a1e8273789cd40e3d49fd2cb2e39abcb579294fe8820dc218b55dd6",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      },
+      "formerRuntime": {
+        "assetId": "warm-carrara-basecolor",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-basecolor.png",
+        "bytes": 2046204,
+        "sha256": "c3a903a10a1e8273789cd40e3d49fd2cb2e39abcb579294fe8820dc218b55dd6",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Marble012_1K-PNG_NormalGL.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_NormalGL.png",
+        "bytes": 3488070,
+        "sha256": "d35c6f6a2c57e1853c92b6131be7943cbb2542c95288c238b9ac84188bbb9552",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      },
+      "formerRuntime": {
+        "assetId": "warm-carrara-normal",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-normal.png",
+        "bytes": 3488070,
+        "sha256": "d35c6f6a2c57e1853c92b6131be7943cbb2542c95288c238b9ac84188bbb9552",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Marble012_1K-PNG_Roughness.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_Roughness.png",
+        "bytes": 496768,
+        "sha256": "8c1e88602a73f3cc546bbe9803e5184e32f9f606d293c00023ca8107f52a4d93",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "L"
+      },
+      "formerRuntime": {
+        "assetId": "warm-carrara-roughness",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-roughness.png",
+        "bytes": 496768,
+        "sha256": "8c1e88602a73f3cc546bbe9803e5184e32f9f606d293c00023ca8107f52a4d93",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "L"
+      }
+    },
+    {
+      "channel": "basecolor",
+      "providerFile": "Marble012_2K-JPG_Color.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_Color.jpg",
+        "bytes": 5139092,
+        "sha256": "1e1ef2d556dcda237181590b4a7543a66ea49223ccf2d455000e05f37e8a8ec5",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Marble012_2K-JPG_NormalGL.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_NormalGL.jpg",
+        "bytes": 1418258,
+        "sha256": "0e295859c9e55ba2dd147aed37a674aba90decaf91d3622d5aa8386441020649",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Marble012_2K-JPG_Roughness.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_Roughness.jpg",
+        "bytes": 2166701,
+        "sha256": "d4a906a9739f30f386914a8b8393e64100f340851dc50328e5b91e24fa95ce7a",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "L"
+      }
+    }
+  ],
+  "materialSlot": "museum_ivory",
+  "label": "Light gray veined marble, Carrara-like project role",
+  "matchNote": "Provider names Marble012, not a geological Carrara identification. Raw base color is light cool gray; warm key lighting supplies warmth. Vein density and normal strength need in-scene review.",
+  "tileMeters": 1.2,
+  "scaleProvenance": "Project starting value; provider does not publish a physical size.",
+  "provider": "ambientCG",
+  "providerUrl": "https://ambientcg.com/view?id=Marble012",
+  "license": {
+    "spdx": "CC0-1.0",
+    "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "verifiedUtc": "2026-09-15",
+    "commercialUse": true,
+    "redistribution": true,
+    "attributionRequired": false,
+    "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+  },
+  "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+  "textureRepeatPerMetre": 0.8333333333333334,
+  "downloads": [
+    {
+      "assetId": "Marble012",
+      "file": "Marble012/Marble012_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble012_uZys50mU/Marble012_1K-PNG.zip",
+      "bytesExpected": 12909875,
+      "sha256": "7c733a107be2cc068c8d7a4fb36b548b8e6fdadec5db3dec04b063357078e72b",
+      "bytes": 12909875
+    },
+    {
+      "assetId": "Marble012",
+      "file": "Marble012/Marble012_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble012_uZys50mU/Marble012_2K-JPG.zip",
+      "bytesExpected": 14792073,
+      "sha256": "585c73d1e2dc8747074ef4fa4027795e3556fbe0fa43362c90c90b633f6956db",
+      "bytes": 14792073
+    }
+  ],
+  "preview": {
+    "path": "art/glass-adventure/v2/source-pbr/_previews/Marble012.webp",
+    "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Marble012.webp",
+    "purpose": "Provider material preview render only, not a runtime channel.",
+    "bytes": 595568,
+    "sha256": "1b610cac5e47bc88790f659ef4f0e3d7166c979832adc4d16187fc75153d2746"
+  },
+  "status": "Retained source/reference only; replaced by Marble004 after actual gameplay comparison on 2026-09-15."
+}

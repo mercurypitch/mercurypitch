@@ -41,6 +41,13 @@ import { PitchDetector } from './pitch-detector'
 
 export type { PitchFrame }
 
+/** Raw detector evidence tied to the capture clock, never to display polling. */
+export interface CapturedPitchFrame {
+  frame: PitchFrame
+  sequence: number
+  capturedAudioSeconds: number
+}
+
 /** Human singing range with headroom; keeps YIN off subharmonics. */
 const MIN_FREQUENCY = 60
 const MAX_FREQUENCY = 1600
@@ -62,6 +69,12 @@ export interface F0Stream {
   takeFrames: () => PitchFrame[]
   /** The most recent frame, for live visual feedback (null before any). */
   latest: () => PitchFrame | null
+  /** Raw latest observation with stable identity and original capture time. */
+  latestCaptured: () => CapturedPitchFrame | null
+  /** Each accepted raw result, independent of requestAnimationFrame polling. */
+  subscribeCaptured: (
+    listener: (capture: CapturedPitchFrame) => void,
+  ) => () => void
   /**
    * The most recent frame with a display/gameplay smoothing pass on top of
    * the detector's own stability filter: a median over the last few VOICED
@@ -102,11 +115,20 @@ export function createF0Stream(
   let takeStart = audioContext.currentTime
   let disposed = false
   let frameCount = 0
+  let captured: CapturedPitchFrame | null = null
+  const captureListeners = new Set<(capture: CapturedPitchFrame) => void>()
 
   const ingest = (frame: PitchFrame): void => {
     if (disposed || !assembler.isRecording()) return
     frameCount += 1
     assembler.ingest(frame)
+    const capture = {
+      frame,
+      sequence: frameCount,
+      capturedAudioSeconds: takeStart + frame.t,
+    }
+    captured = capture
+    for (const listener of captureListeners) listener(capture)
   }
 
   // --- the audio-clock path -------------------------------------------
@@ -270,6 +292,7 @@ export function createF0Stream(
   return {
     startTask: () => {
       takeStart = audioContext.currentTime
+      captured = null
       assembler.startTake()
       // The detector's stability filter keeps a short pitch history that
       // would otherwise clamp the first frames of a new take toward the
@@ -279,12 +302,21 @@ export function createF0Stream(
     },
     takeFrames: () => assembler.takeFrames(),
     latest: () => assembler.latest(),
+    latestCaptured: () => captured,
+    subscribeCaptured: (listener) => {
+      if (disposed) return () => undefined
+      captureListeners.add(listener)
+      return () => {
+        captureListeners.delete(listener)
+      }
+    },
     latestSmoothed: () => assembler.latestSmoothed(),
     latestLevel: () => assembler.latestLevel(),
     frameCount: () => frameCount,
     maxLevel: () => assembler.maxLevel(),
     dispose: () => {
       disposed = true
+      captureListeners.clear()
       cancelAnimationFrame(rafId)
       if (workletNode !== null) {
         workletNode.port.onmessage = null

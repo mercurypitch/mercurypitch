@@ -1,0 +1,255 @@
+{
+  "method": "OpenVDB isosurface of real high-detail Meshy donor; no adaptivity, pole fixing, source projection or subsequent edge-collapse",
+  "voxelMetres": 0.0012,
+  "adaptivity": 0,
+  "normalization": {
+    "uniformScale": 0.21018063187299327,
+    "sourceFootCentre": [
+      -0.0005258321762084961,
+      0.0013314783573150635,
+      -0.9519623517990112
+    ]
+  },
+  "sourceTriangles": 1951634,
+  "triangles": 938848,
+  "nonManifoldEdges": 0,
+  "selfIntersectionPairs": 0,
+  "signedVolume": 0.001791571073873265,
+  "sampledMaxDistanceToSourceMetres": 0.0009517102735117078,
+  "sampledMaxDistanceFromSourceMetres": 0.002883682958781719,
+  "vertices": 469414,
+  "edges": 1408272,
+  "eulerCharacteristic": -10,
+  "rays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2766972979614701,
+          "normalZ": 0.9999997019767761,
+          "face": 786001
+        },
+        {
+          "heightMetres": 0.027829299687261257,
+          "normalZ": -0.9999991655349731,
+          "face": 420633
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2766962248578847,
+          "normalZ": 0.9999999403953552,
+          "face": 713107
+        },
+        {
+          "heightMetres": 0.23436956167181677,
+          "normalZ": -0.7423380017280579,
+          "face": 237894
+        },
+        {
+          "heightMetres": 0.19334865689014002,
+          "normalZ": 0.6500415802001953,
+          "face": 341097
+        },
+        {
+          "heightMetres": 0.19043646241841747,
+          "normalZ": -0.43335261940956116,
+          "face": 810687
+        },
+        {
+          "heightMetres": 0.18800004034465148,
+          "normalZ": 0.6534295678138733,
+          "face": 810688
+        },
+        {
+          "heightMetres": 0.15755995181915328,
+          "normalZ": -0.6365772485733032,
+          "face": 341432
+        },
+        {
+          "heightMetres": 0.15522429715289887,
+          "normalZ": 0.36427947878837585,
+          "face": 341433
+        },
+        {
+          "heightMetres": 0.15314442864959574,
+          "normalZ": -0.4307306408882141,
+          "face": 811458
+        },
+        {
+          "heightMetres": 0.07440852334007184,
+          "normalZ": 0.09283370524644852,
+          "face": 362937
+        },
+        {
+          "heightMetres": 0.027826076650450966,
+          "normalZ": -0.999999463558197,
+          "face": 371520
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2766972681530372,
+          "normalZ": 0.9999999403953552,
+          "face": 316267
+        },
+        {
+          "heightMetres": 0.23379630079397065,
+          "normalZ": -0.15260446071624756,
+          "face": 783393
+        },
+        {
+          "heightMetres": 0.19338341352293353,
+          "normalZ": 0.6576665639877319,
+          "face": 874685
+        },
+        {
+          "heightMetres": 0.19040893433060888,
+          "normalZ": -0.45069873332977295,
+          "face": 405202
+        },
+        {
+          "heightMetres": 0.18781190442022927,
+          "normalZ": 0.6596798300743103,
+          "face": 405199
+        },
+        {
+          "heightMetres": 0.1575834259600837,
+          "normalZ": -0.6599979996681213,
+          "face": 874400
+        },
+        {
+          "heightMetres": 0.15550711956451543,
+          "normalZ": 0.36639025807380676,
+          "face": 404973
+        },
+        {
+          "heightMetres": 0.15304460020772137,
+          "normalZ": -0.4670597314834595,
+          "face": 404739
+        },
+        {
+          "heightMetres": 0.0741278098750849,
+          "normalZ": 0.3869209587574005,
+          "face": 415830
+        },
+        {
+          "heightMetres": 0.027833085358243054,
+          "normalZ": -0.9999995827674866,
+          "face": 889404
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.27669875857468357,
+          "normalZ": 0.9999997615814209,
+          "face": 84507
+        },
+        {
+          "heightMetres": 0.22798349242671787,
+          "normalZ": -0.0907144770026207,
+          "face": 544266
+        },
+        {
+          "heightMetres": 0.19338149087900972,
+          "normalZ": 0.5988648533821106,
+          "face": 404905
+        },
+        {
+          "heightMetres": 0.19041385272204192,
+          "normalZ": -0.4363064169883728,
+          "face": 404925
+        },
+        {
+          "heightMetres": 0.18891496548071313,
+          "normalZ": 0.49713319540023804,
+          "face": 874350
+        },
+        {
+          "heightMetres": 0.15676469263707926,
+          "normalZ": -0.5531530976295471,
+          "face": 874372
+        },
+        {
+          "heightMetres": 0.15540533867028433,
+          "normalZ": 0.3874264657497406,
+          "face": 404949
+        },
+        {
+          "heightMetres": 0.15298009475886618,
+          "normalZ": -0.4331536293029785,
+          "face": 874601
+        },
+        {
+          "heightMetres": 0.08271582060843345,
+          "normalZ": 0.5919205546379089,
+          "face": 886204
+        },
+        {
+          "heightMetres": 0.027834460272211838,
+          "normalZ": -1.0,
+          "face": 890068
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2766972681530372,
+          "normalZ": 0.9999999403953552,
+          "face": 316452
+        },
+        {
+          "heightMetres": 0.22510566707816076,
+          "normalZ": -0.08980081230401993,
+          "face": 237172
+        },
+        {
+          "heightMetres": 0.19387569979273198,
+          "normalZ": 0.610725462436676,
+          "face": 906565
+        },
+        {
+          "heightMetres": 0.15226315723430928,
+          "normalZ": -0.7062476277351379,
+          "face": 437262
+        },
+        {
+          "heightMetres": 0.08647300963256965,
+          "normalZ": 0.07283639162778854,
+          "face": 911002
+        },
+        {
+          "heightMetres": 0.027832921411861954,
+          "normalZ": -1.0,
+          "face": 442153
+        }
+      ]
+    }
+  ]
+}

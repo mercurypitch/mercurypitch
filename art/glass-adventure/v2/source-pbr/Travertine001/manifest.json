@@ -1,0 +1,160 @@
+{
+  "assetId": "Travertine001",
+  "role": "cream-limestone",
+  "maps": [
+    {
+      "channel": "basecolor",
+      "providerFile": "Travertine001_1K-PNG_Color.png",
+      "variant": "1K-PNG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_Color.png",
+        "bytes": 1489268,
+        "sha256": "561fd6ca43446da5680113ef8900ba136fb7c6be30b5aaad223c55627c0ef8b0",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      },
+      "runtime": {
+        "assetId": "cream-limestone-basecolor",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-basecolor.png",
+        "bytes": 1489268,
+        "sha256": "561fd6ca43446da5680113ef8900ba136fb7c6be30b5aaad223c55627c0ef8b0",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Travertine001_1K-PNG_NormalGL.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_NormalGL.png",
+        "bytes": 2747140,
+        "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      },
+      "runtime": {
+        "assetId": "cream-limestone-normal",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-normal.png",
+        "bytes": 2747140,
+        "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Travertine001_1K-PNG_Roughness.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_Roughness.png",
+        "bytes": 362372,
+        "sha256": "729ebff506fdeee407793a8394a7bf66ea79bd658a74a0593cc8c88d27ce725d",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "L"
+      },
+      "runtime": {
+        "assetId": "cream-limestone-roughness",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-roughness.png",
+        "bytes": 362372,
+        "sha256": "729ebff506fdeee407793a8394a7bf66ea79bd658a74a0593cc8c88d27ce725d",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "L"
+      }
+    },
+    {
+      "channel": "basecolor",
+      "providerFile": "Travertine001_2K-JPG_Color.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_Color.jpg",
+        "bytes": 3944954,
+        "sha256": "a0724b7e885e9bf91f5424d44d693ba32e77968db54b2f873f07b9a2ef401eb7",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Travertine001_2K-JPG_NormalGL.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_NormalGL.jpg",
+        "bytes": 1305470,
+        "sha256": "b70acbbd8def7825ec3c7ec339240e777dd1e31e70059e93e8f3560ebf94166b",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Travertine001_2K-JPG_Roughness.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_Roughness.jpg",
+        "bytes": 1402400,
+        "sha256": "7cadf976abeae9be87304eb21fbb378c20d96b330a28bc7d6e8c64fbff7051d5",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "L"
+      }
+    }
+  ],
+  "materialSlot": "museum_limestone",
+  "label": "Beige cream travertine",
+  "matchNote": "Layered travertine provides the cream limestone role; keep broad architectural forms readable rather than increasing bump strength.",
+  "tileMeters": 1.2,
+  "scaleProvenance": "Provider asset page reports approximately 1.2 m x 1.2 m.",
+  "provider": "ambientCG",
+  "providerUrl": "https://ambientcg.com/view?id=Travertine001",
+  "license": {
+    "spdx": "CC0-1.0",
+    "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "verifiedUtc": "2026-09-15",
+    "commercialUse": true,
+    "redistribution": true,
+    "attributionRequired": false,
+    "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+  },
+  "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+  "textureRepeatPerMetre": 0.8333333333333334,
+  "downloads": [
+    {
+      "assetId": "Travertine001",
+      "file": "Travertine001/Travertine001_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Travertine001_olPgXfq4/Travertine001_1K-PNG.zip",
+      "bytesExpected": 9705188,
+      "sha256": "be06e3b302d143f4614bb00cb3ce51caa2a766fa8feb886d8eeb44a8d4052865",
+      "bytes": 9705188
+    },
+    {
+      "assetId": "Travertine001",
+      "file": "Travertine001/Travertine001_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Travertine001_olPgXfq4/Travertine001_2K-JPG.zip",
+      "bytesExpected": 9619414,
+      "sha256": "eb22b7ac1c146c01f26e53791509907044b25499fd87fb4a809989e65dcf2a73",
+      "bytes": 9619414
+    }
+  ],
+  "preview": {
+    "path": "art/glass-adventure/v2/source-pbr/_previews/Travertine001.webp",
+    "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Travertine001.webp",
+    "purpose": "Provider material preview render only, not a runtime channel.",
+    "bytes": 372962,
+    "sha256": "2621cc748fe226bdb1f1ae90204412d8fb23a850a918794dc5f596b503a259d6"
+  }
+}

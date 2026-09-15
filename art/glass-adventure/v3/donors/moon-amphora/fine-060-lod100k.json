@@ -1,0 +1,25 @@
+{
+  "method": "OpenVDB actual high Meshy source at0.6mm, no volume projection/adaptivity, then200k\u2192100k bounded LOD and diagnosed local fairing",
+  "normalization": {
+    "uniformScale": 0.28901058851931744,
+    "sourceFootCentre": [
+      -0.00044345855712890625,
+      0.0001398921012878418,
+      -0.952040433883667
+    ]
+  },
+  "voxelMetres": 0.0006,
+  "triangles": 100000,
+  "selfIntersectionPairs": 0,
+  "badEdges": 0,
+  "badVertices": 0,
+  "nonContiguousEdges": 0,
+  "signedVolume": 0.007074068946782907,
+  "localContactHistory": [
+    0
+  ],
+  "movedVertices": 0,
+  "maxLocalMovementMetres": 0.0,
+  "movementBudgetMetres": 0.0005,
+  "status": "candidate awaiting fidelity and material/fracture proof"
+}

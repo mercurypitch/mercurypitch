@@ -1,0 +1,178 @@
+{
+  "status": "inspection-only; no finalization acceptance implied",
+  "blenderVersion": "5.2.2 LTS",
+  "source": {
+    "file": "art/glass-adventure/v2/meshy/fluted-carafe-01/pre-remeshed.glb",
+    "bytes": 35753760,
+    "sha256": "43f46d00db29eac7bfe4246ed2ad70a0d8f43cf48e49b80173d44119656d743e",
+    "generator": "Meshy"
+  },
+  "boundsInImportedBlenderCoordinates": {
+    "min": [
+      -0.36466142535209656,
+      -0.37320464849472046,
+      -0.9520205855369568
+    ],
+    "max": [
+      0.3637430965900421,
+      0.3743426203727722,
+      0.9511570930480957
+    ]
+  },
+  "proposedTargetHeightMetres": 0.69,
+  "uniformNormalizationScale": 0.36255154091182457,
+  "meshes": [
+    {
+      "node": "mesh_node",
+      "vertices": 993026,
+      "polygons": 1986387,
+      "triangles": 1986387,
+      "boundaryEdges": 3,
+      "nonManifoldEdges": 3,
+      "wireEdges": 0,
+      "zeroAreaFaces": 6,
+      "connectedComponentCount": 2,
+      "largestConnectedComponents": [
+        {
+          "vertices": 993023,
+          "faces": 1986386
+        },
+        {
+          "vertices": 3,
+          "faces": 1
+        }
+      ],
+      "signedLocalVolume": 0.03390801271365604,
+      "uvLayers": [],
+      "materials": [],
+      "materialFaceCounts": {
+        "0": 1986387
+      }
+    }
+  ],
+  "afterCoincidentSeamWeldDiagnostic": [
+    {
+      "node": "mesh_node",
+      "vertices": 993018,
+      "polygons": 1986381,
+      "triangles": 1986381,
+      "boundaryEdges": 2,
+      "nonManifoldEdges": 6,
+      "wireEdges": 0,
+      "zeroAreaFaces": 0,
+      "connectedComponentCount": 1,
+      "largestConnectedComponents": [
+        {
+          "vertices": 993018,
+          "faces": 1986381
+        }
+      ],
+      "signedLocalVolume": 0.03390801271365604,
+      "uvLayers": [],
+      "materials": [],
+      "materialFaceCounts": {
+        "0": 1986381
+      }
+    }
+  ],
+  "materials": [],
+  "verticalCentreRegionRays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.01476743721731738,
+          "normalZ": 0.9999999403953552,
+          "face": 979165
+        },
+        {
+          "heightMetres": 3.9005609234919746e-05,
+          "normalZ": -0.9999997019767761,
+          "face": 978781
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014769943948991204,
+          "normalZ": 0.9999991059303284,
+          "face": 1002931
+        },
+        {
+          "heightMetres": 3.896238972330211e-05,
+          "normalZ": -0.9999999403953552,
+          "face": 996224
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014768474485596204,
+          "normalZ": 1.0,
+          "face": 942140
+        },
+        {
+          "heightMetres": 3.889756045587565e-05,
+          "normalZ": -0.9999997615814209,
+          "face": 913397
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014765881314899146,
+          "normalZ": 0.9999983906745911,
+          "face": 983049
+        },
+        {
+          "heightMetres": 3.883273118844919e-05,
+          "normalZ": -1.0,
+          "face": 982561
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014765016924666793,
+          "normalZ": 0.9999998807907104,
+          "face": 981882
+        },
+        {
+          "heightMetres": 4.108014579256645e-05,
+          "normalZ": -0.999998927116394,
+          "face": 982136
+        }
+      ]
+    }
+  ],
+  "decisionsPending": [
+    "silhouette and front orientation",
+    "mouth and cavity classification",
+    "gold versus glass surface regions",
+    "topology repair, if necessary",
+    "closed fracture feasibility and appropriate piece count"
+  ]
+}

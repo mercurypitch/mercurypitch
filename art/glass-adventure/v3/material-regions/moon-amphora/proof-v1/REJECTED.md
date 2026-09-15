@@ -1,0 +1,1 @@
+Incomplete audition. Sample [1453, 1549] intended as gold landed on a neutral gray atlas region. Classifier correctly rejected overlapping swatches before labels or geometry writes. Corrected, inspected recipe continues in proof-v2.
