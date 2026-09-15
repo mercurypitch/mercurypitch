@@ -1,0 +1,58 @@
+{
+  "glbSha256": "985abff1fbacc134f327be84a006d8336d554b9633878528c5babb2fc941eb4b",
+  "triangles": 11999,
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "meshy_gilded_column_atlas",
+      "normalTexture": {
+        "index": 0
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 1
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      }
+    }
+  ],
+  "images": [
+    {
+      "size": [
+        1024,
+        1024
+      ],
+      "mimeType": "image/png",
+      "bytes": 1541141,
+      "sha256": "b909623e3b6132c913c88f7f146d3d4ef4fd0d472770cd1bcfd9975fa930d161"
+    },
+    {
+      "size": [
+        1024,
+        1024
+      ],
+      "mimeType": "image/png",
+      "bytes": 1754470,
+      "sha256": "c54d2b1454c3e191458268e45a23a9cffc63f0c32772c11cd1975704dcd06c1e"
+    },
+    {
+      "size": [
+        1024,
+        1024
+      ],
+      "mimeType": "image/png",
+      "bytes": 1212999,
+      "sha256": "39f472a0c87147d012e84d1c531af974849e06c38b877310b684fa6120129874"
+    }
+  ],
+  "primitiveAttributes": [
+    [
+      "POSITION",
+      "NORMAL",
+      "TEXCOORD_0",
+      "TANGENT"
+    ]
+  ]
+}

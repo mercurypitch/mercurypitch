@@ -1,0 +1,147 @@
+{
+  "method": "manifold3d 3.5.3 plane clipping, actual unchanged prepared vertices",
+  "sourceTriangles": 50000,
+  "intactVolume": 0.0016089811625612186,
+  "volumeRelativeError": 4.764897250577291e-10,
+  "badEdges": 0,
+  "shards": [
+    {
+      "index": 0,
+      "triangles": 6640,
+      "badEdges": 0,
+      "signedVolume": 8.087989661480513e-05
+    },
+    {
+      "index": 1,
+      "triangles": 2590,
+      "badEdges": 0,
+      "signedVolume": 0.00012019299470095491
+    },
+    {
+      "index": 2,
+      "triangles": 1246,
+      "badEdges": 0,
+      "signedVolume": 3.4579622982208086e-05
+    },
+    {
+      "index": 3,
+      "triangles": 3360,
+      "badEdges": 0,
+      "signedVolume": 8.060692442829118e-05
+    },
+    {
+      "index": 4,
+      "triangles": 1536,
+      "badEdges": 0,
+      "signedVolume": 4.74100329751878e-05
+    },
+    {
+      "index": 5,
+      "triangles": 1908,
+      "badEdges": 0,
+      "signedVolume": 5.715061502148519e-05
+    },
+    {
+      "index": 6,
+      "triangles": 2534,
+      "badEdges": 0,
+      "signedVolume": 7.01017678852677e-05
+    },
+    {
+      "index": 7,
+      "triangles": 7076,
+      "badEdges": 0,
+      "signedVolume": 7.985839754769307e-05
+    },
+    {
+      "index": 8,
+      "triangles": 2954,
+      "badEdges": 0,
+      "signedVolume": 6.241893775976139e-05
+    },
+    {
+      "index": 9,
+      "triangles": 1816,
+      "badEdges": 0,
+      "signedVolume": 4.339965353483947e-05
+    },
+    {
+      "index": 10,
+      "triangles": 3126,
+      "badEdges": 0,
+      "signedVolume": 8.347116330838931e-05
+    },
+    {
+      "index": 11,
+      "triangles": 1316,
+      "badEdges": 0,
+      "signedVolume": 3.3508413651077914e-05
+    },
+    {
+      "index": 12,
+      "triangles": 2730,
+      "badEdges": 0,
+      "signedVolume": 7.390821017475667e-05
+    },
+    {
+      "index": 13,
+      "triangles": 3272,
+      "badEdges": 0,
+      "signedVolume": 0.0001495876890492964
+    },
+    {
+      "index": 14,
+      "triangles": 5852,
+      "badEdges": 0,
+      "signedVolume": 8.82564650884e-05
+    },
+    {
+      "index": 15,
+      "triangles": 3810,
+      "badEdges": 0,
+      "signedVolume": 8.384314423261647e-05
+    },
+    {
+      "index": 16,
+      "triangles": 2064,
+      "badEdges": 0,
+      "signedVolume": 5.765747673124448e-05
+    },
+    {
+      "index": 17,
+      "triangles": 3920,
+      "badEdges": 0,
+      "signedVolume": 5.790541478116214e-05
+    },
+    {
+      "index": 18,
+      "triangles": 3066,
+      "badEdges": 0,
+      "signedVolume": 5.3589851184992964e-05
+    },
+    {
+      "index": 19,
+      "triangles": 4722,
+      "badEdges": 0,
+      "signedVolume": 5.9267169920552184e-05
+    },
+    {
+      "index": 20,
+      "triangles": 2078,
+      "badEdges": 0,
+      "signedVolume": 4.8438772551628965e-05
+    },
+    {
+      "index": 21,
+      "triangles": 1638,
+      "badEdges": 0,
+      "signedVolume": 4.924890096707099e-05
+    },
+    {
+      "index": 22,
+      "triangles": 1760,
+      "badEdges": 0,
+      "signedVolume": 9.369964670287319e-05
+    }
+  ]
+}

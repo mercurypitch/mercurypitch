@@ -1,0 +1,151 @@
+{
+  "status": "inspection-only; no finalization acceptance implied",
+  "blenderVersion": "5.2.2 LTS",
+  "source": {
+    "file": "art/glass-adventure/v2/meshy/moon-amphora-01/pre-remeshed.glb",
+    "bytes": 35288180,
+    "sha256": "e129fcd5b268813135b6c5b5022ee58dad458412a0347c44b4098f4f315203b0",
+    "generator": "Meshy"
+  },
+  "boundsInImportedBlenderCoordinates": {
+    "min": [
+      -0.5057001709938049,
+      -0.5055239796638489,
+      -0.952040433883667
+    ],
+    "max": [
+      0.5048132538795471,
+      0.5058037638664246,
+      0.9510040283203125
+    ]
+  },
+  "proposedTargetHeightMetres": 0.55,
+  "uniformNormalizationScale": 0.28901058851931744,
+  "meshes": [
+    {
+      "node": "mesh_node",
+      "vertices": 980164,
+      "polygons": 1960452,
+      "triangles": 1960452,
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "wireEdges": 0,
+      "zeroAreaFaces": 0,
+      "connectedComponentCount": 1,
+      "largestConnectedComponents": [
+        {
+          "vertices": 980164,
+          "faces": 1960452
+        }
+      ],
+      "signedLocalVolume": 0.29285503718926476,
+      "uvLayers": [],
+      "materials": [],
+      "materialFaceCounts": {
+        "0": 1960452
+      }
+    }
+  ],
+  "afterCoincidentSeamWeldDiagnostic": [],
+  "seamDiagnosticScope": "Meshes under250k vertices; continuous high-detail sources assessed through original topology",
+  "materials": [],
+  "verticalCentreRegionRays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09163841541418405,
+          "normalZ": 0.9999892711639404,
+          "face": 979408
+        },
+        {
+          "heightMetres": 4.840610943670762e-05,
+          "normalZ": -0.9999989867210388,
+          "face": 972504
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09178955961496613,
+          "normalZ": 0.9998764991760254,
+          "face": 1040256
+        },
+        {
+          "heightMetres": 4.8612825918287864e-05,
+          "normalZ": -0.9999998807907104,
+          "face": 1021363
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09178904282376218,
+          "normalZ": 0.9998831152915955,
+          "face": 924898
+        },
+        {
+          "heightMetres": 5.0507726999440116e-05,
+          "normalZ": -0.9999999403953552,
+          "face": 919791
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09171341904425075,
+          "normalZ": 0.9998100399971008,
+          "face": 979478
+        },
+        {
+          "heightMetres": 4.816494020819733e-05,
+          "normalZ": -0.999998927116394,
+          "face": 980304
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09173832838028116,
+          "normalZ": 0.9999572038650513,
+          "face": 978564
+        },
+        {
+          "heightMetres": 4.902625888144835e-05,
+          "normalZ": -0.999997079372406,
+          "face": 982979
+        }
+      ]
+    }
+  ],
+  "decisionsPending": [
+    "silhouette and front orientation",
+    "mouth and cavity classification",
+    "gold versus glass surface regions",
+    "topology repair, if necessary",
+    "closed fracture feasibility and appropriate piece count"
+  ]
+}

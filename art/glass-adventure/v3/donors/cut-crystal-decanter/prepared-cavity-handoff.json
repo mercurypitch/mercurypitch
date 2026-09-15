@@ -1,0 +1,40 @@
+{
+  "currentGeometrySource": "prepared-cavity-v10.blend",
+  "currentPreparedMaterials": "ready-intact.blend",
+  "currentFinalSource": "finalized.blend",
+  "currentExport": "../../exports/cut-crystal-decanter.glb",
+  "finalManifest": "finalization.json",
+  "geometryValidation": "geometry-validation.json",
+  "materialDecisions": "material-finalization.json",
+  "status": "Final GLB geometry, intact and expanded fracture optical proofs passed local review; staged for in-game user inspection",
+  "sourceArchive": "../../../v2/meshy/cut-crystal-decanter-01/",
+  "sourceIntake": "../cut-crystal-decanter-high-source/raw-import.blend",
+  "pipeline": [
+    "Actual 1.96M-triangle Meshy source normalized to .52m, foot-centred, Blender Z up",
+    "OpenVDB .0012m, no adaptivity/pole fixing/reprojection/later source collapse",
+    "Split original neck seam at .429m; donor-derived conservative polished cavity; retain solid stopper",
+    "Measured 982k\u2192200k\u2192100k\u219250k LOD; local diagnosed repairs only, bounded .5mm",
+    "Reviewed source gold paint masks; 25 explicit boundary decisions, generated interior excluded",
+    "Group intact body+stopper;22closed body fragments+original solid stopper",
+    "Fresh GLB component-by-component reimport, physical material and UV/normal/tangent gates"
+  ],
+  "rejectedPreparations": {
+    "v1-v4": "New inner/outer surface intersections. Never use.",
+    "v5": "Cavity valid but inherited25outer source intersections remain. Never use for runtime.",
+    "v6": "Exact union trial failed before saving a blend.",
+    "v7": "Geometry-valid 982k high source; not runtime LOD.",
+    "v8-v9": "Geometry-valid intermediate LODs; v10 selected."
+  },
+  "remainingLimits": [
+    "Deep-cut macro fidelity is softened versus original; source deviation p95 1.124mm, p99 2.190mm,max8.586mm",
+    "Staged authoring candidate; no runtime activation or on-device performance claim"
+  ],
+  "scripts": [
+    "../../decanter_prepare.py",
+    "../../decanter_finalize.py"
+  ],
+  "opticalProofs": [
+    "finalized-intact.png",
+    "finalized-fracture.png"
+  ]
+}

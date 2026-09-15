@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Glassworks music auditions</title>
+    <style>
+      :root {
+        color-scheme: light;
+        color: #193b42;
+        background: #e9efed;
+        font:
+          16px/1.55 'Trebuchet MS',
+          Arial,
+          sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 1100px;
+        padding: 40px 28px 70px;
+        margin: auto;
+      }
+      a {
+        color: #145966;
+        text-underline-offset: 4px;
+      }
+      h1 {
+        font-size: clamp(35px, 5vw, 58px);
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        margin: 18px 0;
+      }
+      h2 {
+        font-size: 23px;
+        line-height: 1.25;
+        margin: 4px 0 12px;
+      }
+      p {
+        max-width: 76ch;
+        margin: 10px 0;
+      }
+      .intro {
+        font-size: 18px;
+      }
+      .notice {
+        border-left: 4px solid #8b723e;
+        background: #f5f0dd;
+        padding: 14px 18px;
+        margin: 24px 0 30px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      article {
+        min-width: 0;
+        background: #fff;
+        padding: 24px;
+        border-top: 3px solid #a0babc;
+      }
+      .role {
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        font-size: 12px;
+        color: #6d652f;
+      }
+      .meta,
+      .note,
+      details {
+        font-size: 14px;
+        color: #4c6970;
+      }
+      audio {
+        display: block;
+        width: 100%;
+        margin: 18px 0;
+      }
+      details {
+        border-top: 1px solid #d3dfdf;
+        margin-top: 16px;
+        padding-top: 14px;
+      }
+      summary {
+        cursor: pointer;
+        min-height: 32px;
+      }
+      :focus-visible {
+        outline: 3px solid #91712b;
+        outline-offset: 4px;
+      }
+      footer {
+        margin-top: 30px;
+        font-size: 14px;
+      }
+      @media (max-width: 680px) {
+        main {
+          padding: 24px 16px 50px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        article {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="../../v3/review.html">Back to museum artwork</a>
+      <h1>A little life<br />between the glass.</h1>
+      <p class="intro">
+        Ten owner-provided Suno takes, with original WAVs preserved and smaller
+        level-matched MP3 auditions. Start with M01 for exploration, then
+        compare the ambient beds. Both A03 variants are retained.
+      </p>
+      <div class="notice">
+        <strong>Auditions only; not yet playing in the game.</strong>
+        <p>
+          Music previews target −20 LUFS and ambience −28 LUFS using a constant
+          gain change. No dynamic compression, musical edits or loop seams have
+          been added. In the game, music and ambience will fade out before voice
+          listening unless the player explicitly chooses a quiet headphone mix.
+        </p>
+      </div>
+      <div class="grid">
+        <article id="M01-v1">
+          <p class="role">Main museum exploration</p>
+          <h2>M01 · Crystal Light</h2>
+          <p class="meta">2:32 · 48 kHz stereo WAV master · preview -20 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/m01-v1.mp3"
+            aria-label="Play M01 · Crystal Light"
+          ></audio>
+          <p class="note">
+            Full take; final gameplay edit and placement pending.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -15.78 LUFS, peak -3.60 dBTP. Preview
+              gain -4.22 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a href="masters/M01_Crystal%20Light.wav">Original WAV</a> ·
+            <a href="previews/m01-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="M02-v1">
+          <p class="role">Hidden balcony and quieter exploration</p>
+          <h2>M02 · Museum Quiet</h2>
+          <p class="meta">3:00 · 48 kHz stereo WAV master · preview -20 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/m02-v1.mp3"
+            aria-label="Play M02 · Museum Quiet"
+          ></audio>
+          <p class="note">
+            Full take; final gameplay edit and placement pending.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -15.98 LUFS, peak -1.99 dBTP. Preview
+              gain -4.02 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a href="masters/M02_Museum%20Quiet.wav">Original WAV</a> ·
+            <a href="previews/m02-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="M03-v1">
+          <p class="role">Playful traversal variation</p>
+          <h2>M03 · Curious Garden</h2>
+          <p class="meta">2:00 · 48 kHz stereo WAV master · preview -20 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/m03-v1.mp3"
+            aria-label="Play M03 · Curious Garden"
+          ></audio>
+          <p class="note">
+            Full take; final gameplay edit and placement pending.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -16.35 LUFS, peak -3.58 dBTP. Preview
+              gain -3.65 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a href="masters/M03_Curious%20Garden.wav">Original WAV</a> ·
+            <a href="previews/m03-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="M04-v1">
+          <p class="role">Welcome and tutorial</p>
+          <h2>M04 · Welcome to the Tutorial</h2>
+          <p class="meta">1:53 · 48 kHz stereo WAV master · preview -20 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/m04-v1.mp3"
+            aria-label="Play M04 · Welcome to the Tutorial"
+          ></audio>
+          <p class="note">
+            Full take; final gameplay edit and placement pending.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -16.65 LUFS, peak -3.52 dBTP. Preview
+              gain -3.35 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a href="masters/M04_Welcome%20to%20the%20Tutorial.wav"
+              >Original WAV</a
+            >
+            · <a href="previews/m04-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="M05-v1">
+          <p class="role">Level completion reward</p>
+          <h2>M05 · Earned Delight</h2>
+          <p class="meta">0:18 · 48 kHz stereo WAV master · preview -20 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/m05-v1.mp3"
+            aria-label="Play M05 · Earned Delight"
+          ></audio>
+          <p class="note">
+            Full take; final gameplay edit and placement pending.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -17.17 LUFS, peak -4.15 dBTP. Preview
+              gain -2.83 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a href="masters/M05_Earned%20Delight.wav">Original WAV</a> ·
+            <a href="previews/m05-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="M06-v1">
+          <p class="role">Future moonlit gallery variation</p>
+          <h2>M06 · Nocturnal Puzzle</h2>
+          <p class="meta">3:00 · 48 kHz stereo WAV master · preview -20 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/m06-v1.mp3"
+            aria-label="Play M06 · Nocturnal Puzzle"
+          ></audio>
+          <p class="note">
+            Full take; final gameplay edit and placement pending.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -16.94 LUFS, peak -3.94 dBTP. Preview
+              gain -3.06 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a href="masters/M06_Nocturnal%20Puzzle.wav">Original WAV</a> ·
+            <a href="previews/m06-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="A01-v1">
+          <p class="role">Air between the columns</p>
+          <h2>A01 · Air Between the Columns</h2>
+          <p class="meta">0:12 · 48 kHz stereo WAV master · preview -28 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/a01-v1.mp3"
+            aria-label="Play A01 · Air Between the Columns"
+          ></audio>
+          <p class="note">
+            Loop editing needed; this is a short complete take.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -21.64 LUFS, peak -5.66 dBTP. Preview
+              gain -6.36 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a
+              href="masters/A01_Non-musical%20Environmental%20Soundscape%20For%20An%20Open-air%20Marble%20Museum%20High%20Above....wav"
+              >Original WAV</a
+            >
+            · <a href="previews/a01-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="A02-v1">
+          <p class="role">Garden water and stone</p>
+          <h2>A02 · Garden Water and Stone</h2>
+          <p class="meta">0:14 · 48 kHz stereo WAV master · preview -28 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/a02-v1.mp3"
+            aria-label="Play A02 · Garden Water and Stone"
+          ></audio>
+          <p class="note">
+            Loop editing needed; this is a short complete take.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -15.28 LUFS, peak -4.29 dBTP. Preview
+              gain -12.72 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a
+              href="masters/A02_Quiet%20Non-musical%20Ambience%20Beside%20A%20Small%20Ornamental%20Water%20Basin%20In%20A%20Floatin....wav"
+              >Original WAV</a
+            >
+            · <a href="previews/a02-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="A03-v1">
+          <p class="role">Quiet glass gallery</p>
+          <h2>A03 · Quiet Glass Gallery · V1</h2>
+          <p class="meta">0:15 · 48 kHz stereo WAV master · preview -28 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/a03-v1.mp3"
+            aria-label="Play A03 · Quiet Glass Gallery · V1"
+          ></audio>
+          <p class="note">
+            Loop editing needed; this is a short complete take.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -25.10 LUFS, peak -9.83 dBTP. Preview
+              gain -2.9 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a
+              href="masters/A03_Very%20Sparse%20Non-musical%20Atmospheric%20Soundscape%20Inside%20An%20Open%20Marble%20Pavilion....wav"
+              >Original WAV</a
+            >
+            · <a href="previews/a03-v1.mp3">MP3 audition</a>
+          </details>
+        </article>
+        <article id="A03-v2">
+          <p class="role">Quiet glass gallery</p>
+          <h2>A03 · Quiet Glass Gallery · V2</h2>
+          <p class="meta">0:14 · 48 kHz stereo WAV master · preview -28 LUFS</p>
+          <audio
+            controls
+            preload="metadata"
+            src="previews/a03-v2.mp3"
+            aria-label="Play A03 · Quiet Glass Gallery · V2"
+          ></audio>
+          <p class="note">
+            Loop editing needed; this is a short complete take.
+          </p>
+          <details>
+            <summary>Source and audio checks</summary>
+            <p>
+              Full decode passed. Original -16.42 LUFS, peak -8.03 dBTP. Preview
+              gain -11.58 dB; dynamics preserved. Original WAV is byte-identical
+              to the download.
+            </p>
+            <a
+              href="masters/A03_V2_Very%20Sparse%20Non-musical%20Atmospheric%20Soundscape%20Inside%20An%20Open%20Marble%20Pavilion....wav"
+              >Original WAV</a
+            >
+            · <a href="previews/a03-v2.mp3">MP3 audition</a>
+          </details>
+        </article>
+      </div>
+      <footer>
+        <p>
+          <a href="README.md">Intake and next steps</a> ·
+          <a href="intake.json">Source hashes and measured levels</a>
+        </p>
+      </footer>
+    </main>
+    <script>
+      document.querySelectorAll('audio').forEach((player) =>
+        player.addEventListener('play', () =>
+          document.querySelectorAll('audio').forEach((other) => {
+            if (other !== player) other.pause()
+          }),
+        ),
+      )
+    </script>
+  </body>
+</html>

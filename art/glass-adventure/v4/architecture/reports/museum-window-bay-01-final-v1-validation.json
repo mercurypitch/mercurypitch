@@ -1,0 +1,97 @@
+{
+  "status": "passed",
+  "stem": "museum-window-bay-01-final-v1",
+  "glbSha256": "f89dd6f919cc066c84d1673afe50d3a567437f78d9038fc318743429e6e1ff81",
+  "bytes": 6335148,
+  "triangles": 22204,
+  "primitives": 1,
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "meshy_museum_window_bay_atlas",
+      "normalTexture": {
+        "index": 0
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 1
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      }
+    }
+  ],
+  "runtimeImages": [
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1882660,
+      "sha256": "d732d553d47483e85bae3808457dee0e85c553396cb075d3293b891aaed38426"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1723780,
+      "sha256": "d11dc8408e7ffe6979b5fbe067b2776c7826f2ed1a7b8cc44a8fab99f68dd156"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1193544,
+      "sha256": "867b29e5069545e7b043bc67ed02e2b84b71c94ea3ece9d1f560f41ce82bb0ea"
+    }
+  ],
+  "packedSourceImages": [
+    {
+      "name": "Image_0",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "sRGB"
+    },
+    {
+      "name": "Image_1",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "Non-Color"
+    },
+    {
+      "name": "normal",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "Non-Color"
+    }
+  ],
+  "sourceMissingExternalDependencies": [],
+  "reimportBlenderBounds": {
+    "min": [
+      -1.4531011581420898,
+      -0.18078075349330902,
+      0.0
+    ],
+    "max": [
+      1.4531011581420898,
+      0.18078075349330902,
+      3.5999999046325684
+    ]
+  },
+  "note": "Structural validation and actual fresh GLB reimport. Visual comparison is a separate gate."
+}

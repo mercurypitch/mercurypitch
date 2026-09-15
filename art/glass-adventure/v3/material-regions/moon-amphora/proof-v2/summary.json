@@ -1,0 +1,90 @@
+{
+  "family": "moon-amphora",
+  "status": "provisional material-region audition; unresolved faces remain explicit",
+  "sourceGlbSha256": "bbbab5288e53e1b84da84276a7c39cfe713856593d0e255360e9a94b80b4b938",
+  "targetBlendSha256": "4cc32726ce1b7d1968d122fb4837ebd35c59154cca3a9008ad05ca9c4d8c269a",
+  "geometryChanged": false,
+  "sourcesWritten": false,
+  "normalization": {
+    "uniformScale": 0.28901058851931744,
+    "sourceFootCentre": [
+      -0.00044345855712890625,
+      0.0001398921012878418,
+      -0.952040433883667
+    ]
+  },
+  "swatchesSrgb": {
+    "gold": [
+      [
+        0.729411780834198,
+        0.6352941393852234,
+        0.5254902243614197
+      ],
+      [
+        0.7960785031318665,
+        0.7058823704719543,
+        0.5843137502670288
+      ]
+    ],
+    "glass": [
+      [
+        0.5098039507865906,
+        0.5137255191802979,
+        0.5215686559677124
+      ],
+      [
+        0.458823561668396,
+        0.458823561668396,
+        0.458823561668396
+      ]
+    ]
+  },
+  "sampleCoordinatesTopLeft": {
+    "gold": [
+      [
+        1190,
+        166
+      ],
+      [
+        1069,
+        358
+      ]
+    ],
+    "glass": [
+      [
+        1280,
+        691
+      ],
+      [
+        1485,
+        1382
+      ]
+    ]
+  },
+  "limits": {
+    "maxDistanceMetres": 0.006,
+    "minMargin": 0.007,
+    "maxChromaDistance": 0.06
+  },
+  "meshes": {
+    "vase_amphora_intact": {
+      "counts": {
+        "glass_shell": 28900,
+        "gold_trim": 20521,
+        "null": 579
+      },
+      "distanceMetres": {
+        "max": 0.0018887275364249945,
+        "p95": 0.0004618023129296488
+      },
+      "excludedAuthoredInteriorFaces": 0
+    }
+  },
+  "legend": {
+    "cyan": "classified glass",
+    "gold": "classified gold",
+    "magenta": "unresolved source correspondence/color",
+    "darkBlue": "authored interior excluded from paint transfer"
+  },
+  "limitsOfAcceptance": "Source paint classification only. Geometry/fracture and physical materials are not accepted by this proof."
+}

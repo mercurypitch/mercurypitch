@@ -1,0 +1,95 @@
+{
+  "status": "inspected geometry; material and fracture gates pending",
+  "source": "fine-060-lod100k.blend",
+  "mesh": {
+    "triangles": 99976,
+    "vertices": 49942,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.007074068946782908
+  },
+  "removedCollapsedComponents": {
+    "removedComponents": 12,
+    "removedFaces": 24,
+    "components": [
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 3.7231004507329876e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00029942011835507027,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 6.027349518288551e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00014029452127148974,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0003230134105544429,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0003245779523583299,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0001851440956918026,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00020807382191988296,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 4.503680488999745e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0001212205273591724,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00017422949839941676,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 1.8438785989239238e-05,
+        "signedVolume": 0
+      }
+    ]
+  },
+  "visualReview": "Matched raw/clay three-quarter and mouth renders preserve the silhouette, open handles, cavity, fluting and laurel relief. The 0.6mm cleanup is visibly closer than rejected 1.2mm. Small foot beading and recesses remain softer than the high source.",
+  "fidelityReport": "source-fidelity-fine-060-lod100k.json",
+  "sourceDeviation": "p95 0.509mm, p99 1.992mm; worst 10.176mm includes narrow handle/relief recesses. This is a source-derived cleanup, not an exact source copy."
+}

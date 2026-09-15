@@ -24,7 +24,9 @@ The renderer never decides whether a display was earned. The host persists the c
 
 The default move speed is 1.15 m/s, jump apex 0.5 m and gravity 6.2 m/s². Movement normalizes diagonals, accelerates over 0.14 s, uses 0.11 s coyote time and a 0.13 s jump buffer, and requires a fresh jump press after cancellation. Simulation steps at 120 Hz with at most five physics steps per host call. It discards excess catch-up work after a stall. Pass real foreground elapsed time and the same monotonic `nowMs` used for voice callbacks to `game.step(input, elapsedSeconds, nowMs)`; renderers may clamp their separate presentation delta.
 
-The collision adapter is deliberately limited to this flat rectangular course: swept body walls/ceilings and foot-centre floor support, independent of Merc's animated silhouette. Supporting the whole outer footprint would incorrectly bridge the 0.30 m teaching gap. `CourseCollider` is the replacement boundary for a future validated slope or moving-platform controller. **Slopes, moving platforms, capsule dynamics and rigid-body shard simulation are not implemented.**
+The collision adapter supports flat rectangular floors and authored `solids`: box props and tapered round props, with side, top and underside contact independent of Merc's animated silhouette. `content/solid-props.ts` shares the exhibit plinth dimensions with the renderer and defines reachable planter bases, arch supports and columns. Give an optional-floor prop a `platformId` so its collision follows that floor's activation. Decorative bundles can replace visible fallback proxies without changing collision.
+
+Supporting the whole outer footprint would incorrectly bridge the 0.30 m teaching gap; floor support uses the foot centre. Props also recover side overlap when Merc steps off a rim. `CourseCollider` remains the replacement boundary for a future validated slope or moving-platform controller. **Slopes, moving platforms, capsule dynamics and rigid-body shard simulation are not implemented.** Intact glass, foliage and distant decorative architecture currently remain nonblocking.
 
 ## Add an exhibit or platform appearance
 
@@ -33,6 +35,8 @@ Register a new breakable `variant` in `BREAKABLE_RENDER_CATALOG`. A recipe names
 Platform data can set `renderId` to a `PLATFORM_RENDER_CATALOG` recipe, leaving the solid proxy unchanged. The catalog can select a kit mesh and named `MUSEUM_MATERIAL_CATALOG` materials/textures. Adding a visual island or plinth does not add movement mechanics. Keep sculpture, frames and decorative shards out of collision unless an explicit proxy is authored and tested.
 
 Imported meshes need a tested intact-to-fracture correspondence, consistent UV/material mapping, bounded fragment counts and resource disposal. Procedural fallbacks support a playable course while assets load; they are not evidence that art or physical-device performance has passed review.
+
+The Meshy-derived fluted carafe, amphora, coupe and decanter each declare 23 matching fragments. The adapter prepares the entire set before replacing a vessel, retains indexed geometry, UV channels and material groups, and owns imported material/texture copies through disposal. Marble, limestone and brass use separate color, normal and roughness channels with explicit color-space and scale recipes. See `art/glass-adventure/STORAGE.md` for restoring the image masters, provider archives and editable Blender sources through Git LFS. Runtime assets remain ordinary Git files.
 
 ## Voice and lifecycle contract
 
@@ -45,6 +49,12 @@ The browser adapter reuses `micManager` and `createF0Stream`; it does not open a
 Each sound owner holds a separate shared-context lease and bus. Cancellation requests a 180 ms release plus 60 ms cleanup allowance. Actual suspended/interrupted states retire its graphs immediately so they cannot replay on resume. A reference rejects unavailable, cancelled, interrupted or stalled output; it never silently permits scoring after an unheard or frozen reference. Old release timers cannot stop a newer sound owner. Physical OS suspension can occur before any scheduled fade finishes.
 
 Pause, background and unmount cancel microphone capture and pending reference ownership. Returning does not automatically restart the voice challenge. Save success separately from scene effects and retain it after falls, reloads or backgrounding.
+
+## Museum soundtrack
+
+`host.createMusic` is optional so another host can provide or omit its own output adapter. The browser adapter lazily loads the approved M01 museum and M03 garden music with A01/A02/A03 ambience; scene selection is presentation data in `content/soundscapes.ts`. M02 is not used. Audio starts from a player gesture, preserves loop positions across encounters, and stores mute/music/ambience preferences independently from progress.
+
+`ui/soundscape.ts` coordinates voice and playback intent. Microphone permission and audio unlock begin in the Start gesture, but pitch detection waits until `silenceForVoice()` resolves after the soundtrack's release. Cancellation, late loads and foreground recovery cannot restart a retired output. The pause dialog exposes separate music and ambience sliders. Original WAVs and derivation receipts are under `art/glass-adventure/audio/v1`; the shipped five MP3 loops total about 6.2 MB.
 
 ## Focused verification
 

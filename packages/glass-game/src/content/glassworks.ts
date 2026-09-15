@@ -1,6 +1,7 @@
 // Glassworks — the floating museum's first course, authored entirely as data.
 
 import type { BreakableDefinition, CheckpointDefinition, HoldDefinition, LevelDefinition, PlatformDefinition, } from '../contracts'
+import { glassworksSolidProps } from './solid-props'
 
 const HOLD: HoldDefinition = {
   requiredSeconds: 1.2,
@@ -71,7 +72,7 @@ function ornament(
   }
 }
 
-export const GLASSWORKS: LevelDefinition = {
+const COURSE: LevelDefinition = {
   id: 'glassworks',
   title: 'Glassworks',
   spawn: { position: { x: 1.2, y: 0, z: 1.2 }, facingYaw: Math.PI },
@@ -131,10 +132,10 @@ export const GLASSWORKS: LevelDefinition = {
     },
     {
       id: VASE,
-      label: 'The rounded vase',
+      label: 'Cut-crystal decanter',
       position: { x: 10.35, y: 0.15, z: 2.7 },
       anchor: { x: 9.45, y: 0.15, z: 2.7 },
-      variant: 'vase',
+      variant: 'decanter',
       optional: false,
       requiresCompleted: [GOBLET],
       hold: { ...HOLD },
@@ -149,7 +150,7 @@ export const GLASSWORKS: LevelDefinition = {
       requiresCompleted: [VASE],
       hold: { ...HOLD },
     },
-    ornament('glassworks.panorama-goblet', 'The little goblet', 'goblet', 4.5),
+    ornament('glassworks.panorama-goblet', 'Aurora coupe', 'coupe', 4.5),
     ornament('glassworks.panorama-vase', 'The moon amphora', 'amphora', 5.5),
     ornament(
       'glassworks.panorama-fluted',
@@ -166,4 +167,9 @@ export const GLASSWORKS: LevelDefinition = {
     top: 0.15,
     requiresCompleted: [GOBLET, VASE, HERO],
   },
+}
+
+export const GLASSWORKS: LevelDefinition = {
+  ...COURSE,
+  solids: glassworksSolidProps(COURSE),
 }

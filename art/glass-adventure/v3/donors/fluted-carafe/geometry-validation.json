@@ -1,0 +1,385 @@
+{
+  "status": "passed",
+  "scope": "automated source/closedness/orientation/intersection/physical-material/GLB-reimport gates; visual review recorded separately",
+  "bundleSha256": "a23ffab3b2e37ef38a5c9cc5648241b47fcca55775c46863ed1726940f4862fa",
+  "bundleBytes": 9121856,
+  "triangleTotalIncludingShards": 119708,
+  "meshes": [
+    {
+      "triangles": 49930,
+      "vertices": 24803,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0016539134770981489,
+      "name": "vase_fluted_intact"
+    },
+    {
+      "triangles": 3546,
+      "vertices": 1771,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00013431970110826732,
+      "name": "vase_fluted_shard_000"
+    },
+    {
+      "triangles": 1888,
+      "vertices": 938,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 4.4274597497342445e-05,
+      "name": "vase_fluted_shard_001"
+    },
+    {
+      "triangles": 5926,
+      "vertices": 2963,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00010624013082130873,
+      "name": "vase_fluted_shard_002"
+    },
+    {
+      "triangles": 1374,
+      "vertices": 689,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 3.436363322101766e-05,
+      "name": "vase_fluted_shard_003"
+    },
+    {
+      "triangles": 2922,
+      "vertices": 1445,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 7.87159367058556e-05,
+      "name": "vase_fluted_shard_004"
+    },
+    {
+      "triangles": 2236,
+      "vertices": 1126,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 5.7690549219061016e-05,
+      "name": "vase_fluted_shard_005"
+    },
+    {
+      "triangles": 2344,
+      "vertices": 1152,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 6.485088729645085e-05,
+      "name": "vase_fluted_shard_006"
+    },
+    {
+      "triangles": 7548,
+      "vertices": 3770,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00011053165704675956,
+      "name": "vase_fluted_shard_007"
+    },
+    {
+      "triangles": 1084,
+      "vertices": 544,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 2.70480432488167e-05,
+      "name": "vase_fluted_shard_008"
+    },
+    {
+      "triangles": 1930,
+      "vertices": 963,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 4.7551399207906145e-05,
+      "name": "vase_fluted_shard_009"
+    },
+    {
+      "triangles": 2792,
+      "vertices": 1394,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00013700318685558424,
+      "name": "vase_fluted_shard_010"
+    },
+    {
+      "triangles": 3078,
+      "vertices": 1533,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 7.498559503375015e-05,
+      "name": "vase_fluted_shard_011"
+    },
+    {
+      "triangles": 3306,
+      "vertices": 1659,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 7.218689782851981e-05,
+      "name": "vase_fluted_shard_012"
+    },
+    {
+      "triangles": 3690,
+      "vertices": 1845,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 7.601991674684931e-05,
+      "name": "vase_fluted_shard_013"
+    },
+    {
+      "triangles": 3992,
+      "vertices": 1986,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 8.843799089294144e-05,
+      "name": "vase_fluted_shard_014"
+    },
+    {
+      "triangles": 2154,
+      "vertices": 1083,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 6.142042299442352e-05,
+      "name": "vase_fluted_shard_015"
+    },
+    {
+      "triangles": 3716,
+      "vertices": 1854,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 8.514119601942063e-05,
+      "name": "vase_fluted_shard_016"
+    },
+    {
+      "triangles": 4470,
+      "vertices": 2229,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 5.3055358316730277e-05,
+      "name": "vase_fluted_shard_017"
+    },
+    {
+      "triangles": 3304,
+      "vertices": 1652,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 5.954599380667356e-05,
+      "name": "vase_fluted_shard_018"
+    },
+    {
+      "triangles": 2458,
+      "vertices": 1239,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 5.254898413006376e-05,
+      "name": "vase_fluted_shard_019"
+    },
+    {
+      "triangles": 2550,
+      "vertices": 1265,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00012172480003456543,
+      "name": "vase_fluted_shard_020"
+    },
+    {
+      "triangles": 754,
+      "vertices": 379,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 1.811447925872528e-05,
+      "name": "vase_fluted_shard_021"
+    },
+    {
+      "triangles": 2716,
+      "vertices": 1350,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 4.8142105876489746e-05,
+      "name": "vase_fluted_shard_022"
+    }
+  ],
+  "volumeRelativeError": 8.422826189560424e-09,
+  "boundsBlenderZUp": {
+    "min": [
+      -0.13210122287273407,
+      -0.13547927141189575,
+      0.0
+    ],
+    "max": [
+      0.13219502568244934,
+      0.1355590671300888,
+      0.6900486946105957
+    ]
+  },
+  "rays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014785826206207275,
+          "normalZ": 0.9999998807907104,
+          "face": 23015
+        },
+        {
+          "heightMetres": 4.668254405260086e-05,
+          "normalZ": -0.9999999403953552,
+          "face": 42150
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014780104160308838,
+          "normalZ": 0.9999998807907104,
+          "face": 23015
+        },
+        {
+          "heightMetres": 4.753377288579941e-05,
+          "normalZ": -0.9999999403953552,
+          "face": 42150
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014790654182434082,
+          "normalZ": 0.9999995231628418,
+          "face": 43639
+        },
+        {
+          "heightMetres": 4.58303838968277e-05,
+          "normalZ": -0.9999999403953552,
+          "face": 42150
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.01477879285812378,
+          "normalZ": 0.9999995231628418,
+          "face": 43639
+        },
+        {
+          "heightMetres": 4.8673711717128754e-05,
+          "normalZ": -0.9999999403953552,
+          "face": 42150
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.014792144298553467,
+          "normalZ": 0.9999985098838806,
+          "face": 21575
+        },
+        {
+          "heightMetres": 4.4689513742923737e-05,
+          "normalZ": -0.9999999403953552,
+          "face": 42150
+        }
+      ]
+    }
+  ],
+  "materialSlots": [
+    "glass_shell",
+    "gold_trim",
+    "glass_cut"
+  ],
+  "uv0NormalsPreserved": true,
+  "tangentsOnEveryPrimitive": true
+}

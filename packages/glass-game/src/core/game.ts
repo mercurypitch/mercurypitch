@@ -135,11 +135,19 @@ export function createGlassGame(
       ) {
         accumulator = Math.max(0, accumulator - MOVEMENT.fixedStep)
         steps++
+        const enabledPlatforms = platforms()
         const step = stepMovement(
           player,
           input,
           MOVEMENT.fixedStep,
-          platforms(),
+          [
+            ...enabledPlatforms,
+            ...(level.solids ?? []).filter(
+              (prop) =>
+                prop.platformId === undefined ||
+                enabledPlatforms.some((floor) => floor.id === prop.platformId),
+            ),
+          ],
           collider,
         )
         if (step.jumped) events.push({ type: 'jumped' })
@@ -148,7 +156,12 @@ export function createGlassGame(
           step.support?.kind === 'catch' ||
           player.position.y < level.fallBelow
         ) {
-          respawn(step.support?.catchCheckpointId, events)
+          respawn(
+            step.support?.kind === 'catch'
+              ? step.support.catchCheckpointId
+              : undefined,
+            events,
+          )
           break
         }
         if (player.grounded) {

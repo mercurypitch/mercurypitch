@@ -1,0 +1,39 @@
+{
+  "status": "optical material audition; fracture not yet prepared",
+  "intact": "coupe_aurora_intact",
+  "shards": [],
+  "meshes": [
+    {
+      "node": "coupe_aurora_intact",
+      "role": "intact",
+      "triangles": 50000,
+      "vertices": 24990,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.001793402087512487,
+      "materials": [
+        "glass_shell",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.16440412402153015,
+          -1.95402553799795e-05,
+          -0.1646607667207718
+        ],
+        "max": [
+          0.16455061733722687,
+          0.39994916319847107,
+          0.16462187469005585
+        ]
+      }
+    }
+  ],
+  "geometrySourceSha256": "1d5a4682f3f6d74ecde68710c8b34a851d53d589345724e17d62b6185ac7dc1c",
+  "regionDiagnostic": "../../material-regions/aurora-coupe/coupe-regions-diagnostic.png",
+  "boundaryDecision": "Reviewed mixed gold/gray trim pixels become continuous gold at this LOD; no geometry change",
+  "resolvedBoundaryFaces": 957,
+  "materials": [
+    "glass_shell",
+    "gold_trim"
+  ]
+}

@@ -1,12 +1,14 @@
 // Adventure session — orchestrates host services without putting UI or audio in the game core.
 import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { museumSoundscape } from '../content/soundscapes'
 import type { GameEvent, LevelDefinition, PitchObservation } from '../contracts'
 import { createGlassGame } from '../core/game'
-import type { GlassGameHost, GlassSound, GlassVoiceSession } from '../host'
+import type { GlassGameHost, GlassSound, GlassVoiceSession, MuseumAudioPreferences, } from '../host'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
 import { createAdventureInput } from './input'
 import { microphoneError } from './mic-error'
+import { createAdventureSoundscape } from './soundscape'
 
 type VoiceMode = 'off' | 'permission' | 'finding' | 'reference' | 'singing'
 export function useAdventure(
@@ -27,6 +29,16 @@ export function useAdventure(
   const [paused, setPaused] = createSignal(false)
   const [tutorial, setTutorial] = createSignal(
     host.readPreference('tutorial') !== 'seen',
+  )
+  const music = host.createMusic?.()
+  const [audioPreferences, setAudioPreferences] = createSignal(
+    music?.preferences(),
+  )
+  const soundscape = createAdventureSoundscape(
+    music,
+    (previous) =>
+      museumSoundscape(level.id, game.snapshot().player.position, previous),
+    () => alive && ready() && !paused() && !tutorial() && !graphicsFailed,
   )
   const storedNote = Number(host.readPreference('comfortable-note') ?? '')
   const [target, setTarget] = createSignal<number | null>(
@@ -77,6 +89,7 @@ export function useAdventure(
     game.cancelEncounter()
     input.clear()
     refresh()
+    soundscape.releaseVoice()
   }
 
   function announce(message: string): void {
@@ -94,6 +107,7 @@ export function useAdventure(
         host.saveProgress(game.saveProgress())
         stopCapture()
         sound?.shatter()
+        soundscape.releaseVoice()
         const finishedSound = sound
         soundTimer = setTimeout(() => {
           finishedSound?.dispose()
@@ -131,6 +145,7 @@ export function useAdventure(
       setVoiceMode('singing')
     } catch {
       if (!alive || sessionToken !== token) return
+      soundscape.pause()
       cancel()
       setError(
         'The reference note could not play. Tap Sing to try again when audio is available.',
@@ -160,7 +175,9 @@ export function useAdventure(
     setVoiceMode('permission')
     refresh()
     try {
-      await session.start()
+      // Start the microphone and context inside this gesture, but do not feed
+      // our own fading music into calibration or pitch detection.
+      await session.start(soundscape.silenceForVoice())
       if (!alive || currentToken !== token) {
         session.stop()
         return
@@ -171,6 +188,7 @@ export function useAdventure(
         },
         () => {
           if (!alive || voice !== session) return
+          soundscape.pause()
           cancel()
           setError('Audio was interrupted. Tap Sing to try again.')
         },
@@ -226,6 +244,7 @@ export function useAdventure(
   }
 
   function pause(): void {
+    soundscape.pause()
     cancel()
     setPaused(true)
     game.setPaused(true)
@@ -238,6 +257,7 @@ export function useAdventure(
     game.setPaused(tutorial())
     lastTime = 0
     refresh()
+    soundscape.activate()
   }
 
   function closeTutorial(): void {
@@ -246,9 +266,11 @@ export function useAdventure(
     game.setPaused(paused())
     input.clear()
     refresh()
+    soundscape.activate()
   }
 
   function showTutorial(): void {
+    soundscape.pause()
     cancel()
     setTutorial(true)
     game.setPaused(true)
@@ -267,6 +289,11 @@ export function useAdventure(
       void reference(midi, ++token)
   }
 
+  function changeAudio(patch: Partial<MuseumAudioPreferences>): void {
+    music?.setPreferences(patch)
+    setAudioPreferences(music?.preferences())
+  }
+
   onMount(() => {
     try {
       renderer = createGlassRenderer(mount(), level, host.assetUrl, {
@@ -281,6 +308,7 @@ export function useAdventure(
         onContextLost: () => {
           if (!alive) return
           graphicsFailed = true
+          soundscape.pause()
           cancel()
           game.setPaused(true)
           setReady(false)
@@ -313,6 +341,7 @@ export function useAdventure(
           game.step(input.read(renderer?.getCameraYaw() ?? 0), elapsed, now),
         )
         refresh()
+        soundscape.update()
       }
       renderer?.render(game.snapshot(), Math.min(0.05, elapsed))
       frameId = requestAnimationFrame(tick)
@@ -329,7 +358,10 @@ export function useAdventure(
         return
       }
       if (tutorial() || paused()) return
-      if (input.key(event, true)) return
+      if (input.key(event, true)) {
+        soundscape.activate()
+        return
+      }
       if (
         event.target instanceof HTMLElement &&
         event.target.closest('input, textarea, select')
@@ -367,6 +399,7 @@ export function useAdventure(
     clearTimeout(noticeTimer)
     stopCapture()
     stopSound()
+    soundscape.dispose()
     input.clear()
     renderer?.dispose()
   })
@@ -389,6 +422,9 @@ export function useAdventure(
     showTutorial,
     changeNote,
     replay,
+    audioPreferences,
+    changeAudio,
+    enableMusic: soundscape.activate,
     cameraYaw: () => {
       snapshot()
       return renderer?.getCameraYaw() ?? 0

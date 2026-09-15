@@ -1,0 +1,55 @@
+{
+  "assetId": "umhlanga_sunrise",
+  "provider": "Poly Haven",
+  "providerUrl": "https://polyhaven.com/a/umhlanga_sunrise",
+  "author": "Greg Zaal",
+  "license": {
+    "spdx": "CC0-1.0",
+    "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "verifiedUtc": "2026-09-15",
+    "commercialUse": true,
+    "redistribution": true,
+    "attributionRequired": false,
+    "providerLicenseUrl": "https://polyhaven.com/license"
+  },
+  "creationMethod": "Photographic HDRI",
+  "selection": "Coastal sunrise with low warm horizon key and cool open-sky fill; no tonemapped JPEG used for lighting.",
+  "providerMetadata": {
+    "dynamicRangeEV": 23,
+    "whiteBalanceKelvin": 5400
+  },
+  "runtime": {
+    "assetId": "museum-environment-v2",
+    "width": 1024,
+    "height": 512,
+    "path": "apps/beside-cue/public/games/adventure-v2/environment/golden-coast.hdr",
+    "bytes": 1577804,
+    "sha256": "5bbc697864531c5953e8f249dec85f7c3f4d585bbf6708105c0a4e5510c75c03"
+  },
+  "sourceMaster": {
+    "width": 2048,
+    "height": 1024,
+    "path": "art/glass-adventure/v2/source-pbr/umhlanga_sunrise/umhlanga_sunrise_2k.hdr",
+    "bytes": 6186336,
+    "sha256": "d0e7e238728c659ba2f1deccf55e9547e7a73b5c36a86d05bddaa9d21fc7aa75"
+  },
+  "downloads": [
+    {
+      "assetId": "umhlanga_sunrise",
+      "file": "umhlanga_sunrise/umhlanga_sunrise_1k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/umhlanga_sunrise_1k.hdr",
+      "bytesExpected": 1577804,
+      "sha256": "5bbc697864531c5953e8f249dec85f7c3f4d585bbf6708105c0a4e5510c75c03",
+      "bytes": 1577804
+    },
+    {
+      "assetId": "umhlanga_sunrise",
+      "file": "umhlanga_sunrise/umhlanga_sunrise_2k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/umhlanga_sunrise_2k.hdr",
+      "bytesExpected": 6186336,
+      "sha256": "d0e7e238728c659ba2f1deccf55e9547e7a73b5c36a86d05bddaa9d21fc7aa75",
+      "bytes": 6186336
+    }
+  ],
+  "integration": "Load RGBE/HDR as linear radiance, PMREM once and share; align environment rotation to authored key after real scene inspection. Do not bake in a guessed compass rotation. Dispose source HDR after PMREM if it is not used for the visible background."
+}

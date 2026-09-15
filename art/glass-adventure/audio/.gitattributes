@@ -1,0 +1,4 @@
+# Preserve the source masters and review/loop derivatives without growing Git blobs.
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.flac filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text

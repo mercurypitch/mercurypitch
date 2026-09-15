@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "Validated Blender candidate for user inspection; no runtime activation or user selection implied",
+  "source": "art/glass-adventure/v2/meshy/fluted-carafe-01/pre-remeshed.glb",
+  "sourceSha256": "43f46d00db29eac7bfe4246ed2ad70a0d8f43cf48e49b80173d44119656d743e",
+  "bundleSha256": "a23ffab3b2e37ef38a5c9cc5648241b47fcca55775c46863ed1726940f4862fa",
+  "bundleBytes": 9121856,
+  "geometryReport": "geometry-validation.json",
+  "fidelityReport": "final-fidelity.json",
+  "preparedReport": "ready-intact.json",
+  "finalizationReport": "finalization.json",
+  "visualReview": {
+    "status": "passed",
+    "reviewedImages": [
+      {
+        "file": "finalized-intact.png",
+        "sha256": "f97d98c927a2410f2381631c72a84dd74dc58398dfc9007df761f6849104c69a"
+      },
+      {
+        "file": "finalized-fracture.png",
+        "sha256": "6721b355afc2877338b8184c475f8f0acab6246ba2c4dd1fa084746e5a25563b"
+      }
+    ],
+    "observations": [
+      "Actual Meshy fluted bulb, narrow neck, two throat collars and scalloped open mouth remain recognizable.",
+      "Physical clear glass and gold finish renders from the final mesh; no clay color texture or painted reflections are used.",
+      "Gold regions are assigned to the existing untextured donor surfaces at its support, collars and rim.",
+      "Exploded proof keeps all 23 actual fragments, including the gilt support, above the display floor.",
+      "Source has uneven sculpted flutes; this candidate preserves that generated character instead of replacing the shape."
+    ]
+  },
+  "sourceFidelity": {
+    "finalToOriginal": {
+      "sampleCount": 12402,
+      "maxMetres": 0.001447063870728016,
+      "p95Metres": 0.0005514691350981591,
+      "p99Metres": 0.0008050257491413502
+    },
+    "originalToFinal": {
+      "sampleCount": 10031,
+      "maxMetres": 0.003041229909285903,
+      "p95Metres": 0.0016244896687567234,
+      "p99Metres": 0.002012770948931575
+    }
+  },
+  "intactTriangles": 49930,
+  "fragmentCount": 23,
+  "trianglesIncludingFragments": 119708,
+  "openMouthAndCavity": {
+    "passed": true,
+    "centreRayFirstHitMetres": 0.014785826206207275,
+    "note": "All five central probes pass through the open mouth and reach the inner floor near14.8mm; bottom support remains closed."
+  },
+  "runtimeActivated": false,
+  "performanceStatus": "Measured asset geometry/bytes only; native frame time and final level residency have not been measured.",
+  "glbSha256": "a23ffab3b2e37ef38a5c9cc5648241b47fcca55775c46863ed1726940f4862fa"
+}

@@ -1,0 +1,15 @@
+{
+  "purpose": "Enclosed floating museum wall module exploration; source references inspected before Meshy submission",
+  "images": [
+    {
+      "reference": "art/glass-adventure/v2/references/museum-window-bay-01.png",
+      "source": "exec-98d3cd8e-a7c5-466a-9cf9-3e3b5688a98e.png",
+      "sha256": "e2bd466cf0a777bd97a37e170f3476d2f269af7123354f385c5cf8a755679041"
+    },
+    {
+      "reference": "art/glass-adventure/v2/references/museum-screen-bay-01.png",
+      "source": "exec-9678d1a1-5bc7-4037-ae98-39661bab7d13.png",
+      "sha256": "4e661383e1abb732f60cb25a206aa6c1edd373feb1a26a00e4edd3e4b4b21683"
+    }
+  ]
+}

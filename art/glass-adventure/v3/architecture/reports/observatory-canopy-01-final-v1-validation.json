@@ -1,0 +1,134 @@
+{
+  "status": "passed",
+  "stem": "observatory-canopy-01-final-v1",
+  "glbSha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+  "bytes": 7545096,
+  "triangles": 40424,
+  "primitives": 1,
+  "materials": [
+    {
+      "doubleSided": true,
+      "name": "meshy_observatory_canopy_atlas",
+      "normalTexture": {
+        "index": 0
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 1
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      }
+    }
+  ],
+  "runtimeImages": [
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1485142,
+      "sha256": "d864e349c4d4ca3bc5f3f4fe36b9102563a3fa824d6c2069c49a99c5fdd4ff73"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1756240,
+      "sha256": "325538e7e47b7e2fae4c60862619f17db57724295326a2fb884be7f9f7e8109b"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "bytes": 1506757,
+      "sha256": "70a65138d623dd1c2ee1031ab9404135f6035b25f17645fd784798d291076a82"
+    }
+  ],
+  "packedSourceImages": [
+    {
+      "name": "Image_0",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "sRGB"
+    },
+    {
+      "name": "Image_1",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "Non-Color"
+    },
+    {
+      "name": "Image_2",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "packed": true,
+      "colorSpace": "Non-Color"
+    }
+  ],
+  "sourceMissingExternalDependencies": [],
+  "reimportBlenderBounds": {
+    "min": [
+      -1.3103201389312744,
+      -1.3108813762664795,
+      0.0
+    ],
+    "max": [
+      1.3103201389312744,
+      1.3108813762664795,
+      3.0
+    ]
+  },
+  "note": "Structural validation and actual fresh GLB reimport. Visual comparison is a separate gate.",
+  "openCrownCenterProbes": [
+    {
+      "xy": [
+        0,
+        0
+      ],
+      "firstHitHeight": 0.24204683303833008
+    },
+    {
+      "xy": [
+        0.04,
+        0
+      ],
+      "firstHitHeight": 0.24197745323181152
+    },
+    {
+      "xy": [
+        -0.04,
+        0
+      ],
+      "firstHitHeight": 0.24188947677612305
+    },
+    {
+      "xy": [
+        0,
+        0.04
+      ],
+      "firstHitHeight": 0.24196386337280273
+    },
+    {
+      "xy": [
+        0,
+        -0.04
+      ],
+      "firstHitHeight": 0.2419731616973877
+    }
+  ]
+}

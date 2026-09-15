@@ -1,0 +1,448 @@
+{
+  "status": "inspection-only; no finalization acceptance implied",
+  "blenderVersion": "5.2.2 LTS",
+  "source": {
+    "file": "art/glass-adventure/v2/meshy/aurora-coupe-01/donor.glb",
+    "bytes": 7957896,
+    "sha256": "cc78471e673f2c26a4dc86b0c70130c26a38a47e23ca0af78fe00ec903631879",
+    "generator": "Meshy"
+  },
+  "boundsInImportedBlenderCoordinates": {
+    "min": [
+      -0.7829869985580444,
+      -0.7846059203147888,
+      -0.9519620537757874
+    ],
+    "max": [
+      0.781944990158081,
+      0.7877420783042908,
+      0.951024055480957
+    ]
+  },
+  "proposedTargetHeightMetres": 0.4,
+  "uniformNormalizationScale": 0.21019596415037908,
+  "meshes": [
+    {
+      "node": "Mesh_0",
+      "vertices": 28789,
+      "polygons": 20558,
+      "triangles": 20558,
+      "boundaryEdges": 27412,
+      "nonManifoldEdges": 27412,
+      "wireEdges": 0,
+      "zeroAreaFaces": 0,
+      "connectedComponentCount": 4804,
+      "largestConnectedComponents": [
+        {
+          "vertices": 116,
+          "faces": 119
+        },
+        {
+          "vertices": 77,
+          "faces": 77
+        },
+        {
+          "vertices": 76,
+          "faces": 76
+        },
+        {
+          "vertices": 70,
+          "faces": 98
+        },
+        {
+          "vertices": 68,
+          "faces": 103
+        },
+        {
+          "vertices": 67,
+          "faces": 93
+        },
+        {
+          "vertices": 66,
+          "faces": 82
+        },
+        {
+          "vertices": 65,
+          "faces": 65
+        },
+        {
+          "vertices": 64,
+          "faces": 63
+        },
+        {
+          "vertices": 64,
+          "faces": 65
+        },
+        {
+          "vertices": 63,
+          "faces": 91
+        },
+        {
+          "vertices": 62,
+          "faces": 89
+        },
+        {
+          "vertices": 59,
+          "faces": 58
+        },
+        {
+          "vertices": 58,
+          "faces": 78
+        },
+        {
+          "vertices": 56,
+          "faces": 60
+        },
+        {
+          "vertices": 54,
+          "faces": 55
+        },
+        {
+          "vertices": 54,
+          "faces": 72
+        },
+        {
+          "vertices": 52,
+          "faces": 72
+        },
+        {
+          "vertices": 52,
+          "faces": 64
+        },
+        {
+          "vertices": 51,
+          "faces": 56
+        }
+      ],
+      "signedLocalVolume": 0.19089835680227432,
+      "uvLayers": [
+        "UVMap"
+      ],
+      "materials": [
+        "Material_0"
+      ],
+      "materialFaceCounts": {
+        "0": 20558
+      }
+    }
+  ],
+  "afterCoincidentSeamWeldDiagnostic": [
+    {
+      "node": "Mesh_0",
+      "vertices": 10089,
+      "polygons": 20558,
+      "triangles": 20558,
+      "boundaryEdges": 61,
+      "nonManifoldEdges": 156,
+      "wireEdges": 0,
+      "zeroAreaFaces": 0,
+      "connectedComponentCount": 1,
+      "largestConnectedComponents": [
+        {
+          "vertices": 10089,
+          "faces": 20558
+        }
+      ],
+      "signedLocalVolume": 0.19089835680227432,
+      "uvLayers": [
+        "UVMap"
+      ],
+      "materials": [
+        "Material_0"
+      ],
+      "materialFaceCounts": {
+        "0": 20558
+      }
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material_0",
+      "textures": [
+        {
+          "node": "Image Texture",
+          "image": "Image_0",
+          "size": [
+            2048,
+            2048
+          ]
+        },
+        {
+          "node": "Image Texture.001",
+          "image": "Image_1",
+          "size": [
+            2048,
+            2048
+          ]
+        },
+        {
+          "node": "Image Texture.002",
+          "image": "Image_2",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ]
+    }
+  ],
+  "verticalCentreRegionRays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2765566706024395,
+          "normalZ": 0.9999393820762634,
+          "face": 9149
+        },
+        {
+          "heightMetres": 0.027592860908836836,
+          "normalZ": -0.999998152256012,
+          "face": 8000
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2766944357013568,
+          "normalZ": 0.9999393820762634,
+          "face": 9149
+        },
+        {
+          "heightMetres": 0.23517375319281048,
+          "normalZ": -0.2232019454240799,
+          "face": 11352
+        },
+        {
+          "heightMetres": 0.19276879189523766,
+          "normalZ": 0.53122878074646,
+          "face": 11166
+        },
+        {
+          "heightMetres": 0.1904086069171523,
+          "normalZ": -0.7674555778503418,
+          "face": 11116
+        },
+        {
+          "heightMetres": 0.18778356224074885,
+          "normalZ": 0.7582351565361023,
+          "face": 11109
+        },
+        {
+          "heightMetres": 0.15770217437013515,
+          "normalZ": -0.6924744248390198,
+          "face": 11340
+        },
+        {
+          "heightMetres": 0.1549591473422853,
+          "normalZ": 0.5709958672523499,
+          "face": 11170
+        },
+        {
+          "heightMetres": 0.1535889477711349,
+          "normalZ": -0.13994459807872772,
+          "face": 11189
+        },
+        {
+          "heightMetres": 0.07554525101459404,
+          "normalZ": 0.19572125375270844,
+          "face": 11268
+        },
+        {
+          "heightMetres": 0.027573140804644774,
+          "normalZ": -0.999998152256012,
+          "face": 8000
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2766205416895876,
+          "normalZ": 0.9999786019325256,
+          "face": 8186
+        },
+        {
+          "heightMetres": 0.23522995361045948,
+          "normalZ": -0.18852071464061737,
+          "face": 8599
+        },
+        {
+          "heightMetres": 0.19292688160598825,
+          "normalZ": 0.3408856689929962,
+          "face": 8663
+        },
+        {
+          "heightMetres": 0.19085416271948757,
+          "normalZ": -0.39377373456954956,
+          "face": 8678
+        },
+        {
+          "heightMetres": 0.18799400763790708,
+          "normalZ": 0.7452545762062073,
+          "face": 8491
+        },
+        {
+          "heightMetres": 0.1577844782420943,
+          "normalZ": -0.700727641582489,
+          "face": 8307
+        },
+        {
+          "heightMetres": 0.15407588963870458,
+          "normalZ": 0.22723115980625153,
+          "face": 8666
+        },
+        {
+          "heightMetres": 0.15392783224906692,
+          "normalZ": -0.2673766314983368,
+          "face": 8667
+        },
+        {
+          "heightMetres": 0.07429142073045884,
+          "normalZ": 0.20529891550540924,
+          "face": 8503
+        },
+        {
+          "heightMetres": 0.02761253089840579,
+          "normalZ": -0.999998152256012,
+          "face": 8000
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.2765426385079699,
+          "normalZ": 0.9999786019325256,
+          "face": 8186
+        },
+        {
+          "heightMetres": 0.22718572344639892,
+          "normalZ": -0.19481807947158813,
+          "face": 9687
+        },
+        {
+          "heightMetres": 0.19259959553114125,
+          "normalZ": 0.22876223921775818,
+          "face": 9739
+        },
+        {
+          "heightMetres": 0.19060577115614655,
+          "normalZ": -0.38851335644721985,
+          "face": 10048
+        },
+        {
+          "heightMetres": 0.18826530784833523,
+          "normalZ": 0.884147584438324,
+          "face": 9942
+        },
+        {
+          "heightMetres": 0.15737584673745503,
+          "normalZ": -0.8361735343933105,
+          "face": 9787
+        },
+        {
+          "heightMetres": 0.15470673564652201,
+          "normalZ": 0.45623070001602173,
+          "face": 9931
+        },
+        {
+          "heightMetres": 0.15363707033797208,
+          "normalZ": -0.5718371272087097,
+          "face": 10090
+        },
+        {
+          "heightMetres": 0.08225868109775707,
+          "normalZ": 0.14055947959423065,
+          "face": 9882
+        },
+        {
+          "heightMetres": 0.027623418300275485,
+          "normalZ": -0.9999887347221375,
+          "face": 8138
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.27660187399248076,
+          "normalZ": 0.9999393820762634,
+          "face": 9149
+        },
+        {
+          "heightMetres": 0.2252747557702995,
+          "normalZ": -0.15696272253990173,
+          "face": 9813
+        },
+        {
+          "heightMetres": 0.19352408034263618,
+          "normalZ": 0.7519243359565735,
+          "face": 9900
+        },
+        {
+          "heightMetres": 0.19019613266079927,
+          "normalZ": -0.7553097009658813,
+          "face": 9672
+        },
+        {
+          "heightMetres": 0.18854196327606684,
+          "normalZ": 0.7576040625572205,
+          "face": 9780
+        },
+        {
+          "heightMetres": 0.1571432522429661,
+          "normalZ": -0.8205033540725708,
+          "face": 9837
+        },
+        {
+          "heightMetres": 0.15552241691300875,
+          "normalZ": 0.5344031453132629,
+          "face": 9947
+        },
+        {
+          "heightMetres": 0.15249136861751514,
+          "normalZ": -0.8210532665252686,
+          "face": 9816
+        },
+        {
+          "heightMetres": 0.08617766968192782,
+          "normalZ": 0.13199128210544586,
+          "face": 9963
+        },
+        {
+          "heightMetres": 0.027609235861936594,
+          "normalZ": -0.999998152256012,
+          "face": 8000
+        }
+      ]
+    }
+  ],
+  "decisionsPending": [
+    "silhouette and front orientation",
+    "mouth and cavity classification",
+    "gold versus glass surface regions",
+    "topology repair, if necessary",
+    "closed fracture feasibility and appropriate piece count"
+  ]
+}

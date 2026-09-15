@@ -112,6 +112,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         onPointerDown={(event) => {
           if (pointer !== null || adventure.paused() || adventure.tutorial())
             return
+          adventure.enableMusic()
           pointer = event.pointerId
           event.currentTarget.focus({ preventScroll: true })
           previous = { x: event.clientX, y: event.clientY }
@@ -226,6 +227,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       >
         <TouchControls
           input={adventure.input}
+          onActivity={adventure.enableMusic}
           disabled={
             adventure.voiceMode() !== 'off' ||
             adventure.snapshot().phase === 'shattering'
@@ -345,6 +347,71 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           >
             <h2 id="glass-pause-title">Take a little breath.</h2>
             <p>Your progress is safe. The microphone is off.</p>
+            <Show when={adventure.audioPreferences()}>
+              {(preferences) => (
+                <fieldset class={styles.audioSettings}>
+                  <legend>Museum sound</legend>
+                  <label class={styles.audioMute}>
+                    <input
+                      type="checkbox"
+                      checked={preferences().muted}
+                      onChange={(event) =>
+                        adventure.changeAudio({
+                          muted: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                    Mute music and ambience
+                  </label>
+                  <label class={styles.audioVolume} for="glass-music-volume">
+                    <span>
+                      Music{' '}
+                      <output for="glass-music-volume">
+                        {Math.round(preferences().musicVolume * 100)}%
+                      </output>
+                    </span>
+                    <input
+                      id="glass-music-volume"
+                      aria-label="Music volume"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={Math.round(preferences().musicVolume * 100)}
+                      onInput={(event) =>
+                        adventure.changeAudio({
+                          musicVolume: event.currentTarget.valueAsNumber / 100,
+                        })
+                      }
+                    />
+                  </label>
+                  <label class={styles.audioVolume} for="glass-ambience-volume">
+                    <span>
+                      Ambience{' '}
+                      <output for="glass-ambience-volume">
+                        {Math.round(preferences().ambienceVolume * 100)}%
+                      </output>
+                    </span>
+                    <input
+                      id="glass-ambience-volume"
+                      aria-label="Ambience volume"
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={Math.round(preferences().ambienceVolume * 100)}
+                      onInput={(event) =>
+                        adventure.changeAudio({
+                          ambienceVolume:
+                            event.currentTarget.valueAsNumber / 100,
+                        })
+                      }
+                    />
+                  </label>
+                  <small>Music and ambience fade out while you sing.</small>
+                </fieldset>
+              )}
+            </Show>
             <button
               class={styles.primary}
               type="button"

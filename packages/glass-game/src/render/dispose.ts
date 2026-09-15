@@ -4,10 +4,12 @@
 
 import type { Material, Mesh, Object3D, Texture } from 'three'
 
-export function disposeObject(root: Object3D): void {
+export function disposeObject(
+  root: Object3D,
+  borrowedMaterials: ReadonlySet<Material> = new Set(),
+): void {
   const geometries = new Set<Mesh['geometry']>()
   const materials = new Set<Material>()
-  const textures = new Set<Texture>()
   root.traverse((object) => {
     const mesh = object as Mesh
     if (
@@ -19,15 +21,22 @@ export function disposeObject(root: Object3D): void {
     for (const material of Array.isArray(mesh.material)
       ? mesh.material
       : [mesh.material]) {
-      if (material === undefined) continue
+      if (material === undefined || borrowedMaterials.has(material)) continue
       materials.add(material)
-      for (const value of Object.values(material)) {
-        if ((value as Texture | null)?.isTexture) textures.add(value as Texture)
-      }
     }
   })
   geometries.forEach((geometry) => geometry.dispose())
-  materials.forEach((material) => material.dispose())
-  textures.forEach((texture) => texture.dispose())
+  disposeMaterials(materials)
   root.removeFromParent()
+}
+
+/** Shared palettes may own textures that were never attached to a visible mesh. */
+export function disposeMaterials(materials: Iterable<Material>): void {
+  const unique = new Set(materials)
+  const textures = new Set<Texture>()
+  for (const material of unique)
+    for (const value of Object.values(material))
+      if ((value as Texture | null)?.isTexture) textures.add(value as Texture)
+  unique.forEach((material) => material.dispose())
+  textures.forEach((texture) => texture.dispose())
 }

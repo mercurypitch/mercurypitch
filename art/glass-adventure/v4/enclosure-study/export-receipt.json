@@ -1,0 +1,15 @@
+{
+  "purpose": "Separate authoring room preview; no gameplay or collision",
+  "bytes": 57286688,
+  "sha256": "370b3d0a38eabd25858bd2b40e500126ed50289caa7ca3803f341df507523e38",
+  "meshNodes": 26,
+  "uniqueMeshReferences": 14,
+  "sharedGeometry": true,
+  "cameras": [
+    "Interior",
+    "Room overview",
+    "Window sightline"
+  ],
+  "images": 24,
+  "externalDependencies": false
+}

@@ -69,6 +69,53 @@ beforeEach(() => {
 })
 
 describe('browser voice ownership', () => {
+  it('acquires permission in the gesture but waits for soundtrack silence before detecting pitch', async () => {
+    const quiet = deferred<undefined>()
+    const voice = createBrowserVoice()
+    const pending = voice.start(quiet.promise)
+    expect(mocks.acquire).toHaveBeenCalledOnce()
+    expect(leases[0].unlock).toHaveBeenCalledOnce()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(mocks.create).not.toHaveBeenCalled()
+    quiet.resolve(undefined)
+    await pending
+    expect(mocks.create).toHaveBeenCalledOnce()
+    voice.stop()
+  })
+
+  it('does not start a detector after cancellation during the fade', async () => {
+    const quiet = deferred<undefined>()
+    const voice = createBrowserVoice()
+    const pending = voice.start(quiet.promise)
+    await Promise.resolve()
+    voice.stop()
+    quiet.resolve(undefined)
+    await pending
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  it('rejects a failed silence handoff even when the rejection value is null', async () => {
+    const voice = createBrowserVoice()
+    await expect(voice.start(Promise.reject(null))).rejects.toBeNull()
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  it('rechecks the context after waiting for silence', async () => {
+    const quiet = deferred<undefined>()
+    const voice = createBrowserVoice()
+    const pending = voice.start(quiet.promise)
+    await Promise.resolve()
+    await Promise.resolve()
+    context.state = 'interrupted'
+    quiet.resolve(undefined)
+    await expect(pending).rejects.toThrow('interrupted')
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
   it('releases a late permission grant without stopping a newer microphone session', async () => {
     const late = deferred<MediaStream>()
     mocks.acquire.mockReturnValueOnce(late.promise)

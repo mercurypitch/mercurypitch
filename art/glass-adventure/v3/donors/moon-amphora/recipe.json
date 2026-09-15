@@ -1,0 +1,17 @@
+{
+  "name": "moon-amphora",
+  "inspectionName": "moon-amphora-high-source",
+  "donor": "art/glass-adventure/v2/meshy/moon-amphora-01/pre-remeshed.glb",
+  "sourceSha256": "e129fcd5b268813135b6c5b5022ee58dad458412a0347c44b4098f4f315203b0",
+  "nodePrefix": "vase_amphora",
+  "heightMetres": 0.55,
+  "inspectionDecision": "Actual Meshy high source retained through inspected0.6mm clean shell then200k\u2192100k reduction;99,976tri after whole zero-volume-component removal. Source-based gold regions, closed23fragment cut, reimport and physical visual proof; see README and validation.json for acceptance limits. Original50k region trial preserved separately.",
+  "repair": {
+    "skipCoincidentWeld": true,
+    "targetTriangles": 100000,
+    "smoothSurface": true
+  },
+  "shardCount": 23,
+  "seed": 20260916,
+  "preparationScript": "prepare_fine_lod.py \u2192 prepare_reviewed_shell.py \u2192 apply_reviewed_materials.py"
+}

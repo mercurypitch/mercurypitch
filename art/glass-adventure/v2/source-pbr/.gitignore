@@ -1,0 +1,2 @@
+# Provider archives and extracted originals now use the parent Git LFS rules.
+# Only interrupted downloads and authoring caches are excluded by the parent.

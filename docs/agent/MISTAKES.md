@@ -259,6 +259,13 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Rule:** cancel playback logically at once, grant a bounded audio-clock release through the shared lease, and disconnect cancelled tails if the OS interrupts that release. A foreground route interruption must still preserve active playback. Native events also need the App plugin registered in each consuming app.
 **See:** `packages/audio-io/src/shared-audio-context.ts`, `apps/beside-cue/src/audio/web-audio-output.ts`
 
+### Distinguish a queued old suspension from a fresh audio interruption
+
+**Symptom:** cancelling a voice challenge sometimes left exploration music silent.
+**Cause:** the last encounter lease queued `suspend()` just before new music requested `resume()`; its delayed suspended event retired the fresh output.
+**Rule:** tolerate that suspended event only while the new unlock is pending and no sources have started. Native suspension preparation and genuine interruption must still cancel. Reproduce the ordering with an actual AudioContext, not only synchronous mocks.
+**See:** `packages/glass-game/src/browser/museum-output.ts`, `art/glass-adventure/audio/v1/verify_runtime.mjs`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
@@ -1294,6 +1301,20 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 **Cause:** a globally installed libvips makes Sharp attempt a source build instead of its prebuilt binary.
 **Rule:** retry with `SHARP_IGNORE_GLOBAL_LIBVIPS=1 pnpm install --frozen-lockfile`; do not change the lockfile or add build dependencies for the host's optional library.
 **See:** `pnpm-lock.yaml` (Sharp install dependencies).
+
+### Give glass transmission a real scene background
+
+**Symptom:** valid transparent GLBs appeared as solid white silhouettes in a review canvas, while Blender renders looked correct.
+**Cause:** the alpha canvas had only a CSS background. Three's transmission pass used its white clear fallback; CSS is outside the scene it samples.
+**Rule:** supply a real `scene.background` or rendered backdrop before judging glass materials. Confirm in the actual GLB browser view, separately from Blender proofs.
+**See:** `art/glass-adventure/v3/model-viewer.js`.
+
+### Validate fractured meshes again after GLB export
+
+**Symptom:** a closed Blender shard gained a boundary after GLB export, despite passing edge and intersection checks.
+**Cause:** simplification left isolated pairs of opposite triangles on the same three vertices. Blender's exporter removed one degenerate face, opening the zero-volume component.
+**Rule:** reject invalid mesh data and remove only verified collapsed components before fracture; then independently reimport the delivered GLB and check every named piece, materials and reconstructed volume.
+**See:** `art/glass-adventure/v3/solid_fracture.py`, `art/glass-adventure/v3/validate_final_shell.py`.
 
 ## Process
 

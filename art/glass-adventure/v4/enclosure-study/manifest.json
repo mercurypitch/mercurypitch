@@ -1,0 +1,199 @@
+{
+  "status": "visual-study-reviewed",
+  "liveRuntimeModified": false,
+  "coordinateSpace": "Blender Z up, metres",
+  "moduleHeightMetres": 3.6,
+  "roomCenterlineSizeMetres": [
+    8.894221072196961,
+    6.048018755912781
+  ],
+  "entryGapMetres": 2.490588192939759,
+  "seamOverlapMetres": 0.06,
+  "placements": [
+    {
+      "name": "North window west",
+      "kind": "window",
+      "position": [
+        -2.9940093779563903,
+        3.0240093779563906,
+        0
+      ],
+      "rotationZ": 0
+    },
+    {
+      "name": "North blind screen",
+      "kind": "screen",
+      "position": [
+        0,
+        3.0240093779563906,
+        0
+      ],
+      "rotationZ": 0
+    },
+    {
+      "name": "North window east",
+      "kind": "window",
+      "position": [
+        2.9940093779563903,
+        3.0240093779563906,
+        0
+      ],
+      "rotationZ": 0
+    },
+    {
+      "name": "West blind screen",
+      "kind": "screen",
+      "position": [
+        -4.447110536098481,
+        -1.42310115814209,
+        0
+      ],
+      "rotationZ": 1.5707963267948966
+    },
+    {
+      "name": "West window",
+      "kind": "window",
+      "position": [
+        -4.447110536098481,
+        1.5709082198143007,
+        0
+      ],
+      "rotationZ": 1.5707963267948966
+    },
+    {
+      "name": "East blind screen",
+      "kind": "screen",
+      "position": [
+        4.447110536098481,
+        -1.42310115814209,
+        0
+      ],
+      "rotationZ": -1.5707963267948966
+    },
+    {
+      "name": "East window",
+      "kind": "window",
+      "position": [
+        4.447110536098481,
+        1.5709082198143007,
+        0
+      ],
+      "rotationZ": -1.5707963267948966
+    },
+    {
+      "name": "South entry west",
+      "kind": "screen",
+      "position": [
+        -2.84620231628418,
+        -3.0240093779563906,
+        0
+      ],
+      "rotationZ": 3.141592653589793
+    },
+    {
+      "name": "South entry east",
+      "kind": "screen",
+      "position": [
+        2.84620231628418,
+        -3.0240093779563906,
+        0
+      ],
+      "rotationZ": 3.141592653589793
+    }
+  ],
+  "bayInstances": 9,
+  "bayUniqueTriangles": 41683,
+  "instanceTriangles": 441851,
+  "uniqueMeshTriangles": 269663,
+  "sources": [
+    {
+      "path": "art/glass-adventure/v4/architecture/exports/museum-window-bay-01-final-v1.glb",
+      "sha256": "f89dd6f919cc066c84d1673afe50d3a567437f78d9038fc318743429e6e1ff81",
+      "root": "meshy_museum_window_bay"
+    },
+    {
+      "path": "art/glass-adventure/v4/architecture/exports/museum-screen-bay-01-final-v1.glb",
+      "sha256": "b65b69a09f2c2a5ae33c71cf00e7e5ea6d6aeb97d28856c0635f598e596838a8",
+      "root": "meshy_museum_screen_bay"
+    },
+    {
+      "path": "apps/beside-cue/public/games/adventure-v2/platform-kit.glb",
+      "sha256": "61fce0a0b314e0e8aff649ea07dcfc070d56e053a9d7096fbc94bca8802ccf28",
+      "root": "platform_terrace"
+    },
+    {
+      "path": "apps/beside-cue/public/games/adventure-v3/gilded-column.glb",
+      "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946",
+      "root": "meshy_gilded_column"
+    },
+    {
+      "path": "apps/beside-cue/public/games/adventure-v3/observatory-canopy.glb",
+      "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+      "root": "meshy_observatory_canopy"
+    },
+    {
+      "path": "apps/beside-cue/public/games/adventure-v2/platform-kit.glb",
+      "sha256": "61fce0a0b314e0e8aff649ea07dcfc070d56e053a9d7096fbc94bca8802ccf28",
+      "root": "platform_plinth"
+    },
+    {
+      "path": "apps/beside-cue/public/games/adventure-v3/moon-amphora.glb",
+      "sha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251",
+      "root": "vase_amphora_intact"
+    },
+    {
+      "path": "apps/beside-cue/public/games/adventure-v3/aurora-coupe.glb",
+      "sha256": "61e0c2d373204eb6929df3e4834ccca1ae1d2f9d27d9ee55d398e2cb6d70e024",
+      "root": "coupe_aurora_intact"
+    }
+  ],
+  "cameras": [
+    {
+      "name": "Interior",
+      "position": [
+        0.0,
+        -2.700000047683716,
+        1.4500000476837158
+      ],
+      "lens": 18.0
+    },
+    {
+      "name": "Window sightline",
+      "position": [
+        -2.549999952316284,
+        -0.20000000298023224,
+        1.1799999475479126
+      ],
+      "lens": 24.0
+    },
+    {
+      "name": "Room overview",
+      "position": [
+        11.0,
+        -12.0,
+        10.0
+      ],
+      "lens": 46.0
+    }
+  ],
+  "limitations": [
+    "Visual enclosure study only; no live level replacement or movement/camera acceptance.",
+    "Walls retain source silhouette irregularities; 60 mm nominal cornice overlap is not a watertight corner contract.",
+    "Window sill is about 0.95 m; Merc eye-level around 0.55 m will not see through from a low camera.",
+    "Exterior donors are visual backdrop references, not connected walkable platforms."
+  ],
+  "visualReview": {
+    "images": [
+      "proofs/interior.png",
+      "proofs/room-overview.png",
+      "proofs/window-sightline.png"
+    ],
+    "result": "Whole glass exhibits, room side walls, deliberate entrance, solid-screen concealment and open-window external glimpses visible; owner adoption pending."
+  },
+  "browserVerification": "browser-check.json: all 3 real models load, orbit and pan change pixels, no page errors",
+  "blend": {
+    "path": "enclosure-study-v1.blend",
+    "sha256": "150f6cce530399e8e04a7e6220d05c871b43b612f38b32c4d82ddca10a645a1d",
+    "bytes": 55527302
+  }
+}

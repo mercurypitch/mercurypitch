@@ -1,0 +1,16 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "input": "art/glass-adventure/v3/donors/fluted-carafe/solid-source-input.npz",
+  "simplifyTolerance": 0.001,
+  "before": {
+    "triangles": 1986380,
+    "volume": 0.0016158895943191721
+  },
+  "meshes": [
+    {
+      "key": "intact",
+      "volume": 0.0016092338351548167,
+      "triangles": 317676
+    }
+  ]
+}

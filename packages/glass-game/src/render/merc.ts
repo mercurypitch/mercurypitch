@@ -4,13 +4,13 @@
 // Adapted from BesideCue's games/glass3d/render/merc.ts. This package owns
 // its loader and resources; it never imports either application's internals.
 
-import type { AnimationAction, Mesh, Texture } from 'three'
+import type { AnimationAction, Mesh } from 'three'
 import { AnimationMixer, Box3, Group, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameSnapshot } from '../contracts'
 import { disposeObject } from './dispose'
 
-export async function loadAdventureMerc(url: string, environment: Texture) {
+export async function loadAdventureMerc(url: string) {
   const gltf = await new GLTFLoader().loadAsync(url)
   const body = gltf.scene
   const bounds = new Box3().setFromObject(body)
@@ -25,7 +25,6 @@ export async function loadAdventureMerc(url: string, environment: Texture) {
     iridescence: 0.85,
     iridescenceIOR: 1.65,
     iridescenceThicknessRange: [120, 480],
-    envMap: environment,
     envMapIntensity: 1.25,
   })
   body.traverse((object) => {
@@ -83,11 +82,13 @@ export async function loadAdventureMerc(url: string, environment: Texture) {
         (item) => item.phase === 'charging' || item.phase === 'listening',
       )
       const moving = Math.hypot(player.velocity.x, player.velocity.z) > 0.08
+      // The authored fall clip topples into a puddle. Normal airborne travel
+      // keeps the upright pose; physics and stretch carry the jump.
       const name =
         snapshot.elapsedSeconds < celebrateUntil
           ? 'celebrate'
           : !player.grounded
-            ? 'fall'
+            ? 'listen'
             : active
               ? 'sing'
               : moving

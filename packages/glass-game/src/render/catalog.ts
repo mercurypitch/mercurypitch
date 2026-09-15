@@ -2,10 +2,15 @@
 // Render catalog — new exhibits and platform skins are data, not loader branches.
 // ============================================================
 
+import type { SurfaceTextures } from './texture-recipe'
+
 export interface BreakableRenderRecipe {
   bundle?: string
   intactNode?: string
   shardPrefix?: string
+  shardCount: number
+  /** A preferred bundle may contain a newer fracture than its legacy fallback. */
+  bundleShardCounts?: Readonly<Record<string, number>>
   persistentPrefix?: string
   displayHeight: number
   tint: number
@@ -30,32 +35,60 @@ const CLEAR_GLASS = {
 export const BREAKABLE_RENDER_CATALOG: Readonly<
   Record<string, BreakableRenderRecipe>
 > = {
-  goblet: { ...CLEAR_GLASS, displayHeight: 0.66, fallbackShape: 'goblet' },
+  goblet: {
+    ...CLEAR_GLASS,
+    bundle: 'vessels',
+    intactNode: 'goblet_laurel_intact',
+    shardPrefix: 'goblet_laurel_shard_',
+    shardCount: 23,
+    displayHeight: 0.66,
+    fallbackShape: 'goblet',
+  },
   vase: {
     ...CLEAR_GLASS,
     bundle: 'vessels',
     intactNode: 'vase_rounded_intact',
     shardPrefix: 'vase_rounded_shard_',
+    shardCount: 16,
+    bundleShardCounts: { 'vessels-v2': 23 },
     persistentPrefix: 'vase_rounded_base',
     displayHeight: 0.62,
     fallbackShape: 'rounded',
   },
   fluted: {
     ...CLEAR_GLASS,
-    bundle: 'vessels',
+    bundle: 'glass-fluted-v3',
     intactNode: 'vase_fluted_intact',
     shardPrefix: 'vase_fluted_shard_',
-    persistentPrefix: 'vase_fluted_base',
+    shardCount: 23,
     displayHeight: 0.76,
     fallbackShape: 'fluted',
   },
   amphora: {
     ...CLEAR_GLASS,
-    bundle: 'vessels',
+    bundle: 'glass-amphora-v3',
     intactNode: 'vase_amphora_intact',
     shardPrefix: 'vase_amphora_shard_',
-    persistentPrefix: 'vase_amphora_base',
+    shardCount: 23,
     displayHeight: 0.75,
+    fallbackShape: 'rounded',
+  },
+  coupe: {
+    ...CLEAR_GLASS,
+    bundle: 'glass-coupe-v3',
+    intactNode: 'coupe_aurora_intact',
+    shardPrefix: 'coupe_aurora_shard_',
+    shardCount: 23,
+    displayHeight: 0.52,
+    fallbackShape: 'goblet',
+  },
+  decanter: {
+    ...CLEAR_GLASS,
+    bundle: 'glass-decanter-v3',
+    intactNode: 'decanter_cut_intact',
+    shardPrefix: 'decanter_cut_shard_',
+    shardCount: 23,
+    displayHeight: 0.62,
     fallbackShape: 'rounded',
   },
   portrait: {
@@ -63,6 +96,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     bundle: 'legend-slab',
     intactNode: 'legend_cash_intact',
     shardPrefix: 'legend_cash_shard_',
+    shardCount: 16,
     persistentPrefix: 'legend_cash_frame_',
     displayHeight: 0.84,
     fallbackShape: 'slab',
@@ -86,32 +120,74 @@ export interface MuseumMaterialRecipe {
   color: number
   roughness: number
   metalness: number
-  texture?: string
+  textures?: SurfaceTextures
   transmission?: number
   thickness?: number
   iridescence?: number
   flatShading?: boolean
+  normalStrength?: number
 }
+
+const stoneTextures = (id: string, repeat = 1 / 1.2): SurfaceTextures => ({
+  map: {
+    asset: `${id}-basecolor`,
+    interpretation: 'color',
+    wrap: 'repeat',
+    repeat: [repeat, repeat],
+  },
+  normalMap: {
+    asset: `${id}-normal`,
+    interpretation: 'data',
+    wrap: 'repeat',
+    repeat: [repeat, repeat],
+  },
+  roughnessMap: {
+    asset: `${id}-roughness`,
+    interpretation: 'data',
+    wrap: 'repeat',
+    repeat: [repeat, repeat],
+  },
+})
 
 export const MUSEUM_MATERIAL_CATALOG: Readonly<
   Record<string, MuseumMaterialRecipe>
 > = {
   marble: {
-    color: 0xe8e0cc,
-    roughness: 0.28,
-    metalness: 0.08,
-    texture: 'floor-marble',
+    color: 0xffffff,
+    roughness: 1,
+    metalness: 0,
+    normalStrength: 0.18,
+    textures: stoneTextures('warm-carrara'),
   },
-  teal: { color: 0x155c68, roughness: 0.23, metalness: 0.42 },
-  gold: { color: 0xdcb671, roughness: 0.24, metalness: 0.85 },
-  rock: { color: 0x788f91, roughness: 0.85, metalness: 0, flatShading: true },
+  teal: {
+    color: 0xffffff,
+    roughness: 0.3,
+    metalness: 0,
+    normalStrength: 0.18,
+    textures: stoneTextures('verde-marble'),
+  },
+  limestone: {
+    color: 0xffffff,
+    roughness: 0.78,
+    metalness: 0,
+    normalStrength: 0.35,
+    textures: stoneTextures('cream-limestone'),
+  },
+  gold: {
+    color: 0xffffff,
+    roughness: 0.4,
+    metalness: 1,
+    normalStrength: 0.08,
+    textures: stoneTextures('brushed-brass', 4),
+  },
+  rock: { color: 0x69818b, roughness: 0.85, metalness: 0, flatShading: true },
   glass: {
-    color: 0xabe8e2,
-    roughness: 0.09,
-    metalness: 0.08,
-    transmission: 0.88,
-    thickness: 0.11,
-    iridescence: 0.65,
+    color: 0xcdf7f0,
+    roughness: 0.06,
+    metalness: 0,
+    transmission: 0.92,
+    thickness: 0.055,
+    iridescence: 0.35,
   },
 }
 
@@ -119,8 +195,9 @@ export const GLTF_MATERIAL_ALIASES: Readonly<Record<string, string>> = {
   museum_ivory: 'marble',
   museum_brass: 'gold',
   museum_petrol: 'teal',
-  museum_obsidian: 'teal',
-  museum_cyan: 'teal',
+  museum_obsidian: 'rock',
+  museum_cyan: 'glass',
+  museum_limestone: 'limestone',
   museum_glass: 'glass',
 }
 
