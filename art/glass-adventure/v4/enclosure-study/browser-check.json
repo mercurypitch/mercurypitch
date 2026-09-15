@@ -1,0 +1,27 @@
+{
+  "origin": "https://localhost:5187",
+  "results": [
+    {
+      "asset": "window",
+      "loaded": true,
+      "orbitChangedPixels": true,
+      "panChangedPixels": true,
+      "status": "22,204 instanced triangles · actual staged model · no collision or gameplay"
+    },
+    {
+      "asset": "screen",
+      "loaded": true,
+      "orbitChangedPixels": true,
+      "panChangedPixels": true,
+      "status": "19,479 instanced triangles · actual staged model · no collision or gameplay"
+    },
+    {
+      "asset": "room",
+      "loaded": true,
+      "orbitChangedPixels": true,
+      "panChangedPixels": true,
+      "status": "441,851 instanced triangles · actual staged model · no collision or gameplay"
+    }
+  ],
+  "errors": []
+}

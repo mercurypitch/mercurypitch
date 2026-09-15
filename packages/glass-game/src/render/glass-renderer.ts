@@ -2,15 +2,16 @@
 // Glass adventure renderer — a disposable, host-neutral Three.js museum scene.
 // ============================================================
 
-import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFSoftShadowMap, PMREMGenerator, Scene, SRGBColorSpace, WebGLRenderer, } from 'three'
+import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFSoftShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { loadMuseumAssets } from './asset-kit'
 import { createAtmosphere } from './atmosphere'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
 import { createContactShadow } from './contact-shadow'
-import { disposeObject } from './dispose'
-import { createMuseumMaterials, createReflectionTexture } from './materials'
+import { disposeMaterials, disposeObject } from './dispose'
+import { createMuseumEnvironment } from './environment'
+import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
 import { getMuseumSceneRecipe } from './scene-catalog'
@@ -70,12 +71,7 @@ export function createGlassRenderer(
   const scene = new Scene()
   scene.fog = new FogExp2(0x59899e, 0.009)
   const camera = createAdventureCamera(level)
-  const sourceEnvironment = createReflectionTexture()
-  const pmrem = new PMREMGenerator(renderer)
-  const environment = pmrem.fromEquirectangular(sourceEnvironment)
-  sourceEnvironment.dispose()
-  pmrem.dispose()
-  scene.environment = environment.texture
+  const environment = createMuseumEnvironment(renderer, scene)
   scene.environmentIntensity = 0.65
   const materials = createMuseumMaterials()
   const atmosphere = createAtmosphere(materials, getMuseumSceneRecipe(level.id))
@@ -102,11 +98,7 @@ export function createGlassRenderer(
   scene.add(contact.mesh)
   const vessels = new Map(
     level.breakables.map((target) => {
-      const vessel = createVessel(
-        target,
-        environment.texture,
-        options.reducedMotion ?? false,
-      )
+      const vessel = createVessel(target, options.reducedMotion ?? false)
       scene.add(vessel.root)
       return [target.id, vessel]
     }),
@@ -133,10 +125,7 @@ export function createGlassRenderer(
   resize()
   const observer = new ResizeObserver(resize)
   observer.observe(container)
-  const mercReady = loadAdventureMerc(
-    assetUrl('merc'),
-    environment.texture,
-  ).then((actor) => {
+  const mercReady = loadAdventureMerc(assetUrl('merc')).then((actor) => {
     if (disposed) {
       actor.dispose()
       return
@@ -155,7 +144,40 @@ export function createGlassRenderer(
     () => disposed,
     options.onAssetError,
   )
-  const ready = Promise.all([mercReady, assetsReady]).then(() => {})
+  const sceneRecipe = getMuseumSceneRecipe(level.id)
+  const environmentReady =
+    sceneRecipe.environment !== undefined
+      ? environment
+          .load(
+            assetUrl(sceneRecipe.environment),
+            () => disposed || contextLost,
+          )
+          .catch((error: unknown) => {
+            if (!disposed)
+              options.onAssetError?.(sceneRecipe.environment!, error)
+          })
+      : Promise.resolve()
+  const ready = Promise.all([mercReady, assetsReady, environmentReady]).then(
+    () => {
+      if (disposed || contextLost || !sceneRecipe.reflectionProbe) return
+      const position = new Vector3().copy(sceneRecipe.reflectionProbe)
+      try {
+        environment.capture(
+          position,
+          [
+            contact.mesh,
+            ...[...vessels.values()].map((vessel) => vessel.root),
+            ...(merc ? [merc.root] : []),
+          ],
+          container.clientWidth < 700 ? 128 : 256,
+        )
+      } catch (error: unknown) {
+        // The previous environment remains valid if this optional enhancement fails.
+        if (!disposed && !contextLost)
+          options.onAssetError?.('museum-reflection-probe', error)
+      }
+    },
+  )
   return {
     ready,
     resize,
@@ -190,8 +212,15 @@ export function createGlassRenderer(
       merc?.dispose()
       vessels.forEach((vessel) => vessel.dispose())
       scene.environment = null
-      disposeObject(scene)
-      Object.values(materials).forEach((material) => material.dispose())
+      disposeObject(
+        scene,
+        new Set([
+          ...museum.materialLibrary.materials,
+          ...Object.values(materials),
+        ]),
+      )
+      museum.materialLibrary.dispose()
+      disposeMaterials(Object.values(materials))
       environment.dispose()
       key.shadow.dispose()
       renderer.dispose()

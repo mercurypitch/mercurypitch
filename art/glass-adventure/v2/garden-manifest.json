@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "source": "Blender-authored deterministic garden geometry",
+  "units": "metres",
+  "up": "+Y",
+  "collision": "none; perimeter/underside dressing only",
+  "bytes": 813920,
+  "sha256": "64e7e44d4d6fe7ffa743f5fdc5eda4dcb5be7fa6b65945a3c0a1af3c95366685",
+  "assemblies": {
+    "garden_perimeter": {
+      "triangles": 4552,
+      "materials": [
+        "garden_palette",
+        "museum_ivory"
+      ]
+    },
+    "garden_foliage": {
+      "triangles": 3352,
+      "materials": [
+        "garden_palette",
+        "museum_ivory"
+      ]
+    },
+    "ivy_trail": {
+      "triangles": 1056,
+      "materials": [
+        "garden_palette"
+      ]
+    },
+    "island_root": {
+      "triangles": 480,
+      "materials": [
+        "museum_limestone"
+      ]
+    }
+  }
+}

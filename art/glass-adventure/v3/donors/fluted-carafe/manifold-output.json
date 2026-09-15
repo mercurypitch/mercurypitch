@@ -1,0 +1,131 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "input": "/home/maff/.codex/worktrees/00ad/mercurypitch-agent/art/glass-adventure/v3/donors/fluted-carafe/manifold-input.npz",
+  "simplifyTolerance": 0,
+  "before": {
+    "triangles": 50000,
+    "volume": 0.0016089811625612225
+  },
+  "meshes": [
+    {
+      "key": "intact",
+      "volume": 0.0016089811625612225,
+      "triangles": 50000
+    },
+    {
+      "key": "shard_000",
+      "volume": 8.08798948062311e-05,
+      "triangles": 6640
+    },
+    {
+      "key": "shard_001",
+      "volume": 0.00012019299409579744,
+      "triangles": 2590
+    },
+    {
+      "key": "shard_002",
+      "volume": 3.4579625164900766e-05,
+      "triangles": 1246
+    },
+    {
+      "key": "shard_003",
+      "volume": 8.060692399961583e-05,
+      "triangles": 3360
+    },
+    {
+      "key": "shard_004",
+      "volume": 4.741003316389112e-05,
+      "triangles": 1536
+    },
+    {
+      "key": "shard_005",
+      "volume": 5.715061526353793e-05,
+      "triangles": 1908
+    },
+    {
+      "key": "shard_006",
+      "volume": 7.010176621552138e-05,
+      "triangles": 2534
+    },
+    {
+      "key": "shard_007",
+      "volume": 7.98583932932879e-05,
+      "triangles": 7076
+    },
+    {
+      "key": "shard_008",
+      "volume": 6.24189377742644e-05,
+      "triangles": 2954
+    },
+    {
+      "key": "shard_009",
+      "volume": 4.339965107414365e-05,
+      "triangles": 1816
+    },
+    {
+      "key": "shard_010",
+      "volume": 8.347116226890837e-05,
+      "triangles": 3126
+    },
+    {
+      "key": "shard_011",
+      "volume": 3.350841307127207e-05,
+      "triangles": 1316
+    },
+    {
+      "key": "shard_012",
+      "volume": 7.390821062023303e-05,
+      "triangles": 2730
+    },
+    {
+      "key": "shard_013",
+      "volume": 0.00014958768908555876,
+      "triangles": 3272
+    },
+    {
+      "key": "shard_014",
+      "volume": 8.825646469745905e-05,
+      "triangles": 5852
+    },
+    {
+      "key": "shard_015",
+      "volume": 8.384314715172748e-05,
+      "triangles": 3810
+    },
+    {
+      "key": "shard_016",
+      "volume": 5.765747825580689e-05,
+      "triangles": 2064
+    },
+    {
+      "key": "shard_017",
+      "volume": 5.790541884716187e-05,
+      "triangles": 3920
+    },
+    {
+      "key": "shard_018",
+      "volume": 5.358985100164619e-05,
+      "triangles": 3066
+    },
+    {
+      "key": "shard_019",
+      "volume": 5.9267172724842784e-05,
+      "triangles": 4722
+    },
+    {
+      "key": "shard_020",
+      "volume": 4.843877257568107e-05,
+      "triangles": 2078
+    },
+    {
+      "key": "shard_021",
+      "volume": 4.924890052652926e-05,
+      "triangles": 1638
+    },
+    {
+      "key": "shard_022",
+      "volume": 9.369964688320348e-05,
+      "triangles": 1760
+    }
+  ]
+}

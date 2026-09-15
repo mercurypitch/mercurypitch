@@ -166,6 +166,8 @@ describe('Glassworks simulation', () => {
     game.beginEncounter(goblet, 57)
     sing(game)
     steps(game, 180)
+    // Leave the planted approach lane before intentionally walking off the deck.
+    walkAxis(game, 'z', 3.65)
     let fell = false
     for (let n = 0; n < 600; n++) {
       if (
@@ -258,6 +260,9 @@ describe('Glassworks simulation', () => {
     for (let n = 0; n < 200 && game.snapshot().player.position.x > 5.5; n++)
       game.step({ ...idle, moveX: -1 }, MOVEMENT.fixedStep)
     steps(game, 24)
+    // The portrait base is a real obstacle now: jump onto it, then down to the exit.
+    walkAxis(game, 'z', 1.5)
+    game.step({ ...idle, moveZ: -1, jumpDown: true }, MOVEMENT.fixedStep)
     const events: GameEvent[] = []
     for (let n = 0; n < 300 && !game.snapshot().complete; n++)
       events.push(...game.step({ ...idle, moveZ: -1 }, MOVEMENT.fixedStep))
@@ -279,6 +284,10 @@ describe('Glassworks simulation', () => {
     }
     walkToGoblet(game)
     breakNearby(goblet)
+    walkAxis(game, 'z', 3.65)
+    walkAxis(game, 'x', 1.7)
+    walkAxis(game, 'z', 5.15)
+    walkAxis(game, 'x', 1.2)
     walkAxis(game, 'z', 7.5)
     walkAxis(game, 'x', 9.8)
     walkAxis(game, 'z', 7.22, false)
@@ -304,6 +313,8 @@ describe('Glassworks simulation', () => {
     ])
     walkAxis(game, 'z', 1.8)
     walkAxis(game, 'x', 5.5)
+    walkAxis(game, 'z', 1.5)
+    game.step({ ...idle, moveZ: -1, jumpDown: true }, MOVEMENT.fixedStep)
     for (let n = 0; n < 300 && !game.snapshot().complete; n++)
       game.step({ ...idle, moveZ: -1 }, MOVEMENT.fixedStep)
     expect(game.snapshot().complete).toBe(true)

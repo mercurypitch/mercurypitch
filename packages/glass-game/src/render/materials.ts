@@ -2,7 +2,7 @@
 // Museum materials — veined stone, warm brass and directional glass reflections.
 // ============================================================
 
-import { CanvasTexture, DataTexture, EquirectangularReflectionMapping, FloatType, LinearFilter, MeshPhysicalMaterial, RepeatWrapping, RGBAFormat, SRGBColorSpace, } from 'three'
+import { CanvasTexture, DataTexture, EquirectangularReflectionMapping, FloatType, LinearFilter, MeshPhysicalMaterial, RepeatWrapping, RGBAFormat, SRGBColorSpace, Vector2, } from 'three'
 import { MUSEUM_MATERIAL_CATALOG } from './catalog'
 
 export const MUSEUM_COLORS = {
@@ -83,12 +83,14 @@ export function createMuseumMaterials(): Record<string, MeshPhysicalMaterial> {
   const marbleMap = createMarbleTexture()
   return Object.fromEntries(
     Object.entries(MUSEUM_MATERIAL_CATALOG).map(([id, recipe]) => {
-      const { texture, ...surface } = recipe
+      const { textures, normalStrength = 1, ...surface } = recipe
       return [
         id,
         new MeshPhysicalMaterial({
           ...surface,
-          map: texture !== undefined ? marbleMap : null,
+          normalScale: new Vector2(normalStrength, normalStrength),
+          map:
+            id === 'marble' && textures?.map !== undefined ? marbleMap : null,
         }),
       ]
     }),

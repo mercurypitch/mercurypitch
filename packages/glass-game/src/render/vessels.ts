@@ -9,6 +9,7 @@ import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import type { FracturePiece } from './fracture'
 import { fractureGeometry } from './fracture'
+import { createMaterialLibrary } from './material-library'
 
 /** Fallbacks and authored GLBs share the same recipe-sized, floor-based envelope. */
 function fitDisplayHeight(
@@ -104,11 +105,11 @@ export function createVesselGeometry(variant: string): BufferGeometry {
 
 export function createVessel(
   target: BreakableDefinition,
-  environment: Texture,
   reducedMotion: boolean,
 ) {
   const recipe = getBreakableRenderRecipe(target.variant)
   const root = new Group()
+  const materialLibrary = createMaterialLibrary()
   root.name = `vessel-${target.id}`
   root.position.copy(target.position)
   root.position.y += 0.255
@@ -127,7 +128,6 @@ export function createVessel(
     iridescence: 0.8,
     iridescenceThicknessRange: [150, 480],
     clearcoat: 1,
-    envMap: environment,
     envMapIntensity: 1.5,
     side: DoubleSide,
     emissive: 0x3fccbe,
@@ -140,7 +140,7 @@ export function createVessel(
     clearcoat: 1,
     side: DoubleSide,
   })
-  const material: Material | Material[] =
+  let material: Material | Material[] =
     recipe.portraitTexture !== undefined ? [glass, portrait] : glass
   let intact: Mesh
   let shardMeshes: {
@@ -227,21 +227,43 @@ export function createVessel(
   let latest: BreakableSnapshot | undefined
   return {
     root,
+    materialLibrary,
     addPersistent(object: Group) {
       root.add(object)
     },
-    setGeometry(geometry: BufferGeometry, authoredPieces?: FracturePiece[]) {
+    setGeometry(
+      geometry: BufferGeometry,
+      authoredPieces?: FracturePiece[],
+      authoredMaterials?: Material[],
+    ) {
       // A late cosmetic download cannot rewind an already presented break.
       if (latest?.brokenAt !== null && latest?.brokenAt !== undefined) {
         geometry.dispose()
         authoredPieces?.forEach((piece) => piece.geometry.dispose())
         return
       }
+      if (authoredMaterials) {
+        material = authoredMaterials
+        for (const imported of authoredMaterials) {
+          if (imported.name !== recipe.portraitMaterial || !portrait.map)
+            continue
+          const face = imported as MeshPhysicalMaterial
+          face.map = portrait.map
+          face.needsUpdate = true
+        }
+      }
       install(geometry, authoredPieces)
     },
     setPortrait(texture: Texture) {
       portrait.map = texture
       portrait.needsUpdate = true
+      // The same image binding survives onto authored intact and fragment slots.
+      for (const imported of materialLibrary.materials) {
+        if (imported.name !== recipe.portraitMaterial) continue
+        const face = imported as MeshPhysicalMaterial
+        face.map = texture
+        face.needsUpdate = true
+      }
     },
     update(state: BreakableSnapshot, now: number) {
       latest = state
@@ -251,8 +273,19 @@ export function createVessel(
       const delay = reducedMotion ? 0 : 0.1
       const shattered = age >= delay && age >= 0
       intact.visible = !restored && !shattered
-      glass.emissiveIntensity =
-        state.charge * state.charge * 0.8 + (age >= 0 && age < delay ? 1.5 : 0)
+      const stress =
+        age < 0
+          ? state.charge * state.charge * 0.8
+          : age < delay
+            ? 1.5
+            : Math.max(0, 0.45 - (age - delay) * 3)
+      glass.emissiveIntensity = stress
+      for (const imported of materialLibrary.materials) {
+        const surface = imported as MeshPhysicalMaterial
+        if (!(surface.transmission > 0)) continue
+        surface.emissive.setHex(0x3fccbe)
+        surface.emissiveIntensity = stress
+      }
       crackMaterial.opacity = Math.max(0, state.charge - 0.35) * 0.9
       for (const crack of cracks)
         crack.visible = intact.visible && state.charge > 0.35
@@ -284,7 +317,13 @@ export function createVessel(
     },
     dispose() {
       glass.envMap = null
-      disposeObject(root)
+      disposeObject(
+        root,
+        new Set([...materialLibrary.materials, glass, portrait, crackMaterial]),
+      )
+      materialLibrary.dispose()
+      glass.dispose()
+      portrait.map?.dispose()
       portrait.dispose()
       crackMaterial.dispose()
     },

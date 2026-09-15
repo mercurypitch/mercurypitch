@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 2,
+  "license": "CC0-1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "sources": [
+    {
+      "provider": "ambientCG",
+      "providerAssetId": "Marble004",
+      "projectRole": "warm-carrara",
+      "url": "https://ambientcg.com/view?id=Marble004",
+      "licenseUrl": "https://docs.ambientcg.com/license/",
+      "files": [
+        {
+          "assetId": "warm-carrara-basecolor",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-basecolor.png",
+          "bytes": 998415,
+          "sha256": "5dce6cc6441fcf2682a5217ac1c8a6b3efda386e66e090f215262adf5439130a",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "RGB"
+        },
+        {
+          "assetId": "warm-carrara-normal",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-normal.png",
+          "bytes": 4903513,
+          "sha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "RGB"
+        },
+        {
+          "assetId": "warm-carrara-roughness",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-roughness.png",
+          "bytes": 596077,
+          "sha256": "247f91e6ff818a3ebb0301b3dca4cdba79f30b3a274d1dfab56a0c76b8e6df47",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "L"
+        }
+      ]
+    },
+    {
+      "provider": "ambientCG",
+      "providerAssetId": "Marble009",
+      "projectRole": "verde-marble",
+      "url": "https://ambientcg.com/view?id=Marble009",
+      "licenseUrl": "https://docs.ambientcg.com/license/",
+      "files": [
+        {
+          "assetId": "verde-marble-basecolor",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-basecolor.png",
+          "bytes": 1871383,
+          "sha256": "1702b28a34989389f1bfdf55943f323110c844c16bb6f5cd2e1409fb313f87da",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "RGB"
+        },
+        {
+          "assetId": "verde-marble-normal",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-normal.png",
+          "bytes": 3381773,
+          "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "RGB"
+        },
+        {
+          "assetId": "verde-marble-roughness",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-roughness.png",
+          "bytes": 448294,
+          "sha256": "25cfa4d95ee494eb49cd0f72438f57472a81b6c247a17256bedc7f8299a10281",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "L"
+        }
+      ]
+    },
+    {
+      "provider": "ambientCG",
+      "providerAssetId": "Travertine001",
+      "projectRole": "cream-limestone",
+      "url": "https://ambientcg.com/view?id=Travertine001",
+      "licenseUrl": "https://docs.ambientcg.com/license/",
+      "files": [
+        {
+          "assetId": "cream-limestone-basecolor",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-basecolor.png",
+          "bytes": 1489268,
+          "sha256": "561fd6ca43446da5680113ef8900ba136fb7c6be30b5aaad223c55627c0ef8b0",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "RGB"
+        },
+        {
+          "assetId": "cream-limestone-normal",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-normal.png",
+          "bytes": 2747140,
+          "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "RGB"
+        },
+        {
+          "assetId": "cream-limestone-roughness",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-roughness.png",
+          "bytes": 362372,
+          "sha256": "729ebff506fdeee407793a8394a7bf66ea79bd658a74a0593cc8c88d27ce725d",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "L"
+        }
+      ]
+    },
+    {
+      "provider": "ambientCG",
+      "providerAssetId": "Metal034",
+      "projectRole": "brushed-brass",
+      "url": "https://ambientcg.com/view?id=Metal034",
+      "licenseUrl": "https://docs.ambientcg.com/license/",
+      "files": [
+        {
+          "assetId": "brushed-brass-basecolor",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-basecolor.png",
+          "bytes": 125306,
+          "sha256": "46712eb6b19970d00ac0f35a26035045521531bdd40c415382f7338ab8dd10ea",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "P"
+        },
+        {
+          "assetId": "brushed-brass-normal",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-normal.png",
+          "bytes": 2692053,
+          "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "RGB"
+        },
+        {
+          "assetId": "brushed-brass-roughness",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-roughness.png",
+          "bytes": 193213,
+          "sha256": "8fe69c25a7dbf2d593ea192d49b756cb60900a8917bcfe7ec4525d5ad44e149e",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "P"
+        },
+        {
+          "assetId": "brushed-brass-metalness",
+          "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-metalness.png",
+          "bytes": 798,
+          "sha256": "218dc8075081832ce2b9466d33e82d745508eeffed758cd110789b24989c7086",
+          "width": 1024,
+          "height": 1024,
+          "imageMode": "1"
+        }
+      ]
+    },
+    {
+      "provider": "Poly Haven",
+      "providerAssetId": "umhlanga_sunrise",
+      "author": "Greg Zaal",
+      "url": "https://polyhaven.com/a/umhlanga_sunrise",
+      "licenseUrl": "https://polyhaven.com/license",
+      "files": [
+        {
+          "assetId": "museum-environment-v2",
+          "width": 1024,
+          "height": 512,
+          "path": "apps/beside-cue/public/games/adventure-v2/environment/golden-coast.hdr",
+          "bytes": 1577804,
+          "sha256": "5bbc697864531c5953e8f249dec85f7c3f4d585bbf6708105c0a4e5510c75c03"
+        }
+      ]
+    }
+  ]
+}

@@ -348,7 +348,10 @@ jobs:
     needs: scope
     if: needs.scope.outputs.beside == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The complete browser suite alone took 17 minutes on PR #807; all
+    # checks/builds passed before the old 20-minute cap killed cache cleanup.
+    # Leave room for the voice/audio/collision cases and runner variation.
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup

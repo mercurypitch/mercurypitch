@@ -4,12 +4,16 @@
 
 import type { Material, Object3D } from 'three'
 import { BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, } from 'three'
+import { EXHIBIT_PLINTH } from '../content/solid-props'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, } from '../contracts'
 import { getPlatformRenderRecipe } from './catalog'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
+import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
 import { createPlatformPlanters } from './platform-details'
+import { createPlatformDressing } from './platform-dressing'
 import { getMuseumSceneRecipe } from './scene-catalog'
+import { stretchSurfaceUv } from './surface-uv'
 
 function box(
   parent: Group,
@@ -134,14 +138,60 @@ export function createMuseum(
   materials: MuseumMaterials,
 ) {
   const root = new Group()
+  const materialLibrary = createMaterialLibrary()
   const sceneRecipe = getMuseumSceneRecipe(level.id)
   const planters = new Map<string, Group>()
+  const coveredSolids = new Set<string>()
+  const solidFallbacks = (level.solids ?? []).flatMap((solid) => {
+    if (!solid.fallback) return []
+    const mesh =
+      solid.shape === 'box'
+        ? box(
+            root,
+            materials.marble,
+            solid.maxX - solid.minX,
+            solid.thickness,
+            solid.maxZ - solid.minZ,
+            (solid.minX + solid.maxX) / 2,
+            solid.top - solid.thickness / 2,
+            (solid.minZ + solid.maxZ) / 2,
+          )
+        : new Mesh(
+            new CylinderGeometry(
+              solid.radiusTop,
+              solid.radiusBottom,
+              solid.thickness,
+              32,
+            ),
+            materials.marble,
+          )
+    if (solid.shape === 'cylinder') {
+      mesh.position.set(solid.x, solid.top - solid.thickness / 2, solid.z)
+      mesh.castShadow = mesh.receiveShadow = true
+      root.add(mesh)
+    }
+    return [{ solid, mesh }]
+  })
+  const dressing = createPlatformDressing(
+    level,
+    sceneRecipe,
+    materials,
+    materialLibrary,
+  )
+  root.add(dressing.root)
   let cameraMeshCache: Mesh[] | undefined
   let lastEnabled = ''
   const floors = new Map(
     level.platforms.map((platform) => {
       const floor = createFloor(platform, materials)
-      if (sceneRecipe.planterPlatforms.includes(platform.id)) {
+      if (
+        sceneRecipe.planterPlatforms.includes(platform.id) &&
+        !solidFallbacks.some(
+          ({ solid }) =>
+            solid.platformId === platform.id &&
+            solid.fallback?.replacedByBundle === 'museum-garden-v2',
+        )
+      ) {
         const details = createPlatformPlanters(platform, materials)
         planters.set(platform.id, details)
         floor.add(details)
@@ -153,20 +203,25 @@ export function createMuseum(
   const pads = new Map<string, Mesh>()
   for (const target of level.breakables) {
     const pedestal = new Mesh(
-      new CylinderGeometry(0.25, 0.29, 0.24, 32),
+      new CylinderGeometry(
+        EXHIBIT_PLINTH.radiusTop,
+        EXHIBIT_PLINTH.radiusBottom,
+        EXHIBIT_PLINTH.height,
+        32,
+      ),
       materials.marble,
     )
     pedestal.position.copy(target.position)
-    pedestal.position.y += 0.12
+    pedestal.position.y += EXHIBIT_PLINTH.height / 2
     pedestal.castShadow = pedestal.receiveShadow = true
     root.add(pedestal)
     ring(
       root,
       materials.gold,
-      0.25,
+      EXHIBIT_PLINTH.radiusTop,
       0.014,
       target.position.x,
-      target.position.y + 0.24,
+      target.position.y + EXHIBIT_PLINTH.height,
       target.position.z,
     )
     const pad = new Mesh(
@@ -234,13 +289,14 @@ export function createMuseum(
   root.add(portal)
   return {
     root,
+    materialLibrary,
     cameraOccluders() {
       if (cameraMeshCache) return cameraMeshCache
       const meshes: Mesh[] = []
       root.updateWorldMatrix(true, true)
       for (const child of root.children) {
         if (!child.visible) continue
-        child.traverse((object) => {
+        child.traverseVisible((object) => {
           const mesh = object as Mesh
           if (!mesh.isMesh || !mesh.visible) return
           const material = Array.isArray(mesh.material)
@@ -254,6 +310,22 @@ export function createMuseum(
     },
     setKit(scene: Object3D, bundle: string) {
       cameraMeshCache = undefined
+      for (const { solid, mesh } of solidFallbacks)
+        if (
+          solid.fallback?.replacedByBundle === bundle &&
+          scene.getObjectByName(solid.fallback.replacedByNode)
+        ) {
+          coveredSolids.add(solid.id)
+          mesh.visible = false
+        }
+      dressing.install(scene, bundle, (id) => {
+        const previous = planters.get(id)
+        if (previous) {
+          removeKitGeometry(previous)
+          previous.removeFromParent()
+          planters.delete(id)
+        }
+      })
       for (const platform of level.platforms) {
         const recipe = getPlatformRenderRecipe(
           platform.renderId ?? platform.kind,
@@ -267,12 +339,20 @@ export function createMuseum(
           source,
           materials,
           recipe.materialOverrides,
+          materialLibrary,
         )
         art.scale.set(
           (platform.maxX - platform.minX) / dimensions.x,
           1,
           (platform.maxZ - platform.minZ) / dimensions.z,
         )
+        art.traverse((object) => {
+          const mesh = object as Mesh
+          if (!mesh.isMesh) return
+          const previous = mesh.geometry
+          mesh.geometry = stretchSurfaceUv(previous, art.scale)
+          previous.dispose()
+        })
         const details = planters.get(platform.id)
         details?.removeFromParent()
         removeKitGeometry(floor)
@@ -283,9 +363,10 @@ export function createMuseum(
         if (decoration.bundle !== bundle) continue
         const source = scene.getObjectByName(decoration.node)
         if (source === undefined) continue
-        const art = createKitInstance(source, materials)
+        const art = createKitInstance(source, materials, {}, materialLibrary)
         art.position.copy(decoration.position)
         art.scale.setScalar(decoration.scale)
+        art.rotation.y = decoration.yaw ?? 0
         root.add(art)
         if (decoration.pedestalRadius !== undefined) {
           const radius = decoration.pedestalRadius
@@ -300,6 +381,12 @@ export function createMuseum(
       }
     },
     update(snapshot: GameSnapshot) {
+      dressing.update(snapshot.enabledPlatformIds)
+      for (const { solid, mesh } of solidFallbacks)
+        mesh.visible =
+          !coveredSolids.has(solid.id) &&
+          (solid.platformId === undefined ||
+            snapshot.enabledPlatformIds.includes(solid.platformId))
       const enabled = snapshot.enabledPlatformIds.join('|')
       if (enabled !== lastEnabled) {
         cameraMeshCache = undefined

@@ -1,0 +1,28 @@
+{
+  "status": "candidate; independent source-fidelity and fracture gates pending",
+  "operation": "local fairing of one inspected LOD crossing; all other vertices unchanged",
+  "history": [
+    1,
+    0
+  ],
+  "finalSelfIntersectionPairs": 0,
+  "movedVertices": 13,
+  "maxVertexDisplacementMetres": 0.00020000033689976864,
+  "maximumAllowedMetres": 0.0002,
+  "initialContactBoundsBlenderZUp": {
+    "min": [
+      0.08104822039604187,
+      -0.06192886829376221,
+      0.5481780171394348
+    ],
+    "max": [
+      0.08371315151453018,
+      -0.059196338057518005,
+      0.5495172739028931
+    ]
+  },
+  "triangles": 200000,
+  "nonManifoldEdges": 0,
+  "nonManifoldVertices": 0,
+  "signedVolume": 0.007089578521286595
+}

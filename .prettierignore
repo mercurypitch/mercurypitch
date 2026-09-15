@@ -1,0 +1,3 @@
+# Artifact generators own their JSON receipts, hashes and measured geometry reports.
+# Keep their original bytes; production source, scripts and documentation stay checked.
+/art/glass-adventure/**/*.json

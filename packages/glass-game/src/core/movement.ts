@@ -1,6 +1,6 @@
 // Adventure movement — manual free-space intent with fixed-step jump forgiveness.
 
-import type { MovementInput, PlatformDefinition, PlayerState, Vec3, } from '../contracts'
+import type { CourseSolid, MovementInput, PlayerState, Vec3, } from '../contracts'
 import type { CourseCollider } from './collision'
 import { FLAT_COURSE_COLLIDER } from './collision'
 
@@ -56,9 +56,9 @@ export function stepMovement(
   state: MovementState,
   input: MovementInput,
   dt: number,
-  platforms: readonly PlatformDefinition[],
+  platforms: readonly CourseSolid[],
   collider: CourseCollider = FLAT_COURSE_COLLIDER,
-): { jumped: boolean; landed: boolean; support: PlatformDefinition | null } {
+): { jumped: boolean; landed: boolean; support: CourseSolid | null } {
   let x = Number.isFinite(input.moveX) ? input.moveX : 0
   let z = Number.isFinite(input.moveZ) ? input.moveZ : 0
   const magnitude = Math.hypot(x, z)

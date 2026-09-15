@@ -25,6 +25,30 @@ export interface PlatformDefinition extends BoundsXZ {
   catchCheckpointId?: string
 }
 
+interface SolidPropBase {
+  id: string
+  kind: 'prop'
+  top: number
+  thickness: number
+  /** Props on an unopened floor are inactive with that floor. */
+  platformId?: string
+  /** Keep a visible stone proxy until optional detailed art installs. */
+  fallback?: { replacedByBundle: string; replacedByNode: string }
+}
+
+/** Static content solids: independent of decorative meshes and progress floors. */
+export type SolidPropDefinition =
+  | (SolidPropBase & BoundsXZ & { shape: 'box' })
+  | (SolidPropBase & {
+      shape: 'cylinder'
+      x: number
+      z: number
+      radiusTop: number
+      radiusBottom: number
+    })
+
+export type CourseSolid = PlatformDefinition | SolidPropDefinition
+
 export interface HoldDefinition {
   requiredSeconds: number
   toleranceCents: number
@@ -59,6 +83,7 @@ export interface LevelDefinition {
   title: string
   spawn: { position: Vec3; facingYaw: number }
   platforms: readonly PlatformDefinition[]
+  solids?: readonly SolidPropDefinition[]
   checkpoints: readonly CheckpointDefinition[]
   breakables: readonly BreakableDefinition[]
   exit: BoundsXZ & { top: number; requiresCompleted: readonly string[] }

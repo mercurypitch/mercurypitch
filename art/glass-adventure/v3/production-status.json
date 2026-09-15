@@ -1,0 +1,176 @@
+{
+  "version": 3,
+  "status": "Seven V3 assets and approved soundtrack integrated; reachable prop collisions implemented; separate V4 enclosure study complete",
+  "sourceLedger": "../v2/meshy-ledger.json",
+  "waveCreditsSpent": 260,
+  "latestBalance": 4400,
+  "preview": "V3 assets, audio and solid props; HTTP5188 and HTTPS5187",
+  "integration": "All seven V3 GLBs active. 130 package tests and ten targeted browser cases passed; supplementary full-route browser script remains incomplete at a new solid prop. See verification evidence.",
+  "storage": {
+    "strategy": "Source binaries in Git LFS; playable public assets in ordinary Git",
+    "inventory": "art/glass-adventure/source-archive.json",
+    "binaryFiles": 402,
+    "logicalBytes": 2274070310,
+    "uniqueObjects": 383,
+    "uniqueBytes": 2205930535,
+    "restoreInstructions": "art/glass-adventure/STORAGE.md",
+    "excludedLocalOnly": [
+      "Blender .blend1 backups",
+      "interrupted .incomplete downloads",
+      "Python caches"
+    ]
+  },
+  "updatedAt": "2026-09-15T15:42:23.490069+00:00",
+  "archive": {
+    "jobs": 7,
+    "files": 73,
+    "bytes": 374645417,
+    "validation": "archive-validation.json"
+  },
+  "architectureCandidates": [
+    "gilded-column-01-final-v2",
+    "garden-arcade-01-final-v1",
+    "observatory-canopy-01-final-v1"
+  ],
+  "glassCandidates": [
+    "fluted-carafe",
+    "moon-amphora",
+    "cut-crystal-decanter",
+    "aurora-coupe"
+  ],
+  "deviceFeedback": {
+    "mercJump": "Fixed and verified against actual rig plus two keyboard jumps in browser",
+    "https": "Existing matching certificate, LAN192.168.178.33:5187, private key ignored",
+    "sunoPrompts": "Saved in personal/besidecue/glass-adventure/SUNO-AUDIO-PROMPTS.md"
+  },
+  "families": {
+    "fluted-carafe": {
+      "stage": "Integrated in local playable and observed in actual renderer; physical-device performance not yet measured",
+      "geometry": "OpenVDB1.2mm,1,862,132triangles,zero detected intersections/bad edges,open cavity probes pass; source deviation sampled1.47mm/3.04mm",
+      "runtimeReady": true,
+      "validation": "donors/fluted-carafe/validation.json",
+      "authoringVerified": true
+    },
+    "moon-amphora": {
+      "stage": "Integrated in local playable and observed in actual renderer; physical-device performance not yet measured",
+      "runtimeReady": true,
+      "validation": "donors/moon-amphora/validation.json",
+      "authoringVerified": true
+    },
+    "cut-crystal-decanter": {
+      "stage": "Integrated in local playable and observed in actual renderer; physical-device performance not yet measured",
+      "runtimeReady": true,
+      "validation": "donors/cut-crystal-decanter/validation.json",
+      "authoringVerified": true
+    },
+    "aurora-coupe": {
+      "stage": "Integrated in local playable and observed in actual renderer; physical-device performance not yet measured",
+      "runtimeReady": true,
+      "validation": "donors/aurora-coupe/validation.json",
+      "authoringVerified": true
+    },
+    "gilded-column": {
+      "stage": "Integrated in local playable and observed in actual renderer; physical-device performance not yet measured",
+      "candidate": "gilded-column-01-final-v2",
+      "runtimeReady": true,
+      "authoringVerified": true
+    },
+    "garden-arcade": {
+      "stage": "Integrated in local playable and observed in actual renderer; physical-device performance not yet measured",
+      "candidate": "garden-arcade-01-final-v1",
+      "runtimeReady": true,
+      "authoringVerified": true,
+      "limitation": "Background scenery outside the course; low sills are not a traversable passage"
+    },
+    "observatory-canopy": {
+      "stage": "Integrated in local playable and observed in actual renderer; physical-device performance not yet measured",
+      "candidate": "observatory-canopy-01-final-v1",
+      "runtimeReady": true,
+      "authoringVerified": true,
+      "limitation": "Distant landmark; minor authored rib waviness remains"
+    }
+  },
+  "review": {
+    "gallery": "review.html",
+    "interactive": "model-viewer.html?asset=gilded-column",
+    "verified": "Four final glass desktop views and decanter 390px; exact intact geometry with shards hidden, clear transmission after real scene background fix; seven unique gallery families/finals, all26images decoded, no errors/overflow. Earlier architecture mouse/keyboard/touch reviews also passed."
+  },
+  "audio": {
+    "status": "Five approved runtime loops integrated; owner listening acceptance received",
+    "intake": "../audio/v1/intake.json",
+    "review": "../audio/v1/review.html",
+    "mastersBytes": 157040798,
+    "previewsBytes": 18267752,
+    "pending": [],
+    "verification": "Independent verification passed all 20 hashes, decodes, preview levels and review links; native browser one-at-a-time playback and 390px layout passed",
+    "missingOptionalAccents": [
+      "S01",
+      "S02",
+      "S03",
+      "S04"
+    ],
+    "runtime": "../audio/v1/RUNTIME.md",
+    "runtimeBytes": 6221621,
+    "active": [
+      "M01",
+      "M03",
+      "A01",
+      "A02",
+      "A03 variant 1"
+    ],
+    "excluded": [
+      "M02"
+    ],
+    "reserved": [
+      "M04",
+      "M05",
+      "M06"
+    ]
+  },
+  "runtimeIntegrationAudit": {
+    "sevenGlbBytes": 56472600,
+    "fourGlassTrianglesIncludingHiddenFragments": 573864,
+    "measuredIndexedGlassAttributeBytes": 36739700,
+    "expandedEquivalentAttributeBytes": 89832480,
+    "observedSceneDrawCalls": 289,
+    "observedSubmittedTriangles": 1375479,
+    "note": "Actual renderer counters include render passes, not unique mesh counts or physical-device FPS. All three architecture exports have 1024px maps. Native packaging and sustained device budgets remain unverified."
+  },
+  "collisions": {
+    "solidProps": 20,
+    "types": [
+      "6 plinths",
+      "8 planter troughs",
+      "4 near-arch supports",
+      "2 hero columns"
+    ],
+    "verification": "40 focused physics tests, independent review and actual browser side/landing/support/step-off passed",
+    "nonblocking": [
+      "intact glass",
+      "foliage",
+      "distant scenery"
+    ]
+  },
+  "enclosureStudy": {
+    "status": "Complete separate review model; not yet in playable route",
+    "review": "../v4/enclosure-study/review.html",
+    "source": "../v4/enclosure-study/enclosure-study-v1.blend",
+    "modules": 2,
+    "roomBays": 9,
+    "note": "Room authoring bundle is not a runtime delivery budget; route/camera/collision and module seams remain integration work."
+  },
+  "verification": {
+    "gamePackageTests": 130,
+    "productionBrowserCases": 10,
+    "browserEvidence": "/home/maff/agent-out/beside-cue/2026-09-15/glass-integration",
+    "nativeBuild": false,
+    "physicalDevicePerformance": "Not yet measured",
+    "fullBrowserRoute": "Incomplete: old waypoint script meets the decanter plinth after actual first break and both terrace jumps. Pure route tests passed; device playthrough and route-automation update pending."
+  },
+  "pullRequest": {
+    "url": "https://github.com/mercurypitch/mercurypitch/pull/807",
+    "branch": "feat/glass-museum-level-one",
+    "draft": true,
+    "mergeAuthorized": false
+  }
+}

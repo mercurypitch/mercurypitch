@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "supersededBy": "validation.json",
+  "bundle": {
+    "bytes": 3391920,
+    "sha256": "40c58723fea8c6d60b7b00393a3d9264a741e96b546deb7e5e43cb9f4544432b",
+    "primitives": 169,
+    "trianglesIncludingHiddenShards": 62552,
+    "embeddedImages": 0
+  },
+  "breakables": {
+    "goblet_laurel": {
+      "closedShards": 23,
+      "exportedVolumeRelativeError": 5.024805852825991e-09,
+      "centreRayFirstSurfaceHeightMetres": 0.2370000034570694,
+      "mouthIsOpen": true
+    },
+    "vase_rounded": {
+      "closedShards": 23,
+      "exportedVolumeRelativeError": 2.145501565427177e-08,
+      "centreRayFirstSurfaceHeightMetres": 0.012000000104308128,
+      "mouthIsOpen": true
+    },
+    "vase_fluted": {
+      "closedShards": 16,
+      "exportedVolumeRelativeError": 7.24610973824852e-10
+    },
+    "vase_amphora": {
+      "closedShards": 16,
+      "exportedVolumeRelativeError": 3.545154618805364e-08
+    }
+  }
+}

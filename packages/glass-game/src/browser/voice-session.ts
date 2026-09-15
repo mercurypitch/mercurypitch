@@ -56,7 +56,7 @@ export function createBrowserVoice(): GlassVoiceSession {
     }
   }
   return {
-    start() {
+    start(beforeCapture = Promise.resolve()) {
       if (stopped)
         return Promise.reject(new Error('This microphone session has ended.'))
       if (starting !== null) return starting
@@ -69,6 +69,11 @@ export function createBrowserVoice(): GlassVoiceSession {
         )
       }
       const unlocked = lease.unlock()
+      // Observe failures immediately even while a permission prompt is pending.
+      const quiet = beforeCapture.then(
+        () => ({ ok: true as const }),
+        (error: unknown) => ({ ok: false as const, error }),
+      )
       // Both acquisitions begin inside the Start gesture. A cancelled permission
       // request may still succeed later, but it only releases this session's id.
       const microphone = micManager.acquire(id)
@@ -87,6 +92,14 @@ export function createBrowserVoice(): GlassVoiceSession {
           }
           if (!available || ctx.state !== 'running')
             throw new Error('Audio could not start. Tap Start to try again.')
+          const silence = await quiet
+          if (stopped) {
+            releaseMic()
+            return
+          }
+          if (!silence.ok) throw silence.error
+          if (ctx.state !== 'running')
+            throw new Error('Audio was interrupted. Tap Start to try again.')
           stream = createF0Stream(ctx, acquired)
           stream.startTask()
           ctx.addEventListener('statechange', changed)

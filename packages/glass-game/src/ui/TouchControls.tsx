@@ -6,6 +6,7 @@ import type { AdventureInput } from './input'
 interface TouchControlsProps {
   input: AdventureInput
   disabled: boolean
+  onActivity?(): void
 }
 export function TouchControls(props: TouchControlsProps) {
   const [offset, setOffset] = createSignal({ x: 0, y: 0 })
@@ -49,6 +50,7 @@ export function TouchControls(props: TouchControlsProps) {
         aria-disabled={props.disabled}
         onPointerDown={(event) => {
           if (props.disabled || stickPointer !== null) return
+          props.onActivity?.()
           event.preventDefault()
           stickPointer = event.pointerId
           event.currentTarget.setPointerCapture(event.pointerId)
@@ -75,6 +77,7 @@ export function TouchControls(props: TouchControlsProps) {
         disabled={props.disabled}
         onPointerDown={(event) => {
           if (jumpPointer !== null) return
+          props.onActivity?.()
           event.preventDefault()
           jumpPointer = event.pointerId
           event.currentTarget.setPointerCapture(event.pointerId)

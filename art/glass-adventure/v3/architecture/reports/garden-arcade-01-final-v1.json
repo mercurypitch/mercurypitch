@@ -1,0 +1,105 @@
+{
+  "version": 3,
+  "assetId": "garden-arcade-01",
+  "status": "reimport-validated-awaiting-owner-art-review",
+  "sourceBlend": "sources/garden-arcade-01-imported.blend",
+  "sourceRawSha256": "04ed9131edecd348ffcfa6beeed5efb668adb422fb3c1eb8e8ca319c17b480c3",
+  "normalization": {
+    "uniformScale": 2.981938504642056,
+    "sourceBlenderPivot": [
+      -0.002182513475418091,
+      -0.004884026944637299,
+      -0.503430962562561
+    ],
+    "canonicalHeightMetres": 3.0,
+    "gltfUp": "+Y",
+    "gltfFront": "+Z",
+    "pivot": "foot-center"
+  },
+  "geometry": {
+    "sourceTriangles": 28161,
+    "targetTriangles": 30000,
+    "finalTriangles": 28161,
+    "distanceMetric": {
+      "sourceToFinal": {
+        "sampledVertices": 5248,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      },
+      "finalToSource": {
+        "sampledVertices": 5248,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      }
+    }
+  },
+  "materials": {
+    "strategy": "Preserved combined donor PBR atlas; ivory/gold/verde regions are not globally replaced by palette aliases",
+    "slot": "meshy_garden_arcade_atlas",
+    "packedSourceResolution": 2048,
+    "runtimeResolution": 1024,
+    "estimatedDecodedMiBWithMipmaps": 16
+  },
+  "edits": [
+    "Uniform fit and foot-center origin",
+    "Original donor triangles and UVs retained; no decimation or synthesized replacement geometry",
+    "Shared 1K PNG runtime derivatives of original donor PBR atlas"
+  ],
+  "textures": [
+    {
+      "name": "Image_0",
+      "path": "exports/garden-arcade-01-final-v1-textures/atlas-0.png",
+      "colorSpace": "sRGB",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "c8963d85bb49b5f6e7b49353ab82111da8562dd6547caeb1026bcd502b55d75c"
+    },
+    {
+      "name": "Image_1",
+      "path": "exports/garden-arcade-01-final-v1-textures/atlas-1.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "6adff792aa9fff5404b2d9be986742420a4cb5f034b8dbe53f0864f0af7a7973"
+    },
+    {
+      "name": "Image_2",
+      "path": "exports/garden-arcade-01-final-v1-textures/atlas-2.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "be3d065eebbd550b370b7bce5db3f0851b8477ae9f123f993591ee70155216b5"
+    }
+  ],
+  "blend": {
+    "path": "sources/garden-arcade-01-final-v1.blend",
+    "sha256": "aa5fcb1015257022c0ed6c26116e5bbd752d1157200c24b0940cbf79fe7e1c8c",
+    "bytes": 10929276
+  },
+  "glb": {
+    "path": "exports/garden-arcade-01-final-v1.glb",
+    "sha256": "72714424b213c2d4d9c094f9b55f5257f7ee18163f7bcbd096f4066d1c872885",
+    "bytes": 6829416
+  },
+  "visualApproval": "Agent comparison passed for backdrop audition: original forms and atlas regions retained. Owner art approval and in-game placement pending.",
+  "runtimeActivated": false,
+  "proofs": [
+    "proofs/garden-arcade-01-final-v1-three-quarter.png",
+    "proofs/garden-arcade-01-final-v1-front.png",
+    "proofs/garden-arcade-01-final-v1-back.png"
+  ],
+  "knownLimitations": [
+    "Original low sills across both openings retained: backdrop/boundary only until traversal clearance reviewed",
+    "Small asymmetrical planter-like end feature retained from donor",
+    "Single combined donor PBR atlas must remain authored; no blanket museum_ivory substitution",
+    "1K runtime atlas noticeably softens rear botanical trim in close views; packed 2K source available for close-hero reassessment",
+    "Canonical width 5.6635m,height3m,depth0.8184m; explicit scene fit required",
+    "No runtime activation or physical-device performance claim"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "method": "local donor-vertex fairing only at diagnosed intersecting face patches",
+  "history": [
+    111,
+    54,
+    35,
+    32,
+    30,
+    29,
+    29,
+    27,
+    34,
+    32,
+    31,
+    33,
+    33,
+    33,
+    34,
+    34,
+    33,
+    33,
+    35,
+    34,
+    33,
+    33,
+    34,
+    37,
+    35,
+    37,
+    38,
+    36,
+    32,
+    32,
+    32,
+    33,
+    34,
+    34,
+    37,
+    37,
+    35,
+    35,
+    34,
+    35,
+    32,
+    31,
+    32,
+    33,
+    32,
+    32,
+    31,
+    30
+  ],
+  "finalPairs": 32,
+  "maxVertexDisplacementMetres": 0.003000008769034359,
+  "maximumAllowedMetres": 0.003,
+  "badEdges": 0,
+  "measurement": {
+    "node": "coupe_aurora_intact",
+    "role": "intact",
+    "triangles": 30000,
+    "vertices": 14566,
+    "nonManifoldEdges": 0,
+    "signedVolume": 0.0017711534479214327,
+    "materials": [
+      "glass_shell",
+      "glass_cut",
+      "gold_trim"
+    ],
+    "bounds": {
+      "min": [
+        -0.1646793633699417,
+        -4.112077294848859e-05,
+        -0.16538846492767334
+      ],
+      "max": [
+        0.16460402309894562,
+        0.40007689595222473,
+        0.16541294753551483
+      ]
+    }
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "taskId": "01a0a56e-dd8f-707a-bdd7-049a2e5feaf2",
+  "sourceReference": "references/museum-window-bay-01.png",
+  "inputSha256": "e2bd466cf0a777bd97a37e170f3476d2f269af7123354f385c5cf8a755679041",
+  "parameters": {
+    "ai_model": "latest",
+    "model_type": "standard",
+    "should_texture": true,
+    "enable_pbr": true,
+    "should_remesh": true,
+    "target_polycount": 24000,
+    "topology": "triangle",
+    "save_pre_remeshed_model": true,
+    "image_enhancement": false,
+    "remove_lighting": false,
+    "target_formats": [
+      "glb"
+    ],
+    "multi_view_thumbnails": true,
+    "response_format": "json"
+  },
+  "files": [
+    {
+      "role": "glb",
+      "file": "donor.glb",
+      "bytes": 11623312,
+      "sha256": "8470eaf0a5227050f5d83923b68c09bd799a453d9cdb977702a8eb349bb66377",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "pre-remeshed.glb",
+      "bytes": 35628816,
+      "sha256": "1abb9f5f07f94159ef5245b4fb2fec55d19ce5cbce27aabc6e8de047297a3be4",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-base_color",
+      "file": "texture_urls-0-base_color.png",
+      "bytes": 4918310,
+      "sha256": "a5d03cd17bac766b0be33adfe1f98e24a7f0301d53ac272ee5f72f179b26cc04",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-metallic",
+      "file": "texture_urls-0-metallic.png",
+      "bytes": 314360,
+      "sha256": "290a041620edb50ff8ebfd7084d6b9c9f0efbd0606a1621ba110762f1ed002e3",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-roughness",
+      "file": "texture_urls-0-roughness.png",
+      "bytes": 1250574,
+      "sha256": "2dc2cee8bef1580f4ff9df99282d3be9e8f0d47d4e99971449434612944b6f41",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-normal",
+      "file": "texture_urls-0-normal.png",
+      "bytes": 5265288,
+      "sha256": "be593f9daabbc02490de3382b004acdba36157ee57793ee0a22d3a7c19f13b62",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_url",
+      "file": "thumbnail_url.png",
+      "bytes": 165857,
+      "sha256": "3401f66d2e35316371185e10df471f8727f16160419073a0977f0a4af4712ceb",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-back",
+      "file": "thumbnail_urls-back.png",
+      "bytes": 159242,
+      "sha256": "cf61377bd90e40bbc6ddbd280133565f302c99461fea848482b38cfd51832ce0",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-front",
+      "file": "thumbnail_urls-front.png",
+      "bytes": 165857,
+      "sha256": "3401f66d2e35316371185e10df471f8727f16160419073a0977f0a4af4712ceb",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-left",
+      "file": "thumbnail_urls-left.png",
+      "bytes": 79285,
+      "sha256": "d865fd41ae3170a70114c08f1e0a4574e2210addd8ff8b46c4a27cffb060e4e9",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-right",
+      "file": "thumbnail_urls-right.png",
+      "bytes": 76244,
+      "sha256": "25c42ad85d785ee2692a99a89ed6ced40b989c414516f84ef1bdfa51ab5ce94c",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "archivedAt": "2026-09-15T14:26:42.450427+00:00",
+  "complete": true,
+  "preRemeshedAvailable": true
+}

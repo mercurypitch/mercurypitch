@@ -29,6 +29,34 @@ export const requiredGameAssets = [
   'games/adventure/floor-marble.webp',
   'games/adventure/legend-johnny-cash.webp',
   'games/adventure/museum-sky.webp',
+  'games/adventure-v2/manifest.json',
+  'games/adventure-v2/platform-kit.glb',
+  'games/adventure-v2/garden-kit.glb',
+  'games/adventure-v2/vessels.glb',
+  'games/adventure-v2/environment/golden-coast.hdr',
+  ...[
+    'warm-carrara',
+    'verde-marble',
+    'cream-limestone',
+    'brushed-brass',
+  ].flatMap((material) =>
+    ['basecolor', 'normal', 'roughness'].map(
+      (channel) => `games/adventure-v2/textures/${material}-${channel}.png`,
+    ),
+  ),
+  'games/adventure-v3/manifest.json',
+  'games/adventure-v3/fluted-carafe.glb',
+  'games/adventure-v3/moon-amphora.glb',
+  'games/adventure-v3/aurora-coupe.glb',
+  'games/adventure-v3/cut-crystal-decanter.glb',
+  'games/adventure-v3/gilded-column.glb',
+  'games/adventure-v3/garden-arcade.glb',
+  'games/adventure-v3/observatory-canopy.glb',
+  'games/adventure-audio-v1/m01-loop.mp3',
+  'games/adventure-audio-v1/m03-loop.mp3',
+  'games/adventure-audio-v1/a01-loop.mp3',
+  'games/adventure-audio-v1/a02-loop.mp3',
+  'games/adventure-audio-v1/a03-loop.mp3',
 ] as const
 
 export function parseOptions(args: string[]): NativeGamesOptions {

@@ -1,0 +1,16 @@
+{
+  "name": "moon-amphora",
+  "inspectionName": "moon-amphora-high-source",
+  "donor": "art/glass-adventure/v2/meshy/moon-amphora-01/pre-remeshed.glb",
+  "sourceSha256": "e129fcd5b268813135b6c5b5022ee58dad458412a0347c44b4098f4f315203b0",
+  "nodePrefix": "vase_amphora",
+  "heightMetres": 0.55,
+  "inspectionDecision": "Original high Meshy source is topologically closed and preserves real curved handles, mouth and relief bands. This50k prepared candidate is for material-region audition only; actual self-intersection, cavity, source-deviation and fracture gates remain pending. No replacement form or procedural decoration.",
+  "repair": {
+    "skipCoincidentWeld": true,
+    "targetTriangles": 50000,
+    "smoothSurface": true
+  },
+  "shardCount": 23,
+  "seed": 20260916
+}

@@ -400,8 +400,9 @@
   z-index: 10;
   background: #173b4870;
   backdrop-filter: blur(5px);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   padding: max(20px, env(safe-area-inset-top)) 20px
     max(20px, env(safe-area-inset-bottom));
   overflow: auto;
@@ -410,6 +411,8 @@
 .tutorial,
 .pausePanel {
   width: min(490px, 100%);
+  margin-block: auto;
+  flex-shrink: 0;
   border-radius: 28px;
   background: #f1f1e3;
   box-shadow: 0 22px 90px #153d4855;
@@ -467,6 +470,65 @@
 }
 .pausePanel .primary {
   margin-top: 16px;
+}
+.audioSettings {
+  min-width: 0;
+  margin: 22px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid #9bad9b;
+  border-radius: 16px;
+  text-align: left;
+  color: #244c43;
+}
+.audioSettings legend {
+  padding: 0 7px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.audioMute {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 14px;
+}
+.audioMute input {
+  width: 20px;
+  height: 20px;
+  accent-color: #396d5a;
+}
+.audioVolume {
+  display: block;
+  margin-top: 9px;
+  font-size: 14px;
+}
+.audioVolume > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.audioVolume output {
+  color: #526e5e;
+  font-variant-numeric: tabular-nums;
+}
+.audioVolume input {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  margin: 0;
+  accent-color: #396d5a;
+  touch-action: pan-y;
+}
+.audioSettings input:focus-visible {
+  outline: 2px solid #396d5a;
+  outline-offset: 3px;
+}
+.audioSettings small {
+  display: block;
+  color: #526e5e;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 5px;
 }
 .completionMark {
   color: #af852c;

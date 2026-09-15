@@ -1,0 +1,304 @@
+{
+  "status": "inspection-only; no finalization acceptance implied",
+  "blenderVersion": "5.2.2 LTS",
+  "source": {
+    "file": "art/glass-adventure/v2/meshy/cut-crystal-decanter-01/donor.glb",
+    "bytes": 8516056,
+    "sha256": "5d8a946752bed1044eaa6c2bc103c02392aa43b9439dfa78aefff563a9655d70",
+    "generator": "Meshy"
+  },
+  "boundsInImportedBlenderCoordinates": {
+    "min": [
+      -0.4787670075893402,
+      -0.4934670329093933,
+      -0.9520019292831421
+    ],
+    "max": [
+      0.47840696573257446,
+      0.494299978017807,
+      0.9510200023651123
+    ]
+  },
+  "proposedTargetHeightMetres": 0.52,
+  "uniformNormalizationScale": 0.2732496096614163,
+  "meshes": [
+    {
+      "node": "Mesh_0",
+      "vertices": 22055,
+      "polygons": 19267,
+      "triangles": 19267,
+      "boundaryEdges": 20773,
+      "nonManifoldEdges": 20773,
+      "wireEdges": 0,
+      "zeroAreaFaces": 0,
+      "connectedComponentCount": 2035,
+      "largestConnectedComponents": [
+        {
+          "vertices": 104,
+          "faces": 163
+        },
+        {
+          "vertices": 64,
+          "faces": 92
+        },
+        {
+          "vertices": 61,
+          "faces": 60
+        },
+        {
+          "vertices": 57,
+          "faces": 67
+        },
+        {
+          "vertices": 55,
+          "faces": 56
+        },
+        {
+          "vertices": 55,
+          "faces": 61
+        },
+        {
+          "vertices": 55,
+          "faces": 56
+        },
+        {
+          "vertices": 54,
+          "faces": 77
+        },
+        {
+          "vertices": 53,
+          "faces": 60
+        },
+        {
+          "vertices": 52,
+          "faces": 52
+        },
+        {
+          "vertices": 51,
+          "faces": 57
+        },
+        {
+          "vertices": 50,
+          "faces": 57
+        },
+        {
+          "vertices": 50,
+          "faces": 57
+        },
+        {
+          "vertices": 49,
+          "faces": 66
+        },
+        {
+          "vertices": 49,
+          "faces": 56
+        },
+        {
+          "vertices": 48,
+          "faces": 48
+        },
+        {
+          "vertices": 47,
+          "faces": 55
+        },
+        {
+          "vertices": 47,
+          "faces": 48
+        },
+        {
+          "vertices": 47,
+          "faces": 55
+        },
+        {
+          "vertices": 46,
+          "faces": 49
+        }
+      ],
+      "signedLocalVolume": 0.7386554838448243,
+      "uvLayers": [
+        "UVMap"
+      ],
+      "materials": [
+        "Material_0"
+      ],
+      "materialFaceCounts": {
+        "0": 19267
+      }
+    }
+  ],
+  "afterCoincidentSeamWeldDiagnostic": [
+    {
+      "node": "Mesh_0",
+      "vertices": 9659,
+      "polygons": 19267,
+      "triangles": 19267,
+      "boundaryEdges": 66,
+      "nonManifoldEdges": 99,
+      "wireEdges": 0,
+      "zeroAreaFaces": 0,
+      "connectedComponentCount": 5,
+      "largestConnectedComponents": [
+        {
+          "vertices": 9027,
+          "faces": 18029
+        },
+        {
+          "vertices": 161,
+          "faces": 319
+        },
+        {
+          "vertices": 161,
+          "faces": 315
+        },
+        {
+          "vertices": 158,
+          "faces": 305
+        },
+        {
+          "vertices": 152,
+          "faces": 299
+        }
+      ],
+      "signedLocalVolume": 0.7386554838448243,
+      "uvLayers": [
+        "UVMap"
+      ],
+      "materials": [
+        "Material_0"
+      ],
+      "materialFaceCounts": {
+        "0": 19267
+      }
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material_0",
+      "textures": [
+        {
+          "node": "Image Texture",
+          "image": "Image_0",
+          "size": [
+            2048,
+            2048
+          ]
+        },
+        {
+          "node": "Image Texture.001",
+          "image": "Image_1",
+          "size": [
+            2048,
+            2048
+          ]
+        },
+        {
+          "node": "Image Texture.002",
+          "image": "Image_2",
+          "size": [
+            2048,
+            2048
+          ]
+        }
+      ]
+    }
+  ],
+  "verticalCentreRegionRays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.519994576447009,
+          "normalZ": 0.9999997019767761,
+          "face": 9376
+        },
+        {
+          "heightMetres": 1.5130572758642182e-05,
+          "normalZ": -0.9999984502792358,
+          "face": 10618
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.5199830615762443,
+          "normalZ": 0.9999717473983765,
+          "face": 9509
+        },
+        {
+          "heightMetres": 1.3192426194295122e-05,
+          "normalZ": -0.9999996423721313,
+          "face": 16430
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.5199081253380716,
+          "normalZ": 0.9998319745063782,
+          "face": 9094
+        },
+        {
+          "heightMetres": 2.3371767393596914e-05,
+          "normalZ": -0.9999991059303284,
+          "face": 6496
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.5198848024315157,
+          "normalZ": 0.9998319745063782,
+          "face": 9094
+        },
+        {
+          "heightMetres": 2.109159496495331e-05,
+          "normalZ": -0.9999990463256836,
+          "face": 9480
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.5199332235217325,
+          "normalZ": 0.9999717473983765,
+          "face": 9509
+        },
+        {
+          "heightMetres": 2.4332697202811e-05,
+          "normalZ": -0.9999984502792358,
+          "face": 10618
+        }
+      ]
+    }
+  ],
+  "decisionsPending": [
+    "silhouette and front orientation",
+    "mouth and cavity classification",
+    "gold versus glass surface regions",
+    "topology repair, if necessary",
+    "closed fracture feasibility and appropriate piece count"
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "version": 3,
+  "assetId": "observatory-canopy-01",
+  "status": "reimport-validated-awaiting-owner-art-review",
+  "sourceBlend": "sources/observatory-canopy-01-imported.blend",
+  "sourceRawSha256": "395e8cc88f76ad5811d1a70765a359dae85cae21cac1b0c343910450202580d0",
+  "normalization": {
+    "uniformScale": 1.5762776262343137,
+    "sourceBlenderPivot": [
+      -0.0012800097465515137,
+      0.00010499358177185059,
+      -0.9524489641189575
+    ],
+    "canonicalHeightMetres": 3.0,
+    "gltfUp": "+Y",
+    "gltfFront": "+Z",
+    "pivot": "foot-center"
+  },
+  "geometry": {
+    "sourceTriangles": 40424,
+    "targetTriangles": 41000,
+    "finalTriangles": 40424,
+    "distanceMetric": {
+      "sourceToFinal": {
+        "sampledVertices": 5315,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      },
+      "finalToSource": {
+        "sampledVertices": 5315,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      }
+    }
+  },
+  "materials": {
+    "strategy": "Preserved combined donor PBR atlas; ivory/gold/verde regions are not globally replaced by palette aliases",
+    "slot": "meshy_observatory_canopy_atlas",
+    "packedSourceResolution": 2048,
+    "runtimeResolution": 1024,
+    "estimatedDecodedMiBWithMipmaps": 16
+  },
+  "edits": [
+    "Uniform fit and foot-center origin",
+    "Original donor triangles and UVs retained; no decimation or synthesized replacement geometry",
+    "Shared 1K PNG runtime derivatives of original donor PBR atlas"
+  ],
+  "textures": [
+    {
+      "name": "Image_0",
+      "path": "exports/observatory-canopy-01-final-v1-textures/atlas-0.png",
+      "colorSpace": "sRGB",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "325538e7e47b7e2fae4c60862619f17db57724295326a2fb884be7f9f7e8109b"
+    },
+    {
+      "name": "Image_1",
+      "path": "exports/observatory-canopy-01-final-v1-textures/atlas-1.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "70a65138d623dd1c2ee1031ab9404135f6035b25f17645fd784798d291076a82"
+    },
+    {
+      "name": "Image_2",
+      "path": "exports/observatory-canopy-01-final-v1-textures/atlas-2.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "d864e349c4d4ca3bc5f3f4fe36b9102563a3fa824d6c2069c49a99c5fdd4ff73"
+    }
+  ],
+  "blend": {
+    "path": "sources/observatory-canopy-01-final-v1.blend",
+    "sha256": "1b964872a410b9ce71eda61a5b9264760bc4fe32a1ae041a4cd4b3f231eb7d37",
+    "bytes": 10717213
+  },
+  "glb": {
+    "path": "exports/observatory-canopy-01-final-v1.glb",
+    "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+    "bytes": 7545096
+  },
+  "visualApproval": "Root-reviewed and accepted as distant scenery candidate; visibly wavy upper ribs still need refinement before hero close-up use.",
+  "runtimeActivated": false,
+  "proofs": [
+    "proofs/observatory-canopy-01-final-v1-three-quarter.png",
+    "proofs/observatory-canopy-01-final-v1-front.png",
+    "proofs/observatory-canopy-01-final-v1-back.png",
+    "proofs/observatory-canopy-01-final-v1-top.png"
+  ],
+  "knownLimitations": [
+    "Original Meshy upper rib waviness is visible in large views; close-up refinement remains, no replacement procedural roof.",
+    "Complete assembly includes stepped podium and columns, intended as scenery until explicit course/camera/collider review",
+    "One original combined donor atlas, must not replace wholesale with museum palette aliases",
+    "Original 40,424 triangles retained; 1K maps slightly soften fine ornament, packed 2K source preserved",
+    "No runtime activation or physical-device performance claim"
+  ],
+  "openCrownValidation": "Five center/downward rays first hit podium at z~0.242m, not a roof cap; see validation report"
+}

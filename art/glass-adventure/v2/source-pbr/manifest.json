@@ -1,0 +1,927 @@
+{
+  "schemaVersion": 2,
+  "purpose": "Museum v2 shared external PBR source provenance; provider originals are not edited.",
+  "retrievedUtc": "2026-09-15",
+  "downloadBudget": {
+    "retrievedUtc": "2026-09-15",
+    "downloadBudgetBytes": 150000000,
+    "previewAndProbeBytes": 2431588,
+    "downloadedPayloadBytes": 122155858,
+    "initialSourcingPayloadBytes": 101760361,
+    "replacementCandidateBatchBytes": 20395497,
+    "replacementCandidateBatchCapBytes": 30000000,
+    "initialPreviewAndProbeBytes": 2187166
+  },
+  "sourceRoot": "art/glass-adventure/v2/source-pbr",
+  "runtimeRoot": "apps/beside-cue/public/games/adventure-v2",
+  "sampling": {
+    "uvContract": "One UV unit corresponds to one world metre in authored v2 GLBs.",
+    "normalConvention": "OpenGL, provider NormalGL map.",
+    "basecolorColorSpace": "sRGB",
+    "dataColorSpace": "NoColorSpace",
+    "roughnessSamplingChannel": "green",
+    "metalnessSamplingChannel": "blue",
+    "wrap": "RepeatWrapping",
+    "anisotropyStartingValue": 4,
+    "glTFTextureFlipY": false,
+    "note": "Scalar maps are grayscale or palettized grayscale, so G/B channels carry the same values. Never use preview renders as basecolor."
+  },
+  "materials": [
+    {
+      "assetId": "Marble004",
+      "role": "warm-carrara",
+      "maps": [
+        {
+          "channel": "basecolor",
+          "providerFile": "Marble004_1K-PNG_Color.png",
+          "variant": "1K-PNG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble004/1K-PNG/Marble004_1K-PNG_Color.png",
+            "bytes": 998415,
+            "sha256": "5dce6cc6441fcf2682a5217ac1c8a6b3efda386e66e090f215262adf5439130a",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "runtime": {
+            "assetId": "warm-carrara-basecolor",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-basecolor.png",
+            "bytes": 998415,
+            "sha256": "5dce6cc6441fcf2682a5217ac1c8a6b3efda386e66e090f215262adf5439130a",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Marble004_1K-PNG_NormalGL.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble004/1K-PNG/Marble004_1K-PNG_NormalGL.png",
+            "bytes": 4903513,
+            "sha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "runtime": {
+            "assetId": "warm-carrara-normal",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-normal.png",
+            "bytes": 4903513,
+            "sha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Marble004_1K-PNG_Roughness.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble004/1K-PNG/Marble004_1K-PNG_Roughness.png",
+            "bytes": 596077,
+            "sha256": "247f91e6ff818a3ebb0301b3dca4cdba79f30b3a274d1dfab56a0c76b8e6df47",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          },
+          "runtime": {
+            "assetId": "warm-carrara-roughness",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-roughness.png",
+            "bytes": 596077,
+            "sha256": "247f91e6ff818a3ebb0301b3dca4cdba79f30b3a274d1dfab56a0c76b8e6df47",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          }
+        }
+      ],
+      "materialSlot": "museum_ivory",
+      "label": "Clean warm ivory marble with faint gray/beige veins",
+      "matchNote": "Selected after actual gameplay and concept comparison; broad warm ivory areas and low-contrast fine veins replace the busy cool Marble012. Carrara remains a project role, not verified geological origin.",
+      "tileMeters": 1.2,
+      "scaleProvenance": "Project starting value; provider does not publish a physical size.",
+      "provider": "ambientCG",
+      "providerUrl": "https://ambientcg.com/view?id=Marble004",
+      "license": {
+        "spdx": "CC0-1.0",
+        "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedUtc": "2026-09-15",
+        "commercialUse": true,
+        "redistribution": true,
+        "attributionRequired": false,
+        "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+      },
+      "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+      "textureRepeatPerMetre": 0.8333333333333334,
+      "downloads": [
+        {
+          "assetId": "Marble004",
+          "file": "Marble004/Marble004_1K-PNG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble004_m4EO7Qwf/Marble004_1K-PNG.zip",
+          "bytesExpected": 14372939,
+          "bytes": 14372939,
+          "sha256": "82b44b9dbf59300715686e3cc97676e34d34a82a47cfb5a5308c16c8c5d7ef8e"
+        }
+      ],
+      "preview": {
+        "path": "art/glass-adventure/v2/source-pbr/_previews/Marble004.webp",
+        "bytes": 117754,
+        "sha256": "cc865b11ef54a5f972df70b2a1fdb38a95d66b653946f1e702524ee5736c7e0a",
+        "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Marble004.webp",
+        "purpose": "Provider preview render only, not a runtime channel."
+      },
+      "sourceMasterStatus": "Only original 1K PNG selected channels are sourced for this replacement; no Marble004 2K master has been downloaded. Retired Marble012 2K files are not masters for this material.",
+      "roughnessInspection": {
+        "meanNormalized": 0.11392646864348767,
+        "runtimeFactorRecommendation": [
+          0.8,
+          1.0
+        ],
+        "note": "Provider map is already polished; old multiplier0.34 would reduce mean roughness to approximately0.039. Renderer agent owns final lighting/material audition."
+      }
+    },
+    {
+      "assetId": "Marble009",
+      "role": "verde-marble",
+      "maps": [
+        {
+          "channel": "basecolor",
+          "providerFile": "Marble009_1K-PNG_Color.png",
+          "variant": "1K-PNG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_Color.png",
+            "bytes": 1871383,
+            "sha256": "1702b28a34989389f1bfdf55943f323110c844c16bb6f5cd2e1409fb313f87da",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "runtime": {
+            "assetId": "verde-marble-basecolor",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-basecolor.png",
+            "bytes": 1871383,
+            "sha256": "1702b28a34989389f1bfdf55943f323110c844c16bb6f5cd2e1409fb313f87da",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Marble009_1K-PNG_NormalGL.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_NormalGL.png",
+            "bytes": 3381773,
+            "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "runtime": {
+            "assetId": "verde-marble-normal",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-normal.png",
+            "bytes": 3381773,
+            "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Marble009_1K-PNG_Roughness.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_Roughness.png",
+            "bytes": 448294,
+            "sha256": "25cfa4d95ee494eb49cd0f72438f57472a81b6c247a17256bedc7f8299a10281",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          },
+          "runtime": {
+            "assetId": "verde-marble-roughness",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-roughness.png",
+            "bytes": 448294,
+            "sha256": "25cfa4d95ee494eb49cd0f72438f57472a81b6c247a17256bedc7f8299a10281",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          }
+        },
+        {
+          "channel": "basecolor",
+          "providerFile": "Marble009_2K-JPG_Color.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_Color.jpg",
+            "bytes": 5262421,
+            "sha256": "bf14b2a8ebff0221682a0d81ac62b5a5b221f572e928b1c46e0505529ac480b2",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Marble009_2K-JPG_NormalGL.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_NormalGL.jpg",
+            "bytes": 1411112,
+            "sha256": "757a906468468b6edf08bdb31b11f21d6d28853fd0765edb12357313a90ec213",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Marble009_2K-JPG_Roughness.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_Roughness.jpg",
+            "bytes": 1904788,
+            "sha256": "612a01d5ae74e696aee68c2d0fb9b2a1153eb167cf958211e6e6a2cb836d55f2",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "L"
+          }
+        }
+      ],
+      "materialSlot": "museum_petrol",
+      "label": "Dark green / teal marble",
+      "matchNote": "Provider dark green marble; project verde Alpi role, not a verified geological Verde Alpi identification. Suitable dark perimeter border and plinth inset.",
+      "tileMeters": 1.2,
+      "scaleProvenance": "Project starting value; provider does not publish a physical size.",
+      "provider": "ambientCG",
+      "providerUrl": "https://ambientcg.com/view?id=Marble009",
+      "license": {
+        "spdx": "CC0-1.0",
+        "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedUtc": "2026-09-15",
+        "commercialUse": true,
+        "redistribution": true,
+        "attributionRequired": false,
+        "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+      },
+      "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+      "textureRepeatPerMetre": 0.8333333333333334,
+      "downloads": [
+        {
+          "assetId": "Marble009",
+          "file": "Marble009/Marble009_1K-PNG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble009_ivcTsBhx/Marble009_1K-PNG.zip",
+          "bytesExpected": 12479175,
+          "sha256": "06bfda486311b784e081b324b790d5047f3d14634afe721204e62550066e5cac",
+          "bytes": 12479175
+        },
+        {
+          "assetId": "Marble009",
+          "file": "Marble009/Marble009_2K-JPG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble009_ivcTsBhx/Marble009_2K-JPG.zip",
+          "bytesExpected": 14545401,
+          "sha256": "8b63736e59bd3b77cf08a2760942947d9e19c47ad07d0d544edef39fb136d1b2",
+          "bytes": 14545401
+        }
+      ],
+      "preview": {
+        "path": "art/glass-adventure/v2/source-pbr/_previews/Marble009.webp",
+        "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Marble009.webp",
+        "purpose": "Provider material preview render only, not a runtime channel.",
+        "bytes": 543660,
+        "sha256": "abdeb48ecc8aac07e4f334485c4d9e19ac33e2cd11fd4b240ce35ecbb90354e9"
+      }
+    },
+    {
+      "assetId": "Travertine001",
+      "role": "cream-limestone",
+      "maps": [
+        {
+          "channel": "basecolor",
+          "providerFile": "Travertine001_1K-PNG_Color.png",
+          "variant": "1K-PNG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_Color.png",
+            "bytes": 1489268,
+            "sha256": "561fd6ca43446da5680113ef8900ba136fb7c6be30b5aaad223c55627c0ef8b0",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "runtime": {
+            "assetId": "cream-limestone-basecolor",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-basecolor.png",
+            "bytes": 1489268,
+            "sha256": "561fd6ca43446da5680113ef8900ba136fb7c6be30b5aaad223c55627c0ef8b0",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Travertine001_1K-PNG_NormalGL.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_NormalGL.png",
+            "bytes": 2747140,
+            "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "runtime": {
+            "assetId": "cream-limestone-normal",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-normal.png",
+            "bytes": 2747140,
+            "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Travertine001_1K-PNG_Roughness.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_Roughness.png",
+            "bytes": 362372,
+            "sha256": "729ebff506fdeee407793a8394a7bf66ea79bd658a74a0593cc8c88d27ce725d",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          },
+          "runtime": {
+            "assetId": "cream-limestone-roughness",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/cream-limestone-roughness.png",
+            "bytes": 362372,
+            "sha256": "729ebff506fdeee407793a8394a7bf66ea79bd658a74a0593cc8c88d27ce725d",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          }
+        },
+        {
+          "channel": "basecolor",
+          "providerFile": "Travertine001_2K-JPG_Color.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_Color.jpg",
+            "bytes": 3944954,
+            "sha256": "a0724b7e885e9bf91f5424d44d693ba32e77968db54b2f873f07b9a2ef401eb7",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Travertine001_2K-JPG_NormalGL.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_NormalGL.jpg",
+            "bytes": 1305470,
+            "sha256": "b70acbbd8def7825ec3c7ec339240e777dd1e31e70059e93e8f3560ebf94166b",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Travertine001_2K-JPG_Roughness.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_Roughness.jpg",
+            "bytes": 1402400,
+            "sha256": "7cadf976abeae9be87304eb21fbb378c20d96b330a28bc7d6e8c64fbff7051d5",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "L"
+          }
+        }
+      ],
+      "materialSlot": "museum_limestone",
+      "label": "Beige cream travertine",
+      "matchNote": "Layered travertine provides the cream limestone role; keep broad architectural forms readable rather than increasing bump strength.",
+      "tileMeters": 1.2,
+      "scaleProvenance": "Provider asset page reports approximately 1.2 m x 1.2 m.",
+      "provider": "ambientCG",
+      "providerUrl": "https://ambientcg.com/view?id=Travertine001",
+      "license": {
+        "spdx": "CC0-1.0",
+        "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedUtc": "2026-09-15",
+        "commercialUse": true,
+        "redistribution": true,
+        "attributionRequired": false,
+        "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+      },
+      "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+      "textureRepeatPerMetre": 0.8333333333333334,
+      "downloads": [
+        {
+          "assetId": "Travertine001",
+          "file": "Travertine001/Travertine001_1K-PNG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Travertine001_olPgXfq4/Travertine001_1K-PNG.zip",
+          "bytesExpected": 9705188,
+          "sha256": "be06e3b302d143f4614bb00cb3ce51caa2a766fa8feb886d8eeb44a8d4052865",
+          "bytes": 9705188
+        },
+        {
+          "assetId": "Travertine001",
+          "file": "Travertine001/Travertine001_2K-JPG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Travertine001_olPgXfq4/Travertine001_2K-JPG.zip",
+          "bytesExpected": 9619414,
+          "sha256": "eb22b7ac1c146c01f26e53791509907044b25499fd87fb4a809989e65dcf2a73",
+          "bytes": 9619414
+        }
+      ],
+      "preview": {
+        "path": "art/glass-adventure/v2/source-pbr/_previews/Travertine001.webp",
+        "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Travertine001.webp",
+        "purpose": "Provider material preview render only, not a runtime channel.",
+        "bytes": 372962,
+        "sha256": "2621cc748fe226bdb1f1ae90204412d8fb23a850a918794dc5f596b503a259d6"
+      }
+    },
+    {
+      "assetId": "Metal034",
+      "role": "brushed-brass",
+      "maps": [
+        {
+          "channel": "basecolor",
+          "providerFile": "Metal034_1K-PNG_Color.png",
+          "variant": "1K-PNG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Color.png",
+            "bytes": 125306,
+            "sha256": "46712eb6b19970d00ac0f35a26035045521531bdd40c415382f7338ab8dd10ea",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "P"
+          },
+          "runtime": {
+            "assetId": "brushed-brass-basecolor",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-basecolor.png",
+            "bytes": 125306,
+            "sha256": "46712eb6b19970d00ac0f35a26035045521531bdd40c415382f7338ab8dd10ea",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "P"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Metal034_1K-PNG_NormalGL.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_NormalGL.png",
+            "bytes": 2692053,
+            "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "runtime": {
+            "assetId": "brushed-brass-normal",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-normal.png",
+            "bytes": 2692053,
+            "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Metal034_1K-PNG_Roughness.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Roughness.png",
+            "bytes": 193213,
+            "sha256": "8fe69c25a7dbf2d593ea192d49b756cb60900a8917bcfe7ec4525d5ad44e149e",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "P"
+          },
+          "runtime": {
+            "assetId": "brushed-brass-roughness",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-roughness.png",
+            "bytes": 193213,
+            "sha256": "8fe69c25a7dbf2d593ea192d49b756cb60900a8917bcfe7ec4525d5ad44e149e",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "P"
+          }
+        },
+        {
+          "channel": "metalness",
+          "providerFile": "Metal034_1K-PNG_Metalness.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Metalness.png",
+            "bytes": 798,
+            "sha256": "218dc8075081832ce2b9466d33e82d745508eeffed758cd110789b24989c7086",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "1"
+          },
+          "runtime": {
+            "assetId": "brushed-brass-metalness",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/brushed-brass-metalness.png",
+            "bytes": 798,
+            "sha256": "218dc8075081832ce2b9466d33e82d745508eeffed758cd110789b24989c7086",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "1"
+          }
+        },
+        {
+          "channel": "basecolor",
+          "providerFile": "Metal034_2K-JPG_Color.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Color.jpg",
+            "bytes": 387086,
+            "sha256": "6081cee1f5f79feb15264b1ec12726be9d4a2f9950e37411f3cb137b20436fef",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Metal034_2K-JPG_NormalGL.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_NormalGL.jpg",
+            "bytes": 1366956,
+            "sha256": "e3d541476b30d1645bf0857f54b68338486c48202fa4da285f26d1d4f28e72c1",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Metal034_2K-JPG_Roughness.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Roughness.jpg",
+            "bytes": 968605,
+            "sha256": "db38a0b751700bfa56e317e81311bcca4da6f94d598ec84c5da313e220d711fd",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "L"
+          }
+        },
+        {
+          "channel": "metalness",
+          "providerFile": "Metal034_2K-JPG_Metalness.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Metalness.jpg",
+            "bytes": 16545,
+            "sha256": "b65d6b9091747bd81ee58adedcb6209d8ee21b2bde9298d7216989ada85ef622",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "L"
+          }
+        }
+      ],
+      "materialSlot": "museum_brass",
+      "label": "Smooth satin gold",
+      "matchNote": "Project brushed-brass ID is a role alias; source is smooth gold, not a brass scan or strongly directional brushed material. Do not claim otherwise.",
+      "tileMeters": 0.25,
+      "scaleProvenance": "Project fine-grain starting value; provider does not publish a physical size.",
+      "provider": "ambientCG",
+      "providerUrl": "https://ambientcg.com/view?id=Metal034",
+      "license": {
+        "spdx": "CC0-1.0",
+        "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedUtc": "2026-09-15",
+        "commercialUse": true,
+        "redistribution": true,
+        "attributionRequired": false,
+        "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+      },
+      "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+      "textureRepeatPerMetre": 4.0,
+      "downloads": [
+        {
+          "assetId": "Metal034",
+          "file": "Metal034/Metal034_1K-PNG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Metal034_Kn28jRDr/Metal034_1K-PNG.zip",
+          "bytesExpected": 9007048,
+          "sha256": "1b9e6359607618bd3d07ea2faa881ad3e59555adc244ca4eade215adeb323165",
+          "bytes": 9007048
+        },
+        {
+          "assetId": "Metal034",
+          "file": "Metal034/Metal034_2K-JPG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Metal034_Kn28jRDr/Metal034_2K-JPG.zip",
+          "bytesExpected": 8750881,
+          "sha256": "baede071b0300f0e2d698fa8e122a3e76909389b48d61e34d1a5c8ae7cf2b2c9",
+          "bytes": 8750881
+        }
+      ],
+      "preview": {
+        "path": "art/glass-adventure/v2/source-pbr/_previews/Metal034.webp",
+        "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Metal034.webp",
+        "purpose": "Provider material preview render only, not a runtime channel.",
+        "bytes": 674464,
+        "sha256": "d8f23868ec640588fcf5ad32212d702a41a50510d573f6999b8dd568113ccd1b"
+      },
+      "metalness": {
+        "observedMinimum": 255,
+        "observedMaximum": 255,
+        "recommendedRuntime": "Use scalar metalness=1; loading the constant metalness texture is unnecessary."
+      }
+    }
+  ],
+  "environment": {
+    "assetId": "umhlanga_sunrise",
+    "provider": "Poly Haven",
+    "providerUrl": "https://polyhaven.com/a/umhlanga_sunrise",
+    "author": "Greg Zaal",
+    "license": {
+      "spdx": "CC0-1.0",
+      "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "verifiedUtc": "2026-09-15",
+      "commercialUse": true,
+      "redistribution": true,
+      "attributionRequired": false,
+      "providerLicenseUrl": "https://polyhaven.com/license"
+    },
+    "creationMethod": "Photographic HDRI",
+    "selection": "Coastal sunrise with low warm horizon key and cool open-sky fill; no tonemapped JPEG used for lighting.",
+    "providerMetadata": {
+      "dynamicRangeEV": 23,
+      "whiteBalanceKelvin": 5400
+    },
+    "runtime": {
+      "assetId": "museum-environment-v2",
+      "width": 1024,
+      "height": 512,
+      "path": "apps/beside-cue/public/games/adventure-v2/environment/golden-coast.hdr",
+      "bytes": 1577804,
+      "sha256": "5bbc697864531c5953e8f249dec85f7c3f4d585bbf6708105c0a4e5510c75c03"
+    },
+    "sourceMaster": {
+      "width": 2048,
+      "height": 1024,
+      "path": "art/glass-adventure/v2/source-pbr/umhlanga_sunrise/umhlanga_sunrise_2k.hdr",
+      "bytes": 6186336,
+      "sha256": "d0e7e238728c659ba2f1deccf55e9547e7a73b5c36a86d05bddaa9d21fc7aa75"
+    },
+    "downloads": [
+      {
+        "assetId": "umhlanga_sunrise",
+        "file": "umhlanga_sunrise/umhlanga_sunrise_1k.hdr",
+        "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/umhlanga_sunrise_1k.hdr",
+        "bytesExpected": 1577804,
+        "sha256": "5bbc697864531c5953e8f249dec85f7c3f4d585bbf6708105c0a4e5510c75c03",
+        "bytes": 1577804
+      },
+      {
+        "assetId": "umhlanga_sunrise",
+        "file": "umhlanga_sunrise/umhlanga_sunrise_2k.hdr",
+        "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/umhlanga_sunrise_2k.hdr",
+        "bytesExpected": 6186336,
+        "sha256": "d0e7e238728c659ba2f1deccf55e9547e7a73b5c36a86d05bddaa9d21fc7aa75",
+        "bytes": 6186336
+      }
+    ],
+    "integration": "Load RGBE/HDR as linear radiance, PMREM once and share; align environment rotation to authored key after real scene inspection. Do not bake in a guessed compass rotation. Dispose source HDR after PMREM if it is not used for the visible background."
+  },
+  "budgetNotes": {
+    "runtimePayloadBytes": 21387409,
+    "runtimeTextureFiles": 13,
+    "runtimeNonconstantTextureFiles": 12,
+    "runtimeEnvironmentFiles": 1,
+    "estimatedTextureRGBA8MipMiB": 64,
+    "estimatedTextureRGBA8MipMiBIfConstantMetalnessLoaded": 69.333333,
+    "estimateAssumptions": "1024x1024 RGBA8 per map with full mip chain, shared once. File compression does not reduce decoded GPU allocation. Excludes HDR source/PMREM, Merc, vessels with other textures, render targets, drivers and duplicate texture objects.",
+    "tentativeDeviceBudgetMiB": {
+      "mobile": 80,
+      "desktop": 192
+    },
+    "hardwareValidated": false,
+    "source2KPublicCopies": false
+  },
+  "verification": [
+    "All 9 source ZIP archives pass CRC checks.",
+    "All 29 extracted PNG/JPEG maps decode at their promised 1K/2K dimensions (includes retired Marble012 sources).",
+    "Active runtime maps are byte-for-byte copies of corresponding selected provider archive entries.",
+    "HDR dimensions remain 1024x512 runtime and 2048x1024 source.",
+    "Marble004 actual PNG basecolor, OpenGL normal and roughness visually inspected against gameplay and target; retired Marble012 files preserved.",
+    "No map conversion, resizing, recoloring or AI-derived physical channel generation.",
+    "Material code and lighting tuning remain renderer-agent ownership."
+  ],
+  "retiredMaterials": [
+    {
+      "assetId": "Marble012",
+      "role": "warm-carrara",
+      "maps": [
+        {
+          "channel": "basecolor",
+          "providerFile": "Marble012_1K-PNG_Color.png",
+          "variant": "1K-PNG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_Color.png",
+            "bytes": 2046204,
+            "sha256": "c3a903a10a1e8273789cd40e3d49fd2cb2e39abcb579294fe8820dc218b55dd6",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "formerRuntime": {
+            "assetId": "warm-carrara-basecolor",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-basecolor.png",
+            "bytes": 2046204,
+            "sha256": "c3a903a10a1e8273789cd40e3d49fd2cb2e39abcb579294fe8820dc218b55dd6",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Marble012_1K-PNG_NormalGL.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_NormalGL.png",
+            "bytes": 3488070,
+            "sha256": "d35c6f6a2c57e1853c92b6131be7943cbb2542c95288c238b9ac84188bbb9552",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          },
+          "formerRuntime": {
+            "assetId": "warm-carrara-normal",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-normal.png",
+            "bytes": 3488070,
+            "sha256": "d35c6f6a2c57e1853c92b6131be7943cbb2542c95288c238b9ac84188bbb9552",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Marble012_1K-PNG_Roughness.png",
+          "variant": "1K-PNG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_Roughness.png",
+            "bytes": 496768,
+            "sha256": "8c1e88602a73f3cc546bbe9803e5184e32f9f606d293c00023ca8107f52a4d93",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          },
+          "formerRuntime": {
+            "assetId": "warm-carrara-roughness",
+            "path": "apps/beside-cue/public/games/adventure-v2/textures/warm-carrara-roughness.png",
+            "bytes": 496768,
+            "sha256": "8c1e88602a73f3cc546bbe9803e5184e32f9f606d293c00023ca8107f52a4d93",
+            "width": 1024,
+            "height": 1024,
+            "imageMode": "L"
+          }
+        },
+        {
+          "channel": "basecolor",
+          "providerFile": "Marble012_2K-JPG_Color.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "sRGB",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_Color.jpg",
+            "bytes": 5139092,
+            "sha256": "1e1ef2d556dcda237181590b4a7543a66ea49223ccf2d455000e05f37e8a8ec5",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "normal",
+          "providerFile": "Marble012_2K-JPG_NormalGL.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_NormalGL.jpg",
+            "bytes": 1418258,
+            "sha256": "0e295859c9e55ba2dd147aed37a674aba90decaf91d3622d5aa8386441020649",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "RGB"
+          }
+        },
+        {
+          "channel": "roughness",
+          "providerFile": "Marble012_2K-JPG_Roughness.jpg",
+          "variant": "2K-JPG",
+          "colorSpace": "none",
+          "source": {
+            "path": "art/glass-adventure/v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_Roughness.jpg",
+            "bytes": 2166701,
+            "sha256": "d4a906a9739f30f386914a8b8393e64100f340851dc50328e5b91e24fa95ce7a",
+            "width": 2048,
+            "height": 2048,
+            "imageMode": "L"
+          }
+        }
+      ],
+      "materialSlot": "museum_ivory",
+      "label": "Light gray veined marble, Carrara-like project role",
+      "matchNote": "Provider names Marble012, not a geological Carrara identification. Raw base color is light cool gray; warm key lighting supplies warmth. Vein density and normal strength need in-scene review.",
+      "tileMeters": 1.2,
+      "scaleProvenance": "Project starting value; provider does not publish a physical size.",
+      "provider": "ambientCG",
+      "providerUrl": "https://ambientcg.com/view?id=Marble012",
+      "license": {
+        "spdx": "CC0-1.0",
+        "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedUtc": "2026-09-15",
+        "commercialUse": true,
+        "redistribution": true,
+        "attributionRequired": false,
+        "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+      },
+      "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+      "textureRepeatPerMetre": 0.8333333333333334,
+      "downloads": [
+        {
+          "assetId": "Marble012",
+          "file": "Marble012/Marble012_1K-PNG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble012_uZys50mU/Marble012_1K-PNG.zip",
+          "bytesExpected": 12909875,
+          "sha256": "7c733a107be2cc068c8d7a4fb36b548b8e6fdadec5db3dec04b063357078e72b",
+          "bytes": 12909875
+        },
+        {
+          "assetId": "Marble012",
+          "file": "Marble012/Marble012_2K-JPG.zip",
+          "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble012_uZys50mU/Marble012_2K-JPG.zip",
+          "bytesExpected": 14792073,
+          "sha256": "585c73d1e2dc8747074ef4fa4027795e3556fbe0fa43362c90c90b633f6956db",
+          "bytes": 14792073
+        }
+      ],
+      "preview": {
+        "path": "art/glass-adventure/v2/source-pbr/_previews/Marble012.webp",
+        "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Marble012.webp",
+        "purpose": "Provider material preview render only, not a runtime channel.",
+        "bytes": 595568,
+        "sha256": "1b610cac5e47bc88790f659ef4f0e3d7166c979832adc4d16187fc75153d2746"
+      },
+      "status": "Retained source/reference only; replaced by Marble004 after actual gameplay comparison on 2026-09-15."
+    }
+  ],
+  "candidateInspection": {
+    "selected": "Marble004",
+    "runnerUp": "Marble001",
+    "reason": "Marble004 actual PNG basecolor and normal/roughness inspected; Marble001 provider preview only. Marble004 is warmer and quieter.",
+    "filesOutsideRepository": [
+      "/home/maff/agent-out/beside-cue/2026-09-15/marble-candidates/Marble004_1K-JPG.zip"
+    ],
+    "jpegInspectionArchive": {
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble004_m4EO7Qwf/Marble004_1K-JPG.zip",
+      "bytes": 5778136,
+      "sha256": "b6d9d67a1e93868e234e4e19cd8198c6bb9f895989bc06643a00f90af20e6593"
+    }
+  }
+}

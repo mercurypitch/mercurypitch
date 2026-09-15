@@ -1,0 +1,79 @@
+{
+  "checkedAt": "2026-09-15T14:36:54.578Z",
+  "status": "passed",
+  "scope": "Actual Chromium MP3 decode + real module seam repair; actual OfflineAudioContext GainNode/source envelope with controlled transport/state only. Native lifecycle covered separately by unit tests; no physical-device or musical owner-audition claim.",
+  "browserVersion": "148.0.7778.96",
+  "moduleSha256": {
+    "museum-loop.ts": "aaef5f16f57c194e78446c8fee8762debc393f9a79df22afeb63d520ebd557df",
+    "museum-output.ts": "d7384bf43fc2f8f4e4cb08125cf44504f1f7a8fdaf4ca44c56b14bedd15ae4c7",
+    "museum-audio.ts": "39d723dcbca720e9eb9dc097ac4c5e9c229d7547c1c3a5b22307eaf4ff8c3ed8"
+  },
+  "errors": [],
+  "decoded": [
+    {
+      "cue": "m01",
+      "sampleRate": 48000,
+      "decodedSeconds": 149.04,
+      "repairedSeconds": 148.96,
+      "peak": 0.4046037793159485,
+      "boundaryStep": 0.006054023280739784,
+      "maxAdjacentStep": 0.04925223998725414
+    },
+    {
+      "cue": "m03",
+      "sampleRate": 48000,
+      "decodedSeconds": 116.88,
+      "repairedSeconds": 116.8,
+      "peak": 0.43468424677848816,
+      "boundaryStep": 0.015385976061224937,
+      "maxAdjacentStep": 0.09112142771482468
+    },
+    {
+      "cue": "a01",
+      "sampleRate": 48000,
+      "decodedSeconds": 10.9,
+      "repairedSeconds": 10.82,
+      "peak": 0.2507382333278656,
+      "boundaryStep": 0.0008855443447828293,
+      "maxAdjacentStep": 0.010978780686855316
+    },
+    {
+      "cue": "a02",
+      "sampleRate": 48000,
+      "decodedSeconds": 12.1,
+      "repairedSeconds": 12.02,
+      "peak": 0.1419014036655426,
+      "boundaryStep": 0.00027391035109758377,
+      "maxAdjacentStep": 0.009716198779642582
+    },
+    {
+      "cue": "a03",
+      "sampleRate": 48000,
+      "decodedSeconds": 13.1,
+      "repairedSeconds": 13.02,
+      "peak": 0.2304334044456482,
+      "boundaryStep": 0.0010998258367180824,
+      "maxAdjacentStep": 0.017516572028398514
+    }
+  ],
+  "envelope": {
+    "releaseAt": 1.2,
+    "beforeRms": 0.11425818344311862,
+    "lateRms": 0.0010537817649388557,
+    "lateRatio": 0.009222812171379059,
+    "afterStopRms": 0,
+    "attackStartRms": 0.000012267893104417452,
+    "settledRms": 0.11423045554267205
+  },
+  "encounterResume": {
+    "resumedAfterQueuedSuspend": true,
+    "states": [
+      "suspended",
+      "suspended",
+      "running"
+    ],
+    "ownersAfterResume": [
+      "glass-museum-music"
+    ]
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "retrievedUtc": "2026-09-15",
+  "downloadBudgetBytes": 150000000,
+  "previewAndProbeBytes": 2431588,
+  "downloadedPayloadBytes": 122155858,
+  "files": [
+    {
+      "assetId": "Marble012",
+      "file": "Marble012/Marble012_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble012_uZys50mU/Marble012_1K-PNG.zip",
+      "bytesExpected": 12909875,
+      "sha256": "7c733a107be2cc068c8d7a4fb36b548b8e6fdadec5db3dec04b063357078e72b",
+      "bytes": 12909875
+    },
+    {
+      "assetId": "Marble012",
+      "file": "Marble012/Marble012_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble012_uZys50mU/Marble012_2K-JPG.zip",
+      "bytesExpected": 14792073,
+      "sha256": "585c73d1e2dc8747074ef4fa4027795e3556fbe0fa43362c90c90b633f6956db",
+      "bytes": 14792073
+    },
+    {
+      "assetId": "Marble009",
+      "file": "Marble009/Marble009_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble009_ivcTsBhx/Marble009_1K-PNG.zip",
+      "bytesExpected": 12479175,
+      "sha256": "06bfda486311b784e081b324b790d5047f3d14634afe721204e62550066e5cac",
+      "bytes": 12479175
+    },
+    {
+      "assetId": "Marble009",
+      "file": "Marble009/Marble009_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble009_ivcTsBhx/Marble009_2K-JPG.zip",
+      "bytesExpected": 14545401,
+      "sha256": "8b63736e59bd3b77cf08a2760942947d9e19c47ad07d0d544edef39fb136d1b2",
+      "bytes": 14545401
+    },
+    {
+      "assetId": "Travertine001",
+      "file": "Travertine001/Travertine001_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Travertine001_olPgXfq4/Travertine001_1K-PNG.zip",
+      "bytesExpected": 9705188,
+      "sha256": "be06e3b302d143f4614bb00cb3ce51caa2a766fa8feb886d8eeb44a8d4052865",
+      "bytes": 9705188
+    },
+    {
+      "assetId": "Travertine001",
+      "file": "Travertine001/Travertine001_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Travertine001_olPgXfq4/Travertine001_2K-JPG.zip",
+      "bytesExpected": 9619414,
+      "sha256": "eb22b7ac1c146c01f26e53791509907044b25499fd87fb4a809989e65dcf2a73",
+      "bytes": 9619414
+    },
+    {
+      "assetId": "Metal034",
+      "file": "Metal034/Metal034_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Metal034_Kn28jRDr/Metal034_1K-PNG.zip",
+      "bytesExpected": 9007048,
+      "sha256": "1b9e6359607618bd3d07ea2faa881ad3e59555adc244ca4eade215adeb323165",
+      "bytes": 9007048
+    },
+    {
+      "assetId": "Metal034",
+      "file": "Metal034/Metal034_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Metal034_Kn28jRDr/Metal034_2K-JPG.zip",
+      "bytesExpected": 8750881,
+      "sha256": "baede071b0300f0e2d698fa8e122a3e76909389b48d61e34d1a5c8ae7cf2b2c9",
+      "bytes": 8750881
+    },
+    {
+      "assetId": "umhlanga_sunrise",
+      "file": "umhlanga_sunrise/umhlanga_sunrise_1k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/umhlanga_sunrise_1k.hdr",
+      "bytesExpected": 1577804,
+      "sha256": "5bbc697864531c5953e8f249dec85f7c3f4d585bbf6708105c0a4e5510c75c03",
+      "bytes": 1577804
+    },
+    {
+      "assetId": "umhlanga_sunrise",
+      "file": "umhlanga_sunrise/umhlanga_sunrise_2k.hdr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/umhlanga_sunrise_2k.hdr",
+      "bytesExpected": 6186336,
+      "sha256": "d0e7e238728c659ba2f1deccf55e9547e7a73b5c36a86d05bddaa9d21fc7aa75",
+      "bytes": 6186336
+    },
+    {
+      "assetId": "Marble004",
+      "file": "Marble004/Marble004_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble004_m4EO7Qwf/Marble004_1K-PNG.zip",
+      "bytesExpected": 14372939,
+      "bytes": 14372939,
+      "sha256": "82b44b9dbf59300715686e3cc97676e34d34a82a47cfb5a5308c16c8c5d7ef8e"
+    }
+  ],
+  "initialSourcingPayloadBytes": 101760361,
+  "replacementCandidateBatchBytes": 20395497,
+  "candidateInspection": {
+    "selected": "Marble004",
+    "runnerUp": "Marble001",
+    "reason": "Marble004 actual PNG basecolor and normal/roughness inspected; Marble001 provider preview only. Marble004 is warmer and quieter.",
+    "filesOutsideRepository": [
+      "/home/maff/agent-out/beside-cue/2026-09-15/marble-candidates/Marble004_1K-JPG.zip"
+    ],
+    "jpegInspectionArchive": {
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble004_m4EO7Qwf/Marble004_1K-JPG.zip",
+      "bytes": 5778136,
+      "sha256": "b6d9d67a1e93868e234e4e19cd8198c6bb9f895989bc06643a00f90af20e6593"
+    }
+  },
+  "initialPreviewAndProbeBytes": 2187166
+}

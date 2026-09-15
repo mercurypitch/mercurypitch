@@ -1,0 +1,93 @@
+{
+  "version": 4,
+  "assetId": "museum-window-bay-01",
+  "status": "structural-and-visual-candidate-passed",
+  "sourceBlend": "sources/museum-window-bay-01-imported.blend",
+  "sourceRawSha256": "8470eaf0a5227050f5d83923b68c09bd799a453d9cdb977702a8eb349bb66377",
+  "normalization": {
+    "uniformScale": 1.8915857569095615,
+    "sourceBlenderPivot": [
+      -0.00023096799850463867,
+      0.0004130713641643524,
+      -0.9520940184593201
+    ],
+    "canonicalHeightMetres": 3.6,
+    "gltfUp": "+Y",
+    "gltfFront": "+Z",
+    "pivot": "foot-center"
+  },
+  "geometry": {
+    "sourceTriangles": 22204,
+    "targetTriangles": 24000,
+    "finalTriangles": 22204,
+    "distanceMetric": {
+      "sourceToFinal": {
+        "sampledVertices": 5832,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      },
+      "finalToSource": {
+        "sampledVertices": 5832,
+        "maxMetres": 0.0,
+        "p95Metres": 0.0
+      }
+    }
+  },
+  "materials": {
+    "strategy": "Preserved combined donor PBR atlas; ivory/gold/verde regions are not globally replaced by palette aliases",
+    "slot": "meshy_museum_window_bay_atlas",
+    "packedSourceResolution": 2048,
+    "runtimeResolution": 1024
+  },
+  "edits": [
+    "Uniform fit and foot-center origin",
+    "Original donor triangles and UVs retained; no decimation or synthesized replacement geometry",
+    "Shared 1K PNG runtime derivatives of original donor PBR atlas",
+    "Reload saved 1K derivatives into export-only image datablocks; preserve packed 2K working Blender file"
+  ],
+  "textures": [
+    {
+      "name": "Image_0",
+      "path": "exports/museum-window-bay-01-final-v1-textures/atlas-0.png",
+      "colorSpace": "sRGB",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "d11dc8408e7ffe6979b5fbe067b2776c7826f2ed1a7b8cc44a8fab99f68dd156"
+    },
+    {
+      "name": "Image_1",
+      "path": "exports/museum-window-bay-01-final-v1-textures/atlas-1.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "867b29e5069545e7b043bc67ed02e2b84b71c94ea3ece9d1f560f41ce82bb0ea"
+    },
+    {
+      "name": "normal",
+      "path": "exports/museum-window-bay-01-final-v1-textures/atlas-2.png",
+      "colorSpace": "Non-Color",
+      "size": [
+        1024,
+        1024
+      ],
+      "sha256": "d732d553d47483e85bae3808457dee0e85c553396cb075d3293b891aaed38426"
+    }
+  ],
+  "blend": {
+    "path": "sources/museum-window-bay-01-final-v1.blend",
+    "sha256": "f4c0add1d78e64e43eb1f22c439ab626a8aac5074dbbee67e6fc05084d3b6010",
+    "bytes": 11828464
+  },
+  "glb": {
+    "path": "exports/museum-window-bay-01-final-v1.glb",
+    "sha256": "f89dd6f919cc066c84d1673afe50d3a567437f78d9038fc318743429e6e1ff81",
+    "bytes": 6335148
+  },
+  "visualApproval": "Actual raw front/back and final GLB three-quarter renders inspected; source silhouette retained; owner adoption pending",
+  "runtimeActivated": false,
+  "pipeline": "V3 donor-preserving helper with V4 path isolation"
+}
