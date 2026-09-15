@@ -48,6 +48,13 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### Consume pitch evidence independently of rendered frames
+
+**Symptom:** a steady injected tone never completed calibration while a rich 3D scene rendered slowly.
+**Cause:** sampling only `latestCaptured()` inside rAF discarded the capture cadence, making valid observations appear separated by long gaps.
+**Rule:** subscribe to raw captured frames for scoring and retain their capture timestamps; share a monotonic decay clock with presentation ticks so intervals are not counted twice. Keep rAF polling for display feedback only.
+**See:** `packages/pitch-engine/src/pitch-f0-stream.ts`, `packages/glass-game/src/core/hold.ts`.
+
 ### A late acknowledgement must not clear a newer phase deadline
 
 **Symptom:** quickly stopping a recorder that never finished could leave it waiting forever.
