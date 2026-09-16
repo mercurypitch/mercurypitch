@@ -162,9 +162,24 @@ async function handleMe(
       sourceLabel: string | null
     }>()
 
+  let redeemedPromos: string[] = []
+  try {
+    const { results: redemptions } = await env.DB.prepare(
+      `SELECT p.code FROM promoRedemptions r
+       JOIN promoCodes p ON p.id = r.promoCodeId
+       WHERE r.userId = ?`,
+    )
+      .bind(auth.userId)
+      .all<{ code: string }>()
+    redeemedPromos = redemptions.map((r) => r.code)
+  } catch {
+    redeemedPromos = []
+  }
+
   return respond({
     creditBalance: creditBalance(ledger.results),
     entitlements,
+    redeemedPromos,
     // Managed testers receive synthetic credits and perks from Mission
     // Control. Report billing as unavailable for this caller so the client
     // does not present purchase controls that checkout will reject.
@@ -1054,6 +1069,179 @@ export async function reconcileBilling(env: Env): Promise<void> {
   }
 }
 
+async function handlePromoRedeem(
+  request: Request,
+  env: Env,
+  respond: Respond,
+): Promise<Response> {
+  const auth = await getAuth(request, env)
+  if (!auth) return respond({ error: 'Unauthorized' }, { status: 401 })
+
+  if (auth.isTestAccount) {
+    return respond(
+      { error: 'Promo codes are disabled for managed testing accounts' },
+      { status: 403 },
+    )
+  }
+
+  if (auth.provider === 'anonymous') {
+    return respond(
+      { error: 'Please create an account to redeem promo codes' },
+      { status: 403 },
+    )
+  }
+
+  const rl = await checkRateLimit(env.DB, `user:${auth.userId}`, 'promo-redeem')
+  if (!rl.allowed) {
+    const after = rl.retryAfter ?? 60
+    return respond(
+      { error: `Too many attempts. Try again in ${after} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(after) } },
+    )
+  }
+
+  const user = await env.DB.prepare(
+    'SELECT email, emailVerified, authProvider FROM users WHERE id = ?',
+  )
+    .bind(auth.userId)
+    .first<{
+      email: string | null
+      emailVerified: number
+      authProvider: string
+    }>()
+
+  if (!user || user.email == null || user.emailVerified !== 1) {
+    return respond(
+      { error: 'Please verify your email address to redeem promo codes.' },
+      { status: 403 },
+    )
+  }
+
+  let body: { code?: string }
+  try {
+    body = (await request.json()) as { code?: string }
+  } catch {
+    return respond({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  const rawCode = typeof body?.code === 'string' ? body.code.trim() : ''
+  if (rawCode === '') {
+    return respond({ error: 'Promo code is required.' }, { status: 400 })
+  }
+
+  const codeUpper = rawCode.toUpperCase()
+
+  const promo = await env.DB.prepare(
+    'SELECT id, code, credits, maxRedemptions, redemptionCount, startsAt, expiresAt, active FROM promoCodes WHERE UPPER(code) = ? AND active = 1',
+  )
+    .bind(codeUpper)
+    .first<{
+      id: string
+      code: string
+      credits: number
+      maxRedemptions: number | null
+      redemptionCount: number
+      startsAt: string | null
+      expiresAt: string | null
+      active: number
+    }>()
+
+  if (!promo) {
+    return respond(
+      { error: 'Invalid or inactive promo code.' },
+      { status: 404 },
+    )
+  }
+
+  const now = new Date()
+  const nowIso = now.toISOString()
+
+  if (promo.startsAt && new Date(promo.startsAt) > now) {
+    return respond(
+      { error: 'This promo code is not active yet.' },
+      { status: 400 },
+    )
+  }
+
+  if (promo.expiresAt && new Date(promo.expiresAt) < now) {
+    return respond({ error: 'This promo code has expired.' }, { status: 400 })
+  }
+
+  if (
+    promo.maxRedemptions !== null &&
+    promo.redemptionCount >= promo.maxRedemptions
+  ) {
+    return respond(
+      { error: 'This promo code has reached its maximum redemption limit.' },
+      { status: 400 },
+    )
+  }
+
+  const prior = await env.DB.prepare(
+    'SELECT 1 FROM promoRedemptions WHERE promoCodeId = ? AND userId = ?',
+  )
+    .bind(promo.id, auth.userId)
+    .first()
+
+  if (prior) {
+    return respond(
+      { error: 'You have already redeemed this promo code.' },
+      { status: 400 },
+    )
+  }
+
+  const redemptionId = crypto.randomUUID()
+  const inserted = await env.DB.prepare(
+    'INSERT OR IGNORE INTO promoRedemptions (id, promoCodeId, userId, redeemedAt) VALUES (?, ?, ?, ?)',
+  )
+    .bind(redemptionId, promo.id, auth.userId, nowIso)
+    .run()
+
+  if (inserted.meta.changes === 0) {
+    return respond(
+      { error: 'You have already redeemed this promo code.' },
+      { status: 400 },
+    )
+  }
+
+  await env.DB.prepare(
+    'UPDATE promoCodes SET redemptionCount = redemptionCount + 1, updatedAt = ? WHERE id = ?',
+  )
+    .bind(nowIso, promo.id)
+    .run()
+
+  const ledgerId = crypto.randomUUID()
+  const idempotencyKey = `promo:${promo.id}:${auth.userId}`
+  await env.DB.prepare(
+    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+     VALUES (?, ?, ?, ?, 'promo', ?, ?)`,
+  )
+    .bind(
+      ledgerId,
+      nowIso,
+      auth.userId,
+      promo.credits,
+      promo.code,
+      idempotencyKey,
+    )
+    .run()
+
+  const ledger = await env.DB.prepare(
+    'SELECT delta FROM creditLedger WHERE userId = ?',
+  )
+    .bind(auth.userId)
+    .all<{ delta: number }>()
+
+  const balance = creditBalance(ledger.results)
+
+  return respond({
+    success: true,
+    code: promo.code,
+    creditsGranted: promo.credits,
+    newBalance: balance,
+  })
+}
+
 /** Route /api/billing/* requests. Returns null when the path doesn't match. */
 export async function handleBilling(
   request: Request,
@@ -1068,6 +1256,9 @@ export async function handleBilling(
   if (route === 'pricing' && method === 'GET')
     return handlePricing(env, respond)
   if (route === 'me' && method === 'GET') return handleMe(request, env, respond)
+  if (route === 'promo/redeem' && method === 'POST') {
+    return handlePromoRedeem(request, env, respond)
+  }
   if (route === 'checkout' && method === 'POST') {
     return handleCheckout(request, env, respond)
   }

@@ -109,46 +109,57 @@ export const HeaderAccount: Component = () => {
           </div>
         }
       >
-        <Show
-          when={isUpgraded()}
-          fallback={
-            <button
-              class={styles.signInPill}
-              onClick={openSignIn}
-              title="Sign in"
-              data-testid="header-signin"
-            >
-              <UserIcon />
-              {/* Deliberately the same words for everyone. The chip cannot
-                  know whether an account is waiting — only that this device
-                  signed in once — and "Welcome back" was read as a passkey
-                  having been detected, which no browser will tell us. The
-                  Home strip carries the returning-visitor message, where
-                  there is room to name the method it is actually offering. */}
-              <span>Sign in</span>
-            </button>
-          }
-        >
-          <div class={styles.pill} data-testid="header-account">
-            <button
-              class={styles.nameBtn}
-              onClick={openAccount}
-              title="Account settings"
-            >
-              <UserIcon />
-              <span class={styles.name}>{name()}</span>
-            </button>
-            <button
-              class={styles.logoutBtn}
-              onClick={() => setConfirming(true)}
-              title="Sign out"
-              aria-label="Sign out"
-              data-testid="header-logout"
-            >
-              <SignOutIcon />
-            </button>
-          </div>
-        </Show>
+        <div class={styles.accountWrapper}>
+          <a
+            href="#/settings/credits"
+            class={styles.promoPill}
+            title="Claim 5 Free Cloud Separation Credits (Product Hunt Promo)"
+            data-testid="header-promo-pill"
+          >
+            <span>Promo</span>
+          </a>
+
+          <Show
+            when={isUpgraded()}
+            fallback={
+              <button
+                class={styles.signInPill}
+                onClick={openSignIn}
+                title="Sign in"
+                data-testid="header-signin"
+              >
+                <UserIcon />
+                {/* Deliberately the same words for everyone. The chip cannot
+                    know whether an account is waiting — only that this device
+                    signed in once — and "Welcome back" was read as a passkey
+                    having been detected, which no browser will tell us. The
+                    Home strip carries the returning-visitor message, where
+                    there is room to name the method it is actually offering. */}
+                <span>Sign in</span>
+              </button>
+            }
+          >
+            <div class={styles.pill} data-testid="header-account">
+              <button
+                class={styles.nameBtn}
+                onClick={openAccount}
+                title="Account settings"
+              >
+                <UserIcon />
+                <span class={styles.name}>{name()}</span>
+              </button>
+              <button
+                class={styles.logoutBtn}
+                onClick={() => setConfirming(true)}
+                title="Sign out"
+                aria-label="Sign out"
+                data-testid="header-logout"
+              >
+                <SignOutIcon />
+              </button>
+            </div>
+          </Show>
+        </div>
       </Show>
 
       <ConfirmDialog

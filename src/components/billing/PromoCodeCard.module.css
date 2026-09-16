@@ -1,0 +1,240 @@
+/* PromoCodeCard — Promo code redemption and Product Hunt launch bonus */
+
+.promoContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 12%, var(--bg-secondary)) 0%,
+    var(--bg-secondary) 65%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+.promoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.promoTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.promoTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.promoBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #da552f 25%, transparent);
+  color: #da552f;
+  border: 1px solid color-mix(in srgb, #da552f 40%, transparent);
+}
+
+.phBadgeLink {
+  display: inline-block;
+  line-height: 0;
+  border-radius: 6px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.phBadgeLink:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.phBadgeImg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.promoDesc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.claimCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-primary));
+}
+
+.claimInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.claimTitle {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.claimSub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.claimBtn {
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: var(--accent);
+  color: #ffffff;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.claimBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.claimBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.claimedPill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 20%, transparent);
+  color: var(--teal);
+  border: 1px solid color-mix(in srgb, var(--teal) 35%, transparent);
+}
+
+.formRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.input {
+  flex: 1;
+  min-width: 140px;
+  font: inherit;
+  font-size: 0.84rem;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.input::placeholder {
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-muted);
+}
+
+.redeemBtn {
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.redeemBtn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg-tertiary));
+}
+
+.redeemBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.alertBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  border: 1px solid color-mix(in srgb, var(--yellow) 40%, var(--border));
+  background: color-mix(in srgb, var(--yellow) 10%, var(--bg-primary));
+  color: var(--text-primary);
+}
+
+.alertTitle {
+  font-weight: 600;
+  color: var(--yellow);
+}
+
+.alertLink {
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+
+.successMessage {
+  font-size: 0.8rem;
+  color: var(--teal);
+  font-weight: 500;
+}
+
+.errorMessage {
+  font-size: 0.8rem;
+  color: var(--red);
+  font-weight: 500;
+}

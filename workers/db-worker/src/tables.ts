@@ -245,4 +245,5 @@ export const TABLES: Record<string, TableDef> = {
   // them, exactly like leaderboardEntries. See migrations/0005_leagues.sql.
   leagues: { access: 'admin', boolCols: ['isMystery'] },
   leaguePointsConfig: { access: 'admin' },
+  promoCodes: { access: 'admin', boolCols: ['active'] },
 }
