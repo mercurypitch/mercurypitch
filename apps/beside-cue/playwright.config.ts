@@ -42,7 +42,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: '**/games-off.e2e.ts',
+      testIgnore: ['**/games-off.e2e.ts', '**/glass-adventure-*.e2e.ts'],
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -53,12 +53,31 @@ export default defineConfig({
         baseURL: `http://127.0.0.1:${storePort}`,
       },
     },
+    // Opt in to the heavy software-rendered 3D WebGL games gate; excluded from routine CI PR Gate.
+    ...(process.env.BESIDE_CUE_GAMES_E2E === '1'
+      ? [
+          {
+            name: 'chromium-games',
+            testMatch: '**/glass-adventure-*.e2e.ts',
+            timeout: 120_000,
+            use: {
+              ...devices['Desktop Chrome'],
+              launchOptions: {
+                args: [
+                  '--use-angle=swiftshader',
+                  '--enable-unsafe-swiftshader',
+                ],
+              },
+            },
+          },
+        ]
+      : []),
     // Opt in locally to the Safari-engine gate; routine CI installs Chromium.
     ...(process.env.BESIDE_CUE_WEBKIT === '1'
       ? [
           {
             name: 'webkit',
-            testIgnore: '**/games-off.e2e.ts',
+            testIgnore: ['**/games-off.e2e.ts', '**/glass-adventure-*.e2e.ts'],
             use: { ...devices['Desktop Safari'] },
           },
         ]

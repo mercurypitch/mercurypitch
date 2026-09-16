@@ -476,6 +476,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm beside-cue:build` | `pnpm --filter @irchiinnuss/beside-cue-app build` |
 | `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app check` |
 | `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app test:run` |
+| `pnpm beside-cue:e2e:games` | `pnpm --filter @irchiinnuss/beside-cue-app test:e2e:games` |
 | `pnpm beside-cue:android` | `pnpm --filter @irchiinnuss/beside-cue-app cap:run:android` |
 | `pnpm serve` | `pnpm dlx http-server dist -p 4173 -c-1` |
 | `pnpm typecheck` | `tsc --noEmit` |

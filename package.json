@@ -43,6 +43,7 @@
     "beside-cue:build": "pnpm --filter @irchiinnuss/beside-cue-app build",
     "beside-cue:check": "pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app check",
     "beside-cue:test": "pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app test:run",
+    "beside-cue:e2e:games": "pnpm --filter @irchiinnuss/beside-cue-app test:e2e:games",
     "beside-cue:android": "pnpm --filter @irchiinnuss/beside-cue-app cap:run:android",
     "serve": "pnpm dlx http-server dist -p 4173 -c-1",
     "typecheck": "tsc --noEmit",
