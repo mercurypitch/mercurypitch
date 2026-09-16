@@ -8,6 +8,7 @@
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
 import { DonatePanel } from '@/components/billing/DonatePanel'
+import { PromoCodeCard } from '@/components/billing/PromoCodeCard'
 import { accountHeld } from '@/db/services/auth-service'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, } from '@/db/services/billing-service'
@@ -140,6 +141,9 @@ export const PricingPanel: Component = () => {
           </div>
         )}
       </Show>
+
+      <PromoCodeCard />
+
       <p class={styles.intro}>
         On-device separation is free forever. Credits only cover faster
         server-side processing.

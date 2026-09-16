@@ -57,6 +57,7 @@ export interface BillingMe {
      *  older db-worker, or when the source is not a donation. */
     sourceLabel?: string | null
   }>
+  redeemedPromos?: string[]
   stripeConfigured: boolean
 }
 
@@ -83,6 +84,9 @@ function isBillingMe(value: unknown): value is BillingMe {
     Number.isFinite(candidate.creditBalance) &&
     Array.isArray(candidate.entitlements) &&
     candidate.entitlements.every(isBillingEntitlement) &&
+    (candidate.redeemedPromos === undefined ||
+      (Array.isArray(candidate.redeemedPromos) &&
+        candidate.redeemedPromos.every((p) => typeof p === 'string'))) &&
     typeof candidate.stripeConfigured === 'boolean'
   )
 }
@@ -351,4 +355,44 @@ export function isTierSoon(
   plan: Pick<PricingPlan, 'amount' | 'credits'>,
 ): boolean {
   return plan.amount == null && plan.credits == null
+}
+
+export interface RedeemPromoResponse {
+  success: boolean
+  code: string
+  creditsGranted: number
+  newBalance: number
+}
+
+/** Redeem a promo code for credits. Requires auth with a verified email. */
+export async function redeemPromoCode(
+  code: string,
+  base?: string,
+): Promise<RedeemPromoResponse> {
+  const token = requireAuth()
+  const b = apiBase(base)
+  const res = await fetch(`${b}/api/billing/promo/redeem`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ code: code.trim() }),
+  })
+
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+  if (!res.ok) {
+    throw new Error(
+      typeof data.error === 'string'
+        ? data.error
+        : 'Failed to redeem promo code',
+    )
+  }
+
+  return {
+    success: data.success === true,
+    code: typeof data.code === 'string' ? data.code : code.trim().toUpperCase(),
+    creditsGranted: Number(data.creditsGranted ?? 0),
+    newBalance: Number(data.newBalance ?? 0),
+  }
 }

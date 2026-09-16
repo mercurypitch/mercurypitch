@@ -778,6 +778,8 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // changes their mind and comes back needs a handful; ten in five minutes is
   // past any real hesitation.
   'billing-checkout': { max: 10, windowMs: 300_000 },
+  // Promo code redemptions: bound guessing loops per account.
+  'promo-redeem': { max: 10, windowMs: 300_000 },
   // Device linking. The caps here bound load, not guessing: a poll must
   // present the poll token as well as the code, and 32^8 codes paired with a
   // 43-character secret is not a space anybody walks. Start mints a row, so

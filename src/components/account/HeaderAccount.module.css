@@ -131,3 +131,32 @@
     animation: none;
   }
 }
+
+.promoPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.32rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #da552f 40%, var(--border));
+  background: color-mix(in srgb, #da552f 14%, var(--bg-secondary));
+  color: #da552f;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.promoPill:hover {
+  background: color-mix(in srgb, #da552f 24%, var(--bg-secondary));
+  transform: translateY(-1px);
+}
+
+.accountWrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
