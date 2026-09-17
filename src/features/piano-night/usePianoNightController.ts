@@ -1355,7 +1355,7 @@ export function usePianoNightController() {
     const countBeats = countInBeats()
     if (previousPhase !== 'playing' && countBeats > 0) {
       await activateAudio()
-      
+
       const ctx = transport.getAudioContext()
       if (ctx) {
         const tempoBpm = transport.timeline.tempoBpm()
