@@ -165,6 +165,7 @@ let originalRequestMidiAccess: PropertyDescriptor | undefined
 
 beforeEach(() => {
   localStorage.clear()
+  localStorage.setItem('pitchperfect_piano_night_count_in', '0')
   keepInstrumentNightTakeMock.mockReset().mockResolvedValue({
     ok: true,
     quotaExceeded: false,

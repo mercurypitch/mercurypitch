@@ -1357,7 +1357,7 @@ export function usePianoNightController() {
       await activateAudio()
 
       const ctx = transport.getAudioContext()
-      if (ctx) {
+      if (ctx && typeof ctx.createOscillator === 'function') {
         const tempoBpm = transport.timeline.tempoBpm()
         const beatSec = 60 / tempoBpm
         const totalDuration = countBeats * beatSec
