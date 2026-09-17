@@ -12,6 +12,7 @@
     "check": "tsc --noEmit && eslint src && prettier --check . --ignore-unknown",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e:games": "cross-env BESIDE_CUE_GAMES_E2E=1 playwright test --project=chromium-games",
     "shots": "playwright test -c playwright.shots.config.ts",
     "shots:serve": "vite build --config shots/vite.config.ts && vite preview --config shots/vite.config.ts",
     "cap:sync": "pnpm build && cap sync android",

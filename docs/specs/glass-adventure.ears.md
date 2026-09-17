@@ -31,6 +31,11 @@ Scope: first playable floating museum, shared between BesideCue and a standalone
 - GA-19: Default store builds shall omit the game entry and game assets. Explicit native games builds shall pair the games payload with microphone declarations.
 - GA-20: Fracture effects shall use bounded fragment counts and release their owned graphics/audio resources when the visit ends. Reduced-motion mode shall reduce fracture motion without changing completion rules.
 
+## CI and Automated Testing
+
+- GA-21: While the CI environment uses CPU software rasterization, the heavy 3D game browser journeys shall be excluded from the default automated PR gate to prevent unresolvable step timeouts.
+- GA-22: When validating changes to 3D game interaction, developers shall explicitly execute the `beside-cue:e2e:games` suite to verify multi-touch and WebGL scenarios locally.
+
 ## Evidence
 
-Pure route, hold and lifecycle tests live in `packages/glass-game/src`; real mouse, multi-touch and injected PCM browser journeys live in `apps/beside-cue/e2e/glass-adventure-*.e2e.ts`. Art recipes and source provenance live in `art/glass-adventure`. Physical iPhone/Android microphone, frame-rate and suspension acceptance remains an owner playtest.
+Pure route, hold and lifecycle tests live in `packages/glass-game/src` and run automatically on every PR. Real mouse, multi-touch and injected PCM browser journeys live in `apps/beside-cue/e2e/glass-adventure-*.e2e.ts` and run on-demand locally via `pnpm beside-cue:e2e:games` (per GA-21, GA-22). Art recipes and source provenance live in `art/glass-adventure`. Physical iPhone/Android microphone, frame-rate and suspension acceptance remains an owner playtest.

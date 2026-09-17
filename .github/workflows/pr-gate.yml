@@ -378,7 +378,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.beside == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -390,12 +390,11 @@ jobs:
       - name: Install Chromium for Beside Cue browser tests
         run: pnpm exec playwright install --with-deps chromium
 
-      # The suite includes real software-rendered 3D scenes. Sharing a job
-      # deadline with checks, units and builds exhausted the old serial gate.
-      # Shard the complete suite, including games-off, but retain one browser
-      # worker per runner so concurrent WebGL contexts do not fight for CPU.
+      # Shard the standard Beside Cue browser suite across two workers.
+      # Heavy 3D WebGL game tests are gated separately (BESIDE_CUE_GAMES_E2E)
+      # to prevent software-rasterizer timeouts on headless CI runners.
       - name: Test Beside Cue browser paths
-        timeout-minutes: 25
+        timeout-minutes: 12
         env:
           PLAYWRIGHT_HTML_OPEN: never
         run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --shard=${{ matrix.shard }}/2 --reporter=line,html
