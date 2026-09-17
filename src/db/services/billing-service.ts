@@ -369,16 +369,25 @@ export async function redeemPromoCode(
   code: string,
   base?: string,
 ): Promise<RedeemPromoResponse> {
-  const token = requireAuth()
+  await requireAuth()
+  const authHeaders = getAuthHeaders()
+  if (!authHeaders.Authorization) {
+    throw new Error('Please sign in to redeem promo codes.')
+  }
+
   const b = apiBase(base)
   const res = await fetch(`${b}/api/billing/promo/redeem`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...authHeaders,
     },
     body: JSON.stringify({ code: code.trim() }),
   })
+
+  if (res.status === 401) {
+    throw new Error('Your session has expired. Please log in again.')
+  }
 
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
   if (!res.ok) {
