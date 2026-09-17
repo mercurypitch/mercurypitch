@@ -102,7 +102,7 @@
 }
 .review {
   display: grid;
-  gap: 1rem;
+  gap: 0.9rem;
   min-width: 0;
   color: #eee2cd;
 }
@@ -180,22 +180,321 @@
   flex-wrap: wrap;
   align-items: center;
 }
-.mixExport {
+.reviewSection,
+.refineSection {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+.refineSection,
+.reviewSection + .reviewSection,
+.refineSection + .reviewSection {
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(232, 185, 115, 0.2);
+}
+.sectionHeading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.sectionHeading > div {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+.sectionHeading strong,
+.notationHeading strong,
+.manualSummary strong {
+  color: #f3e3c8;
+  font-size: 0.82rem;
+  font-weight: 680;
+}
+.sectionHeading span,
+.notationHeading span,
+.manualSummary span {
+  color: #a99c87;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+.titleField.titleField {
+  grid-template-columns: 4.8rem minmax(0, 1fr);
   align-items: center;
   gap: 0.65rem;
-  padding: 0.65rem;
-  border: 1px solid #4a3d2a;
-  border-radius: 6px;
-  background: rgba(37, 30, 22, 0.62);
 }
-.mixExport p {
-  font-size: 0.76rem;
+.titleField > span {
+  color: #a99c87;
+  font-size: 0.68rem;
+}
+.titleField input {
+  min-height: 40px;
+  padding-block: 0.4rem;
+}
+.refineHeading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+}
+.review .sectionDisclosure {
+  display: grid;
+  grid-template-columns: 2.15rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.review .sectionDisclosure:hover:not(:disabled) {
+  background: transparent;
+}
+.sectionIcon {
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid rgba(232, 185, 115, 0.35);
+  border-radius: 50%;
+  color: #edbc75;
+  background: rgba(68, 47, 28, 0.48);
+}
+.sectionIcon svg {
+  width: 1rem;
+  height: 1rem;
+}
+.sectionCopy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.sectionCopy strong {
+  color: #f3e3c8;
+  font-size: 0.82rem;
+}
+.sectionCopy small {
+  overflow: hidden;
+  color: #a99c87;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.disclosureMark {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #d7b57f;
+  font-size: 1rem;
+}
+.review .editShortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.4rem 0.58rem;
+  border-color: rgba(232, 185, 115, 0.34);
+  background: rgba(37, 30, 22, 0.7);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.editShortcut svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+.refineBody {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  padding-top: 0.2rem;
+}
+.manualSummary {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.09);
+}
+.manualSummary > div {
+  display: grid;
+  gap: 0.16rem;
+}
+.manualSummary > span {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.editorMount {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+.editorMount[hidden] {
+  display: none;
+}
+.review .saveCorrections {
+  justify-self: start;
+}
+.exportSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.exportSummary > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.7rem;
+  padding: 0.2rem 0.48rem;
+  border: 1px solid rgba(232, 185, 115, 0.22);
+  border-radius: 999px;
+  color: #d7c7ae;
+  background: rgba(46, 36, 26, 0.55);
+  font-size: 0.64rem;
+  line-height: 1;
+}
+.review .exportPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  justify-self: start;
+  min-width: 10rem;
+  color: #24170b;
+  background: #e8b973;
+  border-color: #e8b973;
+  font-weight: 680;
+}
+.review .exportPrimary:hover:not(:disabled) {
+  background: #f3cd96;
+}
+.exportPrimary svg {
+  width: 1rem;
+  height: 1rem;
+}
+.notationHeading {
+  display: grid;
+  gap: 0.14rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(244, 234, 219, 0.09);
+}
+.exportActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+.review .exportActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-width: 0;
+  padding-inline: 0.5rem;
+  font-size: 0.7rem;
+}
+.exportActions svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+.exportDetails {
+  color: #a99c87;
+  font-size: 0.68rem;
+}
+.exportDetails summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  color: #cbb99d;
+  cursor: pointer;
+}
+.exportDetails p {
+  padding: 0.15rem 0 0.35rem;
+  font-size: 0.68rem;
+}
+.reviewNotice {
+  padding: 0.55rem 0.65rem;
+  border-radius: 5px;
+  color: #d8c9b1;
+  background: rgba(64, 48, 33, 0.46);
+  font-size: 0.72rem;
+}
+.secondaryActions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  color: #887b68;
+}
+.secondaryActions > span {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.secondaryActions > span svg {
+  width: 1rem;
+  height: 1rem;
+}
+.review .secondaryActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.35rem 0.5rem;
+  border-color: transparent;
+  color: #ae9e87;
+  background: transparent;
+  font-size: 0.68rem;
+}
+.secondaryActions button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 @media (max-width: 560px) {
-  .mixExport {
+  .titleField.titleField {
     grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  .refineHeading {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .editShortcut span {
+    display: none;
+  }
+  .review .editShortcut {
+    width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .manualSummary {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .review .exportPrimary {
+    justify-self: stretch;
+  }
+  .exportActions {
+    gap: 0.35rem;
+  }
+  .review .exportActions button {
+    min-height: 48px;
+    flex-direction: column;
+    gap: 0.18rem;
+    font-size: 0.65rem;
   }
 }
 .fields {

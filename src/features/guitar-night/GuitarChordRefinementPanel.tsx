@@ -9,6 +9,22 @@ import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import styles from './GuitarChordRefinementPanel.module.css'
 import type { GuitarChordRefinement } from './useGuitarChordRefinement'
 
+function noteCountLabel(count: number) {
+  return `${count} ${count === 1 ? 'note' : 'notes'}`
+}
+
+function selectedState(selected: boolean) {
+  return selected ? 'true' : 'false'
+}
+
+function describeRefinementDelta(delta: number) {
+  if (delta === 0) return 'The refined pass kept the same note count.'
+  if (delta > 0)
+    return `${delta} additional ${delta === 1 ? 'pitch' : 'pitches'} found.`
+  const fewer = Math.abs(delta)
+  return `${fewer} fewer ${fewer === 1 ? 'pitch' : 'pitches'} proposed.`
+}
+
 export function GuitarChordRefinementPanel(props: {
   controller: GuitarChordRefinement
   score: GuitarPracticeScore
@@ -25,48 +41,56 @@ export function GuitarChordRefinementPanel(props: {
     }[progress.stage]
     return `${stage} · ${Math.round(progress.fraction * 100)}%`
   })
+  const addedNotes = createMemo(
+    () =>
+      (props.controller.candidate()?.notes.length ?? props.score.notes.length) -
+      props.score.notes.length,
+  )
   return (
     <section class={styles.panel} aria-label="Chord refinement">
       <div class={styles.heading}>
-        <strong>Find chord notes</strong>
+        <strong>Chord analysis</strong>
         <span>Experimental</span>
       </div>
-      <p>
-        Find simultaneous notes in this recording, on your device. Check
-        proposed pitches and fingering before practice.
-      </p>
       <Show
         when={props.controller.running()}
         fallback={
           <Show
             when={props.controller.candidate()}
             fallback={
-              <div class={styles.actions}>
-                <button
-                  type="button"
-                  disabled={
-                    props.disabled ||
-                    props.controller.persisting() ||
-                    !props.hasAudio
-                  }
-                  onClick={() => void props.controller.start()}
-                >
-                  Refine chords
-                </button>
-                <Show when={props.controller.hasBackup()}>
+              <>
+                <p class={styles.intro}>
+                  Find simultaneous pitches in the dry recording. Nothing
+                  changes until you accept the result.
+                </p>
+                <div class={styles.actions}>
                   <button
                     type="button"
                     disabled={
                       props.disabled ||
                       props.controller.persisting() ||
-                      !props.controller.canRestore()
+                      !props.hasAudio
                     }
-                    onClick={() => void props.controller.restore()}
+                    onClick={() => void props.controller.start()}
                   >
-                    Restore previous notes
+                    Refine chords
                   </button>
-                </Show>
-              </div>
+                  <Show when={props.controller.hasBackup()}>
+                    <button
+                      type="button"
+                      class={styles.quietAction}
+                      disabled={
+                        props.disabled ||
+                        props.controller.persisting() ||
+                        !props.controller.canRestore()
+                      }
+                      onClick={() => void props.controller.restore()}
+                    >
+                      Restore previous notes
+                    </button>
+                  </Show>
+                </div>
+              </>
             }
           >
             {(candidate) => (
@@ -75,31 +99,45 @@ export function GuitarChordRefinementPanel(props: {
                   class={styles.comparison}
                   disabled={props.disabled || props.controller.persisting()}
                 >
-                  <legend>Compare notes</legend>
-                  <label>
+                  <legend>Choose the note set to preview</legend>
+                  <label
+                    data-selected={selectedState(
+                      props.controller.comparison() === 'current',
+                    )}
+                  >
                     <input
                       type="radio"
                       name="chord-comparison"
+                      aria-label={`Current · ${noteCountLabel(props.score.notes.length)}`}
                       checked={props.controller.comparison() === 'current'}
                       onChange={() => props.controller.compare('current')}
                     />
-                    Current · {props.score.notes.length}{' '}
-                    {props.score.notes.length === 1 ? 'note' : 'notes'}
+                    <span>
+                      <strong>Current</strong>
+                      <small>{noteCountLabel(props.score.notes.length)}</small>
+                    </span>
                   </label>
-                  <label>
+                  <label
+                    data-selected={selectedState(
+                      props.controller.comparison() === 'refined',
+                    )}
+                  >
                     <input
                       type="radio"
                       name="chord-comparison"
+                      aria-label={`Refined · ${noteCountLabel(candidate().notes.length)}`}
                       checked={props.controller.comparison() === 'refined'}
                       onChange={() => props.controller.compare('refined')}
                     />
-                    Refined · {candidate().notes.length}{' '}
-                    {candidate().notes.length === 1 ? 'note' : 'notes'}
+                    <span>
+                      <strong>Refined</strong>
+                      <small>{noteCountLabel(candidate().notes.length)}</small>
+                    </span>
                   </label>
                 </fieldset>
-                <p>
-                  Choose a version, then use Notes Play above to compare.
-                  Nothing is saved until you choose Use refined notes.
+                <p class={styles.delta}>
+                  {describeRefinementDelta(addedNotes())} Use Notes in Listen
+                  above to compare.
                 </p>
                 <div class={styles.actions}>
                   <button
@@ -120,26 +158,31 @@ export function GuitarChordRefinementPanel(props: {
                     Keep current notes
                   </button>
                 </div>
-                <p>Choose either action to unlock practice and export.</p>
               </>
             )}
           </Show>
         }
       >
-        <p role="status">{description()}</p>
+        <div class={styles.progressHeader}>
+          <p role="status">{description()}</p>
+          <button
+            type="button"
+            aria-label="Cancel chord analysis"
+            onClick={() => props.controller.cancel()}
+          >
+            Cancel
+          </button>
+        </div>
         <progress
           aria-label="Chord analysis progress"
           max="1"
           value={props.controller.progress()?.fraction ?? 0}
         />
-        <button type="button" onClick={() => props.controller.cancel()}>
-          Cancel chord analysis
-        </button>
       </Show>
       <Show when={!props.hasAudio}>
-        <p>
-          Audio is no longer on this device. You can still edit and practice the
-          existing notes.
+        <p class={styles.inlineState}>
+          Audio is unavailable. Existing notes can still be edited and
+          practised.
         </p>
       </Show>
       <Show
@@ -149,16 +192,24 @@ export function GuitarChordRefinementPanel(props: {
           !props.controller.pendingReview()
         }
       >
-        <p>
-          Restore is available before further edits or a new accepted practice
-          revision. Previously accepted targets are always preserved.
+        <p class={styles.inlineState}>
+          Previous notes are protected, but this version can no longer be
+          restored after later edits.
         </p>
       </Show>
       <Show when={props.controller.error()}>
-        {(message) => <p role="alert">{message()}</p>}
+        {(message) => (
+          <p class={styles.inlineState} role="alert">
+            {message()}
+          </p>
+        )}
       </Show>
       <Show when={props.controller.notice()}>
-        {(message) => <p role="status">{message()}</p>}
+        {(message) => (
+          <p class={styles.inlineState} role="status">
+            {message()}
+          </p>
+        )}
       </Show>
     </section>
   )

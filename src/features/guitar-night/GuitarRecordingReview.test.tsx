@@ -241,6 +241,23 @@ describe('recording corrections', () => {
     expect(store.accept).not.toHaveBeenCalled()
     expect(store.saveCorrections).not.toHaveBeenCalled()
   })
+  it('keeps refinement calm by default and summarizes the exact audio export setup', () => {
+    renderReview(false, { draft: true })
+    const refine = screen.getByRole('button', { name: /Refine notes/ })
+    expect(refine).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.queryByRole('button', { name: 'Refine chords' }),
+    ).not.toBeInTheDocument()
+    const setup = screen.getByRole('group', { name: 'Audio export setup' })
+    expect(setup).toHaveTextContent('Recording')
+    expect(setup).toHaveTextContent('Current amp')
+    expect(
+      screen.getByRole('button', { name: 'Export audio mix' }),
+    ).toBeEnabled()
+    fireEvent.click(refine)
+    expect(refine).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Refine chords' })).toBeVisible()
+  })
   it('shows a separate drummer lane with one-click mute, level and mix export', () => {
     renderReview(false, {
       draft: true,
@@ -275,6 +292,9 @@ describe('recording corrections', () => {
     expect(
       screen.getByRole('button', { name: 'Export audio mix' }),
     ).toBeEnabled()
+    expect(
+      screen.getByRole('group', { name: 'Audio export setup' }),
+    ).toHaveTextContent('Drums muted')
     expect(screen.getByText(/drummer is a separate track/i)).toBeInTheDocument()
   })
   it('saves and exports out-of-neck MIDI without accepting an invalid guitar target', async () => {

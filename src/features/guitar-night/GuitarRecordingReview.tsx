@@ -9,6 +9,7 @@ FORM: Extend the existing Jam Doctor sheet, not a new editor page or visual iden
 import type { Accessor } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, Show, untrack, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { Download, GuitarTab, LinkChain, Midi, MoreHorizontal, Pencil, Sparkles, Trash2, } from '@/components/icons'
 import type { GuitarRecordingDraft } from '@/db/services/guitar-recording-service'
 import { createGuitarRecordingStore } from '@/db/services/guitar-recording-service'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
@@ -66,6 +67,10 @@ export function GuitarRecordingReview(props: {
   const [error, setError] = createSignal<string | null>(null)
   const [editing, setEditing] = createSignal(false)
   const [editorMounted, setEditorMounted] = createSignal(false)
+  const [refineExpanded, setRefineExpanded] = createSignal(
+    initialDraft.refinementBackup !== undefined ||
+      untrack(() => props.autoRefine === true),
+  )
   const [notice, setNotice] = createSignal<string | null>(null)
   const [deleting, setDeleting] = createSignal(false)
   const editableScore = createMemo(() => {
@@ -97,6 +102,35 @@ export function GuitarRecordingReview(props: {
     get playback() {
       return props.playback
     },
+  })
+  const refinementSummary = createMemo(() => {
+    const progress = refinement.progress()
+    if (progress !== null)
+      return `Finding chord notes · ${Math.round(progress.fraction * 100)}%`
+    const candidate = refinement.candidate()
+    if (candidate !== null)
+      return `${score().notes.length} → ${candidate.notes.length} notes`
+    if (score().refinement !== undefined)
+      return `Chord pass applied · ${score().notes.length} notes`
+    if (fingeringCount() > 0)
+      return `${score().notes.length} notes · ${fingeringCount()} need fingering`
+    return `${score().notes.length} ${score().notes.length === 1 ? 'note' : 'notes'} ready`
+  })
+  const exportSourceLabel = createMemo(() =>
+    props.playback.source() === 'recording' ? 'Recording' : 'Notes',
+  )
+  const exportToneLabel = createMemo(() => {
+    if (props.playback.tone() === 'clean') return 'Clean'
+    if (props.playback.tone() === 'saved-amp') return 'Saved amp'
+    return 'Current amp'
+  })
+  createEffect(() => {
+    if (
+      refinement.running() ||
+      refinement.pendingReview() ||
+      refinement.error() !== null
+    )
+      setRefineExpanded(true)
   })
   const locked = () =>
     busy() || refinement.locked() || props.playback.exporting()
@@ -213,10 +247,7 @@ export function GuitarRecordingReview(props: {
       props.draft.notes.length > 0
         ? `${props.draft.notes.length} ${props.draft.notes.length === 1 ? 'note' : 'notes'} captured.`
         : 'Audio captured. No stable notes identified.',
-    detail:
-      score().refinement !== undefined
-        ? 'Chord-refined draft. Review pitches and suggested fingering before practice; bends are not transcribed.'
-        : 'Detected melody · draft. Try Refine chords for simultaneous notes after recording.',
+    detail: kept() ? 'Kept on this device.' : 'Draft on this device.',
     evidence: [],
     unavailableReasons: [],
     recoveryLabel: 'Back to playing',
@@ -228,6 +259,7 @@ export function GuitarRecordingReview(props: {
       <div class={styles.reviewOverlay}>
         <GuitarNightJamDoctor
           open={props.open && !deleting()}
+          variant="recording-review"
           view={view()}
           onClose={() => {
             if (
@@ -284,163 +316,282 @@ export function GuitarRecordingReview(props: {
           footer={
             <div class={styles.review} ref={reviewHost}>
               <Show when={props.draft.recording.interruption}>
-                {(reason) => <p role="status">{reason()}</p>}
+                {(reason) => (
+                  <p class={styles.reviewNotice} role="status">
+                    {reason()}
+                  </p>
+                )}
               </Show>
-              <GuitarRecordingPlaybackControls
-                playback={props.playback}
-                transport
-                details
-                disabled={
-                  busy() || refinement.running() || refinement.persisting()
-                }
-              />
-              <Show when={props.playback.drumTrackAvailable()}>
-                <div class={styles.mixExport}>
+              <section
+                class={styles.reviewSection}
+                aria-labelledby="recording-listen-heading"
+              >
+                <div class={styles.sectionHeading}>
+                  <div>
+                    <strong id="recording-listen-heading">Listen</strong>
+                    <span>Recording, notes and amp playback</span>
+                  </div>
+                </div>
+                <label class={styles.titleField}>
+                  <span>Take title</span>
+                  <input
+                    value={title()}
+                    maxLength={180}
+                    onInput={(event) => setTitle(event.currentTarget.value)}
+                    disabled={kept() || locked()}
+                  />
+                </label>
+                <GuitarRecordingPlaybackControls
+                  playback={props.playback}
+                  transport
+                  details
+                  disabled={
+                    busy() || refinement.running() || refinement.persisting()
+                  }
+                />
+              </section>
+
+              <section
+                class={styles.refineSection}
+                data-expanded={refineExpanded() ? 'true' : 'false'}
+                aria-labelledby="recording-refine-heading"
+              >
+                <div class={styles.refineHeading}>
                   <button
                     type="button"
-                    disabled={locked() || !props.playback.available()}
-                    aria-describedby="recording-mix-export-note"
-                    onClick={() => void props.playback.exportMix(reviewHost)}
+                    class={styles.sectionDisclosure}
+                    aria-expanded={refineExpanded()}
+                    aria-controls="recording-refine-body"
+                    onClick={() => setRefineExpanded(!refineExpanded())}
                   >
-                    {props.playback.exporting()
-                      ? 'Rendering audio mix…'
-                      : 'Export audio mix'}
+                    <span class={styles.sectionIcon} aria-hidden="true">
+                      <Sparkles />
+                    </span>
+                    <span class={styles.sectionCopy}>
+                      <strong id="recording-refine-heading">
+                        Refine notes
+                      </strong>
+                      <small>{refinementSummary()}</small>
+                    </span>
+                    <span class={styles.disclosureMark} aria-hidden="true">
+                      {refineExpanded() ? '−' : '+'}
+                    </span>
                   </button>
-                  <p id="recording-mix-export-note">
-                    Downloads the selected Recording or Notes tone with the
-                    separate drummer track. Mute Drums above to export guitar
-                    only.
-                  </p>
-                </div>
-              </Show>
-              <GuitarChordRefinementPanel
-                controller={refinement}
-                score={score()}
-                disabled={busy()}
-                hasAudio={props.draft.blob !== null}
-              />
-              <label>
-                Take title
-                <input
-                  value={title()}
-                  maxLength={180}
-                  onInput={(event) => setTitle(event.currentTarget.value)}
-                  disabled={kept() || locked()}
-                />
-              </label>
-              <Show when={score().notes.length > 0}>
-                <Show when={fingeringCount() > 0}>
-                  <p>
-                    {fingeringCount()}{' '}
-                    {fingeringCount() === 1 ? 'note needs' : 'notes need'}{' '}
-                    fingering before guitar practice, attachment or Guitar Pro
-                    export. MIDI can keep pitches outside this tuning.
-                  </p>
-                </Show>
-                <button
-                  type="button"
-                  disabled={locked()}
-                  aria-expanded={editing()}
-                  onClick={() => {
-                    setEditorMounted(true)
-                    setEditing(!editing())
-                  }}
-                >
-                  {editing()
-                    ? 'Hide note corrections'
-                    : fingeringCount() > 0
-                      ? `Review ${fingeringCount()} problem ${fingeringCount() === 1 ? 'note' : 'notes'}`
-                      : 'Review and correct notes'}
-                </button>
-                <Show when={editorMounted()}>
-                  <div hidden={!editing()}>
-                    <GuitarRecordingEditor
-                      score={score()}
+                  <Show when={score().notes.length > 0}>
+                    <button
+                      type="button"
+                      class={styles.editShortcut}
                       disabled={locked()}
-                      onChange={setScore}
+                      aria-expanded={editing()}
+                      aria-label={
+                        editing()
+                          ? 'Hide note corrections'
+                          : fingeringCount() > 0
+                            ? `Review ${fingeringCount()} problem ${fingeringCount() === 1 ? 'note' : 'notes'}`
+                            : 'Review and correct notes'
+                      }
+                      onClick={() => {
+                        setRefineExpanded(true)
+                        setEditorMounted(true)
+                        setEditing(!editing())
+                      }}
+                    >
+                      <Pencil />
+                      <span>{editing() ? 'Close editor' : 'Edit notes'}</span>
+                    </button>
+                  </Show>
+                </div>
+                <Show when={refineExpanded()}>
+                  <div class={styles.refineBody} id="recording-refine-body">
+                    <GuitarChordRefinementPanel
+                      controller={refinement}
+                      score={score()}
+                      disabled={busy()}
+                      hasAudio={props.draft.blob !== null}
                     />
+                    <Show when={score().notes.length > 0}>
+                      <div class={styles.manualSummary}>
+                        <div>
+                          <strong>Manual corrections</strong>
+                          <span>
+                            {fingeringCount() > 0
+                              ? `${fingeringCount()} ${fingeringCount() === 1 ? 'note needs' : 'notes need'} fingering`
+                              : 'Pitch, timing and fingering are ready to review'}
+                          </span>
+                        </div>
+                        <span>
+                          {score().bpm} BPM · {score().timeSignature.join('/')}
+                        </span>
+                      </div>
+                      <Show when={editorMounted()}>
+                        <div class={styles.editorMount} hidden={!editing()}>
+                          <GuitarRecordingEditor
+                            score={score()}
+                            disabled={locked()}
+                            onChange={setScore}
+                          />
+                          <Show when={kept()}>
+                            <button
+                              type="button"
+                              class={styles.saveCorrections}
+                              disabled={locked()}
+                              onClick={() => void save('keep')}
+                            >
+                              Save note corrections
+                            </button>
+                          </Show>
+                        </div>
+                      </Show>
+                    </Show>
+                    <Show when={problem()}>
+                      {(reason) => (
+                        <p class={styles.reviewNotice}>{reason()}</p>
+                      )}
+                    </Show>
                   </div>
                 </Show>
-                <p>
-                  {score().bpm} BPM · {score().timeSignature.join('/')} display
-                  grid. Practice scores your next performance against these
-                  notes.
-                </p>
-              </Show>
-              <Show when={problem()}>{(reason) => <p>{reason()}</p>}</Show>
+              </section>
+
+              <section
+                class={styles.reviewSection}
+                aria-labelledby="recording-export-heading"
+              >
+                <div class={styles.sectionHeading}>
+                  <div>
+                    <strong id="recording-export-heading">
+                      Export current setup
+                    </strong>
+                    <span>What you hear in Listen above</span>
+                  </div>
+                </div>
+                <div
+                  class={styles.exportSummary}
+                  role="group"
+                  aria-label="Audio export setup"
+                >
+                  <span>{exportSourceLabel()}</span>
+                  <span>{exportToneLabel()}</span>
+                  <Show when={props.playback.drumTrackAvailable()}>
+                    <span>
+                      {props.playback.drumsMuted()
+                        ? 'Drums muted'
+                        : `Drums ${Math.round(props.playback.drumLevel() * 100)}%`}
+                    </span>
+                  </Show>
+                </div>
+                <button
+                  type="button"
+                  class={styles.exportPrimary}
+                  aria-label="Export audio mix"
+                  disabled={locked() || !props.playback.available()}
+                  onClick={() => void props.playback.exportMix(reviewHost)}
+                >
+                  <Download />
+                  <span>
+                    {props.playback.exporting()
+                      ? 'Rendering WAV…'
+                      : 'Download WAV'}
+                  </span>
+                </button>
+                <Show when={score().notes.length > 0}>
+                  <div class={styles.notationHeading}>
+                    <strong>Notes and tab</strong>
+                    <span>Exports the corrected melody, not the audio mix</span>
+                  </div>
+                  <span
+                    id="recording-export-timing"
+                    class={styles.visuallyHidden}
+                  >
+                    Guitar Pro rounds timing to thirty-second notes for readable
+                    notation. MIDI keeps your played timing. Neither changes
+                    this take’s audio or practice timing.
+                  </span>
+                  <div class={styles.exportActions}>
+                    <Show when={props.onAttach}>
+                      <button
+                        type="button"
+                        aria-label="Attach to a song"
+                        disabled={locked() || problem() !== null}
+                        title={problem() ?? 'Attach these notes to a song'}
+                        onClick={() => void save('attach')}
+                      >
+                        <LinkChain />
+                        <span>Attach</span>
+                      </button>
+                    </Show>
+                    <button
+                      type="button"
+                      aria-label="Export MIDI"
+                      disabled={locked() || midiProblem() !== null}
+                      title={midiProblem() ?? 'Export MIDI'}
+                      onClick={() => void save('midi')}
+                    >
+                      <Midi />
+                      <span>MIDI</span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Export Guitar Pro"
+                      disabled={locked() || problem() !== null}
+                      title={problem() ?? 'Export Guitar Pro 7'}
+                      aria-describedby="recording-export-timing"
+                      onClick={() => void save('gp')}
+                    >
+                      <GuitarTab />
+                      <span>Guitar Pro</span>
+                    </button>
+                  </div>
+                  <details class={styles.exportDetails}>
+                    <summary>Timing and format details</summary>
+                    <p>
+                      Guitar Pro rounds timing to thirty-second notes for
+                      readable notation. MIDI keeps your played timing. Neither
+                      changes this take’s audio or practice timing.
+                    </p>
+                  </details>
+                </Show>
+              </section>
+
               <Show when={error()}>
-                {(message) => <p role="alert">{message()}</p>}
+                {(message) => (
+                  <p class={styles.reviewNotice} role="alert">
+                    {message()}
+                  </p>
+                )}
               </Show>
               <Show when={notice()}>
-                {(message) => <p role="status">{message()}</p>}
+                {(message) => (
+                  <p class={styles.reviewNotice} role="status">
+                    {message()}
+                  </p>
+                )}
               </Show>
-              <div class={styles.actions}>
-                <Show when={kept() && editing()}>
-                  <button
-                    type="button"
-                    disabled={locked()}
-                    onClick={() => void save('keep')}
-                  >
-                    Save note corrections
-                  </button>
-                </Show>
+
+              <div class={styles.secondaryActions}>
+                <span aria-hidden="true">
+                  <MoreHorizontal />
+                </span>
                 <Show when={!kept()}>
                   <button
                     type="button"
                     disabled={locked()}
                     onClick={() => void discard()}
                   >
-                    Discard recording
+                    <Trash2 />
+                    <span>Discard recording</span>
+                  </button>
+                </Show>
+                <Show when={kept()}>
+                  <button
+                    type="button"
+                    disabled={locked()}
+                    onClick={() => setDeleting(true)}
+                  >
+                    <Trash2 />
+                    <span>Remove recording and notes</span>
                   </button>
                 </Show>
               </div>
-              <Show when={score().notes.length > 0}>
-                <p>
-                  Attach opens the song chooser. Attach and Guitar Pro export
-                  keep a playable practice revision; MIDI saves the current note
-                  corrections.
-                </p>
-                <p id="recording-export-timing">
-                  Guitar Pro rounds timing to thirty-second notes for readable
-                  notation. MIDI keeps your played timing. Neither changes this
-                  take’s audio or practice timing.
-                </p>
-                <div class={styles.actions}>
-                  <Show when={props.onAttach}>
-                    <button
-                      type="button"
-                      disabled={locked() || problem() !== null}
-                      onClick={() => void save('attach')}
-                    >
-                      Attach to a song
-                    </button>
-                  </Show>
-                  <button
-                    type="button"
-                    disabled={locked() || midiProblem() !== null}
-                    onClick={() => void save('midi')}
-                  >
-                    Export MIDI
-                  </button>
-                  <button
-                    type="button"
-                    disabled={locked() || problem() !== null}
-                    aria-describedby="recording-export-timing"
-                    onClick={() => void save('gp')}
-                  >
-                    Export Guitar Pro
-                  </button>
-                </div>
-              </Show>
-              <Show when={kept()}>
-                <button
-                  type="button"
-                  disabled={locked()}
-                  onClick={() => setDeleting(true)}
-                >
-                  Remove recording and notes
-                </button>
-              </Show>
             </div>
           }
         />
