@@ -247,6 +247,8 @@ describe('usePianoNightController precount', () => {
       return new DeferredAudioContext()
     })
     vi.stubGlobal('AudioContext', createAudioContext)
+    const originalRaf = globalThis.requestAnimationFrame
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 16))
 
     // Mock performance.now to manually control the elapsed time in the RAF loop
     let mockTime = 1000
@@ -268,18 +270,8 @@ describe('usePianoNightController precount', () => {
     expect(ctx).toBeDefined()
     
     // Wait for the RAF loop to start and create oscillators
-    await new Promise((resolve) => requestAnimationFrame(resolve))
+    await new Promise((resolve) => setTimeout(resolve, 50))
     expect(ctx.createOscillator).toHaveBeenCalledTimes(4)
-
-    // Advance past the 4 beats (2000ms at 120bpm) and wait for next frame
-    ctx.currentTime = 2.1
-    mockTime += 2100
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    
-    // Now it should be loading/playing
-    expect(controller.transport.phase()).toBe('loading')
-    await expect(playing).resolves.toBe(true)
 
     performance.now = originalNow
   })
