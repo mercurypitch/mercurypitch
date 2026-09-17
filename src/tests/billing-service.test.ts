@@ -3,8 +3,10 @@
 // ============================================================
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import * as AuthService from '@/db/services/auth-service'
 import type { Pricing, PricingPlan } from '@/db/services/billing-service'
-import { fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
+import { fetchPricing, formatPrice, formatSupporterExpiry, formatTierPrice, isTierSoon, redeemPromoCode, startCheckout, stashExpectedCredits, supporterPlanId, takeExpectedCredits, withModelCredits, } from '@/db/services/billing-service'
+import * as UserService from '@/db/services/user-service'
 import { UVR_MODEL_CREDIT_MULTIPLIERS } from '../../workers/db-worker/src/billing-core'
 
 /** Derived from the multiplier map so adding a registry model doesn't break
@@ -243,5 +245,59 @@ describe('supporterPlanId', () => {
     expect(supporterPlanId({ source: 'donation:sup-voice' })).toBe('sup-voice')
     expect(supporterPlanId({ source: 'manual' })).toBeNull()
     expect(supporterPlanId(null)).toBeNull()
+  })
+})
+
+describe('redeemPromoCode', () => {
+  it('throws an error if not signed in (missing Authorization header)', async () => {
+    vi.spyOn(AuthService, 'requireAuth').mockResolvedValueOnce(true)
+    vi.spyOn(UserService, 'getAuthHeaders').mockReturnValueOnce({})
+
+    await expect(
+      redeemPromoCode('CODE123', 'https://api.test'),
+    ).rejects.toThrow('Please sign in to redeem promo codes.')
+  })
+
+  it('maps 401 responses to a friendly session expired message', async () => {
+    vi.spyOn(AuthService, 'requireAuth').mockResolvedValueOnce(true)
+    vi.spyOn(UserService, 'getAuthHeaders').mockReturnValueOnce({
+      Authorization: 'Bearer token',
+    })
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: 'Unauthorized',
+      json: () => Promise.resolve({}),
+    } as Response)
+
+    await expect(
+      redeemPromoCode('CODE123', 'https://api.test'),
+    ).rejects.toThrow('Your session has expired. Please log in again.')
+  })
+
+  it('redeems a code successfully', async () => {
+    vi.spyOn(AuthService, 'requireAuth').mockResolvedValueOnce(true)
+    vi.spyOn(UserService, 'getAuthHeaders').mockReturnValueOnce({
+      Authorization: 'Bearer token',
+    })
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          success: true,
+          code: 'CODE123',
+          creditsGranted: 50,
+          newBalance: 150,
+        }),
+    } as Response)
+
+    const result = await redeemPromoCode('CODE123', 'https://api.test')
+    expect(result).toEqual({
+      success: true,
+      code: 'CODE123',
+      creditsGranted: 50,
+      newBalance: 150,
+    })
   })
 })
