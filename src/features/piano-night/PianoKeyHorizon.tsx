@@ -141,9 +141,6 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
         <div class={styles.whiteKeys}>
           <For each={WHITE_KEYS}>
             {(key) => {
-              const pressed =
-                props.inputMidis().has(key.midi) ||
-                (!props.hideProjectKeys() && props.projectMidis().has(key.midi))
               return (
                 <button
                   type="button"
@@ -157,7 +154,11 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
                     [styles.keyActiveInput]: props.inputMidis().has(key.midi),
                   }}
                   aria-label={`Play ${midiToNoteNameOctave(key.midi)}`}
-                  aria-pressed={pressed}
+                  aria-pressed={
+                    props.inputMidis().has(key.midi) ||
+                    (!props.hideProjectKeys() &&
+                      props.projectMidis().has(key.midi))
+                  }
                   tabindex={focusedMidi() === key.midi ? 0 : -1}
                   onFocus={() => setFocusedMidi(key.midi)}
                   onKeyDown={(event) => onKeyDown(event, key.midi)}
@@ -175,9 +176,6 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
         <div class={styles.blackKeys}>
           <For each={BLACK_KEYS}>
             {(key) => {
-              const pressed =
-                props.inputMidis().has(key.midi) ||
-                (!props.hideProjectKeys() && props.projectMidis().has(key.midi))
               return (
                 <button
                   type="button"
@@ -191,7 +189,11 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
                   }}
                   style={{ left: keyLeft(key) }}
                   aria-label={`Play ${midiToNoteNameOctave(key.midi)}`}
-                  aria-pressed={pressed}
+                  aria-pressed={
+                    props.inputMidis().has(key.midi) ||
+                    (!props.hideProjectKeys() &&
+                      props.projectMidis().has(key.midi))
+                  }
                   tabindex={focusedMidi() === key.midi ? 0 : -1}
                   onFocus={() => setFocusedMidi(key.midi)}
                   onKeyDown={(event) => onKeyDown(event, key.midi)}

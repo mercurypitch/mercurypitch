@@ -75,6 +75,7 @@ function mountController(): ReturnType<typeof usePianoNightController> {
     return null
   }
   render(() => <Harness />)
+  controller.setCountInBeats(0)
   return controller
 }
 
@@ -216,6 +217,71 @@ describe('usePianoNightController source replacement', () => {
     expect(controller.transport.phase()).toBe('ready')
     expect(controller.statusMessage()).toBe('Late Night Sketch is ready.')
     expect(createAudioContext).toHaveBeenCalledOnce()
+  })
+})
+
+describe('usePianoNightController precount', () => {
+  it('respects a 4-beat count-in before engaging the transport', async () => {
+    const activation = deferred<undefined>()
+    class DeferredAudioContext {
+      currentTime = 0
+      state: AudioContextState = 'suspended'
+      readonly resume = vi.fn(async () => {
+        await activation.promise
+        this.state = 'running'
+      })
+      readonly createOscillator = vi.fn(() => ({
+        frequency: { value: 0 },
+        connect: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn(),
+      }))
+      readonly createGain = vi.fn(() => ({
+        gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+        connect: vi.fn(),
+      }))
+      readonly destination = {}
+      readonly close = vi.fn()
+    }
+    const createAudioContext = vi.fn(function AudioContextConstructor() {
+      return new DeferredAudioContext()
+    })
+    vi.stubGlobal('AudioContext', createAudioContext)
+
+    // Mock performance.now to manually control the elapsed time in the RAF loop
+    let mockTime = 1000
+    const originalNow = performance.now
+    performance.now = vi.fn(() => mockTime)
+
+    const controller = mountController()
+    controller.setCountInBeats(4)
+    const playing = controller.play()
+
+    // It should stay ready during the count-in
+    expect(controller.transport.phase()).toBe('ready')
+    
+    // Resolve audio activation
+    activation.resolve(undefined)
+    await Promise.resolve()
+
+    const ctx = controller.transport.getAudioContext() as unknown as DeferredAudioContext
+    expect(ctx).toBeDefined()
+    
+    // Wait for the RAF loop to start and create oscillators
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(ctx.createOscillator).toHaveBeenCalledTimes(4)
+
+    // Advance past the 4 beats (2000ms at 120bpm) and wait for next frame
+    ctx.currentTime = 2.1
+    mockTime += 2100
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    
+    // Now it should be loading/playing
+    expect(controller.transport.phase()).toBe('loading')
+    await expect(playing).resolves.toBe(true)
+
+    performance.now = originalNow
   })
 })
 
