@@ -4349,6 +4349,11 @@
   pointer-events: auto;
 }
 
+.doctorSheet[data-variant='recording-review'] {
+  width: min(32rem, 58%);
+  min-width: 28rem;
+}
+
 .doctorSheetHeader {
   display: flex;
   align-items: center;
@@ -4651,6 +4656,11 @@
     border-left: 0;
     border-radius: 0.85rem 0.85rem 0 0;
     box-shadow: 0 -1.4rem 4rem rgba(0, 0, 0, 0.5);
+  }
+
+  .doctorSheet[data-variant='recording-review'] {
+    width: auto;
+    min-width: 0;
   }
 
   .doctorSheetHeader {

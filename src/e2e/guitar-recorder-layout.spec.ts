@@ -9,7 +9,7 @@ test('keeps the empty free-form recorder centered at desktop and phone widths @s
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page.getByRole('button', { name: 'Free play', exact: true }).click()
-  for (const width of [1440, 390, 320]) {
+  for (const width of [1440, 820, 390, 320]) {
     await page.setViewportSize({ width, height: 850 })
     const button = page.getByRole('button', {
       name: 'Record a melody',
@@ -29,7 +29,7 @@ test('keeps the empty free-form recorder centered at desktop and phone widths @s
   }
 })
 
-for (const width of [1440, 390, 320]) {
+for (const width of [1440, 820, 390, 320]) {
   test(`keeps saved take review, transport and gallery reachable at ${width}px @smoke`, async ({
     page,
   }) => {

@@ -47,6 +47,7 @@ test('chord proposals are explicit, comparable, saved and undoable after reload 
   expect(models).toEqual([])
   await page.getByRole('button', { name: 'Review take', exact: true }).click()
   const review = page.getByRole('dialog').filter({ hasText: 'Recorded melody' })
+  await review.getByRole('button', { name: /Refine notes/ }).click()
   await review
     .getByRole('button', { name: 'Refine chords', exact: true })
     .click()

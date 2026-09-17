@@ -1,20 +1,34 @@
 /* A quiet local-analysis faceplate inherits the review's compact controls. */
 .panel {
   display: grid;
-  gap: 0.75rem;
-  border-block: 1px solid #4a3d2a;
-  padding-block: 1rem;
+  gap: 0.7rem;
   min-width: 0;
 }
 .heading {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.65rem;
 }
+.heading strong {
+  color: #f3e3c8;
+  font-size: 0.78rem;
+}
 .heading span {
-  color: #cfbeaa;
-  font-size: 0.75rem;
+  padding: 0.16rem 0.38rem;
+  border: 1px solid rgba(106, 202, 189, 0.25);
+  border-radius: 999px;
+  color: #b9ded8;
+  background: rgba(28, 72, 68, 0.24);
+  font-size: 0.6rem;
+}
+.intro,
+.delta,
+.inlineState {
+  margin: 0;
+  color: #a99c87;
+  font-size: 0.68rem;
+  line-height: 1.5;
 }
 .actions {
   display: flex;
@@ -29,24 +43,54 @@
 .panel .primary:hover:not(:disabled) {
   background: #f3cd96;
 }
+.panel .quietAction {
+  border-color: transparent;
+  color: #baa98f;
+  background: transparent;
+}
 .comparison {
   margin: 0;
   padding: 0;
   border: 0;
   display: grid;
-  gap: 0.3rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
   min-width: 0;
 }
 .comparison legend {
-  padding: 0 0 0.4rem;
-  font-size: 0.8rem;
+  grid-column: 1 / -1;
+  padding: 0 0 0.25rem;
+  color: #baa98f;
+  font-size: 0.66rem;
 }
 .comparison label {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.6rem;
-  min-height: 44px;
+  gap: 0.5rem;
+  min-height: 58px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(244, 234, 219, 0.12);
+  border-radius: 5px;
+  background: rgba(25, 22, 18, 0.68);
   cursor: pointer;
+}
+.comparison label[data-selected='true'] {
+  border-color: rgba(232, 185, 115, 0.62);
+  background: rgba(69, 50, 31, 0.62);
+}
+.comparison label > span {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+.comparison strong {
+  color: #f0dfc3;
+  font-size: 0.72rem;
+}
+.comparison small {
+  color: #a99c87;
+  font-size: 0.62rem;
 }
 .comparison input {
   width: 20px;
@@ -54,6 +98,24 @@
   height: 20px;
   margin: 0;
   accent-color: #e8b973;
+}
+.progressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+.progressHeader p {
+  margin: 0;
+  color: #d7c7ae;
+  font-size: 0.7rem;
+}
+.panel .progressHeader button {
+  min-height: 36px;
+  padding: 0.3rem 0.55rem;
+  border-color: transparent;
+  background: transparent;
+  font-size: 0.66rem;
 }
 .panel progress {
   width: 100%;
@@ -64,4 +126,9 @@
 .comparison input:focus-visible {
   outline: 2px solid #f4cb8e;
   outline-offset: 3px;
+}
+@media (max-width: 390px) {
+  .comparison {
+    grid-template-columns: 1fr;
+  }
 }

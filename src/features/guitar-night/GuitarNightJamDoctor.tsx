@@ -31,6 +31,8 @@ export interface GuitarNightDoctorView {
 interface GuitarNightJamDoctorProps {
   open: boolean
   view: GuitarNightDoctorView | null
+  /** The recorder review needs a wider reading column without changing Jam Doctor. */
+  variant?: 'default' | 'recording-review'
   /** A still-running take is named, never presented as a finished review. */
   recording?: boolean
   liveEventCount?: number
@@ -211,10 +213,15 @@ export function GuitarNightJamDoctor(props: GuitarNightJamDoctorProps) {
             aria-labelledby={titleId()}
             aria-describedby={detailId()}
             data-recording={props.recording === true ? 'true' : 'false'}
+            data-variant={props.variant ?? 'default'}
           >
             <div class={styles.doctorSheetHeader}>
               <div>
-                <span>Jam Doctor</span>
+                <span>
+                  {props.variant === 'recording-review'
+                    ? 'Take review'
+                    : 'Jam Doctor'}
+                </span>
                 <strong>{props.view?.anchorLabel ?? 'Listening'}</strong>
               </div>
               <button
