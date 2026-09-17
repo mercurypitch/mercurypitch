@@ -98,7 +98,8 @@ export function GuitarRecordingReview(props: {
       return props.playback
     },
   })
-  const locked = () => busy() || refinement.locked()
+  const locked = () =>
+    busy() || refinement.locked() || props.playback.exporting()
   createEffect(() =>
     props.onPreviewScore?.(refinement.preview() ?? editableScore()),
   )
@@ -229,13 +230,21 @@ export function GuitarRecordingReview(props: {
           open={props.open && !deleting()}
           view={view()}
           onClose={() => {
-            if (!busy() && !refinement.persisting()) {
+            if (
+              !busy() &&
+              !refinement.persisting() &&
+              !props.playback.exporting()
+            ) {
               refinement.cancel()
               props.onClose()
             }
           }}
           onRecover={() => {
-            if (!busy() && !refinement.persisting()) {
+            if (
+              !busy() &&
+              !refinement.persisting() &&
+              !props.playback.exporting()
+            ) {
               refinement.cancel()
               props.onClose()
             }
@@ -285,6 +294,25 @@ export function GuitarRecordingReview(props: {
                   busy() || refinement.running() || refinement.persisting()
                 }
               />
+              <Show when={props.playback.drumTrackAvailable()}>
+                <div class={styles.mixExport}>
+                  <button
+                    type="button"
+                    disabled={locked() || !props.playback.available()}
+                    aria-describedby="recording-mix-export-note"
+                    onClick={() => void props.playback.exportMix(reviewHost)}
+                  >
+                    {props.playback.exporting()
+                      ? 'Rendering audio mix…'
+                      : 'Export audio mix'}
+                  </button>
+                  <p id="recording-mix-export-note">
+                    Downloads the selected Recording or Notes tone with the
+                    separate drummer track. Mute Drums above to export guitar
+                    only.
+                  </p>
+                </div>
+              </Show>
               <GuitarChordRefinementPanel
                 controller={refinement}
                 score={score()}

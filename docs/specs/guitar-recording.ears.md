@@ -308,6 +308,30 @@ or existing signal-only Jam Doctor.
   measured preview lag and processing time from audio/physical round-trip latency.
   Full-take refinement shall not overlap the live model worker.
 
+### Separate Session Drummer accompaniment
+
+- **GR-061:** WHEN Record overlaps audible Session Drummer playback, each hit
+  accepted by the drum player shall be retained after humanization with its
+  exact AudioContext time, GM key, velocity, kit and applied drummer level.
+  On Stop, in-range hits shall be aligned to the acknowledged dry-audio start
+  and persisted as a separate local musical track. Dropped, unmapped and
+  out-of-take hits shall not be claimed. Guitar PCM shall remain unchanged.
+- **GR-062:** WHEN a take has recorded drummer events, Recording and Notes
+  replay shall schedule that track on the room drums bus against the primary
+  source's current position. First Play shall warm the required kits before the
+  primary source starts. Pause, Stop, seek, source replacement and disposal
+  shall retire or reposition drum voices with the take; stale preparation shall
+  not resume playback.
+- **GR-063:** Replay shall offer one-click drum mute and an independent bounded
+  drum level. These controls shall not alter dry guitar, detected notes or the
+  stored drummer events. Original-audio and note-synthesis tone selection shall
+  remain independent from the drummer lane.
+- **GR-064:** WHEN Export audio mix is explicitly chosen, an offline stereo WAV
+  shall combine the selected Recording/Notes source and selected amp tone with
+  the separately stored drummer track at its replay level. Muted drums shall
+  produce a guitar-only export. Export shall not rewrite the take, practice
+  revision, original PCM or saved drummer events.
+
 Automated coverage and owner checks: [recorder testing](../guitar-recording-testing.md).
 V1 is five-minute mono dry recording, editable monophonic transcription and
 local persistence, with optional experimental live chord preview and post-stop refinement.

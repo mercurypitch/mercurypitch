@@ -77,7 +77,7 @@ export interface RoutedDrumKitPlayer extends DrumKitPlayer {
 
 export interface DrumKitPlayerOptions {
   /** Route-owned context; this module never constructs or closes it. */
-  readonly getAudioContext: () => AudioContext | null
+  readonly getAudioContext: () => BaseAudioContext | null
   /** Route-owned output bus; samples and fallback synth share this destination. */
   readonly getOutput: () => AudioNode | null
   /** Same-origin by default; may be an HTTPS media/R2 custom-domain base. */
@@ -100,10 +100,12 @@ export interface DrumKitPlayerOptions {
   readonly probeOpusSupport?: () => Promise<boolean>
   /** Seeds pool selection and per-hit micro-variation; fixed default keeps sessions reproducible. */
   readonly selectionSeed?: number
+  /** Offline renderers schedule into a suspended OfflineAudioContext. */
+  readonly offline?: boolean
 }
 
 interface PlayerGraph {
-  context: AudioContext
+  context: BaseAudioContext
   output: AudioNode
   master: GainNode
   lanes: Readonly<Record<DrumKitPlaybackLane, GainNode>>
@@ -882,7 +884,10 @@ export function createDrumKitPlayer(
     )
   }
 
-  const makeGraph = (context: AudioContext, output: AudioNode): PlayerGraph => {
+  const makeGraph = (
+    context: BaseAudioContext,
+    output: AudioNode,
+  ): PlayerGraph => {
     const master = context.createGain()
     const live = context.createGain()
     const authored = context.createGain()
@@ -894,10 +899,14 @@ export function createDrumKitPlayer(
     live.connect(master)
     authored.connect(master)
     let liveCapture: MediaStreamAudioDestinationNode | null = null
-    if (typeof context.createMediaStreamDestination === 'function') {
+    if (
+      'createMediaStreamDestination' in context &&
+      typeof context.createMediaStreamDestination === 'function'
+    ) {
       try {
-        liveCapture = context.createMediaStreamDestination()
-        live.connect(liveCapture)
+        const capture = context.createMediaStreamDestination()
+        liveCapture = capture
+        live.connect(capture)
       } catch {
         if (liveCapture !== null) safeStopStream(liveCapture.stream)
         liveCapture = null
@@ -978,7 +987,8 @@ export function createDrumKitPlayer(
       graph?.context === context && graph.output === output ? graph : null
     // Safari also reports 'interrupted' (a call, Siri) -- not in the lib
     // typings, and not 'suspended', but just as silent until resumed.
-    if ((context.state as string) !== 'running') await context.resume()
+    if ((context.state as string) !== 'running' && options.offline !== true)
+      await (context as AudioContext).resume()
     if (disposed) throw abortError()
     if (existingGraph !== null) return existingGraph
     if (graph !== null) {
@@ -1470,7 +1480,9 @@ export function createDrumKitPlayer(
   }
 
   return {
-    running: () => graph !== null && graph.context.state === 'running',
+    running: () =>
+      graph !== null &&
+      (options.offline === true || graph.context.state === 'running'),
     async activate(): Promise<boolean> {
       try {
         await acquireGraph()

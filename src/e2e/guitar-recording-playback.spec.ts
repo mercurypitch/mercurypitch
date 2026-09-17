@@ -1,7 +1,7 @@
 // Recorder audition exercises real media, synthesis and cabinet PCM from a local deterministic take.
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 interface AuditionProbeFrame {
   serial: number
@@ -161,7 +161,7 @@ async function installAuditionProbe(page: Page): Promise<void> {
   })
 }
 
-async function seedRecording(page: Page): Promise<void> {
+async function seedRecording(page: Page, withDrums = false): Promise<void> {
   await page.goto('/guitar-night')
   await page.getByRole('button', { name: 'Load a song', exact: true }).click()
   await page.getByRole('button', { name: 'Free play', exact: true }).click()
@@ -170,122 +170,148 @@ async function seedRecording(page: Page): Promise<void> {
   ).toBeVisible()
   // The real free-form controller initializes this schema. Only its browser
   // persistence edge is seeded; the app still validates/loads and plays the take.
-  await page.evaluate(async (id) => {
-    const open = indexedDB.open('MercuryPitchDB')
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      open.onsuccess = () => resolve(open.result)
-      open.onerror = () => reject(open.error)
-    })
-    const sampleRate = 48000
-    const frames = sampleRate * 6
-    const chunkSize = 8192
-    const chunkCount = Math.ceil(frames / chunkSize)
-    const now = '2026-09-07T12:00:00.000Z'
-    const notes = [
-      {
-        id: 'a3-note',
-        midi: 57,
-        startFrame: 0,
-        endFrame: frames,
-        clarity: 0.96,
-        onset: 'attack',
-      },
-    ]
-    const transaction = db.transaction(
-      ['guitarRecordings', 'guitarRecordingChunks'],
-      'readwrite',
-    )
-    transaction.objectStore('guitarRecordings').put({
-      id,
-      version: 1,
-      detectorVersion: 'guitar-melody-1.1',
-      title: 'Audition source proof',
-      createdAt: now,
-      updatedAt: now,
-      state: 'draft',
-      sampleRate,
-      inputChannel: 0,
-      inputKind: 'interface',
-      tuning: {
-        instrument: 'guitar',
-        stringCount: 6,
-        openMidi: [64, 59, 55, 50, 45, 40],
-        labels: ['E', 'B', 'G', 'D', 'A', 'E'],
-        capo: 0,
-      },
-      frames,
-      chunks: chunkCount,
-      audioStartFrame: 0,
-      clockAnomalies: 0,
-      interruption: null,
-      amp: {
-        enabled: true,
-        engine: 'studio',
-        head: 'lead',
-        character: 1,
-        drive: 0.95,
-        bass: 0,
-        mid: 0,
-        treble: 0,
-        presence: 0,
-        output: 0.42,
-        cabinet: 'balanced',
-        asymmetry: 0,
-      },
-      backing: null,
-      takeId: null,
-      scoreId: null,
-    })
-    for (let sequence = 0; sequence < chunkCount; sequence++) {
-      const firstFrame = sequence * chunkSize
-      const count = Math.min(chunkSize, frames - firstFrame)
-      const pcm = new ArrayBuffer(count * 2)
-      const view = new DataView(pcm)
-      for (let index = 0; index < count; index++) {
-        // Original audio is A2, notes are A3: the test can distinguish which
-        // source actually reaches the speakers, not just which button is active.
-        const phase = (2 * Math.PI * 110 * (firstFrame + index)) / sampleRate
-        const sample = 0.08 * Math.sin(phase) + 0.002 * Math.sin(phase * 2)
-        view.setInt16(index * 2, Math.round(sample * 32767), true)
-      }
-      transaction.objectStore('guitarRecordingChunks').put({
-        id: `${id}:${sequence}`,
+  await page.evaluate(
+    async ({ id, withDrums }) => {
+      const open = indexedDB.open('MercuryPitchDB')
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        open.onsuccess = () => resolve(open.result)
+        open.onerror = () => reject(open.error)
+      })
+      const sampleRate = 48000
+      const frames = sampleRate * 6
+      const chunkSize = 8192
+      const chunkCount = Math.ceil(frames / chunkSize)
+      const now = '2026-09-07T12:00:00.000Z'
+      const notes = [
+        {
+          id: 'a3-note',
+          midi: 57,
+          startFrame: 0,
+          endFrame: frames,
+          clarity: 0.96,
+          onset: 'attack',
+        },
+      ]
+      const transaction = db.transaction(
+        ['guitarRecordings', 'guitarRecordingChunks'],
+        'readwrite',
+      )
+      transaction.objectStore('guitarRecordings').put({
+        id,
+        version: 1,
+        detectorVersion: 'guitar-melody-1.1',
+        title: 'Audition source proof',
         createdAt: now,
         updatedAt: now,
-        kind: 'audio',
+        state: 'draft',
+        sampleRate,
+        inputChannel: 0,
+        inputKind: 'interface',
+        tuning: {
+          instrument: 'guitar',
+          stringCount: 6,
+          openMidi: [64, 59, 55, 50, 45, 40],
+          labels: ['E', 'B', 'G', 'D', 'A', 'E'],
+          capo: 0,
+        },
+        frames,
+        chunks: chunkCount,
+        audioStartFrame: 0,
+        clockAnomalies: 0,
+        interruption: null,
+        amp: {
+          enabled: true,
+          engine: 'studio',
+          head: 'lead',
+          character: 1,
+          drive: 0.95,
+          bass: 0,
+          mid: 0,
+          treble: 0,
+          presence: 0,
+          output: 0.42,
+          cabinet: 'balanced',
+          asymmetry: 0,
+        },
+        backing: null,
+        takeId: null,
+        scoreId: null,
+      })
+      for (let sequence = 0; sequence < chunkCount; sequence++) {
+        const firstFrame = sequence * chunkSize
+        const count = Math.min(chunkSize, frames - firstFrame)
+        const pcm = new ArrayBuffer(count * 2)
+        const view = new DataView(pcm)
+        for (let index = 0; index < count; index++) {
+          // Original audio is A2, notes are A3: the test can distinguish which
+          // source actually reaches the speakers, not just which button is active.
+          const phase = (2 * Math.PI * 110 * (firstFrame + index)) / sampleRate
+          const sample = 0.08 * Math.sin(phase) + 0.002 * Math.sin(phase * 2)
+          view.setInt16(index * 2, Math.round(sample * 32767), true)
+        }
+        transaction.objectStore('guitarRecordingChunks').put({
+          id: `${id}:${sequence}`,
+          createdAt: now,
+          updatedAt: now,
+          kind: 'audio',
+          recordingId: id,
+          sequence,
+          firstFrame,
+          frames: count,
+          pcm,
+          pitches: [],
+          attacks: [],
+          notes: [],
+          peak: 0.082,
+        })
+      }
+      transaction.objectStore('guitarRecordingChunks').put({
+        id: `${id}:ending`,
+        createdAt: now,
+        updatedAt: now,
+        kind: 'ending',
         recordingId: id,
-        sequence,
-        firstFrame,
-        frames: count,
-        pcm,
+        sequence: chunkCount,
+        firstFrame: frames,
+        frames: 0,
+        pcm: null,
         pitches: [],
         attacks: [],
-        notes: [],
-        peak: 0.082,
+        notes,
+        peak: 0,
+        ...(withDrums
+          ? {
+              drumTrack: {
+                version: 1,
+                hits: [
+                  {
+                    offsetSeconds: 0.25,
+                    gmKey: 36,
+                    velocity: 118,
+                    kitId: 'mercury-synth',
+                    level: 1,
+                  },
+                  {
+                    offsetSeconds: 0.5,
+                    gmKey: 38,
+                    velocity: 108,
+                    kitId: 'mercury-synth',
+                    level: 1,
+                  },
+                ],
+              },
+            }
+          : {}),
       })
-    }
-    transaction.objectStore('guitarRecordingChunks').put({
-      id: `${id}:ending`,
-      createdAt: now,
-      updatedAt: now,
-      kind: 'ending',
-      recordingId: id,
-      sequence: chunkCount,
-      firstFrame: frames,
-      frames: 0,
-      pcm: null,
-      pitches: [],
-      attacks: [],
-      notes,
-      peak: 0,
-    })
-    await new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve()
-      transaction.onerror = () => reject(transaction.error)
-      transaction.onabort = () => reject(transaction.error)
-    })
-    db.close()
-  }, RECORDING_ID)
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+        transaction.onabort = () => reject(transaction.error)
+      })
+      db.close()
+    },
+    { id: RECORDING_ID, withDrums },
+  )
   await page.goto(`/guitar-night?recording=${RECORDING_ID}`)
 }
 
@@ -610,5 +636,83 @@ test('auditions original input and transcribed notes with clean/current/saved am
   )
   expect(JSON.parse(bypassSettings!).enabled).toBe(false)
   expect(cabinetResponses).toContain(200)
+  expect(errors).toEqual([])
+})
+
+test('keeps a recorded Session Drummer lane independently mutable and exports the chosen mix @smoke', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await seedRecording(page, true)
+  const review = page.getByRole('dialog').filter({ hasText: 'Recorded melody' })
+  await expect(review).toBeVisible()
+
+  const drums = review.getByRole('button', {
+    name: 'Mute recorded drums',
+    exact: true,
+  })
+  await expect(drums).toBeVisible()
+  expect(
+    await drums.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return {
+        minHeight: Number.parseFloat(style.minHeight),
+        border: style.borderStyle,
+        background: style.backgroundColor,
+      }
+    }),
+  ).toEqual({
+    minHeight: 48,
+    border: 'solid',
+    background: 'rgb(48, 37, 27)',
+  })
+  await drums.click()
+  const muted = review.getByRole('button', {
+    name: 'Hear recorded drums',
+    exact: true,
+  })
+  await expect(muted).toHaveAttribute('aria-pressed', 'false')
+  await muted.click()
+
+  await review.locator('summary').click()
+  const level = review.getByRole('slider', {
+    name: 'Recorded drums level',
+    exact: true,
+  })
+  await expect(level).toBeVisible()
+  await level.fill('1.4')
+  await expect(level).toHaveValue('1.4')
+
+  const desktop = test.info().outputPath('recorded-drum-lane-desktop.png')
+  await page.screenshot({ path: desktop })
+  await test.info().attach('recorded-drum-lane-desktop', {
+    contentType: 'image/png',
+    path: desktop,
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  const phone = test.info().outputPath('recorded-drum-lane-phone.png')
+  await page.screenshot({ path: phone })
+  await test.info().attach('recorded-drum-lane-phone', {
+    contentType: 'image/png',
+    path: phone,
+  })
+  await expect(drums).toBeVisible()
+
+  await review
+    .getByRole('button', { name: 'Playback tone', exact: true })
+    .click()
+  await page.getByTestId('overflow-clean').click()
+  const downloading = page.waitForEvent('download')
+  await review
+    .getByRole('button', { name: 'Export audio mix', exact: true })
+    .click()
+  const download = await downloading
+  expect(download.suggestedFilename()).toMatch(/^melody-.*\.wav$/)
+  const wav = await readFile((await download.path())!)
+  expect(wav.subarray(0, 4).toString('ascii')).toBe('RIFF')
+  expect(wav.readUInt16LE(22)).toBe(2)
+  expect(wav.byteLength).toBeGreaterThan(44)
   expect(errors).toEqual([])
 })

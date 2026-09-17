@@ -1,5 +1,5 @@
 // ============================================================
-// AudioBuffer WAV — one correct mono PCM encoder for browser audio
+// AudioBuffer WAV — correct mono and stereo PCM encoders for browser audio
 // ============================================================
 //
 // Voice exports and guided-example clips both need a universally playable
@@ -20,14 +20,15 @@ function writeAscii(view: DataView, offset: number, value: string): void {
   }
 }
 
-function createMonoPcmWavBuffer(
+function createPcmWavBuffer(
   frameCount: number,
   sampleRate: number,
+  channels: number,
 ): {
   bytes: ArrayBuffer
   view: DataView
 } {
-  const pcmBytes = frameCount * PCM_BYTES_PER_SAMPLE
+  const pcmBytes = frameCount * PCM_BYTES_PER_SAMPLE * channels
   const bytes = new ArrayBuffer(WAV_HEADER_BYTES + pcmBytes)
   const view = new DataView(bytes)
 
@@ -37,10 +38,10 @@ function createMonoPcmWavBuffer(
   writeAscii(view, 12, 'fmt ')
   view.setUint32(16, 16, true)
   view.setUint16(20, 1, true)
-  view.setUint16(22, 1, true)
+  view.setUint16(22, channels, true)
   view.setUint32(24, sampleRate, true)
-  view.setUint32(28, sampleRate * PCM_BYTES_PER_SAMPLE, true)
-  view.setUint16(32, PCM_BYTES_PER_SAMPLE, true)
+  view.setUint32(28, sampleRate * PCM_BYTES_PER_SAMPLE * channels, true)
+  view.setUint16(32, PCM_BYTES_PER_SAMPLE * channels, true)
   view.setUint16(34, 16, true)
   writeAscii(view, 36, 'data')
   view.setUint32(40, pcmBytes, true)
@@ -64,9 +65,10 @@ export function encodeMonoPcmSamplesToWav(
   if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
     throw new Error('The PCM sample rate must be positive.')
   }
-  const { bytes, view } = createMonoPcmWavBuffer(
+  const { bytes, view } = createPcmWavBuffer(
     samples.length,
     Math.round(sampleRate),
+    1,
   )
   let outputOffset = WAV_HEADER_BYTES
   for (let frame = 0; frame < samples.length; frame += 1) {
@@ -94,7 +96,7 @@ export function encodeAudioBufferToMonoPcmWav(
     Math.max(startFrame, Math.ceil(range.endFrame ?? buffer.length)),
   )
   const frameCount = endFrame - startFrame
-  const { bytes, view } = createMonoPcmWavBuffer(frameCount, buffer.sampleRate)
+  const { bytes, view } = createPcmWavBuffer(frameCount, buffer.sampleRate, 1)
 
   const channels = Array.from(
     { length: buffer.numberOfChannels },
@@ -108,5 +110,41 @@ export function encodeAudioBufferToMonoPcmWav(
     outputOffset += PCM_BYTES_PER_SAMPLE
   }
 
+  return bytes
+}
+
+/** Encode one or two source channels as interleaved signed 16-bit PCM WAV. */
+export function encodeAudioBufferToPcmWav(
+  buffer: AudioBuffer,
+  range: AudioBufferWavRange = {},
+): ArrayBuffer {
+  if (buffer.numberOfChannels < 1 || buffer.sampleRate <= 0) {
+    throw new Error('The decoded audio has no playable channel.')
+  }
+  const startFrame = Math.min(
+    buffer.length,
+    Math.max(0, Math.floor(range.startFrame ?? 0)),
+  )
+  const endFrame = Math.min(
+    buffer.length,
+    Math.max(startFrame, Math.ceil(range.endFrame ?? buffer.length)),
+  )
+  const frameCount = endFrame - startFrame
+  const channelCount = Math.min(2, buffer.numberOfChannels)
+  const { bytes, view } = createPcmWavBuffer(
+    frameCount,
+    buffer.sampleRate,
+    channelCount,
+  )
+  const channels = Array.from({ length: channelCount }, (_, channel) =>
+    buffer.getChannelData(channel),
+  )
+  let outputOffset = WAV_HEADER_BYTES
+  for (let frame = startFrame; frame < endFrame; frame += 1) {
+    for (const channel of channels) {
+      writePcmSample(view, outputOffset, channel[frame] ?? 0)
+      outputOffset += PCM_BYTES_PER_SAMPLE
+    }
+  }
   return bytes
 }

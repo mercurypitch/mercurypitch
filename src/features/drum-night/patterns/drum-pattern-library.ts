@@ -93,6 +93,57 @@ export const DRUM_PATTERNS: readonly DrumPattern[] = Object.freeze([
     provenance: ORIGINAL,
   },
 
+  // --------------------------------------------------------------- blues ---
+  {
+    id: 'blues-slow-shuffle',
+    name: 'Slow Blues Shuffle',
+    style: 'blues',
+    description:
+      'A broad triplet shuffle with a firm backbeat and enough air between kicks for slow-blues phrasing.',
+    bars: 2,
+    tempoBpm: 72,
+    tempoRange: [52, 96],
+    lanes: {
+      ride: 'X-x-X-x-X-x-X-x-|X-x-X-x-X-x-X-x-',
+      snare: '----X-------X---|----X-------X---',
+      kick: 'X-----x-X-----x-|X-------X-----x-',
+    },
+    provenance: ORIGINAL,
+  },
+  {
+    id: 'blues-texas-shuffle',
+    name: 'Texas Shuffle',
+    style: 'blues',
+    description:
+      'A busier shuffled pocket with ghosted snare answers and a walking kick for driving blues leads.',
+    bars: 2,
+    tempoBpm: 116,
+    tempoRange: [92, 148],
+    lanes: {
+      'hh-closed': 'X-x-X-x-X-x-X-x-|X-x-X-x-X-x-X-x-',
+      snare: '--o-X-----o-X---|--o-X---o---X---',
+      kick: 'X--x--x-X--x--x-|X--x--x-X-----x-',
+    },
+    provenance: ORIGINAL,
+  },
+  {
+    id: 'blues-rock-turnaround',
+    name: 'Blues Rock Turnaround',
+    style: 'blues',
+    description:
+      'A heavier shuffle with open-hat lift and a second-bar kick pickup built for loud blues-rock jams.',
+    bars: 2,
+    tempoBpm: 102,
+    tempoRange: [78, 132],
+    lanes: {
+      'hh-closed': 'X-x-X-x-X-x-X---|X-x-X-x-X-x-X---',
+      'hh-open': '--------------x-|--------------x-',
+      snare: '----X-------X---|----X-------X---',
+      kick: 'X-----x-X-------|X---x---X---x-x-',
+    },
+    provenance: ORIGINAL,
+  },
+
   // ---------------------------------------------------------------- funk ---
   {
     id: 'funk-sixteenth-pocket',
@@ -301,12 +352,13 @@ export const DRUM_PATTERNS: readonly DrumPattern[] = Object.freeze([
 ])
 
 export const DRUM_PATTERN_STYLE_ORDER: readonly DrumPatternStyle[] =
-  Object.freeze(['rock', 'funk', 'jazz', 'latin', 'electronic'])
+  Object.freeze(['rock', 'blues', 'funk', 'jazz', 'latin', 'electronic'])
 
 export const DRUM_PATTERN_STYLE_LABELS: Readonly<
   Record<DrumPatternStyle, string>
 > = Object.freeze({
   rock: 'Rock',
+  blues: 'Blues',
   funk: 'Funk',
   jazz: 'Jazz',
   latin: 'Latin',

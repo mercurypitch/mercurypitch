@@ -1,9 +1,9 @@
 // ============================================================
-// AudioBuffer WAV tests — RIFF header and mono sample integrity
+// AudioBuffer WAV tests — RIFF header and mono/stereo sample integrity
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { encodeAudioBufferToMonoPcmWav, encodeMonoPcmSamplesToWav, } from './audio-buffer-wav'
+import { encodeAudioBufferToMonoPcmWav, encodeAudioBufferToPcmWav, encodeMonoPcmSamplesToWav, } from './audio-buffer-wav'
 
 function testAudioBuffer(): AudioBuffer {
   const channels = [
@@ -54,6 +54,24 @@ describe('encodeAudioBufferToMonoPcmWav', () => {
     expect(view.getUint32(40, true)).toBe(4)
     expect(view.getInt16(44, true)).toBe(-16_384)
     expect(view.getInt16(46, true)).toBe(0)
+  })
+})
+
+describe('encodeAudioBufferToPcmWav', () => {
+  it('preserves two channels as interleaved PCM16', () => {
+    const bytes = encodeAudioBufferToPcmWav(testAudioBuffer())
+    const view = new DataView(bytes)
+
+    expect(view.getUint16(22, true)).toBe(2)
+    expect(view.getUint32(28, true)).toBe(32_000)
+    expect(view.getUint16(32, true)).toBe(4)
+    expect(view.getUint32(40, true)).toBe(12)
+    expect(view.getInt16(44, true)).toBe(32_767)
+    expect(view.getInt16(46, true)).toBe(0)
+    expect(view.getInt16(48, true)).toBe(-32_768)
+    expect(view.getInt16(50, true)).toBe(0)
+    expect(view.getInt16(52, true)).toBe(16_384)
+    expect(view.getInt16(54, true)).toBe(-16_384)
   })
 })
 

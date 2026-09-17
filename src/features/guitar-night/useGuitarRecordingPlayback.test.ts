@@ -12,6 +12,16 @@ const audio = vi.hoisted(() => ({
   media: vi.fn(),
   notes: vi.fn(),
   amp: vi.fn(),
+  drumFactory: vi.fn(),
+  drumPrepare: vi.fn<() => Promise<boolean>>(),
+  drumPlay: vi.fn<() => Promise<boolean>>(),
+  drumPause: vi.fn(),
+  drumStop: vi.fn(),
+  drumSeek: vi.fn(),
+  drumMuted: vi.fn(),
+  drumLevel: vi.fn(),
+  drumDispose: vi.fn(),
+  downloadMix: vi.fn(),
   play: vi.fn<() => Promise<boolean>>(),
   time: 0,
 }))
@@ -25,9 +35,19 @@ vi.mock('@/lib/guitar/recording-note-player', () => ({
 vi.mock('@/lib/guitar/guitar-amp-stage', () => ({
   createGuitarAmpStage: audio.amp,
 }))
+vi.mock('./recorded-drum-track-player', () => ({
+  createRecordedDrumTrackPlayer: audio.drumFactory,
+}))
+vi.mock('./guitar-recording-mix-export', () => ({
+  downloadGuitarRecordingMix: audio.downloadMix,
+}))
 
 const clean = { ...DEFAULT_GUITAR_ELECTRIC_AMP_PARAMETERS, enabled: false }
-const graph = { context: {} as AudioContext, destination: {} as AudioNode }
+const graph = {
+  context: {} as AudioContext,
+  destination: {} as AudioNode,
+  drumsDestination: {} as AudioNode,
+}
 const disposeRoots: (() => void)[] = []
 const players: {
   options: PreviewPlayerOptions
@@ -113,6 +133,24 @@ function draft(blob: Blob | null = new Blob(['audio'])): GuitarRecordingDraft {
   }
 }
 
+function draftWithDrums(): GuitarRecordingDraft {
+  return {
+    ...draft(),
+    drumTrack: {
+      version: 1,
+      hits: [
+        {
+          offsetSeconds: 0.25,
+          gmKey: 36,
+          velocity: 110,
+          kitId: 'muldjord',
+          level: 1.1,
+        },
+      ],
+    },
+  }
+}
+
 function setup(initial = draft()) {
   const [current, setCurrent] = createSignal<GuitarRecordingDraft | null>(
     initial,
@@ -158,6 +196,19 @@ beforeEach(() => {
   players.length = 0
   audio.time = 0
   audio.play.mockResolvedValue(true)
+  audio.drumPlay.mockResolvedValue(true)
+  audio.drumPrepare.mockResolvedValue(true)
+  audio.downloadMix.mockResolvedValue(undefined)
+  audio.drumFactory.mockReturnValue({
+    prepare: audio.drumPrepare,
+    play: audio.drumPlay,
+    pause: audio.drumPause,
+    stop: audio.drumStop,
+    seek: audio.drumSeek,
+    setMuted: audio.drumMuted,
+    setLevel: audio.drumLevel,
+    dispose: audio.drumDispose,
+  })
   audio.media.mockImplementation(fakePlayer)
   audio.notes.mockImplementation(fakePlayer)
   audio.amp.mockImplementation(
@@ -180,6 +231,52 @@ afterEach(async () => {
 })
 
 describe('recording audition', () => {
+  it('keeps recorded drums on a synchronized, independently mutable lane', async () => {
+    const { replay } = setup(draftWithDrums())
+    expect(replay.drumTrackAvailable()).toBe(true)
+    replay.setDrumLevel(1.35)
+    await replay.toggle()
+    expect(audio.drumFactory).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: graph.context,
+        destination: graph.drumsDestination,
+        track: expect.objectContaining({ version: 1 }),
+      }),
+    )
+    expect(audio.drumLevel).toHaveBeenLastCalledWith(1.35)
+    expect(audio.drumPrepare).toHaveBeenCalledOnce()
+    expect(audio.drumPlay).toHaveBeenCalledWith(0)
+    replay.seek(1.2)
+    expect(audio.drumSeek).toHaveBeenLastCalledWith(1.2)
+    replay.setDrumsMuted(true)
+    expect(audio.drumMuted).toHaveBeenLastCalledWith(true)
+    replay.pause()
+    expect(audio.drumPause).toHaveBeenCalled()
+    replay.stop()
+    expect(audio.drumStop).toHaveBeenCalledOnce()
+  })
+
+  it('exports only an explicit offline mix and follows the replay drum mute', async () => {
+    const { replay } = setup(draftWithDrums())
+    const host = document.createElement('div')
+    replay.setDrumLevel(1.25)
+    await replay.exportMix(host)
+    expect(audio.downloadMix).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        source: 'recording',
+        drumLevel: 1.25,
+        includeDrums: true,
+      }),
+      host,
+    )
+    replay.setDrumsMuted(true)
+    await replay.exportMix(host)
+    expect(audio.downloadMix).toHaveBeenLastCalledWith(
+      expect.objectContaining({ includeDrums: false }),
+      host,
+    )
+  })
+
   it.each(['recording', 'notes'] as const)(
     'queues an exact pre-Play position without allocating %s audio',
     async (source) => {

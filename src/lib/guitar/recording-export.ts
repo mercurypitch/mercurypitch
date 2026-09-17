@@ -4,7 +4,7 @@ import type { GuitarPracticeScore } from './recording-types'
 
 export function guitarRecordingFilename(
   title: string,
-  extension: 'mid' | 'gp',
+  extension: 'mid' | 'gp' | 'wav',
   now = new Date(),
 ): string {
   const normalized = title.normalize('NFKC').trim().toLowerCase()

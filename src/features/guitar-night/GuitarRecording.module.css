@@ -180,6 +180,24 @@
   flex-wrap: wrap;
   align-items: center;
 }
+.mixExport {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem;
+  border: 1px solid #4a3d2a;
+  border-radius: 6px;
+  background: rgba(37, 30, 22, 0.62);
+}
+.mixExport p {
+  font-size: 0.76rem;
+}
+@media (max-width: 560px) {
+  .mixExport {
+    grid-template-columns: 1fr;
+  }
+}
 .fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

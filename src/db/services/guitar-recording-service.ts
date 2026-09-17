@@ -2,7 +2,7 @@
 import { guitarWavHeader, recoverGuitarMelody, } from '@/lib/guitar/recording-evidence'
 import { createRecordingPreview } from '@/lib/guitar/recording-gallery'
 import { recordingScoreProblem } from '@/lib/guitar/recording-score'
-import type { GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingChunk, GuitarRecordingSummary, GuitarRefinementBackup, } from '@/lib/guitar/recording-types'
+import type { GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingChunk, GuitarRecordingDrumTrack, GuitarRecordingSummary, GuitarRefinementBackup, } from '@/lib/guitar/recording-types'
 import { GUITAR_RECORDING_LIMIT_SECONDS } from '@/lib/guitar/recording-types'
 import type { DexieAdapter } from '../adapters/dexie-adapter'
 import { durableWrite, hasRoomFor } from '../durable-write'
@@ -18,6 +18,45 @@ export interface GuitarRecordingDraft {
   editableScore?: GuitarPracticeScore
   acceptedScore?: GuitarPracticeScore
   refinementBackup?: GuitarRefinementBackup
+  drumTrack?: GuitarRecordingDrumTrack
+}
+
+const MAX_RECORDED_DRUM_HITS = 50_000
+
+function validateDrumTrack(
+  value: GuitarRecordingDrumTrack | undefined,
+  durationSeconds: number,
+): void {
+  if (value === undefined) return
+  if (
+    value === null ||
+    value.version !== 1 ||
+    !Array.isArray(value.hits) ||
+    value.hits.length > MAX_RECORDED_DRUM_HITS ||
+    value.hits.some(
+      (hit, index) =>
+        hit === null ||
+        !Number.isFinite(hit.offsetSeconds) ||
+        hit.offsetSeconds < 0 ||
+        hit.offsetSeconds > durationSeconds + 0.001 ||
+        (index > 0 &&
+          hit.offsetSeconds < value.hits[index - 1]!.offsetSeconds) ||
+        !Number.isInteger(hit.gmKey) ||
+        hit.gmKey < 0 ||
+        hit.gmKey > 127 ||
+        !Number.isInteger(hit.velocity) ||
+        hit.velocity < 1 ||
+        hit.velocity > 127 ||
+        typeof hit.kitId !== 'string' ||
+        hit.kitId.length < 1 ||
+        hit.kitId.length > 64 ||
+        !/^[a-z0-9-]+$/.test(hit.kitId) ||
+        !Number.isFinite(hit.level) ||
+        hit.level < 0 ||
+        hit.level > 2,
+    )
+  )
+    throw new Error('This recording has a damaged drummer track.')
 }
 
 function validateRecording(row: GuitarRecording): void {
@@ -197,11 +236,13 @@ export function createGuitarRecordingStore(
       id: string,
       summary: GuitarRecordingSummary,
       audioStartFrame: number | null,
+      drumTrack?: GuitarRecordingDrumTrack,
     ): Promise<void> {
       await db.transaction(async () => {
         const row = await read(id)
         if (row.state !== 'capturing') return
         const now = new Date().toISOString()
+        validateDrumTrack(drumTrack, summary.frames / row.sampleRate)
         // Complete notes live in an ending evidence chunk, never in catalogue
         // metadata. Live audio chunks also retain their partial/recovery notes.
         const ending: GuitarRecordingChunk = {
@@ -225,6 +266,7 @@ export function createGuitarRecordingStore(
                   row.frames,
                 ),
           peak: 0,
+          ...(drumTrack === undefined ? {} : { drumTrack }),
         }
         await db.putStrict('guitarRecordingChunks', ending)
         await db.putStrict('guitarRecordings', {
@@ -251,6 +293,7 @@ export function createGuitarRecordingStore(
         let notes: GuitarRecordedNote[] = []
         let editableScore: GuitarPracticeScore | undefined
         let refinementBackup: GuitarRefinementBackup | undefined
+        let drumTrack: GuitarRecordingDrumTrack | undefined
         let hasEnding = false
         for (const part of parts) {
           if (
@@ -298,6 +341,8 @@ export function createGuitarRecordingStore(
             notes = part.notes
             editableScore = part.editableScore
             refinementBackup = part.refinementBackup
+            validateDrumTrack(part.drumTrack, row.frames / row.sampleRate)
+            drumTrack = part.drumTrack
             continue
           }
           if (
@@ -356,6 +401,7 @@ export function createGuitarRecordingStore(
           editableScore,
           acceptedScore,
           refinementBackup,
+          drumTrack,
         }
       })
     },

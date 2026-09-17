@@ -4,7 +4,8 @@ Contract: [Guitar recorder EARS](specs/guitar-recording.ears.md).
 Original recorder: merged [PR 739](https://github.com/mercurypitch/mercurypitch/pull/739).
 Recorder follow-up: merged [PR 741](https://github.com/mercurypitch/mercurypitch/pull/741).
 Experimental chord refinement: [PR 746](https://github.com/mercurypitch/mercurypitch/pull/746), `feat/guitar-chord-refinement`.
-Drum sound work is intentionally separate and deferred.
+Drum sound design remains separate; Session Drummer accompaniment can now be
+retained as a musical lane beside a dry guitar take.
 
 ## Implemented phases
 
@@ -64,6 +65,12 @@ Drum sound work is intentionally separate and deferred.
 12. My melodies retains its gallery and adds a quick-switch chevron and held
     touch shortcut. Both views offer confirmed deletion. Switching does not
     autoplay or open Review, and failed/stale loads preserve the selected take.
+13. Recording while Session Drummer is audible retains the exact accepted,
+    humanized drum hits as a separate local track. Replay prewarms and schedules
+    them on the drums bus with independent mute/level through Play, Pause, Stop
+    and seeking. Explicit audio-mix export renders the selected dry-audio or
+    synthesized-note amp path plus optional drums to stereo WAV; it never bakes
+    accompaniment into stored guitar PCM.
 
 Publication: recorder fixes shipped in PR 741. The chord integration is separate;
 drum sound work remains deferred.
@@ -444,6 +451,12 @@ free-form browser test still covers completed grading with opt-in DI monitoring.
       drive. Confirm both speakers, smooth Pause/resume/source changes, and no
       new input request. Saved amp must not move Session's knobs. Notes should
       use current corrections; Recording must remain the original performance.
+- [ ] Start Session Drummer, Record across several bars and change its kit or
+      level on a bar boundary. Stop and replay both Recording and Notes. Check
+      drums stay aligned through Pause, scrub and Stop; mute them and adjust
+      their independent level. Export once with drums and once muted, compare
+      both stereo WAVs, then reopen the take and confirm the dry guitar and saved
+      drummer track are still available.
 - [ ] With out-of-neck notes, try MIDI export; then Review problem notes and
       correct or explicitly exclude them. Undo restores them. Practice/Attach/GP
       should become available once fingering and note timing are valid.

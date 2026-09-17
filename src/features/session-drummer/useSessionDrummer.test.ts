@@ -50,7 +50,8 @@ function fixture(follow = false) {
     const [running, setRunning] = createSignal(false)
     const [reason, setReason] = createSignal<string | null>(null)
     const graph = {} as GuitarSessionAudioGraph
-    const activateGraph = vi.fn(async () => graph)
+    let activeGraph = graph
+    const activateGraph = vi.fn(async () => activeGraph)
     let openAtHostStart: boolean | null = null
     const startHost = vi.fn(() => {
       openAtHostStart = controller.open()
@@ -68,6 +69,9 @@ function fixture(follow = false) {
       controller,
       activateGraph,
       graph,
+      setGraph: (next: GuitarSessionAudioGraph) => {
+        activeGraph = next
+      },
       setClock,
       setRunning,
       setReason,
@@ -118,6 +122,24 @@ describe('session drummer UI lifecycle', () => {
     mocked.engine.update.mockClear()
     f.controller.change({ bars: 4 })
     expect(mocked.engine.update).not.toHaveBeenCalled()
+  })
+  it('publishes audible scheduled hits only while a recorder is subscribed', async () => {
+    const f = fixture()
+    const listener = vi.fn()
+    const unsubscribe = f.controller.subscribeHit(listener)
+    await f.controller.start()
+    const hit = {
+      contextTime: 4.25,
+      gmKey: 38,
+      velocity: 112,
+      kitId: 'crocell',
+      level: 1.1,
+    }
+    mocked.options!.onHit?.(hit)
+    expect(listener).toHaveBeenCalledExactlyOnceWith(hit)
+    unsubscribe()
+    mocked.options!.onHit?.({ ...hit, contextTime: 4.5 })
+    expect(listener).toHaveBeenCalledOnce()
   })
   it('does not lose choices changed while audio is warming up', async () => {
     const f = fixture()
@@ -174,6 +196,20 @@ describe('session drummer UI lifecycle', () => {
     expect(f.startHost).not.toHaveBeenCalled()
     expect(f.controller.armed()).toBe(false)
     expect(f.controller.busy()).toBe(false)
+  })
+  it('rebuilds its engine when the room recycles the audio graph', async () => {
+    const f = fixture()
+    await f.controller.start()
+    f.controller.stop()
+    const replacement = {} as GuitarSessionAudioGraph
+    f.setGraph(replacement)
+
+    await f.controller.start()
+
+    expect(mocked.engine.dispose).toHaveBeenCalledOnce()
+    expect(await mocked.options!.activateGraph()).toBe(replacement)
+    expect(mocked.engine.start).toHaveBeenCalledTimes(2)
+    expect(f.controller.armed()).toBe(true)
   })
   it('stops and unsubscribes when leaving the score clock', async () => {
     const f = fixture(true)

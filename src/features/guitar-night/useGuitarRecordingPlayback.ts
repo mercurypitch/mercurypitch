@@ -11,6 +11,14 @@ import { recordingPlaybackAmp, recordingPlaybackNotes, } from '@/lib/guitar/reco
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import type { PreviewPlayerOptions } from '@/lib/preview-player'
 import { createPreviewPlayer, ENVELOPE_DEFAULTS } from '@/lib/preview-player'
+import type { RecordedDrumTrackPlayer } from './recorded-drum-track-player'
+import { createRecordedDrumTrackPlayer } from './recorded-drum-track-player'
+
+interface GuitarRecordingPlaybackGraph extends NonNullable<
+  PreviewPlayerOptions['audioGraph']
+> {
+  drumsDestination: AudioNode
+}
 
 interface GuitarRecordingPlaybackOptions {
   draft: Accessor<GuitarRecordingDraft | null>
@@ -18,7 +26,7 @@ interface GuitarRecordingPlaybackOptions {
   currentAmp: Accessor<GuitarElectricAmpParameters>
   blocked: Accessor<boolean>
   /** Opens only the room's output context, never Listening or input monitoring. */
-  activate(): Promise<NonNullable<PreviewPlayerOptions['audioGraph']> | null>
+  activate(): Promise<GuitarRecordingPlaybackGraph | null>
   beforePlay(): void
 }
 
@@ -45,6 +53,9 @@ export function useGuitarRecordingPlayback(
   const [engaged, setEngaged] = createSignal(false)
   const [position, setPosition] = createSignal(0)
   const [error, setError] = createSignal<string | null>(null)
+  const [drumsMuted, setDrumsMutedSignal] = createSignal(false)
+  const [drumLevel, setDrumLevelSignal] = createSignal(1)
+  const [exporting, setExporting] = createSignal(false)
   const [ampStatus, setAmpStatus] = createSignal<ReturnType<
     GuitarAmpStage['getStatus']
   > | null>(null)
@@ -70,6 +81,7 @@ export function useGuitarRecordingPlayback(
     kind === 'recording' ? options.draft()?.blob != null : notes().length > 0
   const available = () => sourceAvailable(source()) && parameters() !== null
   let player: AuditionPlayer | null = null
+  let drumPlayer: RecordedDrumTrackPlayer | null = null
   let amp: GuitarAmpStage | null = null
   let latestParameters = untrack(parameters)
   let url: string | null = null
@@ -83,6 +95,7 @@ export function useGuitarRecordingPlayback(
     generation++
     setPosition(player?.currentTime ?? position())
     player?.pause()
+    drumPlayer?.pause()
     // Notes retire their run on Pause; its fading processor no longer owns
     // the selected tone. Resume constructs a fresh stage with latest settings.
     if (source() === 'notes') {
@@ -97,20 +110,25 @@ export function useGuitarRecordingPlayback(
   const retire = () => {
     playerEpoch++
     const previous = player
+    const previousDrums = drumPlayer
     const previousUrl = url
     player = null
+    drumPlayer = null
     amp = null
     url = null
     if (previous === null) {
+      void previousDrums?.dispose()
       if (previousUrl !== null) URL.revokeObjectURL(previousUrl)
       return
     }
     previous.pause()
+    previousDrums?.pause()
     // PreviewPlayer disposal is intentionally immediate. Let its final-output
     // envelope retire first, including amp tails, before releasing the graph.
     retireUntil = performance.now() + RELEASE_MS
     setTimeout(() => {
       previous.dispose()
+      void previousDrums?.dispose()
       if (previousUrl !== null) URL.revokeObjectURL(previousUrl)
     }, RELEASE_MS)
   }
@@ -193,6 +211,7 @@ export function useGuitarRecordingPlayback(
         const onEnded = () => {
           if (disposed || epoch !== playerEpoch || !playing()) return
           setPosition(length)
+          drumPlayer?.pause()
           setPlaying(false)
         }
         const createProcessing = (context: AudioContext) => {
@@ -263,8 +282,22 @@ export function useGuitarRecordingPlayback(
             },
           }
         }
+        if (draft.drumTrack !== undefined) {
+          drumPlayer = createRecordedDrumTrackPlayer({
+            context: graph.context,
+            destination: graph.drumsDestination,
+            track: draft.drumTrack,
+            getPosition: () => player?.currentTime ?? position(),
+          })
+          drumPlayer.setMuted(drumsMuted())
+          drumPlayer.setLevel(drumLevel())
+        }
       }
       const startedPlayer = player
+      // Warm the exact recorded kits before starting the primary source. This
+      // keeps the first audible downbeat from joining late after sample fetch.
+      if (drumPlayer !== null) await drumPlayer.prepare()
+      if (disposed || attempt !== generation) return
       // Read after activation/retirement: scrubbing while output is opening
       // updates this position without creating another context or microphone.
       const start =
@@ -278,6 +311,8 @@ export function useGuitarRecordingPlayback(
         return
       }
       pendingStartSeconds = null
+      if (ok)
+        void drumPlayer?.play(startedPlayer.currentTime).catch(() => undefined)
       batch(() => {
         setPending(false)
         setEngaged(ok)
@@ -303,6 +338,7 @@ export function useGuitarRecordingPlayback(
   const stop = () => {
     generation++
     player?.stop()
+    drumPlayer?.stop()
     pendingStartSeconds = 0
     if (source() === 'notes') {
       amp = null
@@ -327,6 +363,7 @@ export function useGuitarRecordingPlayback(
       setAmpStatus(null)
     }
     player?.seek(target)
+    drumPlayer?.seek(target)
     pendingStartSeconds = playing() ? null : target
     batch(() => {
       setPosition(target)
@@ -350,6 +387,59 @@ export function useGuitarRecordingPlayback(
     position,
     duration,
     error,
+    drumsMuted,
+    drumLevel,
+    exporting,
+    drumTrackAvailable: () =>
+      (options.draft()?.drumTrack?.hits.length ?? 0) > 0,
+    setDrumsMuted(next: boolean) {
+      setDrumsMutedSignal(next)
+      drumPlayer?.setMuted(next)
+    },
+    setDrumLevel(next: number) {
+      const normalized = Math.min(
+        2,
+        Math.max(0, Number.isFinite(next) ? next : 1),
+      )
+      setDrumLevelSignal(normalized)
+      drumPlayer?.setLevel(normalized)
+    },
+    async exportMix(container: HTMLElement = document.body): Promise<void> {
+      if (exporting()) return
+      const draft = options.draft()
+      const selectedSource = source()
+      const selectedTone = parameters()
+      const selectedNotes = notes()
+      const selectedDrumLevel = drumLevel()
+      const includeDrums = !drumsMuted()
+      if (draft === null || selectedTone === null) return
+      setExporting(true)
+      setError(null)
+      try {
+        const { downloadGuitarRecordingMix } =
+          await import('./guitar-recording-mix-export')
+        await downloadGuitarRecordingMix(
+          {
+            draft,
+            source: selectedSource,
+            notes: selectedNotes,
+            amp: selectedTone,
+            drumLevel: selectedDrumLevel,
+            includeDrums,
+          },
+          container,
+        )
+      } catch (cause) {
+        if (!disposed)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : 'The audio mix could not be exported.',
+          )
+      } finally {
+        if (!disposed) setExporting(false)
+      }
+    },
     pause,
     stop,
     seek,

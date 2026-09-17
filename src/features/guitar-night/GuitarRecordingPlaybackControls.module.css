@@ -11,7 +11,8 @@
   gap: 0.5rem;
 }
 .sourceTrigger.sourceTrigger,
-.ampTrigger.ampTrigger {
+.ampTrigger.ampTrigger,
+.drumsToggle.drumsToggle {
   min-height: 48px;
   min-width: 48px;
   padding: 2px 6px;
@@ -26,6 +27,25 @@
   justify-items: center;
   gap: 2px;
   font-size: 0.65rem;
+}
+.drumsToggle.drumsToggle {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  border-color: #64523b;
+  background: #30251b;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+.drumsToggle svg {
+  width: 20px;
+  height: 20px;
+}
+.drumsToggle.drumsToggle[data-muted='true'] {
+  border-color: #75483f;
+  color: #df9c8e;
+  background: #281b18;
 }
 .sourceTrigger svg {
   width: 20px;
@@ -50,6 +70,7 @@
 }
 .sourceTrigger.sourceTrigger:hover:not(:disabled),
 .ampTrigger.ampTrigger:hover:not(:disabled),
+.drumsToggle.drumsToggle:hover:not(:disabled),
 .sourceTrigger.sourceTrigger[aria-expanded='true'],
 .ampTrigger.ampTrigger[aria-expanded='true'] {
   background: #30251b;
@@ -104,6 +125,10 @@
   opacity: 0.5;
   cursor: default;
 }
+.drumsToggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .details {
   margin-top: 0.35rem;
   color: #c6b8a1;
@@ -131,9 +156,30 @@
   line-height: 1.5;
   color: #c6b8a1;
 }
+.drumLevel {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+}
+.drumLevelHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #eee2cd;
+}
+.drumLevelHeading output {
+  color: #edbc75;
+  font-variant-numeric: tabular-nums;
+}
+.drumLevel input {
+  width: 100%;
+  min-height: 32px;
+  accent-color: #edbc75;
+}
 .playback :focus-visible,
 .sourceTrigger:focus-visible,
-.ampTrigger:focus-visible {
+.ampTrigger:focus-visible,
+.drumsToggle:focus-visible {
   outline: 2px solid #edbc75;
   outline-offset: 3px;
 }

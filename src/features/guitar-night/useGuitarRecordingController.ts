@@ -7,7 +7,7 @@ import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-a
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { startGuitarRecordingCapture } from '@/lib/guitar/recording-capture'
 import { acquireGuitarRecordingLock } from '@/lib/guitar/recording-lock'
-import type { GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingBacking, } from '@/lib/guitar/recording-types'
+import type { GuitarDrummerPerformanceHit, GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingBacking, GuitarRecordingDrumTrack, } from '@/lib/guitar/recording-types'
 import { GUITAR_DETECTOR_VERSION, GUITAR_RECORDING_LIMIT_SECONDS, } from '@/lib/guitar/recording-types'
 import { midiToNote } from '@/lib/scale-data'
 import type { GuitarListeningController } from './useGuitarListeningController'
@@ -31,6 +31,10 @@ interface GuitarRecordingOptions {
   blocked: Accessor<boolean>
   refineAfterStop?: Accessor<boolean>
   clearLoop(): void
+}
+
+interface GuitarRecordingDrummerCapture {
+  subscribeHit(listener: (hit: GuitarDrummerPerformanceHit) => void): () => void
 }
 
 export function useGuitarRecordingController(options: GuitarRecordingOptions) {
@@ -73,7 +77,48 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   let completion: Promise<void> = Promise.resolve()
   let releaseDraft: (() => void) | null = null
   let startWrite: Promise<void> = Promise.resolve()
+  let drummerUnsubscribe: (() => void) | null = null
+  let recentDrummerHits: GuitarDrummerPerformanceHit[] = []
+  let recordingDrummerHits: GuitarDrummerPerformanceHit[] | null = null
   const store = () => createGuitarRecordingStore()
+  const setDrummerCapture = (
+    port: GuitarRecordingDrummerCapture | null,
+  ): void => {
+    drummerUnsubscribe?.()
+    drummerUnsubscribe = null
+    recentDrummerHits = []
+    if (port === null || disposed) return
+    drummerUnsubscribe = port.subscribeHit((hit) => {
+      recentDrummerHits = recentDrummerHits.filter(
+        (candidate) => candidate.contextTime >= hit.contextTime - 1,
+      )
+      recentDrummerHits.push(hit)
+      recordingDrummerHits?.push(hit)
+    })
+  }
+  const recordedDrumTrack = (
+    audioStartFrame: number | null,
+    sampleRate: number,
+    frames: number,
+  ): GuitarRecordingDrumTrack | undefined => {
+    if (audioStartFrame === null || recordingDrummerHits === null) return
+    const startSeconds = audioStartFrame / sampleRate
+    const durationSeconds = frames / sampleRate
+    const hits = recordingDrummerHits
+      .map((hit) => ({
+        offsetSeconds: hit.contextTime - startSeconds,
+        gmKey: hit.gmKey,
+        velocity: hit.velocity,
+        kitId: hit.kitId,
+        level: hit.level,
+      }))
+      .filter(
+        (hit) =>
+          hit.offsetSeconds >= 0 && hit.offsetSeconds < durationSeconds + 0.001,
+      )
+      .sort((left, right) => left.offsetSeconds - right.offsetSeconds)
+    return hits.length === 0 ? undefined : { version: 1, hits }
+  }
   const releaseOwnedInput = (): void => {
     const release = ownsInput
     ownsInput = false
@@ -210,6 +255,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
           'No audio input is available. Turn on Listening and try again.',
         )
       pinnedInput = input
+      recordingDrummerHits = [...recentDrummerHits]
       const now = new Date().toISOString()
       const id = globalThis.crypto.randomUUID()
       releaseDraft = await acquireGuitarRecordingLock(id)
@@ -303,7 +349,16 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
         .then(async (summary) => {
           if (!disposed) setState('stopping')
           await startWrite
-          await store().finish(id, summary, startFrame)
+          await store().finish(
+            id,
+            summary,
+            startFrame,
+            recordedDrumTrack(
+              startFrame,
+              input.context.sampleRate,
+              summary.frames,
+            ),
+          )
           if (!disposed) {
             const loaded = await store().load(id)
             if (disposed) return
@@ -332,6 +387,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
           capture = null
           pinnedInput = null
           activeId = null
+          recordingDrummerHits = null
           releaseOwnedInput()
           releaseDraft?.()
           releaseDraft = null
@@ -347,6 +403,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
         )
     } finally {
       if (capture === null) {
+        recordingDrummerHits = null
         releaseOwnedInput()
         releaseDraft?.()
         releaseDraft = null
@@ -401,6 +458,8 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   onCleanup(() => {
     disposed = true
     selectionGeneration++
+    drummerUnsubscribe?.()
+    drummerUnsubscribe = null
     void stop('The room was closed. Recover the saved draft to keep it.')
     if (capture === null) abort?.abort()
   })
@@ -439,6 +498,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
     autoRefineId,
     consumeAutoRefine: () => setAutoRefineId(null),
     catalogue,
+    setDrummerCapture,
     start,
     stop,
     recover,

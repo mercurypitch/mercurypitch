@@ -241,6 +241,42 @@ describe('recording corrections', () => {
     expect(store.accept).not.toHaveBeenCalled()
     expect(store.saveCorrections).not.toHaveBeenCalled()
   })
+  it('shows a separate drummer lane with one-click mute, level and mix export', () => {
+    renderReview(false, {
+      draft: true,
+      configureDraft: (draft) => {
+        draft.drumTrack = {
+          version: 1,
+          hits: [
+            {
+              offsetSeconds: 0.1,
+              gmKey: 36,
+              velocity: 115,
+              kitId: 'muldjord',
+              level: 1.1,
+            },
+          ],
+        }
+      },
+    })
+    const mute = screen.getByRole('button', { name: 'Mute recorded drums' })
+    expect(mute).toHaveAttribute('aria-pressed', 'true')
+    expect(mute.className).not.toBe('')
+    fireEvent.click(mute)
+    expect(
+      screen.getByRole('button', { name: 'Hear recorded drums' }),
+    ).toHaveAttribute('aria-pressed', 'false')
+    const level = screen.getByRole('slider', {
+      name: 'Recorded drums level',
+    })
+    expect(level).toHaveValue('1')
+    fireEvent.input(level, { target: { value: '1.4' } })
+    expect(level).toHaveValue('1.4')
+    expect(
+      screen.getByRole('button', { name: 'Export audio mix' }),
+    ).toBeEnabled()
+    expect(screen.getByText(/drummer is a separate track/i)).toBeInTheDocument()
+  })
   it('saves and exports out-of-neck MIDI without accepting an invalid guitar target', async () => {
     renderReview(true)
     fireEvent.click(screen.getByRole('button', { name: 'Export MIDI' }))
