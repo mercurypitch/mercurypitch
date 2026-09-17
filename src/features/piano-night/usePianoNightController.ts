@@ -1354,30 +1354,61 @@ export function usePianoNightController() {
 
     const countBeats = countInBeats()
     if (previousPhase !== 'playing' && countBeats > 0) {
-      const beatMs = (60 / transport.timeline.tempoBpm()) * 1000
-      let currentCountBeat = countBeats
-      while (currentCountBeat > 0) {
-        if (disposed || commandGeneration !== generation) {
-          setCountInRemaining(0)
-          return false
-        }
-        const ctx = transport.getAudioContext()
-        if (ctx) {
+      await activateAudio()
+      
+      const ctx = transport.getAudioContext()
+      if (ctx) {
+        const tempoBpm = transport.timeline.tempoBpm()
+        const beatSec = 60 / tempoBpm
+        const totalDuration = countBeats * beatSec
+        const startTime = ctx.currentTime
+
+        for (let i = 0; i < countBeats; i++) {
           const osc = ctx.createOscillator()
           const gain = ctx.createGain()
           osc.type = 'sine'
-          osc.frequency.value = currentCountBeat === countBeats ? 880 : 440
-          gain.gain.setValueAtTime(0.5, ctx.currentTime)
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
+          osc.frequency.value = i === 0 ? 880 : 440
+          const clickTime = startTime + i * beatSec
+          gain.gain.setValueAtTime(0.5, clickTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.1)
           osc.connect(gain)
           gain.connect(ctx.destination)
-          osc.start(ctx.currentTime)
-          osc.stop(ctx.currentTime + 0.1)
+          osc.start(clickTime)
+          osc.stop(clickTime + 0.1)
         }
-        setCountInRemaining(currentCountBeat)
-        setPlayheadBeat(expectedStartBeat - currentCountBeat)
-        await new Promise((resolve) => window.setTimeout(resolve, beatMs))
-        currentCountBeat--
+
+        await new Promise<void>((resolve) => {
+          const tick = () => {
+            if (disposed || commandGeneration !== generation) {
+              resolve()
+              return
+            }
+            const elapsed = ctx.currentTime - startTime
+            if (elapsed >= totalDuration) {
+              resolve()
+              return
+            }
+            const beatsElapsed = elapsed * (tempoBpm / 60)
+            const remaining = Math.max(1, countBeats - Math.floor(beatsElapsed))
+            setCountInRemaining(remaining)
+            setPlayheadBeat(expectedStartBeat - countBeats + beatsElapsed)
+            requestAnimationFrame(tick)
+          }
+          requestAnimationFrame(tick)
+        })
+      } else {
+        const beatMs = (60 / transport.timeline.tempoBpm()) * 1000
+        let currentCountBeat = countBeats
+        while (currentCountBeat > 0) {
+          if (disposed || commandGeneration !== generation) {
+            setCountInRemaining(0)
+            return false
+          }
+          setCountInRemaining(currentCountBeat)
+          setPlayheadBeat(expectedStartBeat - currentCountBeat)
+          await new Promise((resolve) => window.setTimeout(resolve, beatMs))
+          currentCountBeat--
+        }
       }
       setCountInRemaining(0)
       if (disposed || commandGeneration !== generation) return false

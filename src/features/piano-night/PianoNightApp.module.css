@@ -564,7 +564,7 @@
 
 .fallStage {
   overflow: hidden;
-  pointer-events: none;
+  touch-action: none;
 }
 
 .laneGuides {
