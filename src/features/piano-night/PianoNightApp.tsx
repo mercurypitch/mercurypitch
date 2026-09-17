@@ -8,7 +8,7 @@
 
 import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, lazy, onCleanup, onMount, Show, Suspense, } from 'solid-js'
-import { ChevronLeft, MoreHorizontal, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, ScoreDocument, Settings, SkipBack, SkipForward, Square, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
+import { ChevronLeft, Metronome, MoreHorizontal, MusicLibrary, Pause, PianoKeys, PianoWorkspace, Play, Repeat, ScoreDocument, Settings, SkipBack, SkipForward, Square, StageCurtains, Volume2, WaveformBars, X, } from '@/components/icons'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { NightMusicImport, NightMusicImportButton, } from '@/features/play-along/DeferredNightMusicImport'
 import { performanceTakeImportBlocker } from '@/features/play-along/night-music-import'
@@ -1018,6 +1018,12 @@ export function PianoNightApp(): JSX.Element {
           </div>
         </Show>
 
+        <Show when={controller.isCountingIn()}>
+          <div class={styles.countInOverlay} aria-live="assertive">
+            <span>{controller.countInRemaining()}</span>
+          </div>
+        </Show>
+
         <PianoNightStageViews
           view={view}
           notes={() => controller.stage().notes}
@@ -1031,11 +1037,27 @@ export function PianoNightApp(): JSX.Element {
           activeMidis={controller.activeMidis}
           keyWindow={keyWindow.window}
           stageMotion={controller.stageMotion}
+          practiceLoop={controller.practiceLoop}
+          onScrub={(delta) => {
+            const clamped = Math.max(
+              0,
+              Math.min(
+                controller.stage().totalBeats,
+                controller.transport.timeline.playheadBeat() - delta,
+              ),
+            )
+            controller.transport.seekToBeat(clamped)
+            controller.setPlayheadBeat(clamped)
+          }}
+          setPracticeLoopStart={controller.setPracticeLoopStart}
+          setPracticeLoopEnd={controller.setPracticeLoopEnd}
         />
 
         <PianoKeyHorizon
           keyWindow={keyWindow}
-          activeMidis={controller.activeMidis}
+          inputMidis={controller.inputMidis}
+          projectMidis={controller.projectMidis}
+          hideProjectKeys={() => !controller.showFallingTouches()}
           onPointerDown={controller.pressTouchKey}
           onPointerMove={controller.moveTouchKey}
           onPointerRelease={controller.releaseTouchKey}
@@ -1081,6 +1103,26 @@ export function PianoNightApp(): JSX.Element {
                   {controller.practiceLoop().repeatCount}
                 </span>
               </Show>
+            </button>
+            <button
+              classList={{
+                [styles.controlActive]: controller.countInBeats() > 0,
+              }}
+              type="button"
+              onClick={() =>
+                controller.setCountInBeats(
+                  controller.countInBeats() > 0 ? 0 : 4,
+                )
+              }
+              aria-label={
+                controller.countInBeats() > 0
+                  ? 'Turn count-in off'
+                  : 'Turn count-in on (4 beats)'
+              }
+              aria-pressed={controller.countInBeats() > 0}
+              data-testid="piano-night-count-in"
+            >
+              <Metronome />
             </button>
             <button
               class={styles.phraseStep}
@@ -1611,6 +1653,34 @@ export function PianoNightApp(): JSX.Element {
                     ? 'Your system asks for reduced motion, so the trim and panels stay still. The notes keep advancing either way — their descent is how the stage tells you when to play. Choose Stepped if you would rather they move a bar at a time.'
                     : 'Flowing scrolls the notes continuously. Stepped advances them a bar at a time instead.'}
                 </p>
+              </fieldset>
+
+              <fieldset class={styles.stageMotionGroup}>
+                <legend>Falling notes on keys</legend>
+                <div>
+                  <button
+                    type="button"
+                    aria-pressed={controller.showFallingTouches()}
+                    classList={{
+                      [styles.practiceChoiceActive]:
+                        controller.showFallingTouches(),
+                    }}
+                    onClick={() => controller.setShowFallingTouches(true)}
+                  >
+                    Show
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={!controller.showFallingTouches()}
+                    classList={{
+                      [styles.practiceChoiceActive]:
+                        !controller.showFallingTouches(),
+                    }}
+                    onClick={() => controller.setShowFallingTouches(false)}
+                  >
+                    Hide
+                  </button>
+                </div>
               </fieldset>
 
               <fieldset class={styles.practiceSpeedGroup}>

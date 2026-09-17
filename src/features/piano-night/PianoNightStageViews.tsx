@@ -14,6 +14,7 @@ import { keyCenterPercent } from './piano-key-window'
 import type { PianoNightPhrase } from './piano-night-demo-project'
 import type { PianoNightStageMotion } from './piano-night-fall-geometry'
 import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT, pianoNightFallAnchorBeat, pianoNightFallGeometry, pianoNightFallStaticBottomPercent, pianoNightFallTrackTranslationPercent, pianoNightFallVisualBeat, pianoNightFallWindow, } from './piano-night-fall-geometry'
+import type { PianoNightPracticeLoopState } from './piano-night-practice-loop'
 import styles from './PianoNightApp.module.css'
 
 export type PianoNightPerformanceView = 'fall' | 'score' | 'keys'
@@ -42,6 +43,10 @@ interface PianoNightStageViewsProps {
    * "does not move" -- see pianoNightFallVisualBeat.
    */
   stageMotion: Accessor<PianoNightStageMotion>
+  practiceLoop?: Accessor<PianoNightPracticeLoopState>
+  onScrub?: (deltaBeats: number) => void
+  setPracticeLoopStart?: (beat: number) => void
+  setPracticeLoopEnd?: (beat: number) => void
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -93,11 +98,47 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
     return `${upcoming.length} project notes around beat ${semanticBeat()}. Square cyan notes mark the lower register and rounded coral notes mark the upper register.`
   })
 
+  let containerRef!: HTMLElement
+  let dragStartY = 0
+  let isDragging = false
+
+  const onPointerDown = (e: PointerEvent) => {
+    isDragging = true
+    dragStartY = e.clientY
+    containerRef.setPointerCapture(e.pointerId)
+  }
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (!isDragging) return
+    const deltaY = e.clientY - dragStartY
+    dragStartY = e.clientY
+
+    const containerHeight = containerRef.clientHeight || 1
+    const pixelsPerBeat =
+      (containerHeight / 100) * PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT
+
+    const deltaBeat = deltaY / pixelsPerBeat
+    if (props.onScrub) props.onScrub(-deltaBeat)
+  }
+
+  const onPointerUp = (e: PointerEvent) => {
+    isDragging = false
+    if (containerRef.hasPointerCapture(e.pointerId)) {
+      containerRef.releasePointerCapture(e.pointerId)
+    }
+  }
+
   return (
     <section
+      ref={containerRef}
       class={styles.fallStage}
       aria-label="Falling-note performance"
       data-testid="piano-night-fall-view"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onLostPointerCapture={onPointerUp}
     >
       <div class={styles.laneGuides} aria-hidden="true">
         <For each={Array.from({ length: 12 })}>{() => <i />}</For>
@@ -160,6 +201,27 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
             )
           }}
         </For>
+        <Show
+          when={
+            props.practiceLoop?.()?.enabled === true &&
+            props.practiceLoop?.()?.range !== null
+          }
+        >
+          <PracticeMarker
+            type="A"
+            beat={props.practiceLoop!().range!.startBeat}
+            anchor={anchorBeat()}
+            setBeat={props.setPracticeLoopStart}
+            container={containerRef}
+          />
+          <PracticeMarker
+            type="B"
+            beat={props.practiceLoop!().range!.endBeat}
+            anchor={anchorBeat()}
+            setBeat={props.setPracticeLoopEnd}
+            container={containerRef}
+          />
+        </Show>
       </div>
       <span class={styles.projectLabel}>
         {props.hasAuthoredCoach()
@@ -353,5 +415,64 @@ export function PianoNightStageViews(
         <PianoNightKeysView {...props} />
       </Show>
     </>
+  )
+}
+
+function PracticeMarker(props: {
+  type: 'A' | 'B'
+  beat: number
+  anchor: number
+  setBeat?: (beat: number) => void
+  container: HTMLElement
+}) {
+  let isDragging = false
+  let dragStartY = 0
+  let markerRef!: HTMLDivElement
+
+  const onPointerDown = (e: PointerEvent) => {
+    e.stopPropagation()
+    isDragging = true
+    dragStartY = e.clientY
+    markerRef.setPointerCapture(e.pointerId)
+  }
+
+  const onPointerMove = (e: PointerEvent) => {
+    e.stopPropagation()
+    if (!isDragging) return
+    const deltaY = e.clientY - dragStartY
+    dragStartY = e.clientY
+
+    const containerHeight = props.container?.clientHeight || 1
+    const pixelsPerBeat =
+      (containerHeight / 100) * PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT
+
+    const deltaBeat = deltaY / pixelsPerBeat
+    if (props.setBeat) props.setBeat(props.beat - deltaBeat)
+  }
+
+  const onPointerUp = (e: PointerEvent) => {
+    e.stopPropagation()
+    isDragging = false
+    if (markerRef.hasPointerCapture(e.pointerId)) {
+      markerRef.releasePointerCapture(e.pointerId)
+    }
+  }
+
+  return (
+    <div
+      ref={markerRef}
+      class={styles.practiceMarker}
+      data-type={props.type}
+      style={{
+        bottom: `${pianoNightFallStaticBottomPercent(props.beat, props.anchor)}%`,
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onLostPointerCapture={onPointerUp}
+    >
+      <span>{props.type}</span>
+    </div>
   )
 }
