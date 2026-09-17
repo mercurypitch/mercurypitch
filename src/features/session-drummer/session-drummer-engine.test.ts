@@ -31,7 +31,9 @@ function fixture() {
     activate: vi.fn(async () => true),
     setKit: vi.fn(),
     trigger: vi.fn(
-      (_hit: Parameters<GuitarRoomDrumPlayerPort['trigger']>[0]) =>
+      (
+        _hit: Parameters<GuitarRoomDrumPlayerPort['trigger']>[0],
+      ): ReturnType<GuitarRoomDrumPlayerPort['trigger']> =>
         'synthesized' as const,
     ),
     panic: vi.fn(),
@@ -39,11 +41,13 @@ function fixture() {
   } satisfies GuitarRoomDrumPlayerPort
   const onBar = vi.fn()
   const onApplied = vi.fn()
+  const onHit = vi.fn()
   const engine = createSessionDrummerEngine({
     activateGraph: async () => graph,
     createPlayer: () => player,
     onBar,
     onApplied,
+    onHit,
   })
   const window = (
     beat: number,
@@ -65,6 +69,7 @@ function fixture() {
     node,
     onBar,
     onApplied,
+    onHit,
     window,
   }
 }
@@ -100,6 +105,24 @@ describe('session drummer clock ownership', () => {
     await vi.advanceTimersByTimeAsync(80)
     expect(f.node.disconnect).toHaveBeenCalledOnce()
     expect(vi.getTimerCount()).toBe(0)
+  })
+  it('reports only hits accepted by the audible player with their exact scheduled identity', async () => {
+    const f = fixture()
+    await f.engine.start(DEFAULT_DRUMMER_SETTINGS, true)
+    f.engine.accept(f.window(0, 0.2))
+    const first = f.player.trigger.mock.calls[0]![0]
+    expect(f.onHit).toHaveBeenCalledWith({
+      contextTime: first.atContextTime,
+      gmKey: first.gmKey,
+      velocity: first.velocity,
+      kitId: DEFAULT_DRUMMER_SETTINGS.kitId,
+      level: DEFAULT_DRUMMER_SETTINGS.level,
+    })
+    const accepted = f.onHit.mock.calls.length
+    f.player.trigger.mockReturnValue('dropped')
+    f.engine.accept(f.window(1, 0.7))
+    expect(f.onHit).toHaveBeenCalledTimes(accepted)
+    await f.engine.dispose()
   })
   it('uses exact host times, including fractional seeks, and stays silent through host pauses', async () => {
     const f = fixture()

@@ -309,7 +309,58 @@ describe('explicit guitar recording lifecycle', () => {
     expect(h.stopInput).toHaveBeenCalledOnce()
     expect(h.controller.reviewOpen()).toBe(true)
     expect(mocks.release).toHaveBeenCalledOnce()
-    expect(mocks.finish).toHaveBeenCalledWith(row.id, summary, 240000)
+    expect(mocks.finish).toHaveBeenCalledWith(
+      row.id,
+      summary,
+      240000,
+      undefined,
+    )
+  })
+  it('stores audible drummer hits as a separate track aligned to the dry take', async () => {
+    const h = harness(true)
+    let listener:
+      | ((hit: {
+          contextTime: number
+          gmKey: number
+          velocity: number
+          kitId: string
+          level: number
+        }) => void)
+      | null = null
+    const unsubscribe = vi.fn()
+    h.controller.setDrummerCapture({
+      subscribeHit(next) {
+        listener = next
+        return unsubscribe
+      },
+    })
+    // The beat scheduler may accept the first downbeat just before the audio
+    // worklet acknowledges its start frame. The controller buffers that future
+    // event and later aligns it against the authoritative audio start.
+    listener!({
+      contextTime: 5.1,
+      gmKey: 38,
+      velocity: 116,
+      kitId: 'muldjord',
+      level: 1.15,
+    })
+    await h.controller.start()
+    await h.controller.stop()
+    const track = mocks.finish.mock.calls[0]![3]
+    expect(track).toEqual({
+      version: 1,
+      hits: [
+        {
+          offsetSeconds: expect.closeTo(0.1, 8),
+          gmKey: 38,
+          velocity: 116,
+          kitId: 'muldjord',
+          level: 1.15,
+        },
+      ],
+    })
+    h.dispose()
+    expect(unsubscribe).toHaveBeenCalledOnce()
   })
   it('never starts or releases already-open Listening/monitoring on Stop recording', async () => {
     const h = harness(true)

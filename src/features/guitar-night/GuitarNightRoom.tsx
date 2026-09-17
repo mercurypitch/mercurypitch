@@ -286,7 +286,11 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
       const graph = transport.getAudioGraph()
       return graph === null
         ? null
-        : { context: graph.context, destination: graph.buses.guide }
+        : {
+            context: graph.context,
+            destination: graph.buses.guide,
+            drumsDestination: graph.buses.drums,
+          }
     },
     beforePlay: () => {
       props.transport.pause()
@@ -380,6 +384,7 @@ export function GuitarNightRoom(props: GuitarNightRoomProps) {
     blocked: () =>
       props.suspended?.() === true || tunerOpen() || isCalibrating(),
   })
+  recorder.setDrummerCapture(drummer)
   const removeMelody = (id: string) =>
     props.backing === null ? freeForm.remove(id) : recorder.remove(id)
   useGuitarNightTakeKeepPrompt({

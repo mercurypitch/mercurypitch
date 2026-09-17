@@ -16,7 +16,13 @@ import type { DrumVoiceId } from '@/lib/drum-voices'
 import { fnv1a32, mulberry32 } from '../audio/drum-sample-select'
 import generatedProfiles from './groove-profiles.generated.json'
 
-export type HumanizeStyle = 'electronic' | 'funk' | 'jazz' | 'latin' | 'rock'
+export type HumanizeStyle =
+  | 'blues'
+  | 'electronic'
+  | 'funk'
+  | 'jazz'
+  | 'latin'
+  | 'rock'
 
 export interface HumanizeOptions {
   readonly style: HumanizeStyle
@@ -83,6 +89,20 @@ interface HumanizeStyleProfile {
 export const HUMANIZE_STYLE_PROFILES: Readonly<
   Record<HumanizeStyle, HumanizeStyleProfile>
 > = Object.freeze({
+  blues: Object.freeze({
+    swingLevel: 'eighth',
+    swingRatio: 1,
+    feelBiasMs: Object.freeze({ kick: 0, snare: 5, hat: 2, other: 0 }),
+    timingSdMs: Object.freeze({ kick: 6, snare: 5, hat: 6, other: 7 }),
+    driftRmsMs: 5,
+    driftCapMs: 12,
+    velocitySd: 9,
+    accent: { down: 1, eighthOff: 0.82, sixteenthOff: 0.7 },
+    flamProb: 0.015,
+    ghostProb: 0.18,
+    earlyCapMs: 12,
+    lateCapMs: 18,
+  }),
   rock: Object.freeze({
     swingLevel: 'none',
     swingRatio: 1,

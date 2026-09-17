@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { createGuitarRecordingAnalysis } from '@/lib/guitar/recording-analysis'
 import { acceptRecordingScoreRevision, createRecordingScore, } from '@/lib/guitar/recording-score'
-import type { GuitarRecording } from '@/lib/guitar/recording-types'
+import type { GuitarRecording, GuitarRecordingDrumTrack, } from '@/lib/guitar/recording-types'
 import { DexieAdapter } from '../adapters/dexie-adapter'
 import { CLOUD_ENTITIES } from '../adapters/hybrid-adapter'
 import type { VoiceTakeAudioRecord, VoiceTakeRecord } from '../entities'
@@ -54,7 +54,9 @@ describe('local guitar recordings', () => {
     await db.destroy()
     vi.unstubAllGlobals()
   })
-  const capture = async (): Promise<void> => {
+  const capture = async (
+    drumTrack?: GuitarRecordingDrumTrack,
+  ): Promise<void> => {
     await store.begin(row())
     const analysis = createGuitarRecordingAnalysis('idea', 48000)
     const pcm = new Float32Array(8192).fill(0.25)
@@ -63,6 +65,7 @@ describe('local guitar recordings', () => {
       'idea',
       { ...analysis.finish(), clockAnomalies: 0, interruption: null },
       54321,
+      drumTrack,
     )
   }
   it('reloads exactly the recorded duration and dry audio without any song or grade', async () => {
@@ -94,6 +97,52 @@ describe('local guitar recordings', () => {
     expect(chunkReads).not.toHaveBeenCalled()
     reads.mockRestore()
     chunkReads.mockRestore()
+  })
+  it('round-trips a separate drummer track without changing dry PCM', async () => {
+    const drumTrack: GuitarRecordingDrumTrack = {
+      version: 1,
+      hits: [
+        {
+          offsetSeconds: 0.05,
+          gmKey: 36,
+          velocity: 118,
+          kitId: 'muldjord',
+          level: 1.1,
+        },
+      ],
+    }
+    await capture(drumTrack)
+    const reopened = await store.load('idea')
+    expect(reopened.drumTrack).toEqual(drumTrack)
+    expect(reopened.blob?.size).toBe(44 + 8192 * 2)
+  })
+  it('rejects damaged or out-of-range drummer evidence atomically', async () => {
+    await store.begin(row())
+    await expect(
+      store.finish(
+        'idea',
+        {
+          frames: 4800,
+          notes: [],
+          clockAnomalies: 0,
+          interruption: null,
+        },
+        0,
+        {
+          version: 1,
+          hits: [
+            {
+              offsetSeconds: 2,
+              gmKey: 38,
+              velocity: 100,
+              kitId: 'crocell',
+              level: 1,
+            },
+          ],
+        },
+      ),
+    ).rejects.toThrow('damaged drummer track')
+    expect((await store.read('idea')).state).toBe('capturing')
   })
   it('does not claim zero heard notes for a draft that still needs recovery', async () => {
     await store.begin(row())

@@ -5,6 +5,7 @@ import { createLazyGuitarRoomDrumPlayer } from '@/features/guitar/backing/guitar
 import type { GuitarSessionAudioGraph } from '@/features/guitar/backing/guitar-session-audio-graph'
 import { setGuitarSessionGainTarget } from '@/features/guitar/backing/guitar-session-audio-graph'
 import { drumVoiceForMidi } from '@/lib/drum-voice-map'
+import type { GuitarDrummerPerformanceHit } from '@/lib/guitar/recording-types'
 import type { SessionBeatEvent, SessionBeatWindow, } from '@/lib/session-beat-clock'
 import type { SessionDrummerSettings } from './session-drummer-pattern'
 import { arrangeDrummerPhrase, drummerPattern } from './session-drummer-pattern'
@@ -13,6 +14,7 @@ export interface SessionDrummerEngineOptions {
   activateGraph(): Promise<GuitarSessionAudioGraph | null>
   onBar(bar: number): void
   onApplied(settings: SessionDrummerSettings): void
+  onHit?(hit: GuitarDrummerPerformanceHit): void
   createPlayer?: typeof createLazyGuitarRoomDrumPlayer
 }
 
@@ -102,13 +104,22 @@ export function createSessionDrummerEngine(
       const at = window.timeAtBeat(hit.beat) + shaped[index].timeOffsetMs / 1000
       // Never backfill after a suspended tab or stalled scheduler.
       if (at < graph!.context.currentTime - 0.015) return
-      player!.trigger({
+      const scheduledAt = Math.max(graph!.context.currentTime, at)
+      const outcome = player!.trigger({
         gmKey: hit.gmKey,
         velocity: shaped[index].velocity,
-        atContextTime: Math.max(graph!.context.currentTime, at),
+        atContextTime: scheduledAt,
         lane: 'authored',
         sourceId: `session-drummer:${generation}:${window.iteration}:${hit.beat}:${hit.gmKey}`,
       })
+      if (outcome !== 'dropped' && outcome !== 'unmapped')
+        options.onHit?.({
+          contextTime: scheduledAt,
+          gmKey: hit.gmKey,
+          velocity: shaped[index].velocity,
+          kitId: config.kitId,
+          level: config.level,
+        })
     })
     const operation = generation
     const timer = setTimeout(

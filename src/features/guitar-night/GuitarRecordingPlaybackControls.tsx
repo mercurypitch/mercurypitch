@@ -1,6 +1,6 @@
 // Recording and note auditions share tactile source/tone menus and one playback owner.
 import { Show } from 'solid-js'
-import { CheckSmall as Check, Headphones, MusicNote, Pause, Play, PowerSymbol as Power, Square, } from '@/components/icons'
+import { CheckSmall as Check, Drum, Headphones, MusicNote, Pause, Play, PowerSymbol as Power, Square, VolumeX, } from '@/components/icons'
 import type { OverflowMenuItem } from '@/components/OverflowMenu'
 import { OverflowMenu } from '@/components/OverflowMenu'
 import type { GuitarRecordingPlaybackTone } from '@/lib/guitar/recording-playback'
@@ -213,6 +213,33 @@ export function GuitarRecordingPlaybackControls(props: {
             </button>
           </div>
         </Show>
+        <Show when={props.playback.drumTrackAvailable()}>
+          <button
+            type="button"
+            class={styles.drumsToggle}
+            data-muted={props.playback.drumsMuted()}
+            aria-pressed={!props.playback.drumsMuted()}
+            aria-label={
+              props.playback.drumsMuted()
+                ? 'Hear recorded drums'
+                : 'Mute recorded drums'
+            }
+            title={
+              props.playback.drumsMuted()
+                ? 'Hear the separate drummer track'
+                : 'Mute the separate drummer track'
+            }
+            disabled={props.disabled === true}
+            onClick={() =>
+              props.playback.setDrumsMuted(!props.playback.drumsMuted())
+            }
+          >
+            <Show when={props.playback.drumsMuted()} fallback={<Drum />}>
+              <VolumeX />
+            </Show>
+            <span>Drums</span>
+          </button>
+        </Show>
         <GuitarRecordingToneMenu
           playback={props.playback}
           disabled={props.disabled}
@@ -231,6 +258,30 @@ export function GuitarRecordingPlaybackControls(props: {
                 ? 'Bypass removes the app’s processing, not any sound already recorded from external gear.'
                 : 'Current amp follows Session’s Amp on/off, drive, tone and cabinet controls.'}
           </p>
+          <Show when={props.playback.drumTrackAvailable()}>
+            <div class={styles.drumLevel}>
+              <div class={styles.drumLevelHeading}>
+                Recorded drums
+                <output>{Math.round(props.playback.drumLevel() * 100)}%</output>
+              </div>
+              <input
+                aria-label="Recorded drums level"
+                type="range"
+                min="0"
+                max="2"
+                step="0.05"
+                value={props.playback.drumLevel()}
+                disabled={props.disabled === true}
+                onInput={(event) =>
+                  props.playback.setDrumLevel(Number(event.currentTarget.value))
+                }
+              />
+            </div>
+            <p>
+              The drummer is a separate track. Its mute and level do not change
+              the dry guitar recording.
+            </p>
+          </Show>
         </details>
       </Show>
       <Show when={!props.playback.sourceAvailable('recording')}>

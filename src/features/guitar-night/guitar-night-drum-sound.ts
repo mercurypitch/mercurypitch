@@ -72,7 +72,9 @@ export const DEFAULT_GUITAR_NIGHT_DRUM_SOUND: GuitarNightDrumSoundPreference =
     feelId: 'straight',
   })
 
-function isGuitarNightDrumKitId(value: unknown): value is GuitarNightDrumKitId {
+export function isGuitarNightDrumKitId(
+  value: unknown,
+): value is GuitarNightDrumKitId {
   return (
     typeof value === 'string' &&
     GUITAR_NIGHT_DRUM_KIT_IDS.includes(value as GuitarNightDrumKitId)

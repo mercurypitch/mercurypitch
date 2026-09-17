@@ -47,6 +47,29 @@ export interface GuitarRecordedNote {
   onset: 'attack' | 'pitch-change'
 }
 
+/** One audible Session Drummer hit on the room AudioContext timeline. */
+export interface GuitarDrummerPerformanceHit {
+  contextTime: number
+  gmKey: number
+  velocity: number
+  kitId: string
+  level: number
+}
+
+/** One independently replayable drummer hit, timed from the dry take start. */
+export interface GuitarRecordedDrumHit {
+  offsetSeconds: number
+  gmKey: number
+  velocity: number
+  kitId: string
+  level: number
+}
+
+export interface GuitarRecordingDrumTrack {
+  version: 1
+  hits: GuitarRecordedDrumHit[]
+}
+
 /** Ephemeral ordered delta, never proof that its audio/evidence are durable. */
 export interface GuitarRecordingPreview {
   sequence: number
@@ -77,6 +100,8 @@ export interface GuitarRecordingChunk {
   editableScore?: GuitarPracticeScore
   /** One explicit refinement undo, separate from immutable evidence/revisions. */
   refinementBackup?: GuitarRefinementBackup
+  /** Separate musical accompaniment; never mixed into the captured DI PCM. */
+  drumTrack?: GuitarRecordingDrumTrack
 }
 
 export interface GuitarRecordingBacking {
