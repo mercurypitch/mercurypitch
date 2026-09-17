@@ -196,10 +196,12 @@ test('opens a silent drummer, scrolls its wheels and keeps choices across reload
   await expect(genre.getByRole('option', { selected: true })).toHaveText('Rock')
   await genre.hover()
   await page.mouse.wheel(0, 110)
-  await expect(genre.getByRole('option', { selected: true })).toHaveText('Funk')
+  await expect(genre.getByRole('option', { selected: true })).toHaveText(
+    'Blues',
+  )
   await genre.focus()
   await page.keyboard.press('ArrowDown')
-  await expect(genre.getByRole('option', { selected: true })).toHaveText('Jazz')
+  await expect(genre.getByRole('option', { selected: true })).toHaveText('Funk')
   const wheelBox = (await genre.boundingBox())!
   await page.mouse.move(wheelBox.x + wheelBox.width / 2, wheelBox.y + 65)
   await page.mouse.down()
@@ -207,6 +209,10 @@ test('opens a silent drummer, scrolls its wheels and keeps choices across reload
     steps: 8,
   })
   await page.mouse.up()
+  await expect(genre.getByRole('option', { selected: true })).toHaveText(
+    'Blues',
+  )
+  await genre.press('ArrowDown')
   await expect(genre.getByRole('option', { selected: true })).toHaveText('Funk')
   await genre.press('ArrowDown')
   await expect(genre.getByRole('option', { selected: true })).toHaveText('Jazz')

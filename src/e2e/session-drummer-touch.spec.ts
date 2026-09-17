@@ -37,6 +37,10 @@ for (const width of [390, 820]) {
       touchPoints: [],
     })
     await expect(genre.getByRole('option', { selected: true })).toHaveText(
+      'Blues',
+    )
+    await genre.getByRole('option', { name: 'Funk', exact: true }).tap()
+    await expect(genre.getByRole('option', { selected: true })).toHaveText(
       'Funk',
     )
     await genre.getByRole('option', { name: 'Jazz', exact: true }).tap()

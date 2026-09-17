@@ -24,6 +24,13 @@ export function DrummerWheel(props: {
   let dragged = false
   let lastWheel = -Infinity
   const [offset, setOffset] = createSignal(0)
+  const resetNativeScroll = () => {
+    // The wheel positions options with a transform. A focused option whose
+    // untransformed box sits below the viewport must not make overflow:hidden
+    // add a second, invisible scroll offset.
+    if (viewport.scrollTop !== 0) viewport.scrollTop = 0
+    if (viewport.scrollLeft !== 0) viewport.scrollLeft = 0
+  }
   const index = () =>
     Math.max(
       0,
@@ -44,7 +51,11 @@ export function DrummerWheel(props: {
       select(index() + Math.sign(event.deltaY))
     }
     viewport.addEventListener('wheel', scroll, { passive: false })
-    onCleanup(() => viewport.removeEventListener('wheel', scroll))
+    viewport.addEventListener('scroll', resetNativeScroll, { passive: true })
+    onCleanup(() => {
+      viewport.removeEventListener('wheel', scroll)
+      viewport.removeEventListener('scroll', resetNativeScroll)
+    })
   })
   const finish = (cancel = false, tapped: number | null = null) => {
     if (!origin) return
@@ -52,6 +63,7 @@ export function DrummerWheel(props: {
     else if (!cancel && tapped !== null) select(tapped)
     origin = null
     setOffset(0)
+    resetNativeScroll()
   }
   return (
     <div class={styles.wheelColumn}>
@@ -151,6 +163,8 @@ export function DrummerWheel(props: {
                 onClick={(event) => {
                   if (!dragged || event.detail === 0) select(optionIndex())
                   dragged = false
+                  viewport.focus({ preventScroll: true })
+                  resetNativeScroll()
                 }}
               >
                 {option.label}
