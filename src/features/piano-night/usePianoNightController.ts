@@ -46,6 +46,9 @@ const INSTRUMENT_STORAGE_KEY = 'pitchperfect_piano_night_instrument'
 const SOUND_CHARACTER_STORAGE_KEY = 'pitchperfect_piano_night_character'
 const SOUND_AMBIENCE_STORAGE_KEY = 'pitchperfect_piano_night_ambience'
 const STAGE_MOTION_STORAGE_KEY = 'pitchperfect_piano_night_stage_motion'
+const SHOW_FALLING_TOUCHES_STORAGE_KEY =
+  'pitchperfect_piano_night_show_falling_touches'
+const COUNT_IN_STORAGE_KEY = 'pitchperfect_piano_night_count_in'
 const PERFORMANCE_TAKE_START_BEAT_EPSILON = 0.001
 
 export type PianoNightSoundLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -328,6 +331,14 @@ export function usePianoNightController() {
       'flowing',
       { validator: isPianoNightStageMotion },
     )
+  const [countInBeats, setCountInBeats] = createPersistedSignal<number>(
+    COUNT_IN_STORAGE_KEY,
+    4,
+  )
+  const [showFallingTouches, setShowFallingTouches] =
+    createPersistedSignal<boolean>(SHOW_FALLING_TOUCHES_STORAGE_KEY, true)
+  const [countInRemaining, setCountInRemaining] = createSignal(0)
+  const isCountingIn = createMemo(() => countInRemaining() > 0)
   const [scoringState, setScoringState] =
     createSignal<PianoPerformanceScoringState>(scoring.snapshot())
   const [statusMessage, setStatusMessage] = createSignal(
@@ -481,16 +492,24 @@ export function usePianoNightController() {
     return true
   }
 
+  const inputMidis = createMemo<ReadonlySet<number>>(() => {
+    return new Set(inputSnapshot().soundingNotes.map((voice) => voice.midi))
+  })
+
+  const projectMidis = createMemo<ReadonlySet<number>>(() => {
+    const active = new Set<number>()
+    if (transport.phase() === 'playing') {
+      for (const midiNote of projectActiveMidis().atBeat(playheadBeat())) {
+        active.add(midiNote)
+      }
+    }
+    return active
+  })
+
   const activeMidis = createMemo<ReadonlySet<number>>(
     () => {
-      const active = new Set(
-        inputSnapshot().soundingNotes.map((voice) => voice.midi),
-      )
-      if (transport.phase() === 'playing') {
-        for (const midiNote of projectActiveMidis().atBeat(playheadBeat())) {
-          active.add(midiNote)
-        }
-      }
+      const active = new Set(inputMidis())
+      for (const midiNote of projectMidis()) active.add(midiNote)
       return active
     },
     new Set<number>(),
@@ -1332,6 +1351,38 @@ export function usePianoNightController() {
       // later rolling batches.
       prepareCurrentSampleWindow(0)
     }
+
+    const countBeats = countInBeats()
+    if (previousPhase !== 'playing' && countBeats > 0) {
+      const beatMs = (60 / transport.timeline.tempoBpm()) * 1000
+      let currentCountBeat = countBeats
+      while (currentCountBeat > 0) {
+        if (disposed || commandGeneration !== generation) {
+          setCountInRemaining(0)
+          return false
+        }
+        const ctx = transport.getAudioContext()
+        if (ctx) {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.type = 'sine'
+          osc.frequency.value = currentCountBeat === countBeats ? 880 : 440
+          gain.gain.setValueAtTime(0.5, ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.start(ctx.currentTime)
+          osc.stop(ctx.currentTime + 0.1)
+        }
+        setCountInRemaining(currentCountBeat)
+        setPlayheadBeat(expectedStartBeat - currentCountBeat)
+        await new Promise((resolve) => window.setTimeout(resolve, beatMs))
+        currentCountBeat--
+      }
+      setCountInRemaining(0)
+      if (disposed || commandGeneration !== generation) return false
+    }
+
     const started = await transport.play()
     if (disposed || generation !== commandGeneration) return false
     syncTransport()
@@ -1701,7 +1752,10 @@ export function usePianoNightController() {
     arrangement,
     transport,
     playheadBeat,
+    setPlayheadBeat,
     activeMidis,
+    inputMidis,
+    projectMidis,
     inputSnapshot,
     midiSnapshot,
     observedPedals,
@@ -1728,6 +1782,14 @@ export function usePianoNightController() {
     performanceTakeMessage: performanceTake.message,
     keepPerformanceTake,
     discardPerformanceTake,
+    toggleStageMotion: () =>
+      setStageMotion((prev) => (prev === 'flowing' ? 'stepped' : 'flowing')),
+    countInBeats,
+    setCountInBeats,
+    countInRemaining,
+    isCountingIn,
+    showFallingTouches,
+    setShowFallingTouches,
     play,
     pause,
     stop,

@@ -19,7 +19,9 @@ interface PianoKeyHorizonProps {
    * to draw its notes over exactly these keys.
    */
   keyWindow: PianoKeyWindowController
-  activeMidis: Accessor<ReadonlySet<number>>
+  inputMidis: Accessor<ReadonlySet<number>>
+  projectMidis: Accessor<ReadonlySet<number>>
+  hideProjectKeys: Accessor<boolean>
   onPointerDown: (event: PointerEvent, midi: number) => void
   onPointerMove: (event: PointerEvent) => void
   onPointerRelease: (event: PointerEvent) => void
@@ -138,50 +140,70 @@ export function PianoKeyHorizon(props: PianoKeyHorizonProps): JSX.Element {
       >
         <div class={styles.whiteKeys}>
           <For each={WHITE_KEYS}>
-            {(key) => (
-              <button
-                type="button"
-                data-midi={key.midi}
-                data-in-range={inRange(key.midi)}
-                data-sharp-right={hasSharpToTheRight(key.midi)}
-                classList={{
-                  [styles.keyActive]: props.activeMidis().has(key.midi),
-                }}
-                aria-label={`Play ${midiToNoteNameOctave(key.midi)}`}
-                aria-pressed={props.activeMidis().has(key.midi)}
-                tabindex={focusedMidi() === key.midi ? 0 : -1}
-                onFocus={() => setFocusedMidi(key.midi)}
-                onKeyDown={(event) => onKeyDown(event, key.midi)}
-                onClick={(event) => {
-                  if (event.detail === 0) props.onKeyboardActivate(key.midi)
-                }}
-                onPointerDown={(event) => props.onPointerDown(event, key.midi)}
-              />
-            )}
+            {(key) => {
+              const pressed =
+                props.inputMidis().has(key.midi) ||
+                (!props.hideProjectKeys() && props.projectMidis().has(key.midi))
+              return (
+                <button
+                  type="button"
+                  data-midi={key.midi}
+                  data-in-range={inRange(key.midi)}
+                  data-sharp-right={hasSharpToTheRight(key.midi)}
+                  classList={{
+                    [styles.keyActive]:
+                      !props.hideProjectKeys() &&
+                      props.projectMidis().has(key.midi),
+                    [styles.keyActiveInput]: props.inputMidis().has(key.midi),
+                  }}
+                  aria-label={`Play ${midiToNoteNameOctave(key.midi)}`}
+                  aria-pressed={pressed}
+                  tabindex={focusedMidi() === key.midi ? 0 : -1}
+                  onFocus={() => setFocusedMidi(key.midi)}
+                  onKeyDown={(event) => onKeyDown(event, key.midi)}
+                  onClick={(event) => {
+                    if (event.detail === 0) props.onKeyboardActivate(key.midi)
+                  }}
+                  onPointerDown={(event) =>
+                    props.onPointerDown(event, key.midi)
+                  }
+                />
+              )
+            }}
           </For>
         </div>
         <div class={styles.blackKeys}>
           <For each={BLACK_KEYS}>
-            {(key) => (
-              <button
-                type="button"
-                data-midi={key.midi}
-                data-in-range={inRange(key.midi)}
-                classList={{
-                  [styles.keyActive]: props.activeMidis().has(key.midi),
-                }}
-                style={{ left: keyLeft(key) }}
-                aria-label={`Play ${midiToNoteNameOctave(key.midi)}`}
-                aria-pressed={props.activeMidis().has(key.midi)}
-                tabindex={focusedMidi() === key.midi ? 0 : -1}
-                onFocus={() => setFocusedMidi(key.midi)}
-                onKeyDown={(event) => onKeyDown(event, key.midi)}
-                onClick={(event) => {
-                  if (event.detail === 0) props.onKeyboardActivate(key.midi)
-                }}
-                onPointerDown={(event) => props.onPointerDown(event, key.midi)}
-              />
-            )}
+            {(key) => {
+              const pressed =
+                props.inputMidis().has(key.midi) ||
+                (!props.hideProjectKeys() && props.projectMidis().has(key.midi))
+              return (
+                <button
+                  type="button"
+                  data-midi={key.midi}
+                  data-in-range={inRange(key.midi)}
+                  classList={{
+                    [styles.keyActive]:
+                      !props.hideProjectKeys() &&
+                      props.projectMidis().has(key.midi),
+                    [styles.keyActiveInput]: props.inputMidis().has(key.midi),
+                  }}
+                  style={{ left: keyLeft(key) }}
+                  aria-label={`Play ${midiToNoteNameOctave(key.midi)}`}
+                  aria-pressed={pressed}
+                  tabindex={focusedMidi() === key.midi ? 0 : -1}
+                  onFocus={() => setFocusedMidi(key.midi)}
+                  onKeyDown={(event) => onKeyDown(event, key.midi)}
+                  onClick={(event) => {
+                    if (event.detail === 0) props.onKeyboardActivate(key.midi)
+                  }}
+                  onPointerDown={(event) =>
+                    props.onPointerDown(event, key.midi)
+                  }
+                />
+              )
+            }}
           </For>
         </div>
       </div>
