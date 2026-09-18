@@ -9,6 +9,101 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.8] - 2026-09-18
+
+The Product Hunt launch release. Everything merged after 0.9.7 on 2026-09-10
+ships here: the promo code, the native app foundation (which the web build
+carries as shared packages), and a release audit that reworked what the
+lower-tier agent's PRs claimed and did not do. Beside Cue changes in the same
+window ship on their own `bc-v*` tag and are not listed.
+
+### Promo codes (#808, #811, #815)
+
+- `POST /api/billing/promo/redeem`, `promoCodes` + `promoRedemptions`
+  (migration `0045`), `PRODUCT_HUNT` seeded at 5 credits, cap 1000. The client
+  has a `PromoCodeCard` under Settings > Credits and a header pill.
+- #811 fixed the client sending `[object Promise]` as the bearer token.
+- The audit (#815) found the grant was three separate statements although
+  the PR body said "atomically": a failure between them left a redemption
+  the user was then told they had already made, with no credits. It is one
+  D1 batch now; the cap is claimed by the slot INSERT itself so two callers
+  racing for the last slot cannot both land; the ledger row can only exist
+  with its slot. `promoRedemptions` joined `USER_OWNED_TABLES`. The lifecycle
+  tests redeemed the seeded row and would have gone red the day it expired;
+  they own a test code now and check the seeded window under a fixed clock.
+  Migration `0046` moves the expiry from 2026-09-22T23:59:59Z (16:59 Pacific
+  on launch day) to 2026-09-30T23:59:59Z; the client reads the same date from
+  `launch-promo.ts` and a test keeps the two in step, so the pill and the
+  one-click card go away when the campaign does.
+
+### Guitar Night (#805, #810, #817)
+
+- #805 Walnut Studio session drummer: `src/features/session-drummer/`, a
+  lookahead scheduler on the audio clock, next-bar changes, three blues
+  grooves, the recorded drum lane as an optional `drumTrack` on the ending
+  chunk (no Dexie version bump), `OfflineAudioContext` mix export.
+- #810 reshaped the take review into Listen / Refine notes / Export.
+- #817, from the audit: `load()` validated the drummer lane the way
+  `finish()` does and threw, taking the irreplaceable dry audio with it —
+  reads now drop a damaged lane and warn; the WAV export carried
+  `aria-label="Export audio mix"` under visible text "Download WAV" (WCAG
+  2.5.3, unreachable by voice) and is named by its label; "bends are not
+  transcribed" was disclosed nowhere after #810 and is back.
+- Known follow-ups, not blocking: the recorded drum lane is stamped in the
+  output clock while the guitar PCM is the input stream, so replay and export
+  put drums ~20–60 ms early on desktop and more on Bluetooth; the picker copy
+  says "16 original grooves" while 19 shipped; the CC BY notice is keyed on
+  two hard-coded kit ids.
+
+### Rooms and drums (#793, #796)
+
+- #793 Muldjord v1 and Crocell v1.1 recorded kits (111 / 107 strikes),
+  authored velocities preserved with -12 dB backing headroom and a -6 dB
+  guide trim on scores with authored percussion, the arrangement player
+  deferred to keep Drum Night's 520,000-byte startup gate.
+- #796 shared in-session music import across Guitar, Drum, Piano and
+  Karaoke Night; queued audio with upfront Local / Cloud preparation choices;
+  the server still owns admission and billing.
+
+### Jam (#816)
+
+- `JamPeerLanes.tsx` anchored its window with `NOW_AT` and `1 - NOW_AT`
+  swapped: `secToX(pos)` landed at 0.25·w while the playhead line and the
+  newest live sample sat at 0.75·w, so the note under the line was the one
+  four seconds ahead (`LEAD_IN_SEC = 4` masked it). The geometry lives in
+  `src/lib/jam/jam-lane-geometry.ts` with a test that failed 6/11 against the
+  old formula. `sessionSongNotes` now prefers `segmentedNotes` with the
+  stored edit layer applied, the melody Karaoke Night draws, instead of the
+  raw merge. Still open: the lane's notes move on `timeupdate` (~4 Hz) while
+  the trail moves per frame, and neither path compensates output latency.
+
+### Compose (#814)
+
+- An imported MIDI's tempo reached the transport but not the melody record,
+  because the live Import button used a callback without a tempo argument
+  while the corrected handler lived in an unused controller. One callback
+  carries the file now (issue #813).
+
+### Auth and native foundation (#773–#797, #788)
+
+- #788: Sign in with Apple end to end (RS256-only JWKS verification with a
+  bounded negative cache), a Google client-id list so a phone's token is
+  accepted, `POST /api/auth/refresh`, the Capacitor origins with an
+  entry-wise Turnstile localhost check. Migration `0043` adds
+  `users.appleRefreshToken`. Follow-up: refresh has no absolute session cap
+  and no rate limit.
+- #773–#797: the Mercury Pitch native app package, `packages/mobile-runtime`,
+  `packages/purchase-kit`, `packages/pitch-engine` (#784: the root app runs
+  the package, not its own detector copy), the native shell and the Sing
+  room. Migration `0044` rebuilds the premium-background tables so the Sing
+  surface passes the CHECK. None of it changes the web app's behaviour.
+
+### Release process
+
+- The Phase 1 audit report and the fixing brief are in
+  `~/agent-out/mercurypitch/2026-09-18/`. Three pending prod migrations ship
+  with the tag: `0043`, `0044`, `0045`, `0046`.
+
 ## [0.9.7] - 2026-09-10
 
 Two rooms per instrument needed a door, a debounce needed a ledger, and three
