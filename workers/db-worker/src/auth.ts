@@ -26,7 +26,7 @@
 import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
-import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, touchSession, } from './auth-sessions'
+import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, sessionRenewable, touchSession, } from './auth-sessions'
 import { sendEmailVerification, sendLoginCode, sendPasswordReset, sendSignupWelcome, } from './email'
 import { shouldTouchLastActive } from './last-active'
 import { claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, } from './login-codes'
@@ -3106,6 +3106,11 @@ async function handleMe(
  * The session id is carried through unchanged. Minting a NEW session here
  * would add a row per foreground and fill the account's device list with
  * entries that all describe the same phone.
+ *
+ * Renewal is not unlimited: past `SESSION_MAX_AGE_DAYS` the session ends here
+ * rather than being handed another thirty days, so the sliding window has an
+ * outer edge. The client treats this 401 the same as any other dead session
+ * and asks for a sign-in.
  */
 async function handleRefresh(
   request: Request,
@@ -3122,6 +3127,13 @@ async function handleRefresh(
   }
   const row = await findUserById(env.DB, auth.userId)
   if (row === null) return respond({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await sessionRenewable(env.DB, auth.sessionId, auth.userId))) {
+    // Ended, not merely refused: leaving the row would keep the token it was
+    // called with working for the rest of its thirty days, which turns a
+    // six-month cap into a seven-month one.
+    await endSession(env.DB, auth.sessionId, auth.userId)
+    return respond({ error: 'Unauthorized' }, { status: 401 })
+  }
   const now = Math.floor(Date.now() / 1000)
   const exp = now + TOKEN_TTL_SECONDS
   const token = await signJwt(

@@ -19,7 +19,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Env } from '../src/auth'
-import { endOtherSessions, sweepExpiredSessions } from '../src/auth-sessions'
+import { endOtherSessions, SESSION_MAX_AGE_DAYS, sweepExpiredSessions, } from '../src/auth-sessions'
 import worker from '../src/index'
 import { applyMigrations, SqliteD1Database } from './sqlite-d1'
 
@@ -446,5 +446,77 @@ describe('deleting the account takes its sessions with it', () => {
     })
     expect(deleted.status).toBe(200)
     expect(sessionRowCount(account.userId)).toBe(0)
+  })
+})
+
+// ── The sliding window needs an outer edge ───────────────────────────
+//
+// `/refresh` hands a live session another thirty days and keeps its `sid`, so
+// a session that is used never expires by itself. Without a cap, a token
+// lifted off a device renews forever and only a sign-out nobody knew to
+// perform, or the account-wide `tokenVersion` bump, ever stops it.
+describe('a session cannot be renewed forever', () => {
+  beforeEach(() => {
+    freshDatabase()
+  })
+
+  /** Move the sign-in itself back, leaving the token and the row otherwise as they are. */
+  function ageSession(userId: string, days: number): void {
+    sqlite
+      .prepare(
+        `UPDATE authSessions SET createdAt = datetime('now', ?) WHERE userId = ?`,
+      )
+      .run(`-${days} days`, userId)
+  }
+
+  it('renews a session that is inside the cap', async () => {
+    const account = await register('renew@example.com')
+    ageSession(account.userId, SESSION_MAX_AGE_DAYS - 1)
+
+    const response = await authed(account.token, '/api/auth/refresh', {
+      method: 'POST',
+      body: '{}',
+    })
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { token: string; expiresAt: string }
+    // Dated from now, so the six-month-old sign-in still has thirty days left.
+    const days = (Date.parse(body.expiresAt) - Date.now()) / 86_400_000
+    expect(days).toBeGreaterThan(29)
+    expect(sessionRowCount(account.userId)).toBe(1)
+    expect(await meStatus(body.token)).toBe(200)
+  })
+
+  it('ends a session that has reached the cap instead of extending it', async () => {
+    const account = await register('expire@example.com')
+    ageSession(account.userId, SESSION_MAX_AGE_DAYS + 1)
+
+    const response = await authed(account.token, '/api/auth/refresh', {
+      method: 'POST',
+      body: '{}',
+    })
+    expect(response.status).toBe(401)
+    // Refusing alone would leave the token it was called with working for the
+    // rest of its thirty days. The row goes, so the token stops verifying now.
+    expect(sessionRowCount(account.userId)).toBe(0)
+    expect(await meStatus(account.token)).toBe(401)
+  })
+
+  it('ends only the session that asked, not the account\'s other devices', async () => {
+    const account = await register('one-device@example.com')
+    const phone = await login('one-device@example.com', 'Mozilla/5.0 (iPhone)')
+    sqlite
+      .prepare(
+        `UPDATE authSessions SET createdAt = datetime('now', ?)
+          WHERE userId = ? AND userAgent LIKE '%iPhone%'`,
+      )
+      .run(`-${SESSION_MAX_AGE_DAYS + 1} days`, account.userId)
+
+    const response = await authed(phone.token, '/api/auth/refresh', {
+      method: 'POST',
+      body: '{}',
+    })
+    expect(response.status).toBe(401)
+    expect(sessionRowCount(account.userId)).toBe(1)
+    expect(await meStatus(account.token)).toBe(200)
   })
 })
