@@ -23,12 +23,11 @@ export interface GuitarRecordingDraft {
 
 const MAX_RECORDED_DRUM_HITS = 50_000
 
-function validateDrumTrack(
-  value: GuitarRecordingDrumTrack | undefined,
+function isDamagedDrumTrack(
+  value: GuitarRecordingDrumTrack,
   durationSeconds: number,
-): void {
-  if (value === undefined) return
-  if (
+): boolean {
+  return (
     value === null ||
     value.version !== 1 ||
     !Array.isArray(value.hits) ||
@@ -56,7 +55,33 @@ function validateDrumTrack(
         hit.level > 2,
     )
   )
+}
+
+/** Writes refuse a damaged drummer lane outright. */
+function validateDrumTrack(
+  value: GuitarRecordingDrumTrack | undefined,
+  durationSeconds: number,
+): void {
+  if (value === undefined) return
+  if (isDamagedDrumTrack(value, durationSeconds))
     throw new Error('This recording has a damaged drummer track.')
+}
+
+/**
+ * Reads keep the take and drop the lane. The dry guitar audio in a take is
+ * irreplaceable; the drummer's accompaniment is a convenience recorded next
+ * to it, and one damaged hit must not make the whole recording unopenable.
+ */
+function loadableDrumTrack(
+  value: GuitarRecordingDrumTrack | undefined,
+  durationSeconds: number,
+): GuitarRecordingDrumTrack | undefined {
+  if (value === undefined) return undefined
+  if (!isDamagedDrumTrack(value, durationSeconds)) return value
+  console.warn(
+    '[guitar-recording] dropped a damaged drummer track so the take still opens',
+  )
+  return undefined
 }
 
 function validateRecording(row: GuitarRecording): void {
@@ -341,8 +366,10 @@ export function createGuitarRecordingStore(
             notes = part.notes
             editableScore = part.editableScore
             refinementBackup = part.refinementBackup
-            validateDrumTrack(part.drumTrack, row.frames / row.sampleRate)
-            drumTrack = part.drumTrack
+            drumTrack = loadableDrumTrack(
+              part.drumTrack,
+              row.frames / row.sampleRate,
+            )
             continue
           }
           if (
