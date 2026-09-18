@@ -63,7 +63,6 @@ function mountController(): ReturnType<typeof usePianoNightController> {
     return null
   }
   render(() => <Harness />)
-  controller.setCountInBeats(0)
   return controller
 }
 

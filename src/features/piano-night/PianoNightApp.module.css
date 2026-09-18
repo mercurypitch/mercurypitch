@@ -564,6 +564,18 @@
 
 .fallStage {
   overflow: hidden;
+  /* The stage is an overlay. Only the scrub surface and the A/B markers take a
+     pointer; everything else here stays transparent to hit testing. */
+  pointer-events: none;
+}
+
+/* The one element that actually scrubs. `touch-action: none` is scoped to it,
+   over the lanes alone, so the rest of the stage keeps native scrolling. */
+.fallScrubSurface {
+  position: absolute;
+  inset: 0 calc(var(--coach-width) + 42px) 0 12%;
+  cursor: ns-resize;
+  pointer-events: auto;
   touch-action: none;
 }
 
@@ -2532,7 +2544,8 @@
     padding-right: 44px;
   }
 
-  .laneGuides {
+  .laneGuides,
+  .fallScrubSurface {
     right: 12%;
   }
 
@@ -2756,7 +2769,8 @@
     font-size: 12px;
   }
 
-  .laneGuides {
+  .laneGuides,
+  .fallScrubSurface {
     inset: 0 6% 0 6%;
   }
 
@@ -3234,6 +3248,8 @@
   position: absolute;
   left: 0;
   right: 0;
+  pointer-events: auto;
+  touch-action: none;
   height: 2px;
   background: var(--coral, #ff7f50);
   z-index: 10;
