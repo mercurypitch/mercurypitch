@@ -3,6 +3,7 @@
 
 import { devices, expect, test } from '@playwright/test'
 import { dismissOverlays } from '@/e2e/helpers/ui'
+import { PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT } from '@/features/piano-night/piano-night-fall-geometry'
 
 const TWO_TRACK_MIDI = Buffer.from([
   0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x02, 0x01,
@@ -747,6 +748,177 @@ test('plays a key and seeks the prepared project with a real pointer @smoke', as
     await page.mouse.up()
   }
   await expect(middleC).toHaveAttribute('aria-pressed', 'false')
+  expect(pageErrors).toEqual([])
+})
+
+/** The beat the seek control reports, read from its accessible value text. */
+async function seekBeat(
+  page: import('@playwright/test').Page,
+): Promise<number> {
+  const valueText = await page
+    .getByRole('slider', { name: 'Seek piano project' })
+    .getAttribute('aria-valuetext')
+  const match = /^Beat (\d+(?:\.\d+)?) of/.exec(valueText ?? '')
+  if (match === null)
+    throw new Error(`Unexpected seek value text: ${valueText}`)
+  return Number(match[1])
+}
+
+/**
+ * Counts how many times a practice range is actually committed, by watching
+ * the A/B band on the session trace: its geometry is rewritten once per
+ * committed range. A per-frame commit shows up once per pointer move, a
+ * buffered drag once for the whole gesture.
+ */
+async function watchLoopCommits(
+  page: import('@playwright/test').Page,
+): Promise<void> {
+  await page.evaluate(() => {
+    const tracked = window as unknown as {
+      __pianoNightLoopCommits: number
+      __pianoNightLoopObserver?: MutationObserver
+    }
+    tracked.__pianoNightLoopCommits = 0
+    // One increment per delivered batch: a single commit rewrites both `left`
+    // and `width`, and each property write is its own mutation record.
+    const observer = new MutationObserver((records) => {
+      const touched = records.some(
+        (record) =>
+          record.target instanceof HTMLElement &&
+          record.target.matches('[data-testid="piano-night-loop-range"]'),
+      )
+      if (touched) tracked.__pianoNightLoopCommits += 1
+    })
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['style'],
+      subtree: true,
+    })
+    tracked.__pianoNightLoopObserver = observer
+  })
+}
+
+function loopCommits(page: import('@playwright/test').Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __pianoNightLoopCommits: number })
+        .__pianoNightLoopCommits,
+  )
+}
+
+test('scrubs the fall stage and drags A/B with a real pointer @smoke', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = []
+  page.on('pageerror', (error) => pageErrors.push(error))
+  await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
+
+  const scrub = page.getByTestId('piano-night-fall-scrub')
+  await expect(scrub).toBeVisible()
+  const stage = await scrub.boundingBox()
+  if (stage === null) throw new Error('Fall scrub surface has no bounding box')
+  const pixelsPerBeat =
+    (stage.height / 100) * PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT
+  const centreX = stage.x + stage.width / 2
+  const centreY = stage.y + stage.height / 2
+
+  expect(await seekBeat(page)).toBe(0)
+
+  // A press that never clears the dead zone is a tap, not a scrub.
+  await page.mouse.move(centreX, centreY)
+  await page.mouse.down()
+  await page.mouse.move(centreX, centreY + 3)
+  await page.mouse.up()
+  expect(await seekBeat(page)).toBe(0)
+
+  // A real drag moves the playhead in proportion to the distance travelled.
+  const travelPixels = Math.round(stage.height * 0.3)
+  await page.mouse.move(centreX, centreY)
+  await page.mouse.down()
+  await page.mouse.move(centreX, centreY + travelPixels, { steps: 12 })
+  await page.mouse.up()
+
+  const expectedBeats = travelPixels / pixelsPerBeat
+  const scrubbedBeat = await seekBeat(page)
+  expect(scrubbedBeat).toBeGreaterThan(expectedBeats * 0.85)
+  expect(scrubbedBeat).toBeLessThan(expectedBeats * 1.15)
+
+  // Half the travel, half the distance — and upward runs the other way.
+  await page.mouse.move(centreX, centreY)
+  await page.mouse.down()
+  await page.mouse.move(centreX, centreY - travelPixels / 2, { steps: 8 })
+  await page.mouse.up()
+  const rewoundBeat = await seekBeat(page)
+  expect(scrubbedBeat - rewoundBeat).toBeGreaterThan(expectedBeats * 0.35)
+  expect(scrubbedBeat - rewoundBeat).toBeLessThan(expectedBeats * 0.65)
+
+  // A/B markers only exist while a practice range does.
+  await page.getByTestId('piano-night-repeat').click()
+  const startMarker = page.locator(
+    '[data-testid="piano-night-loop-marker"][data-type="A"]',
+  )
+  const endMarker = page.locator(
+    '[data-testid="piano-night-loop-marker"][data-type="B"]',
+  )
+  await expect(startMarker).toBeVisible()
+  await expect(endMarker).toBeVisible()
+
+  await watchLoopCommits(page)
+
+  // Drag B down until it nearly meets A. One gesture, one commit.
+  const endBox = await endMarker.boundingBox()
+  if (endBox === null) throw new Error('Practice marker B has no bounding box')
+  const endFromBeat = Number(await endMarker.getAttribute('data-beat'))
+  const endToBeat = 1
+  await page.mouse.move(
+    endBox.x + endBox.width / 2,
+    endBox.y + endBox.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    endBox.x + endBox.width / 2,
+    endBox.y + endBox.height / 2 + (endFromBeat - endToBeat) * pixelsPerBeat,
+    { steps: 14 },
+  )
+  await page.mouse.up()
+
+  await expect
+    .poll(async () => Number(await endMarker.getAttribute('data-beat')))
+    .toBeCloseTo(endToBeat, 1)
+  expect(await loopCommits(page)).toBe(1)
+
+  // Drag A well past B. The range stays valid: A clamps a quarter beat short.
+  const startBox = await startMarker.boundingBox()
+  if (startBox === null) {
+    throw new Error('Practice marker A has no bounding box')
+  }
+  const startX = startBox.x + startBox.width / 2
+  const startY = startBox.y + startBox.height / 2
+  await page.mouse.move(startX, startY)
+  await page.mouse.down()
+  await page.mouse.move(startX, startY - 6 * pixelsPerBeat, { steps: 14 })
+  await expect(startMarker).toHaveAttribute('data-dragging', 'true')
+  // Buffered: the marker follows the pointer, clamped, while nothing commits.
+  await expect(startMarker).toHaveAttribute('data-beat', '0.750')
+  expect(await loopCommits(page)).toBe(1)
+  await page.mouse.up()
+
+  await expect(startMarker).toHaveAttribute('data-dragging', 'false')
+  expect(await loopCommits(page)).toBe(2)
+  await expect(page.getByTestId('piano-night-loop-range')).toBeVisible()
+  await expect(page.getByTestId('piano-night-repeat')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+
+  await page
+    .getByRole('button', { name: 'Open Piano Night settings' })
+    .filter({ visible: true })
+    .click()
+  await expect(page.getByRole('tabpanel', { name: 'Session' })).toContainText(
+    'A 0.8 · B 1.0',
+  )
+
   expect(pageErrors).toEqual([])
 })
 
