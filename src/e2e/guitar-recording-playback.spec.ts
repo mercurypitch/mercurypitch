@@ -724,7 +724,7 @@ test('keeps a recorded Session Drummer lane independently mutable and exports th
   await page.getByTestId('overflow-clean').click()
   const downloading = page.waitForEvent('download')
   await review
-    .getByRole('button', { name: 'Export audio mix', exact: true })
+    .getByRole('button', { name: 'Download WAV', exact: true })
     .click()
   const download = await downloading
   expect(download.suggestedFilename()).toMatch(/^melody-.*\.wav$/)
