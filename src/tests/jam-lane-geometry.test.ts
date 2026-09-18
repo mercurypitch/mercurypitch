@@ -7,13 +7,7 @@
 // the arithmetic lived inside a canvas draw call.
 
 import { describe, expect, it } from 'vitest'
-import {
-  laneSecToX,
-  laneWindow,
-  liveSampleX,
-  NOW_AT,
-  WINDOW_SEC,
-} from '@/lib/jam/jam-lane-geometry'
+import { laneSecToX, laneWindow, liveSampleX, NOW_AT, WINDOW_SEC, } from '@/lib/jam/jam-lane-geometry'
 
 describe('laneWindow', () => {
   it('puts NOW_AT of the window behind the playhead', () => {

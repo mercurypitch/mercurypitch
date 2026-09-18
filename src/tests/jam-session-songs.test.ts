@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getStemBlobUrl = vi.fn()
 const loadLyricsFromDb = vi.fn()
+const loadPitchAnalysisFromDb = vi.fn()
 
 vi.mock('@/db/services/uvr-service', () => ({
   getStemBlobUrl: (id: string, stem: string) => getStemBlobUrl(id, stem),
@@ -14,12 +15,19 @@ vi.mock('@/db/services/uvr-service', () => ({
 vi.mock('@/db/services/lyrics-db-service', () => ({
   loadLyricsFromDb: (id: string) => loadLyricsFromDb(id),
 }))
+vi.mock('@/db/services/session-pitch-analysis-service', () => ({
+  // `?? null` so a describe that never configures this mock still gets the
+  // "never analysed" answer rather than undefined.
+  loadPitchAnalysisFromDb: async (id: string) =>
+    ((await loadPitchAnalysisFromDb(id)) as unknown) ?? null,
+}))
 
 const {
   jammableSessions,
   ownSongRows,
   sessionSong,
   sessionSongLines,
+  sessionSongNotes,
   sessionSongs,
 } = await import('@/lib/jam/jam-session-songs')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -182,5 +190,94 @@ describe('sessionSongs', () => {
     ])
     expect(out).toHaveLength(1)
     expect(out[0]!.id).toBe('session:ok')
+  })
+})
+
+describe('sessionSongNotes', () => {
+  // The two stored melodies differ on purpose: segmentedNotes is edit
+  // mode's base, mergedNotes is the raw merge. A session whose owner
+  // corrected the line in the mixer has that correction in the edit layer
+  // and nowhere else.
+  const segmentedNotes = [
+    { midi: 60, noteName: 'C4', startSec: 0, endSec: 1 },
+    { midi: 62, noteName: 'D4', startSec: 2, endSec: 3 },
+  ]
+  const mergedNotes = [{ midi: 48, noteName: 'C3', startSec: 0, endSec: 6 }]
+
+  beforeEach(() => {
+    loadPitchAnalysisFromDb.mockReset()
+    loadPitchAnalysisFromDb.mockResolvedValue(null)
+  })
+
+  it('sings the melody its owner corrected, not the raw merge', async () => {
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes,
+      segmentedNotes,
+      pitchHistory: [],
+      // The second note was retuned by hand, a semitone up.
+      editLayer: {
+        manual: [{ id: 'm-0', startBeat: 2, endBeat: 3, midi: 63 }],
+        deleted: [],
+        seq: 1,
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
+    expect(await sessionSongNotes('s1')).toEqual([
+      { midi: 60, startSec: 0, endSec: 1 },
+      { midi: 63, startSec: 2, endSec: 3 },
+    ])
+  })
+
+  it('keeps a hand-deleted stretch out of the room target line', async () => {
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes,
+      segmentedNotes,
+      pitchHistory: [],
+      editLayer: {
+        manual: [],
+        deleted: [{ startBeat: 1.5, endBeat: 3.5 }],
+        seq: 0,
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
+    expect(await sessionSongNotes('s1')).toEqual([
+      { midi: 60, startSec: 0, endSec: 1 },
+    ])
+  })
+
+  it('reads the segmentation even when nothing was edited', async () => {
+    // No layer at all is the common case, and it must still be the
+    // segmentation rather than the merge -- the two are different lines.
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes,
+      segmentedNotes,
+      pitchHistory: [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
+    expect((await sessionSongNotes('s1')).map((n) => n.midi)).toEqual([60, 62])
+  })
+
+  it('falls back to the merge when the session predates edit mode', async () => {
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes,
+      segmentedNotes: [],
+      pitchHistory: [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
+    expect(await sessionSongNotes('s1')).toEqual([
+      { midi: 48, startSec: 0, endSec: 6 },
+    ])
+  })
+
+  it('is empty for a session that was never analysed', async () => {
+    // Legal: the room falls back to lyrics and your own trail.
+    expect(await sessionSongNotes('s1')).toEqual([])
+  })
+
+  it('survives a database hiccup', async () => {
+    loadPitchAnalysisFromDb.mockImplementation(async () => {
+      throw new Error('db locked')
+    })
+    expect(await sessionSongNotes('s1')).toEqual([])
   })
 })
