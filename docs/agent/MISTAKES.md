@@ -599,6 +599,19 @@ to the wheel bubbled the child's `lostpointercapture`, cancelling the gesture.
 **See:** `DrummerWheel.tsx`; native touch swipe/tap/cancel regressions in
 `session-drummer-touch.spec.ts` reproduce the otherwise-missed path.
 
+### Check that a controller's handlers are actually wired before fixing one
+
+**Symptom:** the Compose Import MIDI tempo fix was applied twice, a month apart,
+and the button still ignored the file's tempo both times.
+**Cause:** `useEditorController` returns import/export/share handlers, but
+`App.tsx` called it for its side effects and discarded the result. The live
+Compose import is the piano roll's OWN toolbar button, which reaches the host
+through the editor's callbacks, not through the controller.
+**Rule:** before fixing a handler, grep for a caller of it. A hook whose return
+value is dropped is a plausible-looking dead path.
+**See:** `src/features/editor/useEditorController.ts`, `src/lib/piano-roll.ts`
+import handler, issue #813.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`
