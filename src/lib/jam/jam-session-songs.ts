@@ -13,6 +13,8 @@
 import { loadLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getStemBlobUrl } from '@/db/services/uvr-service'
+import type { EditableNote } from '@/features/stem-mixer/pitch-edit-model'
+import { applyEditLayer, emptyEditLayer, } from '@/features/stem-mixer/pitch-edit-model'
 import type { JamSong } from '@/lib/jam/jam-song'
 import { lrcToSongLines, sessionToJamSong } from '@/lib/jam/jam-song-sources'
 import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
@@ -116,19 +118,40 @@ export async function sessionSongLines(
 /**
  * The vocal line as target notes, or none.
  *
- * Prefers mergedNotes -- the cleaned, sustained version -- over the raw
- * segmentation, because a lane wants the line a person would sing and not
- * every frame the detector twitched on. Absent when the session was never
- * analysed, which is legal: the room falls back to lyrics and your own
- * trail, which is still a karaoke machine.
+ * Prefers segmentedNotes with the stored edit layer applied -- the same
+ * melody Karaoke Night draws. segmentedNotes is the edit mode's BASE, and
+ * the layer is where every note the user moved, retuned or deleted by hand
+ * lives; mergedNotes is the raw merge, which has none of that. Reading
+ * mergedNotes meant a room sang against a line its owner had already
+ * corrected, and the comment here used to claim the opposite.
+ *
+ * mergedNotes stays as the fallback for a record that has no segmentation
+ * -- an analysis from before edit mode existed. Absent when the session
+ * was never analysed at all, which is legal: the room falls back to lyrics
+ * and your own trail, which is still a karaoke machine.
  */
 export async function sessionSongNotes(
   sessionId: string,
 ): Promise<JamSongNote[]> {
   try {
     const data = await loadPitchAnalysisFromDb(sessionId)
-    const notes = data?.mergedNotes ?? data?.segmentedNotes ?? []
-    return notes.map((n) => ({
+    if (data === null) return []
+    const segmented = data.segmentedNotes ?? []
+    if (segmented.length > 0) {
+      // EditableNote's beat fields carry SECONDS here, exactly as the
+      // mixer's own controller seeds them -- the edit layer was recorded
+      // in the same units it is replayed in.
+      const base: EditableNote[] = segmented.map((n, i) => ({
+        id: `base-${i}`,
+        startBeat: n.startSec,
+        endBeat: n.endSec,
+        midi: n.midi,
+      }))
+      return applyEditLayer(base, data.editLayer ?? emptyEditLayer()).map(
+        (n) => ({ midi: n.midi, startSec: n.startBeat, endSec: n.endBeat }),
+      )
+    }
+    return data.mergedNotes.map((n) => ({
       midi: n.midi,
       startSec: n.startSec,
       endSec: n.endSec,
