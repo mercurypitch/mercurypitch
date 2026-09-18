@@ -12,6 +12,7 @@ import { melodyTotalBeats } from '@/lib/scale-data'
 import { generateShareURL } from '@/lib/share-url'
 import { bpm, keyName, scaleType, setBpm, showNotification } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
+import type { MelodyItem } from '@/types'
 
 interface Deps {
   audioEngine: AudioEngine
@@ -21,9 +22,37 @@ export interface EditorController {
   handleShare: () => void
   handleExportMIDI: () => void
   handleImportMIDI: () => void
+  applyImportedMelody: (
+    melody: MelodyItem[],
+    name: string,
+    importedBpm?: number,
+  ) => void
 }
 
 export function useEditorController(_deps: Deps): EditorController {
+  /**
+   * Store an imported melody, and adopt the tempo it was written at.
+   *
+   * Both halves belong to the same import, so they live in one place. Writing
+   * only the transport left the melody record on the store default, and every
+   * later load path reads that record back — the song returned at the wrong
+   * speed from the library, the session sequencer and a reload (issue #813).
+   *
+   * A file that declares no tempo leaves the transport where the user put it.
+   */
+  const applyImportedMelody = (
+    melody: MelodyItem[],
+    name: string,
+    importedBpm?: number,
+  ): void => {
+    melodyStore.loadImportedMelody(
+      melody,
+      name,
+      importedBpm === undefined ? undefined : { bpm: importedBpm },
+    )
+    if (importedBpm !== undefined) setBpm(importedBpm)
+  }
+
   const handleShare = (): void => {
     const melody = melodyStore.items()
     const key = keyName()
@@ -64,12 +93,7 @@ export function useEditorController(_deps: Deps): EditorController {
           // and adopt the file's own tempo so it plays as written.
           const name = file.name.replace(/\.(mid|midi)$/i, '')
           const tempo = readMidiTempoBpm(data)
-          melodyStore.loadImportedMelody(
-            melody,
-            name,
-            tempo === null ? undefined : { bpm: tempo },
-          )
-          if (tempo !== null) setBpm(tempo)
+          applyImportedMelody(melody, name, tempo ?? undefined)
           showNotification(
             `Imported ${melody.length} note(s) from ${name}`,
             'success',
@@ -84,5 +108,10 @@ export function useEditorController(_deps: Deps): EditorController {
     input.click()
   }
 
-  return { handleShare, handleExportMIDI, handleImportMIDI }
+  return {
+    handleShare,
+    handleExportMIDI,
+    handleImportMIDI,
+    applyImportedMelody,
+  }
 }

@@ -1613,9 +1613,10 @@ const AppShell: Component<AppProps> = (props) => {
   )
 
   // ── Editor controller ──────────────────────────────────────
-  // Handlers (handleShare, handleExportMIDI, handleImportMIDI) are exposed
-  // for future toolbar integration. Currently unused at the App level.
-  useEditorController({ audioEngine })
+  // applyImportedMelody backs the piano roll's own Import MIDI button. The
+  // other handlers (handleShare, handleExportMIDI, handleImportMIDI) are
+  // exposed for future toolbar integration and are unused at the App level.
+  const editorController = useEditorController({ audioEngine })
 
   // ── Falling Notes controller ─────────────────────────────────
   const fallingNotes = useFallingNotesController(audioEngine)
@@ -4025,10 +4026,13 @@ const AppShell: Component<AppProps> = (props) => {
                         targetPitch={() => null}
                         noteAccuracyMap={() => new Map()}
                         onMelodyChange={updateComposeMelody}
-                        onMelodyImport={(melody, name) => {
-                          melodyStore.loadImportedMelody(melody, name)
+                        onMelodyImport={(melody, name, importedBpm) => {
+                          editorController.applyImportedMelody(
+                            melody,
+                            name,
+                            importedBpm,
+                          )
                         }}
-                        onTempoImport={(importedBpm) => setBpm(importedBpm)}
                         onInstrumentChange={(instrument) => {
                           // Update three things at once:
                           //   1. App's primary AudioEngine (used during practice
