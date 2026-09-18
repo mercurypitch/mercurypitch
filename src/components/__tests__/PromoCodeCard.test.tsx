@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   redeemPromoCode: vi.fn(),
   showNotification: vi.fn(),
   openAuthModal: vi.fn(),
+  isLaunchPromoOpen: vi.fn(() => true),
 }))
 
 vi.mock('@/db/services/auth-service', () => ({
@@ -36,11 +37,21 @@ vi.mock('@/stores/theme-store', () => ({
   theme: () => 'dark',
 }))
 
+vi.mock('@/components/billing/launch-promo', () => ({
+  LAUNCH_PROMO: {
+    code: 'PRODUCT_HUNT',
+    credits: 5,
+    endsAt: '2026-09-30T23:59:59.000Z',
+  },
+  isLaunchPromoOpen: mocks.isLaunchPromoOpen,
+}))
+
 import { PromoCodeCard } from '../billing/PromoCodeCard'
 
 describe('PromoCodeCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.isLaunchPromoOpen.mockReturnValue(true)
   })
 
   it('renders account required banner when signed out', async () => {
@@ -213,5 +224,50 @@ describe('PromoCodeCard', () => {
         screen.getByText('This promo code has expired.'),
       ).toBeInTheDocument()
     })
+  })
+
+  it('stops offering the launch gift once the campaign has closed', async () => {
+    mocks.isLaunchPromoOpen.mockReturnValue(false)
+    mocks.fetchMe.mockResolvedValue({
+      user: {
+        id: 'user-1',
+        authProvider: 'password',
+        email: 'test@example.com',
+        emailVerified: true,
+      },
+    })
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      redeemedPromos: [],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+
+    // The manual code entry stays; the one-click gift and its copy go.
+    expect(await screen.findByTestId('promo-input')).toBeInTheDocument()
+    expect(screen.queryByTestId('claim-ph-btn')).not.toBeInTheDocument()
+    expect(screen.queryByText(/launch gift/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/free credits/i)).not.toBeInTheDocument()
+    expect(screen.getByText('Promo Codes')).toBeInTheDocument()
+  })
+
+  it('tells a signed-out visitor about the gift only while it is open', async () => {
+    mocks.isLaunchPromoOpen.mockReturnValue(false)
+    mocks.fetchMe.mockResolvedValue(null)
+    mocks.fetchBillingMe.mockResolvedValue({
+      creditBalance: 0,
+      entitlements: [],
+      stripeConfigured: true,
+    })
+
+    render(() => <PromoCodeCard />)
+
+    expect(await screen.findByText('Account Required')).toBeInTheDocument()
+    expect(
+      screen.queryByText(/free cloud separation credits/i),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(/redeem promo codes/i)).toBeInTheDocument()
   })
 })

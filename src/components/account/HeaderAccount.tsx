@@ -8,6 +8,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
+import { isLaunchPromoOpen, LAUNCH_PROMO, } from '@/components/billing/launch-promo'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
@@ -110,14 +111,16 @@ export const HeaderAccount: Component = () => {
         }
       >
         <div class={styles.accountWrapper}>
-          <a
-            href="#/settings/credits"
-            class={styles.promoPill}
-            title="Claim 5 Free Cloud Separation Credits (Product Hunt Promo)"
-            data-testid="header-promo-pill"
-          >
-            <span>Promo</span>
-          </a>
+          <Show when={isLaunchPromoOpen()}>
+            <a
+              href="#/settings/credits"
+              class={styles.promoPill}
+              title={`Claim ${LAUNCH_PROMO.credits} free cloud separation credits (Product Hunt launch)`}
+              data-testid="header-promo-pill"
+            >
+              <span>Promo</span>
+            </a>
+          </Show>
 
           <Show
             when={isUpgraded()}

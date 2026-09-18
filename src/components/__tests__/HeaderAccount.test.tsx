@@ -12,8 +12,21 @@ const mocks = vi.hoisted(() => ({
   fetchMe: vi.fn(),
   logout: vi.fn(),
   openAuthModal: vi.fn(),
+  isLaunchPromoOpen: vi.fn(() => true),
 }))
-vi.mock('@/db/services/auth-service', () => mocks)
+vi.mock('@/db/services/auth-service', () => ({
+  restoreAuth: mocks.restoreAuth,
+  fetchMe: mocks.fetchMe,
+  logout: mocks.logout,
+}))
+vi.mock('@/components/billing/launch-promo', () => ({
+  LAUNCH_PROMO: {
+    code: 'PRODUCT_HUNT',
+    credits: 5,
+    endsAt: '2026-09-30T23:59:59.000Z',
+  },
+  isLaunchPromoOpen: mocks.isLaunchPromoOpen,
+}))
 // Mocked so the component doesn't pull the full ui-store import chain
 // (which reads more of @/lib/defaults than the stub above provides).
 vi.mock('@/stores/ui-store', () => ({ openAuthModal: mocks.openAuthModal }))
@@ -22,6 +35,7 @@ import { HeaderAccount } from '../account/HeaderAccount'
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.isLaunchPromoOpen.mockReturnValue(true)
 })
 
 describe('HeaderAccount', () => {
@@ -105,5 +119,31 @@ describe('HeaderAccount', () => {
 
     fireEvent.click(await screen.findByTestId('header-signin'))
     expect(mocks.openAuthModal).toHaveBeenCalledWith('login')
+  })
+
+  it('offers the launch promo pill while the campaign is open', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'anonymous', email: null },
+      profile: null,
+    })
+    render(() => <HeaderAccount />)
+
+    expect(await screen.findByTestId('header-signin')).toBeInTheDocument()
+    expect(screen.getByTestId('header-promo-pill')).toHaveAttribute(
+      'href',
+      '#/settings/credits',
+    )
+  })
+
+  it('drops the promo pill once the campaign has closed', async () => {
+    mocks.isLaunchPromoOpen.mockReturnValue(false)
+    mocks.fetchMe.mockResolvedValue({
+      user: { authProvider: 'anonymous', email: null },
+      profile: null,
+    })
+    render(() => <HeaderAccount />)
+
+    expect(await screen.findByTestId('header-signin')).toBeInTheDocument()
+    expect(screen.queryByTestId('header-promo-pill')).not.toBeInTheDocument()
   })
 })

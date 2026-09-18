@@ -7,12 +7,14 @@
 // 1. For unauthenticated / anonymous users: CTA to sign up to claim promo credits.
 // 2. For unverified accounts: alert to verify email before claiming.
 // 3. For verified accounts:
-//    - 1-click "Claim 5 Free Launch Credits" card if PRODUCT_HUNT has not been redeemed.
+//    - 1-click claim card while the launch campaign is open and unclaimed
+//      (see launch-promo.ts for the window).
 //    - Input box to redeem any promo code (supporting future campaigns).
 // 4. Product Hunt featured badge with automatic dark/light theme switching.
 
 import type { Component } from 'solid-js'
 import { createEffect, createResource, createSignal, Show } from 'solid-js'
+import { isLaunchPromoOpen, LAUNCH_PROMO, } from '@/components/billing/launch-promo'
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
@@ -58,8 +60,12 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
 
   const hasRedeemedPh = (): boolean => {
     const promos = billingMe()?.redeemedPromos
-    return Array.isArray(promos) && promos.includes('PRODUCT_HUNT')
+    return Array.isArray(promos) && promos.includes(LAUNCH_PROMO.code)
   }
+
+  // Evaluated at render: the card is mounted fresh each time Settings opens,
+  // so the day the campaign closes it simply stops offering the gift.
+  const launchOpen = isLaunchPromoOpen()
 
   const phTheme = (): 'dark' | 'light' => {
     return theme() === 'light' ? 'light' : 'dark'
@@ -121,8 +127,12 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
     <div class={styles.promoContainer} data-testid="promo-code-card">
       <div class={styles.promoHeader}>
         <div class={styles.promoTitleGroup}>
-          <h4 class={styles.promoTitle}>Launch Promo & Codes</h4>
-          <span class={styles.promoBadge}>Product Hunt</span>
+          <h4 class={styles.promoTitle}>
+            {launchOpen ? 'Launch Promo & Codes' : 'Promo Codes'}
+          </h4>
+          <Show when={launchOpen}>
+            <span class={styles.promoBadge}>Product Hunt</span>
+          </Show>
         </div>
 
         <a
@@ -134,7 +144,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         >
           <img
             src={`https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1201891&theme=${phTheme()}&t=1789577241428`}
-            alt="Mercury Pitch - Product Hunt Featured"
+            alt="MercuryPitch on Product Hunt"
             width="180"
             height="38"
             class={styles.phBadgeImg}
@@ -143,8 +153,9 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
       </div>
 
       <p class={styles.promoDesc}>
-        Redeem a promotional code or claim your Product Hunt launch bonus
-        credits for studio-quality cloud vocal separation.
+        {launchOpen
+          ? 'Redeem a promotional code or claim your Product Hunt launch bonus credits for cloud vocal separation.'
+          : 'Redeem a promotional code for cloud vocal separation credits.'}
       </p>
 
       {/* 1. Signed-out state */}
@@ -152,8 +163,9 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         <div class={styles.alertBox}>
           <span class={styles.alertTitle}>Account Required</span>
           <span>
-            Create a free account and verify your email to claim 5 free cloud
-            separation credits.{' '}
+            {launchOpen
+              ? `Create a free account and verify your email to claim ${LAUNCH_PROMO.credits} free cloud separation credits.`
+              : 'Create a free account and verify your email to redeem promo codes.'}{' '}
             <button
               type="button"
               class={styles.alertLink}
@@ -185,13 +197,14 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
         </div>
       </Show>
 
-      {/* 3. Verified email state: One-click claim for PRODUCT_HUNT */}
-      <Show when={isAuthenticated() && isEmailVerified()}>
+      {/* 3. Verified email state: one-click claim while the launch is open */}
+      <Show when={launchOpen && isAuthenticated() && isEmailVerified()}>
         <div class={styles.claimCard}>
           <div class={styles.claimInfo}>
             <span class={styles.claimTitle}>Product Hunt Launch Gift</span>
             <span class={styles.claimSub}>
-              5 Free Studio-Grade Cloud GPU Separations
+              {LAUNCH_PROMO.credits} free credits: one credit per song on the
+              standard cloud models
             </span>
           </div>
 
@@ -204,11 +217,11 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
               class={styles.claimBtn}
               disabled={busy()}
               onClick={() => {
-                void handleRedeem('PRODUCT_HUNT')
+                void handleRedeem(LAUNCH_PROMO.code)
               }}
               data-testid="claim-ph-btn"
             >
-              {busy() ? 'Claiming…' : 'Claim 5 Credits'}
+              {busy() ? 'Claiming…' : `Claim ${LAUNCH_PROMO.credits} Credits`}
             </button>
           </Show>
         </div>
@@ -226,7 +239,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
           <input
             type="text"
             class={styles.input}
-            placeholder="Enter promo code (e.g. PRODUCT_HUNT)"
+            placeholder="Enter promo code"
             value={code()}
             onInput={(e) => setCode(e.currentTarget.value)}
             disabled={busy()}
