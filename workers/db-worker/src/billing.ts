@@ -9,6 +9,7 @@
 //   POST /api/billing/uvr-admit — auth; pre-dispatch credit + rate-limit gate
 //   POST /api/billing/debit     — auth; meter a server UVR job (idempotent)
 //   POST /api/billing/refund    — service (X-Service-Key); undo a job's debit
+//   POST /api/billing/promo/redeem — auth + verified email; { code } → credits
 //
 // Design (see docs/plans/premium.md):
 //  • Prices live in the DB (pricingPlans), never in the repo. `amount` NULL
@@ -17,8 +18,9 @@
 //    names the amount on Stripe's page.
 //  • Donations (kind = 'donation') are one-time payments that grant a
 //    time-boxed `supporter` entitlement. They never gate a feature.
-//  • Stripe-hosted UI only; the webhook is the sole writer of credits/
-//    entitlements. Credits are an append-only ledger; balance = SUM(delta).
+//  • Stripe-hosted UI only. The webhook is the sole writer of entitlements
+//    and, with promo redemption, one of two writers of credits. Credits are
+//    an append-only ledger; balance = SUM(delta).
 //  • Inert until configured: with STRIPE_SECRET_KEY unset, checkout/portal
 //    return 501 and pricing still renders (as "Soon").
 //
@@ -1177,54 +1179,71 @@ async function handlePromoRedeem(
     )
   }
 
-  const prior = await env.DB.prepare(
-    'SELECT 1 FROM promoRedemptions WHERE promoCodeId = ? AND userId = ?',
-  )
-    .bind(promo.id, auth.userId)
-    .first()
-
-  if (prior) {
-    return respond(
-      { error: 'You have already redeemed this promo code.' },
-      { status: 400 },
-    )
-  }
-
+  // One transaction for the three writes that make a redemption: the
+  // per-user slot, the campaign counter and the credits. D1 runs a batch
+  // atomically, so a slot can never exist without its credits — three
+  // separate statements could leave a row behind that the user was then
+  // told they had "already redeemed". The cap is claimed by the slot INSERT
+  // itself, guarded by the counter it is about to move: two callers racing
+  // for the last slot serialise on the write lock, and the second one's
+  // INSERT lands nothing. The UNIQUE(promoCodeId, userId) constraint drops
+  // a second slot for the same account the same way.
   const redemptionId = crypto.randomUUID()
-  const inserted = await env.DB.prepare(
-    'INSERT OR IGNORE INTO promoRedemptions (id, promoCodeId, userId, redeemedAt) VALUES (?, ?, ?, ?)',
-  )
-    .bind(redemptionId, promo.id, auth.userId, nowIso)
-    .run()
-
-  if (inserted.meta.changes === 0) {
-    return respond(
-      { error: 'You have already redeemed this promo code.' },
-      { status: 400 },
-    )
-  }
-
-  await env.DB.prepare(
-    'UPDATE promoCodes SET redemptionCount = redemptionCount + 1, updatedAt = ? WHERE id = ?',
-  )
-    .bind(nowIso, promo.id)
-    .run()
-
   const ledgerId = crypto.randomUUID()
   const idempotencyKey = `promo:${promo.id}:${auth.userId}`
-  await env.DB.prepare(
-    `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
-     VALUES (?, ?, ?, ?, 'promo', ?, ?)`,
-  )
-    .bind(
+  const [slot, , credited] = await env.DB.batch([
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO promoRedemptions (id, promoCodeId, userId, redeemedAt)
+       SELECT ?, ?, ?, ?
+        WHERE EXISTS (
+          SELECT 1 FROM promoCodes
+           WHERE id = ? AND active = 1
+             AND (maxRedemptions IS NULL OR redemptionCount < maxRedemptions))`,
+    ).bind(redemptionId, promo.id, auth.userId, nowIso, promo.id),
+    env.DB.prepare(
+      `UPDATE promoCodes SET redemptionCount = redemptionCount + 1, updatedAt = ?
+        WHERE id = ? AND EXISTS (SELECT 1 FROM promoRedemptions WHERE id = ?)`,
+    ).bind(nowIso, promo.id, redemptionId),
+    env.DB.prepare(
+      `INSERT OR IGNORE INTO creditLedger (id, createdAt, userId, delta, reason, jobRef, idempotencyKey)
+       SELECT ?, ?, ?, ?, 'promo', ?, ?
+        WHERE EXISTS (SELECT 1 FROM promoRedemptions WHERE id = ?)`,
+    ).bind(
       ledgerId,
       nowIso,
       auth.userId,
       promo.credits,
       promo.code,
       idempotencyKey,
+      redemptionId,
+    ),
+  ])
+
+  if (slot.meta.changes === 0) {
+    // Nothing landed: either this account already holds a slot, or the
+    // campaign filled up between the read above and this write.
+    const taken = await env.DB.prepare(
+      'SELECT 1 FROM promoRedemptions WHERE promoCodeId = ? AND userId = ?',
     )
-    .run()
+      .bind(promo.id, auth.userId)
+      .first()
+    return respond(
+      {
+        error: taken
+          ? 'You have already redeemed this promo code.'
+          : 'This promo code has reached its maximum redemption limit.',
+      },
+      { status: 400 },
+    )
+  }
+  if (credited.meta.changes === 0) {
+    // The slot is new but the ledger already had this key. Cannot happen
+    // through this handler; log it rather than fail a redemption that did
+    // land, and let the balance below say what the account actually holds.
+    console.error(
+      `[billing] promo ${promo.code}: slot ${redemptionId} landed on an existing ledger key ${idempotencyKey}`,
+    )
+  }
 
   const ledger = await env.DB.prepare(
     'SELECT delta FROM creditLedger WHERE userId = ?',
