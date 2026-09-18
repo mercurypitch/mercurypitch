@@ -6,6 +6,7 @@ import { createGuitarRecordingStore } from '@/db/services/guitar-recording-servi
 import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-amp'
 import type { InstrumentTuning } from '@/lib/guitar/instrument-tuning'
 import { startGuitarRecordingCapture } from '@/lib/guitar/recording-capture'
+import { guitarCaptureLatencySeconds } from '@/lib/guitar/recording-latency'
 import { acquireGuitarRecordingLock } from '@/lib/guitar/recording-lock'
 import type { GuitarDrummerPerformanceHit, GuitarPracticeScore, GuitarRecordedNote, GuitarRecording, GuitarRecordingBacking, GuitarRecordingDrumTrack, } from '@/lib/guitar/recording-types'
 import { GUITAR_DETECTOR_VERSION, GUITAR_RECORDING_LIMIT_SECONDS, } from '@/lib/guitar/recording-types'
@@ -71,6 +72,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
   let generation = 0
   let selectionGeneration = 0
   let startFrame: number | null = null
+  let captureLatencySeconds = 0
   let backingPlaying = false
   let pinnedInput: ReturnType<GuitarListeningController['recordingInput']> =
     null
@@ -104,9 +106,11 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
     if (audioStartFrame === null || recordingDrummerHits === null) return
     const startSeconds = audioStartFrame / sampleRate
     const durationSeconds = frames / sampleRate
+    // A hit's context time is when it was scheduled, not when the player heard
+    // it and answered it on the guitar; see `guitarCaptureLatencySeconds`.
     const hits = recordingDrummerHits
       .map((hit) => ({
-        offsetSeconds: hit.contextTime - startSeconds,
+        offsetSeconds: hit.contextTime - startSeconds + captureLatencySeconds,
         gmKey: hit.gmKey,
         velocity: hit.velocity,
         kitId: hit.kitId,
@@ -264,6 +268,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
       if (disposed || attempt !== generation) return
       activeId = id
       startFrame = null
+      captureLatencySeconds = 0
       const row: GuitarRecording = {
         id,
         version: 1,
@@ -301,6 +306,7 @@ export function useGuitarRecordingController(options: GuitarRecordingOptions) {
         signal: abort.signal,
         onStart(frame) {
           startFrame = frame
+          captureLatencySeconds = guitarCaptureLatencySeconds(input)
           backingPlaying = options.playing()
           const backing = options.playing() ? options.backing() : null
           const anchor =
