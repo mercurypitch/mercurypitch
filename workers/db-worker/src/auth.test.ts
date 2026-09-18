@@ -1509,6 +1509,7 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
       'googleDriveTokens',
       'passwordResets',
       'emailVerifications',
+      'promoRedemptions',
     ]
     expect(workerInternalUserKeyed.filter((table) => !erased(table))).toEqual(
       [],

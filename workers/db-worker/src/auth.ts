@@ -3280,6 +3280,9 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // erases our copy without destroying the accounting trail.
   { table: 'creditLedger', column: 'userId' },
   { table: 'entitlements', column: 'userId' },
+  // A promo redemption names the account that claimed it. The foreign key
+  // cascades, but erasure is a contract, not a side effect of one.
+  { table: 'promoRedemptions', column: 'userId' },
   // An approved-but-uncollected device link names the account it would sign
   // a television into. Rows are short-lived, but the sweep only runs when
   // the NEXT device asks for a code — so with nobody linking anything, an
