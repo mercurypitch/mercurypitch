@@ -3246,21 +3246,32 @@
 
 .practiceMarker {
   position: absolute;
-  left: 0;
+  z-index: 10;
   right: 0;
-  pointer-events: auto;
-  touch-action: none;
+  left: 0;
   height: 2px;
   background: var(--coral, #ff7f50);
-  z-index: 10;
-  cursor: ns-resize;
-  display: flex;
-  align-items: center;
   box-shadow: 0 0 8px var(--coral, #ff7f50);
+  cursor: ns-resize;
   opacity: 0.8;
-  padding: 8px 0;
-  margin-bottom: -8px;
-  background-clip: content-box;
+  /* The fall track it sits over is pointer-transparent. */
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* The grab target is taller than the hairline and reaches upward, so a marker
+   parked on the strike line at the bottom of the stage is still grabbable. */
+.practiceMarker::before {
+  position: absolute;
+  right: 0;
+  bottom: -4px;
+  left: 0;
+  height: 18px;
+  content: '';
+}
+
+.practiceMarker[data-off-window='true'] {
+  opacity: 0.55;
 }
 
 .practiceMarker:hover {

@@ -64,6 +64,9 @@ interface PianoNightStageViewsProps {
  */
 const FALL_SCRUB_DEAD_ZONE_PX = 6
 
+/** Keeps a marker that has scrolled past the top of the stage on screen. */
+const PRACTICE_MARKER_MAX_BOTTOM_PERCENT = 96
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, value))
 }
@@ -248,31 +251,31 @@ function PianoNightFallView(props: PianoNightStageViewsProps): JSX.Element {
             )
           }}
         </For>
-        <Show when={loopRange()}>
-          {(range) => (
-            <>
-              <PracticeMarker
-                type="A"
-                beat={range().startBeat}
-                anchor={anchorBeat()}
-                minBeat={0}
-                maxBeat={range().endBeat - PIANO_NIGHT_MIN_LOOP_BEATS}
-                pixelsPerBeat={pixelsPerBeat}
-                onCommit={props.setPracticeLoopStart}
-              />
-              <PracticeMarker
-                type="B"
-                beat={range().endBeat}
-                anchor={anchorBeat()}
-                minBeat={range().startBeat + PIANO_NIGHT_MIN_LOOP_BEATS}
-                maxBeat={props.totalBeats()}
-                pixelsPerBeat={pixelsPerBeat}
-                onCommit={props.setPracticeLoopEnd}
-              />
-            </>
-          )}
-        </Show>
       </div>
+      <Show when={loopRange()}>
+        {(range) => (
+          <>
+            <PracticeMarker
+              type="A"
+              beat={range().startBeat}
+              visualBeat={visualBeat()}
+              minBeat={0}
+              maxBeat={range().endBeat - PIANO_NIGHT_MIN_LOOP_BEATS}
+              pixelsPerBeat={pixelsPerBeat}
+              onCommit={props.setPracticeLoopStart}
+            />
+            <PracticeMarker
+              type="B"
+              beat={range().endBeat}
+              visualBeat={visualBeat()}
+              minBeat={range().startBeat + PIANO_NIGHT_MIN_LOOP_BEATS}
+              maxBeat={props.totalBeats()}
+              pixelsPerBeat={pixelsPerBeat}
+              onCommit={props.setPracticeLoopEnd}
+            />
+          </>
+        )}
+      </Show>
       <span class={styles.projectLabel}>
         {props.hasAuthoredCoach()
           ? 'Prepared project performance'
@@ -481,7 +484,7 @@ export function PianoNightStageViews(
 function PracticeMarker(props: {
   type: 'A' | 'B'
   beat: number
-  anchor: number
+  visualBeat: number
   minBeat: number
   maxBeat: number
   pixelsPerBeat: () => number
@@ -494,6 +497,18 @@ function PracticeMarker(props: {
   let originBeat = 0
 
   const displayBeat = createMemo(() => draftBeat() ?? props.beat)
+  /**
+   * Pinned to the edge it fell off, the way an off-window note is. A marker
+   * that scrolls out of the stage is a marker nobody can grab, and A lives on
+   * the strike line at the bottom for as long as the playhead sits on it.
+   */
+  const placement = createMemo(() => {
+    const exact =
+      (displayBeat() - props.visualBeat) *
+      PIANO_NIGHT_FALL_TRAVEL_PERCENT_PER_BEAT
+    const bottom = clamp(exact, 0, PRACTICE_MARKER_MAX_BOTTOM_PERCENT)
+    return { bottom, offWindow: bottom !== exact }
+  })
 
   const onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0 || !event.isPrimary) return
@@ -543,9 +558,8 @@ function PracticeMarker(props: {
       data-testid="piano-night-loop-marker"
       data-beat={displayBeat().toFixed(3)}
       data-dragging={draftBeat() !== null}
-      style={{
-        bottom: `${pianoNightFallStaticBottomPercent(displayBeat(), props.anchor)}%`,
-      }}
+      data-off-window={placement().offWindow}
+      style={{ bottom: `${placement().bottom}%` }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
