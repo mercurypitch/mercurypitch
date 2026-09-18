@@ -554,11 +554,15 @@ export interface PianoRollOptions {
   onHoverHintsToggle?: () => void
   /** A MIDI file was imported from the roll's own toolbar. The host stores it
    *  as a melody NAMED after the file rather than overwriting whatever melody
-   *  was current under its old name. */
-  onMelodyImport?: (melody: MelodyItem[], name: string) => void
-  /** An imported MIDI declared its own tempo — apply it to the transport so
-   *  the song plays at the speed it was written at. */
-  onTempoImport?: (bpm: number) => void
+   *  was current under its old name.
+   *
+   *  `bpm` is the tempo the file declared, or undefined when it declared none.
+   *  It rides along with the notes deliberately: the tempo used to arrive on a
+   *  separate callback, and the host applied it to the transport while storing
+   *  a melody record that kept the default — so the song came back at the wrong
+   *  speed from every path that reads the record (issue #813). One callback
+   *  carries the whole file, so the two cannot drift apart again. */
+  onMelodyImport?: (melody: MelodyItem[], name: string, bpm?: number) => void
 }
 
 export type PlaybackState = 'stopped' | 'playing' | 'paused'
@@ -761,8 +765,11 @@ export class PianoRollEditor {
   private onPlaybackStateChange?: (state: PlaybackState) => void
   private onGridToggle?: () => void
   private onHoverHintsToggle?: () => void
-  private onMelodyImport?: (melody: MelodyItem[], name: string) => void
-  private onTempoImport?: (bpm: number) => void
+  private onMelodyImport?: (
+    melody: MelodyItem[],
+    name: string,
+    bpm?: number,
+  ) => void
 
   constructor(options: PianoRollOptions) {
     this.container = options.container
@@ -779,7 +786,6 @@ export class PianoRollEditor {
     this.onGridToggle = options.onGridToggle
     this.onHoverHintsToggle = options.onHoverHintsToggle
     this.onMelodyImport = options.onMelodyImport
-    this.onTempoImport = options.onTempoImport
 
     this.rowHeight = this.config.rowHeight
     this.zoomLevel = 1.0
@@ -3129,10 +3135,12 @@ export class PianoRollEditor {
             const name = file.name.replace(/\.(mid|midi)$/i, '')
             const tempo = readMidiTempoBpm(data)
             this.setMelody(melody)
-            if (tempo !== null) this.onTempoImport?.(tempo)
-            // Prefer the naming import so the library records what was loaded;
-            // fall back to a plain change when the host doesn't handle it.
-            if (this.onMelodyImport) this.onMelodyImport(melody, name)
+            // Prefer the naming import so the library records what was loaded
+            // — and hand it the file's tempo in the same call, so the stored
+            // melody and the transport can never disagree about it. Fall back
+            // to a plain change when the host doesn't handle it.
+            if (this.onMelodyImport)
+              this.onMelodyImport(melody, name, tempo ?? undefined)
             else this.onMelodyChange?.(melody)
             if (this.hintEl)
               this.hintEl.textContent = `Imported ${melody.length} note(s) from ${name}`
