@@ -1364,7 +1364,7 @@ export function usePianoNightController() {
       gain.connect(ctx.destination)
       osc.start(clickTime)
       osc.stop(clickTime + 0.1)
-      // Held so a stop, a pause or a seek can silence a count-in that is
+      // Held so a stop, a pause or a teardown can silence a count-in that is
       // already scheduled ahead of the audio clock.
       countInVoices.push(osc)
     }
