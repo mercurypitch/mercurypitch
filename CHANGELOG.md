@@ -5,6 +5,33 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.9] - 2026-09-18
+
+Piano Night learns the three things a practice room needs: move through a
+song by hand, mark the passage you want to drill, and count yourself in.
+
+### Added
+
+- **Drag the falling notes to move through a song.** Press on the stage and
+  slide: the playhead follows your mouse or your finger. A tap still just
+  taps.
+- **Mark a passage and loop it.** Drag the A and B markers to bound the part
+  you want to drill. The loop settles when you let go, and A can never cross
+  B.
+- **A count-in, if you want one.** The metronome button in the transport
+  turns it on. It counts at the tempo the song will play at, and a fast song
+  is counted in on half notes so the numbers stay readable.
+- **Your notes and the song's are told apart on the keys.** What you play
+  lights in its own colour, so a wrong note is obvious at a glance.
+- **Falling notes on the keys can be hidden.** Practice options has Show and
+  Hide; your own playing still lights up either way.
+
+### Fixed
+
+- **The guided tours stop flickering when you press Next.** The spotlight used
+  to blink out and the text jump to the middle of the screen while the next
+  step got itself ready. It holds its place now.
+
 ## [0.9.8] - 2026-09-18
 
 The Product Hunt launch gift, a session drummer for Guitar Night, music you can
