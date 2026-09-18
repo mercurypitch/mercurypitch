@@ -49,6 +49,15 @@ const STAGE_MOTION_STORAGE_KEY = 'pitchperfect_piano_night_stage_motion'
 const SHOW_FALLING_TOUCHES_STORAGE_KEY =
   'pitchperfect_piano_night_show_falling_touches'
 const COUNT_IN_STORAGE_KEY = 'pitchperfect_piano_night_count_in'
+/** Beats a count-in runs once the player opts in from the transport. */
+export const PIANO_NIGHT_COUNT_IN_BEATS = 4
+/**
+ * How long past the authored count-in length the wall clock waits before it
+ * settles the count-in itself. The audio clock is the truth while it runs, but
+ * a suspended context never advances `currentTime`, so without a wall-clock
+ * deadline `play()` would stay pending forever.
+ */
+const COUNT_IN_DEADLINE_MARGIN_MS = 750
 const PERFORMANCE_TAKE_START_BEAT_EPSILON = 0.001
 
 export type PianoNightSoundLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -331,9 +340,11 @@ export function usePianoNightController() {
       'flowing',
       { validator: isPianoNightStageMotion },
     )
+  // Opt-in. A stored 4 would give every existing player four silent beats in
+  // front of a Start they never asked to delay.
   const [countInBeats, setCountInBeats] = createPersistedSignal<number>(
     COUNT_IN_STORAGE_KEY,
-    4,
+    0,
   )
   const [showFallingTouches, setShowFallingTouches] =
     createPersistedSignal<boolean>(SHOW_FALLING_TOUCHES_STORAGE_KEY, true)
@@ -357,6 +368,7 @@ export function usePianoNightController() {
   let frame: number | null = null
   let uninstallAudioUnlock: (() => void) | null = null
   let commandGeneration = 0
+  let countInVoices: AudioScheduledSourceNode[] = []
   let completionSettled = false
   let settlingPracticeBoundary = false
   let performanceTakeGeneration = 0
@@ -1317,11 +1329,141 @@ export function usePianoNightController() {
     setStatusMessage(`Piano volume set to ${Math.round(normalized * 100)}%.`)
   }
 
+  const stopCountInVoices = (): void => {
+    for (const voice of countInVoices) {
+      try {
+        voice.stop()
+        voice.disconnect()
+      } catch {
+        /* already stopped, or the context went away underneath it */
+      }
+    }
+    countInVoices = []
+  }
+
+  const abortCountIn = (): void => {
+    stopCountInVoices()
+    setCountInRemaining(0)
+  }
+
+  const scheduleCountInClicks = (
+    ctx: AudioContext,
+    countBeats: number,
+    beatSeconds: number,
+  ): void => {
+    const startTime = ctx.currentTime
+    for (let beat = 0; beat < countBeats; beat += 1) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = beat === 0 ? 880 : 440
+      const clickTime = startTime + beat * beatSeconds
+      gain.gain.setValueAtTime(0.5, clickTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.1)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(clickTime)
+      osc.stop(clickTime + 0.1)
+      // Held so a stop, a pause or a seek can silence a count-in that is
+      // already scheduled ahead of the audio clock.
+      countInVoices.push(osc)
+    }
+  }
+
+  /**
+   * Counts the player in, then reports whether the count reached its end.
+   * Always settles: the audio clock drives the display while the context is
+   * running, and a wall-clock deadline ends it when the context is suspended
+   * or the frame loop never runs.
+   */
+  const runCountIn = async (
+    countBeats: number,
+    generation: number,
+    expectedStartBeat: number,
+  ): Promise<boolean> => {
+    const superseded = (): boolean =>
+      disposed || commandGeneration !== generation
+    const tempoBpm = transport.timeline.tempoBpm()
+    const beatSeconds = 60 / tempoBpm
+    const totalSeconds = countBeats * beatSeconds
+
+    setCountInRemaining(countBeats)
+    setPlayheadBeat(Math.max(0, expectedStartBeat - countBeats))
+
+    await activateAudio()
+    if (superseded()) {
+      abortCountIn()
+      return false
+    }
+
+    const ctx = transport.getAudioContext()
+    // A suspended context never advances `currentTime`, so it can neither
+    // sound the clicks nor time them.
+    const audible =
+      ctx !== null &&
+      ctx.state === 'running' &&
+      typeof ctx.createOscillator === 'function'
+    if (audible && ctx !== null) {
+      scheduleCountInClicks(ctx, countBeats, beatSeconds)
+    }
+
+    const audioStartTime = audible && ctx !== null ? ctx.currentTime : 0
+    const wallStartMs = performance.now()
+
+    await new Promise<void>((resolve) => {
+      let settled = false
+      let deadline = 0
+      const settle = (): void => {
+        if (settled) return
+        settled = true
+        window.clearTimeout(deadline)
+        resolve()
+      }
+      deadline = window.setTimeout(
+        settle,
+        totalSeconds * 1000 + COUNT_IN_DEADLINE_MARGIN_MS,
+      )
+      const tick = (): void => {
+        if (superseded()) {
+          settle()
+          return
+        }
+        const wallElapsedSeconds = (performance.now() - wallStartMs) / 1000
+        const elapsedSeconds =
+          audible && ctx !== null
+            ? ctx.currentTime - audioStartTime
+            : wallElapsedSeconds
+        if (elapsedSeconds >= totalSeconds) {
+          settle()
+          return
+        }
+        const beatsElapsed = elapsedSeconds / beatSeconds
+        setCountInRemaining(Math.max(1, countBeats - Math.floor(beatsElapsed)))
+        setPlayheadBeat(
+          Math.max(0, expectedStartBeat - countBeats + beatsElapsed),
+        )
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+
+    setCountInRemaining(0)
+    if (superseded()) {
+      stopCountInVoices()
+      return false
+    }
+    countInVoices = []
+    return true
+  }
+
   const play = async (): Promise<boolean> => {
     if (performanceTake.state() === 'saving') {
       setStatusMessage('Wait for this take to finish saving before replaying.')
       return false
     }
+    // A count-in already owns this start. Without this the second press runs a
+    // second frame loop and schedules a second click train that nothing holds.
+    if (isCountingIn()) return false
     const loop = practiceLoop()
     const range = loop.enabled ? loop.range : null
     if (practiceRunComplete() && range !== null) {
@@ -1338,6 +1480,7 @@ export function usePianoNightController() {
       completionSettled = false
       prepareCurrentSampleWindow(range.startBeat)
     }
+    commandGeneration += 1
     const generation = commandGeneration
     const previousPhase = transport.phase()
     const resumePerformanceTake = performanceTakeRecorder.phase() === 'paused'
@@ -1352,66 +1495,19 @@ export function usePianoNightController() {
       prepareCurrentSampleWindow(0)
     }
 
+    // Count in only when the transport starts from rest. Resuming a paused
+    // take picks up where it stopped, and four beats of clicks in front of it
+    // would push the playhead backwards over music already performed.
     const countBeats = countInBeats()
-    if (previousPhase !== 'playing' && countBeats > 0) {
-      await activateAudio()
-
-      const ctx = transport.getAudioContext()
-      if (ctx && typeof ctx.createOscillator === 'function') {
-        const tempoBpm = transport.timeline.tempoBpm()
-        const beatSec = 60 / tempoBpm
-        const totalDuration = countBeats * beatSec
-        const startTime = ctx.currentTime
-
-        for (let i = 0; i < countBeats; i++) {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.type = 'sine'
-          osc.frequency.value = i === 0 ? 880 : 440
-          const clickTime = startTime + i * beatSec
-          gain.gain.setValueAtTime(0.5, clickTime)
-          gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.1)
-          osc.connect(gain)
-          gain.connect(ctx.destination)
-          osc.start(clickTime)
-          osc.stop(clickTime + 0.1)
-        }
-
-        await new Promise<void>((resolve) => {
-          const tick = () => {
-            if (disposed || commandGeneration !== generation) {
-              resolve()
-              return
-            }
-            const elapsed = ctx.currentTime - startTime
-            if (elapsed >= totalDuration) {
-              resolve()
-              return
-            }
-            const beatsElapsed = elapsed * (tempoBpm / 60)
-            const remaining = Math.max(1, countBeats - Math.floor(beatsElapsed))
-            setCountInRemaining(remaining)
-            setPlayheadBeat(expectedStartBeat - countBeats + beatsElapsed)
-            requestAnimationFrame(tick)
-          }
-          requestAnimationFrame(tick)
-        })
-      } else {
-        const beatMs = (60 / transport.timeline.tempoBpm()) * 1000
-        let currentCountBeat = countBeats
-        while (currentCountBeat > 0) {
-          if (disposed || commandGeneration !== generation) {
-            setCountInRemaining(0)
-            return false
-          }
-          setCountInRemaining(currentCountBeat)
-          setPlayheadBeat(expectedStartBeat - currentCountBeat)
-          await new Promise((resolve) => window.setTimeout(resolve, beatMs))
-          currentCountBeat--
-        }
-      }
-      setCountInRemaining(0)
-      if (disposed || commandGeneration !== generation) return false
+    const startsFromRest =
+      previousPhase !== 'playing' && previousPhase !== 'paused'
+    if (startsFromRest && countBeats > 0) {
+      const counted = await runCountIn(
+        countBeats,
+        generation,
+        expectedStartBeat,
+      )
+      if (!counted) return false
     }
 
     const started = await transport.play()
@@ -1452,6 +1548,7 @@ export function usePianoNightController() {
 
   const pause = (): void => {
     commandGeneration += 1
+    abortCountIn()
     transport.pause()
     scheduler.stop()
     applyScoringUpdate(
@@ -1475,6 +1572,7 @@ export function usePianoNightController() {
   const stop = (): void => {
     invalidatePerformanceTake()
     commandGeneration += 1
+    abortCountIn()
     cancelSamplePreparation(true)
     scheduler.stop()
     cancelFrame()
@@ -1754,6 +1852,7 @@ export function usePianoNightController() {
     performanceTakeGeneration += 1
     performanceTakeRecorder.discard()
     commandGeneration += 1
+    abortCountIn()
     cancelSamplePreparation()
     pendingPointers.clear()
     for (const timer of keyboardReleaseTimers.values()) {
@@ -1783,7 +1882,6 @@ export function usePianoNightController() {
     arrangement,
     transport,
     playheadBeat,
-    setPlayheadBeat,
     activeMidis,
     inputMidis,
     projectMidis,

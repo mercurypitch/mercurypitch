@@ -75,7 +75,6 @@ function mountController(): ReturnType<typeof usePianoNightController> {
     return null
   }
   render(() => <Harness />)
-  controller.setCountInBeats(0)
   return controller
 }
 
@@ -220,61 +219,222 @@ describe('usePianoNightController source replacement', () => {
   })
 })
 
-describe('usePianoNightController precount', () => {
-  it('respects a 4-beat count-in before engaging the transport', async () => {
-    const activation = deferred<undefined>()
-    class DeferredAudioContext {
-      currentTime = 0
-      state: AudioContextState = 'suspended'
-      readonly resume = vi.fn(async () => {
-        await activation.promise
-        this.state = 'running'
-      })
-      readonly createOscillator = vi.fn(() => ({
+interface CountInClickStub {
+  frequency: { value: number }
+  connect: ReturnType<typeof vi.fn>
+  disconnect: ReturnType<typeof vi.fn>
+  start: ReturnType<typeof vi.fn>
+  stop: ReturnType<typeof vi.fn>
+}
+
+function stubCountInAudio(options: { resumes: boolean }): {
+  context: {
+    currentTime: number
+    state: AudioContextState
+    createOscillator: ReturnType<typeof vi.fn>
+    createGain: ReturnType<typeof vi.fn>
+  }
+  clicks: CountInClickStub[]
+} {
+  const clicks: CountInClickStub[] = []
+  class CountInAudioContext {
+    currentTime = 0
+    state: AudioContextState = 'suspended'
+    readonly destination = {}
+    readonly resume = vi.fn(async () => {
+      if (options.resumes) this.state = 'running'
+    })
+    readonly close = vi.fn(async () => {
+      this.state = 'closed'
+    })
+    readonly createOscillator = vi.fn(() => {
+      const click: CountInClickStub = {
         frequency: { value: 0 },
         connect: vi.fn(),
+        disconnect: vi.fn(),
         start: vi.fn(),
         stop: vi.fn(),
-      }))
-      readonly createGain = vi.fn(() => ({
-        gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
-        connect: vi.fn(),
-      }))
-      readonly destination = {}
-      readonly close = vi.fn()
-    }
-    const createAudioContext = vi.fn(function AudioContextConstructor() {
-      return new DeferredAudioContext()
+      }
+      clicks.push(click)
+      return click
     })
-    vi.stubGlobal('AudioContext', createAudioContext)
-    const originalRaf = globalThis.requestAnimationFrame
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb(performance.now()), 16))
+    readonly createGain = vi.fn(() => ({
+      gain: {
+        value: 1,
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+      },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    }))
+    readonly createDynamicsCompressor = vi.fn(() => ({
+      threshold: { value: 0 },
+      knee: { value: 0 },
+      ratio: { value: 0 },
+      attack: { value: 0 },
+      release: { value: 0 },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    }))
+  }
+  const context = new CountInAudioContext()
+  vi.stubGlobal(
+    'AudioContext',
+    vi.fn(function AudioContextConstructor() {
+      return context
+    }),
+  )
+  return { context, clicks }
+}
 
-    // Mock performance.now to manually control the elapsed time in the RAF loop
-    let mockTime = 1000
-    const originalNow = performance.now
-    performance.now = vi.fn(() => mockTime)
+/** Hands back a manual frame pump so the count-in advances deterministically. */
+function captureFrames(): {
+  frames: FrameRequestCallback[]
+  run(): void
+} {
+  const frames: FrameRequestCallback[] = []
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
+    (callback: FrameRequestCallback) => {
+      frames.push(callback)
+      return frames.length
+    },
+  )
+  return {
+    frames,
+    run() {
+      for (const callback of frames.splice(0, frames.length)) callback(0)
+    },
+  }
+}
 
+describe('usePianoNightController count-in', () => {
+  it('leaves the count-in off until the player opts in', () => {
+    vi.stubGlobal('AudioContext', vi.fn())
     const controller = mountController()
-    controller.setCountInBeats(4)
-    const playing = controller.play()
 
-    // It should stay ready during the count-in
-    expect(controller.transport.phase()).toBe('ready')
-    
-    // Resolve audio activation
-    activation.resolve(undefined)
-    await Promise.resolve()
-
-    const ctx = controller.transport.getAudioContext() as unknown as DeferredAudioContext
-    expect(ctx).toBeDefined()
-    
-    // Wait for the RAF loop to start and create oscillators
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    expect(ctx.createOscillator).toHaveBeenCalledTimes(4)
-
-    performance.now = originalNow
+    expect(controller.countInBeats()).toBe(0)
+    expect(controller.isCountingIn()).toBe(false)
   })
+
+  it('respects a 4-beat count-in before engaging the transport', async () => {
+    const { context } = stubCountInAudio({ resumes: true })
+    const pump = captureFrames()
+    const controller = mountController()
+    // A late first note keeps the fallback synth out of the oscillator count.
+    controller.replaceSource(
+      compositionSource('Counted Entry', { noteStartBeat: 4 }),
+    )
+    controller.setCountInBeats(4)
+    const beatSeconds = 60 / controller.transport.timeline.tempoBpm()
+
+    const playing = controller.play()
+    expect(controller.countInRemaining()).toBe(4)
+    expect(controller.isCountingIn()).toBe(true)
+    expect(controller.transport.phase()).not.toBe('playing')
+
+    await vi.waitFor(() => {
+      expect(pump.frames.length).toBeGreaterThan(0)
+    })
+    // One click per counted beat, all scheduled ahead on the audio clock.
+    expect(context.createOscillator).toHaveBeenCalledTimes(4)
+
+    for (const beat of [1, 2, 3]) {
+      context.currentTime = beat * beatSeconds
+      pump.run()
+      expect(controller.countInRemaining()).toBe(4 - beat)
+      expect(controller.transport.phase()).not.toBe('playing')
+    }
+
+    context.currentTime = 4 * beatSeconds
+    pump.run()
+
+    await expect(playing).resolves.toBe(true)
+    expect(controller.countInRemaining()).toBe(0)
+    expect(controller.isCountingIn()).toBe(false)
+    expect(controller.transport.phase()).toBe('playing')
+  })
+
+  it('does not count in when resuming from pause', async () => {
+    class ImmediateAudioContext {
+      currentTime = 0
+      state: AudioContextState = 'running'
+      readonly resume = vi.fn(async () => undefined)
+      readonly close = vi.fn(async () => {
+        this.state = 'closed'
+      })
+    }
+    const context = new ImmediateAudioContext()
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn(function AudioContextConstructor() {
+        return context
+      }),
+    )
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+    const controller = mountController()
+
+    await expect(controller.play()).resolves.toBe(true)
+    controller.pause()
+    expect(controller.transport.phase()).toBe('paused')
+
+    controller.setCountInBeats(4)
+    const resumed = controller.play()
+    // runCountIn publishes the remaining beats before its first await, so a
+    // zero here means the resume never entered one.
+    expect(controller.countInRemaining()).toBe(0)
+    expect(controller.isCountingIn()).toBe(false)
+
+    await expect(resumed).resolves.toBe(true)
+    expect(controller.transport.phase()).toBe('playing')
+  })
+
+  it('a second play() during count-in does not schedule a second click train', async () => {
+    const { context } = stubCountInAudio({ resumes: true })
+    const pump = captureFrames()
+    const controller = mountController()
+    controller.replaceSource(
+      compositionSource('Counted Entry', { noteStartBeat: 4 }),
+    )
+    controller.setCountInBeats(4)
+    const beatSeconds = 60 / controller.transport.timeline.tempoBpm()
+
+    const first = controller.play()
+    const second = controller.play()
+
+    await expect(second).resolves.toBe(false)
+    await vi.waitFor(() => {
+      expect(pump.frames.length).toBeGreaterThan(0)
+    })
+    expect(context.createOscillator).toHaveBeenCalledTimes(4)
+
+    context.currentTime = 4 * beatSeconds
+    pump.run()
+
+    await expect(first).resolves.toBe(true)
+    expect(context.createOscillator).toHaveBeenCalledTimes(4)
+    expect(controller.countInRemaining()).toBe(0)
+  })
+
+  it('count-in settles when the audio context never resumes', async () => {
+    const { context } = stubCountInAudio({ resumes: false })
+    // No frames at all: only the wall-clock deadline can end this count-in.
+    vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+    const controller = mountController()
+    controller.replaceSource(
+      compositionSource('Counted Entry', { noteStartBeat: 4 }),
+    )
+    controller.setCountInBeats(1)
+
+    const playing = controller.play()
+    expect(controller.countInRemaining()).toBe(1)
+
+    await expect(playing).resolves.toBe(true)
+    expect(controller.countInRemaining()).toBe(0)
+    expect(controller.isCountingIn()).toBe(false)
+    // A suspended context cannot sound or time the clicks, so none are queued.
+    expect(context.createOscillator).not.toHaveBeenCalled()
+    expect(context.state).toBe('suspended')
+  }, 10000)
 })
 
 describe('usePianoNightController practice controls', () => {

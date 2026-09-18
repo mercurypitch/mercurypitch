@@ -35,7 +35,7 @@ import type { PianoNightPerformanceView } from './PianoNightStageViews'
 import { PianoNightStageViews } from './PianoNightStageViews'
 import { formatPianoNightGlassValue, loadPianoNightGlass, persistPianoNightGlass, PIANO_NIGHT_GLASS, PIANO_NIGHT_GLASS_VAR, pianoNightGlassLabel, } from './room-glass'
 import { LEGACY_PIANO_PATH } from './route'
-import { usePianoNightController } from './usePianoNightController'
+import { PIANO_NIGHT_COUNT_IN_BEATS, usePianoNightController, } from './usePianoNightController'
 
 const PianoNightMusicPanel = lazy(async () =>
   import('./PianoNightMusicPanel').then((module) => ({
@@ -1034,20 +1034,18 @@ export function PianoNightApp(): JSX.Element {
           playheadBeat={controller.playheadBeat}
           isPlaying={isPlaying}
           phrase={phrase}
-          activeMidis={controller.activeMidis}
+          inputMidis={controller.inputMidis}
+          showProjectKeys={controller.showFallingTouches}
           keyWindow={keyWindow.window}
           stageMotion={controller.stageMotion}
           practiceLoop={controller.practiceLoop}
-          onScrub={(delta) => {
-            const clamped = Math.max(
-              0,
-              Math.min(
-                controller.stage().totalBeats,
-                controller.transport.timeline.playheadBeat() - delta,
-              ),
+          onScrub={(deltaBeats) => {
+            // Through the controller, never the raw transport: a seek has to
+            // invalidate the take, cancel sample preparation, discontinue
+            // scoring and settle the A/B range with it.
+            controller.seekToBeat(
+              controller.transport.timeline.playheadBeat() + deltaBeats,
             )
-            controller.transport.seekToBeat(clamped)
-            controller.setPlayheadBeat(clamped)
           }}
           setPracticeLoopStart={controller.setPracticeLoopStart}
           setPracticeLoopEnd={controller.setPracticeLoopEnd}
@@ -1105,19 +1103,22 @@ export function PianoNightApp(): JSX.Element {
               </Show>
             </button>
             <button
+              class={styles.phraseStep}
               classList={{
                 [styles.controlActive]: controller.countInBeats() > 0,
               }}
               type="button"
               onClick={() =>
                 controller.setCountInBeats(
-                  controller.countInBeats() > 0 ? 0 : 4,
+                  controller.countInBeats() > 0
+                    ? 0
+                    : PIANO_NIGHT_COUNT_IN_BEATS,
                 )
               }
               aria-label={
                 controller.countInBeats() > 0
                   ? 'Turn count-in off'
-                  : 'Turn count-in on (4 beats)'
+                  : `Turn count-in on (${PIANO_NIGHT_COUNT_IN_BEATS} beats)`
               }
               aria-pressed={controller.countInBeats() > 0}
               data-testid="piano-night-count-in"
