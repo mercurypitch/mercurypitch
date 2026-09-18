@@ -218,6 +218,20 @@
   min-height: 2.8em;
   color: #d9cbb5;
 }
+.creditLink {
+  align-self: flex-start;
+  color: #b6a992;
+  font-size: 12px;
+  line-height: 1.45;
+  text-decoration: underline;
+  text-decoration-color: #b6a99266;
+  text-underline-offset: 2px;
+}
+.creditLink:hover,
+.creditLink:focus-visible {
+  color: #e0a45d;
+  text-decoration-color: currentcolor;
+}
 .phrase {
   display: flex;
   gap: 4px;

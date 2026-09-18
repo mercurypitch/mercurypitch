@@ -63,6 +63,7 @@
     "knip:prod": "knip --production",
     "lines": "cloc src --exclude-dir=node_modules,dist --by-file-by-lang --not-match-f='(.*[.]d[.]ts|.*[.]stories[.].*|.*[.]test[.].*|.*[.]json)'",
     "docs:index": "node scripts/gen-agent-index.mjs",
+    "og:versions": "node scripts/gen-og-versions.mjs",
     "docs:index:check": "node scripts/gen-agent-index.mjs --check",
     "pr:prepare": "node scripts/pr-prepare.mjs",
     "pr:validate": "node scripts/pr-prepare.mjs --check",
