@@ -676,7 +676,25 @@ test('keeps a recorded Session Drummer lane independently mutable and exports th
   await expect(muted).toHaveAttribute('aria-pressed', 'false')
   await muted.click()
 
-  await review.locator('summary').click()
+  const playbackDetails = review
+    .locator('summary')
+    .filter({ hasText: 'amp + cabinet' })
+  const exportDetails = review.getByText('Timing and format details', {
+    exact: true,
+  })
+  await expect(playbackDetails).toHaveCount(1)
+  await expect(exportDetails).toBeVisible()
+  await playbackDetails.click()
+  expect(
+    await playbackDetails.evaluate(
+      (element) => (element.parentElement as HTMLDetailsElement).open,
+    ),
+  ).toBe(true)
+  expect(
+    await exportDetails.evaluate(
+      (element) => (element.parentElement as HTMLDetailsElement).open,
+    ),
+  ).toBe(false)
   const level = review.getByRole('slider', {
     name: 'Recorded drums level',
     exact: true,
