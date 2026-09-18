@@ -1019,8 +1019,19 @@ export function PianoNightApp(): JSX.Element {
         </Show>
 
         <Show when={controller.isCountingIn()}>
-          <div class={styles.countInOverlay} aria-live="assertive">
-            <span>{controller.countInRemaining()}</span>
+          <div
+            class={styles.countInOverlay}
+            aria-live="assertive"
+            style={{
+              '--count-in-beat': `${controller.countInIntervalSeconds()}s`,
+            }}
+          >
+            {/* Keyed so each number is a fresh element and its pop starts
+                on the click that brought it, instead of one animation
+                looping at its own pace underneath a changing digit. */}
+            <Show when={controller.countInRemaining()} keyed>
+              {(remaining) => <span>{remaining}</span>}
+            </Show>
           </div>
         </Show>
 
