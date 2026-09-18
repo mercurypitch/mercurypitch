@@ -19,6 +19,7 @@ import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lyricLineProgress } from '@/lib/jam/jam-song'
 import { initAudioEngine } from '@/stores/app-store'
 import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { followMediaClock } from '@/lib/jam/media-clock'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -269,13 +270,16 @@ export const JamSongStage: Component = () => {
    *
    * The host's broadcast is still authoritative -- it just arrives as a
    * correction (jamSongHostTarget) rather than as the only source.
+   *
+   * Read per frame while it plays, not only on `timeupdate`: that event
+   * fires about four times a second, and everything drawn from this position
+   * -- the lanes above all -- stepped in quarter-second jumps past a live
+   * pitch trail running off its own per-frame clock.
    */
   onMount(() => {
     const el = audioRef
     if (el === undefined) return
-    const onTime = () => setJamSongPositionSec(el.currentTime)
-    el.addEventListener('timeupdate', onTime)
-    onCleanup(() => el.removeEventListener('timeupdate', onTime))
+    onCleanup(followMediaClock(el, setJamSongPositionSec))
   })
 
   /**
