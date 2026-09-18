@@ -101,6 +101,43 @@ export async function touchSession(
     .run()
 }
 
+/**
+ * How long a session may go on trading its token for a fresh one.
+ *
+ * `/refresh` carries the same `sid` forward, so a session that is used stays
+ * young forever: its thirty-day token is only ever as old as the last
+ * foreground. That is the point for the phone picked up every other week, but
+ * it also means a token lifted off a device renews indefinitely, and the only
+ * things that stop it are a sign-out nobody knew to perform and the blunt
+ * `tokenVersion` bump. Renewal stops six months after the sign-in itself. A
+ * person signs in again; a stolen token reaches an end that arrives whether
+ * or not anyone noticed.
+ */
+export const SESSION_MAX_AGE_DAYS = 180
+
+/**
+ * Whether this session may still be renewed.
+ *
+ * `julianday` rather than comparing the strings: rows written by the column
+ * default read `YYYY-MM-DD HH:MM:SS`, and one written as ISO would sort wrong
+ * against them because `T` is above a space.
+ */
+export async function sessionRenewable(
+  db: D1Database,
+  sessionId: string,
+  userId: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare(
+      `SELECT id FROM authSessions
+        WHERE id = ? AND userId = ?
+          AND julianday(createdAt) > julianday('now', ?)`,
+    )
+    .bind(sessionId, userId, `-${SESSION_MAX_AGE_DAYS} days`)
+    .first<{ id: string }>()
+  return row !== null
+}
+
 /** End one device. False when the row was not this user's, or already gone. */
 export async function endSession(
   db: D1Database,
