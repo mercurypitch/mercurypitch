@@ -27,6 +27,8 @@ import { createPersistedSignal } from '@/lib/storage'
 import { usePerformanceTakeKeep } from '@/lib/use-performance-take-keep'
 import { createPianoNightActiveMidiIndex } from './piano-night-active-midi-index'
 import { createPianoNightArrangement } from './piano-night-arrangement'
+import type { CountInPlan } from './piano-night-count-in'
+import { COUNT_IN_LEAD_SECONDS, countInRemainingAt, planCountIn, } from './piano-night-count-in'
 import type { PianoNightStageMotion } from './piano-night-fall-geometry'
 import { isPianoNightStageMotion } from './piano-night-fall-geometry'
 import type { PianoNightPracticeLoopState, PianoNightPracticeRange, } from './piano-night-practice-loop'
@@ -350,6 +352,8 @@ export function usePianoNightController() {
     createPersistedSignal<boolean>(SHOW_FALLING_TOUCHES_STORAGE_KEY, true)
   const [countInRemaining, setCountInRemaining] = createSignal(0)
   const isCountingIn = createMemo(() => countInRemaining() > 0)
+  /** Seconds between counts, so the overlay's pop can fit inside one. */
+  const [countInIntervalSeconds, setCountInIntervalSeconds] = createSignal(0.5)
   const [scoringState, setScoringState] =
     createSignal<PianoPerformanceScoringState>(scoring.snapshot())
   const [statusMessage, setStatusMessage] = createSignal(
@@ -1348,16 +1352,15 @@ export function usePianoNightController() {
 
   const scheduleCountInClicks = (
     ctx: AudioContext,
-    countBeats: number,
-    beatSeconds: number,
+    plan: CountInPlan,
+    startAt: number,
   ): void => {
-    const startTime = ctx.currentTime
-    for (let beat = 0; beat < countBeats; beat += 1) {
+    for (const [count, offset] of plan.offsetsSeconds.entries()) {
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.type = 'sine'
-      osc.frequency.value = beat === 0 ? 880 : 440
-      const clickTime = startTime + beat * beatSeconds
+      osc.frequency.value = count === 0 ? 880 : 440
+      const clickTime = startAt + offset
       gain.gain.setValueAtTime(0.5, clickTime)
       gain.gain.exponentialRampToValueAtTime(0.001, clickTime + 0.1)
       osc.connect(gain)
@@ -1372,9 +1375,13 @@ export function usePianoNightController() {
 
   /**
    * Counts the player in, then reports whether the count reached its end.
-   * Always settles: the audio clock drives the display while the context is
-   * running, and a wall-clock deadline ends it when the context is suspended
-   * or the frame loop never runs.
+   *
+   * The clicks and the numbers read one plan from one origin on the audio
+   * clock, so the number changes exactly when the click sounds. The plan is
+   * built from the tempo the song will actually play at — practice speed
+   * included — and moves to half notes when a beat is too short to read.
+   * Always settles: a wall-clock deadline ends it when the context is
+   * suspended or the frame loop never runs.
    */
   const runCountIn = async (
     countBeats: number,
@@ -1383,12 +1390,15 @@ export function usePianoNightController() {
   ): Promise<boolean> => {
     const superseded = (): boolean =>
       disposed || commandGeneration !== generation
-    const tempoBpm = transport.timeline.tempoBpm()
-    const beatSeconds = 60 / tempoBpm
-    const totalSeconds = countBeats * beatSeconds
+    const plan = planCountIn(
+      transport.effectiveTempoBpmAtBeat(expectedStartBeat),
+      countBeats,
+    )
+    const beatsBefore = plan.counts * plan.beatsPerCount
 
-    setCountInRemaining(countBeats)
-    setPlayheadBeat(Math.max(0, expectedStartBeat - countBeats))
+    setCountInIntervalSeconds(plan.intervalSeconds)
+    setCountInRemaining(plan.counts)
+    setPlayheadBeat(Math.max(0, expectedStartBeat - beatsBefore))
 
     await activateAudio()
     if (superseded()) {
@@ -1403,12 +1413,14 @@ export function usePianoNightController() {
       ctx !== null &&
       ctx.state === 'running' &&
       typeof ctx.createOscillator === 'function'
+    // One origin for the clicks and the numbers, a hair ahead of "now" so
+    // the first click is not already late by the time it is scheduled.
+    const startAt =
+      audible && ctx !== null ? ctx.currentTime + COUNT_IN_LEAD_SECONDS : 0
     if (audible && ctx !== null) {
-      scheduleCountInClicks(ctx, countBeats, beatSeconds)
+      scheduleCountInClicks(ctx, plan, startAt)
     }
-
-    const audioStartTime = audible && ctx !== null ? ctx.currentTime : 0
-    const wallStartMs = performance.now()
+    const wallStartMs = performance.now() + COUNT_IN_LEAD_SECONDS * 1000
 
     await new Promise<void>((resolve) => {
       let settled = false
@@ -1421,26 +1433,30 @@ export function usePianoNightController() {
       }
       deadline = window.setTimeout(
         settle,
-        totalSeconds * 1000 + COUNT_IN_DEADLINE_MARGIN_MS,
+        (plan.totalSeconds + COUNT_IN_LEAD_SECONDS) * 1000 +
+          COUNT_IN_DEADLINE_MARGIN_MS,
       )
       const tick = (): void => {
         if (superseded()) {
           settle()
           return
         }
-        const wallElapsedSeconds = (performance.now() - wallStartMs) / 1000
         const elapsedSeconds =
           audible && ctx !== null
-            ? ctx.currentTime - audioStartTime
-            : wallElapsedSeconds
-        if (elapsedSeconds >= totalSeconds) {
+            ? ctx.currentTime - startAt
+            : (performance.now() - wallStartMs) / 1000
+        if (elapsedSeconds >= plan.totalSeconds) {
           settle()
           return
         }
-        const beatsElapsed = elapsedSeconds / beatSeconds
-        setCountInRemaining(Math.max(1, countBeats - Math.floor(beatsElapsed)))
+        setCountInRemaining(countInRemainingAt(plan, elapsedSeconds))
         setPlayheadBeat(
-          Math.max(0, expectedStartBeat - countBeats + beatsElapsed),
+          Math.max(
+            0,
+            expectedStartBeat -
+              beatsBefore +
+              Math.max(0, elapsedSeconds) / plan.beatSeconds,
+          ),
         )
         requestAnimationFrame(tick)
       }
@@ -1916,6 +1932,7 @@ export function usePianoNightController() {
     countInBeats,
     setCountInBeats,
     countInRemaining,
+    countInIntervalSeconds,
     isCountingIn,
     showFallingTouches,
     setShowFallingTouches,
