@@ -14,6 +14,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
 import { colorTokenVars } from '@/lib/css-color-token'
+import { laneSecToX, laneWindow, liveSampleX, NOW_AT, WINDOW_SEC, } from '@/lib/jam/jam-lane-geometry'
 import { groupLinesBySinger, isComingUp, LEAD_IN_SEC, noteSingers, } from '@/lib/jam/jam-song-blocks'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { JamSongNote, TimeStampedPitchSample } from '@/lib/jam/types'
@@ -49,16 +50,6 @@ const NOTE_ALPHA = {
   theirs: 0.1,
 } as const
 
-/** Seconds of history a lane shows. Long enough to see a phrase. */
-const WINDOW_SEC = 8
-/**
- * Where "now" sits across the lane.
- *
- * Not at the right edge: with a target line to sing, you need to see what
- * is COMING more than what has gone, so the playhead sits three quarters
- * along and the next second or two is visible ahead of it.
- */
-const NOW_AT = 0.75
 /**
  * A hole this wide means the singer stopped, not that they slid.
  *
@@ -165,7 +156,6 @@ const Lane: Component<{
       const samples: TimeStampedPitchSample[] =
         jamPitchHistory()[props.peerId] ?? []
       const now = Date.now()
-      const pxPerMs = w / (WINDOW_SEC * 1000)
       const midiToY = (midi: number) =>
         h - ((midi - MIDI_MIN) / (MIDI_MAX - MIDI_MIN)) * h
 
@@ -184,9 +174,8 @@ const Lane: Component<{
       const notes = props.notes?.() ?? []
       const pos = props.positionSec?.() ?? 0
       if (notes.length > 0) {
-        const windowFrom = pos - WINDOW_SEC * (1 - NOW_AT)
-        const windowTo = pos + WINDOW_SEC * NOW_AT
-        const secToX = (t: number) => ((t - windowFrom) / WINDOW_SEC) * w
+        const { from: windowFrom, to: windowTo } = laneWindow(pos)
+        const secToX = (t: number) => laneSecToX(t, pos, w)
         const owners = props.noteOwners?.() ?? []
         for (let i = 0; i < notes.length; i++) {
           const n = notes[i]
@@ -260,7 +249,7 @@ const Lane: Component<{
         // a gap several frames wide is a breath, not a slide.
         if (prevTs !== 0 && s.timestamp - prevTs > GAP_BREAK_MS) drawing = false
         prevTs = s.timestamp
-        const x = w * NOW_AT - age * pxPerMs
+        const x = liveSampleX(age, w)
         const y = midiToY(s.midi)
         if (!drawing) {
           ctx.moveTo(x, y)
