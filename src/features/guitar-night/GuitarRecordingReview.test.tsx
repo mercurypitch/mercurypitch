@@ -194,7 +194,7 @@ describe('recording corrections', () => {
       screen.getByRole('button', { name: 'Hide note corrections' }),
     ).toBeDisabled()
     fireEvent.click(discard)
-    fireEvent.click(screen.getByRole('button', { name: 'Close Jam Doctor' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close take review' }))
     expect(onDiscard).toHaveBeenCalledOnce()
     expect(onClose).not.toHaveBeenCalled()
     expect(store.saveCorrections).not.toHaveBeenCalled()
@@ -248,6 +248,9 @@ describe('recording corrections', () => {
       'recording-review',
     )
     expect(screen.getByText('Take review')).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Close take review' }),
+    ).toBeVisible()
     expect(screen.getByRole('region', { name: 'Listen' })).toBeInTheDocument()
     expect(
       screen.getByRole('region', { name: 'Export current setup' }),
@@ -267,6 +270,16 @@ describe('recording corrections', () => {
     fireEvent.click(refine)
     expect(refine).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: 'Refine chords' })).toBeVisible()
+    const edit = screen.getByRole('button', {
+      name: 'Review and correct notes',
+    })
+    fireEvent.click(edit)
+    expect(edit).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(refine)
+    expect(refine).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.getByRole('button', { name: 'Review and correct notes' }),
+    ).toHaveAttribute('aria-expanded', 'false')
   })
   it('shows a separate drummer lane with one-click mute, level and mix export', () => {
     renderReview(false, {

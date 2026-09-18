@@ -498,7 +498,7 @@ test('auditions original input and transcribed notes with clean/current/saved am
   )
 
   await review
-    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .getByRole('button', { name: 'Close take review', exact: true })
     .click()
   // The compound deck has no native landmark role; its scoped test id keeps
   // source controls behind an open review from masquerading as deck controls.

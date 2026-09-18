@@ -205,7 +205,7 @@ test('live chord switches preserve monitoring and Stop prepares a reversible pro
   expect(result.postWorkers).toBe(1)
   expect(result.overlapped).toBe(false)
   await review
-    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .getByRole('button', { name: 'Close take review', exact: true })
     .click()
   await page.getByRole('button', { name: 'Review take', exact: true }).click()
   await expect(

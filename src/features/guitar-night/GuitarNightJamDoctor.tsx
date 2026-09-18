@@ -228,7 +228,11 @@ export function GuitarNightJamDoctor(props: GuitarNightJamDoctorProps) {
                 ref={closeButton}
                 class={styles.doctorClose}
                 type="button"
-                aria-label="Close Jam Doctor"
+                aria-label={
+                  props.variant === 'recording-review'
+                    ? 'Close take review'
+                    : 'Close Jam Doctor'
+                }
                 onClick={() => props.onClose()}
               >
                 <X />

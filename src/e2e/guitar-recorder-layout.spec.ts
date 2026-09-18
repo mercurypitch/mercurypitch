@@ -89,7 +89,7 @@ for (const width of [1440, 820, 390, 320]) {
       review.getByRole('button', { name: 'Take kept', exact: true }),
     ).toBeDisabled()
     await review
-      .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+      .getByRole('button', { name: 'Close take review', exact: true })
       .click()
     await page.setViewportSize({ width, height: width === 320 ? 568 : 850 })
     await expect(

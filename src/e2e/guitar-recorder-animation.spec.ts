@@ -112,7 +112,7 @@ test('loops actual reel pixels during capture and releases video when stopped @s
     review.getByRole('button', { name: 'Take kept', exact: true }),
   ).toBeDisabled()
   await review
-    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .getByRole('button', { name: 'Close take review', exact: true })
     .click()
   await expect(
     page.getByRole('button', { name: 'Record using tape deck', exact: true }),
