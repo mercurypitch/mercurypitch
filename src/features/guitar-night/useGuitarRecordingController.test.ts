@@ -6,7 +6,7 @@ import type { GuitarElectricAmpParameters } from '@/lib/guitar/guitar-electric-a
 import type { GuitarInputProfileKind } from '@/lib/guitar/guitar-input-profile'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import type { GuitarRecordingInput, startGuitarRecordingCapture, } from '@/lib/guitar/recording-capture'
-import type { GuitarRecording, GuitarRecordingSummary, } from '@/lib/guitar/recording-types'
+import type { GuitarRecording, GuitarRecordingDrumTrack, GuitarRecordingSummary, } from '@/lib/guitar/recording-types'
 import type { GuitarListeningStatus } from './useGuitarListeningController'
 import { useGuitarRecordingController } from './useGuitarRecordingController'
 
@@ -49,6 +49,12 @@ const summary: GuitarRecordingSummary = {
   clockAnomalies: 0,
   interruption: null,
 }
+/** What the browser claims about this route; every field is optional there. */
+let route: {
+  outputLatency?: number
+  baseLatency?: number
+  inputLatency?: number
+}
 let captured: Parameters<typeof startGuitarRecordingCapture>[0]
 let ending: ReturnType<typeof deferred<GuitarRecordingSummary>>
 let row: GuitarRecording
@@ -62,7 +68,11 @@ function harness(
 ) {
   return createRoot((dispose) => {
     disposers.push(dispose)
-    const stream = {} as MediaStream
+    const stream = {
+      getAudioTracks: () => [
+        { getSettings: () => ({ latency: route.inputLatency }) },
+      ],
+    } as unknown as MediaStream
     const [status, setStatus] = createSignal<GuitarListeningStatus>(
       open ? 'listening' : 'off',
     )
@@ -78,7 +88,12 @@ function harness(
             stream,
             channel: channel(),
             channelCount: 2,
-            context: { sampleRate: 48000, currentTime: 5 } as AudioContext,
+            context: {
+              sampleRate: 48000,
+              currentTime: 5,
+              outputLatency: route.outputLatency,
+              baseLatency: route.baseLatency,
+            } as AudioContext,
             source: {} as MediaStreamAudioSourceNode,
           }
     const stopInput = vi.fn(() => setStatus('off'))
@@ -123,6 +138,7 @@ function harness(
 }
 beforeEach(() => {
   vi.resetAllMocks()
+  route = {}
   ending = deferred<GuitarRecordingSummary>()
   mocks.list.mockResolvedValue([])
   mocks.started.mockResolvedValue(undefined)
@@ -361,6 +377,40 @@ describe('explicit guitar recording lifecycle', () => {
     })
     h.dispose()
     expect(unsubscribe).toHaveBeenCalledOnce()
+  })
+  it('lands the drum lane where the player heard it, not where it was scheduled', async () => {
+    // A hit written for context time 5.1 leaves the speakers 50 ms later, and
+    // the guitar answering it reaches the capture graph 12 ms later still, so
+    // in the take the two are 62 ms apart. Storing the scheduling time put the
+    // whole lane that far ahead of the playing.
+    route = { outputLatency: 0.05, baseLatency: 0.01, inputLatency: 0.012 }
+    const h = harness(true)
+    let listener:
+      | ((hit: {
+          contextTime: number
+          gmKey: number
+          velocity: number
+          kitId: string
+          level: number
+        }) => void)
+      | null = null
+    h.controller.setDrummerCapture({
+      subscribeHit(next) {
+        listener = next
+        return vi.fn()
+      },
+    })
+    await h.controller.start()
+    listener!({
+      contextTime: 5.1,
+      gmKey: 38,
+      velocity: 116,
+      kitId: 'muldjord',
+      level: 1.15,
+    })
+    await h.controller.stop()
+    const track = mocks.finish.mock.calls[0]![3] as GuitarRecordingDrumTrack
+    expect(track.hits[0]!.offsetSeconds).toBeCloseTo(0.162, 8)
   })
   it('never starts or releases already-open Listening/monitoring on Stop recording', async () => {
     const h = harness(true)
