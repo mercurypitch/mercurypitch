@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, Index, onCleanup, Show } from 'solid-js'
+import { createEffect, createMemo, Index, onCleanup, Show, untrack, } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
 import { applyPersistedValue } from '@/lib/storage'
 import { isNarrow } from '@/lib/use-viewport'
@@ -264,6 +264,7 @@ export const Walkthrough: Component = () => {
     }
     const el = queryVisible(step.targetSelector)
     if (!el) {
+      if (preparing) return
       highlightRef.style.display = 'none'
       return
     }
@@ -343,6 +344,7 @@ export const Walkthrough: Component = () => {
         : null
 
     if (el === null) {
+      if (preparing) return
       const vw = window.innerWidth
       const vh = window.innerHeight
       const tooltipRect = tooltipRef.getBoundingClientRect()
@@ -430,7 +432,10 @@ export const Walkthrough: Component = () => {
 
   createEffect(() => {
     if (!walkthroughActive()) return
-    reposition()
+    // Untracked: `reposition` reads the current step, so a tracked call here
+    // would re-run this effect on every Next — measuring a target that has
+    // not been prepared yet, and re-attaching all three listeners each time.
+    untrack(reposition)
     window.addEventListener('resize', reposition)
     window.addEventListener('orientationchange', reposition)
     window.addEventListener('scroll', reposition, true)
@@ -447,6 +452,11 @@ export const Walkthrough: Component = () => {
   // awaited, so a single tour can walk through nested UI to reach any element.
   // A generation token cancels a stale preparation when the step changes mid-run.
   let prepGen = 0
+  // True while a step is getting its target on screen. A reposition that
+  // lands in that window (a scroll, a resize) must leave the spotlight where
+  // it is: the new target may not exist yet, and blanking it for the 50-300ms
+  // preparation takes reads as a flicker on every Next.
+  let preparing = false
   let tourOpenedSidebar = false
   // Desktop: the sidebar can be collapsed to a thin rail that display:none's
   // its content. Track when the tour expanded it so we can re-collapse after.
@@ -481,8 +491,11 @@ export const Walkthrough: Component = () => {
       step === undefined ||
       step.targetSelector === undefined ||
       step.targetSelector === ''
-    )
+    ) {
+      preparing = false
       return
+    }
+    preparing = true
 
     // Narrow: open the off-canvas sidebar only for sidebar-anchored steps.
     if (isNarrow()) {
@@ -539,6 +552,7 @@ export const Walkthrough: Component = () => {
     if (gen !== prepGen) return
     const found = await waitForTarget(step.targetSelector)
     if (gen !== prepGen) return
+    preparing = false
     if (!found) {
       // Target never appeared (or is invisible on this screen size): don't
       // leave the spotlight parked on the previous step's element. Hide the
