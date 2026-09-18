@@ -214,6 +214,21 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
 ) => {
   const background = useBackgroundSurfaceController('karaoke')
 
+  /**
+   * The clock for anything the singer follows by ear.
+   *
+   * `elapsed` is where the transport is. `lyricsElapsed` is where the sound
+   * has actually reached the speakers, which over Bluetooth is a fifth of a
+   * second behind it. The word sweep already ran on that one; the pitch
+   * ribbon, the run-in and the rest countdown did not, so on the one surface
+   * where all four sit together the notes arrived ahead of the sound they
+   * were drawn for.
+   *
+   * The scrubber and the time readout keep `elapsed` deliberately: they
+   * report the transport's position, not the performance's.
+   */
+  const earElapsed = (): number => props.lyricsElapsed?.() ?? props.elapsed()
+
   // ── Load progress ─────────────────────────────────────────────
   //
   // Mirrors the mixer's contract rather than inventing a second one: only the
@@ -322,7 +337,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       entry.time,
       entry.endTime,
       entry.wordTimes,
-      props.lyricsElapsed?.() ?? props.elapsed(),
+      earElapsed(),
       entry.wordEndTimes,
       entry.wordSweeps,
     )
@@ -713,7 +728,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       <Show when={ribbonVisible()}>
         <ZenPitchRibbon
           playing={props.playing}
-          elapsed={props.elapsed}
+          elapsed={earElapsed}
           notes={props.ribbonNotes!}
           micPitch={props.micPitch ?? (() => null)}
         />
@@ -802,7 +817,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               // rather than off the current one — during a run-in the line
               // about to start is by definition not the current line yet.
               const leadIn = () =>
-                leadInProgress(entry.leadInFrom, entry.time, props.elapsed())
+                leadInProgress(entry.leadInFrom, entry.time, earElapsed())
               return (
                 <p
                   ref={(el) => lineEls.set(idx, el)}
@@ -818,7 +833,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
                     fallback={
                       <RestCountdownDots
                         dotCount={getRestDotCount(entry.time, entry.endTime)}
-                        elapsed={props.elapsed}
+                        elapsed={earElapsed}
                         gapEnd={entry.endTime}
                         gapStart={entry.time}
                         onSeek={props.seekTo}
