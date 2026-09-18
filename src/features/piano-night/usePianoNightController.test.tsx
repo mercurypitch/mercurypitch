@@ -7,6 +7,7 @@ import type { Component } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { compilePianoTempoMap } from '@/features/piano/runtime/piano-tempo-map'
 import { applyPersistedValue, onPersistedWrite } from '@/lib/storage'
+import { COUNT_IN_LEAD_SECONDS } from './piano-night-count-in'
 import type { PianoNightSource } from './piano-night-source'
 import { usePianoNightController } from './usePianoNightController'
 
@@ -339,19 +340,112 @@ describe('usePianoNightController count-in', () => {
     expect(context.createOscillator).toHaveBeenCalledTimes(4)
 
     for (const beat of [1, 2, 3]) {
-      context.currentTime = beat * beatSeconds
+      context.currentTime = COUNT_IN_LEAD_SECONDS + beat * beatSeconds
       pump.run()
       expect(controller.countInRemaining()).toBe(4 - beat)
       expect(controller.transport.phase()).not.toBe('playing')
     }
 
-    context.currentTime = 4 * beatSeconds
+    context.currentTime = COUNT_IN_LEAD_SECONDS + 4 * beatSeconds
     pump.run()
 
     await expect(playing).resolves.toBe(true)
     expect(controller.countInRemaining()).toBe(0)
     expect(controller.isCountingIn()).toBe(false)
     expect(controller.transport.phase()).toBe('playing')
+  })
+
+  it('changes the number exactly when each click sounds, from one origin', async () => {
+    const { context, clicks } = stubCountInAudio({ resumes: true })
+    const pump = captureFrames()
+    const controller = mountController()
+    controller.replaceSource(
+      compositionSource('Counted Entry', { noteStartBeat: 4 }),
+    )
+    controller.setCountInBeats(4)
+    const beatSeconds = 60 / controller.transport.timeline.tempoBpm()
+    // Wherever the audio clock happens to be when Start is pressed.
+    context.currentTime = 12.34
+
+    const playing = controller.play()
+    await vi.waitFor(() => {
+      expect(clicks).toHaveLength(4)
+    })
+    const origin = 12.34 + COUNT_IN_LEAD_SECONDS
+    clicks.forEach((click, index) => {
+      expect(click.start).toHaveBeenCalledWith(
+        expect.closeTo(origin + index * beatSeconds, 6),
+      )
+    })
+    // A hair before the second click the first number still shows; on the
+    // click itself the next one does.
+    context.currentTime = origin + beatSeconds - 0.01
+    pump.run()
+    expect(controller.countInRemaining()).toBe(4)
+    context.currentTime = origin + beatSeconds
+    pump.run()
+    expect(controller.countInRemaining()).toBe(3)
+
+    context.currentTime = origin + 4 * beatSeconds
+    pump.run()
+    await expect(playing).resolves.toBe(true)
+  })
+
+  it('counts a fast song in on half notes so the numbers can be read', async () => {
+    const { context, clicks } = stubCountInAudio({ resumes: true })
+    const pump = captureFrames()
+    const controller = mountController()
+    // 320 bpm: a beat is under 0.2 s, far too quick to read four digits.
+    controller.replaceSource(
+      compositionSource('Tablet Etude', { tempoBpm: 320, noteStartBeat: 8 }),
+    )
+    controller.setCountInBeats(4)
+    // The transport caps the tempo at 280; a beat is still only 0.21 s.
+    const tempo = controller.transport.timeline.tempoBpm()
+    expect(tempo).toBe(280)
+    const interval = (60 / tempo) * 2
+
+    const playing = controller.play()
+    await vi.waitFor(() => {
+      expect(clicks).toHaveLength(4)
+    })
+    // Four counts two beats apart, still landing on a downbeat.
+    expect(controller.countInIntervalSeconds()).toBeCloseTo(interval)
+    expect(interval).toBeGreaterThanOrEqual(0.4)
+    clicks.forEach((click, index) => {
+      expect(click.start).toHaveBeenCalledWith(
+        expect.closeTo(COUNT_IN_LEAD_SECONDS + index * interval, 6),
+      )
+    })
+    context.currentTime = COUNT_IN_LEAD_SECONDS + interval
+    pump.run()
+    expect(controller.countInRemaining()).toBe(3)
+    context.currentTime = COUNT_IN_LEAD_SECONDS + 4 * interval
+    pump.run()
+    await expect(playing).resolves.toBe(true)
+  })
+
+  it('counts in at the practice speed the song will play at', async () => {
+    const { context, clicks } = stubCountInAudio({ resumes: true })
+    const pump = captureFrames()
+    const controller = mountController()
+    controller.replaceSource(
+      compositionSource('Counted Entry', { noteStartBeat: 4 }),
+    )
+    controller.setCountInBeats(4)
+    expect(controller.setPracticeSpeed(0.5)).toBe(true)
+    const beatSeconds = 60 / (controller.transport.timeline.tempoBpm() * 0.5)
+
+    const playing = controller.play()
+    await vi.waitFor(() => {
+      expect(clicks).toHaveLength(4)
+    })
+    expect(clicks[1]!.start).toHaveBeenCalledWith(
+      expect.closeTo(COUNT_IN_LEAD_SECONDS + beatSeconds, 6),
+    )
+    context.currentTime = COUNT_IN_LEAD_SECONDS + 4 * beatSeconds
+    pump.run()
+    await expect(playing).resolves.toBe(true)
   })
 
   it('does not count in when resuming from pause', async () => {
