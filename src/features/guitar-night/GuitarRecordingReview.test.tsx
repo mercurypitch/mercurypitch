@@ -264,9 +264,7 @@ describe('recording corrections', () => {
     const setup = screen.getByRole('group', { name: 'Audio export setup' })
     expect(setup).toHaveTextContent('Recording')
     expect(setup).toHaveTextContent('Current amp')
-    expect(
-      screen.getByRole('button', { name: 'Export audio mix' }),
-    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Download WAV' })).toBeEnabled()
     fireEvent.click(refine)
     expect(refine).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: 'Refine chords' })).toBeVisible()
@@ -312,9 +310,7 @@ describe('recording corrections', () => {
     expect(level).toHaveValue('1')
     fireEvent.input(level, { target: { value: '1.4' } })
     expect(level).toHaveValue('1.4')
-    expect(
-      screen.getByRole('button', { name: 'Export audio mix' }),
-    ).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Download WAV' })).toBeEnabled()
     expect(
       screen.getByRole('group', { name: 'Audio export setup' }),
     ).toHaveTextContent('Drums muted')
@@ -337,6 +333,14 @@ describe('recording corrections', () => {
     expect(
       screen.getByRole('button', { name: 'Practice these notes' }),
     ).toBeDisabled()
+  })
+  it('names the WAV export by its visible label and still warns that bends are not transcribed', () => {
+    renderReview()
+    // The accessible name must contain the words on the button, or voice
+    // control cannot reach it by what the user sees (WCAG 2.5.3).
+    const wav = screen.getByRole('button', { name: 'Download WAV' })
+    expect(wav).toHaveAccessibleName('Download WAV')
+    expect(screen.getByText(/bends are not transcribed/i)).toBeInTheDocument()
   })
   it('explains notation rounding before GP export and keeps the accepted practice timing', async () => {
     renderReview()

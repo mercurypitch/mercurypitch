@@ -247,7 +247,12 @@ export function GuitarRecordingReview(props: {
       props.draft.notes.length > 0
         ? `${props.draft.notes.length} ${props.draft.notes.length === 1 ? 'note' : 'notes'} captured.`
         : 'Audio captured. No stable notes identified.',
-    detail: kept() ? 'Kept on this device.' : 'Draft on this device.',
+    detail:
+      score().refinement !== undefined
+        ? `${kept() ? 'Kept' : 'Draft'} on this device. Chord-refined: check pitches and fingering before practice; bends are not transcribed.`
+        : kept()
+          ? 'Kept on this device.'
+          : 'Draft on this device.',
     evidence: [],
     unavailableReasons: [],
     recoveryLabel: 'Back to playing',
@@ -488,7 +493,6 @@ export function GuitarRecordingReview(props: {
                 <button
                   type="button"
                   class={styles.exportPrimary}
-                  aria-label="Export audio mix"
                   disabled={locked() || !props.playback.available()}
                   onClick={() => void props.playback.exportMix(reviewHost)}
                 >
@@ -551,8 +555,9 @@ export function GuitarRecordingReview(props: {
                     <summary>Timing and format details</summary>
                     <p>
                       Guitar Pro rounds timing to thirty-second notes for
-                      readable notation. MIDI keeps your played timing. Neither
-                      changes this take’s audio or practice timing.
+                      readable notation. MIDI keeps your played timing. Bends
+                      are not transcribed. Neither changes this take’s audio or
+                      practice timing.
                     </p>
                   </details>
                 </Show>
