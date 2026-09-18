@@ -5,6 +5,53 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.8] - 2026-09-18
+
+The Product Hunt launch gift, a session drummer for Guitar Night, music you can
+add to any Night room mid-session, and the Jam room's pitch lane finally
+pointing at the note you are singing.
+
+### Added
+
+- **A launch promo code.** Settings has a Promo section under Credits: sign in
+  with a verified email and claim five free cloud separation credits, or type
+  any code you were given. The launch offer runs to the end of September.
+- **Guitar Night has a session drummer.** Pick a genre, a beat, how many bars
+  and a fill, and the Walnut Studio kit plays along in Free play and score
+  practice. Changes land on the next bar, and it waits quietly while you browse.
+- **A drummer you record stays with the take.** Free play takes keep the drum
+  hits as their own lane: mute it, set its level from silent to double, and
+  export the mix as a stereo WAV, or the guitar alone.
+- **Add music to any Night room without leaving it.** Guitar, Drum, Piano and
+  Karaoke Night take a MIDI, Guitar Pro or audio file mid-session, keep what
+  you were doing, and ask Local or Cloud before any separation starts.
+- **Two recorded acoustic drum kits.** Muldjord and Crocell, over a hundred
+  strikes each, with ride bells, alternate kicks and crashes, china, toms and
+  sidestick where the kit has them. Credited in the app under CC BY 4.0.
+- **Sign in with Apple is wired up on the server** for the native apps, and a
+  session renews itself instead of signing you out after thirty days.
+
+### Changed
+
+- **Guitar Night's take review reads in three parts:** Listen, Refine notes,
+  Export. Refinement stays folded until you want it, and every export button
+  says what it does.
+- **Imported drum parts sit under the band, not on top of it.** Authored
+  velocities are honoured and the synthesized backing gets headroom, so a
+  mixed MIDI no longer buries the kit.
+
+### Fixed
+
+- **The Jam room's pitch lane lands on the note you are singing.** The
+  reference line sat four seconds ahead of the playhead, and it drew the raw
+  vocal trace instead of the corrected melody Karaoke Night shows.
+- **A MIDI you import into Compose keeps its tempo.** A 90 bpm file came back
+  at 80 everywhere the melody was read.
+- **A damaged drummer lane no longer keeps a Guitar Night take from opening.**
+- **Smaller things.** The take review says again that bends are not
+  transcribed; Guitar Night's count-in and click preferences survive a
+  reload; the pricing page names what a credit buys.
+
 ## [0.9.7] - 2026-09-10
 
 Piano and Guitar let you pick which room they open, voice control reaches the
