@@ -9,6 +9,91 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.9] - 2026-09-18
+
+Piano Night's practice controls (#812), and the count-in fix that device
+testing found in them (#819).
+
+### Piano Night (#812)
+
+Scrub on the fall stage, draggable A/B loop markers, an opt-in count-in, live
+input drawn separately from the project's notes, and a Show/Hide choice for
+falling notes on the keybed.
+
+The PR arrived from a lower-tier agent and was reworked before merging. It had
+never passed CI — the `Scope` job failed on trailing whitespace in a new test,
+so lint, typecheck, unit and browser tests were all skipped — and typecheck and
+lint both failed at its head. Underneath that:
+
+- The count-in defaulted to four beats for every existing user and replayed on
+  resume from pause; the pre-existing suites had been edited to opt out of it,
+  so the shipped default had no coverage at all. It is opt-in now, counts only
+  from rest, and the opt-outs are gone.
+- `play()` read `commandGeneration` without incrementing it, so a second Start
+  ran a second frame loop and scheduled a second click train that nothing held.
+  It bumps the generation and holds its oscillators; a press during a count-in
+  is a no-op, and Stop cancels.
+- The count-in resolved only when `ctx.currentTime` advanced, which a suspended
+  context never does — `play()` could hang forever. It checks `ctx.state` and
+  carries a wall-clock deadline.
+- Scrubbing called `transport.seekToBeat` plus a newly exported
+  `setPlayheadBeat`, skipping the controller's take invalidation, sample
+  cancellation, scoring discontinuation and A/B handling. It goes through
+  `controller.seekToBeat`, and the extra export is gone.
+- Marker drags called `configurePracticeLoop` on every pointer frame — a
+  scheduler stop, a voice release and a take invalidation each time, discarding
+  the recorded take on the first frame. The drag is buffered and committed once
+  on release.
+- Any press on the stage scrubbed, including a right-click; there is a primary
+  button guard and a 6 px dead zone. `.fallStage` went back to
+  `pointer-events: none` with a dedicated scrub surface carrying
+  `touch-action: none`, so the page still scrolls around it.
+- A stray `patch_debug.ts` at the repo root was deleted, and the Keys view now
+  honours the hide setting it was ignoring.
+
+A real-mouse `@smoke` spec covers the scrub and the marker drag, and was shown
+to fail against the pre-fix behaviour (a 3 px tap seeked; one drag produced 14
+commits).
+
+### The guided tours' spotlight (#820)
+
+Pressing Next blanked the spotlight and centred the tooltip for as long as the
+next step took to get its target on screen — a tab switch, a `navigate` click,
+a `reveal` toggle, a scroll — then flew both back across the 0.34 s glide.
+
+`Walkthrough.tsx` attaches its resize/scroll listeners in a `createEffect` that
+also called `reposition()`, and `reposition` reads `currentStep()`: the call was
+tracked, so the effect re-ran on every step change, synchronously, before
+`prepareAndPosition` had done anything — and re-attached all three listeners
+while it was there. It is `untrack`ed now, and a `preparing` flag holds the
+spotlight if a scroll or resize lands mid-preparation. A step whose target never
+appears still hides it, through the existing `!found` path.
+
+`src/tests/walkthrough-step-change-spotlight.test.tsx` was written red first:
+the hold test failed with `expected 'none' not to be 'none'` against the old
+code. Its companion pins the give-up behaviour so the hold cannot swallow it.
+
+### The count-in's clock (#819)
+
+On a device the digits skipped — "4, 2, 1" on desktop, out of step with the
+beeps on a tablet. Four causes, all of them real:
+
+- The clicks were scheduled from one reading of `ctx.currentTime` and the
+  digits timed from a later one, so they never shared an origin.
+- The first click was asked for at exactly "now", which the audio thread can
+  only honour late.
+- The count ran at the score's base tempo rather than
+  `effectiveTempoBpmAtBeat`, so practice speed moved the song but not the count.
+- The digit carried a one-second looping CSS pop under a value changing at the
+  song's tempo; only at 60 bpm did the two agree, and a digit could change
+  while shrunk and read as skipped.
+
+`piano-night-count-in.ts` is now a pure plan both halves read: one origin a
+hair ahead of the clock, the number on screen is whichever click has sounded,
+and a beat shorter than 0.4 s moves the count to half notes (then quarter
+notes) so four readable counts still land on a downbeat. Each count renders as
+its own element with a single pop sized to the count interval.
+
 ## [0.9.8] - 2026-09-18
 
 The Product Hunt launch release. Everything merged after 0.9.7 on 2026-09-10
