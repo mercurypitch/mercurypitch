@@ -127,7 +127,11 @@ describe('launch entry documents', () => {
         document
           .querySelector('meta[property="og:image"]')
           ?.getAttribute('content'),
-      ).toBe(`https://mercurypitch.com/${room.path}-og.png`)
+      ).toMatch(
+        new RegExp(
+          `^https://mercurypitch\\.com/${room.path}-og\\.png\\?v=[0-9a-f]{8}$`,
+        ),
+      )
       expect(
         document.querySelector('script[type="module"]')?.getAttribute('src'),
       ).toBe(room.entry)

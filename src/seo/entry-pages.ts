@@ -21,6 +21,8 @@
 // production resolves /vocal-range-test through Cloudflare's asset-layer
 // html_handling, which only maps a clean path to a document beside it.
 
+import { OG_IMAGE_VERSIONS } from './og-image-versions'
+
 export interface FaqItem {
   q: string
   a: string
@@ -64,7 +66,25 @@ export interface EntryPage {
 }
 
 export const SITE_ORIGIN = 'https://mercurypitch.com'
-export const OG_IMAGE = `${SITE_ORIGIN}/og-image.png`
+
+/**
+ * A card's public URL, stamped with the hash of its own bytes.
+ *
+ * Social platforms cache an Open Graph image against its URL for days or
+ * weeks, and nothing we can do reaches their caches. Regenerating a card in
+ * place therefore leaves every link ever shared showing the old art — which is
+ * what the 2026-09-10 refresh ran into: Guitar Night had gained Free play and
+ * the shared card still offered "I know my way around". The stamp comes from
+ * `scripts/gen-og-versions.mjs`, so new art is a new link.
+ */
+export function ogImage(file: string): string {
+  const version = OG_IMAGE_VERSIONS[file]
+  return version === undefined
+    ? `${SITE_ORIGIN}/${file}`
+    : `${SITE_ORIGIN}/${file}?v=${version}`
+}
+
+export const OG_IMAGE = ogImage('og-image.png')
 export const ABOUT_URL = 'https://about.mercurypitch.com/'
 
 export const ENTRY_PAGES: readonly EntryPage[] = [
@@ -82,7 +102,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Voice Mirror — See Your Voice in 60 Seconds',
       description:
         'Sing for 60 seconds, get your vocal range, accuracy and steadiness as a shareable voiceprint. Analyzed entirely in your browser.',
-      image: 'https://mercurypitch.com/mirror-og.png',
+      image: ogImage('mirror-og.png'),
       imageAlt:
         'A pitch contour rising, holding level, then falling — two glides around one steady note.',
     },
@@ -124,7 +144,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Free Vocal Range Test — Find Your Lowest & Highest Note',
       description:
         'Sing a low-to-high glide and get your measured notes, semitone span and a broad voice-type guide. Analyzed entirely in your browser.',
-      image: 'https://mercurypitch.com/vocal-range-test-og.png',
+      image: ogImage('vocal-range-test-og.png'),
       imageAlt:
         'A measured vocal span marked on a pitch ruler, with the lowest and highest notes lit at each end.',
     },
@@ -166,7 +186,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Karaoke Night — Turn Any Song You Own Into Karaoke',
       description:
         'The vocals lift away and you sing with synced lyrics and live pitch scoring. In your browser — try the example song free.',
-      image: 'https://mercurypitch.com/karaoke-og.png',
+      image: ogImage('karaoke-og.png'),
       imageAlt:
         'MercuryPitch Karaoke Night — turn any song into karaoke on a theatre stage, with the demo song Goodbye to Spring ready to sing.',
     },
@@ -213,7 +233,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Break Glass With Your Voice — Free 60-Second Challenge',
       description:
         'The glass is tuned to YOUR range. Land the note, hold it, and watch it shatter — with real physics, in your browser.',
-      image: 'https://mercurypitch.com/glass/og.jpg',
+      image: ogImage('glass/og.jpg'),
       imageAlt:
         'A wine glass ringing at its resonant note, one held voice note away from shattering.',
     },
@@ -255,7 +275,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Piano Night — shape every phrase',
       description:
         'A focused piano room for practicing and performing. Slow a phrase down, loop the bar that will not sit, and play it back up to tempo.',
-      image: 'https://mercurypitch.com/piano-night-og.png',
+      image: ogImage('piano-night-og.png'),
       imageAlt:
         'MercuryPitch Piano Night — a low-lit studio with a grand piano at dusk, and the panel offering the rooms to play in.',
     },
@@ -288,7 +308,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Guitar Night — your room is ready',
       description:
         'Begin with one string, bring a song, or step straight into the full workspace. The room listens and reads the bar back to you.',
-      image: 'https://mercurypitch.com/guitar-night-og.png',
+      image: ogImage('guitar-night-og.png'),
       imageAlt:
         'MercuryPitch Guitar Night — a lamplit velvet rehearsal room with a drum kit and amps, and the panel offering three ways to begin.',
     },
@@ -321,7 +341,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Drum Night — find the centre',
       description:
         'Play synth and sampled kits from touch, keys or an e-kit, then follow imported percussion from the Pocket, Drummer Seat or written Score.',
-      image: 'https://mercurypitch.com/drum-night-og.png',
+      image: ogImage('drum-night-og.png'),
       imageAlt:
         'MercuryPitch Drum Night — an oxblood drum kit in a quiet late-night tracking room, framed by a circular pocket guide.',
     },
@@ -355,7 +375,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Ear Lab — an ear you can measure',
       description:
         'Thresholds in cents and milliseconds, chords named — one number that moves only when your ear does. Calibrate, then practice where the reading says.',
-      image: 'https://mercurypitch.com/ear-lab-og.png',
+      image: ogImage('ear-lab-og.png'),
       imageAlt:
         'MercuryPitch Ear Lab — a chronometer workshop at night, the Mercury Column standing at 618, and three readings: Hairline 6.4 cents, the Grid 18 ms, Mercury Index 618.',
     },
@@ -390,7 +410,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Jam Rooms — sing it together, from anywhere',
       description:
         'Open a room, share the link, and take a part. A live pitch lane for every singer, and one scoreboard for the whole room.',
-      image: 'https://mercurypitch.com/jam-og.png',
+      image: ogImage('jam-og.png'),
       imageAlt:
         'MercuryPitch Jam Rooms — a rehearsal room with a mic and drum kit, and a panel showing three singers, each with their own pitch lane and a shared score.',
     },
@@ -432,7 +452,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Vocal Pitch Practice — Free Pitch Training with Live Feedback',
       description:
         'See the note you are making against the note you meant, and how far apart they are in cents. Free, in your browser.',
-      image: 'https://mercurypitch.com/pitch-training-og.png',
+      image: ogImage('pitch-training-og.png'),
       imageAlt:
         'A pitch readout: the note being sung tracked against its target line, the gap between them lit where they meet.',
     },
@@ -481,7 +501,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Voice Type Test — Soprano, Alto, Tenor or Bass?',
       description:
         'Sing one glide and see which voice band your measured range overlaps most. A guide, not a verdict.',
-      image: 'https://mercurypitch.com/voice-type-test-og.png',
+      image: ogImage('voice-type-test-og.png'),
       imageAlt:
         'Four voice bands stacked as spans on a pitch scale, with one lit to show the measured range.',
     },
@@ -530,7 +550,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Free Vocal Remover — Vocals and Instrumental, Split Apart',
       description:
         'Separate a song you already own into vocal and instrumental, in your own browser, then sing over it with live pitch scoring.',
-      image: 'https://mercurypitch.com/karaoke-og.png',
+      image: ogImage('karaoke-og.png'),
       imageAlt:
         'MercuryPitch Karaoke Night showing a separated instrumental track with timed lyrics.',
     },
@@ -578,7 +598,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       title: 'Which Singer Has My Vocal Range?',
       description:
         'Sing one glide and see which famous singer covers the same notes you do. Free, and your audio never leaves your device.',
-      image: 'https://mercurypitch.com/which-singer-has-my-vocal-range-og.png',
+      image: ogImage('which-singer-has-my-vocal-range-og.png'),
       imageAlt:
         'Two vocal ranges drawn as spans on a scale, the stretch they share lit between them.',
     },

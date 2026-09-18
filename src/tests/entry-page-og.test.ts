@@ -92,7 +92,9 @@ describe('entry pages', () => {
     const file = resolve(
       repo,
       'public',
-      image!.replace(/^https:\/\/[^/]+\//, ''),
+      // The URL carries the art's own hash so a regenerated card is a new
+      // link; the file it names is the part before the stamp.
+      image!.replace(/^https:\/\/[^/]+\//, '').replace(/\?v=[0-9a-f]{8}$/, ''),
     )
     expect(existsSync(file), `${image} has no file`).toBe(true)
   })

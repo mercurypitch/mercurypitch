@@ -9,7 +9,7 @@ import { Portal } from 'solid-js/web'
 import { Drum, Play, Square } from '@/components/icons'
 import { DRUM_PATTERN_STYLE_LABELS, DRUM_PATTERN_STYLE_ORDER, DRUM_PATTERNS, } from '@/features/drum-night/patterns/drum-pattern-library'
 import type { GuitarNightDrumKitId } from '@/features/guitar-night/guitar-night-drum-sound'
-import { GUITAR_NIGHT_DRUM_KIT_OPTIONS } from '@/features/guitar-night/guitar-night-drum-sound'
+import { GUITAR_NIGHT_DRUM_KIT_OPTIONS, guitarNightDrumKitCredit, } from '@/features/guitar-night/guitar-night-drum-sound'
 import { GuitarNightMixerDialog } from '@/features/guitar-night/GuitarNightMixControls'
 import { DrummerWheel } from './DrummerWheel'
 import { DRUMMER_BARS, drummerPattern, isDrummerFillBar, } from './session-drummer-pattern'
@@ -28,6 +28,9 @@ export function SessionDrummer(props: {
     DRUM_PATTERNS.filter((beat) => beat.style === pattern().style).map(
       (beat) => ({ value: beat.id, label: beat.name }),
     ),
+  )
+  const kitCredit = createMemo(() =>
+    guitarNightDrumKitCredit(drummer().settings().kitId),
   )
   const fillOptions = createMemo(() => [
     { value: '0', label: 'No fills' },
@@ -267,20 +270,17 @@ export function SessionDrummer(props: {
                   {kitStatus()}
                 </p>
               </Show>
-              <Show
-                when={
-                  drummer().settings().kitId === 'muldjord' ||
-                  drummer().settings().kitId === 'crocell'
-                }
-              >
-                <a
-                  class={styles.clockNote}
-                  href={`/drum-night/kits/${drummer().settings().kitId}/LICENSE.md`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Kit credits · CC BY 4.0
-                </a>
+              <Show when={kitCredit()} keyed>
+                {(credit) => (
+                  <a
+                    class={styles.creditLink}
+                    href={credit.href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {credit.label}
+                  </a>
+                )}
               </Show>
               <div class={styles.actions}>
                 <button
@@ -330,7 +330,7 @@ export function SessionDrummer(props: {
                     ? `${pattern().name} · changing next bar`
                     : drummer().armed()
                       ? `${drummerPattern(drummer().active()?.patternId ?? pattern().id).name} · playing`
-                      : '16 original grooves · choose your pocket'}
+                      : `${DRUM_PATTERNS.length} original grooves · choose your pocket`}
               </span>
             </GuitarNightMixerDialog>
           </div>

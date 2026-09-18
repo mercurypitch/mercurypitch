@@ -42,18 +42,65 @@ export interface GuitarNightDrumSoundPreference {
 export interface GuitarNightDrumSoundOption<Id extends string> {
   readonly id: Id
   readonly label: string
+  /**
+   * The credits this kit's licence obliges us to show, when it has any.
+   *
+   * Declared here rather than looked up: the manifest carries the same
+   * `spdx` and `noticePath`, but importing it would pull the generated
+   * sample catalogue into Guitar Night's first paint, which is the whole
+   * point of this module. `src/tests/guitar-night-kit-credits.test.ts`
+   * checks these against the manifest instead, so a kit that joins the
+   * picker cannot ship without the notice its licence requires — which a
+   * hardcoded `kitId === 'muldjord' || kitId === 'crocell'` in the picker
+   * could, and did.
+   */
+  readonly credit?: GuitarNightDrumKitCredit
+}
+
+export interface GuitarNightDrumKitCredit {
+  /** e.g. "Kit credits · CC BY 4.0" */
+  readonly label: string
+  /** The shipped notice, under `public/drum-night/kits/`. */
+  readonly href: string
+}
+
+function kitCredit(spdx: string, notice: string): GuitarNightDrumKitCredit {
+  return {
+    label: `Kit credits · ${spdx.replace(/-/g, ' ')}`,
+    href: `/drum-night/kits/${notice}`,
+  }
 }
 
 /** Small UI descriptors, intentionally independent of the full kit manifest. */
 export const GUITAR_NIGHT_DRUM_KIT_OPTIONS: readonly GuitarNightDrumSoundOption<GuitarNightDrumKitId>[] =
   Object.freeze([
     Object.freeze({ id: 'mercury-synth', label: 'Mercury Synth' }),
-    Object.freeze({ id: 'classic-gm', label: 'Classic GM' }),
-    Object.freeze({ id: 'studio', label: 'Studio' }),
-    Object.freeze({ id: 'live', label: 'Live' }),
+    Object.freeze({
+      id: 'classic-gm',
+      label: 'Classic GM',
+      credit: kitCredit('Apache-2.0', 'classic-gm/LICENSE.md'),
+    }),
+    Object.freeze({
+      id: 'studio',
+      label: 'Studio',
+      credit: kitCredit('CC0-1.0', 'studio/LICENSE.md'),
+    }),
+    Object.freeze({
+      id: 'live',
+      label: 'Live',
+      credit: kitCredit('CC-BY-SA-4.0', 'live/LICENSE.md'),
+    }),
     Object.freeze({ id: 'circuit', label: 'Circuit' }),
-    Object.freeze({ id: 'muldjord', label: 'Muldjord' }),
-    Object.freeze({ id: 'crocell', label: 'Crocell' }),
+    Object.freeze({
+      id: 'muldjord',
+      label: 'Muldjord',
+      credit: kitCredit('CC-BY-4.0', 'muldjord/LICENSE.md'),
+    }),
+    Object.freeze({
+      id: 'crocell',
+      label: 'Crocell',
+      credit: kitCredit('CC-BY-4.0', 'crocell/LICENSE.md'),
+    }),
   ])
 
 export const GUITAR_NIGHT_DRUM_FEEL_OPTIONS: readonly GuitarNightDrumSoundOption<GuitarNightDrumFeelId>[] =
@@ -151,4 +198,14 @@ export function browserGuitarNightDrumSoundStorage(): Storage | null {
   } catch {
     return null
   }
+}
+
+/** The picker's credits for a kit, or null when its licence asks for none. */
+export function guitarNightDrumKitCredit(
+  kitId: GuitarNightDrumKitId,
+): GuitarNightDrumKitCredit | null {
+  return (
+    GUITAR_NIGHT_DRUM_KIT_OPTIONS.find((option) => option.id === kitId)
+      ?.credit ?? null
+  )
 }
