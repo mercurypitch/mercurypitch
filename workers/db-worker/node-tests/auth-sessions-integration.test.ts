@@ -501,7 +501,7 @@ describe('a session cannot be renewed forever', () => {
     expect(await meStatus(account.token)).toBe(401)
   })
 
-  it('ends only the session that asked, not the account\'s other devices', async () => {
+  it("ends only the session that asked, not the account's other devices", async () => {
     const account = await register('one-device@example.com')
     const phone = await login('one-device@example.com', 'Mozilla/5.0 (iPhone)')
     sqlite

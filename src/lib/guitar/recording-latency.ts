@@ -46,7 +46,12 @@ export function guitarCaptureLatencySeconds(
     reported(input.context.outputLatency) ??
     reported(input.context.baseLatency) ??
     0
-  const capture =
-    reported(input.stream.getAudioTracks()[0]?.getSettings().latency) ?? 0
+  // `latency` is a Chromium addition to MediaTrackSettings and is not in the
+  // DOM types; the route diagnostics read it off an untyped record the same
+  // way, and `reported` rejects whatever a browser without it hands back.
+  const settings = input.stream.getAudioTracks()[0]?.getSettings?.() as
+    | Record<string, unknown>
+    | undefined
+  const capture = reported(settings?.latency) ?? 0
   return Math.min(output + capture, MAX_CAPTURE_LATENCY_SECONDS)
 }
