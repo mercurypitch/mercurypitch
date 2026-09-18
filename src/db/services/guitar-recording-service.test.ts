@@ -6,7 +6,7 @@ import 'fake-indexeddb/auto'
 import { DEFAULT_GUITAR_TUNING } from '@/lib/guitar/instrument-tuning'
 import { createGuitarRecordingAnalysis } from '@/lib/guitar/recording-analysis'
 import { acceptRecordingScoreRevision, createRecordingScore, } from '@/lib/guitar/recording-score'
-import type { GuitarRecording, GuitarRecordingDrumTrack, } from '@/lib/guitar/recording-types'
+import type { GuitarRecording, GuitarRecordingChunk, GuitarRecordingDrumTrack, } from '@/lib/guitar/recording-types'
 import { DexieAdapter } from '../adapters/dexie-adapter'
 import { CLOUD_ENTITIES } from '../adapters/hybrid-adapter'
 import type { VoiceTakeAudioRecord, VoiceTakeRecord } from '../entities'
@@ -115,6 +115,37 @@ describe('local guitar recordings', () => {
     const reopened = await store.load('idea')
     expect(reopened.drumTrack).toEqual(drumTrack)
     expect(reopened.blob?.size).toBe(44 + 8192 * 2)
+  })
+  it('opens a take whose drummer lane is damaged, without the lane', async () => {
+    const drumTrack: GuitarRecordingDrumTrack = {
+      version: 1,
+      hits: [
+        {
+          offsetSeconds: 0.05,
+          gmKey: 36,
+          velocity: 118,
+          kitId: 'muldjord',
+          level: 1.1,
+        },
+      ],
+    }
+    await capture(drumTrack)
+    // Damage the stored lane behind the service's back: the dry guitar audio
+    // is irreplaceable, so a bad accompaniment must not make it unopenable.
+    const chunks = await db.readAllStrict<GuitarRecordingChunk>(
+      'guitarRecordingChunks',
+    )
+    const ending = chunks.find((chunk) => chunk.id === 'idea:ending')!
+    await db.putStrict('guitarRecordingChunks', {
+      ...ending,
+      drumTrack: { version: 1, hits: [{ ...drumTrack.hits[0]!, gmKey: 999 }] },
+    })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const reopened = await store.load('idea')
+    expect(reopened.drumTrack).toBeUndefined()
+    expect(reopened.blob?.size).toBe(44 + 8192 * 2)
+    expect(warn).toHaveBeenCalledOnce()
+    warn.mockRestore()
   })
   it('rejects damaged or out-of-range drummer evidence atomically', async () => {
     await store.begin(row())
