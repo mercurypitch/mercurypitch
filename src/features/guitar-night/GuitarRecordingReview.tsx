@@ -362,7 +362,13 @@ export function GuitarRecordingReview(props: {
                     class={styles.sectionDisclosure}
                     aria-expanded={refineExpanded()}
                     aria-controls="recording-refine-body"
-                    onClick={() => setRefineExpanded(!refineExpanded())}
+                    onClick={() => {
+                      const expanded = !refineExpanded()
+                      batch(() => {
+                        setRefineExpanded(expanded)
+                        if (!expanded) setEditing(false)
+                      })
+                    }}
                   >
                     <span class={styles.sectionIcon} aria-hidden="true">
                       <Sparkles />

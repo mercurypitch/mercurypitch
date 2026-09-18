@@ -172,7 +172,7 @@ async function enterSixNoteRecording(page: Page): Promise<void> {
   const review = page.getByRole('dialog').filter({ hasText: 'Recorded melody' })
   await expect(review).toBeVisible()
   await review
-    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .getByRole('button', { name: 'Close take review', exact: true })
     .click()
 }
 

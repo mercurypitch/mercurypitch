@@ -162,7 +162,7 @@ test('records and keeps a dry melody without playback, then practices its accept
   const review = page.getByRole('dialog').filter({ hasText: 'Recorded melody' })
   await expect(review).toBeVisible()
   await review
-    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .getByRole('button', { name: 'Close take review', exact: true })
     .click()
   await expect(flow).toHaveAttribute(
     'aria-label',
@@ -208,7 +208,7 @@ test('records and keeps a dry melody without playback, then practices its accept
     review.getByRole('button', { name: 'Take kept', exact: true }),
   ).toBeDisabled()
   await review
-    .getByRole('button', { name: 'Close Jam Doctor', exact: true })
+    .getByRole('button', { name: 'Close take review', exact: true })
     .click()
   await page
     .getByRole('button', { name: 'Play recording', exact: true })
