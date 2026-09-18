@@ -243,6 +243,16 @@ describe('recording corrections', () => {
   })
   it('keeps refinement calm by default and summarizes the exact audio export setup', () => {
     renderReview(false, { draft: true })
+    expect(screen.getByRole('dialog')).toHaveAttribute(
+      'data-variant',
+      'recording-review',
+    )
+    expect(screen.getByText('Take review')).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Listen' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: 'Export current setup' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Timing and format details')).toBeVisible()
     const refine = screen.getByRole('button', { name: /Refine notes/ })
     expect(refine).toHaveAttribute('aria-expanded', 'false')
     expect(

@@ -206,9 +206,17 @@ describe('chord proposal review', () => {
     expect(
       (await store.load(state.draft.recording.id)).editableScore,
     ).toBeUndefined()
-    fireEvent.click(screen.getByRole('radio', { name: 'Current · 1 note' }))
+    const current = screen.getByRole('radio', { name: 'Current · 1 note' })
+    const refined = screen.getByRole('radio', { name: 'Refined · 2 notes' })
+    expect(refined).toBeChecked()
+    expect(refined.closest('label')).toHaveAttribute('data-selected', 'true')
+    expect(screen.getByText(/1 additional pitch found/)).toBeVisible()
+    fireEvent.click(current)
+    expect(current).toBeChecked()
+    expect(current.closest('label')).toHaveAttribute('data-selected', 'true')
+    expect(refined.closest('label')).toHaveAttribute('data-selected', 'false')
     expect(state.view.preview()).toBeNull()
-    fireEvent.click(screen.getByRole('radio', { name: 'Refined · 2 notes' }))
+    fireEvent.click(refined)
     fireEvent.click(screen.getByRole('button', { name: 'Use refined notes' }))
     await waitFor(() => expect(state.current().notes).toHaveLength(2))
     expect((await store.load(state.draft.recording.id)).notes).toEqual(
