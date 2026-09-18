@@ -87,9 +87,11 @@ rasterized interactive UI; the dark backing and semantic controls remain usable
 without it. Other skins are preserved for later selection, not shipped or gated
 behind unimplemented supporter entitlements.
 
-The existing original groove provenance and kit licences are unchanged. Muldjord
-and Crocell link to their bundled CC BY 4.0 notices in the picker. No new rights
-claims are made about third-party research downloads.
+The existing original groove provenance and kit licences are unchanged. Every kit
+whose licence asks for a notice links its bundled one from the picker; the kit
+options declare that, and `src/tests/guitar-night-kit-credits.test.ts` checks the
+declaration against the kit manifest. No new rights claims are made about
+third-party research downloads.
 
 ## Verification
 

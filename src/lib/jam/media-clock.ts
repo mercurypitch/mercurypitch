@@ -20,10 +20,17 @@ export interface FrameScheduler {
   cancel(handle: number): void
 }
 
-type MediaClock = Pick<
-  HTMLMediaElement,
-  'currentTime' | 'paused' | 'addEventListener' | 'removeEventListener'
->
+/**
+ * The part of a media element this needs. Spelled out rather than picked off
+ * `HTMLMediaElement`, whose `addEventListener` overloads accept handler
+ * objects no fake in a test can satisfy; a real element still fits this.
+ */
+interface MediaClock {
+  readonly currentTime: number
+  readonly paused: boolean
+  addEventListener(type: string, listener: () => void): void
+  removeEventListener(type: string, listener: () => void): void
+}
 
 const browserFrames: FrameScheduler = {
   request: (callback) => requestAnimationFrame(() => callback()),
