@@ -1,12 +1,39 @@
 /* JamPeerLanes — one scrolling pitch lane per singer. */
 
+/* Holds the scroller and the zoom control that floats over it. The
+   control cannot live inside the scroller: it would scroll away the
+   moment a fourth singer joins, which is exactly when a room is hardest
+   to read and most wants zooming. */
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+}
+
 .lanes {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
   min-height: 0;
-  height: 100%;
   overflow-y: auto;
+  /* One finger still scrolls the list; two fingers are ours, and the
+     browser's own page zoom stays out of a gesture aimed at a lane. */
+  touch-action: pan-y;
+}
+
+.zoomDock {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  /* The dock is a position, not a surface: pointers fall through it to
+     the lane behind, and only the control's own buttons take them. */
+  pointer-events: none;
 }
 
 .lane {

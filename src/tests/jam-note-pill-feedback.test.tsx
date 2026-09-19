@@ -8,14 +8,20 @@
 // and dead-on drew the same picture on the same row.
 //
 // This drives the lane's draw loop through a recording 2D context and
-// reads back what it painted. It pins both halves: the pill takes a
-// green, amber or red cast from how the note is actually going, and
-// the trail moves when the pitch moves by less than a semitone.
+// reads back what it painted. It pins three things: the pill takes a
+// green, amber or red cast from how the note is actually going, the
+// trail moves when the pitch moves by less than a semitone, and the
+// pill is drawn as a share of the row it sits on rather than at a
+// constant pixel height -- the pill used to be 9px tall in a lane that
+// gave a semitone three, so singing a whole tone flat still drew the
+// trail INSIDE the target and looked correct.
 
 import { render } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { JamPeerLanes } from '@/components/jam/JamPeerLanes'
-import { JAM_QUALITY_COLOR } from '@/lib/jam/jam-pitch-view'
+import { JAM_PILL_SEMITONE_CAP, JAM_ZOOM_MAX, JAM_ZOOM_MIN, } from '@/lib/jam/jam-lane-zoom'
+import { JAM_BAND_MIN_SPAN, JAM_QUALITY_COLOR } from '@/lib/jam/jam-pitch-view'
+import { setJamLaneZoom } from '@/lib/jam/jam-view-prefs'
 import type { JamSongNote } from '@/lib/jam/types'
 import { setJamPeers, setJamPitchHistory, setJamSong, setJamSongParts, } from '@/stores/jam-store'
 
@@ -26,14 +32,17 @@ const NOTE: JamSongNote[] = [{ midi: NOTE_MIDI, startSec: 0, endSec: 4 }]
 interface Painted {
   /** Fill colours used for a rounded rect, in paint order. */
   pills: string[]
+  /** Heights of those same rects, in the same order. */
+  pillHeights: number[]
   /** Y coordinates the trail was moved or lined to. */
   trailYs: number[]
 }
 
 function recordingContext(): { ctx: unknown; painted: Painted } {
-  const painted: Painted = { pills: [], trailYs: [] }
+  const painted: Painted = { pills: [], pillHeights: [], trailYs: [] }
   const noop = (): void => {}
   let pendingPill = false
+  let pendingHeight = 0
   const ctx = {
     canvas: null as unknown,
     setTransform: noop,
@@ -42,8 +51,9 @@ function recordingContext(): { ctx: unknown; painted: Painted } {
     beginPath: () => {
       pendingPill = false
     },
-    roundRect: () => {
+    roundRect: (_x: number, _y: number, _w: number, h: number) => {
       pendingPill = true
+      pendingHeight = h
     },
     moveTo: (_x: number, y: number) => {
       painted.trailYs.push(y)
@@ -53,7 +63,10 @@ function recordingContext(): { ctx: unknown; painted: Painted } {
     },
     stroke: noop,
     fill: () => {
-      if (pendingPill) painted.pills.push(String(ctx.fillStyle))
+      if (pendingPill) {
+        painted.pills.push(String(ctx.fillStyle))
+        painted.pillHeights.push(pendingHeight)
+      }
       pendingPill = false
     },
     closePath: noop,
@@ -109,8 +122,12 @@ function distance(rgba: string, hex: string): number {
  * painted on the last frame.
  */
 function sing(
-  options: { cents: number | null; frames: number } = { cents: 0, frames: 12 },
+  options: { cents: number | null; frames: number; zoom?: number } = {
+    cents: 0,
+    frames: 12,
+  },
 ): Painted {
+  setJamLaneZoom(options.zoom ?? JAM_ZOOM_MIN)
   const { ctx, painted } = recordingContext()
   const frames: (() => void)[] = []
   vi.stubGlobal('requestAnimationFrame', (cb: () => void) => {
@@ -148,6 +165,7 @@ function sing(
       })
     }
     painted.pills.length = 0
+    painted.pillHeights.length = 0
     painted.trailYs.length = 0
     const next = frames.shift()
     next?.()
@@ -170,6 +188,7 @@ describe('jam note pill feedback', () => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
     setJamPitchHistory({})
+    setJamLaneZoom(JAM_ZOOM_MIN)
   })
 
   it('casts the pill green when the note is held', () => {
@@ -219,5 +238,70 @@ describe('jam note pill feedback', () => {
     expect(onNote).toBeDefined()
     expect(flat).toBeDefined()
     expect(Math.abs(onNote! - flat!)).toBeGreaterThan(1)
+  })
+})
+
+// The lane the mocks describe is the SMALLEST the layout allows: 72px
+// tall, which is the `min-height` a lane falls to in a full room. A
+// ten-semitone band there is 7.2px a row, so this block is the worst
+// case on purpose -- anywhere with more room, the pill is taller.
+const LANE_H = 72
+const PX_PER_SEMITONE = LANE_H / JAM_BAND_MIN_SPAN
+
+describe('how tall the pill is drawn', () => {
+  beforeEach(() => {
+    setJamPeers([])
+    setJamSong(null)
+    setJamSongParts({})
+    setJamPitchHistory({})
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(600)
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(
+      LANE_H,
+    )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+    setJamPitchHistory({})
+    setJamLaneZoom(JAM_ZOOM_MIN)
+  })
+
+  it('never paints over the semitone next door', () => {
+    // The whole reason the verdict colours exist. A pill taller than its
+    // own row makes a perfect note and a near miss the same picture, and
+    // the trail then runs inside a target it is not actually hitting.
+    const height = sing({ cents: 5, frames: 12 }).pillHeights[0]
+    expect(height).toBeDefined()
+    expect(height!).toBeLessThanOrEqual(
+      PX_PER_SEMITONE * JAM_PILL_SEMITONE_CAP + 1e-6,
+    )
+  })
+
+  it('grows when the singer zooms in', () => {
+    // Zooming tightens the band as well as the timeline, so the same
+    // lane gives a semitone more pixels and the pill takes them.
+    const near = sing({ cents: 5, frames: 12, zoom: JAM_ZOOM_MAX })
+      .pillHeights[0]
+    const far = sing({ cents: 5, frames: 12, zoom: JAM_ZOOM_MIN })
+      .pillHeights[0]
+    expect(near).toBeDefined()
+    expect(far).toBeDefined()
+    expect(near!).toBeGreaterThan(far!)
+  })
+
+  it('still says the verdict in height, not only in colour', () => {
+    // For anyone who cannot tell the green from the amber.
+    const held = sing({ cents: 5, frames: 12 }).pillHeights[0]
+    const missed = sing({ cents: -180, frames: 12 }).pillHeights[0]
+    expect(held).toBeDefined()
+    expect(missed).toBeDefined()
+    expect(held!).toBeGreaterThan(missed!)
+  })
+
+  it('stays thick enough to see at all', () => {
+    const missed = sing({ cents: -180, frames: 12 }).pillHeights[0]
+    expect(missed!).toBeGreaterThanOrEqual(2)
   })
 })
