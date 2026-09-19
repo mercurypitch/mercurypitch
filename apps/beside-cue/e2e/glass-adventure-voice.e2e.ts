@@ -170,6 +170,22 @@ async function playerPosition(page: Page): Promise<{ x: number; z: number }> {
   }
 }
 
+async function blurAtPlayerPosition(
+  page: Page,
+): Promise<{ x: number; z: number }> {
+  return page.evaluate(() => {
+    const adventure = document.querySelector<HTMLElement>(
+      '[data-testid="glass-adventure"]',
+    )
+    const x = Number(adventure?.dataset.playerX)
+    const z = Number(adventure?.dataset.playerZ)
+    if (!Number.isFinite(x) || !Number.isFinite(z))
+      throw new Error('Player position is unavailable before window blur.')
+    window.dispatchEvent(new Event('blur'))
+    return { x, z }
+  })
+}
+
 async function animationFrames(page: Page, count: number): Promise<void> {
   await page.evaluate(
     (frameCount) =>
@@ -186,6 +202,59 @@ async function animationFrames(page: Page, count: number): Promise<void> {
   )
 }
 
+async function expectPlayerMovement(
+  page: Page,
+  before: { x: number; z: number },
+  minimumDistance: number,
+): Promise<void> {
+  let distance = 0
+  for (let batch = 0; batch < 10 && distance <= minimumDistance; batch++) {
+    await animationFrames(page, 2)
+    const current = await playerPosition(page)
+    distance = Math.hypot(current.x - before.x, current.z - before.z)
+  }
+  expect(distance).toBeGreaterThan(minimumDistance)
+}
+
+async function minimizeMuseumRaster(page: Page): Promise<void> {
+  // Only the two focus/input cases use this after genuine scene initialization.
+  // Keep real RAF, controls and CSS hit targets while avoiding costly full-size
+  // SwiftShader output. Visual and microphone cases retain their full buffers.
+  const viewport = page.getByLabel('Glass museum; drag to look around')
+  const canvas = page.locator('canvas[aria-label="Floating glass museum"]')
+  const before = {
+    viewport: await viewport.boundingBox(),
+    canvas: await canvas.boundingBox(),
+  }
+  expect(before.viewport).not.toBeNull()
+  expect(before.canvas).not.toBeNull()
+
+  await canvas.evaluate((element) => {
+    element.width = 1
+    element.height = 1
+  })
+
+  expect(await viewport.boundingBox()).toEqual(before.viewport)
+  expect(await canvas.boundingBox()).toEqual(before.canvas)
+  await animationFrames(page, 4)
+  expect(
+    await canvas.evaluate((element) => {
+      const context = element.getContext('webgl2')
+      return {
+        canvasWidth: element.width,
+        canvasHeight: element.height,
+        drawingBufferWidth: context?.drawingBufferWidth,
+        drawingBufferHeight: context?.drawingBufferHeight,
+      }
+    }),
+  ).toEqual({
+    canvasWidth: 1,
+    canvasHeight: 1,
+    drawingBufferWidth: 1,
+    drawingBufferHeight: 1,
+  })
+}
+
 async function settledPlayerPosition(
   page: Page,
 ): Promise<{ x: number; z: number }> {
@@ -197,6 +266,18 @@ async function settledPlayerPosition(
     previous = current
   }
   throw new Error('Player movement did not settle after input release.')
+}
+
+function expectNormalBrakingDistance(
+  beforeBlur: { x: number; z: number },
+  settled: { x: number; z: number },
+): void {
+  // Full speed is 1.15 m/s and normal braking takes 0.14 s, for about
+  // 0.081 m of travel. Leave fixed-step and observation margin without
+  // allowing a stuck input to walk until collision makes it appear settled.
+  expect(
+    Math.hypot(settled.x - beforeBlur.x, settled.z - beforeBlur.z),
+  ).toBeLessThan(0.12)
 }
 
 async function cameraYaw(page: Page): Promise<number> {
@@ -421,20 +502,16 @@ test('visible-window blur releases held movement and orbit without opening Pause
   page,
 }) => {
   await openMuseum(page)
+  await minimizeMuseumRaster(page)
   const before = await playerPosition(page)
   await page.keyboard.down('KeyW')
-  await expect
-    .poll(async () => {
-      const current = await playerPosition(page)
-      return Math.hypot(current.x - before.x, current.z - before.z)
-    })
-    .toBeGreaterThan(0.05)
+  await expectPlayerMovement(page, before, 0.05)
 
-  await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+  const positionAtBlur = await blurAtPlayerPosition(page)
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await page.waitForTimeout(250)
-  const movementReleased = await playerPosition(page)
-  await page.waitForTimeout(250)
+  const movementReleased = await settledPlayerPosition(page)
+  expectNormalBrakingDistance(positionAtBlur, movementReleased)
+  await animationFrames(page, 6)
   expect((await playerPosition(page)).x).toBeCloseTo(movementReleased.x, 4)
   expect((await playerPosition(page)).z).toBeCloseTo(movementReleased.z, 4)
   await page.keyboard.up('KeyW')
@@ -445,7 +522,7 @@ test('visible-window blur releases held movement and orbit without opening Pause
   const draggedYaw = await cameraYaw(page)
   await page.evaluate(() => window.dispatchEvent(new Event('blur')))
   await page.mouse.move(460, 240, { steps: 4 })
-  await page.waitForTimeout(50)
+  await animationFrames(page, 2)
   expect(await cameraYaw(page)).toBeCloseTo(draggedYaw, 5)
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.mouse.up()
@@ -463,6 +540,7 @@ test.describe('phone blur input', () => {
     context,
   }) => {
     await openMuseum(page)
+    await minimizeMuseumRaster(page)
     const cdp = await context.newCDPSession(page)
     const stick = page.getByRole('group', { name: 'Move Merc' })
     const knob = stick.locator('span').nth(1)
@@ -482,19 +560,14 @@ test.describe('phone blur input', () => {
       type: 'touchMove',
       touchPoints: [held],
     })
-    await expect
-      .poll(async () => {
-        const current = await playerPosition(page)
-        return Math.hypot(current.x - before.x, current.z - before.z)
-      })
-      .toBeGreaterThan(0.03)
+    await expectPlayerMovement(page, before, 0.03)
     await expect
       .poll(() =>
         knob.evaluate((element) => getComputedStyle(element).transform),
       )
       .not.toBe('matrix(1, 0, 0, 1, 0, 0)')
 
-    await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+    const positionAtBlur = await blurAtPlayerPosition(page)
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect
       .poll(() =>
@@ -502,11 +575,12 @@ test.describe('phone blur input', () => {
       )
       .toBe('matrix(1, 0, 0, 1, 0, 0)')
     const released = await settledPlayerPosition(page)
+    expectNormalBrakingDistance(positionAtBlur, released)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
       touchPoints: [{ id: 1, x: centre.x + 28, y: centre.y - 12 }],
     })
-    await animationFrames(page, 12)
+    await animationFrames(page, 6)
     expect((await playerPosition(page)).x).toBeCloseTo(released.x, 4)
     expect((await playerPosition(page)).z).toBeCloseTo(released.z, 4)
 
@@ -523,14 +597,7 @@ test.describe('phone blur input', () => {
       type: 'touchMove',
       touchPoints: [{ id: 2, x: centre.x - 20, y: centre.y + 8 }],
     })
-    await animationFrames(page, 24)
-    const afterFreshContact = await playerPosition(page)
-    expect(
-      Math.hypot(
-        afterFreshContact.x - beforeFreshContact.x,
-        afterFreshContact.z - beforeFreshContact.z,
-      ),
-    ).toBeGreaterThan(0.03)
+    await expectPlayerMovement(page, beforeFreshContact, 0.03)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],

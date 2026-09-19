@@ -8,7 +8,9 @@ test.use({
 })
 // Include browser/context fixture setup in the budget. Calling setTimeout from
 // inside a test happens after those fixtures have already been created.
-test.setTimeout(120_000)
+// On CI head 413d9580, the SwiftShader phone and replay journeys exceeded 120s
+// before passing on retry; this is an allowance, not a hardware performance gate.
+test.setTimeout(180_000)
 
 async function openMuseum(page: Page): Promise<void> {
   const errors: string[] = []

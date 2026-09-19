@@ -905,10 +905,11 @@ two-viewport walk runs only in `/prod-upd`.
 
 - The welcome overlay covers the page — set `pitchperfect_welcome_version` (and
   the survey key) in `localStorage`, then reload.
-- With a deliberately paused Playwright clock, `locator.screenshot()` can
-  wait forever for stable animation frames. Render the required frame first,
-  then capture a fixed viewport with `page.screenshot({ clip })` using its
-  measured bounding box; retain the pixel assertions. See
+- With a deliberately paused Playwright clock, even clipped page screenshots
+  stalled for over two minutes in Chromium CI. Settle input first, resume the
+  clock during a bounded real screenshot, then pause again for simulation
+  steps. Avoid queuing unused software-rendered frames while positioning the
+  scene; restore rendering before captures and retain pixel assertions. See
   `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.
 - The dev server is HTTPS-only; `VITE_NO_SSL=1` plus the `app-http` launch
   config gets plain HTTP. Revert before committing.

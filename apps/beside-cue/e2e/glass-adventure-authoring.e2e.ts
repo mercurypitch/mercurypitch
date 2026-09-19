@@ -202,11 +202,18 @@ async function recenterForMovement(page: Page): Promise<void> {
 }
 
 async function frameGateProof(page: Page, route: ProofRoute): Promise<void> {
-  await recenterForMovement(page)
-  // The entry checkpoint is intentionally close to its back wall. Step into
-  // the room so this proof frames the gate rather than the obstruction lift.
-  await moveTo(page, 'z', -1, MOVEMENT_KEYS.north)
-  await setHeading(page, route.gateProofYaw)
+  await suspendRasterOutput(page)
+  try {
+    await recenterForMovement(page)
+    // The entry checkpoint is intentionally close to its back wall. Step into
+    // the room so this proof frames the gate rather than the obstruction lift.
+    await moveTo(page, 'z', -1, MOVEMENT_KEYS.north)
+    await setHeading(page, route.gateProofYaw)
+    await page.clock.runFor(400)
+  } finally {
+    await restoreRasterOutput(page)
+  }
+  await page.clock.runFor(32)
 }
 
 async function moveTo(
@@ -306,10 +313,15 @@ async function captureViewport(page: Page, path: string): Promise<Buffer> {
     .getByLabel('Glass museum; drag to look around')
     .boundingBox()
   expect(clip).not.toBeNull()
-  // The test intentionally pauses RAF between simulation steps. Locator
-  // screenshots wait for extra stable frames, which cannot arrive then.
-  // Capture the same visible rectangle without advancing the game clock.
-  return page.screenshot({ path, clip: clip! })
+  // Keep Chromium's frame/compositor work live during capture. Even a clipped
+  // page screenshot stalled for >120s in CI when the clock remained paused.
+  // Merc has already released movement and settled before every capture.
+  await page.clock.resume()
+  try {
+    return await page.screenshot({ path, clip: clip!, timeout: 45_000 })
+  } finally {
+    await pauseClock(page)
+  }
 }
 
 async function changedPixelFraction(
@@ -532,8 +544,11 @@ for (const route of ROUTES) {
     )
     expect(preserved).toEqual([originalProgress, otherLayoutProgress])
 
-    await restoreRasterOutput(page)
     await setHeading(page, route.finalYaw)
+    // Let the obstruction boom settle before drawing the end-wall view. A
+    // screenshot during its initial close-up can flood software raster work.
+    await page.clock.runFor(800)
+    await restoreRasterOutput(page)
     await page.clock.runFor(32)
     const proof = await captureViewport(
       page,
