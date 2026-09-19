@@ -1,6 +1,6 @@
 // Renderer readiness — an optional reflection failure never hides a playable museum.
 import type * as ThreeTypes from 'three'
-import type { PerspectiveCamera, Scene } from 'three';
+import type { PerspectiveCamera, Scene } from 'three'
 import { DirectionalLight, Group } from 'three'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'

@@ -1,6 +1,6 @@
 // Authored museum presentation — visible proxies share activation with collision and camera occlusion.
 
-import type { Mesh} from 'three';
+import type { Mesh } from 'three'
 import { MeshPhysicalMaterial } from 'three'
 import { expect, it } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
