@@ -70,6 +70,16 @@ describe('the product-updates box on the register form', () => {
     expect(box.checked).toBe(false)
   })
 
+  it('is the branded control, not a bare browser checkbox', () => {
+    // It shipped as a plain <input> the first time. MercuryCheckbox hides
+    // the input and draws its own box with an SVG tick, so the tick is
+    // what tells the two apart.
+    openAuthModal('register')
+    const screen = render(() => <AuthModal />)
+    const box = screen.getByTestId('register-newsletter-optin')
+    expect(box.closest('label')?.querySelector('svg')).not.toBeNull()
+  })
+
   it('is not offered when signing in', () => {
     openAuthModal('login')
     const screen = render(() => <AuthModal />)

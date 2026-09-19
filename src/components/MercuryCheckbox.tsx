@@ -9,14 +9,25 @@ export function MercuryCheckbox(props: {
   children: JSX.Element
   id?: string
   disabled?: boolean
+  /**
+   * Where the box sits against a label of more than one line. Centred
+   * reads best beside a short phrase and badly beside a sentence, which
+   * is what consent copy tends to be.
+   */
+  align?: 'center' | 'start'
+  testId?: string
 }): JSX.Element {
   return (
-    <label class={styles.wrap}>
+    <label
+      class={styles.wrap}
+      classList={{ [styles.alignStart]: props.align === 'start' }}
+    >
       <input
         type="checkbox"
         id={props.id}
         checked={props.checked}
         disabled={props.disabled}
+        data-testid={props.testId}
         onChange={(event) => props.onChange(event.currentTarget.checked)}
       />
       <span class={styles.box} aria-hidden="true">

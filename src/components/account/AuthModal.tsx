@@ -12,6 +12,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createSignal, createUniqueId, Match, onCleanup, onMount, Show, Switch, untrack, } from 'solid-js'
 import { CheckCircle, Eye, EyeOff, Key, Smartphone, X, } from '@/components/icons'
+import { MercuryCheckbox } from '@/components/MercuryCheckbox'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-code-service'
 import { verifyTwofa } from '@/db/services/auth-mfa-service'
@@ -904,19 +905,18 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                   {/* Asked here rather than after the account exists, so the
                       answer arrives with the account and there is no second
                       request to fail on its own. */}
-                  <label class={styles.consentRow}>
-                    <input
-                      type="checkbox"
+                  <div class={styles.consentRow}>
+                    <MercuryCheckbox
                       checked={wantsUpdates()}
-                      onChange={(e) => setWantsUpdates(e.currentTarget.checked)}
-                      data-testid="register-newsletter-optin"
-                    />
-                    <span>
+                      onChange={setWantsUpdates}
+                      align="start"
+                      testId="register-newsletter-optin"
+                    >
                       Send me product updates. Big new features and milestones
                       only, never more than once a month, and you can stop any
                       time.
-                    </span>
-                  </label>
+                    </MercuryCheckbox>
+                  </div>
                 </Show>
 
                 <Show when={error() !== ''}>

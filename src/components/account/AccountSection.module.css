@@ -302,20 +302,6 @@
 /* Account erasure moved into the Settings Danger Zone card
    (DeleteAccountRow), which carries its own row styles. */
 
-.optInRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-primary, #eee);
-  cursor: pointer;
-}
-
-.optInRow input {
-  accent-color: var(--accent, #7aa2f7);
-  cursor: pointer;
-}
-
 /* Say hello — contact + support links, always visible. */
 .helloBlock {
   display: flex;

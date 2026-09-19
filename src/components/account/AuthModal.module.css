@@ -423,21 +423,11 @@
 /* The product-updates box on the register form. Aligned to the first line
    rather than centred: the sentence wraps to three lines on a phone, and a
    centred checkbox floats away from the words it belongs to. */
+/* Just the row's place in the form; the control brings its own layout
+   and its own brand colours (MercuryCheckbox.module.css). */
 .consentRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: var(--text-secondary, #8b949e);
-  cursor: pointer;
-}
-
-.consentRow input {
-  flex: none;
+  display: block;
   margin-top: 2px;
-  accent-color: var(--accent, #58a6ff);
-  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "One newsletter issue. Edit the copy, then rehearse it:",
+    "  node scripts/send-newsletter.mjs scripts/newsletter/v0-9-10.json --preview /tmp/issue.html",
+    "and send it with --send. The worker ignores fields it does not know, so",
+    "this note travels harmlessly.",
+    "",
+    "`issue` is the idempotency key: every accepted send is logged against it",
+    "and re-runs skip those people. Change it only for a genuinely new issue,",
+    "never to 'resend' one - that would mail everybody twice."
+  ],
+  "issue": "v0-9-10",
+  "subject": "MercuryPitch 0.9.10 — jam rooms keep time",
+  "preheader": "Jam rooms follow the song properly, recorded drums land where you played them, and sessions no longer renew forever.",
+  "intro": "A small release, mostly about things that were quietly a beat off. Here is what changed.",
+  "items": [
+    {
+      "title": "Jam rooms follow the song, not a stopwatch",
+      "body": "The shared clock was sampled four times a second, so everyone's playhead drifted a little against the music. It now reads the song's own clock every frame — the lanes line up with what you hear.",
+      "href": "https://mercurypitch.com/#/jam",
+      "cta": "Start a room"
+    },
+    {
+      "title": "Recorded drums land where you played them",
+      "body": "Hits recorded in Guitar Night were placed by when they finished rendering rather than when you played them. They now sit where they were heard.",
+      "href": "https://mercurypitch.com/#/guitar",
+      "cta": "Open Guitar Night"
+    },
+    {
+      "title": "Product updates, if you want them",
+      "body": "There is a checkbox in Settings under Account, and on the sign-up form. It starts off. This email exists because you ticked it, and the link at the bottom unticks it in one click without signing in."
+    }
+  ]
+}

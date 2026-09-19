@@ -3330,6 +3330,11 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // A promo redemption names the account that claimed it. The foreign key
   // cascades, but erasure is a contract, not a side effect of one.
   { table: 'promoRedemptions', column: 'userId' },
+  // Which newsletter issues went to this account. No address is stored, but
+  // a list of what somebody was sent is still a record of them, and an
+  // erased account must not leave one. Same reasoning as promoRedemptions:
+  // the foreign key cascades, and this line is the promise that it does.
+  { table: 'newsletterSends', column: 'userId' },
   // An approved-but-uncollected device link names the account it would sign
   // a television into. Rows are short-lived, but the sweep only runs when
   // the NEXT device asks for a code — so with nobody linking anything, an

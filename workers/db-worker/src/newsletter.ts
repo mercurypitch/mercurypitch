@@ -11,15 +11,21 @@
 // Keeping it here also means account erasure already covers it, and that the
 // switch still works on a day the mail provider does not.
 //
-// Nothing in this file sends anything. The sender is a script run by hand
-// (docs/plans/newsletter-registered-users.md); a cron that mails people is a
-// newsletter sent by accident.
+// Sending lives here too, behind X-Admin-Key, because the secrets do: the
+// unsubscribe signing key and the Resend key are worker secrets, and an
+// operator's laptop should not need a copy of either to mail a release note.
+// What is NOT here is anything that sends on its own — no cron, no queue, no
+// trigger. Someone runs scripts/send-newsletter.mjs, reads the recipient list
+// back, and then sends. A newsletter that can send itself is a newsletter
+// sent by accident.
 //
 // Dispatched from index.ts rather than from handleAuth, so the import runs one
 // way — this file imports auth.ts, never the reverse.
 
 import type { Env } from './auth'
 import { b64urlEncode, checkRateLimit, getAuth } from './auth'
+import type { NewsletterItem } from './email'
+import { renderNewsletterIssue, sendNewsletterIssue } from './email'
 import type { NewsletterConsent } from './newsletter-consent'
 import { readNewsletterConsent, setNewsletterConsent, } from './newsletter-consent'
 
@@ -134,12 +140,296 @@ function unsubscribedPage(): Response {
   )
 }
 
+// ── Sending ──────────────────────────────────────────────────────────
+//
+// The operator's script holds no secrets. It sends CONTENT to the worker and
+// the worker does the rest: it reads the consent column, mints each link with
+// NEWSLETTER_LINK_SECRET, and calls Resend with RESEND_API_KEY. Both of those
+// stay where they already are, and the machine running the script never has a
+// copy of either.
+//
+// Still not a cron. Someone types the command, reads back the recipient list,
+// and sends. See scripts/send-newsletter.mjs.
+
+/**
+ * How many recipients one call will mail.
+ *
+ * Small on purpose. Each send is a request to Resend plus the gap below, so a
+ * page is roughly `SEND_PAGE_MAX * (SEND_GAP_MS + latency)` of wall clock and
+ * a Worker invocation does not get for ever. Twenty-five keeps a page well
+ * under half a minute; the script calls again until nobody is left, which is
+ * safe because every accepted send is already logged.
+ */
+const SEND_PAGE_MAX = 25
+
+/** Resend's free tier allows 2 requests a second. Sending flat out would get
+ *  the back half of a list rejected, which the log would then record as a
+ *  send that did not happen. */
+const SEND_GAP_MS = 600
+
+export interface NewsletterRecipient {
+  userId: string
+  email: string
+  displayName: string | null
+}
+
+/**
+ * Everyone who asked to hear from us and can actually be reached.
+ *
+ * Three conditions, none of them optional:
+ *
+ * - `newsletterOptIn = 1` — the consent column is the list.
+ * - `email IS NOT NULL` — anonymous accounts have no address.
+ * - `emailVerified = 1` — an address nobody confirmed may belong to whoever
+ *   was typed in by mistake. Mailing it is how a typo becomes a complaint
+ *   from a stranger, and a stranger's complaint is what costs a sending
+ *   domain its reputation.
+ *
+ * `issue` excludes anyone already logged as sent, so a run that stopped half
+ * way is safe to repeat.
+ */
+export async function listNewsletterRecipients(
+  db: D1Database,
+  opts: { issue?: string; only?: string; limit?: number } = {},
+): Promise<NewsletterRecipient[]> {
+  const binds: unknown[] = []
+  let sql = `SELECT u.id AS userId, u.email AS email, p.displayName AS displayName
+               FROM users u
+               LEFT JOIN userProfiles p ON p.id = u.id
+              WHERE u.newsletterOptIn = 1
+                AND u.email IS NOT NULL
+                AND u.emailVerified = 1`
+  if (opts.issue) {
+    sql += ` AND NOT EXISTS (SELECT 1 FROM newsletterSends s
+                              WHERE s.issue = ? AND s.userId = u.id)`
+    binds.push(opts.issue)
+  }
+  if (opts.only) {
+    sql += ` AND lower(u.email) = lower(?)`
+    binds.push(opts.only)
+  }
+  sql += ` ORDER BY u.newsletterOptInAt ASC, u.id ASC LIMIT ?`
+  binds.push(Math.min(Math.max(opts.limit ?? SEND_PAGE_MAX, 1), SEND_PAGE_MAX))
+
+  const rows = await db
+    .prepare(sql)
+    .bind(...binds)
+    .all<{ userId: string; email: string; displayName: string | null }>()
+  return rows.results ?? []
+}
+
+interface SendRequestBody {
+  issue?: unknown
+  subject?: unknown
+  preheader?: unknown
+  intro?: unknown
+  items?: unknown
+  only?: unknown
+  dryRun?: unknown
+  limit?: unknown
+}
+
+interface IssueContent {
+  issue: string
+  subject: string
+  preheader: string
+  intro: string
+  items: NewsletterItem[]
+}
+
+/** Reads the issue out of a request body, or says what is missing. A send is
+ *  not the place to accept a half-filled form and mail the gaps. */
+function readIssueContent(body: SendRequestBody): IssueContent | string {
+  const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
+  const issue = str(body.issue)
+  const subject = str(body.subject)
+  const preheader = str(body.preheader)
+  const intro = str(body.intro)
+  if (!issue) return 'issue is required (a slug, e.g. "v0-9-10")'
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/.test(issue)) {
+    return 'issue must be lowercase letters, digits and dashes'
+  }
+  if (!subject) return 'subject is required'
+  if (!preheader) return 'preheader is required'
+  if (!intro) return 'intro is required'
+  if (!Array.isArray(body.items) || body.items.length === 0) {
+    return 'items must be a non-empty array'
+  }
+  const items: NewsletterItem[] = []
+  for (const raw of body.items) {
+    const item = raw as {
+      title?: unknown
+      body?: unknown
+      href?: unknown
+      cta?: unknown
+    }
+    const title = str(item.title)
+    const text = str(item.body)
+    if (!title || !text) return 'every item needs a title and a body'
+    items.push({
+      title,
+      body: text,
+      ...(str(item.href) ? { href: str(item.href) } : {}),
+      ...(str(item.cta) ? { cta: str(item.cta) } : {}),
+    })
+  }
+  return { issue, subject, preheader, intro, items }
+}
+
+interface SendOutcome {
+  email: string
+  status: 'sent' | 'failed' | 'preview'
+}
+
 export async function handleNewsletterRoute(
   request: Request,
   env: Env,
   pathname: string,
   respond: Respond,
+  /** Resolved by index.ts, which owns the admin policy. Required rather than
+   *  defaulted: a route that mails people must not be able to open itself by
+   *  someone forgetting an argument. */
+  isAdmin: () => Promise<boolean>,
 ): Promise<Response | null> {
+  if (pathname === '/api/newsletter/recipients') {
+    if (request.method !== 'GET') {
+      return respond({ error: 'Method not allowed' }, { status: 405 })
+    }
+    if (!(await isAdmin())) {
+      return respond({ error: 'Forbidden' }, { status: 403 })
+    }
+    const params = new URL(request.url).searchParams
+    const recipients = await listNewsletterRecipients(env.DB, {
+      issue: params.get('issue') ?? undefined,
+      only: params.get('only') ?? undefined,
+      limit: Number(params.get('limit')) || undefined,
+    })
+    return respond({
+      recipients,
+      count: recipients.length,
+      // So the operator can tell "nobody left" from "one page of many".
+      pageMax: SEND_PAGE_MAX,
+      canSend: {
+        link: !!env.NEWSLETTER_LINK_SECRET,
+        resend: !!env.RESEND_API_KEY,
+      },
+    })
+  }
+
+  if (pathname === '/api/newsletter/send') {
+    if (request.method !== 'POST') {
+      return respond({ error: 'Method not allowed' }, { status: 405 })
+    }
+    if (!(await isAdmin())) {
+      return respond({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const body = await request
+      .json<SendRequestBody>()
+      .catch(() => null as SendRequestBody | null)
+    const content = readIssueContent(body ?? {})
+    if (typeof content === 'string') {
+      return respond({ error: content }, { status: 400 })
+    }
+
+    // A send cannot be taken back, so the default is the harmless one:
+    // anything other than a literal `false` is a rehearsal.
+    const dryRun = body?.dryRun !== false
+
+    if (!env.NEWSLETTER_LINK_SECRET) {
+      // Not "send it without a link". Mail with no working unsubscribe is
+      // what Gmail and Yahoo's bulk-sender rules exist to stop, and it is
+      // also just wrong.
+      return respond(
+        { error: 'NEWSLETTER_LINK_SECRET is unset — refusing to send' },
+        { status: 503 },
+      )
+    }
+    if (!dryRun && !env.RESEND_API_KEY) {
+      return respond(
+        { error: 'RESEND_API_KEY is unset — refusing to send' },
+        { status: 503 },
+      )
+    }
+
+    const recipients = await listNewsletterRecipients(env.DB, {
+      issue: content.issue,
+      only: typeof body?.only === 'string' ? body.only : undefined,
+      limit: typeof body?.limit === 'number' ? body.limit : undefined,
+    })
+
+    const origin = new URL(request.url).origin
+    const outcomes: SendOutcome[] = []
+    let preview: { subject: string; html: string; text: string } | null = null
+
+    for (const [index, person] of recipients.entries()) {
+      const consent = await readNewsletterConsent(env.DB, person.userId)
+      // Re-read rather than trust the list: somebody may have unsubscribed
+      // between the page being built and their turn coming round.
+      if (!consent?.optIn) continue
+
+      const token = await unsubscribeToken(
+        env.NEWSLETTER_LINK_SECRET,
+        person.userId,
+        consent.optInAt,
+      )
+      const vars = {
+        displayName: person.displayName,
+        subject: content.subject,
+        preheader: content.preheader,
+        intro: content.intro,
+        items: content.items,
+        unsubscribeUrl: `${origin}/api/newsletter/unsubscribe?t=${encodeURIComponent(token)}`,
+      }
+
+      if (dryRun) {
+        preview ??= renderNewsletterIssue(vars)
+        outcomes.push({ email: person.email, status: 'preview' })
+        continue
+      }
+
+      const result = await sendNewsletterIssue(
+        { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM },
+        person.email,
+        vars,
+      )
+      if (!result.ok) {
+        outcomes.push({ email: person.email, status: 'failed' })
+        continue
+      }
+      // Logged only after Resend accepted it. A row written first would,
+      // on a failure, mark somebody as mailed who never was — and the
+      // re-run would then skip them.
+      await env.DB.prepare(
+        `INSERT OR IGNORE INTO newsletterSends (issue, userId, sentAt, providerId)
+              VALUES (?, ?, ?, ?)`,
+      )
+        .bind(
+          content.issue,
+          person.userId,
+          new Date().toISOString(),
+          result.id ?? null,
+        )
+        .run()
+      outcomes.push({ email: person.email, status: 'sent' })
+
+      if (index < recipients.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, SEND_GAP_MS))
+      }
+    }
+
+    return respond({
+      issue: content.issue,
+      dryRun,
+      sent: outcomes.filter((o) => o.status === 'sent').length,
+      failed: outcomes.filter((o) => o.status === 'failed').length,
+      recipients: outcomes,
+      // A full page back means there may be more; the script calls again.
+      morePossible: recipients.length >= SEND_PAGE_MAX,
+      ...(preview ? { preview } : {}),
+    })
+  }
+
   if (pathname === '/api/newsletter/preference') {
     if (request.method !== 'POST') {
       return respond({ error: 'Method not allowed' }, { status: 405 })
