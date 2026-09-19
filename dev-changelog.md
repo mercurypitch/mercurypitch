@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.10] - 2026-09-19
 
 The 0.9.8 audit follow-ups (#822), the support address coming out of the
-bundle (#823), and phases 1-3 of the registered-user newsletter (#824).
+bundle (#823), phases 1-3 of the registered-user newsletter (#824), the jam
+song room (#826) and the lyric-version fixes that followed it, example songs
+that wait for their own lyrics (#828), and account notices (#829).
 
 ### Newsletter for registered users (#824)
 
@@ -104,6 +106,114 @@ than naming an address, since a notification cannot carry a link.
 Requires the landing on `mp-v0.1.28` or later: earlier builds serve the
 contact page but do not read the query string, so a drafted handoff would
 arrive as an empty form.
+
+### Jam room: pitch accuracy, a pop-free transport, zoom and split (#826)
+
+The trace shows where the voice is rather than the nearest note, and a note
+pill's colour reuses `CENTS_EXCELLENT` / `CENTS_GOOD`, so it agrees with the
+score. Starting, stopping and seeking go through a de-click envelope. Lane
+zoom, the lyric split, alignment and lyric size are per-device preferences
+(`jam-lane-zoom`, `jam-view-prefs`, `JamSplitHandle`, `jam-lyrics-scale`)
+and never cross the wire.
+
+The pitch guide: `analyzeVocalSamples` was lifted out of the stem mixer's
+controller into `src/lib/pitch-pipeline/analyze-vocal.ts`, with
+`VOCAL_ANALYSIS_DEFAULTS` as the one source of defaults and no change in
+behaviour. The host analyses once, stores the result under the song's session
+id, and re-sends the manifest under the same song id, so peers get `notes`
+without a transport restart. `JamSong.notesFrom` (local only) drives the
+caption above the lanes; `pitchGuide: 'unavailable'` travels on the manifest
+and is optional, so older clients ignore it. A raw `mergedNotes`-only line is
+re-analysed and kept on failure; an empty analysis is not stored; a device
+that becomes host re-runs provisioning (`resumeHostDuties`). Still on the
+main thread; a worker is the follow-up.
+
+Examples: the Songs shelf was `loadDemoSong()`, the first playable one only,
+and the rest were metadata-only library rows while `sessionSong()` read
+IndexedDB blobs. `exampleSongId(slug)` mirrors `demoSessionId`, an example
+row falls back to its public stems (a separation's leftover server address is
+never used), and hydration happens on pick. `jam-picker-store` and
+`JamPickerList` feed the popup, the phone sheet and the `JamRoomPanel`
+section; the rail list is mounted only while a phone drawer is open, because
+a closed drawer is off-screen rather than hidden and its buttons stay in the
+accessibility tree.
+
+The lyric sheet is `user-select: none` and a seekable row carries
+`data-seekable`. Space moved from the song stage to `JamTransport` through
+`lib/space-playback`. That import is what made the module need its own
+chunk: a module a broad `manualChunks` rule reaches is pulled into that chunk
+unless it has a name of its own, and Piano Night's first paint then loads the
+broad chunk to reach it. `build:e2e` fails the audit; `vite build` alone does
+not.
+
+### Jam room: the Original / Edited buttons and the versions behind them
+
+Reported from a device pass: pressing Original after switching songs put the
+previous song's words on the loaded one, and the buttons came and went.
+
+The picker read its list with `createResource(sessionId, ...)`. A resource
+whose source goes null keeps its value, and `sessionIdOfSong` is null for
+every example, so an example inherited the last song's buttons; any song did
+for as long as its own list took to read. `attachJamSongLyrics(lines)` then
+attached to whatever was loaded. It takes the song id now and ignores words
+for a song the room has left, as `attachJamSongNotes` always did; the finder
+had the same hole across its `fetchLyricsById` await. The list is keyed on
+the song and carries the song id it was read for. `jamSongSessionId` gives an
+example its own versions back, and `exampleSong` opens on the singer's active
+version when it is one of theirs, the manifest otherwise. The lit button is
+matched on every line; matching the first lit Original for most corrections.
+
+Two writers could store a record without its versions, which is what makes
+the buttons disappear. `seedOnce` decides on the active text alone, so a
+singer who corrected the words and went back to the Original lost the Edited
+version to the next `lyricsRevision`; it now replaces the Original and keeps
+the rest, building the Original through `synthesizeVersions` so the
+`x-mp-timing` ends are read (a record with versions is never derived again).
+And `saveLyricsToDbStrict` is create-then-delete: two overlapping saves each
+leave a row, and `loadLyricsFromDb` took `limit: 1` of an unordered pair.
+Writes to one session now take turns (`inTurn`), reads believe the newest
+row, and the legacy-filename heal from #828 is `renameLyricsInDb`, a field
+patch, instead of re-saving a copy read earlier. Per tab only: two tabs can
+still overlap, which the newest-row read keeps stable and the next save
+tidies.
+
+All four storage defects were reproduced against the old code before the fix.
+
+### Example songs wait for their own lyrics (#828)
+
+Only the song card and a `?session=` restore awaited the lyric seed. The
+stage's song sheet, playlist steps and the in-app mixer open an example by its
+library row, and `seedExamplesLibrary` writes rows first and lyrics second, so
+`loadLyrics` found nothing and went to the online finder. The lyric controller
+now waits for an example's own lyrics (bounded at 8 s, cancellable, spinner
+up) before searching. The seed is single-flight per session id, abortable, and
+re-checks the store right before writing, so a seed that comes back late
+cannot overwrite what the singer found meanwhile. Seeded records are named
+`Artist - Title.ext`.
+
+### Account notices (#829)
+
+Migration 0049, `workers/db-worker/src/account-notices.ts`, the notice mail in
+`email.ts`, and the erasure registry. Legal and service notices go to every
+verified account whatever they chose about the newsletter, which is why they
+are a separate route, a separate log and a separate confirmation word. Same
+shape otherwise: the worker sends, `dryRun` defaults to true, sends are logged
+per `(notice, userId)` and skipped on a re-run, 25 per page. Prod answers 404
+until a tag ships the worker and the migration.
+
+### Studio: a `.lyricsfile` for an example song, and word ends through every door
+
+`71114e71`: the studio's lyrics drop zone reads a `.lyricsfile` and converts
+it to the stored LRC, tag included, through the same `lyricsfileToStoredLrc`
+the mixer's import uses. One text is stored and either format derives the
+other. A lyrics URL ending in `.lyricsfile` is converted at seed time, and the
+format is read off the path so a cache-busting query no longer turns a synced
+file into plain text.
+
+`29ea11f1`: the `x-mp-timing` reader accepted only numbers, and a sparse line
+serialises its holes as `null`, so any file with a partly marked line lost the
+whole tag. Nulls are read back as holes. `synthesizeVersions` reads the tag
+for a bare record, which is how a seeded example keeps its word ends.
 
 ## [0.9.9] - 2026-09-18
 
