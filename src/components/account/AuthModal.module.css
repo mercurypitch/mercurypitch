@@ -420,6 +420,26 @@
   outline-offset: -2px;
 }
 
+/* The product-updates box on the register form. Aligned to the first line
+   rather than centred: the sentence wraps to three lines on a phone, and a
+   centred checkbox floats away from the words it belongs to. */
+.consentRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-secondary, #8b949e);
+  cursor: pointer;
+}
+
+.consentRow input {
+  flex: none;
+  margin-top: 2px;
+  accent-color: var(--accent, #58a6ff);
+  cursor: pointer;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .overlay,
   .dialog {

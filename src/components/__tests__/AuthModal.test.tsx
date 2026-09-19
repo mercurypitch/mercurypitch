@@ -179,6 +179,10 @@ describe('AuthModal', () => {
         'secret123',
         'Maff',
         '',
+        // The product-updates box, left alone. Pinned here as well as in
+        // newsletter-consent-ui.test.tsx: an account created by somebody who
+        // did not tick it must never arrive asking for mail.
+        false,
       ),
     )
     await waitFor(() => expect(onAuthenticated).toHaveBeenCalledTimes(1))

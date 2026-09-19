@@ -20,6 +20,7 @@ import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
+import { setNewsletterOptIn } from '@/db/services/newsletter-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_FORM_URL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -222,6 +223,38 @@ export const AccountSection: Component = () => {
           ? 'Sign in to change your leaderboard listing.'
           : raw,
       )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const wantsUpdates = (): boolean => me()?.user.newsletterOptIn === true
+
+  /**
+   * Say yes or no to product updates.
+   *
+   * Goes through a route of its own rather than the generic table API: the
+   * answer lives on the `users` row, which is deliberately absent from the
+   * cloud table registry and reachable only through named endpoints.
+   */
+  async function setWantsUpdates(next: boolean): Promise<void> {
+    setError('')
+    setBusy(true)
+    try {
+      await setNewsletterOptIn(next)
+      await refreshMe()
+      showNotification(
+        next
+          ? 'You’ll hear from us when something big ships'
+          : 'You’re off the product updates list',
+        'info',
+      )
+    } catch (err) {
+      // Same snap-back as the leaderboard row above, for the same reason: a
+      // checkbox that shows consent the server never accepted is worse than
+      // one that shows an error.
+      await refreshMe().catch(() => undefined)
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }
@@ -508,6 +541,29 @@ export const AccountSection: Component = () => {
               Off by default. Exercise and challenge results rank once you've
               practiced a few days running; free practice and your streak are
               never published. Friends you add see more.
+            </p>
+          </div>
+        </Show>
+
+        {/* Product updates. Only for a real account: a device identity has no
+            address to send anything to. */}
+        <Show when={me() != null && isUpgraded()}>
+          <div class={styles.accountField}>
+            <label class={styles.optInRow}>
+              <input
+                type="checkbox"
+                checked={wantsUpdates()}
+                disabled={busy()}
+                data-testid="newsletter-optin"
+                onChange={(e) => void setWantsUpdates(e.currentTarget.checked)}
+              />
+              <span>Send me product updates</span>
+            </label>
+            <p class={styles.fieldHint}>
+              Off by default. Big new features and milestones only, never more
+              than once a month, and never your practice data. Every email has
+              an unsubscribe link, and turning this off here stops them
+              immediately.
             </p>
           </div>
         </Show>

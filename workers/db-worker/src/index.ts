@@ -20,6 +20,7 @@ import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
 import { APPLE_NOTIFICATIONS_PATH, handleAppleRoute } from './apple-routes'
+import { handleNewsletterRoute } from './newsletter'
 import { handlePasskeyRoute } from './passkey-routes'
 import { handleTwofaRoute } from './twofa-routes'
 import { handleBilling, reconcileBilling } from './billing'
@@ -2316,6 +2317,17 @@ async function handleRequest(
       await isAdmin(request, env),
     )
   }
+
+  // Product-update consent and the unsubscribe link from an email. Ahead of
+  // handleAuth for the same reason as the routes below it: newsletter.ts
+  // imports auth.ts, never the reverse.
+  const newsletterResponse = await handleNewsletterRoute(
+    request,
+    env,
+    url.pathname,
+    respondNoStore,
+  )
+  if (newsletterResponse) return newsletterResponse
 
   // Ahead of handleAuth so the import runs one way: twofa-routes imports
   // auth.ts for getAuth and the session issuer, and auth.ts never imports it.
