@@ -212,3 +212,137 @@ describe('overallLineScore', () => {
     expect(overallLineScore([])).toBeNull()
   })
 })
+
+// ── Singing where nothing is written ─────────────────────────────────
+//
+// Asked directly (2026-09-19): does noise in a gap count against you?
+// It does not, and this is the guard on that staying true. The scorer
+// only ever looks INSIDE a note's own [startSec, endSec), and a line
+// with no notes is noteCount 0 and leaves the denominator. Both are
+// easy to lose by accident -- a "score the whole line" refactor, or an
+// `|| 1` on a divisor -- and neither shows up as a failing case unless
+// one is written down.
+//
+// Named `noise` rather than `wrong note` on purpose: an ad lib, a
+// cough, a count-in and somebody else's mic bleeding in all arrive here
+// as exactly this.
+
+/** Samples at given times, each at its own frequency. */
+function noiseAt(
+  entries: readonly [timeMs: number, freq: number][],
+): TimeStampedPitchSample[] {
+  return entries.map(([timestamp, frequency]) => ({
+    timestamp,
+    frequency,
+    midi: 60,
+    cents: 0,
+    noteName: 'C',
+    clarity: 1,
+  }))
+}
+
+describe('singing where no note is written', () => {
+  const anchor = { atMs: 0, positionSec: 0 }
+  /** One line, two notes, and two seconds of nothing between them. */
+  const GAPPED_LINE: LyricsLineTiming[] = [
+    { text: 'hold ... hold', startSec: 0, endSec: 4 },
+  ]
+  const GAPPED_NOTES: JamSongNote[] = [
+    { midi: 69, startSec: 0, endSec: 1 },
+    { midi: 69, startSec: 3, endSec: 4 },
+  ]
+  const ON_THE_NOTES = samplesAt([0, 250, 500, 750, 3000, 3250, 3500, 3750], A4)
+
+  it('scores the same whether the gap is silent or full of noise', () => {
+    const clean = scoreLines(GAPPED_LINE, GAPPED_NOTES, ON_THE_NOTES, anchor)
+    const noisy = scoreLines(
+      GAPPED_LINE,
+      GAPPED_NOTES,
+      [
+        ...ON_THE_NOTES,
+        // Two seconds of a completely different note, right between them.
+        ...noiseAt([
+          [1200, 261.63],
+          [1600, 261.63],
+          [2000, 293.66],
+          [2400, 329.63],
+          [2800, 261.63],
+        ]),
+      ],
+      anchor,
+    )
+    expect(clean[0]?.score).toBeGreaterThan(90)
+    expect(noisy[0]?.score).toBe(clean[0]?.score)
+    expect(noisy[0]?.noteCount).toBe(clean[0]?.noteCount)
+  })
+
+  it('leaves the run total alone when a whole line has nothing to sing', () => {
+    // Line two is an instrumental break. Wailing over it must not add a
+    // line to the denominator, which is what would turn a perfect run
+    // into a half-marked one.
+    const lines: LyricsLineTiming[] = [
+      { text: 'verse', startSec: 0, endSec: 2 },
+      { text: '(solo)', startSec: 2, endSec: 6 },
+    ]
+    const notes: JamSongNote[] = [{ midi: 69, startSec: 0, endSec: 2 }]
+    const overSolo = noiseAt([
+      [2500, 261.63],
+      [3000, 293.66],
+      [4000, 329.63],
+      [5000, 261.63],
+    ])
+
+    const scores = scoreLines(
+      lines,
+      notes,
+      [...samplesAt([0, 400, 800, 1200, 1600], A4), ...overSolo],
+      anchor,
+    )
+    expect(scores[1]?.noteCount).toBe(0)
+    // It WAS voiced -- the samples are real -- and still does not count.
+    expect(scores[1]?.voiced).toBe(true)
+
+    const out = overallLineScore(scores)
+    expect(out?.completedLines).toBe(1)
+    expect(out?.totalLines).toBe(1)
+    expect(out?.score).toBeGreaterThan(90)
+    expect(scoreableLineIndices(lines, notes)).toEqual([0])
+  })
+
+  it('does not let noise before a line starts bleed into it', () => {
+    // The count-in case: four bars of somebody talking over the intro.
+    const lines: LyricsLineTiming[] = [
+      { text: 'verse', startSec: 4, endSec: 6 },
+    ]
+    const notes: JamSongNote[] = [{ midi: 69, startSec: 4, endSec: 6 }]
+    const sung = samplesAt([4000, 4400, 4800, 5200, 5600], A4)
+    const withIntro = [
+      ...noiseAt([
+        [0, 261.63],
+        [1000, 293.66],
+        [2000, 329.63],
+      ]),
+      ...sung,
+    ]
+    const clean = scoreLines(lines, notes, sung, anchor)
+    const noisy = scoreLines(lines, notes, withIntro, anchor)
+    expect(clean[0]?.score).toBeGreaterThan(90)
+    expect(noisy[0]?.score).toBe(clean[0]?.score)
+  })
+
+  it('holds for the live path too, which is the one that runs', () => {
+    // scoreLiveLine is what the room actually calls, line by line; the
+    // after-the-fact path above is only used for a whole take.
+    const live = (samples: TimeStampedPitchSample[]) =>
+      scoreLiveLine(GAPPED_LINE, 0, GAPPED_NOTES, samples, anchor).score
+    expect(
+      live([
+        ...ON_THE_NOTES,
+        ...noiseAt([
+          [1500, 261.63],
+          [2500, 329.63],
+        ]),
+      ]),
+    ).toBe(live(ON_THE_NOTES))
+  })
+})

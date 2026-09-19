@@ -1,20 +1,59 @@
 /* JamPeerLanes — one scrolling pitch lane per singer. */
 
+/* Holds the status strip and the lane area under it. */
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+}
+
+/* Holds the scroller and the zoom control that floats over it. The
+   control cannot live inside the scroller: it would scroll away the
+   moment a fourth singer joins, which is exactly when a room is hardest
+   to read and most wants zooming. It anchors HERE rather than on .root
+   so the strip above cannot end up underneath it. */
+.laneArea {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
 .lanes {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
   min-height: 0;
-  height: 100%;
   overflow-y: auto;
+  /* One finger still scrolls the list; two fingers are ours, and the
+     browser's own page zoom stays out of a gesture aimed at a lane. */
+  touch-action: pan-y;
+}
+
+.zoomDock {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  /* The dock is a position, not a surface: pointers fall through it to
+     the lane behind, and only the control's own buttons take them. */
+  pointer-events: none;
 }
 
 .lane {
   position: relative;
   /* Grows to share the height, but never collapses to a sliver in a
-     twelve-person room -- a lane you cannot read is not worth the space. */
+     twelve-person room -- a lane you cannot read is not worth the space.
+     The floor buys about seven pixels a semitone at the ten-semitone
+     minimum band, which is what makes a near miss legible as one. */
   flex: 1 1 0;
-  min-height: 56px;
+  min-height: 72px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-primary, #0d1117);
@@ -60,4 +99,112 @@
   letter-spacing: 0.05em;
   /* Never intercepts a pointer: the lane behind it is the target. */
   pointer-events: none;
+}
+
+/* ── What the lanes have to say for themselves ──────────────────────
+   A strip above the lanes, never over them: a song with no pitch guide
+   is still a song you can sing, so the lanes, the lyrics and your own
+   trail all stay where they are and this explains the empty target.
+
+   Above rather than below because the room's chat bubble is fixed in
+   the viewport's bottom-right corner: a strip along the bottom of the
+   stage puts its one button under a 56px circle, where a real pointer
+   cannot reach it.
+
+   Not absolutely positioned. It is short, it appears rarely, and a
+   lane list that gives up ~30px while it shows is honest about the
+   space being used. */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 3));
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+/* Where the pitch guide came from. A caption, not a notice: it is there for
+   the whole song, so it costs one short line and no box. */
+.credit {
+  flex-shrink: 0;
+  margin: 0 0 4px;
+  padding: 0 2px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.notice[data-state='unavailable'] {
+  border-color: color-mix(in srgb, var(--warning, #d29922) 45%, var(--border));
+}
+
+/* Takes the slack so the percentage stays pinned to the right. */
+.noticeText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.notice[data-state='working'] .noticeText {
+  flex: 0 0 auto;
+}
+
+.progress {
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  /* The bar is driven in ~2% steps, which is a stutter at this width. */
+  transition: width 180ms linear;
+}
+
+.percent {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.retry {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.retry:hover,
+.retry:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* A thumb needs a target, and this one is the whole point of the strip
+   when the guide failed. */
+@media (pointer: coarse) {
+  .retry {
+    min-height: 24px;
+    padding-inline: 12px;
+  }
 }

@@ -20,10 +20,12 @@
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, } from '@/features/exercises/types'
+import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import type { PathWeek } from '@/features/path/path-content'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
 import type { JamSessionRow } from '@/lib/jam/jam-session-songs'
 import type { JamSong } from '@/lib/jam/jam-song'
+import { exampleSongId, SESSION_SONG_PREFIX } from '@/lib/jam/jam-song-sources'
 import type { MelodyData, MelodyItem, NoteName } from '@/types'
 
 /** Which shelf of the picker an entry came from. */
@@ -77,6 +79,13 @@ interface JamCatalogEntryBase {
   name: string
   /** One line under the name: what the room is about to sing. */
   detail: string
+  /**
+   * The id the room carries once this entry is loaded -- the song's id, or
+   * the built melody's. It is how a list can mark the row that is running
+   * without building anything: two lists show these entries now, and the
+   * one in the sidebar stays open while the room sings.
+   */
+  targetId: string
 }
 
 /**
@@ -295,6 +304,7 @@ export function jamExerciseEntries(defaultOctave: number): JamMelodyEntry[] {
     kind: 'exercise' as const,
     name: drill.title,
     detail: `${drill.notes.length} note${drill.notes.length === 1 ? '' : 's'} · ${drill.bpm} bpm · ${drill.blurb}`,
+    targetId: `${ID_PREFIX.exercise}${type}`,
     build: () =>
       drillToMelody(`${ID_PREFIX.exercise}${type}`, drill, defaultOctave),
   }))
@@ -314,6 +324,7 @@ export function jamWeeklyEntry(
     kind: 'weekly',
     name: weekly.title,
     detail: `This week's challenge · ${weekly.targetItems.length} notes · target ${weekly.targetScore}`,
+    targetId: `${ID_PREFIX.weekly}${weekly.id}`,
     build: () => ({
       id: `${ID_PREFIX.weekly}${weekly.id}`,
       name: weekly.title,
@@ -342,6 +353,7 @@ export function jamAscentEntries(
         kind: 'ascent' as const,
         name: drill.title,
         detail: `Week ${week.order} · ${week.title} · ${drill.blurb}`,
+        targetId: `${ID_PREFIX.ascent}${type}`,
         build: () =>
           drillToMelody(`${ID_PREFIX.ascent}${type}`, drill, defaultOctave),
       },
@@ -349,31 +361,42 @@ export function jamAscentEntries(
   })
 }
 
+/** "m:ss", or nothing for a length nobody wrote down. */
+function clockLabel(durationSec: number): string | null {
+  if (!(durationSec > 0)) return null
+  return `${Math.floor(durationSec / 60)}:${String(Math.round(durationSec % 60)).padStart(2, '0')}`
+}
+
 /**
- * Songs the room can sing.
+ * The example songs, listed without hydrating them.
  *
- * Only ones every peer can fetch (see jam-song-sources.ts). A null song
- * yields an empty shelf rather than a disabled row -- offering something
- * that cannot be picked is worse than not offering it.
+ * The same deal as jamSessionRowEntries below. A row needs a title, an
+ * artist and a length, and all three are on the manifest; the words are a
+ * fetch and the pitch line a database read, and neither is worth doing for
+ * a song nobody picked.
+ *
+ * Every example, not the first one. The shelf used to be built from the one
+ * manifest Karaoke Night opens on, which left every other example to arrive
+ * through "Your songs" as a library row -- and a library row for an example
+ * has no audio behind it in this browser, so it could not be loaded at all.
  */
-export function jamSongEntries(songs: Array<JamSong | null>): JamSongEntry[] {
-  return songs
-    .filter((s): s is JamSong => s !== null)
-    .map((song) => ({
-      id: `song:${song.id}`,
+export function jamExampleRowEntries(
+  manifests: readonly DemoSongManifest[],
+  hydrate: (manifest: DemoSongManifest) => Promise<JamSong | null>,
+): JamSongEntry[] {
+  return manifests.map((manifest) => {
+    const songId = exampleSongId(manifest.slug)
+    return {
+      id: `song:${songId}`,
       kind: 'song' as const,
-      name: song.title,
-      detail: [
-        song.artist,
-        song.lines.length > 0 ? `${song.lines.length} lines` : 'no lyrics yet',
-        song.durationSec > 0
-          ? `${Math.floor(song.durationSec / 60)}:${String(Math.round(song.durationSec % 60)).padStart(2, '0')}`
-          : null,
-      ]
+      name: manifest.title,
+      detail: [manifest.artist, clockLabel(manifest.durationSec ?? 0)]
         .filter(Boolean)
         .join(' · '),
-      buildSong: () => song,
-    }))
+      targetId: songId,
+      buildSong: () => hydrate(manifest),
+    }
+  })
 }
 
 /**
@@ -391,10 +414,8 @@ export function jamSessionRowEntries(
     id: `song:session:${row.session.sessionId}`,
     kind: 'song' as const,
     name: row.title,
-    detail:
-      row.durationSec > 0
-        ? `${Math.floor(row.durationSec / 60)}:${String(Math.round(row.durationSec % 60)).padStart(2, '0')}`
-        : 'your separation',
+    detail: clockLabel(row.durationSec) ?? 'your separation',
+    targetId: `${SESSION_SONG_PREFIX}${row.session.sessionId}`,
     buildSong: () => hydrate(row),
   }))
 }
@@ -406,6 +427,7 @@ export function jamMelodyEntries(melodies: MelodyData[]): JamMelodyEntry[] {
     kind: 'melody' as const,
     name: melody.name,
     detail: `${melody.bpm} bpm · ${melody.key} ${melody.scaleType}`,
+    targetId: melody.id,
     build: () => melody,
   }))
 }

@@ -12,6 +12,150 @@
   overflow: hidden;
 }
 
+/* ── Panel header ───────────────────────────────────────────────────
+   One slim row, for everybody. The assign bar underneath is host-only,
+   so a guest's lyric column used to have no chrome at all -- and no way
+   to say how they want to read it. */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  /* What the alignment buttons are made of. They are a shared component
+     and know nothing about a room's glass, so the row hands it to them:
+     the same floating surface the lane zoom wears, which follows the
+     transparency slider instead of sitting opaque over the backdrop. */
+  --lyrics-align-surface: var(--jam-float, rgba(13, 17, 23, 0.72));
+  /* The row answers to its OWN width, not the viewport's. Side by side
+     the viewer can drag this column down to a quarter of the stage, so a
+     1200px window can hold a 250px header and a media query would never
+     know. See "Fitting the row" below. */
+  container-type: inline-size;
+}
+
+/* Alignment, then size: the two things a reader sets about the words. */
+.headerTools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  /* Both controls at one height. The lane zoom's own buttons are 22px,
+     which is right for something floating over a canvas and two pixels
+     short of the alignment buttons beside it here. */
+  --jam-zoom-target: 24px;
+}
+
+/* A thumb-sized control is 46px tall with its ring, and the row's own
+   padding on top of that is height taken straight from the words. */
+@media (pointer: coarse) {
+  .header {
+    padding-block: 2px;
+  }
+
+  .headerTools {
+    --jam-zoom-target: 40px;
+  }
+}
+
+/* ── Fitting the row ────────────────────────────────────────────────
+   Two controls and a label do not fit every width this column can be
+   given, and a row that wraps costs the words a whole line of height --
+   on a 360px phone, in the stacked layout, that is the one place it
+   cannot be spared. So the row gives things up instead, cheapest first,
+   and each step is sized to the step before it:
+
+     1. the label. The panel is visibly the lyrics; the word is a nicety.
+        Once it goes the two controls take the ends of the row.
+     2. (thumbs only) the 40px targets, down to 32 -- still well over the
+        24px floor.
+     3. the size readout. Minus and plus still work, and so do the wheel
+        and the pinch; what is lost is the one-tap reset.
+     4. the single row. Only reachable side by side, with the seam
+        dragged to its 25% clamp in a window barely wide enough to be
+        side by side at all -- a column about 150px wide, as tall as the
+        stage, where a second row costs nothing the words were using.
+        Each control then has a row to itself, so the readout comes back.
+
+   A 360px phone stops at step 1 and a 320px one at step 2; neither
+   reaches step 4, whose column only exists above 900px.
+
+   The widths are the row's content box, measured in Chromium with a few
+   pixels of slack for a font that is not the one on this machine. The
+   controls are 82 + 95px on a mouse (56 without the readout) and
+   130 + 132px on a thumb (106 + 116 at 32px, 72 without the readout),
+   8px apart; the label wants 48px with its gap. */
+@container (max-width: 240px) {
+  .headerLabel {
+    display: none;
+  }
+
+  .headerTools {
+    flex: 1;
+    justify-content: space-between;
+  }
+}
+
+@container (max-width: 190px) {
+  .headerTools {
+    --jam-zoom-readout: none;
+  }
+}
+
+@container (max-width: 152px) {
+  .headerTools {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 4px;
+    --jam-zoom-readout: inline-flex;
+  }
+}
+
+@media (pointer: coarse) {
+  @container (max-width: 326px) {
+    .headerLabel {
+      display: none;
+    }
+
+    .headerTools {
+      flex: 1;
+      justify-content: space-between;
+    }
+  }
+
+  @container (max-width: 276px) {
+    .headerTools {
+      --jam-zoom-target: 32px;
+      --lyrics-align-target: 32px;
+    }
+  }
+
+  @container (max-width: 236px) {
+    .headerTools {
+      --jam-zoom-readout: none;
+    }
+  }
+
+  @container (max-width: 192px) {
+    .headerTools {
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: 4px;
+      --jam-zoom-readout: inline-flex;
+    }
+  }
+}
+
+.headerLabel {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
 .scroll {
   flex: 1;
   min-height: 0;
@@ -25,6 +169,10 @@
   padding: 12px 16px;
   scrollbar-width: thin;
   overscroll-behavior: contain;
+  /* One finger still scrolls the words. Two are the lyric size (see
+     bindScaleGestures), and without this the browser takes the pinch
+     for itself and zooms the whole page before a script ever sees it. */
+  touch-action: pan-y;
 }
 
 .line {
@@ -32,11 +180,22 @@
   position: relative;
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 6px 8px;
+  gap: 10px;
+  /* --jam-lyrics-scale is the viewer's lyric size, set on the scroll box
+     by the component (jam-view-prefs). Always read with a fallback: an
+     undefined custom property does not fall back to the old value, it
+     throws the whole declaration away, and the words would inherit
+     whatever size the panel happens to have.
+
+     The block padding scales with the words and the inline padding does
+     not. Space between two lines is what tells a wrapped lyric from the
+     next lyric, and at 2x a fixed 6px loses to the line's own leading;
+     the side padding is a gutter, and a gutter that grows only takes
+     width from words that have just been made bigger. */
+  padding: calc(6px * var(--jam-lyrics-scale, 1)) 8px;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: calc(1rem * var(--jam-lyrics-scale, 1));
+  /* Unitless, so the leading follows the size without being told. */
   line-height: 1.45;
   color: var(--text-secondary);
   transition:
@@ -95,7 +254,17 @@
 }
 
 .lineText {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Everything on the row that is not the words. */
+.lineTrail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .lineTime {
@@ -104,6 +273,54 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
   opacity: 0.7;
+}
+
+/* ── Alignment ──────────────────────────────────────────────────────
+   Left and right leave the furniture in the flow at the trailing edge,
+   where it costs nothing. Middle cannot: a row with a score and a name
+   would centre its words in whatever is left over, so the same lyric
+   sits in a different place depending on whether it has been scored yet
+   -- which reads as the column twitching, not as centring. So in Middle
+   the furniture leaves the flow and the row reserves the same gutter on
+   both sides, and the words sit on the PANEL's axis whatever the row
+   carries. */
+.scroll[data-align='left'] .lineText {
+  text-align: left;
+}
+
+.scroll[data-align='right'] .lineText {
+  text-align: right;
+}
+
+.scroll[data-align='center'] .lineText {
+  text-align: center;
+}
+
+.scroll[data-align='center'] .line {
+  /* A share of the ROW, not a fixed guess. 4.25rem is right beside a
+     half-width stage and a third of the width once the seam is dragged
+     to its 25% clamp -- at which point the words break to one per line
+     and the column is unreadable. A percentage in `padding-inline`
+     resolves against the row's inline size, which IS the column, so the
+     reserve follows whatever the viewer chose. (Note the warning in the
+     phone block below: that trap is percentages in the BLOCK direction,
+     which also resolve against width. This one is inline.) */
+  padding-inline: clamp(1.25rem, 12%, 4.25rem);
+}
+
+.scroll[data-align='center'] .lineTrail {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.scroll[data-align='center'] .rest {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-right: 0;
 }
 
 .empty {
@@ -116,7 +333,7 @@
 
 @media (max-width: 900px) {
   .line {
-    font-size: 0.92rem;
+    font-size: calc(0.92rem * var(--jam-lyrics-scale, 1));
   }
 
   /* NOT a percentage. The desktop rule above was fixed for exactly this

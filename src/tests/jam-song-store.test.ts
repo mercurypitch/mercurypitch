@@ -644,3 +644,123 @@ describe('attaching lyrics to a loaded song', () => {
     expect(store.jamSong()).toBeNull()
   })
 })
+
+describe('attaching a pitch line to a loaded song', () => {
+  const NOTES = [{ midi: 60, startSec: 0, endSec: 1 }]
+
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+    store.setJamIsHost(false)
+    store.setJamPeerId(null)
+  })
+
+  it('gives the loaded song its target notes', () => {
+    store.selectJamSong(song())
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSong()?.notes).toEqual(NOTES)
+  })
+
+  it('credits the line to the room that worked it out', () => {
+    // Only the in-room analysis attaches notes after the fact, so this is
+    // what lets the lanes say "worked out in this room".
+    store.selectJamSong(song())
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSong()?.notesFrom).toBe('room')
+  })
+
+  it('takes "no pitch guide" back once there is one', () => {
+    store.setJamIsHost(true)
+    store.selectJamSong(song())
+    expect(store.jamSong()?.pitchGuide).toBe('unavailable')
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSong()).not.toHaveProperty('pitchGuide')
+  })
+
+  it('leaves the transport exactly where it was', () => {
+    // The whole reason a late line is sent as a manifest update rather
+    // than as a new song: an analysis finishing mid-verse must not
+    // restart the song under whoever is singing it.
+    store.selectJamSong(song())
+    store.setJamSongPositionSec(42)
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSongPositionSec()).toBe(42)
+    expect(store.jamSong()?.id).toBe('demo')
+  })
+
+  it('ignores a line meant for a song the room has moved on from', () => {
+    // An analysis outlives the song that started it. Applying its result
+    // to whatever is loaded now would draw one song's melody over
+    // another's words.
+    store.selectJamSong(song())
+    store.attachJamSongNotes('some-other-song', NOTES)
+    expect(store.jamSong()?.notes).toEqual([])
+  })
+
+  it('ignores an empty result rather than announcing nothing', () => {
+    store.selectJamSong(song({ notes: NOTES }))
+    store.attachJamSongNotes('demo', [])
+    expect(store.jamSong()?.notes).toEqual(NOTES)
+  })
+
+  it('does nothing when no song is loaded', () => {
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSong()).toBeNull()
+  })
+})
+
+describe('telling the room a song has no pitch guide', () => {
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+    store.setJamPeerId(null)
+    store.setJamIsHost(false)
+  })
+
+  /** Load as a guest, so picking the song decides nothing by itself. */
+  const loadThenHost = (loaded: JamSong): void => {
+    store.selectJamSong(loaded)
+    store.setJamIsHost(true)
+  }
+
+  it('happens by itself when the host picks a song nothing can be made for', () => {
+    // 'demo' is neither a separation nor an example, so there is no vocal
+    // line to work out and the host knows it the moment the song loads.
+    store.setJamIsHost(true)
+    store.selectJamSong(song())
+    expect(store.jamSong()?.pitchGuide).toBe('unavailable')
+  })
+
+  it('marks the loaded song, which is what travels with its manifest', () => {
+    loadThenHost(song())
+    expect(store.jamSong()).not.toHaveProperty('pitchGuide')
+    store.markJamSongGuideUnavailable('demo')
+    expect(store.jamSong()?.pitchGuide).toBe('unavailable')
+  })
+
+  it('is the host word to give, not a guest one', () => {
+    store.setJamIsHost(false)
+    store.selectJamSong(song())
+    store.markJamSongGuideUnavailable('demo')
+    expect(store.jamSong()).not.toHaveProperty('pitchGuide')
+  })
+
+  it('says nothing about a song that has a line', () => {
+    loadThenHost(
+      song({
+        notes: [{ midi: 60, startSec: 0, endSec: 1 }],
+        notesFrom: 'saved',
+      }),
+    )
+    store.markJamSongGuideUnavailable('demo')
+    expect(store.jamSong()).not.toHaveProperty('pitchGuide')
+  })
+
+  it('ignores news about a song the room has moved on from', () => {
+    loadThenHost(song())
+    store.markJamSongGuideUnavailable('some-other-song')
+    expect(store.jamSong()).not.toHaveProperty('pitchGuide')
+  })
+})

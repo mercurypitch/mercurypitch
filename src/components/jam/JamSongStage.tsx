@@ -11,12 +11,14 @@
 // what keeps a room together across the join.
 
 import type { Component } from 'solid-js'
-import { createEffect, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { activateAudioPlayback, installAudioUnlock } from '@/lib/audio-unlock'
 import { createJamGuidePlayer } from '@/lib/jam/jam-guide-player'
 import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lyricLineProgress } from '@/lib/jam/jam-song'
+import { createJamSongTransport } from '@/lib/jam/jam-song-transport'
+import { jamSplitBounds, jamSplitShare, resetJamSplitShare, setJamSplitShare, } from '@/lib/jam/jam-view-prefs'
 import { followMediaClock } from '@/lib/jam/media-clock'
 import { initAudioEngine } from '@/stores/app-store'
 import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
@@ -25,6 +27,7 @@ import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
 import { JamSongScrubber } from './JamSongScrubber'
 import styles from './JamSongStage.module.css'
+import { JamSplitHandle } from './JamSplitHandle'
 import { JamTransferDialog } from './JamTransferDialog'
 
 /**
@@ -47,8 +50,48 @@ const GUIDE_DRIFT_SEC = 0.12
 /** Its own constant so the notice can be taken back without guessing. */
 const BUFFERING = 'Buffering — the backing track is not arriving smoothly.'
 
+/**
+ * Below this the stage is one column with the lanes underneath.
+ *
+ * The breakpoint lives here rather than in the stylesheet because the
+ * layout is no longer a pure CSS decision: the split handle has to know
+ * which axis it is trading, and which of the two remembered shares it is
+ * writing. One source of truth beats a media query and a JS copy of it
+ * that can disagree in the fifty pixels either side.
+ */
+const STACKED_QUERY = '(max-width: 900px)'
+
 export const JamSongStage: Component = () => {
   let audioRef: HTMLAudioElement | undefined
+  let splitRef: HTMLDivElement | undefined
+
+  /** One column, lanes underneath -- a phone, or a narrow window. */
+  const [stacked, setStacked] = createSignal(false)
+
+  onMount(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const mql = window.matchMedia(STACKED_QUERY)
+    setStacked(mql.matches)
+    const onChange = (): void => {
+      setStacked(mql.matches)
+    }
+    if (typeof mql.addEventListener === 'function') {
+      mql.addEventListener('change', onChange)
+      onCleanup(() => mql.removeEventListener('change', onChange))
+      return
+    }
+    // Older WebKit has only the deprecated pair.
+    const legacy = mql as MediaQueryList & {
+      addListener: (cb: () => void) => void
+      removeListener: (cb: () => void) => void
+    }
+    legacy.addListener(onChange)
+    onCleanup(() => legacy.removeListener(onChange))
+  })
+
+  /** The share of the stage the words get, for whichever layout is on. */
+  const lyricShare = (): number => jamSplitShare(stacked())
+  const splitBounds = () => jamSplitBounds(stacked())
 
   /**
    * Guide-vocal level, per person and not room state -- see JamGuideVocal.
@@ -72,6 +115,36 @@ export const JamSongStage: Component = () => {
     context: () => engineContext,
   })
   onCleanup(() => guidePlayer.dispose())
+
+  /**
+   * Every audible edge of the backing track goes through here.
+   *
+   * The element used to be driven bare -- play(), pause(), currentTime --
+   * and each of those is a full-scale step in one sample. In a room that
+   * is a loud pop on every stop and every start, which is most of what a
+   * practice consists of. See jam-song-transport.ts for why it attaches
+   * to the graph lazily rather than on mount.
+   */
+  const transport = createJamSongTransport({
+    element: () => audioRef,
+    context: () => engineContext,
+  })
+  onCleanup(() => transport.dispose())
+
+  /**
+   * Have a context ready before anyone presses Play.
+   *
+   * Otherwise one exists only once the guide vocal has been unmuted, and
+   * a singer who never touches the guide would get the un-enveloped path
+   * for the whole session -- which is to say, the pop. Constructing the
+   * engine does not start it; the unlock listeners below resume it on the
+   * first tap in the room.
+   */
+  onMount(() => {
+    void initAudioEngine().then((engine) => {
+      engineContext ??= engine.getAudioContext()
+    })
+  })
 
   /**
    * Recovery for a context that went to sleep. The guide can be started
@@ -353,8 +426,7 @@ export const JamSongStage: Component = () => {
     // Token 0 is "nobody has asked yet" -- without this the effect would
     // rewind a freshly opened song to zero on mount.
     if (req.token === 0) return
-    const el = audioRef
-    if (el !== undefined) el.currentTime = req.toSec
+    transport.seek(req.toSec)
     // A buffer source cannot be seeked; restarting at the offset IS the
     // seek. Gated on wanted, not on playing(): a guide that ran off the
     // end of a short vocal stem is stopped, and a seek back into the song
@@ -372,20 +444,19 @@ export const JamSongStage: Component = () => {
    * resolved yet, which the browser resolves by staying paused.
    */
   createEffect(() => {
-    const el = audioRef
-    if (el === undefined) return
+    if (audioRef === undefined) return
     if (jamExercisePlaying() && !jamExercisePaused()) {
       // A refused play() used to be swallowed by an empty catch, which is
       // how a room could sit there "playing" in total silence. Autoplay
       // policy is the usual reason and the user can fix it in one tap, but
       // only if somebody tells them.
-      void el.play().catch((err: unknown) => {
+      void transport.play().catch((err: unknown) => {
         const why = explainPlayFailure(err)
         setJamError(why)
         if (!jamIsHost()) setJamExercisePaused(true)
       })
     } else {
-      el.pause()
+      transport.pause()
     }
   })
 
@@ -493,7 +564,7 @@ export const JamSongStage: Component = () => {
     const target = jamSongHostTarget()
     if (el === undefined || jamIsHost()) return
     if (Math.abs(el.currentTime - target) > RESYNC_THRESHOLD_SEC) {
-      el.currentTime = target
+      transport.seek(target)
     }
   })
 
@@ -581,7 +652,17 @@ export const JamSongStage: Component = () => {
                 inside the component that owns the element. */}
           </div>
 
-          <div class={styles.split}>
+          {/* The share is a CSS custom property rather than a full
+              template, so the stylesheet keeps owning which axis is
+              being split and the component owns only the number. */}
+          <div
+            class={styles.split}
+            ref={splitRef}
+            data-layout={
+              !jamShowPitch() ? 'solo' : stacked() ? 'stacked' : 'wide'
+            }
+            style={{ '--jam-lyrics-share': `${lyricShare()}%` }}
+          >
             <JamSongLyrics
               scores={jamSongLineScores}
               onSeek={jamIsHost() ? (to) => seekTo(to) : undefined}
@@ -592,8 +673,19 @@ export const JamSongStage: Component = () => {
             {/* The PITCH toggle's consumer in a song room. Before this
                 gate the button was rendered here but its only consumer
                 (the drill monitor strip) never mounted — pressing it
-                changed nothing on screen in either direction. */}
+                changed nothing on screen in either direction.
+                With the lanes off there is nothing to trade space with,
+                so the handle goes too and the words take the stage. */}
             <Show when={jamShowPitch()}>
+              <JamSplitHandle
+                stacked={stacked}
+                share={lyricShare}
+                min={() => splitBounds().min}
+                max={() => splitBounds().max}
+                container={() => splitRef}
+                onShare={(next) => setJamSplitShare(stacked(), next)}
+                onReset={() => resetJamSplitShare(stacked())}
+              />
               <JamPeerLanes
                 myPeerId={jamPeerId}
                 notes={() => song().notes}

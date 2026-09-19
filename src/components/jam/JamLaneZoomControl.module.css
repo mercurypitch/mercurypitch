@@ -1,0 +1,81 @@
+/* JamLaneZoomControl — minus / readout / plus, over the pitch lanes. */
+
+.zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 999px;
+  background: var(--jam-float, rgba(13, 17, 23, 0.72));
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 6));
+  /* Over a lane, so it must never eat a pinch aimed at the canvas behind
+     it -- only its own buttons take pointers. */
+  pointer-events: auto;
+}
+
+/* Two sizing hooks, both unset over the lanes, where every value below
+   is what it always was. A host with a width budget of its own -- the
+   lyric column's header, which shares a row with another control and can
+   be dragged down to a quarter of the stage -- sets them from its own
+   stylesheet: --jam-zoom-target for the buttons' size, and
+   --jam-zoom-readout: none to give up the number before overflowing. */
+.btn,
+.readout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--jam-zoom-target, 22px);
+  height: var(--jam-zoom-target, 22px);
+  padding: 0 4px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.readout {
+  display: var(--jam-zoom-readout, inline-flex);
+  min-width: 2.2rem;
+  letter-spacing: 0.02em;
+}
+
+.btn:hover:not(:disabled),
+.readout:hover:not(:disabled) {
+  background: rgb(255 255 255 / 12%);
+  color: var(--text-primary);
+}
+
+.btn:focus-visible,
+.readout:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 1px;
+}
+
+/* Disabled means "already there", not "broken", so it stays readable. */
+.btn:disabled,
+.readout:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* A thumb needs a target a mouse does not. */
+@media (pointer: coarse) {
+  .btn,
+  .readout {
+    min-width: var(--jam-zoom-target, 28px);
+    height: var(--jam-zoom-target, 28px);
+  }
+
+  .readout {
+    min-width: 2.6rem;
+  }
+}

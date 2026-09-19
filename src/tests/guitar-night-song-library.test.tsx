@@ -40,9 +40,24 @@ function chooseAudio(file: File): void {
   fireEvent.change(input)
 }
 
+/**
+ * The button only exists once the queued file has been read and both
+ * lazily-imported ports have resolved. On a loaded CI runner that is
+ * comfortably past testing-library's one-second default, and the timeout
+ * then reads as "the button was never rendered" -- which is how a shard
+ * that simply got busier fails a test about audio preparation.
+ */
+const PREPARE_TIMEOUT_MS = 4000
+
 async function prepareQueuedAudio(): Promise<void> {
-  const prepare = await screen.findByRole('button', { name: /^Prepare vocals/ })
-  await waitFor(() => expect(prepare).toBeEnabled())
+  const prepare = await screen.findByRole(
+    'button',
+    { name: /^Prepare vocals/ },
+    { timeout: PREPARE_TIMEOUT_MS },
+  )
+  await waitFor(() => expect(prepare).toBeEnabled(), {
+    timeout: PREPARE_TIMEOUT_MS,
+  })
   fireEvent.click(prepare)
 }
 

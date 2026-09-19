@@ -1544,7 +1544,7 @@ const JAM_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Inside a room',
     description:
-      'Once connected you get a shared exercise canvas with synced playback, live pitch from every singer, host-controlled BPM, plus chat, camera, and one-tap invites.',
+      'Once connected you get a shared stage with synced playback, live pitch from every singer, host-controlled BPM, plus chat, camera, and one-tap invites. The host picks the songs and drills from the list in the sidebar.',
     targetSelector: '[data-tour="jam.actions"]',
     placement: 'top',
     requiredTab: TAB_JAM,

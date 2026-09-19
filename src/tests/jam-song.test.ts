@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { lineAt, lineIndexAt, lyricLineProgress, notesInWindow, restAt, restsBetween, secondsInFlight, songPlayableInRoom, } from '@/lib/jam/jam-song'
+import { lineAt, lineIndexAt, lyricLineProgress, notesInWindow, restAt, restsBetween, sameSongUpdated, secondsInFlight, songFromWire, songPlayableInRoom, } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 
 const lines: LyricsLineTiming[] = [
@@ -267,5 +267,72 @@ describe('notesInWindow', () => {
 
   it('is empty for a song that was never analysed', () => {
     expect(notesInWindow([], 0, 10)).toEqual([])
+  })
+})
+
+describe('a song crossing the wire', () => {
+  const NOTE = { midi: 60, startSec: 0, endSec: 1 }
+  const wire = (over: object = {}) => ({
+    id: 'session:abc',
+    title: 'Theirs',
+    stems: { instrumental: 'blob:theirs' },
+    lines,
+    durationSec: 90,
+    ...over,
+  })
+
+  it('arrives as a song this device fetches for itself', () => {
+    expect(songFromWire(wire())).toEqual({
+      id: 'session:abc',
+      title: 'Theirs',
+      stems: { instrumental: 'blob:theirs' },
+      lines,
+      notes: [],
+      durationSec: 90,
+      origin: 'url',
+    })
+  })
+
+  it('leaves the part map behind, which is the room and not the song', () => {
+    expect(songFromWire(wire({ parts: { 0: 'peer-a' } }))).not.toHaveProperty(
+      'parts',
+    )
+  })
+
+  it('cannot be told where its notes came from by a peer', () => {
+    // `notesFrom` is what THIS device knows. A manifest claiming a line is
+    // hand-corrected would stop the room ever replacing it.
+    const forged = wire({ notes: [NOTE], notesFrom: 'edited' })
+    expect(songFromWire(forged)).not.toHaveProperty('notesFrom')
+  })
+
+  it('carries the host having found no pitch guide', () => {
+    expect(songFromWire(wire({ pitchGuide: 'unavailable' })).pitchGuide).toBe(
+      'unavailable',
+    )
+    expect(songFromWire(wire())).not.toHaveProperty('pitchGuide')
+  })
+
+  it('takes new words and notes on board without becoming a new song', () => {
+    const loaded = song({ id: 'session:abc', origin: 'url' })
+    const next = sameSongUpdated(loaded, wire({ notes: [NOTE] }))
+    expect(next.notes).toEqual([NOTE])
+    expect(next.id).toBe('session:abc')
+    expect(next.stems).toBe(loaded.stems)
+  })
+
+  it('keeps what it has when the re-send leaves a field out', () => {
+    const loaded = song({ notes: [NOTE] })
+    expect(sameSongUpdated(loaded, undefined).notes).toEqual([NOTE])
+  })
+
+  it('takes "no pitch guide" back off the screen when a retry worked', () => {
+    const waiting = song({ pitchGuide: 'unavailable' })
+    expect(
+      sameSongUpdated(waiting, wire({ notes: [NOTE] })),
+    ).not.toHaveProperty('pitchGuide')
+    expect(
+      sameSongUpdated(song(), wire({ pitchGuide: 'unavailable' })).pitchGuide,
+    ).toBe('unavailable')
   })
 })
