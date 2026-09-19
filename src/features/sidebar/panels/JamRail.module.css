@@ -1,6 +1,13 @@
 /* Jam rail — the room card. Peers list and pitch display bring their
    own module styles; this file owns only the code row. */
 
+/* The room's sections, spaced the way the sidebar spaces its panels. */
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .roomCard {
   display: flex;
   flex-direction: column;

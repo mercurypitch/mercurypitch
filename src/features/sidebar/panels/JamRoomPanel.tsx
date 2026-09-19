@@ -18,7 +18,7 @@ import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { JamPeerList } from '@/components/jam/JamPeerList'
 import { JamPickerList } from '@/components/jam/JamPickerList'
 import { JamPitchDisplay } from '@/components/jam/JamPitchDisplay'
-import { isMobile } from '@/lib/use-viewport'
+import { isNarrow } from '@/lib/use-viewport'
 import { jamConnectedPeers, jamExerciseMelody, jamIsHost, jamIsMuted, jamPeers, jamRoomId, jamSong, jamState, } from '@/stores/jam-store'
 import { setSidebarOpen, sidebarOpen } from '@/stores/ui-store'
 import styles from './JamRail.module.css'
@@ -38,75 +38,87 @@ const JamRoomPanel: Component = () => {
    * of song buttons nobody can see, in the tab order and in the way of
    * anything looking a song up by name. The list is rebuilt whenever the
    * library ticks, too -- work worth doing only for a list on screen.
+   *
+   * `isNarrow`, the width the drawer's own stylesheet turns on, and not
+   * `isMobile`: that one is also true for any touch screen. A tablet keeps
+   * the rail on the page at full width and never opens a drawer, so asking
+   * "is this a touch device" left its list unmounted for good -- the songs
+   * were in the popup and the sidebar had none.
    */
-  const listOnScreen = (): boolean => !isMobile() || sidebarOpen()
+  const railIsDrawer = isNarrow
+  const listOnScreen = (): boolean => !railIsDrawer() || sidebarOpen()
 
   return (
     <Show when={jamState() === 'active'}>
-      <CollapsibleSection title="Room" storageKey="sidebar-jam-room-open">
-        <div class={styles.roomCard} data-tour="jam.rail-room">
-          <div class={styles.codeRow}>
-            <span class={styles.codeBadge}>{jamRoomId()}</span>
-            <button
-              class={styles.copyBtn}
-              onClick={() => {
-                navigator.clipboard.writeText(roomLink()).catch(() => {})
-                setLinkCopied(true)
-                setTimeout(() => setLinkCopied(false), 2000)
-              }}
-            >
-              {linkCopied() ? 'Copied!' : 'Copy link'}
-            </button>
-          </div>
-          <div class={styles.statusRow}>
-            <span class={styles.statusDot} />
-            <span>
-              {jamConnectedPeers().length} peer
-              {jamConnectedPeers().length !== 1 ? 's' : ''} connected
-            </span>
-            <Show when={jamIsMuted()}>
-              <span class={styles.muted}>(muted)</span>
-            </Show>
-          </div>
-          <JamPeerList peers={jamPeers()} />
-          <JamPitchDisplay />
-        </div>
-      </CollapsibleSection>
-      <CollapsibleSection
-        title="Songs and drills"
-        storageKey="sidebar-jam-picker-open"
-      >
-        <div data-tour="jam.rail-picker">
-          <Show
-            when={jamIsHost()}
-            fallback={
-              // The host's list is the host's library: their separations,
-              // their melodies. Showing a guest their OWN would offer rows
-              // they cannot pick, so a guest is told the one true thing.
-              <p class={styles.guestNote}>
-                <Show
-                  when={nowSinging() !== ''}
-                  fallback="Nothing is loaded yet."
-                >
-                  Now in the room: <strong>{nowSinging()}</strong>.
-                </Show>{' '}
-                The host picks what the room sings.
-              </p>
-            }
-          >
-            {/* On a phone the rail is a drawer over the stage, so a pick
-                folds it away; on a desk it stays, which is the point. */}
-            <Show when={listOnScreen()}>
-              <JamPickerList
-                variant="rail"
-                onPicked={() => {
-                  if (isMobile()) setSidebarOpen(false)
+      {/* The sidebar spaces its PANELS, and both sections are one panel:
+          without a gap of their own the list's header sat flush under the
+          listening pill. */}
+      <div class={styles.sections}>
+        <CollapsibleSection title="Room" storageKey="sidebar-jam-room-open">
+          <div class={styles.roomCard} data-tour="jam.rail-room">
+            <div class={styles.codeRow}>
+              <span class={styles.codeBadge}>{jamRoomId()}</span>
+              <button
+                class={styles.copyBtn}
+                onClick={() => {
+                  navigator.clipboard.writeText(roomLink()).catch(() => {})
+                  setLinkCopied(true)
+                  setTimeout(() => setLinkCopied(false), 2000)
                 }}
-              />
+              >
+                {linkCopied() ? 'Copied!' : 'Copy link'}
+              </button>
+            </div>
+            <div class={styles.statusRow}>
+              <span class={styles.statusDot} />
+              <span>
+                {jamConnectedPeers().length} peer
+                {jamConnectedPeers().length !== 1 ? 's' : ''} connected
+              </span>
+              <Show when={jamIsMuted()}>
+                <span class={styles.muted}>(muted)</span>
+              </Show>
+            </div>
+            <JamPeerList peers={jamPeers()} />
+            <JamPitchDisplay />
+          </div>
+        </CollapsibleSection>
+        <CollapsibleSection
+          title="Songs and drills"
+          storageKey="sidebar-jam-picker-open"
+        >
+          <div data-tour="jam.rail-picker">
+            <Show
+              when={jamIsHost()}
+              fallback={
+                // The host's list is the host's library: their separations,
+                // their melodies. Showing a guest their OWN would offer rows
+                // they cannot pick, so a guest is told the one true thing.
+                <p class={styles.guestNote}>
+                  <Show
+                    when={nowSinging() !== ''}
+                    fallback="Nothing is loaded yet."
+                  >
+                    Now in the room: <strong>{nowSinging()}</strong>.
+                  </Show>{' '}
+                  The host picks what the room sings.
+                </p>
+              }
+            >
+              {/* On a phone the rail is a drawer over the stage, so a pick
+                folds it away; on a desk it stays, which is the point. */}
+              <Show when={listOnScreen()}>
+                <JamPickerList
+                  variant="rail"
+                  onPicked={() => {
+                    if (railIsDrawer()) setSidebarOpen(false)
+                  }}
+                />
+              </Show>
             </Show>
-          </Show>
-        </div>
-      </CollapsibleSection>
+          </div>
+        </CollapsibleSection>
+      </div>
     </Show>
   )
 }
