@@ -7,14 +7,27 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 ## [0.9.10] - 2026-09-19
 
-Timing, mostly. Three places where what you saw and what you heard had
-drifted apart, and a way to hear from us if you want to.
+Timing, the jam room, and lyrics that arrive when the song does. And a way
+to hear from us if you want to.
 
 ### Added
 
 - **Product updates, if you want them.** A checkbox on the sign-up form and in
   Settings under Account. It starts off, and every email has a one-click way
   out.
+- **Jam rooms zoom and split.** Zoom your pitch lane, drag the divider between
+  the words and the lanes, and line the words up left, centre or right.
+- **A pitch guide for any song in a jam room.** A song nobody had analysed
+  showed empty lanes. The host's device now works one out for everyone.
+- **The song list lives in the jam room's sidebar.** Example songs, your
+  karaoke songs, challenges, exercises and melodies. Switching is one tap.
+- **Bigger or smaller jam lyrics.** Use the size control, pinch the words, or
+  hold ctrl and scroll.
+
+### Changed
+
+- **Lyric placement in a jam room is three buttons**, left, centre and right,
+  instead of a dropdown.
 
 ### Fixed
 
@@ -31,6 +44,31 @@ drifted apart, and a way to hear from us if you want to.
   leave the old picture in every link ever shared.
 - **Contact goes through the contact form.** The support address is out of the
   app, where machines were reading it.
+- **Jam pitch rides between the lines.** The trace used to snap to the nearest
+  note. It shows where your voice really is, and each note turns green, amber
+  or red.
+- **Jam rooms no longer pop.** Starting, stopping and seeking fade in and out
+  instead of clicking.
+- **Every example song loads in a jam room.** Only the first one did.
+- **Original and Edited stay with their song.** Pressed after switching songs,
+  they could put the last song's words on the new one. Example songs have the
+  buttons too.
+- **Your corrected lyrics survive an update.** An update to an example song's
+  lyrics could delete the version you had corrected. It replaces only the
+  original now.
+- **Space plays and pauses a melody in a jam room**, not only a karaoke song.
+- **Jam lyrics are pressed, not selected.** A click jumps the song to that
+  line, and nothing gets highlighted by accident.
+- **Example songs open with their own lyrics.** Picking one from the song list
+  could offer a lyrics search instead.
+- **Lyrics downloads carry the artist**: "Artist - Title", like every other
+  song.
+- **Word timing survives an import.** Some ways of bringing lyrics in dropped
+  the word-by-word timing.
+- **An older song gets a cleaned-up pitch guide in a jam room.** A line you
+  corrected by hand is never replaced.
+- **A new jam host gets the pitch guide.** If the first host left before it was
+  ready, the lanes stayed empty.
 
 ### Security
 
