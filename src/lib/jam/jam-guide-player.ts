@@ -13,6 +13,25 @@
 // Decode is lazy — the buffer is only fetched when somebody first turns
 // the guide up — because most rooms never do, and a decoded song is tens
 // of megabytes a TV would rather not hold for nothing.
+//
+// Every start and stop is cross-faded. A buffer source cannot be seeked,
+// so following the transport means replacing the source — and the follow
+// effect does that whenever the guide drifts 120ms from the song. Cutting
+// one waveform mid-cycle and splicing in another at full scale is a
+// click, and at the rate this restarts it was a click track. Each source
+// gets its own gain to fade on, under the master that carries the level.
+
+/**
+ * Cross-fade across a restart. Long enough to retire a waveform without
+ * a click, short enough that a seek still lands where you asked.
+ */
+const FADE_SEC = 0.015
+
+/** Fade before a stop. Nothing follows it, so it can afford to breathe. */
+const STOP_FADE_SEC = 0.04
+
+/** Level changes ride a ramp too: a slider dragged in steps steps audibly. */
+const LEVEL_RAMP_SEC = 0.02
 
 export interface JamGuidePlayerDeps {
   /** The shared engine's context; null until the engine has initialised. */
@@ -62,32 +81,83 @@ export function createJamGuidePlayer(deps: JamGuidePlayerDeps): JamGuidePlayer {
   let generation = 0
   let disposed = false
 
-  let gain: GainNode | null = null
+  /** Carries the level, and nothing else: it outlives every source. */
+  let master: GainNode | null = null
   let volume = 0.5
-  let source: AudioBufferSourceNode | null = null
+  /** The sounding source and the gain it fades on, as one unit. */
+  let voice: { source: AudioBufferSourceNode; gain: GainNode } | null = null
   let startedAtCtxTime = 0
   let startOffsetSec = 0
 
-  const ensureGain = (ctx: AudioContext): GainNode => {
-    if (gain === null) {
-      gain = ctx.createGain()
-      gain.gain.value = volume
-      gain.connect(ctx.destination)
+  const ensureMaster = (ctx: AudioContext): GainNode => {
+    if (master === null) {
+      master = ctx.createGain()
+      master.gain.value = volume
+      master.connect(ctx.destination)
     }
-    return gain
+    return master
   }
 
-  const stop = (): void => {
-    const s = source
-    source = null
-    if (s === null) return
-    s.onended = null
+  /** Let go of a source's nodes. Safe to call twice. */
+  const release = (v: { source: AudioBufferSourceNode; gain: GainNode }) => {
+    v.source.onended = null
+    v.source.disconnect()
+    v.gain.disconnect()
+  }
+
+  /**
+   * Fade a source out and stop it once it is silent.
+   *
+   * The nodes are released on its own `ended`, not on a timer: a source
+   * stopped in the future is still playing now, and disconnecting it
+   * early is the cut this whole module exists to avoid.
+   */
+  const retire = (
+    v: { source: AudioBufferSourceNode; gain: GainNode },
+    ctx: AudioContext,
+    fadeSec: number,
+  ): void => {
+    const at = ctx.currentTime
+    v.gain.gain.cancelScheduledValues(at)
+    v.gain.gain.setValueAtTime(v.gain.gain.value, at)
+    v.gain.gain.linearRampToValueAtTime(0, at + fadeSec)
+    v.source.onended = () => release(v)
     try {
-      s.stop()
+      v.source.stop(at + fadeSec)
+    } catch {
+      // Never started, or already ended: nothing to fade.
+      release(v)
+    }
+  }
+
+  /** Stop without a fade. Teardown only — a click nobody will hear. */
+  const stopNow = (): void => {
+    const v = voice
+    voice = null
+    if (v === null) return
+    release(v)
+    try {
+      v.source.stop()
     } catch {
       // Never started or already ended — either way it is stopped.
     }
-    s.disconnect()
+  }
+
+  const stop = (): void => {
+    const v = voice
+    voice = null
+    if (v === null) return
+    const ctx = deps.context()
+    if (ctx === null) {
+      release(v)
+      try {
+        v.source.stop()
+      } catch {
+        // Already gone.
+      }
+      return
+    }
+    retire(v, ctx, STOP_FADE_SEC)
   }
 
   const doLoad = async (url: string, gen: number): Promise<boolean> => {
@@ -131,22 +201,38 @@ export function createJamGuidePlayer(deps: JamGuidePlayerDeps): JamGuidePlayer {
       const buf = buffer
       if (ctx === null || buf === null) return false
       if (nextVolume !== undefined) volume = nextVolume
-      stop()
       // Past the end of the stem there is nothing to play — a vocal can
-      // legitimately be shorter than the backing track's outro.
+      // legitimately be shorter than the backing track's outro. Checked
+      // before the outgoing source is touched, so a start past the end
+      // leaves what is playing alone rather than killing it for nothing.
       const offset = Math.max(0, offsetSec)
       if (offset >= buf.duration) return false
-      const g = ensureGain(ctx)
-      g.gain.value = volume
+
+      const outgoing = voice
+      voice = null
+      if (outgoing !== null) retire(outgoing, ctx, FADE_SEC)
+
+      const at = ctx.currentTime
+      const m = ensureMaster(ctx)
+      m.gain.cancelScheduledValues(at)
+      m.gain.setValueAtTime(volume, at)
+      const g = ctx.createGain()
+      g.gain.setValueAtTime(0, at)
+      g.gain.linearRampToValueAtTime(1, at + FADE_SEC)
+      g.connect(m)
       const s = ctx.createBufferSource()
       s.buffer = buf
       s.connect(g)
+      const next = { source: s, gain: g }
       s.onended = () => {
-        if (source === s) source = null
+        // Ran off the end of the stem on its own. Only clear the slot if
+        // it is still ours: a restart has already moved on.
+        if (voice === next) voice = null
+        release(next)
       }
       s.start(0, offset)
-      source = s
-      startedAtCtxTime = ctx.currentTime
+      voice = next
+      startedAtCtxTime = at
       startOffsetSec = offset
       return true
     },
@@ -155,14 +241,23 @@ export function createJamGuidePlayer(deps: JamGuidePlayerDeps): JamGuidePlayer {
 
     setVolume(v) {
       volume = v
-      if (gain !== null) gain.gain.value = v
+      const ctx = deps.context()
+      if (master === null) return
+      if (ctx === null) {
+        master.gain.value = v
+        return
+      }
+      const at = ctx.currentTime
+      master.gain.cancelScheduledValues(at)
+      master.gain.setValueAtTime(master.gain.value, at)
+      master.gain.linearRampToValueAtTime(v, at + LEVEL_RAMP_SEC)
     },
 
-    playing: () => source !== null,
+    playing: () => voice !== null,
 
     positionSec() {
       const ctx = deps.context()
-      if (source === null || ctx === null) return null
+      if (voice === null || ctx === null) return null
       return startOffsetSec + (ctx.currentTime - startedAtCtxTime)
     },
 
@@ -170,10 +265,10 @@ export function createJamGuidePlayer(deps: JamGuidePlayerDeps): JamGuidePlayer {
       if (disposed) return
       disposed = true
       generation += 1
-      stop()
-      if (gain !== null) {
-        gain.disconnect()
-        gain = null
+      stopNow()
+      if (master !== null) {
+        master.disconnect()
+        master = null
       }
       buffer = null
       bufferUrl = null

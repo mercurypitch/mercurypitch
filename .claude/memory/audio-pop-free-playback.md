@@ -21,11 +21,11 @@ inside continuous material (seeks), where the program masks them.
 House envelope constants (`ENVELOPE_DEFAULTS` in
 `src/lib/preview-player.ts` — configurable per player):
 
-| Transition | Shape | Length |
-|---|---|---|
-| start / resume | `exponentialRampToValueAtTime(1)` from the 0.0001 floor (`openEnvelope`) | 90 ms |
-| pause / stop | `setTargetAtTime(0, now, len/5)` (`closeEnvelope`), **then** stop the transport after len + slack | 180 ms (+60 ms slack) |
-| seek while playing | linear dip to 0 (15 ms) → move position → linear back (15 ms) | 2×15 ms |
+| Transition         | Shape                                                                                             | Length                |
+| ------------------ | ------------------------------------------------------------------------------------------------- | --------------------- |
+| start / resume     | `exponentialRampToValueAtTime(1)` from the 0.0001 floor (`openEnvelope`)                          | 90 ms                 |
+| pause / stop       | `setTargetAtTime(0, now, len/5)` (`closeEnvelope`), **then** stop the transport after len + slack | 180 ms (+60 ms slack) |
+| seek while playing | linear dip to 0 (15 ms) → move position → linear back (15 ms)                                     | 2×15 ms               |
 
 Order matters: open the envelope only after playback is running; close it
 fully before pausing/stopping. A `play()` racing a fade-out must cancel
@@ -46,6 +46,25 @@ uses them).
   unstoppable and layer on every play.
 - **Synth voices**: ADSR scheduling in `audio-engine.ts`
   (`_scheduleSustainEnvelope`) and `tone-player.ts`.
+- **The jam room's backing track**: `createJamSongTransport()` in
+  `src/lib/jam/jam-song-transport.ts`. Same envelope rules over the
+  stage's one `<audio>` element, plus the stop-is-a-rewind-then-a-pause
+  case: the pause must NOT cancel a seek that is still dipping, or the
+  song comes back from the middle next time.
+- **The jam guide vocal**: `jam-guide-player.ts` cross-fades every
+  restart (15 ms) and stop (40 ms). A buffer source cannot be seeked, so
+  the follow effect replaces the source whenever the guide drifts 120 ms
+  — splicing two waveforms at full scale made that a click track.
+
+## The trap on the way out of it
+
+A `MediaElementAudioSourceNode` **permanently** diverts an element's
+output into the graph; it cannot be detached. Attaching to a context that
+is suspended, or that never resumes, turns the pop into total silence —
+strictly worse. Build the graph only against a context whose `state` is
+already `'running'`, and keep the bare-element path as the fallback.
+`createJamSongTransport` attaches lazily on the first such play for
+exactly this reason.
 
 ## Review checklist for new audio code
 
