@@ -306,6 +306,133 @@ describe('provideJamSongPitch', () => {
     expect(analyze).toHaveBeenCalledTimes(1)
   })
 
+  it('does not write an empty result down', async () => {
+    // A stored analysis with no notes spares the next room nothing -- it
+    // reads back as "never analysed" -- while the mixer takes the record to
+    // mean the song HAS been analysed and stops offering to.
+    const save = vi.fn(async () => undefined)
+    setJamPitchProvisionSeams({
+      loadVocalSamples: async () => SAMPLES,
+      analyze: async () => analysis([]),
+      save,
+    })
+
+    provideJamSongPitch({ song: song(), isHost: true, onNotes: vi.fn() })
+    await settle()
+
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  describe('telling the room there is no guide to be had', () => {
+    // A guest reads "the host is the one who can make it" until somebody
+    // says otherwise, and the host is the only one who knows.
+    it('says so when there was never anything to work from', () => {
+      const onUnavailable = vi.fn()
+      provideJamSongPitch({
+        song: song({ stems: { instrumental: 'blob:inst' } }),
+        isHost: true,
+        onNotes: vi.fn(),
+        onUnavailable,
+      })
+      expect(onUnavailable).toHaveBeenCalledWith('session:abc123')
+    })
+
+    it('says so when the work came back with nothing', async () => {
+      const onUnavailable = vi.fn()
+      setJamPitchProvisionSeams({
+        loadVocalSamples: async () => SAMPLES,
+        analyze: async () => analysis([]),
+        save: async () => undefined,
+      })
+      provideJamSongPitch({
+        song: song(),
+        isHost: true,
+        onNotes: vi.fn(),
+        onUnavailable,
+      })
+      await settle()
+      expect(onUnavailable).toHaveBeenCalledWith('session:abc123')
+    })
+
+    it('says nothing on behalf of a guest, who is only waiting', () => {
+      const onUnavailable = vi.fn()
+      provideJamSongPitch({
+        song: song(),
+        isHost: false,
+        onNotes: vi.fn(),
+        onUnavailable,
+      })
+      expect(onUnavailable).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('replacing a raw line', () => {
+    const NOTE: JamSongNote = { midi: 60, startSec: 0, endSec: 1 }
+    const raw = () => song({ notes: [NOTE], notesFrom: 'raw' })
+
+    it('works a clean line out even though the song already has notes', async () => {
+      const onNotes = vi.fn()
+      const save = vi.fn(async () => undefined)
+      setJamPitchProvisionSeams({
+        loadVocalSamples: async () => SAMPLES,
+        analyze: async () => analysis([62, 64]),
+        save,
+      })
+
+      provideJamSongPitch({ song: raw(), isHost: true, onNotes })
+      await settle()
+
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(onNotes).toHaveBeenCalledWith(
+        'session:abc123',
+        expect.arrayContaining([expect.objectContaining({ midi: 62 })]),
+      )
+    })
+
+    it('fails without a word, because the singer still has the raw line', async () => {
+      // Nobody asked for this run. A warning about work they did not know
+      // was happening, over a lane that is not empty, is only noise.
+      const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const onUnavailable = vi.fn()
+      const save = vi.fn(async () => undefined)
+      vi.mocked(showNotification).mockClear()
+      setJamPitchProvisionSeams({
+        loadVocalSamples: async () => {
+          throw new Error('offline')
+        },
+        analyze: async () => analysis([60]),
+        save,
+      })
+
+      provideJamSongPitch({
+        song: raw(),
+        isHost: true,
+        onNotes: vi.fn(),
+        onUnavailable,
+      })
+      await settle()
+
+      expect(jamPitchProvision().phase).toBe('idle')
+      expect(showNotification).not.toHaveBeenCalled()
+      expect(onUnavailable).not.toHaveBeenCalled()
+      expect(save).not.toHaveBeenCalled()
+      errors.mockRestore()
+    })
+
+    it('never overwrites the only line there is with nothing', async () => {
+      const save = vi.fn(async () => undefined)
+      setJamPitchProvisionSeams({
+        loadVocalSamples: async () => SAMPLES,
+        analyze: async () => analysis([]),
+        save,
+      })
+      provideJamSongPitch({ song: raw(), isHost: true, onNotes: vi.fn() })
+      await settle()
+      expect(save).not.toHaveBeenCalled()
+      expect(jamPitchProvision().phase).toBe('idle')
+    })
+  })
+
   it('keeps the line when saving it fails', async () => {
     // A full disk is not a reason to leave the singer without a target.
     const save = vi.fn(async () => {

@@ -26,7 +26,7 @@ import { computeBackingSize } from '@/lib/canvas-size-sync'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { laneSecToX, laneWindow, laneWindowSec, liveSampleX, NOW_AT, } from '@/lib/jam/jam-lane-geometry'
 import { JAM_NOTE_LABEL_MIN_PILL, jamLaneMinSpan, jamPillHeight, jamTrailWidth, laneBandMidis, steppedJamZoom, zoomFromPinch, zoomFromWheel, } from '@/lib/jam/jam-lane-zoom'
-import { jamPitchBanner } from '@/lib/jam/jam-pitch-provision'
+import { GUIDE_CREDIT_TEXT, jamPitchBanner, } from '@/lib/jam/jam-pitch-provision'
 import type { NoteAccuracy } from '@/lib/jam/jam-pitch-view'
 import { blankNoteAccuracy, easeToward, JAM_BAND_FALLBACK, jamPitchBand, judgeAgainstNote, midiLabel, noteVerdict, observeNoteFrame, sampleMidi, tintForVerdict, } from '@/lib/jam/jam-pitch-view'
 import { groupLinesBySinger, isComingUp, LEAD_IN_SEC, noteSingers, } from '@/lib/jam/jam-song-blocks'
@@ -216,6 +216,10 @@ export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
     const shown = banner()
     return shown.kind === 'unavailable' ? shown : null
   })
+  const credit = createMemo(() => {
+    const shown = banner()
+    return shown.kind === 'ready' ? GUIDE_CREDIT_TEXT[shown.credit] : null
+  })
 
   return (
     <div class={styles.root}>
@@ -272,6 +276,18 @@ export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
               </button>
             </Show>
           </div>
+        )}
+      </Show>
+      {/* One quiet line once there IS a guide. The lanes used to say nothing
+          at this point, so a line cleaned up a minute ago and a room where
+          nothing had happened looked exactly alike. Not a notice: no box,
+          no live region -- it is a caption, and reading it aloud every time
+          a song loads would be the room talking over the singer. */}
+      <Show when={credit()}>
+        {(text) => (
+          <p class={styles.credit} data-testid="jam-pitch-credit">
+            {text()}
+          </p>
         )}
       </Show>
       <div class={styles.laneArea}>
