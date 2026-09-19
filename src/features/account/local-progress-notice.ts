@@ -30,7 +30,7 @@
 
 import { getDeviceId, getUserId } from '@/db/services/user-service'
 import { ENDOWED_DAY, pathProgress } from '@/features/path/path-progress'
-import { CONTACT_EMAIL } from '@/lib/contact-links'
+import { contactFormUrl } from '@/lib/contact-links'
 import { localDayString } from '@/lib/local-day'
 import { storageGet, storageSet } from '@/lib/storage'
 import { exerciseHistory } from '@/stores/exercise-history-store'
@@ -107,20 +107,23 @@ export function describeLocalProgress(p: LocalProgress): string {
 }
 
 /**
- * A mail draft the owner can act on: the two ids are the whole job.
+ * A request the owner can act on, drafted for them: the two ids are the whole
+ * job.
  *
- * Composed into the singer's own mail client, which they read and send
- * themselves — nothing leaves the device until they press send.
+ * This opens the contact form with the message already written, where it used
+ * to open a mail client with our address in the link. Same bargain either way:
+ * the singer reads what was drafted, and nothing is sent until they press send
+ * themselves. The form has no subject line, so the ask is the first sentence.
  */
-export function progressHandoffMailto(
+export function progressHandoffUrl(
   deviceId: string,
   accountId: string,
   p: LocalProgress,
 ): string {
-  const subject = 'Move my practice history to my account'
-  const body = [
-    'Hi — I signed in and my earlier practice stayed on my old device identity.',
+  const message = [
+    'Move my practice history to my account.',
     '',
+    'I signed in and my earlier practice stayed on my old device identity.',
     `What is on the device: ${describeLocalProgress(p)}.`,
     '',
     'Please can you move it across?',
@@ -129,7 +132,7 @@ export function progressHandoffMailto(
     `device: ${deviceId}`,
     `account: ${accountId}`,
   ].join('\n')
-  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  return contactFormUrl('support', message)
 }
 
 // ── Persistence ──────────────────────────────────────────────────

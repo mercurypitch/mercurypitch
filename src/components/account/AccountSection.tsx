@@ -21,7 +21,7 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
 import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
-import { CONTACT_EMAIL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
+import { CONTACT_FORM_URL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
 import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
@@ -585,8 +585,10 @@ export const AccountSection: Component = () => {
           </button>
           <a
             class={styles.helloLink}
-            href={`mailto:${CONTACT_EMAIL}`}
-            data-testid="say-hello-email"
+            href={CONTACT_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="say-hello-contact"
           >
             <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
               <path
@@ -594,7 +596,7 @@ export const AccountSection: Component = () => {
                 d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
               />
             </svg>
-            Email us
+            Contact us
           </a>
           <a
             class={styles.helloLink}

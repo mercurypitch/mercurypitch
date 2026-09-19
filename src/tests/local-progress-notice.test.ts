@@ -11,6 +11,7 @@
 // The predicate is pure, so every branch is testable without a session.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CONTACT_FORM_URL } from '@/lib/contact-links'
 
 // The two ids are the whole signal, so the wiring block below drives them
 // directly rather than standing up a token and a session.
@@ -31,7 +32,7 @@ const {
   noticeSeen,
   accountFirstSeenAt,
   localProgressAtSignIn,
-  progressHandoffMailto,
+  progressHandoffUrl,
   summarizeLocalProgress,
 } = await import('@/features/account/local-progress-notice')
 const { clearExerciseHistory, recordExerciseResult } =
@@ -166,28 +167,44 @@ describe('describeLocalProgress', () => {
   })
 })
 
-describe('progressHandoffMailto', () => {
+describe('progressHandoffUrl', () => {
+  const messageOf = (href: string): string =>
+    new URL(href).searchParams.get('message') ?? ''
+
   it('carries both ids, which are the whole job', () => {
-    const href = progressHandoffMailto('device-a', 'account-b', SOME_PROGRESS)
-    const decoded = decodeURIComponent(href)
-    expect(decoded).toContain('device: device-a')
-    expect(decoded).toContain('account: account-b')
+    const message = messageOf(
+      progressHandoffUrl('device-a', 'account-b', SOME_PROGRESS),
+    )
+    expect(message).toContain('device: device-a')
+    expect(message).toContain('account: account-b')
   })
 
-  it('is a mailto to the published address with a subject', () => {
-    const href = progressHandoffMailto('a', 'b', SOME_PROGRESS)
-    expect(href.startsWith('mailto:')).toBe(true)
-    expect(href).toContain('@')
-    expect(decodeURIComponent(href)).toContain(
-      'Move my practice history to my account',
+  it('opens the contact form on the support topic, not a mail client', () => {
+    const href = progressHandoffUrl('a', 'b', SOME_PROGRESS)
+    expect(href.startsWith('mailto:')).toBe(false)
+    const url = new URL(href)
+    expect(`${url.origin}${url.pathname}`).toBe(CONTACT_FORM_URL)
+    expect(url.searchParams.get('topic')).toBe('support')
+  })
+
+  it('leads with the ask, because the form has no subject line', () => {
+    const message = messageOf(progressHandoffUrl('a', 'b', SOME_PROGRESS))
+    expect(message.split('\n')[0]).toBe(
+      'Move my practice history to my account.',
     )
   })
 
-  it('escapes the newlines rather than truncating the body', () => {
-    // An unescaped newline ends the URL at the first line in some clients.
-    const href = progressHandoffMailto('a', 'b', SOME_PROGRESS)
+  it('escapes the newlines rather than truncating the message', () => {
+    // An unescaped newline ends the URL at the first line.
+    const href = progressHandoffUrl('a', 'b', SOME_PROGRESS)
     expect(href).not.toContain('\n')
-    expect(decodeURIComponent(href)).toContain('\n')
+    expect(messageOf(href)).toContain('\n')
+  })
+
+  it('publishes no address a harvester could read', () => {
+    // The whole point of moving off mailto: the link used to carry the
+    // inbox in plain text, in a bundle anyone can fetch.
+    expect(progressHandoffUrl('a', 'b', SOME_PROGRESS)).not.toContain('@')
   })
 })
 

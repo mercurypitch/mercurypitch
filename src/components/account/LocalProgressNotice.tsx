@@ -16,7 +16,7 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { CheckCircle, History } from '@/components/icons'
 import { authVersion, getDeviceId, getUserId } from '@/db/services/user-service'
-import { describeLocalProgress, localProgressAtSignIn, localProgressNoticeDue, localProgressTotal, markNoticeSeen, progressHandoffMailto, } from '@/features/account/local-progress-notice'
+import { describeLocalProgress, localProgressAtSignIn, localProgressNoticeDue, localProgressTotal, markNoticeSeen, progressHandoffUrl, } from '@/features/account/local-progress-notice'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import styles from './LocalProgressNotice.module.css'
 
@@ -110,11 +110,9 @@ export const LocalProgressNotice: Component = () => {
             </button>
             <a
               class={styles.secondary}
-              href={progressHandoffMailto(
-                getDeviceId(),
-                getUserId(),
-                progress(),
-              )}
+              href={progressHandoffUrl(getDeviceId(), getUserId(), progress())}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={dismiss}
               data-testid="local-progress-contact"
             >
