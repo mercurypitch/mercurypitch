@@ -21,7 +21,7 @@ import { ownerTokenFor } from '@/lib/jam/jam-rooms'
 import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { secondsInFlight, songPlayableInRoom } from '@/lib/jam/jam-song'
+import { sameSongUpdated, secondsInFlight, songFromWire, songPlayableInRoom, } from '@/lib/jam/jam-song'
 import { SongFileInbox } from '@/lib/jam/jam-song-inbox'
 import type { JamSongParts } from '@/lib/jam/jam-song-parts'
 import { assignRange, isMyLine, rehomeDeparted } from '@/lib/jam/jam-song-parts'
@@ -439,6 +439,7 @@ export function selectJamSong(song: JamSong): boolean {
     song,
     isHost: jamIsHost(),
     onNotes: attachJamSongNotes,
+    onUnavailable: markJamSongGuideUnavailable,
   })
   return true
 }
@@ -481,8 +482,46 @@ export function attachJamSongLyrics(lines: LyricsLineTiming[]): void {
 export function attachJamSongNotes(songId: string, notes: JamSongNote[]): void {
   const song = jamSong()
   if (song === null || song.id !== songId || notes.length === 0) return
-  setJamSong({ ...song, notes })
+  // Only the in-room analysis comes through here, so that is what the line
+  // is credited to -- and a guide that exists is no longer "unavailable",
+  // which matters after a Try again that worked.
+  const { pitchGuide: _gone, ...rest } = song
+  setJamSong({ ...rest, notes, notesFrom: 'room' })
   if (!jamIsHost()) return
+  broadcastSongWithParts()
+}
+
+/**
+ * Pick up what only a host does, on the device that has just become one.
+ *
+ * The pitch guide is the host's job, and it is decided once, when the song
+ * is picked. A room handed over mid-song therefore kept whatever the old
+ * host had managed: if that was nothing, the new host sat in front of blank
+ * lanes that nothing would ever fill, being the one device that could.
+ */
+function resumeHostDuties(wasHost: boolean): void {
+  if (wasHost || !jamIsHost()) return
+  const song = jamSong()
+  if (song === null) return
+  provideJamSongPitch({
+    song,
+    isHost: true,
+    onNotes: attachJamSongNotes,
+    onUnavailable: markJamSongGuideUnavailable,
+  })
+}
+
+/**
+ * Tell the room there is no pitch guide to be had for the loaded song.
+ *
+ * Host-only, and only worth a broadcast once: the manifest is re-sent under
+ * the same id, exactly as attaching notes does, so nobody's song restarts.
+ */
+export function markJamSongGuideUnavailable(songId: string): void {
+  const song = jamSong()
+  if (song === null || song.id !== songId || !jamIsHost()) return
+  if (song.notes.length > 0 || song.pitchGuide === 'unavailable') return
+  setJamSong({ ...song, pitchGuide: 'unavailable' })
   broadcastSongWithParts()
 }
 
@@ -545,6 +584,7 @@ function broadcastSongWithParts(): void {
     lines: song.lines,
     notes: song.notes,
     durationSec: song.durationSec,
+    ...(song.pitchGuide === undefined ? {} : { pitchGuide: song.pitchGuide }),
     parts: jamSongParts(),
   })
 }
@@ -1929,13 +1969,7 @@ export function initJam() {
       const same = jamSong()?.id === msg.song.id
       if (same) {
         setJamSong((prev) =>
-          prev === null
-            ? prev
-            : {
-                ...prev,
-                lines: msg.song?.lines ?? prev.lines,
-                notes: msg.song?.notes ?? prev.notes,
-              },
+          prev === null ? prev : sameSongUpdated(prev, msg.song),
         )
         setJamSongParts(msg.song.parts ?? {})
         // The words or the parts moved under the scores, so they are stale.
@@ -1950,7 +1984,7 @@ export function initJam() {
       // drill room and put a drill back before the song landed.
       const incoming = msg.song
       batch(() => {
-        setJamSong({ ...incoming, notes: incoming.notes ?? [], origin: 'url' })
+        setJamSong(songFromWire(incoming))
         setJamExerciseMelody(null)
         setJamExercisePlaying(false, 'the host loaded a song')
         setJamExercisePaused(false)
@@ -1977,7 +2011,9 @@ export function initJam() {
       if (isHost && !jamIsHost() && jamState() === 'active') {
         showNotification(HOST_RETURNED, 'info')
       }
+      const wasHost = jamIsHost()
       setJamIsHost(isHost)
+      resumeHostDuties(wasHost)
     },
     onHostPeerChanged: (hostPeerId) => {
       setJamHostPeerId(hostPeerId)
@@ -1988,7 +2024,10 @@ export function initJam() {
         pendingIncomingJamBackgroundCapability = null
       }
       const localPeerId = jamPeerId()
-      if (localPeerId !== null) setJamIsHost(hostPeerId === localPeerId)
+      if (localPeerId === null) return
+      const wasHost = jamIsHost()
+      setJamIsHost(hostPeerId === localPeerId)
+      resumeHostDuties(wasHost)
     },
     onBackgroundChanged: (incoming) => {
       const current = jamRoomBackground()

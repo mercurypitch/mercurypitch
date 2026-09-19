@@ -9,7 +9,7 @@
 // picture -- and that picture looked like a broken app.
 
 import { describe, expect, it } from 'vitest'
-import { GUEST_WAITING_REASON, JAM_PITCH_IDLE, jamPitchBanner, jamPitchNeed, NO_VOCAL_STEM_REASON, NOT_ANALYSABLE_REASON, } from '@/lib/jam/jam-pitch-provision'
+import { GUEST_NO_GUIDE_REASON, GUEST_WAITING_REASON, GUIDE_CREDIT_TEXT, JAM_PITCH_IDLE, jamPitchBanner, jamPitchNeed, NO_VOCAL_STEM_REASON, NOT_ANALYSABLE_REASON, VOCAL_LEFT_WITH_HOST_REASON, } from '@/lib/jam/jam-pitch-provision'
 import type { JamSong } from '@/lib/jam/jam-song'
 import type { JamSongNote } from '@/lib/jam/types'
 
@@ -57,6 +57,66 @@ describe('jamPitchNeed', () => {
     expect(jamPitchNeed(song(), false)).toEqual({ kind: 'wait' })
   })
 
+  it('replaces a raw line, because nobody ever cleaned it up', () => {
+    // A stored merge from before the clean-up pass existed. "There are
+    // notes" used to end the question, so such a song stayed noisy in every
+    // room, for ever.
+    const raw = song({ notes: [NOTE], notesFrom: 'raw' })
+    expect(jamPitchNeed(raw, true)).toEqual({
+      kind: 'analyse',
+      sessionId: 'abc123',
+      vocalUrl: 'blob:vox',
+    })
+  })
+
+  it('leaves a raw line alone when nothing better can be made', () => {
+    // No vocal track, or a guest: the raw line is still a line.
+    const noVocal = song({
+      notes: [NOTE],
+      notesFrom: 'raw',
+      stems: { instrumental: 'blob:inst' },
+    })
+    expect(jamPitchNeed(noVocal, true)).toEqual({ kind: 'have' })
+    expect(
+      jamPitchNeed(song({ notes: [NOTE], notesFrom: 'raw' }), false),
+    ).toEqual({ kind: 'have' })
+  })
+
+  it('never redoes a line its owner corrected by hand', () => {
+    for (const notesFrom of ['saved', 'edited', 'room'] as const) {
+      expect(jamPitchNeed(song({ notes: [NOTE], notesFrom }), true)).toEqual({
+        kind: 'have',
+      })
+    }
+  })
+
+  it('does not try to fetch a vocal track that left with the last host', () => {
+    // A song only its host held reaches the room as that host's own blob
+    // addresses, stamped `origin: 'url'` on arrival. Inherit the room and
+    // the address points at a device that has gone: fetching fails, and so
+    // would every Try again.
+    const inherited = song({ origin: 'url' })
+    expect(jamPitchNeed(inherited, true)).toEqual({
+      kind: 'cannot',
+      reason: VOCAL_LEFT_WITH_HOST_REASON,
+    })
+    // The host's OWN blob is fine -- that is what a separation is.
+    expect(jamPitchNeed(song({ origin: 'local' }), true).kind).toBe('analyse')
+  })
+
+  it('finds any example under its own id', () => {
+    const example = song({
+      id: 'karaoke-night-demo:josephine',
+      stems: { instrumental: 'https://x/i.m4a', vocal: 'https://x/v.m4a' },
+      origin: 'url',
+    })
+    expect(jamPitchNeed(example, true)).toEqual({
+      kind: 'analyse',
+      sessionId: 'karaoke-night-demo:josephine',
+      vocalUrl: 'https://x/v.m4a',
+    })
+  })
+
   it('finds the demo under its own id, not only a session one', () => {
     expect(jamPitchNeed(song({ id: 'karaoke-night-demo' }), true)).toEqual({
       kind: 'analyse',
@@ -101,10 +161,71 @@ describe('jamPitchBanner', () => {
     retryable: true,
   }
 
-  it('says nothing once there is a line to aim at', () => {
-    const sung = song({ notes: [NOTE] })
-    expect(jamPitchBanner(working, sung, true)).toEqual({ kind: 'none' })
-    expect(jamPitchBanner(broken, sung, true)).toEqual({ kind: 'none' })
+  it('says where the line came from, once there is one', () => {
+    // It used to say nothing here, so a line cleaned up a minute ago and a
+    // room where nothing had happened looked exactly alike.
+    for (const notesFrom of ['saved', 'edited', 'room'] as const) {
+      expect(
+        jamPitchBanner(
+          JAM_PITCH_IDLE,
+          song({ notes: [NOTE], notesFrom }),
+          true,
+        ),
+      ).toEqual({ kind: 'ready', credit: notesFrom })
+    }
+  })
+
+  it('calls a raw line a saved one, which is all it is to a singer', () => {
+    const raw = song({ notes: [NOTE], notesFrom: 'raw' })
+    expect(jamPitchBanner(JAM_PITCH_IDLE, raw, true)).toEqual({
+      kind: 'ready',
+      credit: 'saved',
+    })
+  })
+
+  it('tells a guest the line is the host one, and an heir to the room nothing', () => {
+    // Notes that arrived over the wire carry no provenance. "From the host"
+    // is true for a guest; for whoever inherited the room it would now mean
+    // somebody who has left.
+    const wired = song({ notes: [NOTE], origin: 'url' })
+    expect(jamPitchBanner(JAM_PITCH_IDLE, wired, false)).toEqual({
+      kind: 'ready',
+      credit: 'host',
+    })
+    expect(jamPitchBanner(JAM_PITCH_IDLE, wired, true)).toEqual({
+      kind: 'none',
+    })
+  })
+
+  it('has plain words for every credit', () => {
+    for (const text of Object.values(GUIDE_CREDIT_TEXT)) {
+      expect(text).toMatch(/^Pitch guide: /)
+    }
+  })
+
+  it('shows the work while a raw line is being replaced', () => {
+    const raw = song({ notes: [NOTE], notesFrom: 'raw' })
+    expect(jamPitchBanner(working, raw, true)).toEqual({
+      kind: 'working',
+      progress: 42,
+    })
+  })
+
+  it('lets a line outrank the failure to make a better one', () => {
+    const sung = song({ notes: [NOTE], notesFrom: 'saved' })
+    expect(jamPitchBanner(broken, sung, true)).toEqual({
+      kind: 'ready',
+      credit: 'saved',
+    })
+  })
+
+  it('stops telling a guest to wait for a host who has already tried', () => {
+    const none = song({ origin: 'url', pitchGuide: 'unavailable' })
+    expect(jamPitchBanner(JAM_PITCH_IDLE, none, false)).toEqual({
+      kind: 'unavailable',
+      message: GUEST_NO_GUIDE_REASON,
+      retry: false,
+    })
   })
 
   it('shows how far the analysis has got', () => {
