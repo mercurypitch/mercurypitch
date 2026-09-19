@@ -31,6 +31,7 @@ import { sendEmailVerification, sendLoginCode, sendPasswordReset, sendSignupWelc
 import { shouldTouchLastActive } from './last-active'
 import { claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, } from './login-codes'
 import { AccountSuspendedError, assertAccountActive } from './moderation'
+import { setNewsletterConsent } from './newsletter-consent'
 import { purgePerksByEmail } from './perks'
 import type { ManagedTestAccountState } from './testing-account-state'
 import { assertManagedTestAccountActive, isManagedTestEmail, managedStateForIdentity, } from './testing-account-state'
@@ -68,6 +69,15 @@ export interface Env {
   BACKGROUND_CAPABILITY_SECRET?: string
   /** HMAC secret for JWTs. `wrangler secret put JWT_SECRET` (prod) or .dev.vars (local). */
   JWT_SECRET?: string
+  /** Signs the unsubscribe link carried in every newsletter. Deliberately NOT
+   *  JWT_SECRET: rotating the thing that mints sessions must not break links
+   *  already sitting in somebody's inbox, and a secret that travels in a URL
+   *  should never be the one that issues credentials. Generate separate
+   *  dev/prod values of at least 32 random bytes and set each with
+   *  `wrangler secret put NEWSLETTER_LINK_SECRET --env ...`. Unset means this
+   *  environment cannot honour an unsubscribe link, which is only correct
+   *  because it cannot mint one either. */
+  NEWSLETTER_LINK_SECRET?: string
   /** AES-256-GCM key-encryption key for TOTP secrets at rest (twofa.ts).
    *  Deliberately NOT derived from JWT_SECRET — rotating that must never
    *  orphan every singer's second factor. Generate a separate dev/prod value
@@ -208,6 +218,8 @@ interface UserRow {
   suspensionReason: string | null
   /** SHA-256 of this device's anonymous credential. NULL = never bound. */
   deviceSecretHash: string | null
+  /** Whether this account asked for product updates (migration 0047). */
+  newsletterOptIn: number
 }
 
 export const TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
@@ -256,7 +268,7 @@ const SEGMENT_RE = /^[A-Za-z0-9_-]+$/
 
 // ── base64url helpers ────────────────────────────────────────────────
 
-function b64urlEncode(data: ArrayBuffer | Uint8Array): string {
+export function b64urlEncode(data: ArrayBuffer | Uint8Array): string {
   const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
   let bin = ''
   for (const b of bytes) bin += String.fromCharCode(b)
@@ -642,6 +654,10 @@ function publicUser(
     lastLoginAt: row.lastLoginAt,
     isTestAccount: testAccount !== null,
     testAccountExpiresAt: testAccount?.expiresAt ?? null,
+    // Their own answer about themselves, so Settings has something to render
+    // without a second request. A row read before migration 0047 applied
+    // yields undefined rather than 0, hence the comparison rather than a cast.
+    newsletterOptIn: row.newsletterOptIn === 1,
   }
 }
 
@@ -696,6 +712,13 @@ const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // loop. Listing and ending sessions is ordinary account-settings traffic.
   'logout-all': { max: 10, windowMs: 300_000 }, // 10/5min
   sessions: { max: 60, windowMs: 300_000 }, // 60/5min
+  // A checkbox, not a credential: the cap only has to bound a loop. The
+  // unsubscribe link is unauthenticated and reachable from anyone's inbox, so
+  // it gets the tighter one — a forged token is cheap to try, and answering
+  // the same way whatever happens is worth little if it can be tried a
+  // million times an hour.
+  'newsletter-preference': { max: 30, windowMs: 300_000 }, // 30/5min
+  'newsletter-unsubscribe': { max: 20, windowMs: 300_000 }, // 20/5min
   // ONE budget shared by /2fa/verify, /2fa/enable and /2fa/disable, because
   // all three accept the same proof: attacking the weakest of them must not
   // hand out a fresh allowance. Ten is roomy for mistyping and useless
@@ -1072,6 +1095,12 @@ interface AuthBody {
   returnTo?: string
   /** Cloudflare Turnstile CAPTCHA response token (register, login, forgot-password). */
   cfTurnstileToken?: string
+  /**
+   * Ticked the product-updates box on the register form. Only `true` counts:
+   * a missing field, a string or a number is a client that did not ask the
+   * question, and consent is not somewhere to guess a default.
+   */
+  newsletterOptIn?: boolean
 }
 
 async function parseBody(request: Request): Promise<AuthBody | null> {
@@ -1475,6 +1504,9 @@ async function upgradeAnonymousToPassword(
       .bind(chosenName, nowIso(), anon.id)
       .run()
   }
+  if (body.newsletterOptIn === true) {
+    await setNewsletterConsent(env.DB, anon.id, true, 'signup')
+  }
   const row = (await findUserById(env.DB, anon.id)) as UserRow
   await sendVerificationEmail(request, env, anon.id, email, chosenName)
   // Upgrading an anonymous device to a password account creates a real
@@ -1530,6 +1562,9 @@ async function handleRegister(
     id,
     body.displayName?.trim() || defaultDisplayName(id),
   )
+  if (body.newsletterOptIn === true) {
+    await setNewsletterConsent(env.DB, id, true, 'signup')
+  }
   const row = (await findUserById(env.DB, id)) as UserRow
   await sendVerificationEmail(request, env, id, email, body.displayName?.trim())
   return issueSession(env, row, respond, true, sessionOrigin(request))

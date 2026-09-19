@@ -43,6 +43,8 @@ export interface AuthUserInfo {
   lastLoginAt: string | null
   isTestAccount: boolean
   testAccountExpiresAt: string | null
+  /** Asked for product updates. Absent on a worker older than migration 0047. */
+  newsletterOptIn?: boolean
 }
 
 export interface AuthResponse {
@@ -562,6 +564,12 @@ export async function registerWithPassword(
   password: string,
   displayName?: string,
   cfTurnstileToken?: string,
+  /**
+   * Ticked the product-updates box on the form. It rides the register request
+   * rather than following it, so there is no window where the account exists
+   * and the answer does not — and nothing to retry if the second call fails.
+   */
+  newsletterOptIn?: boolean,
 ): Promise<AuthResponse> {
   return postAuth('register', {
     email,
@@ -569,6 +577,7 @@ export async function registerWithPassword(
     displayName,
     deviceId: getUserId(),
     cfTurnstileToken,
+    newsletterOptIn,
     // Registering with a deviceId takes that anonymous account over
     // permanently, so the server needs proof it is ours.
     deviceSecret: getDeviceSecret(),

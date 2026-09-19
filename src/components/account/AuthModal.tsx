@@ -79,6 +79,9 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
   const [password, setPassword] = createSignal('')
   const [showPassword, setShowPassword] = createSignal(false)
   const [displayName, setDisplayName] = createSignal('')
+  // Unticked, always. A pre-ticked box is not consent under the GDPR, so a
+  // list built from one is a list that cannot be mailed.
+  const [wantsUpdates, setWantsUpdates] = createSignal(false)
   const [error, setError] = createSignal('')
   const [busy, setBusy] = createSignal(false)
   const [turnstileToken, setTurnstileToken] = createSignal('')
@@ -127,6 +130,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     // approve from yet.
     setPane(isTvDevice() && mode === 'login' ? 'phone' : mode)
     setPassword('')
+    setWantsUpdates(false)
     setShowPassword(false)
     setError('')
     setBusy(false)
@@ -405,6 +409,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
             credentials.password,
             name,
             token,
+            wantsUpdates(),
           )
           if (request !== requestGeneration) return
           // Creating the account IS the consent the voiceprint adoption
@@ -896,6 +901,22 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
                     password={password()}
                     showInvalid={password() !== ''}
                   />
+                  {/* Asked here rather than after the account exists, so the
+                      answer arrives with the account and there is no second
+                      request to fail on its own. */}
+                  <label class={styles.consentRow}>
+                    <input
+                      type="checkbox"
+                      checked={wantsUpdates()}
+                      onChange={(e) => setWantsUpdates(e.currentTarget.checked)}
+                      data-testid="register-newsletter-optin"
+                    />
+                    <span>
+                      Send me product updates. Big new features and milestones
+                      only, never more than once a month, and you can stop any
+                      time.
+                    </span>
+                  </label>
                 </Show>
 
                 <Show when={error() !== ''}>

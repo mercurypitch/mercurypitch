@@ -251,7 +251,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 21.6k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
+| `db-worker` | [index.ts](../../workers/db-worker/src/index.ts) | 21.9k | ── MercuryPitch DB Worker Generic CRUD REST API over Cloudflare D1, matching the contract of the frontend ServerAdapter (src/db/adapters/... |
 | `jam-worker` | [index.ts](../../workers/jam-worker/src/index.ts) | 1.3k | ── Jam Signaling Worker WebSocket upgrade router → Durable Object signaling relay. |
 
 <!-- END:GENERATED module-map -->
@@ -384,6 +384,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/play-along/stem-mix-engine.ts](../../src/features/play-along/stem-mix-engine.ts) | 1.6k |
 | [src/features/voice-history/GuidedVoiceCheck.tsx](../../src/features/voice-history/GuidedVoiceCheck.tsx) | 1.6k |
 | [workers/db-worker/src/guided-exercises.ts](../../workers/db-worker/src/guided-exercises.ts) | 1.6k |
+| [src/db/services/auth-service.ts](../../src/db/services/auth-service.ts) | 1.5k |
 | [src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts](../../src/features/guitar-tab-3d/renderer/canvas2d/Canvas2dTabRenderer.ts) | 1.5k |
 | [src/features/progress/ProgressPage.tsx](../../src/features/progress/ProgressPage.tsx) | 1.5k |
 | [src/lib/backgrounds/background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 1.5k |
@@ -392,7 +393,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/components/FallingNotesCanvas.tsx](../../src/components/FallingNotesCanvas.tsx) | 1.4k |
 | [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.4k |
 | [src/components/LibraryModal.tsx](../../src/components/LibraryModal.tsx) | 1.4k |
-| [src/db/services/auth-service.ts](../../src/db/services/auth-service.ts) | 1.4k |
 | [src/features/guitar-night/useGuitarNightReferenceController.ts](../../src/features/guitar-night/useGuitarNightReferenceController.ts) | 1.4k |
 | [src/features/guitar-night/useGuitarNightScoreRoomController.ts](../../src/features/guitar-night/useGuitarNightScoreRoomController.ts) | 1.4k |
 | [src/features/piano/instrument/piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 1.4k |
