@@ -21,7 +21,12 @@ const CENTS_PERFECT = 10
  * definition rather than two that can drift apart.
  */
 export const CENTS_EXCELLENT = 25
-const CENTS_GOOD = 50
+/**
+ * The "still counting" line — half a semitone. Exported for the same
+ * reason as the one above: the jam canvases colour a note against it,
+ * and the jam scoreboard already counts a frame as a hit inside it.
+ */
+export const CENTS_GOOD = 50
 const SCORE_PERFECT = 100
 const SCORE_EXCELLENT = 90
 const SCORE_GOOD = 75

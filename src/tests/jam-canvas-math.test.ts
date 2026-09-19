@@ -42,17 +42,21 @@ function midiToY(
 
 const SHARED_PITCH_MARGIN = 36
 
-/** Maps a frequency to a y-pixel using log2 scale. */
-const MIN_FREQ = 55
-const MAX_FREQ = 2093
-const LOG_MIN = Math.log2(MIN_FREQ)
-const LOG_MAX = Math.log2(MAX_FREQ)
-const LOG_RANGE = LOG_MAX - LOG_MIN
-
-function freqToY(freq: number, h: number): number {
-  const log = Math.log2(Math.max(freq, MIN_FREQ))
-  const pct = 1 - (log - LOG_MIN) / LOG_RANGE
-  return SHARED_PITCH_MARGIN + pct * (h - SHARED_PITCH_MARGIN * 2)
+/**
+ * Maps a MIDI note to a y-pixel inside the canvas' current band.
+ *
+ * This replaced a fixed 55-2093 Hz log scale: five and a quarter
+ * octaves squeezed into a few hundred pixels gave a semitone about a
+ * pixel, so nobody could see whether they were on the note.
+ */
+function sharedMidiToY(
+  midi: number,
+  h: number,
+  bandMin: number,
+  bandMax: number,
+): number {
+  const pct = (midi - bandMin) / (bandMax - bandMin)
+  return h - SHARED_PITCH_MARGIN - pct * (h - SHARED_PITCH_MARGIN * 2)
 }
 
 /** Maps a sample timestamp to x using the 60% anchor. */
@@ -152,33 +156,46 @@ describe('midiToY — exercise canvas', () => {
   })
 })
 
-// ── freqToY tests (shared pitch canvas) ───────────────────────────────
+// ── midiToY tests (shared pitch canvas) ──────────────────────────────
 
-describe('freqToY — shared pitch canvas (log scale)', () => {
+describe('midiToY -- shared pitch canvas (fitted band)', () => {
   const H = 300
+  const BAND_MIN = 55
+  const BAND_MAX = 67
 
-  it('maps minimum frequency to the bottom of the drawable area', () => {
-    const y = freqToY(MIN_FREQ, H)
-    // pct = 1.0 → top position (which is near bottom due to 1-pct inversion)
-    // Actually: pct = 1 - (log2(MIN_FREQ) - LOG_MIN)/LOG_RANGE = 1 - 0 = 1
-    // y = MARGIN + 1 * (h - MARGIN*2) = near bottom
-    const expected = SHARED_PITCH_MARGIN + 1.0 * (H - SHARED_PITCH_MARGIN * 2)
-    expect(y).toBeCloseTo(expected, 3)
+  it('maps the bottom of the band to the bottom of the drawable area', () => {
+    expect(sharedMidiToY(BAND_MIN, H, BAND_MIN, BAND_MAX)).toBeCloseTo(
+      H - SHARED_PITCH_MARGIN,
+      3,
+    )
   })
 
-  it('maps maximum frequency to the top of the drawable area', () => {
-    const y = freqToY(MAX_FREQ, H)
-    // pct = 1 - (log2(MAX_FREQ) - LOG_MIN)/LOG_RANGE = 1 - 1 = 0
-    const expected = SHARED_PITCH_MARGIN
-    expect(y).toBeCloseTo(expected, 3)
+  it('maps the top of the band to the top of the drawable area', () => {
+    expect(sharedMidiToY(BAND_MAX, H, BAND_MIN, BAND_MAX)).toBeCloseTo(
+      SHARED_PITCH_MARGIN,
+      3,
+    )
   })
 
-  it('higher frequency always maps to lower y (canvas Y-down)', () => {
-    expect(freqToY(880, H)).toBeLessThan(freqToY(440, H))
+  it('higher pitch always maps to lower y (canvas Y-down)', () => {
+    expect(sharedMidiToY(64, H, BAND_MIN, BAND_MAX)).toBeLessThan(
+      sharedMidiToY(60, H, BAND_MIN, BAND_MAX),
+    )
   })
 
-  it('clips frequencies below MIN_FREQ to MIN_FREQ', () => {
-    expect(freqToY(10, H)).toBeCloseTo(freqToY(MIN_FREQ, H), 5)
+  it('gives a semitone real estate the old log scale never could', () => {
+    // The fixed scale spanned 63 semitones; at this height that was
+    // under four pixels each. A twelve-semitone band gives twenty.
+    const step =
+      sharedMidiToY(60, H, BAND_MIN, BAND_MAX) -
+      sharedMidiToY(61, H, BAND_MIN, BAND_MAX)
+    expect(step).toBeGreaterThan(4)
+  })
+
+  it('separates a quarter-tone, which is what the rounding used to hide', () => {
+    const onNote = sharedMidiToY(60, H, BAND_MIN, BAND_MAX)
+    const quarterSharp = sharedMidiToY(60.5, H, BAND_MIN, BAND_MAX)
+    expect(Math.abs(onNote - quarterSharp)).toBeGreaterThan(4)
   })
 })
 
