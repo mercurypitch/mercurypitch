@@ -9,6 +9,102 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.10] - 2026-09-19
+
+The 0.9.8 audit follow-ups (#822), the support address coming out of the
+bundle (#823), and phases 1-3 of the registered-user newsletter (#824).
+
+### Newsletter for registered users (#824)
+
+A checkbox on the register form and in Settings, the column behind both,
+and a sender that is run by hand.
+
+Consent lives on `users` (migration 0047), not in a list held by a mail
+provider. A mirror would be a second source of truth: unsubscribe from an
+email and Settings would go on saying the opposite until something
+reconciled them. It also means account erasure already covers it, and that
+the switch works on a day the provider does not.
+
+The box is unticked and stays unticked unless a literal `true` arrives with
+the register request — a pre-ticked box is not consent under the GDPR, and a
+truthy string is not an answer. Google and Apple signups land opted out;
+Settings is how they change that.
+
+The unsubscribe link needs no sign-in, as the 2024 Gmail/Yahoo bulk-sender
+rules require. It is an HMAC over the user id and the moment they opted in,
+signed with `NEWSLETTER_LINK_SECRET` rather than `JWT_SECRET`: a value that
+travels through other people's mail servers inside a URL must not be the one
+that mints sessions. It survives being clicked twice or prefetched, opting
+back in retires every link sent before it, and it answers the same page for a
+stranger as for a subscriber — an unsubscribe endpoint that answers
+differently is an address oracle.
+
+Phase 3 puts the sending in the worker, behind `X-Admin-Key`:
+`GET /api/newsletter/recipients` and `POST /api/newsletter/send`, driven by
+`scripts/send-newsletter.mjs`. The operator's machine holds no secrets and
+renders nothing; it posts content, and the worker mints the links and calls
+Resend. `dryRun` defaults to true, so a send needs `--send` typed on purpose.
+Accepted sends are logged per (issue, user) in `newsletterSends`
+(migration 0048), so a run that stopped half way is finished by running the
+same command again. Recipients are gated on `emailVerified`: an address
+nobody confirmed may be a stranger's, and a stranger's complaint is what
+costs a sending domain its reputation.
+
+Still no cron, no queue and no trigger. A newsletter that can send itself is
+a newsletter sent by accident.
+
+Plan and decisions: `docs/plans/newsletter-registered-users.md`.
+
+### The 0.9.8 audit follow-ups (#822)
+
+- **Jam lanes read the song clock per frame.** Lane notes were positioned
+  from `timeupdate`, which fires about four times a second, while the pitch
+  trail beside them ran per frame. `timeupdate` is kept and still matters:
+  animation frames stop in a hidden tab, and a phone with the room in the
+  background has to keep the song moving.
+- **Zen's ear-matched visuals moved to the audible clock.** The stage keeps
+  two clocks — where the transport is, and where the sound has reached the
+  output device. Only the word sweep read the second one. The scrubber and
+  the time readout keep the transport's position, which is what they report.
+- **Recorded drum hits are placed where they were heard.** A hit is stored at
+  the context time it was scheduled for; it leaves the speakers one output
+  latency later, and the guitar answering it reaches capture one input delay
+  later still. The lane is offset by what the browser reports about the
+  route — nothing measured, so an unreported term counts as zero.
+- **Session renewal is bounded.** Foregrounding traded a live session for a
+  fresh thirty days through the same session id, so a session in use never
+  expired. Renewal now stops six months after the sign-in, measured on the
+  session row rather than the token, and the session is ended rather than
+  merely refused — leaving the row would keep the calling token good for the
+  rest of its thirty days. Only the session that asked is ended. Note this
+  cannot bite yet: `authSessions.createdAt` arrived 2026-08-31, so the first
+  caps fall around 2027-02-27.
+- **Drum kit credits come from the licence, not the id.** The notice was
+  gated on `muldjord` or `crocell` written into the component; three other
+  kits ship a notice and showed nothing. Each option now declares what its
+  licence obliges, and a test checks every declaration against the kit
+  manifest. The picker's "16 original grooves" is counted now (19).
+- **Social card URLs carry a content hash.** Platforms cache an OG image by
+  URL, so recutting a card behind the same path changed nothing in links
+  already shared. Each URL now carries the first eight hex digits of its
+  sha256; the map is generated (`pnpm run og:versions`) and a test recomputes
+  the hashes from disk, so a recut card that ships without a regenerated map
+  fails CI.
+
+### The support address leaves the bundle (#823)
+
+`CONTACT_EMAIL` is replaced by `CONTACT_FORM_URL`, the landing site's contact
+form, which already sits behind Turnstile. Account's "Email us" becomes
+"Contact us"; the local-progress notice's "Ask us to move it" opens the form
+with the topic set and the message drafted, both device ids included, and the
+singer still presses send themselves. `progressHandoffMailto` is now
+`progressHandoffUrl`. The billing-delay notification points at Account rather
+than naming an address, since a notification cannot carry a link.
+
+Requires the landing on `mp-v0.1.28` or later: earlier builds serve the
+contact page but do not read the query string, so a drafted handoff would
+arrive as an empty form.
+
 ## [0.9.9] - 2026-09-18
 
 Piano Night's practice controls (#812), and the count-in fix that device

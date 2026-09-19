@@ -5,6 +5,39 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.10] - 2026-09-19
+
+Timing, mostly. Three places where what you saw and what you heard had
+drifted apart, and a way to hear from us if you want to.
+
+### Added
+
+- **Product updates, if you want them.** A checkbox on the sign-up form and in
+  Settings under Account. It starts off, and every email has a one-click way
+  out.
+
+### Fixed
+
+- **Jam rooms keep time with the song.** Lane notes stepped along four times a
+  second while the pitch trail beside them glided. Both follow the song now.
+- **Karaoke's visuals follow what you hear.** The pitch ribbon, the run-in to a
+  line and the rest countdown were drawn up to a fifth of a second early over
+  Bluetooth.
+- **Recorded drums land where you played them.** A take's drum lane sat ahead
+  of the guitar answering it, on replay and in the exported mix.
+- **Every drum kit credits its creator.** Three kits shipped a licence notice
+  that was never shown. The picker counts its grooves properly too: 19, not 16.
+- **Shared links show the current artwork.** Recutting a social card used to
+  leave the old picture in every link ever shared.
+- **Contact goes through the contact form.** The support address is out of the
+  app, where machines were reading it.
+
+### Security
+
+- **A sign-in no longer renews itself forever.** Sessions stop renewing six
+  months after the sign-in, however often you use the app. Your other devices
+  are untouched.
+
 ## [0.9.9] - 2026-09-18
 
 Piano Night learns the three things a practice room needs: move through a
