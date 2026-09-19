@@ -82,7 +82,14 @@ async function seedSongNotes(page: Page): Promise<void> {
           fileHash: `session:${sessionId}`,
           analysisResultsJson: JSON.stringify(notes),
           lrcLinesJson: '[]',
-          segmentedNotesJson: '[]',
+          // The cleaned line as well as the raw one. A record with only
+          // `analysisResultsJson` is a song analysed before the clean-up
+          // existed, and the host's room now works a proper line out for
+          // those: it fetched the real vocal stem, spent seconds of main
+          // thread on it and then REPLACED these notes under whichever
+          // test was half way through measuring them. One run in five
+          // failed on a pill that had changed size for no visible reason.
+          segmentedNotesJson: JSON.stringify(notes),
           createdAt: now,
           updatedAt: now,
         })
