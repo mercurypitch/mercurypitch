@@ -21,7 +21,7 @@ import { createJamSongTransport } from '@/lib/jam/jam-song-transport'
 import { jamSplitBounds, jamSplitShare, resetJamSplitShare, setJamSplitShare, } from '@/lib/jam/jam-view-prefs'
 import { followMediaClock } from '@/lib/jam/media-clock'
 import { initAudioEngine } from '@/stores/app-store'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -355,36 +355,9 @@ export const JamSongStage: Component = () => {
     onCleanup(followMediaClock(el, setJamSongPositionSec))
   })
 
-  /**
-   * Space toggles playback, so a practice run starts without hunting for
-   * a button. Host only -- it is the host's transport, and a guest hitting
-   * space would either do nothing or (worse) fight the room.
-   *
-   * Ignored while typing: the chat box is right there, and swallowing a
-   * space in a message is a much more annoying bug than a missing
-   * shortcut.
-   */
-  onMount(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || !jamIsHost()) return
-      const t = e.target as HTMLElement | null
-      const tag = t?.tagName
-      if (
-        tag === 'INPUT' ||
-        tag === 'TEXTAREA' ||
-        tag === 'BUTTON' ||
-        t?.isContentEditable === true
-      ) {
-        return
-      }
-      e.preventDefault()
-      const at = audioRef?.currentTime ?? 0
-      if (jamExercisePlaying() && !jamExercisePaused()) jamSongPause(at)
-      else jamSongPlay(at)
-    }
-    document.addEventListener('keydown', onKey)
-    onCleanup(() => document.removeEventListener('keydown', onKey))
-  })
+  // Space is play/pause here as it is for a drill, and it is the room's
+  // transport bar (JamTransport) that listens for it: one key, one owner,
+  // whichever engine is loaded.
 
   /**
    * Move the playhead.

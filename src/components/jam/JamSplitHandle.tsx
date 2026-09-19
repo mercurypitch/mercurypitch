@@ -90,8 +90,16 @@ export const JamSplitHandle: Component<JamSplitHandleProps> = (props) => {
       case 'End':
         next = props.max()
         break
-      case 'Enter':
       case ' ':
+        // Already spent: in a host's room Space is the transport's, taken
+        // in the capture phase before this ever runs. Resetting the seam
+        // as well would be one key doing two unrelated things. Enter and a
+        // double click still reset; a guest's Space reaches here untouched.
+        if (event.defaultPrevented) return
+        event.preventDefault()
+        props.onReset()
+        return
+      case 'Enter':
         event.preventDefault()
         props.onReset()
         return

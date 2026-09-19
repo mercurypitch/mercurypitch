@@ -591,6 +591,14 @@ export default defineConfig(({ command, mode }) => {
             ) {
               return 'voice-vocabulary'
             }
+            // The Space-bar transport rule is a leaf with no imports, used by
+            // every standalone room and -- since the jam room's transport took
+            // it up -- by the main app. Left organic, Rollup filed it under a
+            // heavy app chunk the moment the app imported it, and Piano
+            // Night's first paint pulled `advanced`, `library` and
+            // `pitch-core` in to reach thirty lines of key handling. The
+            // first-paint audit (assert-piano-night-bundle) caught it.
+            if (id.includes('/src/lib/space-playback.')) return 'space-playback'
             // Persisted standalone-room preferences need only Solid and
             // localStorage. Keeping this primitive inside the broad
             // pitch-core chunk makes any standalone setting inherit the main
