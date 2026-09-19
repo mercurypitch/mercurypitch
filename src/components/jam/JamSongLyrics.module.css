@@ -173,6 +173,14 @@
      bindScaleGestures), and without this the browser takes the pinch
      for itself and zooms the whole page before a script ever sees it. */
   touch-action: pan-y;
+  /* A lyric sheet in a room is something to press, not something to copy.
+     Selectable, every row wore the text cursor, a double click on "take it
+     from the chorus" highlighted a word, and a drag that missed the brush
+     by a pixel smeared a selection down the column. Prefixed as well:
+     Safari still wants it, and the callout is its long-press bubble. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .line {
@@ -202,6 +210,24 @@
     color 0.2s ease,
     background 0.2s ease,
     transform 0.2s ease;
+}
+
+/* A row the viewer can jump the song to -- the host's, in other words.
+   The cursor is the whole affordance on a desk; a guest's rows keep the
+   arrow, because a hand over something that does nothing is a small lie
+   told fifty times a song. */
+.line[data-seekable] {
+  cursor: pointer;
+}
+
+/* Only where hovering is a real thing, or a tapped row stays lit on a
+   phone until something else is tapped. Text only: a row may already be
+   wearing its singer's tint or the current line's card, and a hover
+   surface would have to out-argue both. */
+@media (hover: hover) {
+  .line[data-seekable]:hover {
+    color: var(--text-primary);
+  }
 }
 
 /* Sung already: dimmed rather than hidden, so the singer keeps a sense of
@@ -463,6 +489,12 @@
      stuck on the first line. Scrolling stays available whenever no
      singer is armed — this class only exists while the brush is. */
   touch-action: none;
+}
+
+/* The brush outranks the jump: an armed row paints on a click and does
+   not seek, so it must not wear the hand that promises a seek. */
+.line.painting {
+  cursor: crosshair;
 }
 
 /* What WILL be painted when the pointer comes up. Deliberately louder
