@@ -9,8 +9,9 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
+import { parseLrcTimingMetadata } from '@/lib/lrc-timing-metadata'
 import { parseLrcFile, parseLrcWordTimings } from '@/lib/lyrics-service'
-import { LYRICSFILE_SWEEPS_KEY, lyricsfileToLrc, parseLyricsfile, serialiseLyricsfile, splitWithSpacing, } from '@/lib/lyricsfile'
+import { LYRICSFILE_SWEEPS_KEY, lyricsfileToLrc, lyricsfileToStoredLrc, parseLyricsfile, serialiseLyricsfile, splitWithSpacing, } from '@/lib/lyricsfile'
 
 const LINES = [
   { time: 2, text: 'hold on' },
@@ -487,5 +488,54 @@ describe('lyricsfileToLrc', () => {
       expect(wt?.words.join(' ')).toBe(lines[i].text)
       expect(wt?.wordTimes).toEqual(wordTimings[i])
     }
+  })
+})
+
+describe('lyricsfileToStoredLrc', () => {
+  // The claim the studio and the demo seed both rest on: either format can
+  // be derived from the other, so one stored text is enough.
+  it('keeps a partly marked line whole across lyricsfile → LRC → mixer', async () => {
+    const ends: number[] = []
+    ends[3] = 9.75
+    const source = {
+      lines: [
+        { time: 1, text: 'Lantern under water' },
+        { time: 7, text: 'Paper boats go over' },
+      ],
+      wordTimings: { 0: [1, 1.4, 1.9], 1: [7, 7.5, 8.1, 8.6] },
+      wordEndTimings: { 1: ends },
+      wordSweepTimings: {
+        1: {
+          3: [
+            { time: 8.6, progress: 0 },
+            { time: 9.75, progress: 1 },
+          ],
+        },
+      },
+    }
+    const parsed = await parseLyricsfile(serialiseLyricsfile(source))
+    if (parsed === null) throw new Error('did not parse')
+    const lrc = lyricsfileToStoredLrc(parsed)
+
+    // What the mixer sees when that text is loaded.
+    const lines = parseLrcFile(lrc)
+    expect(lines.map((l) => l.time)).toEqual([1, 7])
+    expect(
+      parseLrcWordTimings(lines[1].text, lines[1].time)?.wordTimes,
+    ).toEqual([7, 7.5, 8.1, 8.6])
+    const extension = parseLrcTimingMetadata(lrc)
+    expect(extension?.wordEndTimings).toEqual(source.wordEndTimings)
+    expect(extension?.wordSweepTimings).toEqual(source.wordSweepTimings)
+  })
+
+  it('writes no tag when there is nothing LRC cannot hold', async () => {
+    const parsed = await parseLyricsfile(
+      serialiseLyricsfile({
+        lines: [{ time: 1, text: 'Plain and simple' }],
+        wordTimings: { 0: [1, 1.5, 2] },
+      }),
+    )
+    if (parsed === null) throw new Error('did not parse')
+    expect(lyricsfileToStoredLrc(parsed)).toBe(lyricsfileToLrc(parsed))
   })
 })

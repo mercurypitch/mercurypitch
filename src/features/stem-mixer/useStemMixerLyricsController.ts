@@ -19,7 +19,7 @@ import type { LrcLine, LyricsSearchMatch, LyricsSearchResult, } from '@/lib/lyri
 import { computeActiveWord, extractTitle, fetchLyricsById, getCurrentLineIndex, parseLrcFile, parseTextLyrics, searchLyrics, searchLyricsMulti, } from '@/lib/lyrics-service'
 import type { LyricsVersion, LyricsVersionKind } from '@/lib/lyrics-versions'
 import { findVersion, removeVersion, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
-import { lyricsfileToLrc, parseLyricsfile, serialiseLyricsfile, } from '@/lib/lyricsfile'
+import { lyricsfileToStoredLrc, parseLyricsfile, serialiseLyricsfile, } from '@/lib/lyricsfile'
 import type { LyricsEditRow } from '@/lib/whisper-lyrics'
 import { buildEditedLrc, segmentsToLrc } from '@/lib/whisper-lyrics'
 import type { WhisperSegment } from '@/lib/whisper-service'
@@ -920,10 +920,7 @@ export function useStemMixerLyricsController(
     if (parsed === null) return false
 
     handleLyricsUpload({
-      text: withLrcTimingMetadata(lyricsfileToLrc(parsed), {
-        wordEndTimings: parsed.wordEndTimings,
-        wordSweepTimings: parsed.wordSweepTimings,
-      }),
+      text: lyricsfileToStoredLrc(parsed),
       format: 'lrc',
       filename: `${filename.replace(/\.[^.]+$/, '')}.lrc`,
     })

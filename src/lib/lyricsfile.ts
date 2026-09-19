@@ -23,6 +23,7 @@
 
 import type { WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
 import { formatTimeLrc } from './lrc-generator'
+import { withLrcTimingMetadata } from './lrc-timing-metadata'
 import type { LrcLine } from './lyrics-service'
 
 /** Sweeps have no home in the 1.0 spec — see `LYRICSFILE_SWEEPS_KEY`. */
@@ -393,4 +394,21 @@ export function lyricsfileToLrc(parsed: ParsedLyricsfile): string {
   })
 
   return [...head, ...body].join('\n')
+}
+
+/**
+ * A parsed lyricsfile as the LRC the app stores.
+ *
+ * Word starts go inline, which is all LRC has syntax for. The word ends and
+ * sub-word splits ride in the `x-mp-timing` tag, where the app already keeps
+ * them. A lyricsfile can come in through the mixer's upload, the studio's
+ * drop zone or a demo song's lyrics URL, and every one of them converts
+ * here — so there is no door that quietly keeps the starts and drops the
+ * half of the file that made it worth exporting.
+ */
+export function lyricsfileToStoredLrc(parsed: ParsedLyricsfile): string {
+  return withLrcTimingMetadata(lyricsfileToLrc(parsed), {
+    wordEndTimings: parsed.wordEndTimings,
+    wordSweepTimings: parsed.wordSweepTimings,
+  })
 }

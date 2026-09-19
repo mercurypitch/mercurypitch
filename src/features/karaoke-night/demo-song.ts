@@ -30,7 +30,7 @@ export interface DemoSongManifest {
     licenseUrl: string
   }
   stems: { vocal?: string; instrumental?: string }
-  /** Lyrics URL — .lrc (synced) or .txt (plain, until an LRC exists). */
+  /** Lyrics URL — .lrc or .lyricsfile (synced), or .txt (plain). */
   lyrics?: string
   /** Lyrics pasted straight into the studio. Wins over `lyrics` when set. */
   lyricsText?: string
@@ -218,7 +218,7 @@ function writeStamp(key: string, stamp: SeedStamp): void {
 }
 
 /** The lyric text this manifest carries, pasted text winning over a URL. */
-async function demoLyricsText(
+export async function demoLyricsText(
   m: DemoSongManifest,
 ): Promise<{ text: string; format: 'lrc' | 'txt' } | null> {
   const pasted = (m.lyricsText ?? '').trim()
@@ -235,7 +235,29 @@ async function demoLyricsText(
   if (!res.ok) return null
   const text = await res.text()
   if (text.trim() === '') return null
-  return { text, format: url.toLowerCase().endsWith('.lrc') ? 'lrc' : 'txt' }
+  // The path alone: a cache-busting `?v=2` is a normal thing to put on an
+  // asset URL, and it must not turn a synced file into plain text.
+  const path = url.toLowerCase().split(/[?#]/)[0]
+  if (path.endsWith('.lyricsfile')) return lyricsfileAsLrc(text)
+  return { text, format: path.endsWith('.lrc') ? 'lrc' : 'txt' }
+}
+
+/**
+ * A `.lyricsfile` behind the lyrics URL, as the LRC the rest of the app
+ * speaks. Null for a file that is not one: seeding nothing leaves the singer
+ * with the finder, where seeding it as text would put a page of YAML on the
+ * stage. Loaded on demand — the YAML parser has no business on this page's
+ * first paint.
+ */
+async function lyricsfileAsLrc(
+  text: string,
+): Promise<{ text: string; format: 'lrc' } | null> {
+  const { lyricsfileToStoredLrc, parseLyricsfile } =
+    await import('@/lib/lyricsfile')
+  const parsed = await parseLyricsfile(text)
+  return parsed === null
+    ? null
+    : { text: lyricsfileToStoredLrc(parsed), format: 'lrc' }
 }
 
 /**
