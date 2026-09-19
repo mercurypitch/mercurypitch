@@ -5,6 +5,7 @@ declare global {
   interface Window {
     museumMusicProbe: {
       starts: number
+      /** Started long loops that have neither ended nor fully disconnected. */
       active: Set<AudioBufferSourceNode>
     }
   }
@@ -51,6 +52,7 @@ async function openMuseum(page: Page): Promise<void> {
     const probe = { starts: 0, active: new Set<AudioBufferSourceNode>() }
     window.museumMusicProbe = probe
     const originalStart = AudioBufferSourceNode.prototype.start
+    const originalDisconnect = AudioBufferSourceNode.prototype.disconnect
     AudioBufferSourceNode.prototype.start = function (...args) {
       if (this.loop && (this.buffer?.duration ?? 0) > 5) {
         probe.starts++
@@ -60,6 +62,11 @@ async function openMuseum(page: Page): Promise<void> {
         })
       }
       originalStart.apply(this, args)
+    }
+    AudioBufferSourceNode.prototype.disconnect = function (...args: unknown[]) {
+      Reflect.apply(originalDisconnect, this, args)
+      if (args.length === 0 && this.loop && (this.buffer?.duration ?? 0) > 5)
+        probe.active.delete(this)
     }
     // Silence enters the real detector pipeline; no simulation completion seam.
     navigator.mediaDevices.getUserMedia = async () => {
@@ -203,7 +210,8 @@ for (const width of [390, 820, 1280]) {
         ),
       ),
     ).toEqual(expected)
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await suspendRasterOutput(page)
     await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
       'data-ready',
       'true',

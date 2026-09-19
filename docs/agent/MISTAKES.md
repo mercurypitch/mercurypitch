@@ -905,11 +905,12 @@ two-viewport walk runs only in `/prod-upd`.
 
 - The welcome overlay covers the page — set `pitchperfect_welcome_version` (and
   the survey key) in `localStorage`, then reload.
-- With a deliberately paused Playwright clock, even clipped page screenshots
-  stalled for over two minutes in Chromium CI. Settle input first, resume the
-  clock during a bounded real screenshot, then pause again for simulation
-  steps. Avoid queuing unused software-rendered frames while positioning the
-  scene; restore rendering before captures and retain pixel assertions. See
+- A synthetic Playwright clock plus SwiftShader can stall screenshots even
+  early in a test. Finish the settled real frame, suspend further raster work
+  during bounded compositor capture, then pause the clock and restore drawing.
+  Keep normal startup rendering: HDR/PMREM and reflection probes bake before
+  readiness, so suppressing those draws produces black reflections. Inspect
+  the captured images as well as retaining pixel assertions. See
   `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.
 - The dev server is HTTPS-only; `VITE_NO_SSL=1` plus the `app-http` launch
   config gets plain HTTP. Revert before committing.

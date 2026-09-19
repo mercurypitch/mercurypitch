@@ -313,14 +313,24 @@ async function captureViewport(page: Page, path: string): Promise<Buffer> {
     .getByLabel('Glass museum; drag to look around')
     .boundingBox()
   expect(clip).not.toBeNull()
-  // Keep Chromium's frame/compositor work live during capture. Even a clipped
-  // page screenshot stalled for >120s in CI when the clock remained paused.
-  // Merc has already released movement and settled before every capture.
+  // Complete the real frame, then retain it while Chromium captures. Resuming
+  // the synthetic clock with full raster output can queue more SwiftShader
+  // work faster than the screenshot can finish (even <11s into the CI test).
+  await page
+    .getByLabel('Floating glass museum')
+    .evaluate((canvas: HTMLCanvasElement) => {
+      const gl = canvas.getContext('webgl2')
+      if (gl === null)
+        throw new Error('The museum WebGL2 context is unavailable')
+      gl.finish()
+    })
+  await suspendRasterOutput(page)
   await page.clock.resume()
   try {
     return await page.screenshot({ path, clip: clip!, timeout: 45_000 })
   } finally {
     await pauseClock(page)
+    await restoreRasterOutput(page)
   }
 }
 
@@ -430,7 +440,9 @@ for (const route of ROUTES) {
       )
     })
     await page.clock.install()
-    const response = await page.goto(`/glass-game/?layout=${route.layout}`)
+    const response = await page.goto(`/glass-game/?layout=${route.layout}`, {
+      waitUntil: 'domcontentloaded',
+    })
     expect(response?.status()).toBe(200)
     await waitForLevel(page, route)
     const otherLevelId =
@@ -500,7 +512,7 @@ for (const route of ROUTES) {
       },
     )
     await page.clock.resume()
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await waitForLevel(page, route)
     await pauseClock(page)
     await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
