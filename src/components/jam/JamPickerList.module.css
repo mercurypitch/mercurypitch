@@ -1,0 +1,273 @@
+/* JamPickerList — what the room can sing, in the popup, the phone's sheet
+   and the sidebar. The containers bring their own surface and scrolling;
+   this file owns the shelves and the rows. */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.shelfLabel {
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  padding: 6px 2px 2px;
+}
+
+.shelf:first-child .shelfLabel {
+  padding-top: 0;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  font-family: inherit;
+  text-align: left;
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+}
+
+.item:hover,
+.item:focus-visible {
+  border-color: var(--accent);
+}
+
+.item:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+/* The row the room is running. Said twice -- a border and a tag -- because
+   an accent hairline alone is invisible to anyone who cannot separate it
+   from the hover state. */
+.itemRunning {
+  border-color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.nameText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #8b949e);
+}
+
+.runningTag {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.status,
+.error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.status {
+  color: var(--text-secondary, #8b949e);
+  background: var(--bg-primary, #0d1117);
+  border: 1px solid var(--border);
+}
+
+.error {
+  color: #ffd7d5;
+  background: rgba(248, 81, 73, 0.14);
+  border: 1px solid rgba(248, 81, 73, 0.38);
+}
+
+/* Shown on the one row being loaded. Hydrating a separated song is two
+   multi-megabyte stem reads, so the row says it is working rather than
+   looking like a dead tap. */
+.spinner {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--border-color, rgb(255 255 255 / 25%));
+  border-top-color: var(--accent-color, #58a6ff);
+  border-radius: 50%;
+  animation: pickSpin 0.7s linear infinite;
+}
+
+@keyframes pickSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* ── The phone's sheet ────────────────────────────────────────────── */
+/* 8px of padding is a desk target, not a thumb's. */
+
+.list[data-variant='sheet'] {
+  padding: 4px 2px 8px;
+}
+
+.list[data-variant='sheet'] .item {
+  min-height: 48px;
+  justify-content: center;
+  padding: 10px 12px;
+}
+
+/* ── The sidebar ──────────────────────────────────────────────────── */
+/* A 240px rail, open all evening: quieter rows, names on one line, and
+   groups that fold so six shelves do not push the roster off the screen. */
+
+.list[data-variant='rail'] {
+  gap: 2px;
+}
+
+.foldHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 6px;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.foldHeader:hover,
+.foldHeader:focus-visible {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+.foldHeader .shelfLabel {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+}
+
+.count {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted, #6e7681);
+}
+
+.chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.chevron[data-open='true'] {
+  transform: rotate(180deg);
+}
+
+.list[data-variant='rail'] .rows {
+  gap: 2px;
+  /* A library can be long, and the rail is not the place to scroll all of
+     it: cap each group and let the roster above stay in reach. */
+  max-height: 38vh;
+  overflow-y: auto;
+}
+
+.list[data-variant='rail'] .item {
+  padding: 5px 7px;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 6px;
+}
+
+.list[data-variant='rail'] .item:hover:not(:disabled),
+.list[data-variant='rail'] .item:focus-visible {
+  background: var(--bg-tertiary);
+  border-color: var(--border);
+}
+
+.list[data-variant='rail'] .itemRunning,
+.list[data-variant='rail'] .itemRunning:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.list[data-variant='rail'] .name {
+  font-size: 0.78rem;
+}
+
+.list[data-variant='rail'] .nameText {
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list[data-variant='rail'] .meta {
+  overflow: hidden;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+  .foldHeader {
+    min-height: 40px;
+  }
+
+  .list[data-variant='rail'] .item {
+    min-height: 44px;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}

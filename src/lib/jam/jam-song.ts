@@ -11,7 +11,7 @@
 // The two coordinates never mix. A room is running one or the other, and
 // jamSongPositionSec is only meaningful while a song is loaded.
 
-import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
+import type { JamSongMessage, JamSongNote, LyricsLineTiming, } from '@/lib/jam/types'
 
 /** Where a song's audio lives, and what every peer must be able to reach. */
 export interface JamSongStems {
@@ -20,6 +20,17 @@ export interface JamSongStems {
   /** Optional guide vocal, for hearing the line rather than scoring it. */
   vocal?: string
 }
+
+/**
+ * Where a song's target line came from, as far as THIS device knows.
+ *
+ * - `saved`  -- read from this device's store, as the analysis left it.
+ * - `edited` -- the same, with its owner's hand corrections applied.
+ * - `raw`    -- a stored merge from before the clean-up pass existed: every
+ *               wobble and breath is still a note. Worth replacing.
+ * - `room`   -- worked out in this room, just now.
+ */
+export type JamNotesSource = 'saved' | 'edited' | 'raw' | 'room'
 
 export interface JamSong {
   id: string
@@ -30,6 +41,17 @@ export interface JamSong {
   lines: LyricsLineTiming[]
   /** The vocal line to aim at; empty when the song was never analysed. */
   notes: JamSongNote[]
+  /**
+   * Where `notes` came from. Local knowledge: it never crosses the wire, so
+   * it is absent on a guest, whose line is simply the host's.
+   */
+  notesFrom?: JamNotesSource
+  /**
+   * Set by the host once it has looked and found there is no pitch guide to
+   * be had. It travels with the manifest, because a guest otherwise goes on
+   * being told that the host can make one.
+   */
+  pitchGuide?: 'unavailable'
   durationSec: number
   /**
    * Where the audio came from, which decides whether the room can run it
@@ -37,6 +59,57 @@ export interface JamSong {
    * and needs the peer-to-peer transfer that phase 1 does not build.
    */
   origin: 'url' | 'local'
+}
+
+/** A song as it crosses the wire: the host's manifest. */
+type WireSong = NonNullable<JamSongMessage['song']>
+
+/**
+ * A song as a guest holds it.
+ *
+ * Peers trust the host's manifest but still resolve the audio themselves --
+ * nothing but addresses, words and notes crossed the wire. Built field by
+ * field rather than spread: the manifest also carries the part map, which
+ * is the room's and not the song's, and `notesFrom` is local knowledge a
+ * peer must never be able to assert on this device's behalf.
+ */
+export function songFromWire(incoming: WireSong): JamSong {
+  return {
+    id: incoming.id,
+    title: incoming.title,
+    ...(incoming.artist === undefined ? {} : { artist: incoming.artist }),
+    stems: incoming.stems,
+    lines: incoming.lines,
+    notes: incoming.notes ?? [],
+    durationSec: incoming.durationSec,
+    ...(incoming.pitchGuide === 'unavailable'
+      ? { pitchGuide: 'unavailable' as const }
+      : {}),
+    origin: 'url',
+  }
+}
+
+/**
+ * The song already loaded, after the host re-sent its manifest.
+ *
+ * A re-send under the same id is news about the song, never a new song: the
+ * host found the words, worked out the notes, or learned there is no pitch
+ * guide to be had. The flag follows the manifest both ways, so a Try again
+ * that worked takes "no pitch guide" back off every guest's screen.
+ */
+export function sameSongUpdated(
+  prev: JamSong,
+  incoming: WireSong | undefined,
+): JamSong {
+  const { pitchGuide: _stale, ...rest } = prev
+  return {
+    ...rest,
+    lines: incoming?.lines ?? prev.lines,
+    notes: incoming?.notes ?? prev.notes,
+    ...(incoming?.pitchGuide === 'unavailable'
+      ? { pitchGuide: 'unavailable' as const }
+      : {}),
+  }
 }
 
 /**

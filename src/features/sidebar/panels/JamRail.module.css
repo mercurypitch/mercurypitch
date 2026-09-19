@@ -59,3 +59,17 @@
 .muted {
   color: var(--text-muted);
 }
+
+/* What a guest sees where the host has the song list. */
+.guestNote {
+  margin: 0;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.guestNote strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}

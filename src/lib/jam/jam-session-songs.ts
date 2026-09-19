@@ -13,10 +13,13 @@
 import { loadLyricsFromDb } from '@/db/services/lyrics-db-service'
 import { loadPitchAnalysisFromDb } from '@/db/services/session-pitch-analysis-service'
 import { getStemBlobUrl } from '@/db/services/uvr-service'
+import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
+import { demoLyricsText } from '@/features/karaoke-night/demo-song'
+import { isExampleSession } from '@/features/karaoke-night/examples-library'
 import type { EditableNote } from '@/features/stem-mixer/pitch-edit-model'
-import { applyEditLayer, emptyEditLayer, } from '@/features/stem-mixer/pitch-edit-model'
-import type { JamSong } from '@/lib/jam/jam-song'
-import { lrcToSongLines, sessionToJamSong } from '@/lib/jam/jam-song-sources'
+import { applyEditLayer, emptyEditLayer, isEditLayerEmpty, } from '@/features/stem-mixer/pitch-edit-model'
+import type { JamNotesSource, JamSong } from '@/lib/jam/jam-song'
+import { demoSongToJamSong, exampleSongId, lrcToSongLines, sessionToJamSong, } from '@/lib/jam/jam-song-sources'
 import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
 import { parseLrcFile } from '@/lib/lyrics-service'
 import type { LyricsVersionKind } from '@/lib/lyrics-versions'
@@ -133,9 +136,34 @@ export async function sessionSongLines(
 export async function sessionSongNotes(
   sessionId: string,
 ): Promise<JamSongNote[]> {
+  return (await sessionSongGuide(sessionId)).notes
+}
+
+/** A session's target line, and where it came from. */
+export interface JamSongGuide {
+  notes: JamSongNote[]
+  /** Null when there is no line at all. */
+  from: JamNotesSource | null
+}
+
+const NO_GUIDE: JamSongGuide = { notes: [], from: null }
+
+/**
+ * The same notes as `sessionSongNotes`, with their provenance.
+ *
+ * The room needs it for two things. It tells the singer what they are
+ * aiming at -- the line they corrected by hand is not the same promise as
+ * one a machine produced a minute ago. And it lets the room notice a `raw`
+ * line, the merge from before the clean-up pass existed, and replace it
+ * instead of singing against every wobble for ever because "there are
+ * notes" looked like "there is nothing to do".
+ */
+export async function sessionSongGuide(
+  sessionId: string,
+): Promise<JamSongGuide> {
   try {
     const data = await loadPitchAnalysisFromDb(sessionId)
-    if (data === null) return []
+    if (data === null) return NO_GUIDE
     const segmented = data.segmentedNotes ?? []
     if (segmented.length > 0) {
       // EditableNote's beat fields carry SECONDS here, exactly as the
@@ -147,19 +175,58 @@ export async function sessionSongNotes(
         endBeat: n.endSec,
         midi: n.midi,
       }))
-      return applyEditLayer(base, data.editLayer ?? emptyEditLayer()).map(
-        (n) => ({ midi: n.midi, startSec: n.startBeat, endSec: n.endBeat }),
-      )
+      const layer = data.editLayer ?? emptyEditLayer()
+      const notes = applyEditLayer(base, layer).map((n) => ({
+        midi: n.midi,
+        startSec: n.startBeat,
+        endSec: n.endBeat,
+      }))
+      if (notes.length === 0) return NO_GUIDE
+      return { notes, from: isEditLayerEmpty(layer) ? 'saved' : 'edited' }
     }
-    return data.mergedNotes.map((n) => ({
+    const merged = data.mergedNotes.map((n) => ({
       midi: n.midi,
       startSec: n.startSec,
       endSec: n.endSec,
     }))
+    return merged.length === 0 ? NO_GUIDE : { notes: merged, from: 'raw' }
   } catch {
     // Same rule as lyrics: a nicety must not cost you the song.
-    return []
+    return NO_GUIDE
   }
+}
+
+/** A song with its line's provenance written on it, or null for no song. */
+function withGuide(song: JamSong | null, guide: JamSongGuide): JamSong | null {
+  if (song === null) return null
+  return guide.from === null ? song : { ...song, notesFrom: guide.from }
+}
+
+/** A stem address every device can fetch, or null. */
+function publicStemUrl(url: string | undefined): string | null {
+  return url !== undefined && /^https?:\/\//i.test(url) ? url : null
+}
+
+/**
+ * Where an example's stems are, or null for anything that is not one.
+ *
+ * An example's library row is metadata only: its `outputs` ARE the public
+ * addresses, and no audio is ever written to this browser's IndexedDB --
+ * opening one streams it. So the blob lookup below finds nothing for it,
+ * every time, and "open it in Karaoke and try again" could never help.
+ *
+ * Examples only. A separation's `outputs` can hold an address too, left
+ * over from the server that produced it, and that one expires; handing it
+ * to a room would load a song that plays silence.
+ */
+function exampleStemUrls(
+  session: UvrSession,
+): { instrumental: string; vocal?: string } | null {
+  if (!isExampleSession(session)) return null
+  const instrumental = publicStemUrl(session.outputs?.instrumental)
+  if (instrumental === null) return null
+  const vocal = publicStemUrl(session.outputs?.vocal)
+  return { instrumental, ...(vocal === null ? {} : { vocal }) }
 }
 
 /**
@@ -168,24 +235,65 @@ export async function sessionSongNotes(
  * Null when there is no instrumental: a session that separated badly, or
  * one whose blobs were evicted, has nothing to sing over, and an entry
  * that plays silence is worse than an entry that is not there.
+ *
+ * An example is the exception to "the stems live in this browser". It is
+ * sung straight from its public addresses, and marked `origin: 'url'`
+ * because every peer can fetch them -- nothing has to be transferred.
  */
 export async function sessionSong(
   session: UvrSession,
 ): Promise<JamSong | null> {
-  const instrumental = await getStemBlobUrl(session.sessionId, 'instrumental')
-  if (instrumental === null || instrumental === '') return null
-  const vocal = await getStemBlobUrl(session.sessionId, 'vocal')
-  const [lines, notes] = await Promise.all([
+  const stored = await getStemBlobUrl(session.sessionId, 'instrumental')
+  const remote =
+    stored === null || stored === '' ? exampleStemUrls(session) : null
+  if ((stored === null || stored === '') && remote === null) return null
+  const [lines, guide] = await Promise.all([
     sessionSongLines(session.sessionId),
-    sessionSongNotes(session.sessionId),
+    sessionSongGuide(session.sessionId),
   ])
-  return sessionToJamSong(
-    session,
-    { instrumental, ...(vocal === null ? {} : { vocal }) },
-    lines,
-    session.stemMeta?.instrumental?.duration ?? 0,
-    notes,
+  const durationSec = session.stemMeta?.instrumental?.duration ?? 0
+  if (remote !== null) {
+    return withGuide(
+      sessionToJamSong(session, remote, lines, durationSec, guide.notes, 'url'),
+      guide,
+    )
+  }
+  const vocal = await getStemBlobUrl(session.sessionId, 'vocal')
+  return withGuide(
+    sessionToJamSong(
+      session,
+      { instrumental: stored ?? '', ...(vocal === null ? {} : { vocal }) },
+      lines,
+      durationSec,
+      guide.notes,
+    ),
+    guide,
   )
+}
+
+/**
+ * One example song, hydrated for the room.
+ *
+ * Words straight from the manifest rather than the local lyrics db: the
+ * room wants the timings, not a copy of someone's edits, and every peer
+ * must end up with the same lines. demoLyricsText is the one reader that
+ * knows all three shapes the studio can publish -- pasted text, a .lrc,
+ * and a .lyricsfile.
+ *
+ * An example is a normal session as far as analysis is concerned, so if it
+ * has been opened in the mixer once there is a vocal line to aim at; if
+ * not, the room works one out (jam-pitch-provision).
+ */
+export async function exampleSong(
+  manifest: DemoSongManifest,
+): Promise<JamSong | null> {
+  const lyrics = await demoLyricsText(manifest).catch(() => null)
+  const lines =
+    lyrics !== null && lyrics.format === 'lrc'
+      ? lrcToSongLines(parseLrcFile(lyrics.text))
+      : []
+  const guide = await sessionSongGuide(exampleSongId(manifest.slug))
+  return withGuide(demoSongToJamSong(manifest, lines, guide.notes), guide)
 }
 
 /**
@@ -227,22 +335,23 @@ export function jammableSessionRows(
  * The rows the picker's "Your songs" shelf should show, given whatever the
  * Songs shelf above it is already listing.
  *
- * That shelf serves one demo straight from the manifest, and the same demo
- * also has a local session row — the Examples library seeds one for every
- * published demo, and opening one in Karaoke Night always did. Listed in
- * both places it reads as a duplicate rather than as two routes to the same
- * song, and a picker that shows a title twice is a picker nobody trusts.
+ * That shelf serves the examples straight from their manifests, and every
+ * example also has a local session row — the Examples library seeds one for
+ * each, and opening one in Karaoke Night always did. Listed in both places
+ * it reads as a duplicate rather than as two routes to the same song, and a
+ * picker that shows a title twice is a picker nobody trusts.
  *
- * Only the shelved id is dropped. Any other example still needs this shelf
- * to be reachable at all, so it stays — under a slightly wrong heading,
- * which beats being unjammable.
+ * Only what is shelved is dropped. An example whose manifest could not be
+ * fetched, or one the studio has since parked, still has its row — and
+ * sessionSong can still sing it — so it stays reachable here, under a
+ * slightly wrong heading, which beats being unjammable.
  */
 export function ownSongRows(
   sessions: readonly UvrSession[],
-  shelvedSessionId: string,
+  shelvedSessionIds: ReadonlySet<string>,
 ): JamSessionRow[] {
   return jammableSessionRows(sessions).filter(
-    (row) => row.session.sessionId !== shelvedSessionId,
+    (row) => !shelvedSessionIds.has(row.session.sessionId),
   )
 }
 

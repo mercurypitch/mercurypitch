@@ -23,9 +23,11 @@ vi.mock('@/db/services/session-pitch-analysis-service', () => ({
 }))
 
 const {
+  exampleSong,
   jammableSessions,
   ownSongRows,
   sessionSong,
+  sessionSongGuide,
   sessionSongLines,
   sessionSongNotes,
   sessionSongs,
@@ -56,43 +58,45 @@ describe('jammableSessions', () => {
 })
 
 describe('ownSongRows', () => {
-  // The Examples library seeds a session row for every published demo, so
-  // the demo the Songs shelf serves from the manifest is now always in the
-  // session list too. Listed under both, it looks like a duplicate.
+  // The Examples library seeds a session row for every published example,
+  // so whatever the Example songs shelf serves from a manifest is always in
+  // the session list too. Listed under both, it looks like a duplicate.
   const all = [
     session({ sessionId: 'karaoke-night-demo' }),
     session({ sessionId: 'karaoke-night-demo:josephine' }),
     session({ sessionId: 'my-own-song' }),
   ]
+  const ids = (shelved: string[]) =>
+    ownSongRows(all, new Set(shelved)).map((r) => r.session.sessionId)
 
-  it('drops the song the shelf above already shows', () => {
-    expect(
-      ownSongRows(all, 'karaoke-night-demo').map((r) => r.session.sessionId),
-    ).not.toContain('karaoke-night-demo')
+  it('drops every song the shelf above already shows', () => {
+    expect(ids(['karaoke-night-demo', 'karaoke-night-demo:josephine'])).toEqual(
+      ['my-own-song'],
+    )
   })
 
-  it('keeps every other example, which has no other shelf to appear on', () => {
-    // The Songs shelf serves one manifest entry. Filtering all demos here
-    // would make the rest of the corpus unjammable.
-    expect(
-      ownSongRows(all, 'karaoke-night-demo').map((r) => r.session.sessionId),
-    ).toEqual(['karaoke-night-demo:josephine', 'my-own-song'])
+  it('keeps an example the shelf above does not have', () => {
+    // A manifest that could not be fetched, or one the studio has parked:
+    // the row is still here and sessionSong can still sing it, so this shelf
+    // is the only way left to reach it.
+    expect(ids(['karaoke-night-demo'])).toEqual([
+      'karaoke-night-demo:josephine',
+      'my-own-song',
+    ])
   })
 
   it('leaves the visitor own sessions alone', () => {
-    expect(
-      ownSongRows(all, 'karaoke-night-demo').map((r) => r.session.sessionId),
-    ).toContain('my-own-song')
+    expect(ids(['karaoke-night-demo'])).toContain('my-own-song')
   })
 
   it('still refuses a session that is not finished', () => {
     const pending = [session({ sessionId: 'writing', status: 'finalizing' })]
-    expect(ownSongRows(pending, 'karaoke-night-demo')).toEqual([])
+    expect(ownSongRows(pending, new Set(['karaoke-night-demo']))).toEqual([])
   })
 
   it('drops nothing when the shelf above is empty', () => {
-    // loadDemoSong can fail; the session rows must not vanish with it.
-    expect(ownSongRows(all, '')).toHaveLength(3)
+    // The example list can fail to load; the rows must not vanish with it.
+    expect(ids([])).toHaveLength(3)
   })
 })
 
@@ -135,6 +139,143 @@ describe('sessionSong', () => {
     const s = await sessionSong(session())
     expect(s).not.toBeNull()
     expect(s?.stems.vocal).toBeUndefined()
+  })
+
+  describe('an example song', () => {
+    // An example's library row is metadata only: nothing is ever written to
+    // this browser for it, so the blob lookup finds nothing, every time.
+    // That used to end in "missing its backing track on this device", and
+    // opening the song in Karaoke first could never have helped.
+    const example = (over: object = {}) =>
+      session({
+        sessionId: 'karaoke-night-demo:josephine',
+        provider: 'examples',
+        originalFile: { name: 'Josh Woodward — Josephine' },
+        outputs: {
+          vocal: 'https://stems.example/josephine/vocal.m4a',
+          instrumental: 'https://stems.example/josephine/instrumental.m4a',
+        },
+        stemMeta: { instrumental: { duration: 258 } },
+        ...over,
+      })
+
+    beforeEach(() => {
+      getStemBlobUrl.mockResolvedValue(null)
+    })
+
+    it('is sung straight from its public stems', async () => {
+      const s = await sessionSong(example())
+      expect(s?.stems).toEqual({
+        instrumental: 'https://stems.example/josephine/instrumental.m4a',
+        vocal: 'https://stems.example/josephine/vocal.m4a',
+      })
+      expect(s?.durationSec).toBe(258)
+    })
+
+    it('is a song every peer can fetch, not one only the host holds', async () => {
+      // 'local' would make the room wait on a transfer that is not needed.
+      expect((await sessionSong(example()))?.origin).toBe('url')
+    })
+
+    it('keeps the session id, so its pitch guide is filed where the mixer reads', async () => {
+      expect((await sessionSong(example()))?.id).toBe(
+        'session:karaoke-night-demo:josephine',
+      )
+    })
+
+    it('is recognised by its id alone, for a row from before the provider stamp', async () => {
+      expect(await sessionSong(example({ provider: undefined }))).not.toBeNull()
+    })
+
+    it('is still a song with no guide vocal', async () => {
+      const s = await sessionSong(
+        example({
+          outputs: {
+            instrumental: 'https://stems.example/josephine/instrumental.m4a',
+          },
+        }),
+      )
+      expect(s?.stems.vocal).toBeUndefined()
+      expect(s?.origin).toBe('url')
+    })
+
+    it('is refused when its row carries no address at all', async () => {
+      expect(await sessionSong(example({ outputs: {} }))).toBeNull()
+    })
+
+    it('prefers a copy that IS on this device', async () => {
+      getStemBlobUrl.mockImplementation((_id: string, stem: string) =>
+        Promise.resolve(`blob:${stem}`),
+      )
+      const s = await sessionSong(example())
+      expect(s?.stems.instrumental).toBe('blob:instrumental')
+      expect(s?.origin).toBe('local')
+    })
+  })
+
+  it('never sings a separation from an address its server left behind', async () => {
+    // A separation's outputs can hold a URL too, and that one expires. A
+    // room loaded from it would play silence and say nothing.
+    getStemBlobUrl.mockResolvedValue(null)
+    const stale = session({
+      outputs: {
+        vocal: 'https://worker.example/out/vocal.wav',
+        instrumental: 'https://worker.example/out/instrumental.wav',
+      },
+    })
+    expect(await sessionSong(stale)).toBeNull()
+  })
+})
+
+describe('exampleSong', () => {
+  beforeEach(() => {
+    loadPitchAnalysisFromDb.mockReset()
+  })
+
+  const manifest = {
+    slug: 'josephine',
+    title: 'Josephine',
+    artist: 'Josh Woodward',
+    attribution: { text: '', url: '', license: '', licenseUrl: '' },
+    stems: {
+      vocal: 'https://stems.example/josephine/vocal.m4a',
+      instrumental: 'https://stems.example/josephine/instrumental.m4a',
+    },
+    lyricsText: '[00:01.00]First line\n[00:04.00]Second line',
+    durationSec: 258,
+  }
+
+  it('carries its own id, not the original example id', async () => {
+    // One shared id filed every example's pitch guide under the first one.
+    expect((await exampleSong(manifest))?.id).toBe(
+      'karaoke-night-demo:josephine',
+    )
+  })
+
+  it('reads the words from the manifest, so every peer gets the same lines', async () => {
+    const s = await exampleSong(manifest)
+    expect(s?.lines.map((l) => l.text)).toEqual(['First line', 'Second line'])
+    expect(loadLyricsFromDb).not.toHaveBeenCalledWith(
+      'karaoke-night-demo:josephine',
+    )
+  })
+
+  it('aims at the pitch line saved under its own session', async () => {
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes: [],
+      segmentedNotes: [{ midi: 60, startSec: 1, endSec: 2 }],
+    })
+    const s = await exampleSong(manifest)
+    expect(loadPitchAnalysisFromDb).toHaveBeenCalledWith(
+      'karaoke-night-demo:josephine',
+    )
+    expect(s?.notes).toEqual([{ midi: 60, startSec: 1, endSec: 2 }])
+  })
+
+  it('is still a song when plain text is all the studio published', async () => {
+    const s = await exampleSong({ ...manifest, lyricsText: 'no timings here' })
+    expect(s?.lines).toEqual([])
+    expect(s?.origin).toBe('url')
   })
 })
 
@@ -279,5 +420,75 @@ describe('sessionSongNotes', () => {
       throw new Error('db locked')
     })
     expect(await sessionSongNotes('s1')).toEqual([])
+  })
+})
+
+describe('sessionSongGuide', () => {
+  // The same notes as sessionSongNotes, with where they came from. The room
+  // says it to the singer, and uses it to spot a line worth replacing.
+  beforeEach(() => {
+    loadPitchAnalysisFromDb.mockReset()
+    getStemBlobUrl.mockReset()
+    loadLyricsFromDb.mockReset()
+    loadLyricsFromDb.mockResolvedValue(null)
+  })
+
+  const SEGMENTED = [{ midi: 60, startSec: 1, endSec: 2 }]
+
+  it('calls an untouched analysis a saved line', async () => {
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes: [],
+      segmentedNotes: SEGMENTED,
+    })
+    expect((await sessionSongGuide('s1')).from).toBe('saved')
+  })
+
+  it('knows a line its owner corrected by hand', async () => {
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes: [],
+      segmentedNotes: SEGMENTED,
+      editLayer: {
+        manual: [{ id: 'm-1', startBeat: 3, endBeat: 4, midi: 64 }],
+        deleted: [],
+        seq: 1,
+      },
+    })
+    const guide = await sessionSongGuide('s1')
+    expect(guide.from).toBe('edited')
+    expect(guide.notes.map((n) => n.midi)).toEqual([60, 64])
+  })
+
+  it('calls a merge nobody cleaned up what it is', async () => {
+    // From before the clean-up pass existed. The room replaces these.
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes: [{ midi: 61, startSec: 0, endSec: 1 }],
+    })
+    const guide = await sessionSongGuide('s1')
+    expect(guide.from).toBe('raw')
+    expect(guide.notes).toHaveLength(1)
+  })
+
+  it('has no provenance for no line', async () => {
+    loadPitchAnalysisFromDb.mockResolvedValue(null)
+    expect(await sessionSongGuide('s1')).toEqual({ notes: [], from: null })
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes: [],
+      segmentedNotes: [],
+    })
+    expect((await sessionSongGuide('s1')).from).toBeNull()
+  })
+
+  it('writes the provenance on the song the room is handed', async () => {
+    getStemBlobUrl.mockResolvedValue('blob:x')
+    loadPitchAnalysisFromDb.mockResolvedValue({
+      mergedNotes: [{ midi: 61, startSec: 0, endSec: 1 }],
+    })
+    expect((await sessionSong(session()))?.notesFrom).toBe('raw')
+  })
+
+  it('writes nothing on a song that has no line', async () => {
+    getStemBlobUrl.mockResolvedValue('blob:x')
+    loadPitchAnalysisFromDb.mockResolvedValue(null)
+    expect(await sessionSong(session())).not.toHaveProperty('notesFrom')
   })
 })

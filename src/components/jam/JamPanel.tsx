@@ -2,35 +2,24 @@
 // Main jam session UI — tabless layout with collapsible sidebar.
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { MicInsightHint } from '@/components/MicInsightHint'
 import { Sheet } from '@/components/mobile/Sheet'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
-import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
-import { getActiveWeekly } from '@/features/challenges/weekly-service'
-import { DEMO_SESSION_ID, demoLyricsText, loadDemoSong, } from '@/features/karaoke-night/demo-song'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
-import { activePathWeek } from '@/features/path/path-progress'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
-import type { JamCatalogEntry } from '@/lib/jam/jam-catalog'
-import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
 import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
-import { ownSongRows, sessionSong, sessionSongNotes, } from '@/lib/jam/jam-session-songs'
-import type { JamSong } from '@/lib/jam/jam-song'
-import { demoSongToJamSong, lrcToSongLines } from '@/lib/jam/jam-song-sources'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
-import type { LyricsLineTiming } from '@/lib/jam/types'
-import { parseLrcFile } from '@/lib/lyrics-service'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { isMobile, isNarrow } from '@/lib/use-viewport'
-import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamShowPitch, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, selectJamSong, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, setJamShowPitch, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { clearJamPickerError, jamPickerAcceptedPicks, } from '@/stores/jam-picker-store'
+import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamShowPitch, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, setJamShowPitch, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { setSidebarCollapsed as setAppSidebarCollapsed, setSidebarOpen as setAppSidebarOpen, sidebarCollapsed as appSidebarCollapsed, sidebarOpen as appSidebarOpen, } from '@/stores/ui-store'
-import { getAllUvrSessionsReactive } from '@/stores/uvr-store'
 import jamStyles from './Jam.module.css'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
 import { JamCameraWidget } from './JamCameraWidget'
@@ -40,6 +29,7 @@ import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamInviteModal } from './JamInviteModal'
 import panelStyles from './JamPanel.module.css'
+import { JamPickerList } from './JamPickerList'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
 import { JamSongShare } from './JamSongShare'
@@ -54,8 +44,6 @@ export const JamPanel: Component = () => {
   const [showInvite, setShowInvite] = createSignal(false)
   const [joining, setJoining] = createSignal(false)
   const [showExercisePicker, setShowExercisePicker] = createSignal(false)
-  const [pickerError, setPickerError] = createSignal('')
-  const [pickingEntryId, setPickingEntryId] = createSignal<string | null>(null)
 
   /**
    * Close the picker when the click lands anywhere else.
@@ -236,119 +224,6 @@ export const JamPanel: Component = () => {
     return Object.values(lib.melodies)
   })
 
-  // This week's challenge, fetched once the room is live. Null covers both
-  // "no API configured" and "no challenge running" -- the shelf just does
-  // not render, which is why the fetch never needs an error branch.
-  const [weekly, setWeekly] = createSignal<WeeklyChallenge | null>(null)
-
-  /**
-   * The one song a room can sing today: its stems are already public, so
-   * every peer resolves the same URLs and nothing has to be transferred.
-   * Null until it loads, and null forever if the manifest is missing --
-   * the shelf then renders empty rather than offering a dead row.
-   */
-  const [demoSong, setDemoSong] = createSignal<JamSong | null>(null)
-  const [demoSongState, setDemoSongState] = createSignal<
-    'loading' | 'ready' | 'unavailable'
-  >('loading')
-
-  /**
-   * Your own separated sessions. Resolved when the room goes live and
-   * again whenever the session list changes, because a separation that
-   * finishes while you are sitting in a room should appear without
-   * making you leave and come back.
-   *
-   * The demo the Songs shelf already lists is dropped — see `ownSongRows`.
-   */
-  const mySongRows = createMemo(() =>
-    jamState() === 'active'
-      ? ownSongRows(getAllUvrSessionsReactive(), DEMO_SESSION_ID)
-      : [],
-  )
-
-  createEffect(() => {
-    if (jamState() !== 'active') {
-      setDemoSong(null)
-      setDemoSongState('loading')
-      return
-    }
-    setDemoSong(null)
-    setDemoSongState('loading')
-    void (async () => {
-      try {
-        const manifest = await loadDemoSong()
-        if (manifest === null) {
-          setDemoSongState('unavailable')
-          return
-        }
-        let lines: LyricsLineTiming[] = []
-        // Straight from the manifest rather than the local lyrics db: the
-        // room wants the timings, not a copy of someone's edits, and every
-        // peer must end up with the same lines. demoLyricsText is the one
-        // reader that knows all three shapes the studio can publish --
-        // pasted text, a .lrc, and a .lyricsfile, which the room used to
-        // skip entirely because it only looked at the extension.
-        const lyrics = await demoLyricsText(manifest).catch(() => null)
-        if (lyrics !== null && lyrics.format === 'lrc') {
-          lines = lrcToSongLines(parseLrcFile(lyrics.text))
-        }
-        // The demo is a normal session as far as analysis is concerned, so
-        // if it has been opened in the mixer once there is a vocal line to
-        // aim at; if not, the room still works on lyrics alone.
-        const notes = await sessionSongNotes(DEMO_SESSION_ID)
-        const song = demoSongToJamSong(manifest, lines, notes)
-        if (song === null) {
-          setDemoSongState('unavailable')
-          return
-        }
-        setDemoSong(song)
-        setDemoSongState('ready')
-      } catch {
-        // The picker still has drills and saved melodies. Keep those usable
-        // and say only that the included song is unavailable.
-        setDemoSongState('unavailable')
-      }
-    })()
-  })
-
-  createEffect(() => {
-    if (jamState() !== 'active') return
-    void getActiveWeekly()
-      .then(setWeekly)
-      .catch(() => setWeekly(null))
-  })
-
-  /**
-   * What the room can sing, grouped by where it came from. Exercises, the
-   * weekly challenge and the Ascent week all resolve to the same thing a
-   * saved melody does -- a target contour on a beat grid -- so the picker
-   * treats them identically and selectJamExercise broadcasts the result.
-   */
-  const pickerShelves = createMemo(() => {
-    const octave = VOCAL_RANGES[vocalRangePreset()].defaultOctave
-    const week = activePathWeek()
-    const weeklyEntry = jamWeeklyEntry(weekly())
-    return [
-      { label: 'Songs', entries: jamSongEntries([demoSong()]) },
-      {
-        label: 'Your songs',
-        entries: jamSessionRowEntries(mySongRows(), (row) =>
-          sessionSong(row.session),
-        ),
-      },
-      {
-        label: "This week's challenge",
-        entries: weeklyEntry === null ? [] : [weeklyEntry],
-      },
-      {
-        label: week === null ? 'Your Ascent' : `Ascent · week ${week.order}`,
-        entries: jamAscentEntries(week, octave),
-      },
-      { label: 'Exercises', entries: jamExerciseEntries(octave) },
-      { label: 'Your melodies', entries: jamMelodyEntries(melodyOptions()) },
-    ]
-  })
-
   const FUNNY_NAMES = [
     'Warty',
     'Hoary',
@@ -451,106 +326,20 @@ export const JamPanel: Component = () => {
     joinJamRoom(roomId, name).finally(() => setJoining(false))
   }
 
+  // Any accepted pick closes the popup -- including one made in the sidebar
+  // while the popup happened to be open. See jamPickerAcceptedPicks.
+  createEffect(
+    on(jamPickerAcceptedPicks, () => setShowExercisePicker(false), {
+      defer: true,
+    }),
+  )
+
   const togglePicker = (): void => {
     const opening = !showExercisePicker()
-    if (opening) setPickerError('')
+    // A list opened afresh should not greet the host with an old complaint.
+    if (opening) clearJamPickerError()
     setShowExercisePicker(opening)
   }
-
-  /**
-   * A separated song is hydrated only after it is chosen. Keep the drawer
-   * open while that IndexedDB work runs, and close only after the room truly
-   * accepted the song. The old handler closed first, so a missing stem or a
-   * read failure looked exactly like a picker that had ignored the tap.
-   */
-  const choosePickerEntry = (entry: JamCatalogEntry): void => {
-    setPickerError('')
-    if (entry.kind !== 'song') {
-      selectJamExercise(entry.build())
-      setShowExercisePicker(false)
-      return
-    }
-
-    const entryId = entry.id
-    const entryName = entry.name
-    setPickingEntryId(entryId)
-    void (async () => {
-      try {
-        const song = await entry.buildSong()
-        if (song === null) {
-          setPickerError(
-            `${entryName} is missing its backing track on this device. Open it in Karaoke and try again.`,
-          )
-          return
-        }
-        if (!selectJamSong(song)) {
-          const reason = jamError()?.trim() ?? ''
-          setPickerError(
-            reason !== ''
-              ? reason
-              : `${entryName} cannot be loaded into this room.`,
-          )
-          return
-        }
-        setShowExercisePicker(false)
-      } catch {
-        setPickerError(
-          `${entryName} could not be read from this device. Try opening it in Karaoke first.`,
-        )
-      } finally {
-        setPickingEntryId(null)
-      }
-    })()
-  }
-
-  /** The picker's shelves, rendered into the desktop overlay or the
-   *  mobile sheet — one list, two containers. */
-  const pickerBody = () => (
-    <>
-      <Show when={pickerError() !== ''}>
-        <div class={panelStyles.pickError} role="alert">
-          {pickerError()}
-        </div>
-      </Show>
-      <Show when={demoSongState() !== 'ready'}>
-        <div class={panelStyles.pickShelf}>
-          <div class={panelStyles.pickShelfLabel}>Songs</div>
-          <div class={panelStyles.pickStatus} role="status">
-            {demoSongState() === 'loading'
-              ? 'Loading the included karaoke song…'
-              : 'The included karaoke song is unavailable. Drills and melodies are still ready.'}
-          </div>
-        </div>
-      </Show>
-      <For each={pickerShelves()}>
-        {(shelf) => (
-          <Show when={shelf.entries.length > 0}>
-            <div class={panelStyles.pickShelf}>
-              <div class={panelStyles.pickShelfLabel}>{shelf.label}</div>
-              <For each={shelf.entries}>
-                {(entry) => (
-                  <button
-                    class={panelStyles.pickItem}
-                    disabled={pickingEntryId() !== null}
-                    aria-busy={pickingEntryId() === entry.id}
-                    onClick={() => choosePickerEntry(entry)}
-                  >
-                    <span class={panelStyles.pickName}>
-                      {entry.name}
-                      <Show when={pickingEntryId() === entry.id}>
-                        <span class={panelStyles.pickSpinner} />
-                      </Show>
-                    </span>
-                    <span class={panelStyles.pickMeta}>{entry.detail}</span>
-                  </button>
-                )}
-              </For>
-            </div>
-          </Show>
-        )}
-      </For>
-    </>
-  )
 
   return (
     <div class={jamStyles.panel}>
@@ -985,8 +774,8 @@ export const JamPanel: Component = () => {
                     </svg>
                   </button>
 
-                  {/* Peers now live in the APP sidebar (JamRoomPanel);
-                      this shows or hides it. A second press must undo the
+                  {/* Peers and the song list live in the APP sidebar
+                      (JamRoomPanel); this shows or hides it. A second press must undo the
                       first — a button that can only open reads as ignored
                       the moment it is pressed while already open. */}
                   <button
@@ -1007,8 +796,8 @@ export const JamPanel: Component = () => {
                     aria-pressed={rosterShowing()}
                     title={
                       rosterShowing()
-                        ? 'Hide the room roster'
-                        : 'Show the room roster in the sidebar'
+                        ? 'Hide the roster and the song list'
+                        : 'Show the roster and the song list'
                     }
                   >
                     <svg
@@ -1339,7 +1128,7 @@ export const JamPanel: Component = () => {
                   song list, so it is a gesture already learned. */}
               <Show when={showExercisePicker() && !isNarrow()}>
                 <div class={panelStyles.exercisePicker} ref={pickerRef}>
-                  {pickerBody()}
+                  <JamPickerList variant="popup" />
                 </div>
               </Show>
               <Sheet
@@ -1348,7 +1137,7 @@ export const JamPanel: Component = () => {
                 ariaLabel="Choose a song or a drill"
                 snap="tall"
               >
-                <div class={panelStyles.pickSheet}>{pickerBody()}</div>
+                <JamPickerList variant="sheet" />
               </Sheet>
             </div>
 
