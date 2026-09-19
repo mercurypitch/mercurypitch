@@ -151,6 +151,20 @@ describe('the split handle as a control', () => {
     expect(onReset).toHaveBeenCalledTimes(3)
   })
 
+  it('leaves Space alone once the transport has spent it', () => {
+    // In a host's room Space is play/pause, taken in the capture phase
+    // before the handle hears it. One key must not also reset the seam.
+    const { handle, onReset } = renderHandle({ share: 70 })
+    const spent = new KeyboardEvent('keydown', {
+      key: ' ',
+      bubbles: true,
+      cancelable: true,
+    })
+    spent.preventDefault()
+    handle.dispatchEvent(spent)
+    expect(onReset).not.toHaveBeenCalled()
+  })
+
   it('ignores a key it has no business claiming', () => {
     // Tab has to keep moving focus out of the separator.
     const { handle, onShare, onReset } = renderHandle()

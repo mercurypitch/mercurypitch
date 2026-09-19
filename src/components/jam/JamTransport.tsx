@@ -16,7 +16,8 @@
 // Host-only, like everything that drives the room.
 
 import type { Component } from 'solid-js'
-import { Show } from 'solid-js'
+import { onCleanup, onMount, Show } from 'solid-js'
+import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { clearJamExercise, jamExerciseMelody, jamExercisePaused, jamExercisePlaying, jamIsHost, jamIsSongRoom, jamPlaybackPause, jamPlaybackPlay, jamPlaybackResume, jamPlaybackStop, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongStop, } from '@/stores/jam-store'
 import styles from './JamTransport.module.css'
 
@@ -57,6 +58,38 @@ export const JamTransport: Component<JamTransportProps> = (props) => {
     if (jamIsSongRoom()) jamSongStop()
     else jamPlaybackStop()
   }
+
+  /**
+   * Space is play/pause for whatever the room is running.
+   *
+   * It lived in the song stage, so it worked for a song and did nothing
+   * for a drill or a melody -- the same key, in the same room, depending
+   * on which engine happened to be loaded. It belongs here for the reason
+   * the buttons do: this bar is the one place that knows which engine that
+   * is. It is also the app's shared rule now (lib/space-playback), so a
+   * focused chip or button no longer swallows the key the way the stage's
+   * own listener let it.
+   *
+   * Host only, like the buttons: it is the host's transport, and for a
+   * guest the key is left exactly as it was. A dialog or a menu with focus
+   * inside it keeps Space for its own controls -- the phone's song sheet is
+   * one, and pressing Space on a row there should pick the row.
+   */
+  onMount(() => {
+    const focusInOverlay = (): boolean =>
+      document.activeElement?.closest(
+        '[role="dialog"], [role="menu"], [role="listbox"]',
+      ) != null
+    onCleanup(
+      installSpacePlaybackToggle({
+        toggle: () => {
+          if (isRunning()) pause()
+          else play()
+        },
+        ownsSpace: () => jamIsHost() && hasSomething() && !focusInOverlay(),
+      }),
+    )
+  })
 
   return (
     <Show when={jamIsHost()}>
@@ -105,6 +138,7 @@ export const JamTransport: Component<JamTransportProps> = (props) => {
                 aria-label={
                   isPaused() ? 'Resume' : 'Start playback for everyone here'
                 }
+                aria-keyshortcuts="Space"
               >
                 <svg
                   width="15"
@@ -122,6 +156,7 @@ export const JamTransport: Component<JamTransportProps> = (props) => {
               onClick={pause}
               title="Pause"
               aria-label="Pause"
+              aria-keyshortcuts="Space"
             >
               <svg
                 width="15"
