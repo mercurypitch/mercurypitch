@@ -5,6 +5,28 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.11] - 2026-09-20
+
+A tablet's jam room gets its song list back, and the original singer's
+volume moves out of the playback row.
+
+### Changed
+
+- **The original singer's volume sits over the words in a jam room.** It was
+  the first button of the playback row. Now it floats in the bottom corner
+  the words leave free, clear of the who-sings buttons.
+- **A ready pitch guide no longer takes a row of the lanes.** You still get
+  the "Pitch guide ready" notice. The row appears only while a guide is being
+  worked out, or when there will not be one.
+
+### Fixed
+
+- **Your songs were missing from the jam room sidebar on a tablet.** They
+  loaded in the song picker and nowhere else. The sidebar list now fills on
+  any screen wide enough to show it.
+- **The song list no longer touches the listening pill** above it in the jam
+  room sidebar.
+
 ## [0.9.10] - 2026-09-19
 
 Timing, the jam room, and lyrics that arrive when the song does. And a way
