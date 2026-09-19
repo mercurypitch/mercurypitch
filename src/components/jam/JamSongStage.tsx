@@ -10,8 +10,8 @@
 // is seeked TO the broadcast position rather than driving it, which is
 // what keeps a room together across the join.
 
-import type { Component } from 'solid-js'
-import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { activateAudioPlayback, installAudioUnlock } from '@/lib/audio-unlock'
 import { createJamGuidePlayer } from '@/lib/jam/jam-guide-player'
 import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
@@ -21,7 +21,8 @@ import { createJamSongTransport } from '@/lib/jam/jam-song-transport'
 import { jamSplitBounds, jamSplitShare, resetJamSplitShare, setJamSplitShare, } from '@/lib/jam/jam-view-prefs'
 import { followMediaClock } from '@/lib/jam/media-clock'
 import { initAudioEngine } from '@/stores/app-store'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamGuideVolume, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { JamGuideVocal } from './JamGuideVocal'
 import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -92,6 +93,19 @@ export const JamSongStage: Component = () => {
   /** The share of the stage the words get, for whichever layout is on. */
   const lyricShare = (): number => jamSplitShare(stacked())
   const splitBounds = () => jamSplitBounds(stacked())
+
+  // Only a song with a vocal stem has a guide to turn up or down. A memo and
+  // one builder, not an expression in the JSX: the song object is replaced
+  // whenever its words, notes or parts change, and an inline builder would be
+  // a new function each time -- a new control, in the middle of a drag.
+  const hasGuideVocal = createMemo(() => jamSong()?.stems.vocal !== undefined)
+  const guideVocal = (): JSX.Element => (
+    <JamGuideVocal
+      overWords
+      volume={jamGuideVolume}
+      onVolume={setJamGuideVolume}
+    />
+  )
 
   /**
    * Guide-vocal level, per person and not room state -- see JamGuideVocal.
@@ -611,11 +625,11 @@ export const JamSongStage: Component = () => {
                 (JamSongShare), beside the transfer chip -- under the
                 timeline it read as part of the player and went unnoticed. */}
 
-            {/* The guide-vocal control is not here any more. After the
-                timeline it read as part of the scrubber, and its slider
-                expanded straight over the one thing in this row that must
-                not be covered. It lives with the transport controls now
-                (JamPanel) -- with play and stop, which is what it is. */}
+            {/* The guide-vocal control is not here. After the timeline it
+                read as part of the scrubber, and its slider expanded
+                straight over the one thing in this row that must not be
+                covered. It floats in a corner of the words now (below),
+                and on a phone it is docked above the tab bar (JamPanel). */}
 
             {/* Play, pause and stop live in the room's one transport bar
                 (JamTransport) rather than here. Two sets of buttons for
@@ -642,6 +656,10 @@ export const JamSongStage: Component = () => {
               lines={song().lines}
               positionSec={jamSongPositionSec}
               showNotes={false}
+              // Everybody gets it, guests included: the transport is the
+              // host's, but how loud the original singer is in your own
+              // ears is yours.
+              corner={hasGuideVocal() ? guideVocal : undefined}
             />
             {/* The PITCH toggle's consumer in a song room. Before this
                 gate the button was rendered here but its only consumer

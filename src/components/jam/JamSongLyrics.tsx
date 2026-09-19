@@ -7,8 +7,8 @@
 // This is the read-only half of the same idea, and it stays small enough
 // that the singer's eye can find the current line without hunting.
 
-import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { Component, JSX } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { JamZoomSubject } from '@/components/jam/JamLaneZoomControl'
 import { JamLaneZoomControl } from '@/components/jam/JamLaneZoomControl'
 import { LyricsAlignButtons } from '@/components/LyricsAlignButtons'
@@ -37,6 +37,18 @@ interface JamSongLyricsProps {
   scores?: () => Record<number, JamLineScore>
   /** Jump the song to a line. Absent for anyone who cannot move the room. */
   onSeek?: (toSec: number) => void
+  /**
+   * A control that floats in a bottom corner of the words -- the guide
+   * vocal, today. A function, so the panel decides when it is built; the
+   * panel owns WHERE, because which corner is free depends on how the
+   * viewer has the words lined up, and only this component knows that.
+   *
+   * Built ONCE each time it appears. A new function for the same control
+   * is not a reason to build it again: a consumer that writes the builder
+   * inline hands over a fresh one every time anything it reads changes, and
+   * a level control rebuilt mid-drag drops the drag.
+   */
+  corner?: () => JSX.Element
 }
 
 /**
@@ -397,8 +409,36 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     return layout
   })
 
+  /**
+   * The corner the words leave free.
+   *
+   * Right-aligned words run into the right edge, so the control goes left.
+   * Anything else leaves the right free -- except for the column of
+   * who-sings buttons that lives at the trailing edge of every row, which
+   * the stylesheet steps inside of rather than sitting on.
+   */
+  const cornerSide = (): 'left' | 'right' =>
+    jamLyricsAlign() === 'right' ? 'left' : 'right'
+
   return (
-    <div class={styles.panel}>
+    <div
+      class={styles.panel}
+      data-corner={props.corner !== undefined ? '' : undefined}
+      // No words, no scroller to pad. What stands in for them (the finder)
+      // scrolls itself from another stylesheet, so the panel is told instead.
+      data-wordless={props.lines.length === 0 ? '' : undefined}
+    >
+      {/* `when` is a boolean, so only there-or-not re-renders this; and
+          the build is untracked, so the builder's identity never does. */}
+      <Show when={props.corner !== undefined}>
+        <div
+          class={styles.corner}
+          data-side={cornerSide()}
+          data-testid="jam-lyrics-corner"
+        >
+          {untrack(() => props.corner?.())}
+        </div>
+      </Show>
       {/* One slim row that everybody gets. The assign bar below is
           host-only, so until now a guest's lyric column had no chrome at
           all and no way to say how they want to read it. */}

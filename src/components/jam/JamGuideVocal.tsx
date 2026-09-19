@@ -30,6 +30,14 @@ import styles from './JamGuideVocal.module.css'
 interface JamGuideVocalProps {
   volume: () => number
   onVolume: (v: number) => void
+  /**
+   * Floating over the lyric sheet rather than sitting in a row of
+   * controls. The room's glass lets whatever is behind it show, and behind
+   * this one is text: the level track opened with a lyric running through
+   * it. Over words the capsule is near-solid, the way the karaoke stage's
+   * sing pill is for the same reason.
+   */
+  overWords?: boolean
 }
 
 /**
@@ -46,7 +54,11 @@ export const JamGuideVocal: Component<JamGuideVocalProps> = (props) => {
 
   return (
     <PillControl
-      class={styles.pill}
+      class={
+        props.overWords === true
+          ? `${styles.pill} ${styles.overWords}`
+          : styles.pill
+      }
       level={props.volume()}
       off={muted()}
       // A tap is the whole interaction most of the time -- on or off. The

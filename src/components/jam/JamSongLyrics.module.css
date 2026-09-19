@@ -1,6 +1,8 @@
 /* JamSongLyrics — the read-only lyric column of a song room. */
 
 .panel {
+  /* Anchors the corner control. */
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -10,6 +12,47 @@
   background: var(--bg-primary, #0d1117);
   backdrop-filter: blur(calc(var(--jam-blur, 1px) * 3));
   overflow: hidden;
+}
+
+/* ── The corner control ─────────────────────────────────────────────
+   The guide vocal floats over the words, the way the sing pill does on the
+   karaoke stage: it is about what you hear while you read, and in the
+   transport row it led a line of buttons that are about the room.
+
+   The side is the component's call (it follows the alignment). What this
+   file knows is what each corner has in it. The right one has the column
+   of who-sings buttons at the trailing edge of every row, so the control
+   steps inside that column instead of sitting on it; the left has nothing.
+
+   Bottom-aligned because the pill grows UPWARD out of its capsule, and a
+   base that stays put keeps the button under the pointer while it does. */
+.corner {
+  position: absolute;
+  bottom: 10px;
+  /* Over the words, under a row whose who-sings menu is open (20). */
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+}
+
+.corner[data-side='left'] {
+  left: 12px;
+}
+
+.corner[data-side='right'] {
+  /* The scroller's 16px gutter, the 20px button, and room to miss it. */
+  right: 52px;
+}
+
+/* Two screens have no corner to give, and the control lives elsewhere on
+   both (JamPanel has the other two homes -- keep these queries in step):
+   a phone docks it above the tab bar, and a short screen, where the words
+   are a strip a line or two tall and a capsule that opens 104px upward has
+   nowhere to open into, puts it back in the playback row. */
+@media (max-width: 640px), (max-height: 600px) {
+  .corner {
+    display: none;
+  }
 }
 
 /* ── Panel header ───────────────────────────────────────────────────
@@ -181,6 +224,28 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* Room for the corner control, only where it is (see `.corner`, which
+   stands down on a phone and on a short screen). Written as the inverse of
+   that query rather than as a base rule with a reset under it: the padding
+   above changes with the width, and a reset would have to know by how much.
+
+   BELOW `.scroll` on purpose -- the stylesheet's contract tests read the
+   first `.scroll {` they find. */
+@media (min-width: 641px) and (min-height: 601px) {
+  /* The last line comes to rest above the control, not under it. */
+  .panel[data-corner] .scroll {
+    padding-bottom: 56px;
+  }
+
+  /* A song with no words has no scroller. The lyric finder stands in for it
+     and scrolls itself, from a stylesheet this one cannot name -- so the
+     panel keeps the corner clear, and the last search result stops short
+     of it. */
+  .panel[data-corner][data-wordless] {
+    padding-bottom: 56px;
+  }
 }
 
 .line {
