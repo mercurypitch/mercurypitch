@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { withLrcTimingMetadata } from '@/lib/lrc-timing-metadata'
 import type { LyricsVersion } from '@/lib/lyrics-versions'
 import { findVersion, nextActiveAfterDelete, removeVersion, sortVersions, synthesizeVersions, upsertVersion, } from '@/lib/lyrics-versions'
 
@@ -82,6 +83,53 @@ describe('synthesizeVersions (migration)', () => {
     expect(out.versions).toHaveLength(1)
     expect(out.versions[0].kind).toBe('imported')
     expect(out.activeVersionKind).toBe('imported')
+  })
+
+  it('bare text: word ends and splits come out of its own timing tag', () => {
+    // A demo song is seeded straight into storage as text, so it never
+    // passes through the upload that reads this tag. Synthesis is the one
+    // place every such record does pass through.
+    const ends: number[] = []
+    ends[2] = 4.25
+    const extension = {
+      wordEndTimings: { 1: ends },
+      wordSweepTimings: { 1: { 2: [{ time: 4.25, progress: 1 }] } },
+    }
+    const text = withLrcTimingMetadata(
+      '[00:01.00] One [00:01.50] two\n[00:03.00] Three [00:03.40] four [00:03.90] five',
+      extension,
+    )
+    const out = synthesizeVersions({ text }, 5)
+
+    expect(out.versions).toHaveLength(1)
+    expect(out.versions[0].kind).toBe('imported')
+    expect(out.versions[0].text).toBe(text)
+    expect(out.versions[0].wordEndTimings).toEqual(extension.wordEndTimings)
+    expect(out.versions[0].wordSweepTimings).toEqual(extension.wordSweepTimings)
+  })
+
+  it('bare text: an unreadable tag costs the ends, never the lyrics', () => {
+    const out = synthesizeVersions(
+      { text: '[x-mp-timing:not-base64]\n[00:01.00]Still here' },
+      5,
+    )
+    expect(out.versions).toHaveLength(1)
+    expect(out.versions[0].wordEndTimings).toBeUndefined()
+    expect(out.versions[0].wordSweepTimings).toBeUndefined()
+  })
+
+  it('a versioned record is trusted as stored, tag or no tag', () => {
+    // The singer may have cleared an end mark since; the tag in the text is
+    // older than their versions and must not resurrect it.
+    const text = withLrcTimingMetadata('[00:01.00] One', {
+      wordEndTimings: { 0: [1.8] },
+      wordSweepTimings: {},
+    })
+    const out = synthesizeVersions(
+      { text, versions: [{ kind: 'imported', text, createdAt: 1 }] },
+      5,
+    )
+    expect(out.versions[0].wordEndTimings).toBeUndefined()
   })
 
   it('legacy: text WITH timings → an Edited active version', () => {
