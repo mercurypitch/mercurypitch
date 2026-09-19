@@ -459,6 +459,7 @@ export const StemMixerFixedWorkspace: Component<
                     <LyricsAlignSelect
                       lyricsAlign={lp().lyricsAlign}
                       setLyricsAlign={props.setLyricsAlign}
+                      hitTarget="compact"
                     />
                     <Show when={lp().hasMultipleSections()}>
                       <div class="sm-lyrics-col-toggle">
