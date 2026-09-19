@@ -24,6 +24,19 @@
   flex-shrink: 0;
   padding: 4px 8px 4px 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  /* What the alignment buttons are made of. They are a shared component
+     and know nothing about a room's glass, so the row hands it to them:
+     the same floating surface the lane zoom wears, which follows the
+     transparency slider instead of sitting opaque over the backdrop. */
+  --lyrics-align-surface: var(--jam-float, rgba(13, 17, 23, 0.72));
+}
+
+/* A thumb-sized control is 46px tall with its ring, and the row's own
+   padding on top of that is height taken straight from the words. */
+@media (pointer: coarse) {
+  .header {
+    padding-block: 2px;
+  }
 }
 
 .headerLabel {

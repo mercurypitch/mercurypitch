@@ -9,7 +9,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
-import { LyricsAlignSelect } from '@/components/LyricsAlignSelect'
+import { LyricsAlignButtons } from '@/components/LyricsAlignButtons'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { formatClock } from '@/lib/format-time'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
@@ -217,10 +217,13 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
           all and no way to say how they want to read it. */}
       <div class={styles.header}>
         <span class={styles.headerLabel}>Lyrics</span>
-        <LyricsAlignSelect
+        {/* Three buttons, not the mixer's one-chip select. That chip is
+            one button wide because its header is crowded, and pays for
+            it with a menu the operating system draws; this row has the
+            room to show all three choices and which one is on. */}
+        <LyricsAlignButtons
           lyricsAlign={jamLyricsAlign}
           setLyricsAlign={setJamLyricsAlign}
-          hitTarget="roomy"
         />
       </div>
       {/* Inside the panel, not above it. An outer wrapper made the panel a

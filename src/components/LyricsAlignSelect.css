@@ -1,10 +1,10 @@
 /* LyricsAlignSelect — the one-chip lyric alignment control.
  *
  * These rules lived inside the StemMixerStyles string, which is injected
- * only where the mixer is mounted. The chip is shared now (a jam room's
- * lyric column has one too), and a control that is unstyled outside one
- * host is a control that reads as broken everywhere else. Global class
- * names, unchanged, so every mixer layout keeps its existing appearance.
+ * only where the mixer is mounted. The chip is a shared component, and a
+ * control that is unstyled outside one host is a control that reads as
+ * broken everywhere else. Global class names, unchanged, so every mixer
+ * layout keeps its existing appearance.
  */
 
 .sm-lyrics-align-select {
@@ -54,8 +54,8 @@
 
 /* A thumb needs more than a 22x18 chip — but only where the host has the
    room. The mixer's header has six chips in one row and asks for
-   `compact`; a jam room's header carries this one control and asks for
-   `roomy`, which clears the 24px touch floor. */
+   `compact`; a host with a row to spare asks for `roomy`, which clears
+   the 24px touch floor. */
 @media (pointer: coarse) {
   .sm-lyrics-align-select[data-hit-target='roomy'] {
     width: 1.8rem;
