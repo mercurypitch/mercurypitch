@@ -5,24 +5,13 @@
 import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
 import { renderScale } from '@/lib/device-tier'
+import { easeToward, JAM_BAND_FALLBACK, jamPitchBand, labelStepForPixels, midiLabel, sampleMidi, } from '@/lib/jam/jam-pitch-view'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamPitchHistory } from '@/stores/jam-store'
 
-const Y_AXIS_NOTES = [
-  { label: 'C2', freq: 65.41 },
-  { label: 'C3', freq: 130.81 },
-  { label: 'C4', freq: 261.63 },
-  { label: 'C5', freq: 523.25 },
-  { label: 'C6', freq: 1046.5 },
-  { label: 'C7', freq: 2093.0 },
-]
-
-const MIN_FREQ = 55
-const MAX_FREQ = 2093
-const LOG_MIN = Math.log2(MIN_FREQ)
-const LOG_MAX = Math.log2(MAX_FREQ)
-const LOG_RANGE = LOG_MAX - LOG_MIN
 const MARGIN = 36
+/** Seconds of singing the vertical band is fitted to. */
+const BAND_WINDOW_MS = 10000
 const DOT_RADIUS = 2.5
 const GLOW_RADIUS = 10
 
@@ -71,11 +60,38 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   }
 
-  const freqToY = (freq: number, h: number): number => {
-    if (!Number.isFinite(freq) || freq <= 0) return h / 2
-    const pct = (Math.log2(freq) - LOG_MIN) / LOG_RANGE
+  // The band everyone is drawn in. This canvas used to be pinned to
+  // 55-2093 Hz -- five and a quarter octaves, so a semitone was about a
+  // pixel and nobody could see whether they were on the note. It now
+  // fits whoever is actually singing, eased so it does not pump.
+  let bandMin = Number.NaN
+  let bandMax = Number.NaN
+
+  const midiToY = (midi: number, h: number): number => {
+    if (!Number.isFinite(midi) || midi <= 0) return h / 2
+    const pct = (midi - bandMin) / (bandMax - bandMin)
     const y = h - MARGIN - pct * (h - MARGIN * 2)
     return Number.isFinite(y) ? y : h / 2
+  }
+
+  /** Refit the band to the last few seconds of singing, one step at a time. */
+  const updateBand = () => {
+    const now = Date.now()
+    const sung: number[] = []
+    for (const samples of Object.values(jamPitchHistory())) {
+      for (const s of samples) {
+        if (
+          s.frequency > 0 &&
+          s.midi > 0 &&
+          now - s.timestamp <= BAND_WINDOW_MS
+        ) {
+          sung.push(sampleMidi(s))
+        }
+      }
+    }
+    const target = jamPitchBand(sung) ?? JAM_BAND_FALLBACK
+    bandMin = easeToward(bandMin, target.minMidi)
+    bandMax = easeToward(bandMax, target.maxMidi)
   }
 
   const startDrawLoop = () => {
@@ -87,6 +103,7 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
       // Transparent base -- the container's background owns the room glass.
       ctx.clearRect(0, 0, w, h)
 
+      updateBand()
       drawYAxis(w, h)
       drawTimeTicks(w, h)
       drawPeerSamples(w, h)
@@ -99,8 +116,12 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
   const drawYAxis = (w: number, h: number) => {
     if (!ctx) return
     const rightX = w - 8
-    for (const note of Y_AXIS_NOTES) {
-      const y = freqToY(note.freq, h)
+    const step = labelStepForPixels(
+      (h - MARGIN * 2) / Math.max(1, bandMax - bandMin),
+    )
+    for (let midi = Math.ceil(bandMin); midi <= bandMax; midi++) {
+      if (midi % step !== 0) continue
+      const y = midiToY(midi, h)
       if (y < 4 || y > h - 4) continue
 
       ctx.strokeStyle = 'rgba(48,54,61,0.7)'
@@ -116,7 +137,7 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
       ctx.font = '10px sans-serif'
       ctx.textAlign = 'right'
       ctx.textBaseline = 'middle'
-      ctx.fillText(note.label, rightX, y)
+      ctx.fillText(midiLabel(midi), rightX, y)
     }
   }
 
@@ -196,8 +217,8 @@ export const JamSharedPitchCanvas: Component<JamSharedPitchCanvasProps> = (
         const x = anchorX + (s.timestamp - now) * pxPerMs
         if (x < -10 || x > w + 10) continue
 
-        if (s.frequency > 0) {
-          const y = freqToY(s.frequency, h)
+        if (s.frequency > 0 && s.midi > 0) {
+          const y = midiToY(sampleMidi(s), h)
           if (y < -10 || y > h + 10) continue
           points.push({ x, y, clarity: s.clarity })
         }

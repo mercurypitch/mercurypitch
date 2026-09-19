@@ -12,9 +12,11 @@
 .lane {
   position: relative;
   /* Grows to share the height, but never collapses to a sliver in a
-     twelve-person room -- a lane you cannot read is not worth the space. */
+     twelve-person room -- a lane you cannot read is not worth the space.
+     The floor buys about seven pixels a semitone at the ten-semitone
+     minimum band, which is what makes a near miss legible as one. */
   flex: 1 1 0;
-  min-height: 56px;
+  min-height: 72px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-primary, #0d1117);

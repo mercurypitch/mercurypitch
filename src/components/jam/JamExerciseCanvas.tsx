@@ -6,9 +6,11 @@ import type { Component } from 'solid-js'
 import { createMemo, onCleanup, onMount } from 'solid-js'
 import { renderScale } from '@/lib/device-tier'
 import { roleCountFor, roleIndexOf, targetForRole } from '@/lib/jam/jam-modes'
+import type { NoteAccuracy } from '@/lib/jam/jam-pitch-view'
+import { blankNoteAccuracy, JAM_BAND_FALLBACK, jamPitchBand, judgeAgainstNote, labelStepForPixels, midiLabel, noteVerdict, observeNoteFrame, sampleMidi, tintForVerdict, } from '@/lib/jam/jam-pitch-view'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamExerciseBeat, jamExerciseMelody, jamExercisePlaying, jamExerciseTotalBeats, jamMyTarget, jamPeers, jamPitchHistory, jamRoomMode, setJamExerciseHistory, } from '@/stores/jam-store'
-import type { MelodyData } from '@/types'
+import type { MelodyData, MelodyItem } from '@/types'
 
 const MARGIN_LEFT = 40
 const MARGIN_RIGHT = 20
@@ -40,6 +42,10 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
   // a previous mount.
   let lastComputedScores: InternalScore[] = []
   let wasPlaying = false
+  // How each of my notes has gone this pass, so a pill can settle on a
+  // verdict instead of strobing between bands at 60 fps.
+  const noteAccuracy = new Map<MelodyItem['id'], NoteAccuracy>()
+  let lastJudgedBeat = 0
 
   const peerColorMap = createMemo(() => {
     const history = jamPitchHistory()
@@ -100,20 +106,22 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     return map
   })
 
-  // MIDI range for display — find min/max from melody, pad by one full octave
-  // so pitch trails are never clipped when singing slightly off the target notes.
+  // MIDI range for display. This used to pad the melody by a full octave
+  // either side, so a five-note exercise was drawn across thirty-one
+  // semitones and a near miss looked like a hit. The ribbon's band gives
+  // it two semitones of air and a ten-semitone floor instead -- the same
+  // policy the zen stage uses, so the two coach the same way.
   const midiRange = createMemo(() => {
-    const notes = melodyNotes()
-    const totalBeats = jamExerciseTotalBeats()
-    if (notes.length === 0)
-      return { min: 48, max: 84, totalBeats: Math.max(totalBeats, 16) }
-    const min = Math.min(...notes.map((n) => n.midi))
-    const max = Math.max(...notes.map((n) => n.midi))
-    return {
-      min: Math.max(24, min - 12),
-      max: Math.min(108, max + 12),
-      totalBeats: Math.max(totalBeats, 16),
+    const totalBeats = Math.max(jamExerciseTotalBeats(), 16)
+    const band = jamPitchBand(melodyNotes().map((n) => n.midi))
+    if (band === null) {
+      return {
+        min: JAM_BAND_FALLBACK.minMidi,
+        max: JAM_BAND_FALLBACK.maxMidi,
+        totalBeats,
+      }
     }
+    return { min: band.minMidi, max: band.maxMidi, totalBeats }
   })
 
   onMount(() => {
@@ -230,42 +238,35 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
   ) => {
     if (!ctx) return
 
-    // MIDI grid lines (every 2 semitones)
+    // Grid lines sit BETWEEN semitones, so each note gets a lane and a
+    // line never runs through the target you are aiming at. They used
+    // to fall on the note centres while the note boxes were drawn half
+    // a semitone above them, which is what made a note look like it sat
+    // between the lines instead of on one.
     ctx.strokeStyle = 'rgba(48,54,61,0.5)'
     ctx.lineWidth = 0.5
-    for (let midi = minMidi; midi <= maxMidi; midi++) {
-      const y = midiToY(midi, h, minMidi, maxMidi)
+    for (let midi = Math.ceil(minMidi); midi <= maxMidi; midi++) {
+      const y = midiToY(midi + 0.5, h, minMidi, maxMidi)
       ctx.beginPath()
       ctx.moveTo(MARGIN_LEFT, y)
       ctx.lineTo(w - MARGIN_RIGHT, y)
       ctx.stroke()
     }
 
-    // MIDI labels (every octave)
-    const midiNames = [
-      'C',
-      'C#',
-      'D',
-      'D#',
-      'E',
-      'F',
-      'F#',
-      'G',
-      'G#',
-      'A',
-      'A#',
-      'B',
-    ]
-    for (let midi = minMidi; midi <= maxMidi; midi++) {
-      if (midi % 12 !== 0) continue
+    // MIDI labels, as dense as there is room for. One per octave was
+    // fine across five octaves and useless across a ten-semitone band,
+    // which may contain no C at all.
+    const labelStep = labelStepForPixels(
+      (h - MARGIN_TOP - MARGIN_BOTTOM) / Math.max(1, maxMidi - minMidi),
+    )
+    for (let midi = Math.ceil(minMidi); midi <= maxMidi; midi++) {
+      if (midi % labelStep !== 0) continue
       const y = midiToY(midi, h, minMidi, maxMidi)
-      const name = midiNames[midi % 12]!
-      const octave = Math.floor(midi / 12) - 1
       ctx.fillStyle = '#484f58'
       ctx.font = '9px sans-serif'
       ctx.textAlign = 'right'
       ctx.textBaseline = 'middle'
-      ctx.fillText(`${name}${octave}`, MARGIN_LEFT - 4, y)
+      ctx.fillText(midiLabel(midi), MARGIN_LEFT - 4, y)
     }
   }
 
@@ -284,6 +285,16 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     const noteHeight =
       ((h - MARGIN_TOP - MARGIN_BOTTOM) / (maxMidi - minMidi)) * 0.7
 
+    // A jump backwards is a restart, and the verdicts behind it belong
+    // to a pass that is over.
+    if (currentBeat < lastJudgedBeat - 0.25) noteAccuracy.clear()
+    lastJudgedBeat = currentBeat
+    const myId = props.myPeerId()
+    const mySamples =
+      myId === null || myId === '' ? [] : (jamPitchHistory()[myId] ?? [])
+    const latest = mySamples[mySamples.length - 1]
+    const now = Date.now()
+
     for (const note of notes) {
       const x = beatToX(note.startBeat, w, totalBeats, currentBeat)
       const width = Math.max(
@@ -294,7 +305,22 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
       const boxH = Math.max(16, noteHeight)
       const boxHalf = boxH / 2
       const r = 5 // corner radius
-      const yy = midiToY(note.midi + 0.5, h, minMidi, maxMidi) - boxHalf
+      // Centred ON the note, so a pitch sung dead on lands in the
+      // middle of the box it is aimed at.
+      const yy = midiToY(note.midi, h, minMidi, maxMidi) - boxHalf
+
+      // How this note is going, judged only while it is under the
+      // playhead. Silence counts, and counts against you: a note
+      // nobody sang is a note nobody hit.
+      let acc = noteAccuracy.get(note.id)
+      if (currentBeat >= note.startBeat && currentBeat < note.endBeat) {
+        if (acc === undefined) {
+          acc = blankNoteAccuracy()
+          noteAccuracy.set(note.id, acc)
+        }
+        observeNoteFrame(acc, judgeAgainstNote(latest, note.midi, now))
+      }
+      const verdict = acc === undefined ? null : noteVerdict(acc)
 
       // Solid dark base
       ctx.beginPath()
@@ -302,16 +328,29 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
       ctx.fillStyle = 'rgba(13,17,23,0.92)'
       ctx.fill()
 
-      // Gradient fill
+      // Gradient fill, pulled towards the verdict rather than replaced
+      // by it: the box has to stay readable as a target after it has
+      // been judged, not turn into a flat block of colour.
+      const lift = verdict === null ? 0 : 0.12
       const fillGrad = ctx.createLinearGradient(0, yy, 0, yy + boxH)
-      fillGrad.addColorStop(0, 'rgba(60,110,190,0.75)')
-      fillGrad.addColorStop(1, 'rgba(35,70,130,0.6)')
+      fillGrad.addColorStop(
+        0,
+        hexToRgba(tintForVerdict('#3c6ebe', verdict), 0.75 + lift),
+      )
+      fillGrad.addColorStop(
+        1,
+        hexToRgba(tintForVerdict('#234682', verdict), 0.6 + lift),
+      )
       ctx.fillStyle = fillGrad
       ctx.fill()
 
-      // Outer stroke
-      ctx.strokeStyle = 'rgba(88,166,255,0.65)'
-      ctx.lineWidth = 1
+      // Outer stroke. Weight is the second channel, for anyone who
+      // cannot separate the three colours.
+      ctx.strokeStyle = hexToRgba(
+        tintForVerdict('#58a6ff', verdict, 0.75),
+        verdict === null ? 0.65 : 0.9,
+      )
+      ctx.lineWidth = verdict === 'perfect' ? 2.5 : verdict === null ? 1 : 1.75
       ctx.stroke()
 
       // Note label if space permits
@@ -470,7 +509,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     for (let i = 0; i < recent.length; i++) {
       const s = recent[i]!
       const x = sampleToX(s)
-      const y = midiToY(s.midi, h, minMidi, maxMidi)
+      const y = midiToY(sampleMidi(s), h, minMidi, maxMidi)
       if (
         x < MARGIN_LEFT ||
         x > w - MARGIN_RIGHT ||
@@ -492,7 +531,7 @@ export const JamExerciseCanvas: Component<JamExerciseCanvasProps> = (props) => {
     // ── Latest dot + glow at playhead position ──
 
     const lx = beatToX(currentBeat, w, totalBeats, currentBeat)
-    const ly = midiToY(latest.midi, h, minMidi, maxMidi)
+    const ly = midiToY(sampleMidi(latest), h, minMidi, maxMidi)
 
     if (lx < MARGIN_LEFT || ly < MARGIN_TOP || ly > h - MARGIN_BOTTOM) return
 
