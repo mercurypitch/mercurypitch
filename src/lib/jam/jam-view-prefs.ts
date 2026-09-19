@@ -23,7 +23,8 @@ import { createPersistedSignal } from '@/lib/storage'
  * Structurally the stem mixer's `LyricsAlign`, declared here rather than
  * imported so a lyric column in a jam room does not pull a mixer module
  * into its graph. The two are deliberately the same three values, so the
- * shared `LyricsAlignSelect` chip fits both without a mapping.
+ * shared alignment controls (the mixer's `LyricsAlignSelect` chip, the
+ * room's `LyricsAlignButtons`) fit either signal without a mapping.
  */
 export type JamLyricsAlign = 'left' | 'center' | 'right'
 
