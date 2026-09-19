@@ -1,19 +1,23 @@
 // ============================================================
-// Jam song stage — zoom, the lyric split, and the alignment buttons
+// Jam song stage — zoom, the lyric split, alignment and lyric size
 // ============================================================
 //
-// The stage shipped with three constants where a preference belonged: an
+// The stage shipped with four constants where a preference belonged: an
 // eight-second window whatever the lane was, a 3fr/2fr split whatever the
-// screen was, and hard-left lyrics. This spec drives the three controls
-// that replaced them with a real pointer, a real wheel and a real
-// two-finger pinch, because none of them can be proved in jsdom: the
-// lanes are a canvas, the split is a grid measured in percentages, and
-// the alignment only shows up in where the glyphs actually land. Nor can
-// where the sung line sits in its box, which is measured here too.
+// screen was, hard-left lyrics, and one font size for every pair of eyes.
+// This spec drives the four controls that replaced them with a real
+// pointer, a real wheel and a real two-finger pinch, because none of them
+// can be proved in jsdom: the lanes are a canvas, the split is a grid
+// measured in percentages, the alignment only shows up in where the
+// glyphs actually land, and the lyric size is a custom property that
+// means nothing until a stylesheet multiplies it. Nor can where the sung
+// line sits in its box, which is measured here too.
 //
-// This file exceeds 600 lines to keep the three controls on the one room
+// This file exceeds 600 lines to keep the four controls on the one room
 // they share. Seeding the song, the fake microphone and the preview room
-// are most of what any test here needs, so three specs would be three
+// are most of what any test here needs, and the controls lean on each
+// other -- the lyric size moves the line the centring test measures, the
+// seam resizes the box both of them scroll -- so four specs would be four
 // copies of the set-up, drifting apart.
 //
 // The room is the preview room (VITE_JAM_MOCK_SIGNALING=1): two invented
@@ -340,14 +344,26 @@ async function setAlign(page: Page, value: 'left' | 'center' | 'right') {
   )
 }
 
+/** The lyric size control: the lane zoom's three buttons, in the header. */
+const lyricSize = (page: Page) => page.getByTestId('jam-lyrics-size')
+
+/** The computed font size of one lyric line, in CSS pixels. */
+async function lineFontPx(page: Page, line: number): Promise<number> {
+  return await page.evaluate((index) => {
+    const row = document.querySelector(`[data-line="${index}"]`)
+    if (row === null) throw new Error(`no lyric line ${index}`)
+    return Number.parseFloat(getComputedStyle(row).fontSize)
+  }, line)
+}
+
 /**
  * How far a line's middle is from the middle of the box it scrolls in.
  *
  * `offBy` of zero is perfectly centred. Only ask it of a line the box CAN
  * centre: one near either end of the song stops at the end instead, and
  * asserting that it is centred would be asserting the clamp is broken.
- * Line 6, where openSongRoom parks the song, is far enough in on both
- * screens.
+ * Line 6, where openSongRoom parks the song, is far enough in at every
+ * size and on both screens.
  */
 async function lineOffCentre(page: Page, line: number) {
   return await page.evaluate((index) => {
@@ -601,6 +617,102 @@ test.describe('the song stage on a desktop', () => {
     await page.screenshot({ path: shot('desktop-lyrics-centred.png') })
   })
 
+  test('sizes the words with the buttons and a wheel, and remembers it @smoke', async ({
+    page,
+  }) => {
+    const { zoom } = await openSongRoom(page)
+    const size = lyricSize(page)
+    const scroll = page.locator('[data-align]').first()
+    await expect(size).toHaveAttribute('data-zoom', '1.000')
+    const shipped = await lineFontPx(page, 6)
+    expect(shipped).toBeGreaterThan(10)
+    await page.screenshot({ path: shot('desktop-lyrics-100.png') })
+
+    // The point of the feature: plus makes the words bigger, by the step
+    // the readout says. Two stops up the ladder is 125%.
+    const larger = page.getByRole('button', { name: 'Larger lyrics' })
+    await larger.click()
+    await larger.click()
+    await expect(size).toHaveAttribute('data-zoom', '1.250')
+    await expect(page.getByTitle('Reset lyric size')).toHaveText('125%')
+    expect(await lineFontPx(page, 6)).toBeCloseTo(shipped * 1.25, 1)
+    // Every line, not only the sung one.
+    expect(await lineFontPx(page, 0)).toBeCloseTo(shipped * 1.25, 1)
+
+    // Line 6 is being sung (openSongRoom parks there). Every line above
+    // it just grew, so it moved; it has to be brought back to the middle.
+    await expect.poll(() => offCentre(page, 6)).toBeLessThanOrEqual(4)
+
+    // All the way up: it stops, and says so.
+    await larger.click()
+    await larger.click()
+    await larger.click()
+    await expect(size).toHaveAttribute('data-zoom', '2.000')
+    await expect(larger).toBeDisabled()
+    expect(await lineFontPx(page, 6)).toBeCloseTo(shipped * 2, 1)
+    await page.screenshot({ path: shot('desktop-lyrics-200.png') })
+    await expect.poll(() => offCentre(page, 6)).toBeLessThanOrEqual(4)
+
+    // And all the way down. Seven stops from the ceiling to the floor.
+    const smaller = page.getByRole('button', { name: 'Smaller lyrics' })
+    for (let i = 0; i < 7; i++) await smaller.click()
+    await expect(size).toHaveAttribute('data-zoom', '0.800')
+    await expect(smaller).toBeDisabled()
+    expect(await lineFontPx(page, 6)).toBeCloseTo(shipped * 0.8, 1)
+    await page.screenshot({ path: shot('desktop-lyrics-80.png') })
+
+    // One click back to the shipped size, from anywhere.
+    await page.getByTitle('Reset lyric size').click()
+    await expect(size).toHaveAttribute('data-zoom', '1.000')
+    await expect(page.getByTitle('Reset lyric size')).toBeDisabled()
+    expect(await lineFontPx(page, 6)).toBeCloseTo(shipped, 1)
+
+    // Ctrl+wheel over the words sizes them...
+    const box = await scroll.boundingBox()
+    await page.mouse.move(
+      (box?.x ?? 0) + (box?.width ?? 0) / 2,
+      (box?.y ?? 0) + (box?.height ?? 0) / 2,
+    )
+    await page.keyboard.down('Control')
+    await page.mouse.wheel(0, -120)
+    await page.keyboard.up('Control')
+    await expect(size).not.toHaveAttribute('data-zoom', '1.000')
+    const wheeled = Number(await size.getAttribute('data-zoom'))
+    expect(wheeled).toBeGreaterThan(1)
+    expect(await lineFontPx(page, 6)).toBeCloseTo(shipped * wheeled, 1)
+
+    // ...and a plain wheel still scrolls them, which is what it is for.
+    const before = (await lineOffCentre(page, 6))?.scrollTop ?? 0
+    await page.mouse.wheel(0, 160)
+    await expect
+      .poll(async () => (await lineOffCentre(page, 6))?.scrollTop ?? 0)
+      .toBeGreaterThan(before)
+    await expect(size).toHaveAttribute('data-zoom', wheeled.toFixed(3))
+
+    // The lanes have a zoom of their own, and this is not it.
+    await expect(zoom).toHaveAttribute('data-zoom', '1.000')
+
+    // Land on a stop, leave, and come back: the words are the size they
+    // were left. Out of the room and in from scratch, for the reason the
+    // split test gives.
+    await page.getByTitle('Reset lyric size').click()
+    await larger.click()
+    await larger.click()
+    await larger.click()
+    await expect(size).toHaveAttribute('data-zoom', '1.500')
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem('pitchperfect_jam_lyrics_scale'),
+      ),
+    ).toBe('1.5')
+    await page.locator('button[title="Leave room"]:visible').click()
+    await page.reload()
+    await dismissOverlays(page)
+    await reenterSongRoom(page)
+    await expect(lyricSize(page)).toHaveAttribute('data-zoom', '1.500')
+    expect(await lineFontPx(page, 0)).toBeCloseTo(shipped * 1.5, 1)
+  })
+
   test('has nothing to trade when the lanes are hidden @smoke', async ({
     page,
   }) => {
@@ -771,6 +883,84 @@ test.describe('the song stage on a phone', () => {
     await page.screenshot({ path: shot('phone-lyrics-centred-short.png') })
   })
 
+  test('sizes the words with two fingers, and still scrolls them with one @smoke', async ({
+    page,
+  }) => {
+    await openSongRoom(page)
+    const size = lyricSize(page)
+    await expect(size).toHaveAttribute('data-zoom', '1.000')
+    const shipped = await lineFontPx(page, 6)
+    await page.screenshot({ path: shot('phone-lyrics-100.png') })
+
+    const box = await page.locator('[data-align]').first().boundingBox()
+    const cx = (box?.x ?? 0) + (box?.width ?? 0) / 2
+    const cy = (box?.y ?? 0) + (box?.height ?? 0) / 2
+
+    // Real touch points through CDP, for the reason the lane pinch gives:
+    // the gesture has to survive `touch-action: pan-y` on a box that
+    // genuinely scrolls, and arrive at the page as two fingers.
+    const cdp = await page.context().newCDPSession(page)
+    type TouchType = 'touchStart' | 'touchMove' | 'touchEnd'
+    const touch = (type: TouchType, points: Array<{ x: number; y: number }>) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: points.map((point, id) => ({ ...point, id: id + 1 })),
+      })
+    const two = (spread: number) => [
+      { x: cx - spread, y: cy },
+      { x: cx + spread, y: cy },
+    ]
+    const pinchOut = async () => {
+      await touch('touchStart', two(40))
+      for (const spread of [55, 70, 85, 100, 115, 130]) {
+        await touch('touchMove', two(spread))
+      }
+      await touch('touchEnd', [])
+      return Number(await size.getAttribute('data-zoom'))
+    }
+
+    // Retried for the same reason too: the first synthetic touch after a
+    // layout settles is occasionally swallowed.
+    await expect.poll(pinchOut, { timeout: 15000 }).toBeGreaterThan(1.5)
+    const pinched = Number(await size.getAttribute('data-zoom'))
+    expect(await lineFontPx(page, 6)).toBeCloseTo(shipped * pinched, 1)
+    await page.screenshot({ path: shot('phone-lyrics-pinched.png') })
+
+    // The pinch was the words', not the page's: the browser did not zoom.
+    expect(await page.evaluate(() => window.visualViewport?.scale ?? 1)).toBe(1)
+
+    // And it did not throw the sung line out of the panel on the way.
+    await expect.poll(() => offCentre(page, 6)).toBeLessThanOrEqual(4)
+
+    // One finger is still a scroll -- the gesture this box is mostly for.
+    const before = (await lineOffCentre(page, 6))?.scrollTop ?? 0
+    const drag = async () => {
+      await touch('touchStart', [{ x: cx, y: cy + 60 }])
+      for (const dy of [40, 20, 0, -20, -40, -60]) {
+        await touch('touchMove', [{ x: cx, y: cy + dy }])
+      }
+      await touch('touchEnd', [])
+      return (await lineOffCentre(page, 6))?.scrollTop ?? 0
+    }
+    await expect.poll(drag, { timeout: 15000 }).toBeGreaterThan(before + 40)
+    await expect(size).toHaveAttribute('data-zoom', pinched.toFixed(3))
+
+    // The buttons are a thumb's size here, like the ones beside them.
+    const larger = await page
+      .getByRole('button', { name: 'Larger lyrics' })
+      .boundingBox()
+    expect(larger?.width ?? 0).toBeGreaterThanOrEqual(40)
+    expect(larger?.height ?? 0).toBeGreaterThanOrEqual(40)
+
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(0)
+  })
+
   test('aligns the words on a narrow column too @smoke', async ({ page }) => {
     await openSongRoom(page)
     // Three buttons where there was one chip, so each one has to be a
@@ -790,6 +980,75 @@ test.describe('the song stage on a phone', () => {
     expect(
       Math.abs((centered?.textCenter ?? 0) - (centered?.rowCenter ?? 0)),
     ).toBeLessThanOrEqual(6)
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(0)
+  })
+})
+
+// ── The narrowest phone ──────────────────────────────────────────────
+
+test.describe('the lyric header on a 360px phone', () => {
+  test.use({
+    viewport: { width: 360, height: 740 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('keeps both controls on one row, all of it inside the panel @smoke', async ({
+    page,
+  }) => {
+    await openSongRoom(page)
+    await expect(splitOf(page)).toHaveAttribute('data-layout', 'stacked')
+    const header = page.getByTestId('jam-lyrics-header')
+    await page.screenshot({ path: shot('phone-360-header.png') })
+
+    // Three 40px buttons and a minus / readout / plus do not fit beside a
+    // label at this width. What gives is the label -- never a second row,
+    // which would come straight out of the height the words have.
+    const layout = await header.evaluate((row) => {
+      const box = (element: Element) => element.getBoundingClientRect()
+      const controls = [
+        ...row.querySelectorAll('[role="radio"], [data-testid] button'),
+      ].filter((control) => box(control).width > 0)
+      const rowBox = box(row)
+      return {
+        overflow: row.scrollWidth - row.clientWidth,
+        height: rowBox.height,
+        tops: [...new Set(controls.map((c) => Math.round(box(c).top)))],
+        count: controls.length,
+        leftmost: Math.min(...controls.map((c) => box(c).left)) - rowBox.left,
+        rightmost:
+          rowBox.right - Math.max(...controls.map((c) => box(c).right)),
+        smallest: Math.min(
+          ...controls.map((c) => Math.min(box(c).width, box(c).height)),
+        ),
+      }
+    })
+    // All six: three alignments, minus, the readout and plus.
+    expect(layout.count).toBe(6)
+    expect(layout.tops).toHaveLength(1)
+    expect(layout.overflow).toBeLessThanOrEqual(0)
+    expect(layout.leftmost).toBeGreaterThanOrEqual(0)
+    expect(layout.rightmost).toBeGreaterThanOrEqual(0)
+    expect(layout.smallest).toBeGreaterThanOrEqual(40)
+    // One row of thumb-sized controls, not two.
+    expect(layout.height).toBeLessThanOrEqual(56)
+
+    // The host's parts bar underneath still has its row, and the words
+    // still have theirs.
+    await expect(page.getByText('Parts', { exact: true })).toBeVisible()
+    await expect(page.locator('[data-line="6"]')).toBeVisible()
+
+    // And they all still work at this size.
+    await page.getByRole('button', { name: 'Larger lyrics' }).click()
+    await expect(lyricSize(page)).toHaveAttribute('data-zoom', '1.100')
+    await setAlign(page, 'left')
+
     expect(
       await page.evaluate(
         () =>

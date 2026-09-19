@@ -8,6 +8,7 @@
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { JamZoomSubject } from '@/components/jam/JamLaneZoomControl'
 import { JamLaneZoomControl } from '@/components/jam/JamLaneZoomControl'
 import { JAM_ZOOM_MAX, JAM_ZOOM_MIN, JAM_ZOOM_STEP, steppedJamZoom, } from '@/lib/jam/jam-lane-zoom'
 
@@ -99,5 +100,97 @@ describe('the lane zoom control', () => {
     fireEvent.click(control.in)
     expect(control.out).not.toBeDisabled()
     expect(control.readout).not.toBeDisabled()
+  })
+})
+
+// ── A second scalar on the same control ──────────────────────────────
+// The lyric column's size uses these three buttons too. Everything about
+// the control defaults to the lanes (every test above renders it with no
+// subject at all, and is the proof that nothing moved); a host that is
+// not the lanes describes its own scalar, and then none of the lanes'
+// words, range or test id may leak through.
+
+/** A scale that rests in the middle of its range, unlike the lanes'. */
+const SUBJECT: JamZoomSubject = {
+  min: 0.5,
+  max: 3,
+  isDefault: (value) => value === 1,
+  format: (value) => `${Math.round(value * 100)}%`,
+  outLabel: 'Smaller things',
+  outTitle: 'Smaller',
+  inLabel: 'Larger things',
+  inTitle: 'Larger',
+  readoutLabel: (shown) => `Thing size ${shown}`,
+  resetTitle: 'Reset thing size',
+  testId: 'thing-size',
+}
+
+function renderSubject(initial: number) {
+  const [value, setValue] = createSignal(initial)
+  const utils = render(() => (
+    <JamLaneZoomControl
+      subject={SUBJECT}
+      zoom={value}
+      onZoomIn={() => setValue((v) => v + 0.5)}
+      onZoomOut={() => setValue((v) => v - 0.5)}
+      onReset={() => setValue(1)}
+    />
+  ))
+  return {
+    ...utils,
+    value,
+    out: utils.getByLabelText('Smaller things'),
+    in: utils.getByLabelText('Larger things'),
+    readout: utils.getByTitle('Reset thing size'),
+  }
+}
+
+describe('the control, given something other than the lanes to scale', () => {
+  afterEach(cleanup)
+
+  it("says the host's words and none of the lanes'", () => {
+    const control = renderSubject(1.5)
+    expect(control.out).toHaveAttribute('title', 'Smaller')
+    expect(control.in).toHaveAttribute('title', 'Larger')
+    expect(control.readout).toHaveAttribute('aria-label', 'Thing size 150%')
+    expect(control.readout).toHaveTextContent('150%')
+    expect(control.queryByTitle('Reset the zoom')).toBeNull()
+    expect(control.queryByLabelText(/pitch lanes/)).toBeNull()
+  })
+
+  it('answers to its own test id, so two in one room can be told apart', () => {
+    const control = renderSubject(1)
+    expect(control.getByTestId('thing-size')).toHaveAttribute(
+      'data-zoom',
+      '1.000',
+    )
+    expect(control.queryByTestId('jam-lane-zoom')).toBeNull()
+  })
+
+  it("stops at the host's ends, not at 1x and 4x", () => {
+    // 0.5 is below the lane floor and 3 is inside the lane range: with
+    // the lanes' bounds, minus would be dead here and plus alive at 3.
+    const low = renderSubject(0.5)
+    expect(low.out).toBeDisabled()
+    expect(low.in).not.toBeDisabled()
+    cleanup()
+
+    const mid = renderSubject(0.75)
+    expect(mid.out).not.toBeDisabled()
+    cleanup()
+
+    const high = renderSubject(3)
+    expect(high.in).toBeDisabled()
+    expect(high.out).not.toBeDisabled()
+  })
+
+  it('offers a reset from BELOW the resting value as well as above it', () => {
+    // The lanes rest on their floor, so "below the default" cannot
+    // happen there -- and a check written for them would call 0.5 default.
+    const below = renderSubject(0.5)
+    expect(below.readout).not.toBeDisabled()
+    fireEvent.click(below.readout)
+    expect(below.value()).toBe(1)
+    expect(below.readout).toBeDisabled()
   })
 })

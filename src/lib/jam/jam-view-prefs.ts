@@ -3,11 +3,11 @@
 // device.
 //
 // None of this is room state and none of it crosses the wire. How far a
-// singer zooms their lanes, whether they want the words centred, and how
-// they split the stage between lyrics and lanes is the same kind of
-// choice as a font size: broadcasting it would make one person's eyesight
-// everybody's layout. The room store holds what the band must agree on;
-// this holds what it must not.
+// singer zooms their lanes, whether they want the words centred, how big
+// they need them, and how they split the stage between lyrics and lanes
+// are all the same kind of choice: broadcasting any of them would make
+// one person's eyesight everybody's layout. The room store holds what the
+// band must agree on; this holds what it must not.
 //
 // Each value carries a validator, because localStorage is an untyped
 // input -- an old build, a hand-edited key or a half-written value all
@@ -15,6 +15,7 @@
 // lyrics in it.
 
 import { clampJamZoom, isJamZoom, JAM_ZOOM_MIN } from '@/lib/jam/jam-lane-zoom'
+import { clampJamLyricsScale, isJamLyricsScale, JAM_LYRICS_SCALE_DEFAULT, } from '@/lib/jam/jam-lyrics-scale'
 import { createPersistedSignal } from '@/lib/storage'
 
 // ── Lyric alignment ──────────────────────────────────────────────────
@@ -47,6 +48,34 @@ export const [jamLyricsAlign, setJamLyricsAlign] =
   createPersistedSignal<JamLyricsAlign>(JAM_LYRICS_ALIGN_KEY, 'center', {
     validator: isJamLyricsAlign,
   })
+
+// ── Lyric size ───────────────────────────────────────────────────────
+
+/** Its own key, like the alignment's: the stem editor's lyric size is its own. */
+export const JAM_LYRICS_SCALE_KEY = 'pitchperfect_jam_lyrics_scale'
+
+const [lyricsScale, setLyricsScale] = createPersistedSignal<number>(
+  JAM_LYRICS_SCALE_KEY,
+  JAM_LYRICS_SCALE_DEFAULT,
+  { validator: isJamLyricsScale },
+)
+
+/** A multiplier on the lyric column's font size. 1 is the shipped size. */
+export const jamLyricsScale = lyricsScale
+
+/**
+ * Clamped in the setter, so no call site has to remember the range.
+ *
+ * Three things write this -- the buttons, a wheel and a pinch -- and the
+ * last two overshoot as a matter of course. A value outside the range
+ * would also fail its own validator on the next load and silently reset
+ * the viewer to 100%.
+ */
+export function setJamLyricsScale(next: number): number {
+  const clamped = clampJamLyricsScale(next)
+  setLyricsScale(clamped)
+  return clamped
+}
 
 // ── Lane zoom ────────────────────────────────────────────────────────
 

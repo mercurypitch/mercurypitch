@@ -106,6 +106,33 @@ describe('the lyric sweep under touch', () => {
     expect(assign).not.toHaveBeenCalled()
   })
 
+  it('paints nothing when a second finger turns the sweep into a pinch', () => {
+    // With a singer armed, the first finger anchors a sweep the moment it
+    // lands. Two fingers on the words size them (the lyric scale), so the
+    // host was reading, not assigning -- and lifting must not paint the
+    // line the first finger happened to come down on.
+    const assign = vi.mocked(jamStore.assignJamSongLines)
+    assign.mockClear()
+    const { rows, container } = renderSheet()
+    const box = container.querySelector('[data-align]') as HTMLElement
+
+    fireEvent.pointerDown(rows[1]!, { clientX: 10, clientY: 40 })
+    expect(container.querySelector('[class*="paintPreview"]')).not.toBeNull()
+
+    const second = new Event('touchstart', { bubbles: true, cancelable: true })
+    Object.defineProperty(second, 'touches', {
+      value: [
+        { identifier: 0, clientX: 10, clientY: 40, target: rows[1] },
+        { identifier: 1, clientX: 140, clientY: 40, target: rows[2] },
+      ],
+    })
+    box.dispatchEvent(second)
+
+    expect(container.querySelector('[class*="paintPreview"]')).toBeNull()
+    fireEvent.pointerUp(document)
+    expect(assign).not.toHaveBeenCalled()
+  })
+
   it('keeps the browser from panning while the brush is armed', () => {
     // The gesture can only be delivered at all if the armed rows opt out
     // of scroll gestures; this is the CSS half of the fix.

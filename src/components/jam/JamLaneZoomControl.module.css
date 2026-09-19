@@ -14,13 +14,19 @@
   pointer-events: auto;
 }
 
+/* Two sizing hooks, both unset over the lanes, where every value below
+   is what it always was. A host with a width budget of its own -- the
+   lyric column's header, which shares a row with another control and can
+   be dragged down to a quarter of the stage -- sets them from its own
+   stylesheet: --jam-zoom-target for the buttons' size, and
+   --jam-zoom-readout: none to give up the number before overflowing. */
 .btn,
 .readout {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
+  min-width: var(--jam-zoom-target, 22px);
+  height: var(--jam-zoom-target, 22px);
   padding: 0 4px;
   border: none;
   border-radius: 999px;
@@ -37,6 +43,7 @@
 }
 
 .readout {
+  display: var(--jam-zoom-readout, inline-flex);
   min-width: 2.2rem;
   letter-spacing: 0.02em;
 }
@@ -64,8 +71,8 @@
 @media (pointer: coarse) {
   .btn,
   .readout {
-    min-width: 28px;
-    height: 28px;
+    min-width: var(--jam-zoom-target, 28px);
+    height: var(--jam-zoom-target, 28px);
   }
 
   .readout {
