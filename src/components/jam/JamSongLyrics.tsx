@@ -9,15 +9,18 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import type { JamZoomSubject } from '@/components/jam/JamLaneZoomControl'
+import { JamLaneZoomControl } from '@/components/jam/JamLaneZoomControl'
 import { LyricsAlignButtons } from '@/components/LyricsAlignButtons'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { formatClock } from '@/lib/format-time'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { canAttachLyrics } from '@/lib/jam/jam-lyrics-attach'
+import { formatJamLyricsScale, isJamLyricsScaleDefault, JAM_LYRICS_SCALE_DEFAULT, JAM_LYRICS_SCALE_MAX, JAM_LYRICS_SCALE_MIN, lyricsScaleFromPinch, lyricsScaleFromWheel, steppedJamLyricsScale, } from '@/lib/jam/jam-lyrics-scale'
 import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
 import { blockOfLine, groupLinesBySinger } from '@/lib/jam/jam-song-blocks'
 import { EVERYONE, singerOfLine } from '@/lib/jam/jam-song-parts'
-import { jamLyricsAlign, setJamLyricsAlign } from '@/lib/jam/jam-view-prefs'
+import { jamLyricsAlign, jamLyricsScale, setJamLyricsAlign, setJamLyricsScale, } from '@/lib/jam/jam-view-prefs'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { assignJamSongLines, jamAssignBrush, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
@@ -47,6 +50,28 @@ function scoreBand(score: number): 'good' | 'close' | 'missed' {
   if (score >= 80) return 'good'
   if (score >= 50) return 'close'
   return 'missed'
+}
+
+/**
+ * What the lane zoom's three buttons say when they size the words.
+ *
+ * The same control on purpose. Sizing the words is meant to be as easy
+ * as zooming the lanes, and the surest way to be as easy as something is
+ * to be it. Only the words and the scale differ.
+ */
+const LYRICS_SIZE_SUBJECT: JamZoomSubject = {
+  min: JAM_LYRICS_SCALE_MIN,
+  max: JAM_LYRICS_SCALE_MAX,
+  isDefault: isJamLyricsScaleDefault,
+  format: formatJamLyricsScale,
+  outLabel: 'Smaller lyrics',
+  outTitle: 'Smaller lyrics',
+  inLabel: 'Larger lyrics',
+  inTitle: 'Larger lyrics',
+  readoutLabel: (shown) =>
+    `Lyric size ${shown}. Reset to ${formatJamLyricsScale(JAM_LYRICS_SCALE_DEFAULT)}`,
+  resetTitle: 'Reset lyric size',
+  testId: 'jam-lyrics-size',
 }
 
 /** A person, for the per-line "who sings this" button. */
@@ -161,6 +186,117 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     if (Number.isInteger(idx)) setPaintTo(idx)
   }
 
+  /**
+   * Ctrl+wheel and a two-finger pinch size the words; everything else is
+   * left exactly as it was.
+   *
+   * The second half of that sentence is the hard half. This box scrolls,
+   * and reading ahead by dragging it is the thing people do most here, so
+   * a plain wheel and a one-finger drag are never cancelled, never
+   * handled, and never slowed down by more than two comparisons.
+   *
+   * Touch events rather than the pointer events the lanes use. A lane
+   * list rarely has anywhere to scroll to; this box always does, and
+   * `touch-action: pan-y` (see the stylesheet) hands a vertical pan to
+   * the browser however many fingers make it. Pointer events cannot take
+   * that back -- by the time the pan starts they are already cancelled --
+   * so a pinch whose fingers drift vertically would scroll the words
+   * while sizing them. A touchmove that is cancelled while two fingers
+   * are down is the one thing that stops the pan, and only a non-passive
+   * listener is allowed to cancel it.
+   *
+   * Bound from the ref, like `watchBoxHeight` and for its reason.
+   */
+  const bindScaleGestures = (box: HTMLDivElement): void => {
+    const onWheel = (event: WheelEvent): void => {
+      // Ctrl/cmd is also what a trackpad pinch reports. Without it this
+      // is a scroll, and it belongs to the scrollbar.
+      if (!event.ctrlKey && !event.metaKey) return
+      // Or the browser zooms the whole page as well.
+      event.preventDefault()
+      setJamLyricsScale(
+        lyricsScaleFromWheel(jamLyricsScale(), event.deltaY, event.deltaMode),
+      )
+    }
+
+    let pinchStartDistance = 0
+    let pinchStartScale = JAM_LYRICS_SCALE_DEFAULT
+
+    /**
+     * The fingers that landed in THIS box.
+     *
+     * `touches` is every finger on the screen, and one on the words plus
+     * one resting on the lanes is not a pinch of either.
+     */
+    const fingersHere = (event: TouchEvent): Touch[] =>
+      Array.from(event.touches).filter(
+        (touch) => touch.target instanceof Node && box.contains(touch.target),
+      )
+
+    const armPinch = (fingers: Touch[]): void => {
+      const [a, b] = fingers
+      if (a === undefined || b === undefined) return
+      pinchStartDistance = Math.hypot(
+        a.clientX - b.clientX,
+        a.clientY - b.clientY,
+      )
+      pinchStartScale = jamLyricsScale()
+    }
+
+    const onTouchStart = (event: TouchEvent): void => {
+      const fingers = fingersHere(event)
+      // Exactly two. A third finger is somebody's palm, and scaling
+      // against whichever two happen to be listed first makes the words
+      // jump.
+      pinchStartDistance = 0
+      if (fingers.length !== 2) return
+      armPinch(fingers)
+      // A second finger means the first was never a sweep. With a singer
+      // armed the first touch has already anchored one, and releasing
+      // would paint a line the host was only trying to read.
+      setPaintFrom(null)
+      setPaintTo(null)
+    }
+
+    const onTouchMove = (event: TouchEvent): void => {
+      if (pinchStartDistance <= 0) return
+      const [a, b, extra] = fingersHere(event)
+      if (a === undefined || b === undefined || extra !== undefined) return
+      // Not cancelable once the browser has committed to a pan -- a second
+      // finger added mid-scroll -- and cancelling it then only logs an
+      // intervention warning.
+      if (event.cancelable) event.preventDefault()
+      setJamLyricsScale(
+        lyricsScaleFromPinch(
+          pinchStartScale,
+          pinchStartDistance,
+          Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+        ),
+      )
+    }
+
+    const onTouchGone = (event: TouchEvent): void => {
+      // A finger lifted mid-pinch must not leave the next one scaling
+      // against a distance measured with two.
+      pinchStartDistance = 0
+      const fingers = fingersHere(event)
+      if (fingers.length === 2) armPinch(fingers)
+    }
+
+    box.addEventListener('wheel', onWheel, { passive: false })
+    box.addEventListener('touchstart', onTouchStart, { passive: true })
+    box.addEventListener('touchmove', onTouchMove, { passive: false })
+    box.addEventListener('touchend', onTouchGone)
+    box.addEventListener('touchcancel', onTouchGone)
+    onCleanup(() => {
+      box.removeEventListener('wheel', onWheel)
+      box.removeEventListener('touchstart', onTouchStart)
+      box.removeEventListener('touchmove', onTouchMove)
+      box.removeEventListener('touchend', onTouchGone)
+      box.removeEventListener('touchcancel', onTouchGone)
+    })
+  }
+
   const blocks = createMemo(() =>
     groupLinesBySinger(props.lines, jamSongParts()),
   )
@@ -221,22 +357,27 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
    * first and last lines behave -- they simply stop at the ends instead of
    * needing half a panel of padding to centre into.
    *
-   * It also follows the height of the box, which is read before the early
-   * returns so that it is tracked whether or not a line is current yet.
+   * It also follows the LAYOUT: the size of the words and the height of
+   * the box. Every line above the sung one grows or shrinks with the
+   * scale, so the sung line moves even though the song has not; without
+   * re-running, two presses of the plus button push the line being sung
+   * out of the bottom of the panel. Both are read before the early
+   * returns so that they are tracked whether or not a line is current yet.
    */
-  createEffect<number | undefined>((lastHeight) => {
-    const height = boxHeight()
+  createEffect<string | undefined>((lastLayout) => {
+    const layout = `${jamLyricsScale()}/${boxHeight()}`
     const i = currentIndex()
     const box = scrollRef
-    if (i < 0 || box === undefined) return height
+    if (i < 0 || box === undefined) return layout
     const el = box.querySelector<HTMLElement>(`[data-line="${i}"]`)
-    if (el === null) return height
+    if (el === null) return layout
     // Where the line sits in the box's own content, from the two rects.
     // Not `el.offsetTop`: that is measured from the offsetParent, which
     // here is the PANEL (its backdrop-filter makes it one) and not this
     // box, so it counted the header and the parts bar as lyrics. The
     // "centred" line sat that much too high -- about 85px, which on a
-    // phone's 210px box is the top edge.
+    // phone's 210px box is the top edge, and at a large lyric size is
+    // past it, with the line being sung cut in half.
     const lineTop =
       el.getBoundingClientRect().top -
       box.getBoundingClientRect().top -
@@ -245,13 +386,15 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     const target = lineTop - box.clientHeight / 2 + el.offsetHeight / 2
     box.scrollTo({
       top: Math.max(0, Math.min(target, box.scrollHeight - box.clientHeight)),
-      // A new line glides into place. A new height must not: a dragged
-      // seam is sixty of these a second, each one restarting the glide,
-      // and the sung line would trail the pointer instead of staying put.
+      // A new line glides into place. A new layout must not: a pinch or
+      // a dragged seam is sixty of these a second, each one restarting
+      // the glide, and the sung line would trail the fingers instead of
+      // staying put under them. Pinned, it is the fixed point the words
+      // grow around.
       behavior:
-        lastHeight === undefined || height === lastHeight ? 'smooth' : 'auto',
+        lastLayout === undefined || layout === lastLayout ? 'smooth' : 'auto',
     })
-    return height
+    return layout
   })
 
   return (
@@ -259,16 +402,32 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
       {/* One slim row that everybody gets. The assign bar below is
           host-only, so until now a guest's lyric column had no chrome at
           all and no way to say how they want to read it. */}
-      <div class={styles.header}>
+      <div class={styles.header} data-testid="jam-lyrics-header">
         <span class={styles.headerLabel}>Lyrics</span>
-        {/* Three buttons, not the mixer's one-chip select. That chip is
-            one button wide because its header is crowded, and pays for
-            it with a menu the operating system draws; this row has the
-            room to show all three choices and which one is on. */}
-        <LyricsAlignButtons
-          lyricsAlign={jamLyricsAlign}
-          setLyricsAlign={setJamLyricsAlign}
-        />
+        <div class={styles.headerTools}>
+          {/* Three buttons, not the mixer's one-chip select. That chip is
+              one button wide because its header is crowded, and pays for
+              it with a menu the operating system draws; this row has the
+              room to show all three choices and which one is on. */}
+          <LyricsAlignButtons
+            lyricsAlign={jamLyricsAlign}
+            setLyricsAlign={setJamLyricsAlign}
+          />
+          {/* The visible half of the lyric size. Ctrl+wheel and a pinch
+              on the words are the fast path and the one nobody is told
+              about; these are the buttons that say it can be done. */}
+          <JamLaneZoomControl
+            subject={LYRICS_SIZE_SUBJECT}
+            zoom={jamLyricsScale}
+            onZoomIn={() =>
+              setJamLyricsScale(steppedJamLyricsScale(jamLyricsScale(), 1))
+            }
+            onZoomOut={() =>
+              setJamLyricsScale(steppedJamLyricsScale(jamLyricsScale(), -1))
+            }
+            onReset={() => setJamLyricsScale(JAM_LYRICS_SCALE_DEFAULT)}
+          />
+        </div>
       </div>
       {/* Inside the panel, not above it. An outer wrapper made the panel a
           flex sibling of the bar, and the scroll box then sized itself
@@ -298,13 +457,18 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
           class={styles.scroll}
           ref={(box) => {
             scrollRef = box
+            bindScaleGestures(box)
             watchBoxHeight(box)
           }}
           data-align={jamLyricsAlign()}
-          style={colorTokenVars(
-            '--brush-color',
-            colors()[jamAssignBrush() ?? ''] ?? 'rgba(255,255,255,0.6)',
-          )}
+          style={{
+            ...colorTokenVars(
+              '--brush-color',
+              colors()[jamAssignBrush() ?? ''] ?? 'rgba(255,255,255,0.6)',
+            ),
+            // One number; the stylesheet derives every lyric size from it.
+            '--jam-lyrics-scale': jamLyricsScale().toFixed(3),
+          }}
         >
           <For each={props.lines}>
             {(line, i) => (
