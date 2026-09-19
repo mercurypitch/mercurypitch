@@ -20,11 +20,57 @@ export interface LyricsData {
   activeVersionKind?: LyricsVersionKind
 }
 
+/** Writes under way, by session id -- see `inTurn`. */
+const writesInFlight = new Map<string, Promise<unknown>>()
+
+/**
+ * One write per session at a time.
+ *
+ * A save is create-then-delete: it reads the rows that exist, writes the
+ * new one, and removes the ones it read. Two saves that overlap each read
+ * the same old row, so each leaves its own new row behind -- and a read
+ * then took whichever of the two came first, which is how a record with
+ * its versions and one without could take turns being "the lyrics". The
+ * mixer's saves are fire-and-forget and the example seeder writes on its
+ * own schedule, so overlapping is the ordinary case, not the rare one.
+ *
+ * This tab only. Two tabs can still overlap, which `newestOf` keeps
+ * readable and the next save tidies up.
+ */
+function inTurn<T>(sessionId: string, write: () => Promise<T>): Promise<T> {
+  const before = writesInFlight.get(sessionId) ?? Promise.resolve()
+  // A failed write must not wedge the ones queued behind it.
+  const mine = before.then(write, write)
+  const settled = mine.catch(() => {})
+  writesInFlight.set(sessionId, settled)
+  void settled.then(() => {
+    if (writesInFlight.get(sessionId) === settled)
+      writesInFlight.delete(sessionId)
+  })
+  return mine
+}
+
+/** The row to believe when a session has more than one: the last written. */
+function newestOf(rows: UvrSessionLyrics[]): UvrSessionLyrics | undefined {
+  return rows.reduce<UvrSessionLyrics | undefined>(
+    (newest, row) =>
+      newest === undefined || row.createdAt > newest.createdAt ? row : newest,
+    undefined,
+  )
+}
+
 /**
  * Save or update lyrics, propagating storage and serialization failures.
  * Use this variant when the caller must know whether persistence succeeded.
  */
-export async function saveLyricsToDbStrict(
+export function saveLyricsToDbStrict(
+  sessionId: string,
+  data: LyricsData,
+): Promise<void> {
+  return inTurn(sessionId, () => replaceLyrics(sessionId, data))
+}
+
+async function replaceLyrics(
   sessionId: string,
   data: LyricsData,
 ): Promise<void> {
@@ -88,13 +134,11 @@ export async function loadLyricsFromDbStrict(
 ): Promise<LyricsData | null> {
   const db = await getDb()
   const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
-  const results = await repo.findAll({
-    where: { sessionId } as Record<string, unknown>,
-    limit: 1,
-  })
-  if (results.length === 0) return null
+  const entry = newestOf(
+    await repo.findAll({ where: { sessionId } as Record<string, unknown> }),
+  )
+  if (entry === undefined) return null
 
-  const entry = results[0]
   const data: LyricsData = {
     text: entry.text,
     format: entry.format,
@@ -127,13 +171,13 @@ export async function loadLyricsFromDb(
   try {
     const db = await getDb()
     const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
-    const results = await repo.findAll({
-      where: { sessionId } as Record<string, unknown>,
-      limit: 1,
-    })
-    if (results.length === 0) return null
+    // Every row, not the first: see `inTurn` for how a session comes to
+    // have two, and why "the first" was not a stable answer.
+    const entry = newestOf(
+      await repo.findAll({ where: { sessionId } as Record<string, unknown> }),
+    )
+    if (entry === undefined) return null
 
-    const entry = results[0]
     const data: LyricsData = {
       text: entry.text,
       format: entry.format,
@@ -179,17 +223,48 @@ export async function loadLyricsFromDb(
   }
 }
 
+/**
+ * Rename a session's stored copy, touching nothing else.
+ *
+ * A patch to the row, in turn with the saves. Re-saving a copy read earlier
+ * would do the same job and put back whatever that copy held -- a rename
+ * decided a moment before the mixer stored a new Edited version would take
+ * the version away again.
+ */
+export async function renameLyricsInDb(
+  sessionId: string,
+  filename: string,
+): Promise<void> {
+  try {
+    await inTurn(sessionId, async () => {
+      const db = await getDb()
+      const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
+      const entry = newestOf(
+        await repo.findAll({ where: { sessionId } as Record<string, unknown> }),
+      )
+      if (entry === undefined || entry.filename === filename) return
+      await repo.update(entry.id, { filename })
+    })
+  } catch (err) {
+    console.error('[LyricsDB] renameLyricsInDb failed:', err)
+  }
+}
+
 /** Delete lyrics for a session from IndexedDB. */
 export async function deleteLyricsFromDb(sessionId: string): Promise<void> {
   try {
-    const db = await getDb()
-    const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
-    const existing = await repo.findAll({
-      where: { sessionId } as Record<string, unknown>,
+    // In turn, or a save still on its way would land after the delete and
+    // the lyrics somebody just removed would be back.
+    await inTurn(sessionId, async () => {
+      const db = await getDb()
+      const repo = db.getRepository<UvrSessionLyrics>('uvrSessionLyrics')
+      const existing = await repo.findAll({
+        where: { sessionId } as Record<string, unknown>,
+      })
+      for (const entry of existing) {
+        await repo.delete(entry.id)
+      }
     })
-    for (const entry of existing) {
-      await repo.delete(entry.id)
-    }
   } catch (err) {
     if (IS_DEV) console.warn('[LyricsDB] deleteLyricsFromDb failed:', err)
   }

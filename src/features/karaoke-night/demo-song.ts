@@ -13,6 +13,7 @@
 // This module is part of the page's FIRST-PAINT graph — keep it free of
 // static db/store imports (the lyrics seed loads the db layer on demand).
 
+import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { API_BASE_URL } from '@/lib/defaults'
 
 export interface DemoSongManifest {
@@ -308,6 +309,39 @@ function renamedFromLegacy(
   return renamed === filename ? null : renamed
 }
 
+/**
+ * What a correction has no business taking with it.
+ *
+ * `shouldSeedLyrics` looks at the active text, and the active text is only
+ * one of a record's versions. A singer who corrected the words and then went
+ * back to the Original has an untouched active text AND an Edited version
+ * of their own -- and the store replaces whole records, so a correction
+ * written as bare text deleted their version along with the old Original.
+ *
+ * The Original is rebuilt the way a bare record's is on load, so the end
+ * marks in the corrected text are read: a record that already has versions
+ * is never derived again, and a version written without them has lost them.
+ * With nothing to keep there is nothing to pre-empt, and the record stays
+ * bare.
+ */
+async function keptBesideTheOriginal(
+  current: LyricsData | null,
+  correctedText: string,
+): Promise<Partial<LyricsData>> {
+  const size =
+    current?.fontSize === undefined ? {} : { fontSize: current.fontSize }
+  const theirs = (current?.versions ?? []).filter((v) => v.kind !== 'imported')
+  if (theirs.length === 0) return size
+  const { sortVersions, synthesizeVersions } =
+    await import('@/lib/lyrics-versions')
+  const original = synthesizeVersions({ text: correctedText }, Date.now())
+  return {
+    ...size,
+    versions: sortVersions([...original.versions, ...theirs]),
+    activeVersionKind: 'imported',
+  }
+}
+
 /** Seeds under way, by session id — see `seedDemoLyrics`. */
 const seedsInFlight = new Map<string, Promise<void>>()
 
@@ -345,7 +379,7 @@ async function seedOnce(
   signal?: AbortSignal,
 ): Promise<void> {
   try {
-    const { loadLyricsFromDb, saveLyricsToDb } =
+    const { loadLyricsFromDb, renameLyricsInDb, saveLyricsToDb } =
       await import('@/db/services/lyrics-db-service')
     const sessionId = demoSessionId(m.slug)
     const stampKey = seedStampKey(m.slug)
@@ -356,11 +390,12 @@ async function seedOnce(
     ) {
       // Nothing to seed, but a copy from before examples were named after
       // their artist still downloads as the bare title. Renaming it touches
-      // no word of the visitor's text, so it is safe whoever edited it.
+      // no word of the visitor's text, so it is safe whoever edited it --
+      // as long as it is a rename. Re-saving the copy read above would put
+      // back whatever the mixer has stored since.
       const renamed =
         existing === null ? null : renamedFromLegacy(m, existing.filename)
-      if (existing !== null && renamed !== null)
-        await saveLyricsToDb(sessionId, { ...existing, filename: renamed })
+      if (renamed !== null) await renameLyricsInDb(sessionId, renamed)
       return
     }
 
@@ -376,6 +411,7 @@ async function seedOnce(
       text: lyrics.text,
       format: lyrics.format,
       filename: demoLyricsFilename(m, lyrics.format),
+      ...(await keptBesideTheOriginal(current, lyrics.text)),
     })
     writeStamp(stampKey, { revision, text: lyrics.text })
   } catch (err) {
