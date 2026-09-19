@@ -7,8 +7,8 @@ test.use({
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
   },
 })
-// Software WebGL renders every controlled physics frame of the authored scene.
-test.setTimeout(240_000)
+// Scene loading is real; the controlled physics section skips pixel raster work.
+test.setTimeout(120_000)
 
 async function coordinate(page: Page, axis: string): Promise<number> {
   return Number(
@@ -16,6 +16,24 @@ async function coordinate(page: Page, axis: string): Promise<number> {
       .getByTestId('glass-adventure')
       .getAttribute(`data-player-${axis}`),
   )
+}
+
+async function suspendRasterOutput(page: Page): Promise<void> {
+  await page
+    .getByLabel('Floating glass museum')
+    .evaluate((canvas: HTMLCanvasElement) => {
+      const gl = canvas.getContext('webgl2')
+      if (gl === null)
+        throw new Error('The museum WebGL2 context is unavailable')
+      const noop = () => undefined
+      Object.defineProperties(gl, {
+        clear: { configurable: true, value: noop },
+        drawArrays: { configurable: true, value: noop },
+        drawArraysInstanced: { configurable: true, value: noop },
+        drawElements: { configurable: true, value: noop },
+        drawElementsInstanced: { configurable: true, value: noop },
+      })
+    })
 }
 
 test('Merc lands on the actual exhibit support instead of passing through @smoke', async ({
@@ -49,6 +67,10 @@ test('Merc lands on the actual exhibit support instead of passing through @smoke
     'true',
     { timeout: 30_000 },
   )
+  // The authored scene has now loaded through the real renderer. This test
+  // exercises simulation and collision, so avoid making software WebGL shade
+  // hundreds of unrelated pixels while Playwright advances the physics clock.
+  await suspendRasterOutput(page)
   await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
   await page.getByLabel('Glass museum; drag to look around').focus()
   await page.keyboard.down('KeyW')
