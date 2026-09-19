@@ -130,10 +130,12 @@ function isManifest(m: unknown): m is DemoSongManifest {
   )
 }
 
-async function loadListFromApi(): Promise<DemoSongManifest[]> {
+async function loadListFromApi(
+  signal?: AbortSignal,
+): Promise<DemoSongManifest[]> {
   if ((API_BASE_URL ?? '') === '') return []
   try {
-    const res = await fetch(`${API_BASE_URL}/api/demo-songs`)
+    const res = await fetch(`${API_BASE_URL}/api/demo-songs`, { signal })
     if (!res.ok) return []
     const data = (await res.json()) as { songs?: unknown }
     if (!Array.isArray(data.songs)) return []
@@ -147,9 +149,11 @@ async function loadListFromApi(): Promise<DemoSongManifest[]> {
   }
 }
 
-async function loadFromManifest(): Promise<DemoSongManifest | null> {
+async function loadFromManifest(
+  signal?: AbortSignal,
+): Promise<DemoSongManifest | null> {
   try {
-    const res = await fetch(MANIFEST_URL, { cache: 'no-cache' })
+    const res = await fetch(MANIFEST_URL, { cache: 'no-cache', signal })
     if (!res.ok) return null
     const m = (await res.json()) as unknown
     return isManifest(m) ? m : null
@@ -169,10 +173,12 @@ async function loadFromManifest(): Promise<DemoSongManifest | null> {
  * down. An empty list — no rows, no API, an outage — falls back to the
  * manifest that ships with the build, which is the floor.
  */
-export async function loadDemoSongs(): Promise<DemoSongManifest[]> {
-  const fromApi = await loadListFromApi()
+export async function loadDemoSongs(
+  signal?: AbortSignal,
+): Promise<DemoSongManifest[]> {
+  const fromApi = await loadListFromApi(signal)
   if (fromApi.length > 0) return fromApi
-  const shipped = await loadFromManifest()
+  const shipped = await loadFromManifest(signal)
   return shipped === null ? [] : [shipped]
 }
 
@@ -220,6 +226,7 @@ function writeStamp(key: string, stamp: SeedStamp): void {
 /** The lyric text this manifest carries, pasted text winning over a URL. */
 export async function demoLyricsText(
   m: DemoSongManifest,
+  signal?: AbortSignal,
 ): Promise<{ text: string; format: 'lrc' | 'txt' } | null> {
   const pasted = (m.lyricsText ?? '').trim()
   if (pasted !== '') {
@@ -231,7 +238,7 @@ export async function demoLyricsText(
   }
   const url = m.lyrics ?? ''
   if (url === '') return null
-  const res = await fetch(url)
+  const res = await fetch(url, { signal })
   if (!res.ok) return null
   const text = await res.text()
   if (text.trim() === '') return null
@@ -260,6 +267,50 @@ async function lyricsfileAsLrc(
     : { text: lyricsfileToStoredLrc(parsed), format: 'lrc' }
 }
 
+/** Characters a download cannot carry in its name on one platform or another. */
+const UNSAFE_IN_A_FILENAME = /[\\/:*?"<>|]+/g
+
+/**
+ * What a seeded lyric is called — and so what a download of it is called,
+ * because both exports take their name from the stored record.
+ *
+ * "Artist - Title", the shape a lyric found online is stored under, so an
+ * example exports like any other song in the library.
+ */
+export function demoLyricsFilename(
+  m: Pick<DemoSongManifest, 'title' | 'artist'>,
+  extension: string,
+): string {
+  const clean = (part: string): string =>
+    part.replace(UNSAFE_IN_A_FILENAME, ' ').replace(/\s+/g, ' ').trim()
+  const artist = clean(m.artist)
+  const title = clean(m.title)
+  const base = artist === '' ? title : `${artist} - ${title}`
+  return `${base === '' ? 'lyrics' : base}.${extension}`
+}
+
+/**
+ * The new name for a record still carrying the one every seed used to write
+ * — the title alone, as a slug — or null for a record that is not. The
+ * extension is kept: mapping a plain-text seed turns it into an `.lrc`.
+ */
+function renamedFromLegacy(
+  m: DemoSongManifest,
+  filename: string,
+): string | null {
+  const dot = filename.lastIndexOf('.')
+  const base = dot > 0 ? filename.slice(0, dot) : filename
+  if (base !== m.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')) return null
+  const renamed = demoLyricsFilename(
+    m,
+    dot > 0 ? filename.slice(dot + 1) : 'lrc',
+  )
+  return renamed === filename ? null : renamed
+}
+
+/** Seeds under way, by session id — see `seedDemoLyrics`. */
+const seedsInFlight = new Map<string, Promise<void>>()
+
 /**
  * Seed the demo lyrics into the local lyrics db.
  *
@@ -269,8 +320,30 @@ async function lyricsfileAsLrc(
  * **only when it still matches what we seeded** — i.e. nobody has touched
  * it. A copy seeded before revisions existed has no stamp to compare, so
  * it is left alone rather than guessed at.
+ *
+ * One seed per song at a time. The startup seeder, the song card and the
+ * stage can all ask within the same second, and the store upserts as
+ * create-then-delete — two writers that both read "nothing here" would each
+ * leave a row behind.
  */
-export async function seedDemoLyrics(m: DemoSongManifest): Promise<void> {
+export function seedDemoLyrics(
+  m: DemoSongManifest,
+  signal?: AbortSignal,
+): Promise<void> {
+  const sessionId = demoSessionId(m.slug)
+  const running = seedsInFlight.get(sessionId)
+  if (running !== undefined) return running
+  const seed = seedOnce(m, signal).finally(() => {
+    seedsInFlight.delete(sessionId)
+  })
+  seedsInFlight.set(sessionId, seed)
+  return seed
+}
+
+async function seedOnce(
+  m: DemoSongManifest,
+  signal?: AbortSignal,
+): Promise<void> {
   try {
     const { loadLyricsFromDb, saveLyricsToDb } =
       await import('@/db/services/lyrics-db-service')
@@ -280,19 +353,51 @@ export async function seedDemoLyrics(m: DemoSongManifest): Promise<void> {
     const revision = m.lyricsRevision ?? 0
     if (
       !shouldSeedLyrics(existing?.text ?? null, readStamp(stampKey), revision)
-    )
+    ) {
+      // Nothing to seed, but a copy from before examples were named after
+      // their artist still downloads as the bare title. Renaming it touches
+      // no word of the visitor's text, so it is safe whoever edited it.
+      const renamed =
+        existing === null ? null : renamedFromLegacy(m, existing.filename)
+      if (existing !== null && renamed !== null)
+        await saveLyricsToDb(sessionId, { ...existing, filename: renamed })
       return
+    }
 
-    const lyrics = await demoLyricsText(m)
-    if (lyrics === null) return
+    const lyrics = await demoLyricsText(m, signal)
+    if (lyrics === null || signal?.aborted === true) return
+    // A lyrics URL can take seconds on a bad connection, and the stage does
+    // not wait for ever — it goes online for the words instead. Whatever it
+    // stored in the meantime is the visitor's, so look again before writing.
+    const current = await loadLyricsFromDb(sessionId)
+    if (!shouldSeedLyrics(current?.text ?? null, readStamp(stampKey), revision))
+      return
     await saveLyricsToDb(sessionId, {
       text: lyrics.text,
       format: lyrics.format,
-      filename: `${m.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.${lyrics.format}`,
+      filename: demoLyricsFilename(m, lyrics.format),
     })
     writeStamp(stampKey, { revision, text: lyrics.text })
   } catch (err) {
     if (import.meta.env.DEV)
       console.warn('[KaraokeNight] demo lyrics seed failed:', err)
   }
+}
+
+/**
+ * Seed by session id, for a caller that was handed an id and not a manifest.
+ *
+ * The stage is the one that matters: a song sheet pick, a playlist step and
+ * the in-app mixer all open an example by its row, and a row can be in the
+ * library before its lyrics are. Quiet on every failure, like the seed — the
+ * caller looks in the store afterwards and finds them there or does not.
+ */
+export async function seedDemoLyricsForSession(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!isDemoSessionId(sessionId)) return
+  const songs = await loadDemoSongs(signal)
+  const manifest = songs.find((m) => demoSessionId(m.slug) === sessionId)
+  if (manifest !== undefined) await seedDemoLyrics(manifest, signal)
 }
