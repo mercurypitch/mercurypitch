@@ -4,8 +4,9 @@
 
 import { describe, expect, it } from 'vitest'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
+import { demoSessionId, isDemoSessionId, LEGACY_SLUG, } from '@/features/karaoke-night/demo-song'
 import { lineAt } from '@/lib/jam/jam-song'
-import { demoSongToJamSong, jamSongSessionId, lrcToSongLines, sessionToJamSong, stripWordTimings, } from '@/lib/jam/jam-song-sources'
+import { demoSongToJamSong, exampleSongId, isExampleSongId, jamSongSessionId, lrcToSongLines, sessionToJamSong, stripWordTimings, } from '@/lib/jam/jam-song-sources'
 
 const manifest = (over: Partial<DemoSongManifest> = {}) =>
   ({
@@ -128,6 +129,65 @@ describe('demoSongToJamSong', () => {
     const s = demoSongToJamSong(manifest({ durationSec: undefined }))
     expect(s?.durationSec).toBe(0)
   })
+
+  it('gives every example its own id', () => {
+    // One shared id meant a second example could not be told from the
+    // first: same row marked as running, same pitch guide, same scores.
+    expect(demoSongToJamSong(manifest({ slug: 'josephine' }))?.id).toBe(
+      'karaoke-night-demo:josephine',
+    )
+    expect(demoSongToJamSong(manifest({ slug: LEGACY_SLUG }))?.id).toBe(
+      'karaoke-night-demo',
+    )
+    expect(demoSongToJamSong(manifest({ slug: undefined }))?.id).toBe(
+      'karaoke-night-demo',
+    )
+  })
+})
+
+describe('exampleSongId', () => {
+  // The rule is demo-song's, spelled a second time so jam-song-sources can
+  // stay in its own layer. Two spellings drifting apart would not throw: a
+  // song's pitch guide would be saved under a session nothing else reads.
+  it('is exactly the session id Karaoke Night stores the example under', () => {
+    for (const slug of [undefined, '', '  ', LEGACY_SLUG, 'josephine', 'a:b']) {
+      expect(exampleSongId(slug)).toBe(demoSessionId(slug))
+    }
+  })
+
+  it('recognises the ids it mints, and only those', () => {
+    for (const id of [
+      'karaoke-night-demo',
+      'karaoke-night-demo:josephine',
+      'session:abc',
+      'karaoke-night-demos',
+      '',
+    ]) {
+      expect(isExampleSongId(id)).toBe(isDemoSessionId(id))
+    }
+  })
+})
+
+describe('sessionToJamSong', () => {
+  it('is a song only this device holds, unless told otherwise', () => {
+    const built = sessionToJamSong(
+      { sessionId: 'abc', originalFile: { name: 'x.mp3' } },
+      { instrumental: 'blob:i' },
+    )
+    expect(built?.origin).toBe('local')
+  })
+
+  it('can be a song every peer fetches, for an example sung from its row', () => {
+    const built = sessionToJamSong(
+      { sessionId: 'karaoke-night-demo:josephine' },
+      { instrumental: 'https://stems.example/i.m4a' },
+      [],
+      0,
+      [],
+      'url',
+    )
+    expect(built?.origin).toBe('url')
+  })
 })
 
 describe('jamSongSessionId', () => {
@@ -135,8 +195,17 @@ describe('jamSongSessionId', () => {
     expect(jamSongSessionId('session:9f2c')).toBe('9f2c')
   })
 
-  it('finds the demo, whose song id IS its session id', () => {
+  it('finds an example, whose song id IS its session id', () => {
     expect(jamSongSessionId('karaoke-night-demo')).toBe('karaoke-night-demo')
+    expect(jamSongSessionId('karaoke-night-demo:josephine')).toBe(
+      'karaoke-night-demo:josephine',
+    )
+  })
+
+  it('finds an example that was loaded from its library row', () => {
+    expect(jamSongSessionId('session:karaoke-night-demo:josephine')).toBe(
+      'karaoke-night-demo:josephine',
+    )
   })
 
   it('agrees with the ids the builders actually mint', () => {
@@ -151,7 +220,14 @@ describe('jamSongSessionId', () => {
   })
 
   it('has nothing to offer for a song that carries its own notes', () => {
-    for (const id of ['', 'session:', 'exercise:scale', 'melody:7', 'weekly']) {
+    for (const id of [
+      '',
+      'session:',
+      'exercise:scale',
+      'melody:7',
+      'weekly',
+      'karaoke-night-demos',
+    ]) {
       expect(jamSongSessionId(id)).toBeNull()
     }
   })

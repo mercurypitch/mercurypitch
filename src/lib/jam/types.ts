@@ -279,6 +279,11 @@ export interface JamSongMessage {
      */
     notes?: JamSongNote[]
     /**
+     * The host looked, and this song has no pitch guide to be had. Optional,
+     * so a peer on an older build ignores it and says what it always said.
+     */
+    pitchGuide?: 'unavailable'
+    /**
      * Who sings which line (see lib/jam/jam-song-parts.ts).
      *
      * Travels with the manifest rather than as its own message: the
