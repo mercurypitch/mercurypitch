@@ -1510,6 +1510,8 @@ describe('DELETE /api/auth/me shared perk ownership', () => {
       'passwordResets',
       'emailVerifications',
       'promoRedemptions',
+      'newsletterSends',
+      'accountNoticeSends',
     ]
     expect(workerInternalUserKeyed.filter((table) => !erased(table))).toEqual(
       [],
