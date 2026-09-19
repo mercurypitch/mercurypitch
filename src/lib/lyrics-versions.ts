@@ -13,6 +13,7 @@
 // Tests: src/tests/lyrics-versions.test.ts
 
 import type { WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
+import { parseLrcTimingMetadata } from './lrc-timing-metadata'
 
 export type LyricsVersionKind =
   | 'imported'
@@ -112,7 +113,13 @@ export interface SynthesizedVersions {
  *   - the active mapping becomes an 'edited' version when it has word
  *     timings, else 'imported';
  *   - a distinct `originalText` becomes a separate 'imported' version so the
- *     pre-edit lyrics remain reachable.
+ *     pre-edit lyrics remain reachable;
+ *   - word ends and sub-word splits are read out of the text's own
+ *     `x-mp-timing` tag. An upload reads that tag on its way in, but a record
+ *     that arrives as bare text never passes through an upload -- the demo
+ *     songs are seeded straight into storage -- and without this the same
+ *     file keeps its end marks through one door and loses them through the
+ *     other.
  */
 export function synthesizeVersions(
   data: LegacyLyricsShape,
@@ -131,11 +138,17 @@ export function synthesizeVersions(
   const hasTimings =
     data.wordTimings !== undefined && Object.keys(data.wordTimings).length > 0
   const activeKind: LyricsVersionKind = hasTimings ? 'edited' : 'imported'
+  const extension = parseLrcTimingMetadata(text)
+  const wordEnds = extension?.wordEndTimings ?? {}
+  const wordSweeps = extension?.wordSweepTimings ?? {}
   const versions: LyricsVersion[] = [
     {
       kind: activeKind,
       text,
       wordTimings: hasTimings ? data.wordTimings : undefined,
+      wordEndTimings: Object.keys(wordEnds).length > 0 ? wordEnds : undefined,
+      wordSweepTimings:
+        Object.keys(wordSweeps).length > 0 ? wordSweeps : undefined,
       createdAt: now,
     },
   ]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
+import { hasLrcTimingMetadata, parseLrcTimingMetadata, withLrcTimingMetadata, } from '@/lib/lrc-timing-metadata'
 import { appendSweepPoint, appendWordSweepSample, beginWordSweep, interpolateSweepProgress, } from '@/lib/lyric-sweep'
 
 describe('lyric marker sweep curves', () => {
@@ -74,6 +74,79 @@ describe('MercuryPitch LRC timing metadata', () => {
 
     expect(lrc).toContain('[x-mp-timing:')
     expect(parseLrcTimingMetadata(lrc)).toEqual(extension)
+  })
+
+  it('round-trips a line where only one word has an end', () => {
+    // The usual shape, not the odd one: an end is marked where a word is
+    // held, so most lines carry one mark with holes in front of it. JSON
+    // writes each hole as null, and a reader that took only numbers dropped
+    // the whole tag -- ends AND sweeps -- for every such file.
+    const ends: number[] = []
+    ends[9] = 171.141
+    const extension = {
+      wordEndTimings: { 25: ends },
+      wordSweepTimings: {
+        25: {
+          9: [
+            { time: 171.101, progress: 0.8 },
+            { time: 171.141, progress: 1 },
+          ],
+        },
+      },
+    }
+    const lrc = withLrcTimingMetadata('[00:01.00] Held', extension)
+    const back = parseLrcTimingMetadata(lrc)
+
+    expect(back).toEqual(extension)
+    // Holes, not nulls and not zeros: `0 in ends` is how the mixer tells
+    // "no end marked" from "ends at the very start".
+    expect(back?.wordEndTimings[25]).toHaveLength(10)
+    expect(0 in (back?.wordEndTimings[25] ?? [])).toBe(false)
+    expect(back?.wordEndTimings[25][9]).toBe(171.141)
+  })
+
+  it('reads a tag written by a build that serialised holes as null', () => {
+    // The shape exports in the wild already carry, so it has to be read --
+    // changing what the writer emits would not reach a file on a disk.
+    const encoded = btoa(
+      JSON.stringify({
+        v: 1,
+        ends: { 25: [null, null, 171.141], 27: [null, 185.504] },
+        sweeps: { 27: { 1: [{ time: 185.504, progress: 1 }] } },
+      }),
+    )
+    const back = parseLrcTimingMetadata(
+      `[x-mp-timing:${encoded}]\n[00:01.00]Valid`,
+    )
+    expect(back?.wordEndTimings[25][2]).toBe(171.141)
+    expect(back?.wordEndTimings[27][1]).toBe(185.504)
+    expect(back?.wordSweepTimings[27][1]).toHaveLength(1)
+  })
+
+  it('drops a line that is nothing but holes', () => {
+    const encoded = btoa(
+      JSON.stringify({ v: 1, ends: { 3: [null, null], 4: [1.5] } }),
+    )
+    const back = parseLrcTimingMetadata(`[x-mp-timing:${encoded}]\n[00:01.00]x`)
+    expect(back?.wordEndTimings).toEqual({ 4: [1.5] })
+  })
+
+  it('accepts null as a hole and nothing else', () => {
+    for (const slot of ['1.5', true, {}, [], -1]) {
+      const encoded = btoa(JSON.stringify({ v: 1, ends: { 0: [null, slot] } }))
+      expect(
+        parseLrcTimingMetadata(`[x-mp-timing:${encoded}]\n[00:01.00]x`),
+        JSON.stringify(slot),
+      ).toBeNull()
+    }
+  })
+
+  it('says whether a tag is there, readable or not', () => {
+    expect(hasLrcTimingMetadata('[00:01.00]No tag')).toBe(false)
+    expect(hasLrcTimingMetadata('[x-mp-timing:not-base64]\n[00:01.00]x')).toBe(
+      true,
+    )
+    expect(hasLrcTimingMetadata('[ar:x-mp-timing]\n[00:01.00]x')).toBe(false)
   })
 
   it('ignores malformed metadata without rejecting the LRC', () => {
