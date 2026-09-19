@@ -67,19 +67,38 @@
    of controls for two engines is how a room ended up with two Play
    buttons, one of which stopped the song. */
 
-/* Lyrics get the larger share: they are read continuously, while the
-   lanes are glanced at. */
+/* How the stage is divided is the viewer's call now, not a constant.
+   `--jam-lyrics-share` comes from JamSongStage (persisted per device in
+   jam-view-prefs); the layout name says which axis the handle trades.
+   No gap: the handle IS the gutter, so the percentage maps exactly onto
+   the lyric column and a drag lands where the pointer is. */
 .split {
   display: grid;
-  grid-template-columns: 3fr 2fr;
-  gap: 8px;
+  gap: 0;
   flex: 1;
   min-height: 0;
 }
 
+/* Side by side. */
+.split[data-layout='wide'] {
+  grid-template-columns: var(--jam-lyrics-share, 50%) auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
 /* A phone cannot show two columns of anything useful. Lyrics on top,
-   because that is what you are actually reading; lanes below at a fixed
-   height so they never squeeze the words. */
+   because that is what you are actually reading; the lanes keep a floor
+   so they never vanish entirely. */
+.split[data-layout='stacked'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--jam-lyrics-share, 60%) auto minmax(88px, 1fr);
+}
+
+/* Pitch turned off: there is nothing to trade space with. */
+.split[data-layout='solo'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
 /* Phone: the row becomes two.
    Title and lyric version are things that shrink; the timeline is the one
    thing that must not, and squeezing it between them left a scrub target a
@@ -101,24 +120,12 @@
   }
 }
 
-@media (max-width: 900px) {
-  .split {
-    grid-template-columns: 1fr;
-    /* Lyrics take what is left; the lanes get a share of the remainder
-       rather than a fixed 140px. On a 664px phone the chrome above already
-       eats half the screen, and a fixed lane strip left two lines of words
-       visible. minmax keeps the lanes readable without letting them win. */
-    grid-template-rows: minmax(0, 1.6fr) minmax(88px, 1fr);
-  }
-}
-
-/* Very short screens (a phone in landscape, or a small window): the lanes
-   become a glance rather than a display, so the words survive. */
-@media (max-height: 560px) {
-  .split {
-    grid-template-rows: minmax(0, 2.4fr) minmax(72px, 1fr);
-  }
-}
+/* The old `@media (max-width: 900px)` and `@media (max-height: 560px)`
+   templates lived here. They are gone on purpose: a media query and the
+   handle would be two authorities over the same tracks, and the media
+   query wins whatever the viewer drags. The 900px cutoff now lives in
+   JamSongStage's STACKED_QUERY, and a short screen is handled by the
+   viewer moving the seam -- which they could not do before. */
 
 /* ── Your run score ─────────────────────────────────────────────────
    Beside the title in the transport, not over the lyrics: mid-song a

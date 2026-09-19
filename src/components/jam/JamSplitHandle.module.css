@@ -1,0 +1,90 @@
+/* JamSplitHandle — the draggable seam between lyrics and pitch lanes. */
+
+.handle {
+  position: relative;
+  align-self: stretch;
+  justify-self: stretch;
+  /* Its own size, not the grid's: a shared control owns its chrome, and
+     the track it sits in is `auto`. */
+  width: 10px;
+  min-width: 10px;
+  cursor: col-resize;
+  /* Quiet until wanted. A permanent accent rule down the middle of the
+     stage is furniture; a seam that inks in when you reach for it is an
+     affordance. */
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 0;
+}
+
+.handleStacked {
+  width: auto;
+  min-width: 0;
+  height: 10px;
+  min-height: 10px;
+  cursor: row-resize;
+}
+
+/* The visible part: a hairline that thickens into the accent on contact.
+   Separate from the hit area so the target can be generous without a
+   ten-pixel bar being drawn across the room. */
+.grip {
+  position: absolute;
+  inset: 20% 50%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 85%, transparent);
+  transition:
+    background 0.15s ease,
+    inset 0.15s ease;
+}
+
+.handleStacked .grip {
+  inset: 50% 20%;
+  width: auto;
+  height: 2px;
+  margin-left: 0;
+  margin-top: -1px;
+}
+
+.handle:hover .grip,
+.handle:focus-visible .grip,
+.handle[data-dragging='true'] .grip {
+  background: var(--accent, #58a6ff);
+  inset: 6% 50%;
+}
+
+.handleStacked:hover .grip,
+.handleStacked:focus-visible .grip,
+.handleStacked[data-dragging='true'] .grip {
+  inset: 50% 6%;
+}
+
+.handle:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+/* A thumb cannot aim at ten pixels. Touch screens get a real target, and
+   the grip stays the same slim line inside it. */
+@media (pointer: coarse) {
+  .handle {
+    width: 24px;
+    min-width: 24px;
+  }
+
+  .handleStacked {
+    width: auto;
+    min-width: 0;
+    height: 24px;
+    min-height: 24px;
+  }
+
+  /* Visible without a hover to reveal it -- there is no hover here. */
+  .grip {
+    background: color-mix(in srgb, var(--accent, #58a6ff) 45%, transparent);
+  }
+}
