@@ -905,8 +905,11 @@ two-viewport walk runs only in `/prod-upd`.
 
 - The welcome overlay covers the page — set `pitchperfect_welcome_version` (and
   the survey key) in `localStorage`, then reload.
-- `requestAnimationFrame` is paused, so canvases freeze and screenshots time
-  out. Assert via `getImageData` / `toDataURL` and check the DOM for HUD state.
+- With a deliberately paused Playwright clock, `locator.screenshot()` can
+  wait forever for stable animation frames. Render the required frame first,
+  then capture a fixed viewport with `page.screenshot({ clip })` using its
+  measured bounding box; retain the pixel assertions. See
+  `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.
 - The dev server is HTTPS-only; `VITE_NO_SSL=1` plus the `app-http` launch
   config gets plain HTTP. Revert before committing.
 - `backdrop-filter: none` in headless output is an artifact, not a regression.

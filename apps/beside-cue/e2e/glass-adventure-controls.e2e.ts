@@ -44,6 +44,63 @@ async function value(page: Page, key: string): Promise<number> {
   )
 }
 
+const RASTER_METHODS = [
+  'clear',
+  'drawArrays',
+  'drawArraysInstanced',
+  'drawElements',
+  'drawElementsInstanced',
+] as const
+
+async function runIdleWithoutRaster(
+  page: Page,
+  duration: number,
+): Promise<void> {
+  // Keep the controller RAF and its clamped quiet-time dt advancing while
+  // omitting only stationary SwiftShader draws that do not affect the check.
+  const canvas = page.getByLabel('Floating glass museum')
+  await canvas.evaluate((element: HTMLCanvasElement, methods) => {
+    const gl = element.getContext('webgl2')
+    if (gl === null) throw new Error('The museum WebGL2 context is unavailable')
+    const context = gl as WebGL2RenderingContext & {
+      __controlsRasterMethods?: Record<string, (...args: unknown[]) => unknown>
+    }
+    context.__controlsRasterMethods = Object.fromEntries(
+      methods.map((name) => [
+        name,
+        (context[name] as (...args: unknown[]) => unknown).bind(context),
+      ]),
+    )
+    for (const name of methods)
+      Object.defineProperty(context, name, {
+        configurable: true,
+        value: () => undefined,
+      })
+  }, RASTER_METHODS)
+  try {
+    await page.clock.runFor(duration)
+  } finally {
+    await canvas.evaluate((element: HTMLCanvasElement, methods) => {
+      const gl = element.getContext('webgl2') as
+        | (WebGL2RenderingContext & {
+            __controlsRasterMethods?: Record<
+              string,
+              (...args: unknown[]) => unknown
+            >
+          })
+        | null
+      if (gl === null || gl.__controlsRasterMethods === undefined)
+        throw new Error('The museum raster output was not suspended')
+      for (const name of methods)
+        Object.defineProperty(gl, name, {
+          configurable: true,
+          value: gl.__controlsRasterMethods[name],
+        })
+      delete gl.__controlsRasterMethods
+    }, RASTER_METHODS)
+  }
+}
+
 test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops @smoke', async ({
   page,
 }) => {
@@ -56,7 +113,7 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await page.clock.runFor(32)
   const draggedYaw = await value(page, 'camera-yaw')
   expect(Math.abs(draggedYaw - initialYaw)).toBeGreaterThan(0.2)
-  await page.clock.runFor(1_900)
+  await runIdleWithoutRaster(page, 1_900)
   const heldStart = {
     x: await value(page, 'player-x'),
     z: await value(page, 'player-z'),
@@ -88,7 +145,7 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
   await page.mouse.up()
 
-  await page.clock.runFor(1_900)
+  await runIdleWithoutRaster(page, 1_900)
   expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
   const strafeStart = {
     x: await value(page, 'player-x'),

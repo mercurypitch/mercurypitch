@@ -170,6 +170,35 @@ async function playerPosition(page: Page): Promise<{ x: number; z: number }> {
   }
 }
 
+async function animationFrames(page: Page, count: number): Promise<void> {
+  await page.evaluate(
+    (frameCount) =>
+      new Promise<void>((resolve) => {
+        let remaining = frameCount
+        const advance = () => {
+          remaining--
+          if (remaining === 0) resolve()
+          else requestAnimationFrame(advance)
+        }
+        requestAnimationFrame(advance)
+      }),
+    count,
+  )
+}
+
+async function settledPlayerPosition(
+  page: Page,
+): Promise<{ x: number; z: number }> {
+  let previous = await playerPosition(page)
+  for (let attempt = 0; attempt < 12; attempt++) {
+    await animationFrames(page, 3)
+    const current = await playerPosition(page)
+    if (current.x === previous.x && current.z === previous.z) return current
+    previous = current
+  }
+  throw new Error('Player movement did not settle after input release.')
+}
+
 async function cameraYaw(page: Page): Promise<number> {
   return Number(
     await page.getByTestId('glass-adventure').getAttribute('data-camera-yaw'),
@@ -472,13 +501,12 @@ test.describe('phone blur input', () => {
         knob.evaluate((element) => getComputedStyle(element).transform),
       )
       .toBe('matrix(1, 0, 0, 1, 0, 0)')
-    await page.waitForTimeout(250)
-    const released = await playerPosition(page)
+    const released = await settledPlayerPosition(page)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchMove',
       touchPoints: [{ id: 1, x: centre.x + 28, y: centre.y - 12 }],
     })
-    await page.waitForTimeout(250)
+    await animationFrames(page, 12)
     expect((await playerPosition(page)).x).toBeCloseTo(released.x, 4)
     expect((await playerPosition(page)).z).toBeCloseTo(released.z, 4)
 
@@ -495,15 +523,14 @@ test.describe('phone blur input', () => {
       type: 'touchMove',
       touchPoints: [{ id: 2, x: centre.x - 20, y: centre.y + 8 }],
     })
-    await expect
-      .poll(async () => {
-        const current = await playerPosition(page)
-        return Math.hypot(
-          current.x - beforeFreshContact.x,
-          current.z - beforeFreshContact.z,
-        )
-      })
-      .toBeGreaterThan(0.03)
+    await animationFrames(page, 24)
+    const afterFreshContact = await playerPosition(page)
+    expect(
+      Math.hypot(
+        afterFreshContact.x - beforeFreshContact.x,
+        afterFreshContact.z - beforeFreshContact.z,
+      ),
+    ).toBeGreaterThan(0.03)
     await cdp.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],

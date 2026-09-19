@@ -220,8 +220,10 @@ async function moveTo(
   let reached = false
   await page.keyboard.down(key)
   try {
-    for (let step = 0; step < 100; step += 1) {
-      await page.clock.runFor(80)
+    // Observe often enough to release near the target before normal braking
+    // carries Merc past the doorway centre. Keep the same eight-second cap.
+    for (let step = 0; step < 250; step += 1) {
+      await page.clock.runFor(32)
       if (direction * ((await coordinate(page, axis)) - target) >= -0.025) {
         reached = true
         break
@@ -297,6 +299,17 @@ async function restoreRasterOutput(page: Page): Promise<void> {
         })
       delete gl.__proofRasterMethods
     }, RASTER_METHODS)
+}
+
+async function captureViewport(page: Page, path: string): Promise<Buffer> {
+  const clip = await page
+    .getByLabel('Glass museum; drag to look around')
+    .boundingBox()
+  expect(clip).not.toBeNull()
+  // The test intentionally pauses RAF between simulation steps. Locator
+  // screenshots wait for extra stable frames, which cannot arrive then.
+  // Capture the same visible rectangle without advancing the game clock.
+  return page.screenshot({ path, clip: clip! })
 }
 
 async function changedPixelFraction(
@@ -442,10 +455,10 @@ for (const route of ROUTES) {
     )
     await pauseClock(page)
     await frameGateProof(page, route)
-    const viewport = page.getByLabel('Glass museum; drag to look around')
-    const closedRaster = await viewport.screenshot({
-      path: `/tmp/glass-gate-${route.layout}-closed.png`,
-    })
+    const closedRaster = await captureViewport(
+      page,
+      `/tmp/glass-gate-${route.layout}-closed.png`,
+    )
 
     await recenterForMovement(page)
     await suspendRasterOutput(page)
@@ -486,9 +499,10 @@ for (const route of ROUTES) {
       page.getByRole('dialog', { name: 'You made the museum sing.' }),
     ).toHaveCount(0)
     await frameGateProof(page, route)
-    const openRaster = await viewport.screenshot({
-      path: `/tmp/glass-gate-${route.layout}-open.png`,
-    })
+    const openRaster = await captureViewport(
+      page,
+      `/tmp/glass-gate-${route.layout}-open.png`,
+    )
     expect(
       await changedPixelFraction(closedRaster, openRaster),
     ).toBeGreaterThan(0.002)
@@ -521,9 +535,10 @@ for (const route of ROUTES) {
     await restoreRasterOutput(page)
     await setHeading(page, route.finalYaw)
     await page.clock.runFor(32)
-    const proof = await viewport.screenshot({
-      path: `/tmp/glass-proof-${route.proofSlug}.png`,
-    })
+    const proof = await captureViewport(
+      page,
+      `/tmp/glass-proof-${route.proofSlug}.png`,
+    )
     expect(proof.byteLength).toBeGreaterThan(20_000)
   })
 }
