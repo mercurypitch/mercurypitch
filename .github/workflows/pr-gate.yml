@@ -403,7 +403,7 @@ jobs:
       # per pull request. Keeping them here too would build Android twice.
 
   beside-cue-browser:
-    name: Beside Cue browser tests (${{ matrix.shard }}/2)
+    name: Beside Cue browser tests (legacy ${{ matrix.shard }}/2)
     needs: scope
     if: needs.scope.outputs.beside == 'true'
     runs-on: ubuntu-latest
@@ -419,15 +419,14 @@ jobs:
       - name: Install Chromium for Beside Cue browser tests
         run: pnpm exec playwright install --with-deps chromium
 
-      # The suite includes real software-rendered 3D scenes. Sharing a job
-      # deadline with checks, units and builds exhausted the old serial gate.
-      # Shard the complete suite, including games-off, but retain one browser
-      # worker per runner so concurrent WebGL contexts do not fight for CPU.
+      # Keep the existing games and games-off paths sharded, but give the
+      # heavier adventure files their own jobs below. One browser worker per
+      # runner prevents concurrent WebGL contexts from fighting for CPU.
       - name: Test Beside Cue browser paths
-        timeout-minutes: 25
+        timeout-minutes: 20
         env:
           PLAYWRIGHT_HTML_OPEN: never
-        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --shard=${{ matrix.shard }}/2 --reporter=line,html
+        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --project=chromium --project=chromium-store --shard=${{ matrix.shard }}/2 --reporter=line,html
 
       # Keep a step deadline below the job deadline so even a stuck browser
       # leaves traces. The line reporter also prints each failure immediately.
@@ -437,8 +436,44 @@ jobs:
         with:
           name: beside-cue-playwright-shard-${{ matrix.shard }}
           path: |
-            playwright-report
-            test-results
+            apps/beside-cue/playwright-report
+            apps/beside-cue/test-results
+          retention-days: 7
+
+  beside-cue-adventure-browser:
+    name: Beside Cue adventure (${{ matrix.spec }})
+    needs: scope
+    if: needs.scope.outputs.beside == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        spec: [controls, music, solids, voice]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - name: Install Chromium for Glass Adventure browser tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Each file loads and compiles the authored museum through SwiftShader.
+      # File-level jobs keep a slow GPU process from delaying unrelated paths
+      # and make the exact failing interaction visible in the required gate.
+      - name: Test Glass Adventure browser paths
+        timeout-minutes: 17
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --project=chromium-adventure apps/beside-cue/e2e/glass-adventure-${{ matrix.spec }}.e2e.ts --reporter=line,html
+
+      - name: Upload Glass Adventure browser failure reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glass-adventure-playwright-${{ matrix.spec }}
+          path: |
+            apps/beside-cue/playwright-report
+            apps/beside-cue/test-results
           retention-days: 7
 
   mercurypitch:
@@ -495,6 +530,7 @@ jobs:
         workers,
         beside-cue,
         beside-cue-browser,
+        beside-cue-adventure-browser,
         mercurypitch,
       ]
     if: always()

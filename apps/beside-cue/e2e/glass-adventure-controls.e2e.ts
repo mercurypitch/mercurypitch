@@ -6,6 +6,9 @@ test.use({
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
   },
 })
+// Include browser/context fixture setup in the budget. Calling setTimeout from
+// inside a test happens after those fixtures have already been created.
+test.setTimeout(120_000)
 
 async function openMuseum(page: Page): Promise<void> {
   const errors: string[] = []
@@ -44,7 +47,6 @@ async function value(page: Page, key: string): Promise<number> {
 test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops @smoke', async ({
   page,
 }) => {
-  test.setTimeout(90_000)
   await page.setViewportSize({ width: 640, height: 480 })
   await openMuseum(page)
   const initialYaw = await value(page, 'camera-yaw')
@@ -106,7 +108,6 @@ test.describe('phone', () => {
     page,
     context,
   }) => {
-    test.setTimeout(120_000)
     await openMuseum(page)
     const cdp = await context.newCDPSession(page)
     const stick = await page
@@ -188,7 +189,6 @@ test.describe('phone', () => {
 test('a completed gallery restores, then replay starts a fresh visit', async ({
   page,
 }) => {
-  test.setTimeout(60_000)
   await page.setViewportSize({ width: 640, height: 480 })
   await page.addInitScript(() => {
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')

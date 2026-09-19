@@ -20,7 +20,7 @@ async function coordinate(page: Page, axis: string): Promise<number> {
 
 test('Merc lands on the actual exhibit support instead of passing through @smoke', async ({
   page,
-}, testInfo) => {
+}) => {
   await page.addInitScript(() => {
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
@@ -64,7 +64,6 @@ test('Merc lands on the actual exhibit support instead of passing through @smoke
   await page.keyboard.up('KeyW')
   await page.clock.runFor(700)
   expect(await coordinate(page, 'y')).toBeCloseTo(0.24, 3)
-  await page.screenshot({ path: testInfo.outputPath('standing-on-plinth.png') })
   await page.clock.runFor(400)
   expect(await coordinate(page, 'y')).toBeCloseTo(0.24, 3)
   await page.keyboard.down('KeyA')
