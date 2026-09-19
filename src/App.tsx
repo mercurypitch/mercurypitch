@@ -1101,7 +1101,7 @@ const AppShell: Component<AppProps> = (props) => {
             })
           } else {
             showNotification(
-              'Your payment went through, but the credits are taking longer than usual. They are added automatically — if they have not appeared within a few hours, email hello@mercurypitch.com.',
+              'Your payment went through, but the credits are taking longer than usual. They are added automatically. If they have not appeared within a few hours, open Account and use Contact us.',
               'warning',
               { channel: 'billing-return', durationMs: 15000 },
             )

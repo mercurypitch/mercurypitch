@@ -96,7 +96,7 @@ describe('LocalProgressNotice', () => {
     expect(text).toContain('2 exercises you did here are still')
   })
 
-  it('offers a mail draft carrying both ids', () => {
+  it('offers a drafted contact-form request carrying both ids', () => {
     recordExerciseResult({
       type: 'long-note',
       score: 80,
@@ -104,12 +104,18 @@ describe('LocalProgressNotice', () => {
       completedAt: 1,
     })
     const { getByTestId } = render(() => <LocalProgressNotice />)
-    const href =
-      getByTestId('local-progress-contact').getAttribute('href') ?? ''
-    const decoded = decodeURIComponent(href)
+    const link = getByTestId('local-progress-contact')
+    const href = link.getAttribute('href') ?? ''
+    // Read the query the way the form will. decodeURIComponent would leave
+    // the `+` that URLSearchParams writes for a space, and the ids would
+    // never match.
+    const message = new URL(href).searchParams.get('message') ?? ''
 
-    expect(decoded).toContain('device: device-a')
-    expect(decoded).toContain('account: account-b')
+    expect(message).toContain('device: device-a')
+    expect(message).toContain('account: account-b')
+    // It leaves the app, so it must not take the tab with it.
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   })
 
   it('closes on Got it and does not come back', () => {
