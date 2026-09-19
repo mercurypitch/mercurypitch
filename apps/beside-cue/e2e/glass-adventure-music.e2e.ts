@@ -128,9 +128,7 @@ test('exploration music stops before capture and stays stopped after background'
 })
 
 for (const width of [390, 820, 1280]) {
-  test(`sound controls fit and save at ${width}px @smoke`, async ({
-    page,
-  }, testInfo) => {
+  test(`sound controls fit and save at ${width}px @smoke`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await openMuseum(page)
     await page.getByRole('button', { name: 'Pause game' }).click()
@@ -175,7 +173,6 @@ for (const width of [390, 820, 1280]) {
     expect(overflow.page).toBe(false)
     expect(overflow.top).toBeGreaterThanOrEqual(0)
     expect(overflow.bottom).toBeLessThanOrEqual(844)
-    await page.screenshot({ path: testInfo.outputPath('sound-controls.png') })
     const expected = { muted: true, musicVolume: 0.01, ambienceVolume: 1 }
     expect(
       await page.evaluate(() =>
