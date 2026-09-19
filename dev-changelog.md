@@ -80,6 +80,63 @@ Measured with a throwaway probe at the minimum split share: the expanded
 capsule fits at 1180x820, 820x1180, 1024x600 and 1366x640. Not tried on a
 real tablet or phone.
 
+### Three `manualChunks` rules deleted; every document weighed
+
+The owner's question after the jam room broke Piano Night's audit by importing
+a 30-line helper: why does one reusable module pull another, and can the
+recursion be fixed rather than pinned again.
+
+**The mechanism.** A module named into a manual chunk takes every static
+dependency that has no name of its own with it, transitively (Rollup's
+`addStaticDependenciesToManualChunk`). Three rules at the end of
+`manualChunks` named whole FEATURES by component name: `community`,
+`advanced` (UvrPanel, StemMixer, VocalAnalysis, PitchTestingTab, ...) and
+`library`. The first of them to reach a shared helper owned it; a page that
+needed the helper loaded the chunk, and the other two, because they import
+each other. Each of the ~25 per-module pins above them was this bug patched
+once, found by a failing audit or a dead first paint -- and only Piano Night
+and Drum Night have audits.
+
+**The fix is deletion.** Without the three rules Rollup places a module by
+which entries reach it, which is cycle-free by construction. First-paint
+JavaScript per document (uncompressed, `build:e2e`):
+
+| Document                                       | Before             | After        |
+| ---------------------------------------------- | ------------------ | ------------ |
+| Voice Mirror and the three vocal test pages    | 3149 KB, 42 chunks | 344 KB, 18   |
+| Karaoke Night, Vocal Remover                   | 3063 KB, 45        | 352 KB, 36   |
+| Glass                                          | 3050 KB, 41        | 331 KB, 19   |
+| Guitar Night                                   | 3822 KB, 59        | 1432 KB, 61  |
+| Main app (index, jam, ear lab, pitch training) | 4819 KB, 65        | 4669 KB, 96  |
+| Piano Night / Drum Night                       | 298 / 507 KB       | 298 / 505 KB |
+
+Zero circular chunks; both room audits pass.
+
+**The cost.** The main app asks for 96 scripts at first paint instead of 65
+(249 emitted instead of 212), for slightly fewer bytes. 56 of the 96 are
+under 5 KB. Over HTTP/2 that is cheap and not free.
+`output.experimentalMinChunkSize` was tried at 10 KB to buy the requests
+back and is NOT the answer: it merges by "likely to load together", which put
+`pitch-core` into Piano Night (298 to 542 KB, failing its audit), took Drum
+Night to 755 KB and Karaoke to 535 KB, and gave the script-free 404 page
+256 KB of JavaScript. Cutting the main app's request count is a separate job
+(the mixer is still a 562 KB static import of the shell).
+
+**What keeps it fixed.** `scripts/assert-first-paint-budgets.mjs` runs in
+`build:e2e` beside the two room audits. It walks each emitted document's own
+script tags and then static import edges only, sums the bytes, and holds the
+total against a ceiling (measured plus about a quarter). A document with no
+ceiling fails, so a new page cannot arrive unweighed; so does a ceiling for a
+document that is gone. Run against a build with main's rules it fails nine
+documents and names `advanced`, `vendor-media` and `library` as the heaviest.
+`src/e2e/every-document-boots.spec.ts` loads every document in the entry
+model and fails on a script that did not arrive, a thrown error, or an empty
+`#root` -- the one symptom a bad chunk layout has.
+
+The pins stay for now. Each is only needed if a budget says so, and they can
+go one at a time; `pitch-core` and `local-song-library` break real cycles and
+stay until proven unnecessary.
+
 ## [0.9.10] - 2026-09-19
 
 The 0.9.8 audit follow-ups (#822), the support address coming out of the

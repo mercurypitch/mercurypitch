@@ -18,6 +18,9 @@ volume moves out of the playback row.
 - **A ready pitch guide no longer takes a row of the lanes.** You still get
   the "Pitch guide ready" notice. The row appears only while a guide is being
   worked out, or when there will not be one.
+- **The standalone pages start on about a tenth of the code.** The Voice
+  Mirror, Karaoke Night, Glass and the vocal range test each fetched most of
+  the studio before they could open. Now they fetch their own part.
 
 ### Fixed
 
