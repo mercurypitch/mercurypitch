@@ -7,6 +7,7 @@
   "description": "A content-driven glass museum adventure, shared by web and native hosts.",
   "exports": {
     ".": "./src/index.ts",
+    "./development-levels": "./src/content/foundation-routes.ts",
     "./solid": "./src/ui/GlassAdventure.tsx",
     "./browser": "./src/browser/browser-host.ts"
   },

@@ -64,7 +64,7 @@ export function createAtmosphere(
 ) {
   const root = new Group()
   const sky = new Mesh(
-    new SphereGeometry(100, 32, 24),
+    new SphereGeometry(recipe.skyRadius ?? 100, 32, 24),
     new MeshBasicMaterial({
       side: BackSide,
       depthWrite: false,
@@ -75,6 +75,8 @@ export function createAtmosphere(
   )
   sky.name = 'museum-sky'
   sky.frustumCulled = false
+  if (recipe.atmosphereOrigin !== undefined)
+    sky.position.copy(recipe.atmosphereOrigin)
   root.add(sky)
   if (recipe.moon !== undefined) {
     const moon = new Mesh(

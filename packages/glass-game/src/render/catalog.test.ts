@@ -2,8 +2,10 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { GLASSWORKS } from '../content/glassworks'
+import type { LevelDefinition } from '../contracts'
 import { BREAKABLE_RENDER_CATALOG, getBreakableRenderRecipe, getPlatformRenderRecipe, } from './catalog'
-import { getMuseumSceneRecipe } from './scene-catalog'
+import { getMuseumSceneFrame, getMuseumSceneRecipe, getMuseumVisualRecipe, } from './scene-catalog'
 
 describe('data-driven exhibit recipes', () => {
   it('resolves every authored intact and matching shard prefix in the asset bundles', () => {
@@ -56,7 +58,7 @@ describe('data-driven exhibit recipes', () => {
     for (const recipe of Object.values(BREAKABLE_RENDER_CATALOG)) {
       if (recipe.bundle === undefined) continue
       const resolved =
-        getMuseumSceneRecipe('glassworks').preferredBundles?.[recipe.bundle] ??
+        getMuseumSceneRecipe(GLASSWORKS).preferredBundles?.[recipe.bundle] ??
         recipe.bundle
       const gltf = read(resolved)
       expect(gltf.nodes.some((node) => node.name === recipe.intactNode)).toBe(
@@ -98,16 +100,77 @@ describe('data-driven exhibit recipes', () => {
     expect(() => getPlatformRenderRecipe('missing-floor')).toThrow(
       'Unknown museum platform',
     )
+    expect(() => getMuseumVisualRecipe('missing-landmark')).toThrow(
+      'Unknown museum visual',
+    )
   })
   it('does not attach Glassworks landmarks to a newly authored level', () => {
-    const scene = getMuseumSceneRecipe('another-level')
+    const scene = getMuseumSceneRecipe({
+      ...GLASSWORKS,
+      id: 'another-level',
+    })
     expect(scene.archPlatforms).toEqual([])
     expect(scene.planterPlatforms).toEqual([])
     expect(scene.kitDecorations).toEqual([])
     expect(scene.observatories).toEqual([])
     expect(scene.skyTexture).toBeUndefined()
     expect(
-      getMuseumSceneRecipe('glassworks').kitDecorations.length,
+      getMuseumSceneRecipe(GLASSWORKS).kitDecorations.length,
     ).toBeGreaterThan(0)
+  })
+
+  it('themes and frames translated authored rooms from presentation bounds', () => {
+    const level: LevelDefinition = {
+      ...GLASSWORKS,
+      id: 'translated-quarter-turn',
+      spawn: {
+        position: { x: 103, y: 0, z: -45 },
+        facingYaw: Math.PI / 2,
+      },
+      presentation: {
+        worldBounds: {
+          minX: 100,
+          maxX: 112,
+          minY: -2,
+          maxY: 4,
+          minZ: -48,
+          maxZ: -38,
+        },
+        lightBounds: {
+          minX: 102,
+          maxX: 110,
+          minY: -1,
+          maxY: 5,
+          minZ: -47,
+          maxZ: -39,
+        },
+        rooms: [],
+        audioRegions: [],
+        visuals: [],
+        assetRecipeIds: ['deck', 'goblet'],
+      },
+    }
+    const scene = getMuseumSceneRecipe(level)
+    expect(scene.skyTexture).toBe('museum-sky')
+    expect(scene.environment).toBe('museum-environment-v2')
+    expect(scene.preferredBundles).toMatchObject({
+      'museum-kit': 'museum-kit-v2',
+      vessels: 'vessels-v2',
+    })
+    expect(scene.atmosphereOrigin).toEqual({ x: 106, y: 1, z: -43 })
+    expect(scene.reflectionProbe).toEqual({ x: 103, y: 1.15, z: -45 })
+    expect(scene.kitDecorations).toEqual([])
+
+    const frame = getMuseumSceneFrame(level)
+    expect(frame.lightTarget).toEqual({ x: 106, y: 2, z: -43 })
+    expect(frame.keyPosition.x).toBeGreaterThan(90)
+    expect(frame.rimPosition.z).toBeLessThan(-43)
+    expect(frame.shadowExtent).toBeGreaterThan(5)
+    expect(frame.shadowExtent).toBeLessThan(10)
+    const worldRadius = Math.hypot(12, 6, 10) / 2
+    expect(frame.cameraFar).toBeGreaterThan(
+      (scene.skyRadius ?? 0) + worldRadius + 6.5,
+    )
+    expect(frame.cameraFar).toBeLessThan(70)
   })
 })

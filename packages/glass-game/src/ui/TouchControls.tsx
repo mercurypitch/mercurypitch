@@ -1,5 +1,5 @@
 // Adventure touch controls — stick, look and jump never steal each other's pointer.
-import { createEffect, createSignal } from 'solid-js'
+import { createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import styles from './GlassAdventure.module.css'
 import type { AdventureInput } from './input'
 
@@ -10,15 +10,30 @@ interface TouchControlsProps {
 }
 export function TouchControls(props: TouchControlsProps) {
   const [offset, setOffset] = createSignal({ x: 0, y: 0 })
+  let stickElement!: HTMLDivElement
+  let jumpElement!: HTMLButtonElement
   let stickPointer: number | null = null
   let jumpPointer: number | null = null
-  createEffect(() => {
-    if (!props.disabled) return
+  const resetContacts = (): void => {
+    const heldStick = stickPointer
+    const heldJump = jumpPointer
     stickPointer = null
     jumpPointer = null
+    if (heldStick !== null && stickElement?.hasPointerCapture(heldStick))
+      stickElement.releasePointerCapture(heldStick)
+    if (heldJump !== null && jumpElement?.hasPointerCapture(heldJump))
+      jumpElement.releasePointerCapture(heldJump)
     props.input.setStick(0, 0)
     props.input.setJump(false)
     setOffset({ x: 0, y: 0 })
+  }
+  createEffect(() => {
+    if (!props.disabled) return
+    resetContacts()
+  })
+  onMount(() => {
+    window.addEventListener('blur', resetContacts)
+    onCleanup(() => window.removeEventListener('blur', resetContacts))
   })
   const move = (event: PointerEvent): void => {
     if (props.disabled || event.pointerId !== stickPointer) return
@@ -44,6 +59,7 @@ export function TouchControls(props: TouchControlsProps) {
   return (
     <div class={styles.touchControls} aria-label="Movement controls">
       <div
+        ref={stickElement}
         class={styles.stick}
         role="group"
         aria-label="Move Merc"
@@ -71,6 +87,7 @@ export function TouchControls(props: TouchControlsProps) {
         <span class={styles.controlCaption}>Move</span>
       </div>
       <button
+        ref={jumpElement}
         class={styles.jump}
         type="button"
         aria-label="Jump"

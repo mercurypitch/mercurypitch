@@ -24,7 +24,7 @@ export function useAdventure(
   const [voiceMode, setVoiceMode] = createSignal<VoiceMode>('off')
   const [pitch, setPitch] = createSignal<number | null>(null)
   const [notice, setNotice] = createSignal(
-    'Follow the gold path to the first goblet.',
+    'Explore the museum and approach a glass exhibit.',
   )
   const [paused, setPaused] = createSignal(false)
   const [tutorial, setTutorial] = createSignal(
@@ -37,7 +37,7 @@ export function useAdventure(
   const soundscape = createAdventureSoundscape(
     music,
     (previous) =>
-      museumSoundscape(level.id, game.snapshot().player.position, previous),
+      museumSoundscape(level, game.snapshot().player.position, previous),
     () => alive && ready() && !paused() && !tutorial() && !graphicsFailed,
   )
   const storedNote = Number(host.readPreference('comfortable-note') ?? '')
@@ -337,8 +337,9 @@ export function useAdventure(
       const elapsed = lastTime === 0 ? 0 : (now - lastTime) / 1000
       lastTime = now
       if (ready() && !paused() && !tutorial()) {
+        renderer?.setMovementActive(input.hasMovementIntent())
         events(
-          game.step(input.read(renderer?.getCameraYaw() ?? 0), elapsed, now),
+          game.step(input.read(renderer?.getMovementYaw() ?? 0), elapsed, now),
         )
         refresh()
         soundscape.update()
@@ -380,9 +381,12 @@ export function useAdventure(
     const keyUp = (event: KeyboardEvent): void => {
       input.key(event, false)
     }
+    const releaseInput = (): void => input.clear()
     window.addEventListener('keydown', keyDown)
     window.addEventListener('keyup', keyUp)
-    window.addEventListener('blur', pause)
+    // Permission prompts can blur a still-visible window. Release contacts so
+    // movement cannot stick, while the host's foreground gate owns real exits.
+    window.addEventListener('blur', releaseInput)
     const unsubscribe = host.subscribeForeground((foreground) => {
       if (!foreground) pause()
     })
@@ -390,7 +394,7 @@ export function useAdventure(
       unsubscribe()
       window.removeEventListener('keydown', keyDown)
       window.removeEventListener('keyup', keyUp)
-      window.removeEventListener('blur', pause)
+      window.removeEventListener('blur', releaseInput)
     })
   })
   onCleanup(() => {
@@ -430,6 +434,7 @@ export function useAdventure(
       return renderer?.getCameraYaw() ?? 0
     },
     orbit: (x: number, y: number) => renderer?.orbit(x, y),
+    setOrbitActive: (active: boolean) => renderer?.setOrbitActive(active),
     zoom: (delta: number) => renderer?.zoom(delta),
     recenter: () => renderer?.recenter(),
   }

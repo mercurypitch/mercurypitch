@@ -1,4 +1,5 @@
 // BesideCue adventure host — the shared museum gets this app's lifecycle and local storage.
+import type { LevelDefinition } from '@irchiinnuss/glass-game'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
 import { subscribeAppForeground } from '@/infrastructure/app-foreground'
@@ -6,6 +7,7 @@ import { subscribeAppForeground } from '@/infrastructure/app-foreground'
 interface AdventureScreenProps {
   onExit(): void
   assetBase?: string
+  level?: LevelDefinition
 }
 const files: Record<string, string> = {
   merc: 'glass3d/merc.glb',
@@ -53,5 +55,5 @@ export function AdventureScreen(props: AdventureScreenProps) {
     subscribeForeground: subscribeAppForeground,
     onExit: () => props.onExit(),
   })
-  return <GlassAdventure host={host} />
+  return <GlassAdventure host={host} level={props.level} />
 }

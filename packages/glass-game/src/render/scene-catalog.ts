@@ -1,11 +1,13 @@
 // Museum scene catalog — level-specific skyline and dressing stay authored data.
 
-import type { Vec3 } from '../contracts'
+import type { Bounds3, LevelDefinition, Vec3 } from '../contracts'
 
 export interface MuseumSceneRecipe {
   skyTexture?: string
   environment?: string
   reflectionProbe?: Vec3
+  atmosphereOrigin?: Vec3
+  skyRadius?: number
   preferredBundles?: Readonly<Record<string, string>>
   platformDecorations?: readonly {
     bundle: string
@@ -33,6 +35,21 @@ export interface MuseumSceneRecipe {
   }[]
   observatories: readonly { position: Vec3; radius: number }[]
   moon?: { position: Vec3; radius: number }
+}
+
+export interface MuseumVisualRecipe {
+  bundle: string
+  node: string
+  scale: number
+}
+
+export interface MuseumSceneFrame {
+  cameraFar: number
+  lightTarget: Vec3
+  keyPosition: Vec3
+  rimPosition: Vec3
+  shadowExtent: number
+  shadowFar: number
 }
 
 const EMPTY_SCENE: MuseumSceneRecipe = {
@@ -131,7 +148,111 @@ export const MUSEUM_SCENE_CATALOG: Readonly<Record<string, MuseumSceneRecipe>> =
     },
   }
 
-/** New levels start without Glassworks' ornaments or fixed world coordinates. */
-export function getMuseumSceneRecipe(levelId: string): MuseumSceneRecipe {
-  return MUSEUM_SCENE_CATALOG[levelId] ?? EMPTY_SCENE
+/** Bounded authored visuals fail at startup instead of silently changing design. */
+export const MUSEUM_VISUAL_CATALOG: Readonly<
+  Record<string, MuseumVisualRecipe>
+> = {
+  'museum-arch': {
+    bundle: 'museum-kit',
+    node: 'museum_arch',
+    scale: 1,
+  },
+}
+
+function centre(bounds: Bounds3): Vec3 {
+  return {
+    x: (bounds.minX + bounds.maxX) / 2,
+    y: (bounds.minY + bounds.maxY) / 2,
+    z: (bounds.minZ + bounds.maxZ) / 2,
+  }
+}
+
+function radius(bounds: Bounds3): number {
+  return (
+    Math.hypot(
+      bounds.maxX - bounds.minX,
+      bounds.maxY - bounds.minY,
+      bounds.maxZ - bounds.minZ,
+    ) / 2
+  )
+}
+
+function authoredSkyRadius(bounds: Bounds3): number {
+  return Math.max(40, radius(bounds) * 4)
+}
+
+/** World framing and shadow coverage follow authored bounds, including translations. */
+export function getMuseumSceneFrame(level: LevelDefinition): MuseumSceneFrame {
+  const presentation = level.presentation
+  if (presentation === undefined)
+    return {
+      cameraFar: 180,
+      lightTarget: { x: 5, y: 0, z: 4 },
+      keyPosition: { x: -6, y: 12, z: 8 },
+      rimPosition: { x: 12, y: 5, z: -6 },
+      shadowExtent: 10,
+      shadowFar: 35,
+    }
+  const lightTarget = centre(presentation.lightBounds)
+  const lightRadius = Math.max(2, radius(presentation.lightBounds))
+  const worldRadius = Math.max(2, radius(presentation.worldBounds))
+  const skyRadius = authoredSkyRadius(presentation.worldBounds)
+  const lightDistance = lightRadius * 2 + 3
+  return {
+    cameraFar: skyRadius + worldRadius + 8,
+    lightTarget,
+    keyPosition: {
+      x: lightTarget.x - lightDistance * 0.55,
+      y: lightTarget.y + lightDistance,
+      z: lightTarget.z + lightDistance * 0.65,
+    },
+    rimPosition: {
+      x: lightTarget.x + lightDistance,
+      y: lightTarget.y + lightDistance * 0.45,
+      z: lightTarget.z - lightDistance * 0.5,
+    },
+    shadowExtent: lightRadius * 1.08,
+    shadowFar: lightDistance + lightRadius * 2 + 4,
+  }
+}
+
+/** Presentation metadata opts any authored level into the shared museum theme. */
+export function getMuseumSceneRecipe(
+  level: LevelDefinition,
+): MuseumSceneRecipe {
+  const presentation = level.presentation
+  if (presentation === undefined)
+    return MUSEUM_SCENE_CATALOG[level.id] ?? EMPTY_SCENE
+  const origin = centre(presentation.worldBounds)
+  return {
+    skyTexture: 'museum-sky',
+    environment: 'museum-environment-v2',
+    reflectionProbe: {
+      x: level.spawn.position.x,
+      y: Math.min(
+        presentation.worldBounds.maxY,
+        Math.max(presentation.worldBounds.minY, level.spawn.position.y + 1.15),
+      ),
+      z: level.spawn.position.z,
+    },
+    atmosphereOrigin: origin,
+    skyRadius: authoredSkyRadius(presentation.worldBounds),
+    preferredBundles: {
+      'museum-kit': 'museum-kit-v2',
+      vessels: 'vessels-v2',
+    },
+    archPlatforms: [],
+    planterPlatforms: [],
+    kitDecorations: [],
+    observatories: [],
+  }
+}
+
+export function getMuseumVisualRecipe(id: string): MuseumVisualRecipe {
+  const recipe = MUSEUM_VISUAL_CATALOG[id]
+  if (recipe === undefined)
+    throw new Error(
+      `Unknown museum visual recipe "${id}". Register it in render/scene-catalog.ts.`,
+    )
+  return recipe
 }

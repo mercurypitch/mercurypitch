@@ -1,6 +1,7 @@
 // Renderer readiness — an optional reflection failure never hides a playable museum.
 import type * as ThreeTypes from 'three'
-import { Group } from 'three'
+import type { PerspectiveCamera, Scene } from 'three';
+import { DirectionalLight, Group } from 'three'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
@@ -66,6 +67,22 @@ vi.mock('./museum', () => ({
 }))
 import { createGlassRenderer } from './glass-renderer'
 
+function browserFixture() {
+  vi.stubGlobal('window', { devicePixelRatio: 1 })
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  )
+  return {
+    clientWidth: 800,
+    clientHeight: 600,
+    append: vi.fn(),
+  } as unknown as HTMLElement
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   state.listeners.clear()
@@ -76,22 +93,10 @@ afterEach(() => {
 it.each([false, true])(
   'resolves after optional capture failure while context-loss latch=%s remains authoritative',
   async (contextLoss) => {
-    vi.stubGlobal('window', { devicePixelRatio: 1 })
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        disconnect() {}
-      },
-    )
     state.loseContext = contextLoss
     const onAssetError = vi.fn(),
       onContextLost = vi.fn()
-    const container = {
-      clientWidth: 800,
-      clientHeight: 600,
-      append: vi.fn(),
-    } as unknown as HTMLElement
+    const container = browserFixture()
     const renderer = createGlassRenderer(container, GLASSWORKS, (id) => id, {
       onAssetError,
       onContextLost,
@@ -109,3 +114,53 @@ it.each([false, true])(
     renderer.dispose()
   },
 )
+
+it('aims both authored lights and the camera range from translated bounds', async () => {
+  const level = {
+    ...GLASSWORKS,
+    id: 'translated-renderer',
+    spawn: {
+      position: { x: 103, y: 0, z: -45 },
+      facingYaw: Math.PI / 2,
+    },
+    presentation: {
+      worldBounds: {
+        minX: 100,
+        maxX: 112,
+        minY: -2,
+        maxY: 4,
+        minZ: -48,
+        maxZ: -38,
+      },
+      lightBounds: {
+        minX: 102,
+        maxX: 110,
+        minY: -1,
+        maxY: 5,
+        minZ: -47,
+        maxZ: -39,
+      },
+      rooms: [],
+      audioRegions: [],
+      visuals: [],
+      assetRecipeIds: [],
+    },
+  }
+  const renderer = createGlassRenderer(browserFixture(), level, (id) => id)
+  await renderer.ready
+  renderer.render(createGlassGame(level).snapshot(), 0.016)
+
+  const [scene, camera] = state.render.mock.calls[0] as [
+    Scene,
+    PerspectiveCamera,
+  ]
+  const lights = scene.children.filter(
+    (child): child is DirectionalLight => child instanceof DirectionalLight,
+  )
+  expect(lights).toHaveLength(2)
+  for (const light of lights)
+    expect(light.target.position.toArray()).toEqual([106, 2, -43])
+  expect(camera.far).toBeGreaterThan(50)
+  expect(camera.far).toBeLessThan(70)
+  renderer.dispose()
+})

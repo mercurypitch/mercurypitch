@@ -3,16 +3,17 @@
 // ============================================================
 
 import type { Material, Object3D } from 'three'
-import { BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, } from 'three'
+import { BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, Vector3, } from 'three'
 import { EXHIBIT_PLINTH } from '../content/solid-props'
-import type { GameSnapshot, LevelDefinition, PlatformDefinition, } from '../contracts'
+import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, } from '../contracts'
+import { getActiveSolidIds } from '../core/solid-activation'
 import { getPlatformRenderRecipe } from './catalog'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
 import { createPlatformPlanters } from './platform-details'
 import { createPlatformDressing } from './platform-dressing'
-import { getMuseumSceneRecipe } from './scene-catalog'
+import { getMuseumSceneRecipe, getMuseumVisualRecipe } from './scene-catalog'
 import { stretchSurfaceUv } from './surface-uv'
 
 function box(
@@ -25,11 +26,25 @@ function box(
   y: number,
   z: number,
 ) {
-  const mesh = new Mesh(new BoxGeometry(w, h, d), material)
+  const source = new BoxGeometry(w, h, d)
+  const geometry = stretchSurfaceUv(source, new Vector3(w, h, d))
+  source.dispose()
+  const mesh = new Mesh(geometry, material)
   mesh.position.set(x, y, z)
   mesh.castShadow = mesh.receiveShadow = true
   parent.add(mesh)
   return mesh
+}
+
+function proxyMaterial(
+  role: SolidMaterialRole | undefined,
+  materials: MuseumMaterials,
+  fallback: Material,
+): Material {
+  if (role === 'brass') return materials.gold
+  if (role === 'glass') return materials.glass
+  if (role === 'stone') return materials.marble
+  return fallback
 }
 
 function ring(
@@ -58,7 +73,20 @@ function createFloor(platform: PlatformDefinition, materials: MuseumMaterials) {
   const cx = (platform.minX + platform.maxX) / 2
   const cz = (platform.minZ + platform.maxZ) / 2
   group.position.set(cx, platform.top, cz)
-  box(group, materials[recipe.body], w, h, d, 0, -h / 2, 0)
+  box(
+    group,
+    proxyMaterial(
+      platform.presentation?.material,
+      materials,
+      materials[recipe.body],
+    ),
+    w,
+    h,
+    d,
+    0,
+    -h / 2,
+    0,
+  )
   if (!recipe.outline) return group
   // The whole rectangle remains an honest floor. Inlays have no protruding rails.
   for (const sign of [-1, 1]) {
@@ -139,16 +167,21 @@ export function createMuseum(
 ) {
   const root = new Group()
   const materialLibrary = createMaterialLibrary()
-  const sceneRecipe = getMuseumSceneRecipe(level.id)
+  const sceneRecipe = getMuseumSceneRecipe(level)
   const planters = new Map<string, Group>()
   const coveredSolids = new Set<string>()
-  const solidFallbacks = (level.solids ?? []).flatMap((solid) => {
-    if (!solid.fallback) return []
+  const solidProxies = (level.solids ?? []).flatMap((solid) => {
+    if (!solid.fallback && !solid.presentation) return []
+    const material = proxyMaterial(
+      solid.presentation?.material,
+      materials,
+      materials.marble,
+    )
     const mesh =
       solid.shape === 'box'
         ? box(
             root,
-            materials.marble,
+            material,
             solid.maxX - solid.minX,
             solid.thickness,
             solid.maxZ - solid.minZ,
@@ -163,8 +196,9 @@ export function createMuseum(
               solid.thickness,
               32,
             ),
-            materials.marble,
+            material,
           )
+    mesh.name = `solid-${solid.id}`
     if (solid.shape === 'cylinder') {
       mesh.position.set(solid.x, solid.top - solid.thickness / 2, solid.z)
       mesh.castShadow = mesh.receiveShadow = true
@@ -180,13 +214,13 @@ export function createMuseum(
   )
   root.add(dressing.root)
   let cameraMeshCache: Mesh[] | undefined
-  let lastEnabled = ''
+  let lastActive: string | undefined
   const floors = new Map(
     level.platforms.map((platform) => {
       const floor = createFloor(platform, materials)
       if (
         sceneRecipe.planterPlatforms.includes(platform.id) &&
-        !solidFallbacks.some(
+        !solidProxies.some(
           ({ solid }) =>
             solid.platformId === platform.id &&
             solid.fallback?.replacedByBundle === 'museum-garden-v2',
@@ -202,28 +236,31 @@ export function createMuseum(
   )
   const pads = new Map<string, Mesh>()
   for (const target of level.breakables) {
-    const pedestal = new Mesh(
-      new CylinderGeometry(
+    if (target.mount === undefined) {
+      const pedestal = new Mesh(
+        new CylinderGeometry(
+          EXHIBIT_PLINTH.radiusTop,
+          EXHIBIT_PLINTH.radiusBottom,
+          EXHIBIT_PLINTH.height,
+          32,
+        ),
+        materials.marble,
+      )
+      pedestal.name = `legacy-plinth-${target.id}`
+      pedestal.position.copy(target.position)
+      pedestal.position.y += EXHIBIT_PLINTH.height / 2
+      pedestal.castShadow = pedestal.receiveShadow = true
+      root.add(pedestal)
+      ring(
+        root,
+        materials.gold,
         EXHIBIT_PLINTH.radiusTop,
-        EXHIBIT_PLINTH.radiusBottom,
-        EXHIBIT_PLINTH.height,
-        32,
-      ),
-      materials.marble,
-    )
-    pedestal.position.copy(target.position)
-    pedestal.position.y += EXHIBIT_PLINTH.height / 2
-    pedestal.castShadow = pedestal.receiveShadow = true
-    root.add(pedestal)
-    ring(
-      root,
-      materials.gold,
-      EXHIBIT_PLINTH.radiusTop,
-      0.014,
-      target.position.x,
-      target.position.y + EXHIBIT_PLINTH.height,
-      target.position.z,
-    )
+        0.014,
+        target.position.x,
+        target.position.y + EXHIBIT_PLINTH.height,
+        target.position.z,
+      )
+    }
     const pad = new Mesh(
       new CircleGeometry(0.23, 48),
       new MeshBasicMaterial({
@@ -310,7 +347,7 @@ export function createMuseum(
     },
     setKit(scene: Object3D, bundle: string) {
       cameraMeshCache = undefined
-      for (const { solid, mesh } of solidFallbacks)
+      for (const { solid, mesh } of solidProxies)
         if (
           solid.fallback?.replacedByBundle === bundle &&
           scene.getObjectByName(solid.fallback.replacedByNode)
@@ -379,21 +416,39 @@ export function createMuseum(
           root.add(pedestal)
         }
       }
+      for (const visual of level.presentation?.visuals ?? []) {
+        const recipe = getMuseumVisualRecipe(visual.recipeId)
+        if (recipe.bundle !== bundle) continue
+        const source = scene.getObjectByName(recipe.node)
+        if (source === undefined)
+          throw new Error(
+            `Museum visual recipe "${visual.recipeId}" could not find node "${recipe.node}" in bundle "${bundle}".`,
+          )
+        const art = createKitInstance(source, materials, {}, materialLibrary)
+        art.name = `visual-${visual.id}`
+        art.position.copy(visual.position)
+        art.rotation.y = visual.yaw
+        art.scale.setScalar(recipe.scale)
+        root.add(art)
+      }
     },
     update(snapshot: GameSnapshot) {
+      const activeSolidIds =
+        snapshot.activeSolidIds ??
+        getActiveSolidIds(level, new Set(snapshot.completedBreakableIds))
+      const active = new Set(activeSolidIds)
       dressing.update(snapshot.enabledPlatformIds)
-      for (const { solid, mesh } of solidFallbacks)
-        mesh.visible =
-          !coveredSolids.has(solid.id) &&
-          (solid.platformId === undefined ||
-            snapshot.enabledPlatformIds.includes(solid.platformId))
-      const enabled = snapshot.enabledPlatformIds.join('|')
-      if (enabled !== lastEnabled) {
+      for (const { solid, mesh } of solidProxies) {
+        const solidActive = active.has(solid.id)
+        mesh.visible = !coveredSolids.has(solid.id) && solidActive
+      }
+      const enabled = activeSolidIds.join('|')
+      if (enabled !== lastActive) {
         cameraMeshCache = undefined
-        lastEnabled = enabled
+        lastActive = enabled
       }
       floors.forEach((floor, id) => {
-        floor.visible = snapshot.enabledPlatformIds.includes(id)
+        floor.visible = active.has(id)
       })
       pads.forEach((pad, id) => {
         pad.visible = !snapshot.completedBreakableIds.includes(id)

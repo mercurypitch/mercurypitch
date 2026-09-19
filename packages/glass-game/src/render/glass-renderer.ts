@@ -2,7 +2,7 @@
 // Glass adventure renderer — a disposable, host-neutral Three.js museum scene.
 // ============================================================
 
-import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFSoftShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
+import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { loadMuseumAssets } from './asset-kit'
 import { createAtmosphere } from './atmosphere'
@@ -14,7 +14,7 @@ import { createMuseumEnvironment } from './environment'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
-import { getMuseumSceneRecipe } from './scene-catalog'
+import { getMuseumSceneFrame, getMuseumSceneRecipe, getMuseumVisualRecipe, } from './scene-catalog'
 import { createVessel } from './vessels'
 
 export interface GlassRendererOptions {
@@ -29,9 +29,14 @@ export interface GlassRenderer {
   render(snapshot: GameSnapshot, dt: number): void
   resize(): void
   orbit(dxRadians: number, dyRadians: number): void
+  setOrbitActive(active: boolean): void
   zoom(delta: number): void
   recenter(): void
+  /** Actual rendered view heading, used for presentation and diagnostics. */
   getCameraYaw(): number
+  /** Stable camera-relative movement basis for the current held input. */
+  getMovementYaw(): number
+  setMovementActive(active: boolean): void
   getMetrics(): {
     drawCalls: number
     triangles: number
@@ -52,6 +57,11 @@ export function createGlassRenderer(
   level.platforms.forEach((platform) =>
     getPlatformRenderRecipe(platform.renderId ?? platform.kind),
   )
+  level.presentation?.visuals.forEach((visual) =>
+    getMuseumVisualRecipe(visual.recipeId),
+  )
+  const sceneRecipe = getMuseumSceneRecipe(level)
+  const sceneFrame = getMuseumSceneFrame(level)
   const renderer = new WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -62,7 +72,7 @@ export function createGlassRenderer(
   renderer.toneMappingExposure = 0.9
   renderer.transmissionResolutionScale = 0.5
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = PCFSoftShadowMap
+  renderer.shadowMap.type = PCFShadowMap
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
   renderer.domElement.style.cssText =
     'display:block;width:100%;height:100%;touch-action:none;'
@@ -70,28 +80,36 @@ export function createGlassRenderer(
   container.append(renderer.domElement)
   const scene = new Scene()
   scene.fog = new FogExp2(0x59899e, 0.009)
-  const camera = createAdventureCamera(level)
+  const camera = createAdventureCamera(level, {
+    reducedMotion: options.reducedMotion,
+  })
+  camera.camera.far = sceneFrame.cameraFar
+  camera.camera.updateProjectionMatrix()
   const environment = createMuseumEnvironment(renderer, scene)
   scene.environmentIntensity = 0.65
   const materials = createMuseumMaterials()
-  const atmosphere = createAtmosphere(materials, getMuseumSceneRecipe(level.id))
+  const atmosphere = createAtmosphere(materials, sceneRecipe)
   scene.add(atmosphere.root)
   scene.add(new HemisphereLight(0xcceaff, 0x243e42, 0.6))
   const key = new DirectionalLight(0xffdfaa, 2.5)
-  key.position.set(-6, 12, 8)
-  key.target.position.set(5, 0, 4)
+  key.position.copy(sceneFrame.keyPosition)
+  key.target.position.copy(sceneFrame.lightTarget)
   key.castShadow = true
   key.shadow.mapSize.set(1024, 1024)
-  key.shadow.camera.left = key.shadow.camera.bottom = -10
-  key.shadow.camera.right = key.shadow.camera.top = 10
+  key.shadow.camera.left = key.shadow.camera.bottom = -sceneFrame.shadowExtent
+  key.shadow.camera.right = key.shadow.camera.top = sceneFrame.shadowExtent
   key.shadow.camera.near = 0.5
-  key.shadow.camera.far = 35
+  key.shadow.camera.far = sceneFrame.shadowFar
   key.shadow.normalBias = 0.018
   key.shadow.bias = -0.00015
   scene.add(key, key.target)
   const rim = new DirectionalLight(0x73ddd9, 0.75)
-  rim.position.set(12, 5, -6)
-  scene.add(rim)
+  rim.position.copy(sceneFrame.rimPosition)
+  if (level.presentation === undefined) scene.add(rim)
+  else {
+    rim.target.position.copy(sceneFrame.lightTarget)
+    scene.add(rim, rim.target)
+  }
   const museum = createMuseum(level, materials)
   scene.add(museum.root)
   const contact = createContactShadow(level)
@@ -144,7 +162,6 @@ export function createGlassRenderer(
     () => disposed,
     options.onAssetError,
   )
-  const sceneRecipe = getMuseumSceneRecipe(level.id)
   const environmentReady =
     sceneRecipe.environment !== undefined
       ? environment
@@ -182,9 +199,12 @@ export function createGlassRenderer(
     ready,
     resize,
     orbit: camera.orbit,
+    setOrbitActive: camera.setOrbitActive,
     zoom: camera.zoom,
     recenter: camera.recenter,
     getCameraYaw: camera.yaw,
+    getMovementYaw: camera.movementYaw,
+    setMovementActive: camera.setMovementActive,
     getMetrics: () => ({
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,

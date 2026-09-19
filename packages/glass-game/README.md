@@ -6,6 +6,7 @@ A shared, content-driven 3D platformer for MercuryPitch and BesideCue. The playe
 
 - `contracts.ts` describes level data, simulation snapshots, input and captured pitch evidence.
 - `content/` owns stable IDs and authored geometry. `glassworks.ts` is the first level.
+- `authoring/` composes reusable local rooms and exhibit prefabs into a validated `LevelDefinition`. It is pure TypeScript; hosts and renderers consume the compiled result.
 - `core/` is pure TypeScript. It owns fixed-step movement, floor collision, holds, progress and route gates; it has no browser, rendering or microphone imports.
 - `render/` owns Three.js, the follow/orbit camera, Merc, materials and fracture presentation. `render/catalog.ts` maps content variants and platform skins to asset/material recipes.
 - `host.ts` defines injected assets, persistence, foreground lifecycle, voice and sound. `browser/` adapts the existing shared microphone, pitch stream and audio-context lease services.
@@ -27,6 +28,22 @@ The default move speed is 1.15 m/s, jump apex 0.5 m and gravity 6.2 m/s². Movem
 The collision adapter supports flat rectangular floors and authored `solids`: box props and tapered round props, with side, top and underside contact independent of Merc's animated silhouette. `content/solid-props.ts` shares the exhibit plinth dimensions with the renderer and defines reachable planter bases, arch supports and columns. Give an optional-floor prop a `platformId` so its collision follows that floor's activation. Decorative bundles can replace visible fallback proxies without changing collision.
 
 Supporting the whole outer footprint would incorrectly bridge the 0.30 m teaching gap; floor support uses the foot centre. Props also recover side overlap when Merc steps off a rim. `CourseCollider` remains the replacement boundary for a future validated slope or moving-platform controller. **Slopes, moving platforms, capsule dynamics and rigid-body shard simulation are not implemented.** Intact glass, foliage and distant decorative architecture currently remain nonblocking.
+
+## Compose rooms from a shared kit
+
+`content/foundation-room-kit.ts` and `content/foundation-routes.ts` are worked examples: two 6 m square rooms arranged straight or around a quarter turn, each with two required holds, one optional exhibit and a permanent doorway gate. They are small composition proofs, not the planned longer museum levels.
+
+1. Define a `RoomPrefab` in local metres with floors, box/round solid proxies, checkpoints, exhibit mounts, cardinal connection ports and exit zones. Optional visuals name render recipes; sound regions and room/camera bounds are data. A mount names its supporting local platform and safe listening anchor.
+2. Define an `ExhibitPrefab` with a supported held-note recipe, vessel variant and shared plinth dimensions. Those dimensions place both the visible mount and its collision proxy. Put each exhibit in an explicit room/mount; give encounters stable IDs and prerequisite references.
+3. Create an `AuthoredLevelSource` with stable `levelId`, `layoutId` and room instance IDs. Room transforms support translation and `yawQuarterTurns: 0 | 1 | 2 | 3`; arbitrary rotation and scale are rejected. All gameplay and presentation coordinates transform together. `audioSceneId` may override a placed room's sound regions.
+4. Connect two `room.port` references with matching position, opposing direction and matching width/height. Their authored seals are removed. An optional connection gate declares `opensAfter`; completion removes the same visible and physical solid. `solidActivations` can also enable a permanent bridge. Platforms cannot disappear after completion in this foundation.
+5. Call `composeLevel(source, catalog)`. Its diagnostics identify invalid transforms/geometry, unknown recipes/references, duplicate identities, prerequisite cycles, declared required routes depending on optional exhibits, required encounters omitted from the exit's transitive prerequisites, and unsupported or blocked safe pads. It does not prove global reachability: exercise the real controller through every required route and its closed gates.
+
+Compiled identities include level, layout, room, member type and local ID. Reordering arrays does not change them. `contentRevision` is metadata, not an automatic progress reset; moving a saved checkpoint or changing prerequisites still needs a deliberate compatibility decision. The explicit `spawnCheckpoint` controls fresh and reset visits independently of checkpoint sorting. Each layout has a distinct progress namespace; original Glassworks IDs remain unchanged.
+
+`getActiveCourseSolids` is the shared authority for physics, visible proxies and camera obstacles. The renderer consumes `snapshot.activeSolidIds`, so a saved open gate is absent immediately, without depending on an animation. Static imported art needs matching proxies and reviewed dimensions before replacing these visible shapes. Room `cameraBounds` are transformed metadata; this milestone uses mesh obstruction, not a new room-constrained camera or streaming system.
+
+In a games-enabled Vite development server, open `/glass-game/?layout=straight` or `/glass-game/?layout=quarter-turn`. The default `/glass-game/` still opens Glassworks directly without BesideCue onboarding. Development proof content uses a separate package entry; the query selector is excluded from production. There is no public campaign selector, new voice judge, grade system or store-profile change in this milestone.
 
 ## Add an exhibit or platform appearance
 
@@ -50,6 +67,8 @@ Each sound owner holds a separate shared-context lease and bus. Cancellation req
 
 Pause, background and unmount cancel microphone capture and pending reference ownership. Returning does not automatically restart the voice challenge. Save success separately from scene effects and retain it after falls, reloads or backgrounding.
 
+A visible-window blur only clears held keys, stick/jump contacts and camera capture. It does not open Pause or retire a pending permission request; the host's hidden-page/pagehide/native-inactive events still do. The camera follows Merc's heading while moving, with a held manual orbit and 1.75 s quiet interval taking precedence. Recenter retains zoom/pitch, and reduced-motion mode keeps automatic heading rotation off. Held movement keeps a stable basis so automatic camera rotation cannot steer it into a circle. When a nearby wall compresses the view, bounded steeper camera rays can find room above it; easing and clearance hysteresis retain the player's chosen pitch for open space.
+
 ## Museum soundtrack
 
 `host.createMusic` is optional so another host can provide or omit its own output adapter. The browser adapter lazily loads the approved M01 museum and M03 garden music with A01/A02/A03 ambience; scene selection is presentation data in `content/soundscapes.ts`. M02 is not used. Audio starts from a player gesture, preserves loop positions across encounters, and stores mute/music/ambience preferences independently from progress.
@@ -59,3 +78,5 @@ Pause, background and unmount cancel microphone capture and pending reference ow
 ## Focused verification
 
 From this package, run `pnpm exec vitest run src/core src/browser`. From `packages/pitch-engine`, run `pnpm exec vitest run src/pitch-f0-stream.test.ts` for the shared observation seam. Core tests walk the real route, test all three authored jumps and closed gates, prove optional completion is independent, and exercise stale/silent/duplicate voice evidence. Browser adapter tests control microphone and Web Audio boundaries; they do not claim native-device performance or microphone usability.
+
+For room composition, run `pnpm exec vitest run src/authoring src/render/camera.test.ts src/render/museum.test.ts`. BesideCue's `glass-adventure-authoring.e2e.ts` covers the development routes and real embedded GLB texture loading under the main app's CSP. Texture images embedded in GLBs need `blob:` in both `connect-src` (ImageBitmap fetch) and `img-src` (image fallback); scripts retain their existing restrictions. Seeded browser saves verify restoration, not earned singing; pure route tests exercise fresh holds through the actual game coordinator. Actual mobile camera/microphone and sustained rendering acceptance remain device checks.

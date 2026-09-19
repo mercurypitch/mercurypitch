@@ -1,6 +1,9 @@
 // Soundscape lifecycle tests — scene changes cannot revive music during capture or after app background.
 import { describe, expect, it, vi } from 'vitest'
+import { GLASS_FOUNDATION_QUARTER_TURN } from '../content/foundation-routes'
+import { GLASSWORKS } from '../content/glassworks'
 import { museumSoundscape } from '../content/soundscapes'
+import type { LevelDefinition } from '../contracts'
 import type { GlassMuseumAudio, MuseumAudioScene } from '../host'
 import { createAdventureSoundscape } from './soundscape'
 
@@ -106,11 +109,96 @@ describe('adventure soundscape', () => {
 
   it('uses overlapping region boundaries so small movements do not repeatedly change music', () => {
     const position = { x: 8, y: 0, z: 5 }
-    expect(museumSoundscape('glassworks', position, 'museum')).toBe('museum')
-    expect(museumSoundscape('glassworks', position, 'garden')).toBe('garden')
-    expect(museumSoundscape('glassworks', { x: 5.5, y: 0, z: 2 })).toBe(
+    expect(museumSoundscape(GLASSWORKS, position, 'museum')).toBe('museum')
+    expect(museumSoundscape(GLASSWORKS, position, 'garden')).toBe('garden')
+    expect(museumSoundscape(GLASSWORKS, { x: 5.5, y: 0, z: 2 })).toBe('gallery')
+    expect(
+      museumSoundscape(
+        { ...GLASSWORKS, id: 'future-level' },
+        position,
+        'garden',
+      ),
+    ).toBe('museum')
+  })
+
+  it('selects compiled translated regions with a modest boundary hysteresis', () => {
+    const level: LevelDefinition = {
+      ...GLASSWORKS,
+      id: 'authored-quarter-turn',
+      presentation: {
+        worldBounds: {
+          minX: 18,
+          maxX: 30,
+          minY: -2,
+          maxY: 4,
+          minZ: 8,
+          maxZ: 16,
+        },
+        lightBounds: {
+          minX: 18,
+          maxX: 30,
+          minY: -2,
+          maxY: 4,
+          minZ: 8,
+          maxZ: 16,
+        },
+        rooms: [],
+        audioRegions: [
+          {
+            id: 'turned-garden',
+            bounds: {
+              minX: 20,
+              maxX: 24,
+              minY: -1,
+              maxY: 3,
+              minZ: 10,
+              maxZ: 14,
+            },
+            sceneId: 'garden',
+          },
+          {
+            id: 'turned-gallery',
+            bounds: {
+              minX: 24,
+              maxX: 28,
+              minY: -1,
+              maxY: 3,
+              minZ: 10,
+              maxZ: 14,
+            },
+            sceneId: 'gallery',
+          },
+        ],
+        visuals: [],
+        assetRecipeIds: [],
+      },
+    }
+    expect(museumSoundscape(level, { x: 22, y: 0, z: 12 })).toBe('garden')
+    expect(museumSoundscape(level, { x: 24.2, y: 0, z: 12 }, 'garden')).toBe(
+      'garden',
+    )
+    expect(museumSoundscape(level, { x: 24.31, y: 0, z: 12 }, 'garden')).toBe(
       'gallery',
     )
-    expect(museumSoundscape('future-level', position, 'garden')).toBe('museum')
+    expect(museumSoundscape(level, { x: 24.31, y: 4, z: 12 }, 'gallery')).toBe(
+      'museum',
+    )
+  })
+
+  it('uses the compiled regions after a room quarter turn', () => {
+    const regions = GLASS_FOUNDATION_QUARTER_TURN.presentation!.audioRegions
+    expect(new Set(regions.map((region) => region.sceneId))).toEqual(
+      new Set(['museum', 'gallery']),
+    )
+    for (const region of regions) {
+      const position = {
+        x: (region.bounds.minX + region.bounds.maxX) / 2,
+        y: (region.bounds.minY + region.bounds.maxY) / 2,
+        z: (region.bounds.minZ + region.bounds.maxZ) / 2,
+      }
+      expect(museumSoundscape(GLASS_FOUNDATION_QUARTER_TURN, position)).toBe(
+        region.sceneId,
+      )
+    }
   })
 })

@@ -1,5 +1,5 @@
 // Glass adventure — the same playable museum surface in web and native hosts.
-import { createEffect, createMemo, createSignal, Show, untrack } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
@@ -78,19 +78,31 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
   )
   let pointer: number | null = null
   let previous = { x: 0, y: 0 }
-  const release = (event: PointerEvent): void => {
-    if (event.pointerId === pointer) pointer = null
+  const releaseOrbit = (): void => {
+    const heldPointer = pointer
+    pointer = null
+    if (heldPointer !== null) {
+      adventure.setOrbitActive(false)
+      if (canvas?.hasPointerCapture(heldPointer))
+        canvas.releasePointerCapture(heldPointer)
+    }
   }
+  const release = (event: PointerEvent): void => {
+    if (event.pointerId !== pointer) return
+    pointer = null
+    adventure.setOrbitActive(false)
+  }
+  onMount(() => {
+    window.addEventListener('blur', releaseOrbit)
+    onCleanup(() => window.removeEventListener('blur', releaseOrbit))
+  })
   createEffect(() => {
     if (
       adventure.paused() ||
       adventure.tutorial() ||
       adventure.snapshot().complete
-    ) {
-      if (pointer !== null && canvas?.hasPointerCapture(pointer))
-        canvas.releasePointerCapture(pointer)
-      pointer = null
-    }
+    )
+      releaseOrbit()
   })
   return (
     <div
@@ -117,6 +129,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           event.currentTarget.focus({ preventScroll: true })
           previous = { x: event.clientX, y: event.clientY }
           event.currentTarget.setPointerCapture(event.pointerId)
+          adventure.setOrbitActive(true)
         }}
         onPointerMove={(event) => {
           if (

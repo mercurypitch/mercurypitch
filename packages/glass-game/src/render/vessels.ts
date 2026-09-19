@@ -112,7 +112,8 @@ export function createVessel(
   const materialLibrary = createMaterialLibrary()
   root.name = `vessel-${target.id}`
   root.position.copy(target.position)
-  root.position.y += 0.255
+  root.position.y += target.mount?.height ?? 0.255
+  if (target.mount !== undefined) root.rotation.y = target.mount.facingYaw
   if (recipe.faceAnchor === true)
     root.rotation.y = Math.atan2(
       target.anchor.x - target.position.x,

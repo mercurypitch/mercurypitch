@@ -16,7 +16,7 @@ export function readProgress(
   const fallback: SavedProgress = {
     version: 1,
     levelId: level.id,
-    checkpointId: level.checkpoints[0]?.id ?? '',
+    checkpointId: level.spawn.checkpointId ?? level.checkpoints[0]?.id ?? '',
     completedBreakableIds: [],
     finished: false,
   }

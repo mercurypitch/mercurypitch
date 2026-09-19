@@ -12,7 +12,7 @@ import { prepareExhibitAsset } from './exhibit-asset'
 import { createKitInstance } from './kit-instance'
 import type { MuseumMaterials } from './materials'
 import type { createMuseum } from './museum'
-import { getMuseumSceneRecipe } from './scene-catalog'
+import { getMuseumSceneRecipe, getMuseumVisualRecipe } from './scene-catalog'
 import type { SurfaceTextureSlot, TextureRecipe } from './texture-recipe'
 import { configureTexture } from './texture-recipe'
 import type { createVessel } from './vessels'
@@ -27,7 +27,7 @@ export async function loadMuseumAssets(
   disposed: () => boolean,
   onError?: (id: string, error: unknown) => void,
 ): Promise<void> {
-  const sceneRecipe = getMuseumSceneRecipe(level.id)
+  const sceneRecipe = getMuseumSceneRecipe(level)
   const loadBundle = async (
     id: string,
     use: (scene: Object3D, resolvedBundle: string) => void,
@@ -112,6 +112,9 @@ export async function loadMuseumAssets(
   const bundles = new Set<string>([
     ...sceneRecipe.kitDecorations.map((item) => item.bundle),
     ...(sceneRecipe.platformDecorations ?? []).map((item) => item.bundle),
+    ...(level.presentation?.visuals ?? []).map(
+      (visual) => getMuseumVisualRecipe(visual.recipeId).bundle,
+    ),
   ])
   const portraitTextures = new Set<string>()
   for (const target of level.breakables) {

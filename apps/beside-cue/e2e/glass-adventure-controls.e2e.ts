@@ -56,6 +56,21 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await page.clock.runFor(32)
   const draggedYaw = await value(page, 'camera-yaw')
   expect(Math.abs(draggedYaw - initialYaw)).toBeGreaterThan(0.2)
+  await page.clock.runFor(1_900)
+  const heldStart = {
+    x: await value(page, 'player-x'),
+    z: await value(page, 'player-z'),
+  }
+  await page.keyboard.down('KeyD')
+  await page.clock.runFor(350)
+  await page.keyboard.up('KeyD')
+  expect(
+    Math.hypot(
+      (await value(page, 'player-x')) - heldStart.x,
+      (await value(page, 'player-z')) - heldStart.z,
+    ),
+  ).toBeGreaterThan(0.2)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
   await page.mouse.up()
   await page.mouse.move(470, 240)
   await page.clock.runFor(32)
@@ -72,6 +87,28 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await page.clock.runFor(32)
   expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
   await page.mouse.up()
+
+  await page.clock.runFor(1_900)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
+  const strafeStart = {
+    x: await value(page, 'player-x'),
+    z: await value(page, 'player-z'),
+  }
+  await page.keyboard.down('KeyD')
+  await page.clock.runFor(600)
+  await page.keyboard.up('KeyD')
+  const strafe = {
+    x: (await value(page, 'player-x')) - strafeStart.x,
+    z: (await value(page, 'player-z')) - strafeStart.z,
+  }
+  const expected = { x: Math.cos(draggedYaw), z: -Math.sin(draggedYaw) }
+  expect(strafe.x * expected.x + strafe.z * expected.z).toBeGreaterThan(0.35)
+  expect(Math.abs(strafe.x * expected.z - strafe.z * expected.x)).toBeLessThan(
+    0.08,
+  )
+  expect(
+    Math.abs((await value(page, 'camera-yaw')) - draggedYaw),
+  ).toBeGreaterThan(0.4)
 
   const x = await value(page, 'player-x')
   const z = await value(page, 'player-z')

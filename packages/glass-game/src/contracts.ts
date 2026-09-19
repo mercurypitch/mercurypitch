@@ -13,6 +13,27 @@ export interface BoundsXZ {
   maxZ: number
 }
 
+export interface Bounds3 extends BoundsXZ {
+  minY: number
+  maxY: number
+}
+
+/** A solid is active only while both completion clauses hold. */
+export interface SolidActivation {
+  allCompleted?: readonly string[]
+  noneCompleted?: readonly string[]
+}
+
+export type SolidProxyRole = 'floor' | 'bridge' | 'wall' | 'gate' | 'plinth'
+export type SolidMaterialRole = 'stone' | 'brass' | 'glass'
+
+/** Host-neutral visible fallback for collision that must not become invisible. */
+export interface SolidPresentation {
+  role: SolidProxyRole
+  material: SolidMaterialRole
+  assetRecipeId?: string
+}
+
 export interface PlatformDefinition extends BoundsXZ {
   id: string
   top: number
@@ -21,6 +42,9 @@ export interface PlatformDefinition extends BoundsXZ {
   material: 'stone' | 'brass'
   /** Optional renderer catalog recipe; has no effect on this solid proxy. */
   renderId?: string
+  activation?: SolidActivation
+  presentation?: SolidPresentation
+  /** Legacy single-encounter bridge activation retained for Glassworks saves. */
   unlockAfter?: string
   catchCheckpointId?: string
 }
@@ -32,6 +56,8 @@ interface SolidPropBase {
   thickness: number
   /** Props on an unopened floor are inactive with that floor. */
   platformId?: string
+  activation?: SolidActivation
+  presentation?: SolidPresentation
   /** Keep a visible stone proxy until optional detailed art installs. */
   fallback?: { replacedByBundle: string; replacedByNode: string }
 }
@@ -64,10 +90,21 @@ export interface BreakableDefinition {
   label: string
   position: Vec3
   anchor: Vec3
+  mount?: ExhibitMountDefinition
   variant: string
   optional: boolean
   requiresCompleted?: readonly string[]
   hold: HoldDefinition
+}
+
+export interface ExhibitMountDefinition {
+  kind: 'plinth'
+  solidId: string
+  height: number
+  radiusTop: number
+  radiusBottom: number
+  facingYaw: number
+  presentation: SolidPresentation
 }
 
 export interface CheckpointDefinition {
@@ -78,10 +115,57 @@ export interface CheckpointDefinition {
   requiresCompleted?: readonly string[]
 }
 
+export type MuseumAudioSceneId = 'museum' | 'garden' | 'gallery'
+
+export interface AuthoredLevelIdentity {
+  levelId: string
+  layoutId: string
+  contentRevision: number
+}
+
+export interface RoomPresentationDefinition {
+  id: string
+  bounds: Bounds3
+  cameraBounds?: Bounds3
+  ports?: readonly CompiledRoomPortDefinition[]
+}
+
+export interface CompiledRoomPortDefinition {
+  id: string
+  position: Vec3
+  facingYaw: number
+  width: number
+  height: number
+}
+
+export interface AudioRegionDefinition {
+  id: string
+  bounds: Bounds3
+  sceneId: MuseumAudioSceneId
+}
+
+export interface VisualInstanceDefinition {
+  id: string
+  recipeId: string
+  position: Vec3
+  yaw: number
+}
+
+export interface LevelPresentationDefinition {
+  worldBounds: Bounds3
+  lightBounds: Bounds3
+  rooms: readonly RoomPresentationDefinition[]
+  audioRegions: readonly AudioRegionDefinition[]
+  visuals: readonly VisualInstanceDefinition[]
+  assetRecipeIds: readonly string[]
+}
+
 export interface LevelDefinition {
   id: string
   title: string
-  spawn: { position: Vec3; facingYaw: number }
+  authored?: AuthoredLevelIdentity
+  presentation?: LevelPresentationDefinition
+  spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]
   solids?: readonly SolidPropDefinition[]
   checkpoints: readonly CheckpointDefinition[]
@@ -124,6 +208,8 @@ export interface BreakableSnapshot {
 export interface GameSnapshot {
   player: PlayerState
   breakables: readonly BreakableSnapshot[]
+  /** All active collision IDs, including floors and props. */
+  activeSolidIds?: readonly string[]
   enabledPlatformIds: readonly string[]
   completedBreakableIds: readonly string[]
   activeEncounter: { id: string; charge: number; targetMidi: number } | null

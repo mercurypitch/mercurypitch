@@ -1,12 +1,13 @@
 // Glass adventure coordinator — pure movement, encounter ownership and durable route progress.
 
-import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, } from '../contracts'
+import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PlatformDefinition, } from '../contracts'
 import type { CourseCollider } from './collision'
 import { containsBody, FLAT_COURSE_COLLIDER } from './collision'
 import type { HoldJudge } from './hold'
 import { createHoldJudge } from './hold'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
 import { findCheckpoint, readProgress, requirementsMet } from './progress'
+import { getActiveCourseSolids, getActiveSolidIds } from './solid-activation'
 
 const INTERACTION_RADIUS = 0.75
 const SHATTER_SECONDS = 1.4
@@ -39,8 +40,8 @@ export function createGlassGame(
   const brokenAt = new Map<string, number>()
 
   const platforms = () =>
-    level.platforms.filter(
-      (p) => p.unlockAfter === undefined || completed.has(p.unlockAfter),
+    getActiveCourseSolids(level, completed).filter(
+      (solid): solid is PlatformDefinition => solid.kind !== 'prop',
     )
 
   const phase = (): EncounterPhase => {
@@ -135,19 +136,12 @@ export function createGlassGame(
       ) {
         accumulator = Math.max(0, accumulator - MOVEMENT.fixedStep)
         steps++
-        const enabledPlatforms = platforms()
+        const activeSolids = getActiveCourseSolids(level, completed)
         const step = stepMovement(
           player,
           input,
           MOVEMENT.fixedStep,
-          [
-            ...enabledPlatforms,
-            ...(level.solids ?? []).filter(
-              (prop) =>
-                prop.platformId === undefined ||
-                enabledPlatforms.some((floor) => floor.id === prop.platformId),
-            ),
-          ],
+          activeSolids,
           collider,
         )
         if (step.jumped) events.push({ type: 'jumped' })
@@ -207,6 +201,7 @@ export function createGlassGame(
       return events
     },
     snapshot(): GameSnapshot {
+      const activeSolidIds = getActiveSolidIds(level, completed)
       return {
         player: {
           position: { ...player.position },
@@ -232,7 +227,10 @@ export function createGlassGame(
                   : 'idle',
           brokenAt: brokenAt.get(target.id) ?? null,
         })),
-        enabledPlatformIds: platforms().map((p) => p.id),
+        activeSolidIds,
+        enabledPlatformIds: level.platforms
+          .filter((platform) => activeSolidIds.includes(platform.id))
+          .map((platform) => platform.id),
         completedBreakableIds: [...completed],
         activeEncounter:
           active === null

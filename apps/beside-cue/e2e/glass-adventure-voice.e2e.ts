@@ -6,10 +6,18 @@ interface VoiceSource {
   gain: GainNode
   track: MediaStreamTrack
 }
+interface PendingPermission {
+  resolve(stream: MediaStream): void
+  reject(cause: unknown): void
+}
 declare global {
   interface Window {
     glassVoiceFixture: {
       sources: VoiceSource[]
+      deferNextPermission(): void
+      grantPermission(): Promise<void>
+      denyPermission(): void
+      pendingPermissionCount(): number
       setAmplitude(value: number): void
       dispose(): Promise<void>
     }
@@ -49,12 +57,13 @@ async function openMuseum(page: Page): Promise<void> {
       )
     }
     let amplitude = 0
+    let nextPermission: 'grant' | 'defer' = 'grant'
     const sources: VoiceSource[] = []
+    const pendingPermissions: PendingPermission[] = []
     const original = navigator.mediaDevices.getUserMedia.bind(
       navigator.mediaDevices,
     )
-    navigator.mediaDevices.getUserMedia = async (constraints) => {
-      if (!constraints?.audio) return original(constraints)
+    const createStream = async (): Promise<MediaStream> => {
       const context = new AudioContext()
       await context.resume()
       const oscillator = context.createOscillator()
@@ -76,8 +85,36 @@ async function openMuseum(page: Page): Promise<void> {
       sources.push({ context, gain, track })
       return destination.stream
     }
+    navigator.mediaDevices.getUserMedia = async (constraints) => {
+      if (!constraints?.audio) return original(constraints)
+      const permission = nextPermission
+      nextPermission = 'grant'
+      if (permission === 'defer')
+        return new Promise<MediaStream>((resolve, reject) => {
+          pendingPermissions.push({ resolve, reject })
+        })
+      return createStream()
+    }
     window.glassVoiceFixture = {
       sources,
+      deferNextPermission() {
+        nextPermission = 'defer'
+      },
+      async grantPermission() {
+        const pending = pendingPermissions.shift()
+        if (!pending) throw new Error('No microphone permission is pending.')
+        try {
+          pending.resolve(await createStream())
+        } catch (cause) {
+          pending.reject(cause)
+        }
+      },
+      denyPermission() {
+        const pending = pendingPermissions.shift()
+        if (!pending) throw new Error('No microphone permission is pending.')
+        pending.reject(new DOMException('Permission denied', 'NotAllowedError'))
+      },
+      pendingPermissionCount: () => pendingPermissions.length,
       setAmplitude(value) {
         amplitude = value
         for (const source of sources)
@@ -85,6 +122,8 @@ async function openMuseum(page: Page): Promise<void> {
             source.gain.gain.setValueAtTime(value, source.context.currentTime)
       },
       async dispose() {
+        for (const pending of pendingPermissions.splice(0))
+          pending.reject(new DOMException('Test ended', 'AbortError'))
         for (const source of sources)
           if (source.track.readyState === 'live') source.track.stop()
         await Promise.all(
@@ -121,6 +160,20 @@ async function expectMicrophoneOff(page: Page): Promise<void> {
       { timeout: 6000 },
     )
     .toBe(true)
+}
+
+async function playerPosition(page: Page): Promise<{ x: number; z: number }> {
+  const adventure = page.getByTestId('glass-adventure')
+  return {
+    x: Number(await adventure.getAttribute('data-player-x')),
+    z: Number(await adventure.getAttribute('data-player-z')),
+  }
+}
+
+async function cameraYaw(page: Page): Promise<number> {
+  return Number(
+    await page.getByTestId('glass-adventure').getAttribute('data-camera-yaw'),
+  )
 }
 
 test.afterEach(async ({ page }) => {
@@ -250,4 +303,210 @@ test('cancel and page background stop capture; return requires an explicit fresh
     await page.evaluate(() => window.glassVoiceFixture.sources.length),
   ).toBe(3)
   await expectMicrophoneOff(page)
+})
+
+test('a browser permission prompt can blur the window without pausing or cancelling its grant', async ({
+  page,
+}) => {
+  await openMuseum(page)
+  await page.evaluate(() => window.glassVoiceFixture.deferNextPermission())
+  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Opening your microphone…' }),
+  ).toBeVisible()
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.glassVoiceFixture.pendingPermissionCount()),
+    )
+    .toBe(1)
+
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(
+    page.getByRole('heading', { name: 'Opening your microphone…' }),
+  ).toBeVisible()
+
+  await page.evaluate(() => window.glassVoiceFixture.grantPermission())
+  await expect(
+    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+  ).toBeVisible()
+  expect(
+    await page.evaluate(() => window.glassVoiceFixture.sources.length),
+  ).toBe(1)
+})
+
+test('true background cancels a pending permission grant and a late stream cannot resurrect recording', async ({
+  page,
+}) => {
+  await openMuseum(page)
+  await page.evaluate(() => window.glassVoiceFixture.deferNextPermission())
+  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Opening your microphone…' }),
+  ).toBeVisible()
+
+  await page.evaluate(() =>
+    window.dispatchEvent(new PageTransitionEvent('pagehide')),
+  )
+  await expect(page.getByRole('dialog')).toContainText('The microphone is off.')
+  await page.evaluate(() => window.glassVoiceFixture.grantPermission())
+  await expectMicrophoneOff(page)
+  await page.evaluate(() =>
+    window.dispatchEvent(new PageTransitionEvent('pageshow')),
+  )
+  await expect(page.getByRole('dialog')).toContainText('The microphone is off.')
+  await expect(
+    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+  ).toHaveCount(0)
+  expect(
+    await page.evaluate(() => window.glassVoiceFixture.sources.length),
+  ).toBe(1)
+})
+
+test('permission denial returns to a fresh start instead of leaving the encounter stuck', async ({
+  page,
+}) => {
+  await openMuseum(page)
+  await page.evaluate(() => window.glassVoiceFixture.deferNextPermission())
+  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Opening your microphone…' }),
+  ).toBeVisible()
+  await page.evaluate(() => window.glassVoiceFixture.denyPermission())
+
+  await expect(page.getByRole('alert')).toContainText(
+    'Microphone access is off.',
+  )
+  await expect(
+    page.getByRole('button', { name: 'Sing to the glass' }),
+  ).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+  ).toBeVisible()
+})
+
+test('visible-window blur releases held movement and orbit without opening Pause', async ({
+  page,
+}) => {
+  await openMuseum(page)
+  const before = await playerPosition(page)
+  await page.keyboard.down('KeyW')
+  await expect
+    .poll(async () => {
+      const current = await playerPosition(page)
+      return Math.hypot(current.x - before.x, current.z - before.z)
+    })
+    .toBeGreaterThan(0.05)
+
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.waitForTimeout(250)
+  const movementReleased = await playerPosition(page)
+  await page.waitForTimeout(250)
+  expect((await playerPosition(page)).x).toBeCloseTo(movementReleased.x, 4)
+  expect((await playerPosition(page)).z).toBeCloseTo(movementReleased.z, 4)
+  await page.keyboard.up('KeyW')
+
+  await page.mouse.move(320, 210)
+  await page.mouse.down()
+  await page.mouse.move(390, 220, { steps: 4 })
+  const draggedYaw = await cameraYaw(page)
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+  await page.mouse.move(460, 240, { steps: 4 })
+  await page.waitForTimeout(50)
+  expect(await cameraYaw(page)).toBeCloseTo(draggedYaw, 5)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.mouse.up()
+})
+
+test.describe('phone blur input', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('blur retires a touch stick contact before any stale or fresh move', async ({
+    page,
+    context,
+  }) => {
+    await openMuseum(page)
+    const cdp = await context.newCDPSession(page)
+    const stick = page.getByRole('group', { name: 'Move Merc' })
+    const knob = stick.locator('span').nth(1)
+    const box = await stick.boundingBox()
+    expect(box).not.toBeNull()
+    const centre = {
+      x: box!.x + box!.width / 2,
+      y: box!.y + box!.height / 2,
+    }
+    const held = { id: 1, x: centre.x + 20, y: centre.y - 8 }
+    const before = await playerPosition(page)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 1, ...centre }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [held],
+    })
+    await expect
+      .poll(async () => {
+        const current = await playerPosition(page)
+        return Math.hypot(current.x - before.x, current.z - before.z)
+      })
+      .toBeGreaterThan(0.03)
+    await expect
+      .poll(() =>
+        knob.evaluate((element) => getComputedStyle(element).transform),
+      )
+      .not.toBe('matrix(1, 0, 0, 1, 0, 0)')
+
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect
+      .poll(() =>
+        knob.evaluate((element) => getComputedStyle(element).transform),
+      )
+      .toBe('matrix(1, 0, 0, 1, 0, 0)')
+    await page.waitForTimeout(250)
+    const released = await playerPosition(page)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 1, x: centre.x + 28, y: centre.y - 12 }],
+    })
+    await page.waitForTimeout(250)
+    expect((await playerPosition(page)).x).toBeCloseTo(released.x, 4)
+    expect((await playerPosition(page)).z).toBeCloseTo(released.z, 4)
+
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
+    const beforeFreshContact = await playerPosition(page)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 2, ...centre }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ id: 2, x: centre.x - 20, y: centre.y + 8 }],
+    })
+    await expect
+      .poll(async () => {
+        const current = await playerPosition(page)
+        return Math.hypot(
+          current.x - beforeFreshContact.x,
+          current.z - beforeFreshContact.z,
+        )
+      })
+      .toBeGreaterThan(0.03)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
+  })
 })

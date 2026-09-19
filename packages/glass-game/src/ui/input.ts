@@ -3,6 +3,7 @@ import type { MovementInput } from '../contracts'
 
 export interface AdventureInput {
   read(yaw: number): MovementInput
+  hasMovementIntent(): boolean
   setStick(x: number, y: number): void
   setJump(down: boolean): void
   clear(): void
@@ -13,6 +14,16 @@ export function createAdventureInput(): AdventureInput {
   let stickX = 0
   let stickY = 0
   let touchJump = false
+  const movementAxes = () => ({
+    x:
+      stickX +
+      Number(held.has('KeyD') || held.has('ArrowRight')) -
+      Number(held.has('KeyA') || held.has('ArrowLeft')),
+    forward:
+      -stickY +
+      Number(held.has('KeyW') || held.has('ArrowUp')) -
+      Number(held.has('KeyS') || held.has('ArrowDown')),
+  })
   return {
     key(event, down) {
       const target = event.target as HTMLElement | null
@@ -48,20 +59,17 @@ export function createAdventureInput(): AdventureInput {
       return true
     },
     read(yaw) {
-      const x =
-        stickX +
-        Number(held.has('KeyD') || held.has('ArrowRight')) -
-        Number(held.has('KeyA') || held.has('ArrowLeft'))
-      const forward =
-        -stickY +
-        Number(held.has('KeyW') || held.has('ArrowUp')) -
-        Number(held.has('KeyS') || held.has('ArrowDown'))
+      const { x, forward } = movementAxes()
       const length = Math.max(1, Math.hypot(x, forward))
       return {
         moveX: (x * Math.cos(yaw) - forward * Math.sin(yaw)) / length,
         moveZ: (-x * Math.sin(yaw) - forward * Math.cos(yaw)) / length,
         jumpDown: touchJump || held.has('Space'),
       }
+    },
+    hasMovementIntent() {
+      const { x, forward } = movementAxes()
+      return Math.hypot(x, forward) > 0.001
     },
     setStick(x, y) {
       stickX = x

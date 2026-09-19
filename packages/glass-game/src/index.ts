@@ -2,4 +2,12 @@
 export type * from './contracts'
 export type * from './host'
 export { GLASSWORKS } from './content/glassworks'
+export { composeLevel } from './authoring/compose-level'
+export { LevelAuthoringError } from './authoring/contracts'
+export type * from './authoring/contracts'
 export { createGlassGame } from './core/game'
+export {
+  getActiveCourseSolids,
+  getActiveSolidIds,
+  solidActivationMet,
+} from './core/solid-activation'
