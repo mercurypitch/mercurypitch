@@ -1,0 +1,76 @@
+{
+  "taskId": "01a0a50b-903c-721f-9a83-ec0eebbe8460",
+  "sourceReference": "references/fluted-carafe-geometry.png",
+  "inputSha256": "0e175e71d11d481e41b3d84467745264bb1886ea27f573ea417e50e9b99210ca",
+  "parameters": {
+    "ai_model": "latest",
+    "model_type": "standard",
+    "should_texture": false,
+    "enable_pbr": false,
+    "should_remesh": true,
+    "target_polycount": 20000,
+    "topology": "triangle",
+    "save_pre_remeshed_model": true,
+    "image_enhancement": false,
+    "remove_lighting": false,
+    "target_formats": [
+      "glb"
+    ],
+    "multi_view_thumbnails": true,
+    "response_format": "json"
+  },
+  "files": [
+    {
+      "role": "glb",
+      "file": "donor.glb",
+      "bytes": 927260,
+      "sha256": "c83457224bbb8b3cab5518d8e04f8f94b3309120a89b9d9845f5e483c458baf3",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "pre-remeshed.glb",
+      "bytes": 35753760,
+      "sha256": "43f46d00db29eac7bfe4246ed2ad70a0d8f43cf48e49b80173d44119656d743e",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_url",
+      "file": "thumbnail_url.png",
+      "bytes": 60976,
+      "sha256": "8238ac724c579d4d7be5c9effdc06c8d08f0112248e1ee5538634de1fc7eeece",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-back",
+      "file": "thumbnail_urls-back.png",
+      "bytes": 62710,
+      "sha256": "ec61ef26819a732c0b344dfdda0a7cf7889a3e8b2c363fc65dab151767df624b",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-front",
+      "file": "thumbnail_urls-front.png",
+      "bytes": 60976,
+      "sha256": "8238ac724c579d4d7be5c9effdc06c8d08f0112248e1ee5538634de1fc7eeece",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-left",
+      "file": "thumbnail_urls-left.png",
+      "bytes": 65484,
+      "sha256": "daa1ca5193e6a62e58a577eefbd85843bb936cff9ef1d5e9eccf8acf5549ea21",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-right",
+      "file": "thumbnail_urls-right.png",
+      "bytes": 65646,
+      "sha256": "8188d0599a556dce4eb3950b6ee0253568071430bb2396f51f42fe8ed01b515f",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "archivedAt": "2026-09-15T12:38:03.725095+00:00",
+  "complete": true,
+  "preRemeshedAvailable": true
+}

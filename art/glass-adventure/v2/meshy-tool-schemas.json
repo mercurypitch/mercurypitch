@@ -1,0 +1,500 @@
+[
+  {
+    "name": "meshy_image_to_3d",
+    "title": "Generate 3D Model from Image",
+    "description": "Generate a 3D model from a single image using Meshy AI.\n\nThis tool creates a new 3D generation task from an image and returns a task_id.\n\nIMAGE INPUT (provide ONE, NEVER both):\n  - Local file \u2192 file_path: \"/absolute/path/to/image.jpg\" (RECOMMENDED)\n  - Remote URL \u2192 image_url: \"https://example.com/image.jpg\"\n  - NEVER manually base64-encode. NEVER use both file_path and image_url.\n\nOther Args:\n  - ai_model: \"meshy-5\", \"meshy-6\", or \"latest\" (default). Ask user which model before proceeding\n  - model_type, pose_mode, topology, target_polycount, should_remesh, symmetry_mode\n  - should_texture: Whether to generate textures (default true). Set false for untextured mesh\n  - enable_pbr: PBR maps (default false). Set true for metallic/roughness/normal maps\n  - texture_prompt, texture_image_url: Guide texturing\n  - image_enhancement: Optimize input image (default true, meshy-6/latest only)\n  - remove_lighting: Remove highlights/shadows from base color texture (default true, meshy-6/latest only)\n  - save_pre_remeshed_model, response_format\n\nNote: Image-to-3D does NOT have a separate refine step. Texturing is controlled by should_texture (default true).\n\nExamples:\n  - Local file: { file_path: \"/path/to/cat.jpg\" }\n  - Public URL: { image_url: \"https://example.com/cat.jpg\" }\n  - With pose: { file_path: \"/path/to/character.png\", pose_mode: \"a-pose\" }\n\nError Handling:\n  - Returns \"InvalidImageUrl\" if image is not accessible\n  - Returns \"File not found\" if file_path doesn't exist",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_url": {
+          "type": "string",
+          "description": "PUBLIC image URL (https://...). Use ONLY for remote images. For local files use file_path instead. NEVER manually base64-encode."
+        },
+        "file_path": {
+          "type": "string",
+          "description": "ABSOLUTE path to LOCAL image (.jpg/.png). PREFERRED for local files. Server auto-encodes. Example: /Users/me/photo.jpg. NEVER manually base64-encode."
+        },
+        "input_task_id": {
+          "type": "string",
+          "description": "Chain from a SUCCEEDED text-to-image or image-to-image task: use its generated image as the input instead of image_url/file_path. Provide only one image source."
+        },
+        "ai_model": {
+          "type": "string",
+          "enum": [
+            "meshy-5",
+            "meshy-6",
+            "latest"
+          ],
+          "default": "latest",
+          "description": "AI model: 'meshy-5', 'meshy-6', or 'latest' (default, currently resolves to Meshy 6). IMPORTANT: Before calling this tool, ask the user which model to use and explain the differences: meshy-6/latest = best quality (20 credits), meshy-5 = previous gen (5 credits)"
+        },
+        "model_type": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "lowpoly"
+          ],
+          "description": "Model type: 'standard' or 'lowpoly'"
+        },
+        "pose_mode": {
+          "type": "string",
+          "enum": [
+            "a-pose",
+            "t-pose"
+          ],
+          "description": "Pose mode for character models: 'a-pose' or 't-pose'. IMPORTANT: When the user intends to rig or animate the model, default to 't-pose' for best rigging results"
+        },
+        "enable_pbr": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable physically-based rendering textures. Default false"
+        },
+        "topology": {
+          "type": "string",
+          "enum": [
+            "quad",
+            "triangle"
+          ],
+          "description": "Mesh topology type (quad or triangle)"
+        },
+        "target_polycount": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300000,
+          "description": "Target polygon count for the model (100\u2013300,000)"
+        },
+        "decimation_mode": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Adaptive decimation polycount level (1=ultra, 2=high, 3=medium, 4=low). When set, target_polycount is ignored."
+        },
+        "should_remesh": {
+          "type": "boolean",
+          "description": "Whether to remesh. Default false for meshy-6, true for others"
+        },
+        "symmetry_mode": {
+          "type": "string",
+          "enum": [
+            "off",
+            "auto",
+            "on"
+          ],
+          "description": "DEPRECATED \u2014 no longer affects output (kept for backward compatibility). Values: 'off', 'auto', 'on'."
+        },
+        "should_texture": {
+          "type": "boolean",
+          "description": "Whether to generate textures. Default true"
+        },
+        "texture_prompt": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Text to guide texturing. Max 600 characters"
+        },
+        "texture_image_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Image URL to guide texturing"
+        },
+        "hd_texture": {
+          "type": "boolean",
+          "description": "Generate the base color texture at 4K (4096\u00d74096). Default false. Only supported when ai_model is meshy-6 or latest; PBR maps stay at 2K."
+        },
+        "image_enhancement": {
+          "type": "boolean",
+          "description": "Optimize input image for better results. Default true. Meshy-6/latest only"
+        },
+        "remove_lighting": {
+          "type": "boolean",
+          "default": true,
+          "description": "Removes highlights and shadows from the base color texture for cleaner results under custom lighting. Default true. Only supported when ai_model is meshy-6 or latest"
+        },
+        "save_pre_remeshed_model": {
+          "type": "boolean",
+          "description": "Store GLB before remeshing. Default false. Only applies when should_remesh is true"
+        },
+        "target_formats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "glb",
+              "obj",
+              "fbx",
+              "stl",
+              "usdz",
+              "3mf"
+            ]
+          },
+          "description": "Output formats to generate. When omitted, produces glb/obj/fbx/stl/usdz but NOT 3mf. To get 3MF, you MUST include '3mf' explicitly (e.g. [\"glb\", \"3mf\"]). Specifying formats can reduce task completion time."
+        },
+        "alpha_thumbnail": {
+          "type": "boolean",
+          "description": "Also render a transparent-background (RGBA) preview, returned as alpha_thumbnail_url. Default false."
+        },
+        "multi_view_thumbnails": {
+          "type": "boolean",
+          "description": "Also return 4 cardinal-view thumbnails (front/back/left/right). Default false."
+        },
+        "auto_size": {
+          "type": "boolean",
+          "description": "Use AI to auto-estimate real-world height and resize the model. Default false."
+        },
+        "origin_at": {
+          "type": "string",
+          "enum": [
+            "bottom",
+            "center"
+          ],
+          "description": "Origin position: 'bottom' or 'center'. Default 'bottom' when auto_size is true."
+        },
+        "response_format": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "json"
+          ],
+          "default": "markdown",
+          "description": "Output format: 'markdown' for human-readable or 'json' for machine-readable"
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Unique task identifier for polling with meshy_get_task_status"
+        },
+        "status": {
+          "type": "string",
+          "description": "Initial task status (typically 'PENDING')"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable status message"
+        },
+        "estimated_time": {
+          "type": "string",
+          "description": "Estimated completion time"
+        }
+      },
+      "required": [
+        "task_id",
+        "status",
+        "message",
+        "estimated_time"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  {
+    "name": "meshy_get_task_status",
+    "title": "Get Task Status",
+    "description": "Check task status or wait for completion. Supports two modes:\n\n**wait=true (default)**: Auto-polls with exponential backoff (5s\u219230s, 15s at 95%+) until SUCCEEDED/FAILED/TIMEOUT. Returns full result with progress bar. Recommended \u2014 call once and get the final result.\n\n**wait=false**: Returns current status immediately (single query) with progress bar.\n\nArgs:\n  - task_id (string): Task ID returned from generation tools (required)\n  - task_type (enum, optional): Task type for endpoint routing (default: \"text-to-3d\"). Auto-infers if wrong.\n  - wait (boolean): Auto-wait until completion (default: true)\n  - timeout_seconds (number): Max wait time when wait=true (default: 300, max: 300)\n  - response_format (enum): \"markdown\" or \"json\" (default: \"markdown\")\n\nReturns (wait=true, SUCCEEDED):\n  Progress bar + full task data + model info + download instructions\n\nReturns (wait=false):\n  Progress bar + current status snapshot\n\nExamples:\n  - Auto-wait: { task_id: \"abc-123\" }\n  - Quick check: { task_id: \"abc-123\", wait: false }\n  - Image-to-3d: { task_id: \"abc-123\", task_type: \"image-to-3d\" }\n  - Short timeout: { task_id: \"abc-123\", timeout_seconds: 60 }",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique task identifier (UUID)"
+        },
+        "task_type": {
+          "type": "string",
+          "enum": [
+            "text-to-3d",
+            "image-to-3d",
+            "multi-image-to-3d",
+            "remesh",
+            "retexture",
+            "rigging",
+            "animation",
+            "text-to-image",
+            "image-to-image",
+            "convert",
+            "resize",
+            "uv-unwrap",
+            "multi-color-print",
+            "print-analyze",
+            "print-repair",
+            "creative-lab-figure-prototype",
+            "creative-lab-figure-build",
+            "creative-lab-lamp-prototype",
+            "creative-lab-lamp-build",
+            "creative-lab-keychain-prototype",
+            "creative-lab-keychain-build",
+            "creative-lab-fridge-magnet-prototype",
+            "creative-lab-fridge-magnet-build"
+          ],
+          "default": "text-to-3d",
+          "description": "Task type for endpoint routing. Common values: 'text-to-3d', 'image-to-3d', 'multi-image-to-3d', 'remesh', 'retexture', 'rigging', 'animation', 'text-to-image', 'image-to-image', 'convert', 'resize', 'uv-unwrap'. Creative Lab is STAGE-specific: 'creative-lab-{product}-prototype' or 'creative-lab-{product}-build' (product = figure/lamp/keychain/fridge-magnet). If omitted or unrecognized, the server auto-infers the correct endpoint by probing \u2014 so an imperfect value still resolves; never fall back to manual HTTP."
+        },
+        "wait": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true (default), auto-poll until task completes. If false, return current status immediately."
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 300,
+          "default": 300,
+          "description": "Maximum wait time in seconds when wait=true (default: 300, max: 300)"
+        },
+        "response_format": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "json"
+          ],
+          "default": "markdown",
+          "description": "Output format: 'markdown' for human-readable or 'json' for machine-readable"
+        }
+      },
+      "required": [
+        "task_id"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "SUCCEEDED",
+            "FAILED",
+            "CANCELED",
+            "TIMEOUT",
+            "IN_PROGRESS",
+            "PENDING"
+          ],
+          "description": "Final outcome of the status check"
+        },
+        "task_id": {
+          "type": "string",
+          "description": "Task identifier"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current task status from the API"
+        },
+        "progress": {
+          "type": "number",
+          "description": "Progress percentage (0-100)"
+        },
+        "wait_time_seconds": {
+          "type": "number",
+          "description": "Total wait time in seconds (wait mode only)"
+        },
+        "poll_count": {
+          "type": "number",
+          "description": "Number of polls performed (wait mode only)"
+        },
+        "model_urls": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Available model download URLs"
+        },
+        "image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Generated image URLs (text-to-image / image-to-image tasks)"
+        },
+        "vertex_count": {
+          "type": "number",
+          "description": "Number of vertices in the model"
+        },
+        "face_count": {
+          "type": "number",
+          "description": "Number of faces in the model"
+        },
+        "consumed_credits": {
+          "type": "number",
+          "description": "Credits consumed by the task (0 for FAILED \u2014 credits are refunded on failure)"
+        },
+        "error_code": {
+          "type": "string",
+          "description": "Error code if task failed"
+        },
+        "error_message": {
+          "type": "string",
+          "description": "Error message if task failed"
+        }
+      },
+      "required": [
+        "outcome",
+        "task_id",
+        "status",
+        "progress"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  {
+    "name": "meshy_download_model",
+    "title": "Download Model or Image",
+    "description": "Download a completed task's output to local disk with automatic file organization.\n\nHandles both 3D models and 2D images: 3D tasks save the chosen model `format`; image tasks (text-to-image / image-to-image) save the generated PNG/JPG image(s) and ignore `format`.\n\nIMPORTANT: For 3D models, ask the user which format they need BEFORE downloading. Do NOT download all formats.\nFormat recommendations: GLB (viewing), OBJ (white model printing), 3MF (multicolor printing), FBX (game engines), USDZ (AR).\n\nBy default, files are auto-saved to meshy_output/ under the current working directory with smart naming and history tracking. Use save_to to override with a custom path.\n\nArgs:\n  - task_id (string): Task ID of completed model (required)\n  - task_type (enum, optional): Task type to route to correct endpoint (default: \"text-to-3d\"). Auto-infers if wrong.\n  - format (enum): Model format - \"glb\", \"fbx\", \"usdz\", \"stl\", \"obj\", \"blend\", or \"3mf\" (default: \"glb\"). IMPORTANT: Ask user which format they need before downloading. NOTE: \"3mf\" is downloadable only if it was generated \u2014 request it via target_formats:[\"3mf\"] at creation, or use meshy_convert / meshy_process_multicolor.\n  - include_textures (boolean): Include texture files (default: true)\n  - save_to (string, optional): Override auto path with a custom ABSOLUTE path. If omitted, auto-saves to meshy_output/{timestamp}_{prompt}_{id}/.\n  - parent_task_id (string, optional): Parent task ID for chaining (e.g., preview_task_id for refine). Places output in the same project folder.\n  - print_ready (boolean, optional): If true and format=\"obj\", auto-fix for 3D printing: Y-up\u2192Z-up, scale to height, center, bottom at Z=0.\n  - print_height_mm (number, optional): Target height in mm when print_ready=true. Default 75. Adjust per user request.\n\nReturns:\n  { \"local_path\": \"/path/to/file.obj\", \"file_size_bytes\": 12345678, \"project_dir\": \"...\", \"print_fixed\": true }\n\nExamples:\n  - Auto-save: { task_id: \"abc-123\", format: \"glb\" }\n  - 3D printing: { task_id: \"abc-123\", format: \"obj\", print_ready: true, print_height_mm: 100 }\n  - Chained refine: { task_id: \"def-456\", parent_task_id: \"abc-123\", format: \"glb\" }\n\nError Handling:\n  - Returns error if task is not SUCCEEDED\n  - If download fails, falls back to returning URLs",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique task identifier (UUID)"
+        },
+        "task_type": {
+          "type": "string",
+          "enum": [
+            "text-to-3d",
+            "image-to-3d",
+            "multi-image-to-3d",
+            "remesh",
+            "retexture",
+            "rigging",
+            "animation",
+            "text-to-image",
+            "image-to-image",
+            "convert",
+            "resize",
+            "uv-unwrap",
+            "multi-color-print",
+            "print-analyze",
+            "print-repair",
+            "creative-lab-figure-prototype",
+            "creative-lab-figure-build",
+            "creative-lab-lamp-prototype",
+            "creative-lab-lamp-build",
+            "creative-lab-keychain-prototype",
+            "creative-lab-keychain-build",
+            "creative-lab-fridge-magnet-prototype",
+            "creative-lab-fridge-magnet-build"
+          ],
+          "default": "text-to-3d",
+          "description": "Task type for endpoint routing. Common values: 'text-to-3d', 'image-to-3d', 'multi-image-to-3d', 'remesh', 'retexture', 'rigging', 'animation', 'text-to-image', 'image-to-image', 'convert', 'resize', 'uv-unwrap'. Creative Lab is STAGE-specific: 'creative-lab-{product}-prototype' or 'creative-lab-{product}-build' (product = figure/lamp/keychain/fridge-magnet). If omitted or unrecognized, the server auto-infers the correct endpoint by probing \u2014 so an imperfect value still resolves; never fall back to manual HTTP."
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "glb",
+            "fbx",
+            "usdz",
+            "stl",
+            "obj",
+            "blend",
+            "3mf"
+          ],
+          "default": "glb",
+          "description": "Model format to download. IMPORTANT: Ask the user which format they need before downloading. Recommendations: GLB (general viewing), OBJ (white model printing), 3MF (multicolor printing), FBX (game engines/animation), USDZ (AR/Apple), BLEND (Blender). Do NOT download all formats. NOTE: a format is only downloadable if it was generated \u2014 '3mf' must be requested at creation via target_formats:[\"3mf\"], or produced by the multi-color print / convert tools."
+        },
+        "include_textures": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include texture files in response"
+        },
+        "save_to": {
+          "type": "string",
+          "description": "Override auto-save path with a custom ABSOLUTE path. If omitted, auto-saves to meshy_output/{timestamp}_{prompt}_{id}/. Example: /Users/me/models/chair.glb"
+        },
+        "parent_task_id": {
+          "type": "string",
+          "description": "Parent task ID for chaining (e.g., preview_task_id for refine, input_task_id for rig). Places output in the same project folder as the parent."
+        },
+        "print_ready": {
+          "type": "boolean",
+          "description": "If true and format is OBJ, auto-fix coordinates for 3D printing: rotates Y-up to Z-up, scales to target height, centers on XY, aligns bottom to Z=0. Default false."
+        },
+        "print_height_mm": {
+          "type": "number",
+          "description": "Target height in mm when print_ready is true. Default 75. Adjust per user request (e.g. 'print at 15cm' \u2192 150)."
+        }
+      },
+      "required": [
+        "task_id"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "meshy_check_balance",
+    "title": "Check Credit Balance",
+    "description": "Check your Meshy account credit balance.\n\nReturns the current number of credits available in your account.\n\nArgs:\n  - response_format (enum): Output format - \"markdown\" or \"json\" (default: \"markdown\")\n\nReturns:\n  { \"balance\": 150 }\n\nExamples:\n  - Check balance: {}\n  - JSON format: { response_format: \"json\" }",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "response_format": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "json"
+          ],
+          "default": "markdown",
+          "description": "Output format: 'markdown' for human-readable or 'json' for machine-readable"
+        }
+      },
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "number",
+          "description": "Current credit balance"
+        }
+      },
+      "required": [
+        "balance"
+      ],
+      "additionalProperties": false,
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  }
+]

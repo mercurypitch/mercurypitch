@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "ceilingCredits": 600,
+  "ceilingSource": "Internal first-wave control within the user-authorized approximately 4000 credits",
+  "jobs": [
+    {
+      "name": "fluted-carafe-01",
+      "reference": "references/fluted-carafe-geometry.png",
+      "inputSha256": "0e175e71d11d481e41b3d84467745264bb1886ea27f573ea417e50e9b99210ca",
+      "submittedAt": "2026-09-15T12:29:53.354128+00:00",
+      "quotedCredits": 20,
+      "balanceBefore": 4660,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": false,
+        "enable_pbr": false,
+        "should_remesh": true,
+        "target_polycount": 20000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a50b-903c-721f-9a83-ec0eebbe8460",
+      "balanceAfter": 4640,
+      "observedBalanceDelta": 20,
+      "lastStatus": "SUCCEEDED",
+      "lastCheckedAt": "2026-09-15T12:35:12.563872+00:00",
+      "download": {
+        "file": "meshy/fluted-carafe-01/donor.glb",
+        "bytes": 927260,
+        "sha256": "c83457224bbb8b3cab5518d8e04f8f94b3309120a89b9d9845f5e483c458baf3"
+      },
+      "archive": {
+        "file": "meshy/fluted-carafe-01/archive.json",
+        "complete": true,
+        "bytes": 36996812,
+        "fileCount": 7
+      }
+    },
+    {
+      "name": "moon-amphora-01",
+      "reference": "references/moon-amphora-geometry.png",
+      "inputSha256": "90c15e8b3a8fe40ae96e6e68073a9129044dcd346ccc8cf1823f4ec4f07b6706",
+      "submittedAt": "2026-09-15T12:30:51.548834+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4640,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 20000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a50c-739c-717d-b2ba-ce4b1a58a41d",
+      "balanceAfter": 4610,
+      "observedBalanceDelta": 30,
+      "lastStatus": "SUCCEEDED",
+      "lastCheckedAt": "2026-09-15T12:35:16.266444+00:00",
+      "archive": {
+        "file": "meshy/moon-amphora-01/archive.json",
+        "complete": true,
+        "bytes": 52870286,
+        "fileCount": 11
+      }
+    },
+    {
+      "name": "cut-crystal-decanter-01",
+      "reference": "references/cut-crystal-decanter-geometry-v2.png",
+      "inputSha256": "057871be73627bd1871d378e942b04cf4fed2df6e175daf3591a76c6814ceb11",
+      "submittedAt": "2026-09-15T12:30:58.016281+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4610,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 20000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a50c-8c53-7778-81a9-08aa7ab9bea2",
+      "balanceAfter": 4580,
+      "observedBalanceDelta": 30,
+      "lastStatus": "SUCCEEDED",
+      "lastCheckedAt": "2026-09-15T12:35:19.809570+00:00",
+      "archive": {
+        "file": "meshy/cut-crystal-decanter-01/archive.json",
+        "complete": true,
+        "bytes": 55214894,
+        "fileCount": 11
+      }
+    },
+    {
+      "name": "aurora-coupe-01",
+      "reference": "references/aurora-coupe-geometry.png",
+      "inputSha256": "f3aada297a70421a633f0bfc67345dc98af5c22f00216348003bf791452d8568",
+      "submittedAt": "2026-09-15T12:31:04.232194+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4580,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 20000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a50c-a548-77e0-ae7b-04a264ef258d",
+      "balanceAfter": 4550,
+      "observedBalanceDelta": 30,
+      "lastStatus": "SUCCEEDED",
+      "lastCheckedAt": "2026-09-15T12:35:24.478817+00:00",
+      "archive": {
+        "file": "meshy/aurora-coupe-01/archive.json",
+        "complete": true,
+        "bytes": 54618446,
+        "fileCount": 11
+      }
+    },
+    {
+      "name": "gilded-column-01",
+      "reference": "references/gilded-column.png",
+      "inputSha256": "9e7873c48554d651c7f2fc1265749a17bca34b87402ade8dc193bcf14ce4423b",
+      "submittedAt": "2026-09-15T12:31:11.584104+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4550,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 24000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a50c-c1d0-72e2-aeb5-aaefd2d44ccf",
+      "balanceAfter": 4520,
+      "observedBalanceDelta": 30,
+      "lastStatus": "SUCCEEDED",
+      "lastCheckedAt": "2026-09-15T12:35:29.102942+00:00",
+      "archive": {
+        "file": "meshy/gilded-column-01/archive.json",
+        "complete": true,
+        "bytes": 55847418,
+        "fileCount": 11
+      }
+    },
+    {
+      "name": "garden-arcade-01",
+      "reference": "references/garden-arcade.png",
+      "inputSha256": "8454afdf73479b603136406630978e3e26f452336a4ac9e5a866f24c20cf645a",
+      "submittedAt": "2026-09-15T12:40:13.146347+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4520,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 30000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a515-0553-772c-b728-8ccf5608bdad",
+      "balanceAfter": 4490,
+      "observedBalanceDelta": 30,
+      "lastStatus": "SUCCEEDED",
+      "lastCheckedAt": "2026-09-15T12:42:10.251736+00:00",
+      "archive": {
+        "file": "meshy/garden-arcade-01/archive.json",
+        "complete": true,
+        "bytes": 60145809,
+        "fileCount": 11
+      }
+    },
+    {
+      "name": "observatory-canopy-01",
+      "reference": "references/observatory-canopy.png",
+      "inputSha256": "6f685f91fe03689d7d26f123138ce14d59457f4811298d2a631849af7a14fe3a",
+      "submittedAt": "2026-09-15T12:40:20.105921+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4490,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 40000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a515-20a0-7779-94dd-5954c3cb33ac",
+      "balanceAfter": 4460,
+      "observedBalanceDelta": 30,
+      "lastStatus": "SUCCEEDED",
+      "lastCheckedAt": "2026-09-15T12:44:53.425473+00:00",
+      "archive": {
+        "file": "meshy/observatory-canopy-01/archive.json",
+        "complete": true,
+        "bytes": 58951752,
+        "fileCount": 11
+      }
+    },
+    {
+      "name": "museum-window-bay-01",
+      "reference": "references/museum-window-bay-01.png",
+      "inputSha256": "e2bd466cf0a777bd97a37e170f3476d2f269af7123354f385c5cf8a755679041",
+      "submittedAt": "2026-09-15T14:18:21.168064+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4460,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 24000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a56e-dd8f-707a-bdd7-049a2e5feaf2",
+      "balanceAfter": 4430,
+      "observedBalanceDelta": 30
+    },
+    {
+      "name": "museum-screen-bay-01",
+      "reference": "references/museum-screen-bay-01.png",
+      "inputSha256": "4e661383e1abb732f60cb25a206aa6c1edd373feb1a26a00e4edd3e4b4b21683",
+      "submittedAt": "2026-09-15T14:23:49.209194+00:00",
+      "quotedCredits": 30,
+      "balanceBefore": 4430,
+      "state": "submitted",
+      "parameters": {
+        "ai_model": "latest",
+        "model_type": "standard",
+        "should_texture": true,
+        "enable_pbr": true,
+        "should_remesh": true,
+        "target_polycount": 24000,
+        "topology": "triangle",
+        "save_pre_remeshed_model": true,
+        "image_enhancement": false,
+        "remove_lighting": false,
+        "target_formats": [
+          "glb"
+        ],
+        "multi_view_thumbnails": true,
+        "response_format": "json"
+      },
+      "taskId": "01a0a573-ded9-71ba-9336-7c28786ced8a",
+      "balanceAfter": 4400,
+      "observedBalanceDelta": 30
+    }
+  ],
+  "balanceChecks": [
+    {
+      "at": "2026-09-15T12:27:51.258205+00:00",
+      "balance": 4660
+    }
+  ],
+  "connectionChecks": [
+    {
+      "at": "2026-09-15T07:37:54.001938+00:00",
+      "state": "blocked",
+      "reason": "Configured Proton Pass CLI session is not authenticated; MCP initialization stopped before a Meshy request."
+    }
+  ]
+}

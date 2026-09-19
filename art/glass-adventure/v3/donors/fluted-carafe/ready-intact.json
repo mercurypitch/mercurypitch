@@ -1,0 +1,252 @@
+{
+  "status": "prepared for physical-material proof and fracture validation",
+  "source": "clean Meshy-derived surface; see clean-voxel-trial.json",
+  "attempts": [
+    {
+      "targetTriangles": 50000,
+      "contactHistory": [
+        7,
+        0
+      ],
+      "finalPairs": 0,
+      "maxLocalMovementMetres": 0.0005000271695766735,
+      "localMovementBudgetMetres": 0.0005
+    }
+  ],
+  "removedCollapsedComponents": {
+    "removedComponents": 35,
+    "removedFaces": 70,
+    "components": [
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 3.402200270352101e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00015966165257479985,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 6.768602912209403e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0002804145743953673,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0005305627160393362,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0005550091387164262,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0004222329189720123,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0005812966748660604,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 4.994814945250998e-06,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0004476927481276688,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 2.0764507806140785e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00018836076733379854,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0008990187046008269,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0007796330553921887,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 6.060564820354025e-06,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0007534850390937753,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0006249340587876255,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00012152445987528803,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 6.545985686309644e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0006992346351578327,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 2.121732671357767e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 5.5899918765769134e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0005144672288709701,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 9.774139506400295e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0004904473818301349,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.000471855245322791,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00010313251693883369,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0004301955427280674,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.000752110557732579,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.00032691728961906476,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0004795987072539214,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 7.978847120040812e-05,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0003421977511944205,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0005247731103533737,
+        "signedVolume": 0
+      },
+      {
+        "vertices": 3,
+        "faces": 2,
+        "diameterMetres": 0.0005229839075738396,
+        "signedVolume": 0
+      }
+    ]
+  },
+  "mesh": {
+    "triangles": 49930,
+    "vertices": 24803,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.0016539134750909038
+  },
+  "footTranslationMetres": -3.304176061647013e-05,
+  "materialFaceCounts": {
+    "glass_shell": 47873,
+    "gold_trim": 2057
+  },
+  "giltRegions": {
+    "foot": "z<.024m,r>.049m",
+    "throat": "z.487-.496m or .500-.509m,r>.029m",
+    "mouth": "within1.7mm of angle-local scalloped rim; original mesh only"
+  }
+}

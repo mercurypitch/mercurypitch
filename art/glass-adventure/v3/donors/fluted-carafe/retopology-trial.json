@@ -1,0 +1,10 @@
+{
+  "operation": "Blender QuadriFlow on clean Meshy-derived shell",
+  "targetQuads": 50000,
+  "triangles": 1862132,
+  "selfIntersectionPairs": 0,
+  "badEdges": 0,
+  "signedVolume": 0.0016548594927072086,
+  "sampledMaxDistanceToCleanMetres": 0.0,
+  "sampledMaxDistanceFromCleanMetres": 0.0
+}

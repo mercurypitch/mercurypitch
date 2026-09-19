@@ -1,0 +1,54 @@
+{
+  "status": "passed",
+  "checks": [
+    "all receipt sizes and SHA256",
+    "all standalone image verify and full decode"
+  ],
+  "jobs": [
+    {
+      "job": "gilded-column-01",
+      "files": 11,
+      "bytes": 55847418
+    },
+    {
+      "job": "fluted-carafe-01",
+      "files": 7,
+      "bytes": 36996812
+    },
+    {
+      "job": "moon-amphora-01",
+      "files": 11,
+      "bytes": 52870286
+    },
+    {
+      "job": "observatory-canopy-01",
+      "files": 11,
+      "bytes": 58951752
+    },
+    {
+      "job": "aurora-coupe-01",
+      "files": 11,
+      "bytes": 54618446
+    },
+    {
+      "job": "cut-crystal-decanter-01",
+      "files": 11,
+      "bytes": 55214894
+    },
+    {
+      "job": "garden-arcade-01",
+      "files": 11,
+      "bytes": 60145809
+    }
+  ],
+  "repairs": {
+    "status": "passed after bounded range downloads",
+    "images": [
+      "aurora-coupe-01/texture_urls-0-base_color.png",
+      "cut-crystal-decanter-01/texture_urls-0-base_color.png",
+      "cut-crystal-decanter-01/texture_urls-0-normal.png"
+    ],
+    "priorRecords": "archive-before-image-repair.json and rejected .incomplete payloads are retained per source folder"
+  },
+  "recordedAt": "2026-09-15T12:59:45.216365+00:00"
+}

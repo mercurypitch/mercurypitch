@@ -1,0 +1,148 @@
+{
+  "version": 3,
+  "assetId": "gilded-column-01",
+  "status": "imported-awaiting-visual-inspection",
+  "sourceGeometry": "Meshy donor; imported unchanged",
+  "source": {
+    "incomingPath": "/home/maff/.codex/worktrees/00ad/mercurypitch-agent/art/glass-adventure/v2/meshy/gilded-column-01/donor.glb",
+    "rawPath": "raw/gilded-column-01/donor.glb",
+    "bytes": 9035956,
+    "sha256": "28745214840c9903badc944268ee1feed18c7041207e76a4d8b173a7a87e7312"
+  },
+  "blend": {
+    "path": "sources/gilded-column-01-imported.blend",
+    "bytes": 9157791,
+    "sha256": "1e1106eb701950c6fe5f69a1ac434c7d8c718366ee394f35b0097086d5c928ac"
+  },
+  "blenderVersion": "5.2.2 LTS",
+  "coordinateSpace": "Blender imported coordinates, Z up; no normalization applied",
+  "bounds": {
+    "min": [
+      -0.2461330145597458,
+      -0.24510608613491058,
+      -0.9519820213317871
+    ],
+    "max": [
+      0.24476701021194458,
+      0.24619092047214508,
+      0.9510460495948792
+    ],
+    "dimensions": [
+      0.49090002477169037,
+      0.49129700660705566,
+      1.9030280709266663
+    ]
+  },
+  "totalTriangles": 23148,
+  "objects": [
+    {
+      "name": "Mesh_0",
+      "vertices": 28726,
+      "polygons": 23148,
+      "triangles": 23148,
+      "uvLayers": [
+        {
+          "name": "UVMap",
+          "corners": 69444
+        }
+      ],
+      "materialSlots": [
+        "Material_0"
+      ],
+      "negativeWorldDeterminant": false,
+      "nonfiniteCoordinates": 0
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material_0",
+      "principled": {
+        "Base Color": {
+          "linked": true,
+          "default": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ]
+        },
+        "Metallic": {
+          "linked": true,
+          "default": 0.0
+        },
+        "Roughness": {
+          "linked": true,
+          "default": 0.5
+        },
+        "IOR": {
+          "linked": false,
+          "default": 1.5
+        },
+        "Alpha": {
+          "linked": false,
+          "default": 1.0
+        },
+        "Transmission Weight": {
+          "linked": false,
+          "default": 0.0
+        }
+      },
+      "imageNodes": [
+        {
+          "name": "Image Texture",
+          "image": "Image_0"
+        },
+        {
+          "name": "Image Texture.001",
+          "image": "Image_1"
+        },
+        {
+          "name": "Image Texture.002",
+          "image": "Image_2"
+        }
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Image_0",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "sRGB",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    },
+    {
+      "name": "Image_1",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    },
+    {
+      "name": "Image_2",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    }
+  ],
+  "linkedLibraries": [],
+  "edits": [],
+  "visualInspection": "pending",
+  "runtimeExport": null
+}

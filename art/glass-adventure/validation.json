@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "bundles": 3,
+  "namedMeshes": 109,
+  "bundleBytes": 2096820,
+  "breakables": {
+    "vase_rounded": {
+      "closedShards": 16,
+      "exportedVolumeRelativeError": 2.3877849204236484e-8
+    },
+    "vase_fluted": {
+      "closedShards": 16,
+      "exportedVolumeRelativeError": 1.452038443971263e-9
+    },
+    "vase_amphora": {
+      "closedShards": 16,
+      "exportedVolumeRelativeError": 3.392956593295502e-8
+    },
+    "legend_cash": {
+      "closedShards": 16,
+      "exportedVolumeRelativeError": 1.7670992178228177e-9,
+      "uvSamples": 516,
+      "maxUVError": 3.973642970223068e-8
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "fluted-carafe",
+  "inspectionName": "fluted-carafe-high-source",
+  "donor": "art/glass-adventure/v2/meshy/fluted-carafe-01/pre-remeshed.glb",
+  "sourceSha256": "43f46d00db29eac7bfe4246ed2ad70a0d8f43cf48e49b80173d44119656d743e",
+  "nodePrefix": "vase_fluted",
+  "heightMetres": 0.69,
+  "inspectionDecision": "20k remesh and source both visibly preserve scalloped mouth, fluted bulb and neck. Centre rays hit interior base at0.0148m.20k remesh has171 bad edges after coincident seam welding. Prefer actual pre-remesh Meshy source with one inspected disconnected triangle (<0.4mm after scaling); remove that isolated zero-volume artifact only, preserve existing shared vertices, simplify actual source surface. No hollowing or new vessel shape. Final surface deviation and visual proof still required.",
+  "repair": {
+    "skipCoincidentWeld": true,
+    "tinyBoundaryRepair": {
+      "edgeCount": 3,
+      "maxDiameterMetres": 0.0005,
+      "isolatedTriangle": true
+    },
+    "targetTriangles": 50000,
+    "smoothSurface": true
+  },
+  "shardCount": 23,
+  "seed": 20260915
+}

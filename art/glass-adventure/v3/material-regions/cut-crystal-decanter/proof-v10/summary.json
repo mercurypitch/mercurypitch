@@ -1,0 +1,102 @@
+{
+  "family": "cut-crystal-decanter",
+  "status": "provisional material-region audition; unresolved faces remain explicit",
+  "sourceGlbSha256": "5d8a946752bed1044eaa6c2bc103c02392aa43b9439dfa78aefff563a9655d70",
+  "targetBlendSha256": "a124421396438bec812eefcb0250dd666b1e61393fc4c751b86c31590da1c9d0",
+  "geometryChanged": false,
+  "sourcesWritten": false,
+  "normalization": {
+    "uniformScale": 0.273224321738884,
+    "sourceFootCentre": [
+      -0.00025084614753723145,
+      0.0004168003797531128,
+      -0.9521169066429138
+    ]
+  },
+  "swatchesSrgb": {
+    "gold": [
+      [
+        0.615686297416687,
+        0.5529412031173706,
+        0.46274513006210327
+      ],
+      [
+        0.8352941870689392,
+        0.7568628191947937,
+        0.6627451181411743
+      ]
+    ],
+    "glass": [
+      [
+        0.6431372761726379,
+        0.6431372761726379,
+        0.6431372761726379
+      ],
+      [
+        0.6392157077789307,
+        0.6392157077789307,
+        0.6392157077789307
+      ]
+    ]
+  },
+  "sampleCoordinatesTopLeft": {
+    "gold": [
+      [
+        544,
+        257
+      ],
+      [
+        1664,
+        1421
+      ]
+    ],
+    "glass": [
+      [
+        915,
+        691
+      ],
+      [
+        512,
+        691
+      ]
+    ]
+  },
+  "limits": {
+    "maxDistanceMetres": 0.006,
+    "minMargin": 0.007,
+    "maxChromaDistance": 0.06
+  },
+  "meshes": {
+    "decanter_cut_body": {
+      "counts": {
+        "glass_shell": 32815,
+        "gold_trim": 1066,
+        "null": 25
+      },
+      "distanceMetres": {
+        "max": 0.0010270091006532311,
+        "p95": 0.0004748188439407386
+      },
+      "excludedAuthoredInteriorFaces": 12358
+    },
+    "decanter_cut_stopper": {
+      "counts": {
+        "glass_shell": 3717,
+        "gold_trim": 0,
+        "null": 0
+      },
+      "distanceMetres": {
+        "max": 0.0010900243651121855,
+        "p95": 0.0004092640592716634
+      },
+      "excludedAuthoredInteriorFaces": 17
+    }
+  },
+  "legend": {
+    "cyan": "classified glass",
+    "gold": "classified gold",
+    "magenta": "unresolved source correspondence/color",
+    "darkBlue": "authored interior excluded from paint transfer"
+  },
+  "limitsOfAcceptance": "Source paint classification only. Geometry/fracture and physical materials are not accepted by this proof."
+}

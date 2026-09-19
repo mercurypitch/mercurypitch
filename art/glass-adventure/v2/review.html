@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Glassworks — material and object studies</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #173b3a;
+      --paper: #f3efe5;
+      --muted: #65716b;
+      --line: #d6cdbb;
+      --gold: #927344;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font:
+        16px/1.55 system-ui,
+        sans-serif;
+    }
+    main {
+      max-width: 1380px;
+      margin: auto;
+      padding: 48px 36px 80px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    h1,
+    h2,
+    h3 {
+      font-family: Georgia, serif;
+      font-weight: 400;
+      line-height: 1.08;
+    }
+    h1 {
+      font-size: clamp(48px, 6vw, 90px);
+      max-width: 850px;
+      margin: 18px 0 22px;
+      letter-spacing: -0.045em;
+    }
+    h2 {
+      font-size: 38px;
+      margin: 0;
+    }
+    h3 {
+      font-size: 27px;
+      margin: 12px 0 8px;
+    }
+    p {
+      max-width: 790px;
+    }
+    .intro {
+      font-size: 19px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    .rule {
+      border-top: 1px solid var(--line);
+      margin: 48px 0 28px;
+      padding-top: 24px;
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 30px;
+      align-items: center;
+    }
+    .hero img {
+      width: 100%;
+      display: block;
+    }
+    .hero p {
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+    .card {
+      margin: 0;
+      min-width: 0;
+    }
+    .card img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: contain;
+      background: #282a28;
+      display: block;
+    }
+    .card figcaption {
+      padding: 12px 0 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .card p {
+      font-size: 14px;
+      margin: 9px 0;
+      color: var(--muted);
+    }
+    .number {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+    }
+    a {
+      color: inherit;
+      text-underline-offset: 4px;
+    }
+    button {
+      font: inherit;
+      padding: 9px 17px;
+      border: 1px solid var(--ink);
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    button[aria-pressed='true'] {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    button:focus-visible,
+    a:focus-visible {
+      outline: 3px solid #b48238;
+      outline-offset: 4px;
+    }
+    .switch {
+      display: flex;
+      gap: 8px;
+    }
+    .architecture img {
+      aspect-ratio: 1;
+      object-fit: contain;
+      background: #c4c1bb;
+    }
+    .proof {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    .proof img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .proof p,
+    .note {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 24px 0;
+    }
+    th,
+    td {
+      text-align: left;
+      vertical-align: top;
+      padding: 15px 10px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+    th {
+      font-weight: 600;
+      color: var(--gold);
+    }
+    @media (max-width: 850px) {
+      main {
+        padding: 28px 20px 50px;
+      }
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .hero,
+      .proof {
+        grid-template-columns: 1fr;
+      }
+      h2 {
+        font-size: 32px;
+      }
+    }
+    @media (max-width: 520px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .rule {
+        margin-top: 36px;
+      }
+      table {
+        display: block;
+        overflow: auto;
+      }
+      .card img {
+        max-height: 580px;
+      }
+    }
+  </style>
+  <main>
+    <div class="eyebrow">
+      Glassworks / floating museum / production studies 02
+    </div>
+    <h1>Crystal, marble<br />and a garden in the sky.</h1>
+    <p class="intro">
+      Six distinct glassware designs and a shared architectural language. These
+      images guide production; the Blender proofs below show the actual models
+      reached so far.
+    </p>
+    <div class="hero">
+      <a href="../concepts/floating-museum-direction.png"
+        ><img
+          src="../concepts/floating-museum-direction.png"
+          alt="Original floating marble museum concept with Merc and golden glassware"
+      /></a>
+      <div>
+        <div class="eyebrow">The world reference</div>
+        <h2>Beauty comes from the whole scene.</h2>
+        <p>
+          Quiet ivory terraces, dark marble inlays, carved columns, clear glass,
+          small gold details and planted edges. Warm directional light and
+          reflections connect them.
+        </p>
+        <p>
+          The first playable established the course. This pass builds the
+          objects, materials and surrounding architecture needed to approach
+          this image.
+        </p>
+      </div>
+    </div>
+    <div class="rule">
+      <h2>The glass collection</h2>
+      <div class="switch" aria-label="Reference appearance">
+        <button type="button" aria-pressed="true" data-mode="beauty">
+          Crystal reference</button
+        ><button type="button" aria-pressed="false" data-mode="geometry">
+          Geometry guide
+        </button>
+      </div>
+    </div>
+    <p class="note">
+      Geometry guides deliberately replace transparent glass with matte clay so
+      reconstruction can see the form. Final objects use separate crystal and
+      gold materials. Click any object for the original image.
+    </p>
+    <div class="grid" id="vessels"></div>
+    <div class="rule">
+      <h2>The architectural kit</h2>
+      <span class="eyebrow">Repeatable modules / shared materials</span>
+    </div>
+    <div class="grid architecture" id="architecture"></div>
+    <div class="rule">
+      <h2>From reference to geometry</h2>
+      <span class="eyebrow">Actual Blender proofs</span>
+    </div>
+    <div class="proof">
+      <div>
+        <a href="architecture-review.png"
+          ><img
+            src="architecture-review.png"
+            alt="Blender geometry proof of marble platform, masonry arches and column"
+        /></a>
+        <h3>Terraces and arcades</h3>
+        <p>
+          Dimensional floor, stepped cornice and masonry arches. This studio
+          proof shows the structural kit before the game's shared PBR maps;
+          ornate capitals still require the selected detail pass.
+        </p>
+      </div>
+      <div>
+        <a href="vessels-review.png"
+          ><img
+            src="vessels-review.png"
+            alt="Blender render of clear laurel goblet and scalloped vase"
+        /></a>
+        <h3>Thin walls, separate gold</h3>
+        <p>
+          Blender-authored laurel goblet and rose vase, with real hollow shells
+          and matching fragments. These are source models, not Meshy outputs.
+          The other four new silhouettes are prepared as references.
+        </p>
+      </div>
+    </div>
+    <div class="proof" style="margin-top: 28px">
+      <div>
+        <a href="fractures-review.png"
+          ><img
+            src="fractures-review.png"
+            alt="Actual Blender proof of separated irregular glass fragments"
+        /></a>
+        <h3>Glass that breaks along its shape</h3>
+        <p>
+          Twenty-three closed irregular fragments for each new vessel, with gold
+          attached to matching pieces. This is an expanded geometry proof; the
+          game controls the break timing and movement.
+        </p>
+      </div>
+      <div>
+        <a href="garden-review.png"
+          ><img
+            src="garden-review.png"
+            alt="Actual Blender proof of foliage planters and island roots"
+        /></a>
+        <h3>Planted museum edges</h3>
+        <p>
+          Reusable foliage, flower and ivy clusters, with solid marble troughs
+          and irregular stone roots. Shared vertex colors keep the repeated
+          garden clusters inexpensive to draw.
+        </p>
+      </div>
+    </div>
+    <div class="rule">
+      <h2>The current game</h2>
+      <span class="eyebrow">Actual runtime capture</span>
+    </div>
+    <div>
+      <a href="runtime-review.png"
+        ><img
+          style="display: block; width: 100%; height: auto"
+          src="runtime-review.png"
+          alt="Current game view with marble terraces, planted troughs, glass and museum architecture"
+      /></a>
+      <p class="note">
+        This is the integrated renderer, not an imagegen mockup. Some distant
+        structures and four vessel silhouettes still await their detailed pass.
+        Phone-sized screenshots are checked; physical-device performance is
+        still pending.
+      </p>
+    </div>
+    <div class="rule">
+      <h2>The material palette</h2>
+      <a href="source-pbr/README.md">Sources and sampling notes</a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Surface</th>
+          <th>Where it belongs</th>
+          <th>What gives it depth</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ivory marble</td>
+          <td>Walkable floor, columns, plinths</td>
+          <td>
+            Sparse veins, restrained normal detail and broad polished
+            highlights.
+          </td>
+        </tr>
+        <tr>
+          <td>Dark verde marble</td>
+          <td>Floor inlays and recessed panels</td>
+          <td>Deep green color, fine veining and a smooth finish.</td>
+        </tr>
+        <tr>
+          <td>Pale structural stone</td>
+          <td>Arcades, undersides and island roots</td>
+          <td>Rougher surface and deeper geometric shadows.</td>
+        </tr>
+        <tr>
+          <td>Champagne gold</td>
+          <td>Rims, leaves, collars and canopy ribs</td>
+          <td>
+            Metallic reflections, with separate roughness for broad bands and
+            fine trim.
+          </td>
+        </tr>
+        <tr>
+          <td>Clear crystal</td>
+          <td>Vases, goblets and display faces</td>
+          <td>
+            Visible wall thickness, neutral transmission and reflections of the
+            museum.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">
+      Production record: <a href="README.md">asset status and rebuilding</a> ·
+      <a href="references/manifest.json">image prompts and hashes</a> ·
+      <a href="references/geometry-manifest.json"
+        >geometry guides and correction history</a
+      >. Meshy submissions await the configured credential session; image
+      generation does not imply a completed 3D model or device acceptance.
+    </p>
+  </main>
+  <script>
+    const pieces = [
+      [
+        'laurel-goblet',
+        'Laurel goblet',
+        'An open bowl, slender stem and two gold laurel branches. Clear glass remains the dominant surface.',
+      ],
+      [
+        'fluted-carafe',
+        'Fluted carafe',
+        'A tall twisting silhouette with a trumpet rim. Long ribs should remain smooth through the neck.',
+      ],
+      [
+        'moon-amphora',
+        'Moon amphora',
+        'A broad ribbed body with two attached handles, a small teal jewel and restrained botanical details.',
+      ],
+      [
+        'rose-bud-vase',
+        'Rose bud vase',
+        'A rounded petal body, narrow neck and scalloped lip, with a warm edge tint.',
+      ],
+      [
+        'cut-crystal-decanter',
+        'Crystal decanter',
+        'A faceted octagonal body and solid removable stopper. The corrected geometry guide closes the erroneous top opening.',
+      ],
+      [
+        'aurora-coupe',
+        'Aurora coupe',
+        'A wide shallow bowl, crystal knot and fine gold wreath, offering a different breaking silhouette.',
+      ],
+    ]
+    const architecture = [
+      [
+        'gilded-column',
+        'Gilded column',
+        'Fluted ivory shaft, stacked base, carved capital and selective gold accents.',
+      ],
+      [
+        'garden-arcade',
+        'Garden arcade',
+        'Two repeated arch bays with deep green inset panels and thin botanical trim.',
+      ],
+      [
+        'observatory-canopy',
+        'Observatory canopy',
+        'An airy open ribbed crown and column rhythm. No glass roof surface.',
+      ],
+    ]
+    let mode = 'beauty'
+    function card([id, title, description], index, kind) {
+      const suffix =
+        kind === 'geometry'
+          ? id === 'cut-crystal-decanter'
+            ? '-geometry-v2'
+            : '-geometry'
+          : ''
+      const figure = document.createElement('figure')
+      figure.className = 'card'
+      const link = document.createElement('a')
+      link.href = `references/${id}${suffix}.png`
+      const img = document.createElement('img')
+      img.src = link.href
+      img.alt = `${title} ${kind === 'geometry' ? 'matte geometry guide' : 'design reference'}`
+      img.loading = 'lazy'
+      link.append(img)
+      figure.append(link)
+      const caption = document.createElement('figcaption')
+      const number = document.createElement('span')
+      number.className = 'number'
+      number.textContent = `STUDY ${String(index + 1).padStart(2, '0')}`
+      const heading = document.createElement('h3')
+      heading.textContent = title
+      const p = document.createElement('p')
+      p.textContent = description
+      caption.append(number, heading, p)
+      figure.append(caption)
+      return figure
+    }
+    function update() {
+      document
+        .querySelector('#vessels')
+        .replaceChildren(...pieces.map((p, i) => card(p, i, mode)))
+      document
+        .querySelectorAll('[data-mode]')
+        .forEach((b) =>
+          b.setAttribute('aria-pressed', String(b.dataset.mode === mode)),
+        )
+    }
+    document.querySelectorAll('[data-mode]').forEach((b) =>
+      b.addEventListener('click', () => {
+        mode = b.dataset.mode
+        update()
+      }),
+    )
+    document
+      .querySelector('#architecture')
+      .replaceChildren(...architecture.map((p, i) => card(p, i, 'beauty')))
+    update()
+  </script>
+</html>

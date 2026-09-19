@@ -1,0 +1,1221 @@
+{
+  "status": "staged; independent GLB reimport and visual validation still required",
+  "source": "art/glass-adventure/v2/meshy/moon-amphora-01/pre-remeshed.glb",
+  "sourceSha256": "e129fcd5b268813135b6c5b5022ee58dad458412a0347c44b4098f4f315203b0",
+  "preparedInput": "ready-intact.blend",
+  "preparedSha256": "e65ea3f8caf1bc41083a5e9470b644e6e62c5ec7d8d87e34d38152c68ed12614",
+  "units": "metres",
+  "up": "+Y",
+  "footCentred": true,
+  "intact": "vase_amphora_intact",
+  "shards": [
+    "vase_amphora_shard_000",
+    "vase_amphora_shard_001",
+    "vase_amphora_shard_002",
+    "vase_amphora_shard_003",
+    "vase_amphora_shard_004",
+    "vase_amphora_shard_005",
+    "vase_amphora_shard_006",
+    "vase_amphora_shard_007",
+    "vase_amphora_shard_008",
+    "vase_amphora_shard_009",
+    "vase_amphora_shard_010",
+    "vase_amphora_shard_011",
+    "vase_amphora_shard_012",
+    "vase_amphora_shard_013",
+    "vase_amphora_shard_014",
+    "vase_amphora_shard_015",
+    "vase_amphora_shard_016",
+    "vase_amphora_shard_017",
+    "vase_amphora_shard_018",
+    "vase_amphora_shard_019",
+    "vase_amphora_shard_020",
+    "vase_amphora_shard_021",
+    "vase_amphora_shard_022"
+  ],
+  "meshes": [
+    {
+      "node": "vase_amphora_intact",
+      "role": "intact",
+      "triangles": 99976,
+      "vertices": 49942,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.007074068864131597,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.1460062712430954,
+          0.0,
+          -0.14612875878810883
+        ],
+        "max": [
+          0.14593207836151123,
+          0.5499162077903748,
+          0.14620812237262726
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_000",
+      "role": "shard",
+      "triangles": 5576,
+      "vertices": 2788,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00040883466171659803,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          0.02515837550163269,
+          0.2538982033729553,
+          -0.1400110423564911
+        ],
+        "max": [
+          0.14345338940620422,
+          0.3917195498943329,
+          -0.01149313896894455
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_001",
+      "role": "shard",
+      "triangles": 3594,
+      "vertices": 1799,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00025769307740810345,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.09110377728939056,
+          1.5962868928909302e-06,
+          -0.05177231878042221
+        ],
+        "max": [
+          0.0006114058196544647,
+          0.059907495975494385,
+          0.09095937013626099
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_002",
+      "role": "shard",
+      "triangles": 2410,
+      "vertices": 1207,
+      "nonManifoldEdges": 0,
+      "signedVolume": 8.97916880698441e-05,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.1066024973988533,
+          0.4828944504261017,
+          0.003024861216545105
+        ],
+        "max": [
+          -0.001658078283071518,
+          0.5498804450035095,
+          0.1092211902141571
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_003",
+      "role": "shard",
+      "triangles": 3418,
+      "vertices": 1711,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0004000033329266328,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.10791272670030594,
+          0.18626508116722107,
+          0.06880047172307968
+        ],
+        "max": [
+          0.06568128615617752,
+          0.33921605348587036,
+          0.14620812237262726
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_004",
+      "role": "shard",
+      "triangles": 3770,
+      "vertices": 1887,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0004220899714721608,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.1351371556520462,
+          0.12800028920173645,
+          -0.1315661072731018
+        ],
+        "max": [
+          0.002576686441898346,
+          0.2818130850791931,
+          0.009961575269699097
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_005",
+      "role": "shard",
+      "triangles": 5458,
+      "vertices": 2733,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00012261614460819115,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          0.042643673717975616,
+          0.41984817385673523,
+          -0.08257783204317093
+        ],
+        "max": [
+          0.14593207836151123,
+          0.5498684048652649,
+          0.038251157850027084
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_006",
+      "role": "shard",
+      "triangles": 9462,
+      "vertices": 4729,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00035058579811275567,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.13850417733192444,
+          0.28039222955703735,
+          -0.11510348320007324
+        ],
+        "max": [
+          -0.036139294505119324,
+          0.44323864579200745,
+          0.02329644188284874
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_007",
+      "role": "shard",
+      "triangles": 4302,
+      "vertices": 2153,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0004502064869279043,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          0.017402097582817078,
+          0.08699525147676468,
+          -0.04030529409646988
+        ],
+        "max": [
+          0.13980014622211456,
+          0.24802523851394653,
+          0.11990078538656235
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_008",
+      "role": "shard",
+      "triangles": 3214,
+      "vertices": 1609,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00013298409035526312,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.09761790186166763,
+          0.4736482501029968,
+          -0.10942978411912918
+        ],
+        "max": [
+          0.07229850441217422,
+          0.5499007701873779,
+          -0.015464264899492264
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_009",
+      "role": "shard",
+      "triangles": 3192,
+      "vertices": 1598,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00022704465878419503,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.06028037890791893,
+          9.350478649139404e-07,
+          -0.09184133261442184
+        ],
+        "max": [
+          0.08958708494901657,
+          0.04765680804848671,
+          0.0003405176103115082
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_010",
+      "role": "shard",
+      "triangles": 6500,
+      "vertices": 3250,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0005113053098000083,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          0.046200402081012726,
+          0.22636500000953674,
+          -0.018754173070192337
+        ],
+        "max": [
+          0.14495548605918884,
+          0.39792001247406006,
+          0.13279642164707184
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_011",
+      "role": "shard",
+      "triangles": 13498,
+      "vertices": 6745,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00038089482736113935,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.06270682066679001,
+          0.3663325607776642,
+          -0.04793323948979378
+        ],
+        "max": [
+          0.1252647340297699,
+          0.511378824710846,
+          0.081915482878685
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_012",
+      "role": "shard",
+      "triangles": 4490,
+      "vertices": 2249,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00040291086620798845,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.12625515460968018,
+          0.07582587748765945,
+          -0.01177804172039032
+        ],
+        "max": [
+          0.029588807374238968,
+          0.22598819434642792,
+          0.12288183718919754
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_013",
+      "role": "shard",
+      "triangles": 3936,
+      "vertices": 1972,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00024962836406546425,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.004533689469099045,
+          0.0,
+          -0.01686372235417366
+        ],
+        "max": [
+          0.09106995165348053,
+          0.09310337901115417,
+          0.09106233716011047
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_014",
+      "role": "shard",
+      "triangles": 4316,
+      "vertices": 2160,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0004587814611504283,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.14566387236118317,
+          0.19631676375865936,
+          -0.06986257433891296
+        ],
+        "max": [
+          -0.08186064660549164,
+          0.3811180293560028,
+          0.10676904767751694
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_015",
+      "role": "shard",
+      "triangles": 3290,
+      "vertices": 1647,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0003576806404071691,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.12397690117359161,
+          0.20856863260269165,
+          -0.14612875878810883
+        ],
+        "max": [
+          0.04431399330496788,
+          0.3665805459022522,
+          -0.0633779987692833
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_016",
+      "role": "shard",
+      "triangles": 3674,
+      "vertices": 1839,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00039355450790438343,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.0005526095628738403,
+          0.11840750277042389,
+          -0.13583733141422272
+        ],
+        "max": [
+          0.14104758203029633,
+          0.26207002997398376,
+          -0.004301898181438446
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_017",
+      "role": "shard",
+      "triangles": 4978,
+      "vertices": 2493,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00010104146841926622,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.1460062712430954,
+          0.42109188437461853,
+          -0.050477951765060425
+        ],
+        "max": [
+          -0.043387532234191895,
+          0.549724280834198,
+          0.025271665304899216
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_018",
+      "role": "shard",
+      "triangles": 2124,
+      "vertices": 1064,
+      "nonManifoldEdges": 0,
+      "signedVolume": 7.914876821858253e-05,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.0038905031979084015,
+          0.4964756369590759,
+          0.007956601679325104
+        ],
+        "max": [
+          0.10276389122009277,
+          0.5499162077903748,
+          0.10933392494916916
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_019",
+      "role": "shard",
+      "triangles": 7330,
+      "vertices": 3655,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00025172933923409775,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.11520421504974365,
+          0.31156906485557556,
+          0.012959577143192291
+        ],
+        "max": [
+          -0.004796244204044342,
+          0.41627782583236694,
+          0.1362081915140152
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_020",
+      "role": "shard",
+      "triangles": 8126,
+      "vertices": 4065,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0005025773621243542,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.0903407633304596,
+          2.180039882659912e-05,
+          -0.107646144926548
+        ],
+        "max": [
+          0.06711289286613464,
+          0.1649191528558731,
+          0.043469928205013275
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_021",
+      "role": "shard",
+      "triangles": 10786,
+      "vertices": 5381,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.00029176637634023496,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.04837973788380623,
+          0.33594241738319397,
+          -0.13673458993434906
+        ],
+        "max": [
+          0.10109920799732208,
+          0.4962764084339142,
+          -0.02312096208333969
+        ]
+      }
+    },
+    {
+      "node": "vase_amphora_shard_022",
+      "role": "shard",
+      "triangles": 6268,
+      "vertices": 3126,
+      "nonManifoldEdges": 0,
+      "signedVolume": 0.0002311996572975263,
+      "materials": [
+        "glass_shell",
+        "glass_cut",
+        "gold_trim"
+      ],
+      "bounds": {
+        "min": [
+          -0.020933639258146286,
+          0.28263553977012634,
+          0.04986749589443207
+        ],
+        "max": [
+          0.0934966504573822,
+          0.40723925828933716,
+          0.14408618211746216
+        ]
+      }
+    }
+  ],
+  "surfaceChecks": [
+    {
+      "triangles": 99976,
+      "vertices": 49942,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.007074068864131597
+    },
+    {
+      "triangles": 5576,
+      "vertices": 2788,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00040883466171659803
+    },
+    {
+      "triangles": 3594,
+      "vertices": 1799,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00025769307740810345
+    },
+    {
+      "triangles": 2410,
+      "vertices": 1207,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 8.97916880698441e-05
+    },
+    {
+      "triangles": 3418,
+      "vertices": 1711,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004000033329266328
+    },
+    {
+      "triangles": 3770,
+      "vertices": 1887,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004220899714721608
+    },
+    {
+      "triangles": 5458,
+      "vertices": 2733,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00012261614460819115
+    },
+    {
+      "triangles": 9462,
+      "vertices": 4729,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00035058579811275567
+    },
+    {
+      "triangles": 4302,
+      "vertices": 2153,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004502064869279043
+    },
+    {
+      "triangles": 3214,
+      "vertices": 1609,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00013298409035526312
+    },
+    {
+      "triangles": 3192,
+      "vertices": 1598,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00022704465878419503
+    },
+    {
+      "triangles": 6500,
+      "vertices": 3250,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0005113053098000083
+    },
+    {
+      "triangles": 13498,
+      "vertices": 6745,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00038089482736113935
+    },
+    {
+      "triangles": 4490,
+      "vertices": 2249,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00040291086620798845
+    },
+    {
+      "triangles": 3936,
+      "vertices": 1972,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00024962836406546425
+    },
+    {
+      "triangles": 4316,
+      "vertices": 2160,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004587814611504283
+    },
+    {
+      "triangles": 3290,
+      "vertices": 1647,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0003576806404071691
+    },
+    {
+      "triangles": 3674,
+      "vertices": 1839,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00039355450790438343
+    },
+    {
+      "triangles": 4978,
+      "vertices": 2493,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00010104146841926622
+    },
+    {
+      "triangles": 2124,
+      "vertices": 1064,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 7.914876821858253e-05
+    },
+    {
+      "triangles": 7330,
+      "vertices": 3655,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00025172933923409775
+    },
+    {
+      "triangles": 8126,
+      "vertices": 4065,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0005025773621243542
+    },
+    {
+      "triangles": 10786,
+      "vertices": 5381,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00029176637634023496
+    },
+    {
+      "triangles": 6268,
+      "vertices": 3126,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0002311996572975263
+    }
+  ],
+  "rays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09157085418701172,
+          "normalZ": 0.9998489022254944,
+          "face": 39650
+        },
+        {
+          "heightMetres": 1.2151896953582764e-05,
+          "normalZ": -1.0,
+          "face": 91391
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09176641702651978,
+          "normalZ": 0.9998448491096497,
+          "face": 43376
+        },
+        {
+          "heightMetres": 1.0639429092407227e-05,
+          "normalZ": -1.0,
+          "face": 91391
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09177124500274658,
+          "normalZ": 0.9998489022254944,
+          "face": 39650
+        },
+        {
+          "heightMetres": 1.3634562492370605e-05,
+          "normalZ": -1.0,
+          "face": 91391
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09164071083068848,
+          "normalZ": 0.9997590780258179,
+          "face": 35889
+        },
+        {
+          "heightMetres": 1.2889504432678223e-05,
+          "normalZ": -1.0,
+          "face": 91391
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09170389175415039,
+          "normalZ": 0.9998030662536621,
+          "face": 93748
+        },
+        {
+          "heightMetres": 1.1399388313293457e-05,
+          "normalZ": -1.0,
+          "face": 91391
+        }
+      ]
+    }
+  ],
+  "fracture": {
+    "method": "Manifold3D convex Voronoi plane clipping of actual donor-derived shell",
+    "seedCoordinatesBlenderZUp": [
+      [
+        0.09821341931819916,
+        0.1045672670006752,
+        0.3216036260128021
+      ],
+      [
+        -0.06959766149520874,
+        -0.057360198348760605,
+        0.0005581926088780165
+      ],
+      [
+        -0.07110807299613953,
+        -0.08334287256002426,
+        0.5463463068008423
+      ],
+      [
+        -0.04238582402467728,
+        -0.13529393076896667,
+        0.26855260133743286
+      ],
+      [
+        -0.08157426863908768,
+        0.08657921105623245,
+        0.1812213510274887
+      ],
+      [
+        0.1423291116952896,
+        0.0035383866634219885,
+        0.5208605527877808
+      ],
+      [
+        -0.10043112933635712,
+        0.061671625822782516,
+        0.38705918192863464
+      ],
+      [
+        0.09617862850427628,
+        -0.03657805547118187,
+        0.14996378123760223
+      ],
+      [
+        -0.03504110872745514,
+        0.09796491265296936,
+        0.5484960675239563
+      ],
+      [
+        0.043805427849292755,
+        0.07912581413984299,
+        0.0004956469056196511
+      ],
+      [
+        0.12208337336778641,
+        -0.0767095535993576,
+        0.3195432424545288
+      ],
+      [
+        0.023398760706186295,
+        -0.026836849749088287,
+        0.4294833540916443
+      ],
+      [
+        -0.060111213475465775,
+        -0.07247338443994522,
+        0.13919945061206818
+      ],
+      [
+        0.06886106729507446,
+        -0.05848804488778114,
+        0.011915984563529491
+      ],
+      [
+        -0.13263002038002014,
+        -0.03829585760831833,
+        0.29975324869155884
+      ],
+      [
+        -0.03392032906413078,
+        0.13965559005737305,
+        0.29842156171798706
+      ],
+      [
+        0.0844956561923027,
+        0.08946909010410309,
+        0.18955698609352112
+      ],
+      [
+        -0.14346347749233246,
+        0.007935279980301857,
+        0.4969847798347473
+      ],
+      [
+        0.06470800936222076,
+        -0.08730889856815338,
+        0.5483871698379517
+      ],
+      [
+        -0.06609953194856644,
+        -0.09769634157419205,
+        0.38316190242767334
+      ],
+      [
+        -0.016971899196505547,
+        0.045912545174360275,
+        0.09349989145994186
+      ],
+      [
+        0.014807837083935738,
+        0.08331518620252609,
+        0.4039757251739502
+      ],
+      [
+        0.04038546606898308,
+        -0.11999284476041794,
+        0.3770497441291809
+      ]
+    ],
+    "volumeRelativeError": 7.378081823209723e-10,
+    "backend": {
+      "backend": "manifold3d 3.5.3",
+      "inputVolume": 0.00707406886413155,
+      "inputTriangles": 99976,
+      "meshes": [
+        {
+          "key": "shard_000",
+          "triangles": 5576,
+          "volume": 0.0004088346673779994
+        },
+        {
+          "key": "shard_001",
+          "triangles": 3594,
+          "volume": 0.000257693076995958
+        },
+        {
+          "key": "shard_002",
+          "triangles": 2410,
+          "volume": 8.979168798557095e-05
+        },
+        {
+          "key": "shard_003",
+          "triangles": 3418,
+          "volume": 0.00040000332708906196
+        },
+        {
+          "key": "shard_004",
+          "triangles": 3770,
+          "volume": 0.00042208997157635556
+        },
+        {
+          "key": "shard_005",
+          "triangles": 5458,
+          "volume": 0.00012261614055481934
+        },
+        {
+          "key": "shard_006",
+          "triangles": 9462,
+          "volume": 0.000350585798744448
+        },
+        {
+          "key": "shard_007",
+          "triangles": 4302,
+          "volume": 0.0004502064839830399
+        },
+        {
+          "key": "shard_008",
+          "triangles": 3214,
+          "volume": 0.0001329840891217632
+        },
+        {
+          "key": "shard_009",
+          "triangles": 3192,
+          "volume": 0.00022704465868794759
+        },
+        {
+          "key": "shard_010",
+          "triangles": 6500,
+          "volume": 0.0005113053111202668
+        },
+        {
+          "key": "shard_011",
+          "triangles": 13498,
+          "volume": 0.0003808948362421993
+        },
+        {
+          "key": "shard_012",
+          "triangles": 4490,
+          "volume": 0.0004029108656330585
+        },
+        {
+          "key": "shard_013",
+          "triangles": 3936,
+          "volume": 0.00024962836492087894
+        },
+        {
+          "key": "shard_014",
+          "triangles": 4316,
+          "volume": 0.00045878145402427484
+        },
+        {
+          "key": "shard_015",
+          "triangles": 3290,
+          "volume": 0.0003576806396631611
+        },
+        {
+          "key": "shard_016",
+          "triangles": 3674,
+          "volume": 0.0003935545068376086
+        },
+        {
+          "key": "shard_017",
+          "triangles": 4978,
+          "volume": 0.00010104146757923951
+        },
+        {
+          "key": "shard_018",
+          "triangles": 2124,
+          "volume": 7.914876955892395e-05
+        },
+        {
+          "key": "shard_019",
+          "triangles": 7330,
+          "volume": 0.00025172934374775944
+        },
+        {
+          "key": "shard_020",
+          "triangles": 8126,
+          "volume": 0.0005025773690355274
+        },
+        {
+          "key": "shard_021",
+          "triangles": 10786,
+          "volume": 0.00029176637827638135
+        },
+        {
+          "key": "shard_022",
+          "triangles": 6268,
+          "volume": 0.0002311996553753052
+        }
+      ],
+      "relativeVolumeError": 2.4522287092405495e-16
+    }
+  },
+  "bundle": {
+    "file": "exports/moon-amphora.glb",
+    "bytes": 11461724,
+    "sha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251"
+  }
+}

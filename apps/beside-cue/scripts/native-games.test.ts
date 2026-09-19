@@ -1,0 +1,173 @@
+// ============================================================
+// Native games profile tests — preserve store inputs and reject mismatched web output
+// ============================================================
+
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, resolve } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { gamesInfoPlist, parseOptions, requiredGameAssets, stageGamesProfile, } from './native-games.ts'
+
+const temporary: string[] = []
+
+function fixture(): string {
+  const directory = mkdtempSync(resolve(tmpdir(), 'beside-cue-native-'))
+  temporary.push(directory)
+  return directory
+}
+
+function put(directory: string, path: string, value = 'fixture'): void {
+  const target = resolve(directory, path)
+  mkdirSync(dirname(target), { recursive: true })
+  writeFileSync(target, value)
+}
+
+afterEach(() => {
+  for (const directory of temporary.splice(0))
+    rmSync(directory, { recursive: true, force: true })
+})
+
+describe('explicit native games profile', () => {
+  it('requires the platform and refuses contradictory or unsupported actions', () => {
+    expect(() => parseOptions([])).toThrow('Choose --platform')
+    expect(() => parseOptions(['--platform', 'web'])).toThrow(
+      'must be android or ios',
+    )
+    expect(() => parseOptions(['--platform', 'ios', '--assemble'])).toThrow(
+      'Android-only',
+    )
+    expect(() =>
+      parseOptions(['--platform', 'android', '--prepare-only', '--build']),
+    ).toThrow('cannot build')
+    expect(() => parseOptions(['--platform', 'android', '--unknown'])).toThrow(
+      'Unknown',
+    )
+    expect(parseOptions(['--', '--platform', 'android', '--assemble'])).toEqual(
+      { platform: 'android', assemble: true, build: false, prepareOnly: false },
+    )
+  })
+
+  it('adds the iOS purpose at the root, preserving nested dictionaries and canonical source', () => {
+    const directory = fixture()
+    const canonical = readFileSync(resolve('ios/App/App/Info.plist'), 'utf8')
+    put(directory, 'ios/App/App/Info.plist', canonical)
+    stageGamesProfile(directory, 'ios', true)
+    const generated = readFileSync(
+      resolve(directory, 'ios/App/build/games/Info.plist'),
+      'utf8',
+    )
+    expect(generated).toContain('<key>NSMicrophoneUsageDescription</key>')
+    expect(generated).toMatch(
+      /<key>NSMicrophoneUsageDescription<\/key>\s*<string>[^<]+<\/string>\s*<\/dict>\s*<\/plist>/u,
+    )
+    expect(
+      readFileSync(resolve(directory, 'ios/App/App/Info.plist'), 'utf8'),
+    ).toBe(canonical)
+    expect(existsSync(resolve(directory, 'dist'))).toBe(false)
+    expect(() => gamesInfoPlist(generated)).toThrow('Canonical store plist')
+    expect(() => gamesInfoPlist('<plist><array></array></plist>')).toThrow(
+      'root dictionary',
+    )
+  })
+
+  it('rejects store/incomplete output before stamping anything or generating a plist', () => {
+    const directory = fixture()
+    put(directory, 'dist/index.html', '<html>Store bundle</html>')
+    expect(() => stageGamesProfile(directory, 'android', false)).toThrow(
+      'models/swiftf0.onnx',
+    )
+    expect(() => stageGamesProfile(directory, 'ios', false)).toThrow(
+      'models/swiftf0.onnx',
+    )
+    expect(
+      existsSync(resolve(directory, 'dist/native-games-profile.json')),
+    ).toBe(false)
+    expect(
+      existsSync(resolve(directory, 'ios/App/build/games/Info.plist')),
+    ).toBe(false)
+  })
+
+  it('stamps only a complete games bundle and refreshes provenance after a changed build', () => {
+    const directory = fixture()
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    stageGamesProfile(directory, 'android', false)
+    const first = JSON.parse(
+      readFileSync(
+        resolve(directory, 'dist/native-games-profile.json'),
+        'utf8',
+      ),
+    )
+    expect(first).toMatchObject({
+      schema: 1,
+      profile: 'games',
+      platform: 'android',
+    })
+    expect(first.indexSha256).toMatch(/^[a-f0-9]{64}$/u)
+    put(directory, 'dist/index.html', 'new build')
+    stageGamesProfile(directory, 'android', false)
+    const second = JSON.parse(
+      readFileSync(
+        resolve(directory, 'dist/native-games-profile.json'),
+        'utf8',
+      ),
+    )
+    expect(second.indexSha256).not.toBe(first.indexSha256)
+  })
+
+  it('rejects an empty model download even when every required path exists', () => {
+    const directory = fixture()
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    put(directory, 'dist/models/swiftf0.onnx', '')
+    expect(() => stageGamesProfile(directory, 'android', false)).toThrow(
+      'models/swiftf0.onnx',
+    )
+    expect(
+      existsSync(resolve(directory, 'dist/native-games-profile.json')),
+    ).toBe(false)
+  })
+
+  it('keeps canonical store permissions off and scopes the generated plist selector to the app target', () => {
+    const store = readFileSync(
+      resolve('android/app/src/main/AndroidManifest.xml'),
+      'utf8',
+    ).replace(/<!--[\s\S]*?-->/gu, '')
+    const games = readFileSync(
+      resolve('android/app/src/games/AndroidManifest.xml'),
+      'utf8',
+    )
+    for (const permission of [
+      'android.permission.RECORD_AUDIO',
+      'android.permission.MODIFY_AUDIO_SETTINGS',
+    ]) {
+      expect(store).not.toContain(permission)
+      expect(games).toContain(`android:name="${permission}"`)
+    }
+    expect(games).toContain(
+      'android:name="android.hardware.microphone" android:required="false"',
+    )
+    expect(
+      readFileSync(resolve('ios/App/App/Info.plist'), 'utf8'),
+    ).not.toContain('NSMicrophoneUsageDescription')
+    const project = readFileSync(
+      resolve('ios/App/App.xcodeproj/project.pbxproj'),
+      'utf8',
+    )
+    const selected = project
+      .split('buildSettings = {')
+      .slice(1)
+      .filter((block) =>
+        block.split('};')[0].includes('BESIDE_CUE_INFO_PLIST_PATH'),
+      )
+    expect(selected).toHaveLength(2)
+    for (const block of selected) {
+      const settings = block.split('};')[0]
+      expect(settings).toContain(
+        'PRODUCT_BUNDLE_IDENTIFIER = com.irchiinnuss.besidecue;',
+      )
+      expect(settings).toContain('BESIDE_CUE_INFO_PLIST_PATH = App/Info.plist;')
+      expect(settings).toContain(
+        'INFOPLIST_FILE = "$(BESIDE_CUE_INFO_PLIST_PATH)";',
+      )
+    }
+  })
+})

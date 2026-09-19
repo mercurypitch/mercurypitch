@@ -1,0 +1,148 @@
+{
+  "version": 3,
+  "assetId": "garden-arcade-01",
+  "status": "imported-awaiting-visual-inspection",
+  "sourceGeometry": "Meshy donor; imported unchanged",
+  "source": {
+    "incomingPath": "/home/maff/.codex/worktrees/00ad/mercurypitch-agent/art/glass-adventure/v2/meshy/garden-arcade-01/donor.glb",
+    "rawPath": "raw/garden-arcade-01/donor.glb",
+    "bytes": 10764276,
+    "sha256": "04ed9131edecd348ffcfa6beeed5efb668adb422fb3c1eb8e8ca319c17b480c3"
+  },
+  "blend": {
+    "path": "sources/garden-arcade-01-imported.blend",
+    "bytes": 10929103,
+    "sha256": "d9ba1983cf85d8b7e27616bf97692a899e75ced729e3d751c9b816977a0d36f4"
+  },
+  "blenderVersion": "5.2.2 LTS",
+  "coordinateSpace": "Blender imported coordinates, Z up; no normalization applied",
+  "bounds": {
+    "min": [
+      -0.9518109560012817,
+      -0.14210501313209534,
+      -0.503430962562561
+    ],
+    "max": [
+      0.9474459290504456,
+      0.13233695924282074,
+      0.5026260018348694
+    ],
+    "dimensions": [
+      1.8992568850517273,
+      0.2744419723749161,
+      1.0060569643974304
+    ]
+  },
+  "totalTriangles": 28161,
+  "objects": [
+    {
+      "name": "Mesh_0",
+      "vertices": 31484,
+      "polygons": 28161,
+      "triangles": 28161,
+      "uvLayers": [
+        {
+          "name": "UVMap",
+          "corners": 84483
+        }
+      ],
+      "materialSlots": [
+        "Material_0"
+      ],
+      "negativeWorldDeterminant": false,
+      "nonfiniteCoordinates": 0
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material_0",
+      "principled": {
+        "Base Color": {
+          "linked": true,
+          "default": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ]
+        },
+        "Metallic": {
+          "linked": true,
+          "default": 0.0
+        },
+        "Roughness": {
+          "linked": true,
+          "default": 0.5
+        },
+        "IOR": {
+          "linked": false,
+          "default": 1.5
+        },
+        "Alpha": {
+          "linked": false,
+          "default": 1.0
+        },
+        "Transmission Weight": {
+          "linked": false,
+          "default": 0.0
+        }
+      },
+      "imageNodes": [
+        {
+          "name": "Image Texture",
+          "image": "Image_0"
+        },
+        {
+          "name": "Image Texture.001",
+          "image": "Image_1"
+        },
+        {
+          "name": "Image Texture.002",
+          "image": "Image_2"
+        }
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Image_0",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "sRGB",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    },
+    {
+      "name": "Image_1",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    },
+    {
+      "name": "Image_2",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    }
+  ],
+  "linkedLibraries": [],
+  "edits": [],
+  "visualInspection": "pending",
+  "runtimeExport": null
+}

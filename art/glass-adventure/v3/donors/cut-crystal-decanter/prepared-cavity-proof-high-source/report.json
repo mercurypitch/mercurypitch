@@ -1,0 +1,10 @@
+{
+  "source": "donors/cut-crystal-decanter-high-source/raw-import.blend",
+  "sourceSha256": "f1e29ea31f8d0a543da795e56f3b3333bfbb5ce38b3c1c2811d5c2f0ffe7add4",
+  "sourceUnchanged": true,
+  "purpose": "Matching clay geometry views; final optical material appearance is not represented",
+  "views": [
+    "three-quarter",
+    "cut-band"
+  ]
+}

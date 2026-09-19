@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Museum enclosure study</title>
+    <style>
+      :root {
+        font:
+          16px/1.5 Arial,
+          sans-serif;
+        color: #193b42;
+        background: #f2f0e8;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        padding: 24px;
+        max-width: 1600px;
+        margin: auto;
+      }
+      a {
+        color: #155967;
+      }
+      h1 {
+        margin: 14px 0 8px;
+        font:
+          42px/1.05 Georgia,
+          serif;
+      }
+      p {
+        max-width: 80ch;
+      }
+      button,
+      select {
+        font: inherit;
+        min-height: 44px;
+        padding: 8px 12px;
+        background: #fff;
+        border: 1px solid #90a9ab;
+        color: #193b42;
+      }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 16px 0;
+      }
+      #viewport {
+        height: 70vh;
+        min-height: 350px;
+        background: #c4d5d7;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+      :focus-visible {
+        outline: 3px solid #a06b1b;
+        outline-offset: 3px;
+      }
+      #status {
+        min-height: 24px;
+      }
+      @media (max-width: 600px) {
+        main {
+          padding: 14px;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        #viewport {
+          height: 62vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="review.html">Back to enclosure studies</a>
+      <h1 id="title">Museum enclosure</h1>
+      <p>
+        Inspect the actual models. Drag to orbit; right-drag or shift-drag to
+        pan; scroll or pinch to move closer. Arrow keys pan. This is an
+        authoring study without gameplay or collision.
+      </p>
+      <div class="toolbar">
+        <button id="interior" disabled>Interior</button
+        ><button id="overview" disabled>Overview</button
+        ><button id="window" disabled>Window sightline</button
+        ><button id="reset" disabled>Reset view</button>
+      </div>
+      <div id="viewport">
+        <canvas
+          tabindex="0"
+          aria-label="3D enclosure: drag to orbit, shift-drag to pan, scroll to zoom"
+        ></canvas>
+      </div>
+      <p id="status" role="status">Loading the authoring model…</p>
+      <p>
+        Repeated bays share geometry and materials. Browser lighting
+        approximates the Blender study; this viewer does not change the live
+        level.
+      </p>
+    </main>
+    <script type="module" src="./viewer.js"></script>
+  </body>
+</html>

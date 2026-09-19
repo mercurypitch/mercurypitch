@@ -1,0 +1,18 @@
+{
+  "source": "clean-surface-lod.blend",
+  "epsilonMetres": 1e-09,
+  "bvhPairs": 1,
+  "counts": {
+    "crossing": 1
+  },
+  "pairs": [
+    {
+      "pair": [
+        31312,
+        31314
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 1.2745065197911076e-05
+    }
+  ]
+}

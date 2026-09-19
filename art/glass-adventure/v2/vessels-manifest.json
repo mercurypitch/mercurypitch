@@ -1,0 +1,2634 @@
+{
+  "version": 2,
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "uvMetresPerRepeat": 1,
+  "assets": {
+    "goblet_laurel": {
+      "bundle": "vessels.glb",
+      "node": "goblet_laurel",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "goblet_laurel_intact",
+      "shards": [
+        "goblet_laurel_shard_000",
+        "goblet_laurel_shard_001",
+        "goblet_laurel_shard_002",
+        "goblet_laurel_shard_003",
+        "goblet_laurel_shard_004",
+        "goblet_laurel_shard_005",
+        "goblet_laurel_shard_006",
+        "goblet_laurel_shard_007",
+        "goblet_laurel_shard_008",
+        "goblet_laurel_shard_009",
+        "goblet_laurel_shard_010",
+        "goblet_laurel_shard_011",
+        "goblet_laurel_shard_012",
+        "goblet_laurel_shard_013",
+        "goblet_laurel_shard_014",
+        "goblet_laurel_shard_015",
+        "goblet_laurel_shard_016",
+        "goblet_laurel_shard_017",
+        "goblet_laurel_shard_018",
+        "goblet_laurel_shard_019",
+        "goblet_laurel_shard_020",
+        "goblet_laurel_shard_021",
+        "goblet_laurel_shard_022"
+      ],
+      "persistent": [],
+      "wallThickness": 0.003,
+      "construction": "Blender authored from image reference; no Meshy generation",
+      "reference": "references/laurel-goblet.png",
+      "fracture": "Seeded convex Voronoi cells intersected with actual intact glass and gilt geometry; closed cut faces",
+      "meshes": [
+        {
+          "node": "goblet_laurel_intact",
+          "role": "intact",
+          "triangles": 8304,
+          "vertices": 4274,
+          "bounds": {
+            "min": [
+              -0.139,
+              0.0,
+              -0.139
+            ],
+            "max": [
+              0.139,
+              0.536559,
+              0.139
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_000",
+          "role": "shard",
+          "triangles": 576,
+          "vertices": 298,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.082451
+            ],
+            "max": [
+              0.099,
+              0.045669,
+              0.054658
+            ]
+          },
+          "translation": [
+            0.066756,
+            0.017389,
+            -0.013443
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_001",
+          "role": "shard",
+          "triangles": 576,
+          "vertices": 298,
+          "bounds": {
+            "min": [
+              -0.082451,
+              0.0,
+              -0.099
+            ],
+            "max": [
+              0.054658,
+              0.046918,
+              -0.0
+            ]
+          },
+          "translation": [
+            -0.013403,
+            0.017546,
+            -0.066607
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_002",
+          "role": "shard",
+          "triangles": 576,
+          "vertices": 298,
+          "bounds": {
+            "min": [
+              -0.099,
+              0.0,
+              -0.054658
+            ],
+            "max": [
+              0.0,
+              0.04705,
+              0.082451
+            ]
+          },
+          "translation": [
+            -0.066581,
+            0.017563,
+            0.013439
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_003",
+          "role": "shard",
+          "triangles": 576,
+          "vertices": 298,
+          "bounds": {
+            "min": [
+              -0.054658,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.082451,
+              0.045828,
+              0.099
+            ]
+          },
+          "translation": [
+            0.013483,
+            0.017408,
+            0.066728
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_004",
+          "role": "shard",
+          "triangles": 870,
+          "vertices": 437,
+          "bounds": {
+            "min": [
+              -0.024867,
+              0.026515,
+              -0.025552
+            ],
+            "max": [
+              0.02684,
+              0.117275,
+              0.02614
+            ]
+          },
+          "translation": [
+            0.000165,
+            0.074649,
+            7.5e-05
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_005",
+          "role": "shard",
+          "triangles": 716,
+          "vertices": 360,
+          "bounds": {
+            "min": [
+              -0.010598,
+              0.114689,
+              -0.010426
+            ],
+            "max": [
+              0.010199,
+              0.186861,
+              0.010358
+            ]
+          },
+          "translation": [
+            -4.4e-05,
+            0.156783,
+            -1.2e-05
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_006",
+          "role": "shard",
+          "triangles": 1754,
+          "vertices": 879,
+          "bounds": {
+            "min": [
+              -0.056523,
+              0.185104,
+              -0.061817
+            ],
+            "max": [
+              0.071326,
+              0.265429,
+              0.062805
+            ]
+          },
+          "translation": [
+            0.000616,
+            0.234005,
+            0.000308
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_007",
+          "role": "shard",
+          "triangles": 434,
+          "vertices": 219,
+          "bounds": {
+            "min": [
+              -0.132992,
+              0.262838,
+              0.023192
+            ],
+            "max": [
+              -0.011942,
+              0.416433,
+              0.135377
+            ]
+          },
+          "translation": [
+            -0.071362,
+            0.347302,
+            0.080266
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_008",
+          "role": "shard",
+          "triangles": 1196,
+          "vertices": 624,
+          "bounds": {
+            "min": [
+              -0.035691,
+              0.256185,
+              0.053727
+            ],
+            "max": [
+              0.069571,
+              0.40355,
+              0.136164
+            ]
+          },
+          "translation": [
+            0.02134,
+            0.335489,
+            0.109358
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_009",
+          "role": "shard",
+          "triangles": 378,
+          "vertices": 191,
+          "bounds": {
+            "min": [
+              0.037996,
+              0.258296,
+              -0.000185
+            ],
+            "max": [
+              0.131387,
+              0.400194,
+              0.11311
+            ]
+          },
+          "translation": [
+            0.082268,
+            0.317054,
+            0.048512
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_010",
+          "role": "shard",
+          "triangles": 386,
+          "vertices": 195,
+          "bounds": {
+            "min": [
+              0.05245,
+              0.261688,
+              -0.11092
+            ],
+            "max": [
+              0.134691,
+              0.398023,
+              0.016011
+            ]
+          },
+          "translation": [
+            0.091423,
+            0.328167,
+            -0.041421
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_011",
+          "role": "shard",
+          "triangles": 782,
+          "vertices": 407,
+          "bounds": {
+            "min": [
+              -0.025223,
+              0.254662,
+              -0.131738
+            ],
+            "max": [
+              0.072637,
+              0.385826,
+              -0.044614
+            ]
+          },
+          "translation": [
+            0.00468,
+            0.317302,
+            -0.101996
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_012",
+          "role": "shard",
+          "triangles": 726,
+          "vertices": 379,
+          "bounds": {
+            "min": [
+              -0.116536,
+              0.253816,
+              -0.12807
+            ],
+            "max": [
+              -0.011599,
+              0.387568,
+              -0.033854
+            ]
+          },
+          "translation": [
+            -0.044422,
+            0.332865,
+            -0.100093
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_013",
+          "role": "shard",
+          "triangles": 442,
+          "vertices": 223,
+          "bounds": {
+            "min": [
+              -0.135342,
+              0.250966,
+              -0.059904
+            ],
+            "max": [
+              -0.049117,
+              0.396066,
+              0.050454
+            ]
+          },
+          "translation": [
+            -0.08659,
+            0.304082,
+            0.001744
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_014",
+          "role": "shard",
+          "triangles": 408,
+          "vertices": 212,
+          "bounds": {
+            "min": [
+              -0.065915,
+              0.398426,
+              0.105183
+            ],
+            "max": [
+              0.038544,
+              0.536559,
+              0.139
+            ]
+          },
+          "translation": [
+            -0.017475,
+            0.497642,
+            0.123058
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_015",
+          "role": "shard",
+          "triangles": 986,
+          "vertices": 517,
+          "bounds": {
+            "min": [
+              0.014123,
+              0.384322,
+              0.066791
+            ],
+            "max": [
+              0.112867,
+              0.536559,
+              0.136962
+            ]
+          },
+          "translation": [
+            0.066072,
+            0.446905,
+            0.114247
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_016",
+          "role": "shard",
+          "triangles": 394,
+          "vertices": 205,
+          "bounds": {
+            "min": [
+              0.10315,
+              0.382449,
+              -0.009087
+            ],
+            "max": [
+              0.139,
+              0.536559,
+              0.081799
+            ]
+          },
+          "translation": [
+            0.121536,
+            0.479533,
+            0.03416
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_017",
+          "role": "shard",
+          "triangles": 404,
+          "vertices": 208,
+          "bounds": {
+            "min": [
+              0.089715,
+              0.393511,
+              -0.09542
+            ],
+            "max": [
+              0.138624,
+              0.536559,
+              -0.007488
+            ]
+          },
+          "translation": [
+            0.116212,
+            0.480627,
+            -0.049268
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_018",
+          "role": "shard",
+          "triangles": 424,
+          "vertices": 218,
+          "bounds": {
+            "min": [
+              0.00564,
+              0.378699,
+              -0.137461
+            ],
+            "max": [
+              0.100916,
+              0.536559,
+              -0.083983
+            ]
+          },
+          "translation": [
+            0.05582,
+            0.481458,
+            -0.112198
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_019",
+          "role": "shard",
+          "triangles": 878,
+          "vertices": 461,
+          "bounds": {
+            "min": [
+              -0.072292,
+              0.372018,
+              -0.139
+            ],
+            "max": [
+              0.026988,
+              0.536559,
+              -0.109886
+            ]
+          },
+          "translation": [
+            -0.040469,
+            0.434069,
+            -0.125031
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_020",
+          "role": "shard",
+          "triangles": 748,
+          "vertices": 394,
+          "bounds": {
+            "min": [
+              -0.134156,
+              0.376598,
+              -0.122719
+            ],
+            "max": [
+              -0.049647,
+              0.536559,
+              -0.020378
+            ]
+          },
+          "translation": [
+            -0.088067,
+            0.459073,
+            -0.093863
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_021",
+          "role": "shard",
+          "triangles": 418,
+          "vertices": 215,
+          "bounds": {
+            "min": [
+              -0.139,
+              0.394871,
+              -0.06303
+            ],
+            "max": [
+              -0.106722,
+              0.536559,
+              0.050695
+            ]
+          },
+          "translation": [
+            -0.124611,
+            0.492044,
+            -0.003528
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "goblet_laurel_shard_022",
+          "role": "shard",
+          "triangles": 400,
+          "vertices": 206,
+          "bounds": {
+            "min": [
+              -0.133683,
+              0.396489,
+              0.026589
+            ],
+            "max": [
+              -0.058085,
+              0.536559,
+              0.123732
+            ]
+          },
+          "translation": [
+            -0.09868,
+            0.482475,
+            0.078023
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 23352,
+      "fractureValidation": {
+        "intactVolume": 0.001490034908290949,
+        "shardsVolume": 0.001490034900803808,
+        "relativeError": 5.024809199948893e-09,
+        "closedShards": 23
+      }
+    },
+    "vase_rounded": {
+      "bundle": "vessels.glb",
+      "node": "vase_rounded",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "vase_rounded_intact",
+      "shards": [
+        "vase_rounded_shard_000",
+        "vase_rounded_shard_001",
+        "vase_rounded_shard_002",
+        "vase_rounded_shard_003",
+        "vase_rounded_shard_004",
+        "vase_rounded_shard_005",
+        "vase_rounded_shard_006",
+        "vase_rounded_shard_007",
+        "vase_rounded_shard_008",
+        "vase_rounded_shard_009",
+        "vase_rounded_shard_010",
+        "vase_rounded_shard_011",
+        "vase_rounded_shard_012",
+        "vase_rounded_shard_013",
+        "vase_rounded_shard_014",
+        "vase_rounded_shard_015",
+        "vase_rounded_shard_016",
+        "vase_rounded_shard_017",
+        "vase_rounded_shard_018",
+        "vase_rounded_shard_019",
+        "vase_rounded_shard_020",
+        "vase_rounded_shard_021",
+        "vase_rounded_shard_022"
+      ],
+      "persistent": [],
+      "wallThickness": 0.004,
+      "construction": "Blender authored from image reference; no Meshy generation",
+      "reference": "references/rose-bud-vase.png",
+      "fracture": "Seeded convex Voronoi cells intersected with actual intact glass and gilt geometry; closed cut faces",
+      "meshes": [
+        {
+          "node": "vase_rounded_intact",
+          "role": "intact",
+          "triangles": 10224,
+          "vertices": 5306,
+          "bounds": {
+            "min": [
+              -0.162495,
+              0.0,
+              -0.162495
+            ],
+            "max": [
+              0.162495,
+              0.455975,
+              0.162495
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_000",
+          "role": "shard",
+          "triangles": 404,
+          "vertices": 204,
+          "bounds": {
+            "min": [
+              -0.142657,
+              0.010743,
+              0.058658
+            ],
+            "max": [
+              0.017059,
+              0.197589,
+              0.160119
+            ]
+          },
+          "translation": [
+            -0.062162,
+            0.1204,
+            0.104575
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_001",
+          "role": "shard",
+          "triangles": 1122,
+          "vertices": 573,
+          "bounds": {
+            "min": [
+              -0.041641,
+              0.0,
+              -0.01245
+            ],
+            "max": [
+              0.095649,
+              0.168641,
+              0.152777
+            ]
+          },
+          "translation": [
+            0.023575,
+            0.032045,
+            0.052094
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_002",
+          "role": "shard",
+          "triangles": 418,
+          "vertices": 213,
+          "bounds": {
+            "min": [
+              0.060153,
+              0.003119,
+              -0.025317
+            ],
+            "max": [
+              0.161622,
+              0.191981,
+              0.121465
+            ]
+          },
+          "translation": [
+            0.103087,
+            0.09485,
+            0.037545
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_003",
+          "role": "shard",
+          "triangles": 730,
+          "vertices": 375,
+          "bounds": {
+            "min": [
+              0.011417,
+              0.0,
+              -0.138333
+            ],
+            "max": [
+              0.150576,
+              0.189115,
+              0.003318
+            ]
+          },
+          "translation": [
+            0.069606,
+            0.055193,
+            -0.043798
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_004",
+          "role": "shard",
+          "triangles": 530,
+          "vertices": 271,
+          "bounds": {
+            "min": [
+              -0.065853,
+              0.0,
+              -0.162495
+            ],
+            "max": [
+              0.083949,
+              0.195392,
+              -0.029746
+            ]
+          },
+          "translation": [
+            0.011539,
+            0.072803,
+            -0.096077
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_005",
+          "role": "shard",
+          "triangles": 822,
+          "vertices": 421,
+          "bounds": {
+            "min": [
+              -0.138508,
+              0.0,
+              -0.136545
+            ],
+            "max": [
+              0.014758,
+              0.160115,
+              -0.000115
+            ]
+          },
+          "translation": [
+            -0.040223,
+            0.036235,
+            -0.050846
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_006",
+          "role": "shard",
+          "triangles": 738,
+          "vertices": 377,
+          "bounds": {
+            "min": [
+              -0.16014,
+              0.0,
+              -0.051093
+            ],
+            "max": [
+              -0.003574,
+              0.165331,
+              0.073822
+            ]
+          },
+          "translation": [
+            -0.072253,
+            0.043817,
+            0.018457
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_007",
+          "role": "shard",
+          "triangles": 452,
+          "vertices": 236,
+          "bounds": {
+            "min": [
+              -0.139023,
+              0.185473,
+              0.044851
+            ],
+            "max": [
+              -0.023855,
+              0.329929,
+              0.144123
+            ]
+          },
+          "translation": [
+            -0.090325,
+            0.281302,
+            0.079297
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_008",
+          "role": "shard",
+          "triangles": 868,
+          "vertices": 456,
+          "bounds": {
+            "min": [
+              -0.056968,
+              0.156547,
+              0.09926
+            ],
+            "max": [
+              0.05149,
+              0.315206,
+              0.162495
+            ]
+          },
+          "translation": [
+            0.015518,
+            0.265707,
+            0.133602
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_009",
+          "role": "shard",
+          "triangles": 716,
+          "vertices": 378,
+          "bounds": {
+            "min": [
+              0.030076,
+              0.160913,
+              0.041683
+            ],
+            "max": [
+              0.136787,
+              0.320128,
+              0.14508
+            ]
+          },
+          "translation": [
+            0.059465,
+            0.279381,
+            0.108238
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_010",
+          "role": "shard",
+          "triangles": 612,
+          "vertices": 320,
+          "bounds": {
+            "min": [
+              0.089656,
+              0.164079,
+              -0.048165
+            ],
+            "max": [
+              0.162495,
+              0.324653,
+              0.088132
+            ]
+          },
+          "translation": [
+            0.138214,
+            0.253964,
+            0.001319
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_011",
+          "role": "shard",
+          "triangles": 1106,
+          "vertices": 581,
+          "bounds": {
+            "min": [
+              0.066777,
+              0.181784,
+              -0.131819
+            ],
+            "max": [
+              0.146797,
+              0.325606,
+              0.000401
+            ]
+          },
+          "translation": [
+            0.113436,
+            0.287505,
+            -0.044521
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_012",
+          "role": "shard",
+          "triangles": 620,
+          "vertices": 320,
+          "bounds": {
+            "min": [
+              -0.032003,
+              0.184443,
+              -0.158556
+            ],
+            "max": [
+              0.093568,
+              0.333572,
+              -0.068564
+            ]
+          },
+          "translation": [
+            0.011422,
+            0.282236,
+            -0.120891
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_013",
+          "role": "shard",
+          "triangles": 970,
+          "vertices": 511,
+          "bounds": {
+            "min": [
+              -0.095542,
+              0.145743,
+              -0.162219
+            ],
+            "max": [
+              0.029958,
+              0.308438,
+              -0.094274
+            ]
+          },
+          "translation": [
+            -0.034132,
+            0.265989,
+            -0.129631
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_014",
+          "role": "shard",
+          "triangles": 272,
+          "vertices": 138,
+          "bounds": {
+            "min": [
+              -0.150645,
+              0.149637,
+              -0.124254
+            ],
+            "max": [
+              -0.070694,
+              0.306825,
+              -0.027452
+            ]
+          },
+          "translation": [
+            -0.113373,
+            0.225165,
+            -0.074859
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_015",
+          "role": "shard",
+          "triangles": 1100,
+          "vertices": 576,
+          "bounds": {
+            "min": [
+              -0.162495,
+              0.16336,
+              -0.042833
+            ],
+            "max": [
+              -0.099537,
+              0.314829,
+              0.086543
+            ]
+          },
+          "translation": [
+            -0.130048,
+            0.269317,
+            0.024338
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_016",
+          "role": "shard",
+          "triangles": 670,
+          "vertices": 345,
+          "bounds": {
+            "min": [
+              0.0238,
+              0.324474,
+              -0.026658
+            ],
+            "max": [
+              0.092013,
+              0.455975,
+              0.082175
+            ]
+          },
+          "translation": [
+            0.062913,
+            0.428007,
+            0.030826
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_017",
+          "role": "shard",
+          "triangles": 960,
+          "vertices": 498,
+          "bounds": {
+            "min": [
+              0.019379,
+              0.31833,
+              -0.082572
+            ],
+            "max": [
+              0.101885,
+              0.455975,
+              0.01958
+            ]
+          },
+          "translation": [
+            0.069492,
+            0.367441,
+            -0.041672
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_018",
+          "role": "shard",
+          "triangles": 622,
+          "vertices": 321,
+          "bounds": {
+            "min": [
+              -0.059491,
+              0.331435,
+              -0.091908
+            ],
+            "max": [
+              0.052961,
+              0.455975,
+              -0.051313
+            ]
+          },
+          "translation": [
+            -0.003329,
+            0.425567,
+            -0.072127
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_019",
+          "role": "shard",
+          "triangles": 1064,
+          "vertices": 554,
+          "bounds": {
+            "min": [
+              -0.107749,
+              0.30029,
+              -0.106934
+            ],
+            "max": [
+              0.007255,
+              0.455975,
+              -0.016568
+            ]
+          },
+          "translation": [
+            -0.052067,
+            0.353645,
+            -0.07088
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_020",
+          "role": "shard",
+          "triangles": 1038,
+          "vertices": 537,
+          "bounds": {
+            "min": [
+              -0.110279,
+              0.30957,
+              -0.038329
+            ],
+            "max": [
+              -0.036508,
+              0.455975,
+              0.074298
+            ]
+          },
+          "translation": [
+            -0.078108,
+            0.366832,
+            0.025437
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_021",
+          "role": "shard",
+          "triangles": 676,
+          "vertices": 348,
+          "bounds": {
+            "min": [
+              -0.083068,
+              0.364668,
+              0.018043
+            ],
+            "max": [
+              0.027986,
+              0.455975,
+              0.091908
+            ]
+          },
+          "translation": [
+            -0.033392,
+            0.43307,
+            0.059911
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_022",
+          "role": "shard",
+          "triangles": 1090,
+          "vertices": 561,
+          "bounds": {
+            "min": [
+              -0.054106,
+              0.306939,
+              0.017436
+            ],
+            "max": [
+              0.094745,
+              0.441558,
+              0.10988
+            ]
+          },
+          "translation": [
+            0.032777,
+            0.343464,
+            0.074189
+          ],
+          "materials": [
+            "glass_shell",
+            "glass_cut",
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 27824,
+      "fractureValidation": {
+        "intactVolume": 0.0014281809180115325,
+        "shardsVolume": 0.0014281808873698734,
+        "relativeError": 2.1455026282358106e-08,
+        "closedShards": 23
+      }
+    },
+    "vase_fluted": {
+      "bundle": "vessels.glb",
+      "node": "vase_fluted",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "vase_fluted_intact",
+      "shards": [
+        "vase_fluted_shard_000",
+        "vase_fluted_shard_001",
+        "vase_fluted_shard_002",
+        "vase_fluted_shard_003",
+        "vase_fluted_shard_004",
+        "vase_fluted_shard_005",
+        "vase_fluted_shard_006",
+        "vase_fluted_shard_007",
+        "vase_fluted_shard_008",
+        "vase_fluted_shard_009",
+        "vase_fluted_shard_010",
+        "vase_fluted_shard_011",
+        "vase_fluted_shard_012",
+        "vase_fluted_shard_013",
+        "vase_fluted_shard_014",
+        "vase_fluted_shard_015"
+      ],
+      "persistent": [
+        "vase_fluted_base"
+      ],
+      "wallThickness": 0.007,
+      "construction": "v1 Blender silhouette retained; UVs and material slots corrected; new reference donor pending",
+      "meshes": [
+        {
+          "node": "vase_fluted_base",
+          "role": "persistent-base",
+          "triangles": 192,
+          "vertices": 98,
+          "bounds": {
+            "min": [
+              -0.0735,
+              0.0,
+              -0.0735
+            ],
+            "max": [
+              0.0735,
+              0.013,
+              0.0735
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_intact",
+          "role": "intact",
+          "triangles": 2176,
+          "vertices": 1090,
+          "bounds": {
+            "min": [
+              -0.130625,
+              0.0,
+              -0.130625
+            ],
+            "max": [
+              0.130625,
+              0.69,
+              0.130625
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_000",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.084411
+            ],
+            "max": [
+              0.130625,
+              0.2829,
+              -0.0
+            ]
+          },
+          "translation": [
+            0.088914,
+            0.153737,
+            -0.036544
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_001",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              0.020934,
+              0.2829,
+              -0.064044
+            ],
+            "max": [
+              0.099108,
+              0.69,
+              -0.0
+            ]
+          },
+          "translation": [
+            0.049974,
+            0.492984,
+            -0.02054
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_002",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.130625
+            ],
+            "max": [
+              0.084411,
+              0.306491,
+              -0.0
+            ]
+          },
+          "translation": [
+            0.035791,
+            0.158854,
+            -0.087081
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_003",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              0.0,
+              0.306491,
+              -0.089247
+            ],
+            "max": [
+              0.057672,
+              0.69,
+              -0.020934
+            ]
+          },
+          "translation": [
+            0.019961,
+            0.496915,
+            -0.048566
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_004",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [
+              -0.084411,
+              0.0,
+              -0.130625
+            ],
+            "max": [
+              0.0,
+              0.240243,
+              -0.0
+            ]
+          },
+          "translation": [
+            -0.037906,
+            0.144486,
+            -0.092228
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_005",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              -0.075566,
+              0.240243,
+              -0.116938
+            ],
+            "max": [
+              0.0,
+              0.69,
+              -0.020934
+            ]
+          },
+          "translation": [
+            -0.021587,
+            0.485874,
+            -0.052521
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_006",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [
+              -0.130625,
+              0.0,
+              -0.084411
+            ],
+            "max": [
+              0.0,
+              0.336438,
+              -0.0
+            ]
+          },
+          "translation": [
+            -0.084755,
+            0.165348,
+            -0.034835
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_007",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              -0.076729,
+              0.336438,
+              -0.049583
+            ],
+            "max": [
+              -0.020934,
+              0.69,
+              -0.0
+            ]
+          },
+          "translation": [
+            -0.046778,
+            0.501906,
+            -0.019226
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_008",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              -0.130625,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.0,
+              0.228752,
+              0.084411
+            ]
+          },
+          "translation": [
+            -0.091248,
+            0.114854,
+            0.037504
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_009",
+          "role": "shard",
+          "triangles": 248,
+          "vertices": 126,
+          "bounds": {
+            "min": [
+              -0.118568,
+              0.228752,
+              -0.0
+            ],
+            "max": [
+              -0.020934,
+              0.69,
+              0.07662
+            ]
+          },
+          "translation": [
+            -0.059098,
+            0.449108,
+            0.02429
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_010",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [
+              -0.084411,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.0,
+              0.327269,
+              0.130625
+            ]
+          },
+          "translation": [
+            -0.035128,
+            0.163359,
+            0.085467
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_011",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              -0.05206,
+              0.327269,
+              0.020934
+            ],
+            "max": [
+              0.0,
+              0.69,
+              0.080562
+            ]
+          },
+          "translation": [
+            -0.019451,
+            0.500378,
+            0.047326
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_012",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.084411,
+              0.256822,
+              0.130625
+            ]
+          },
+          "translation": [
+            0.037377,
+            0.148082,
+            0.09094
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_013",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              0.0,
+              0.256822,
+              0.020934
+            ],
+            "max": [
+              0.071088,
+              0.69,
+              0.110008
+            ]
+          },
+          "translation": [
+            0.02118,
+            0.488637,
+            0.051531
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_014",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.130625,
+              0.285683,
+              0.084411
+            ]
+          },
+          "translation": [
+            0.088698,
+            0.154341,
+            0.036455
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_015",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              0.020934,
+              0.285683,
+              -0.0
+            ],
+            "max": [
+              0.097944,
+              0.69,
+              0.063292
+            ]
+          },
+          "translation": [
+            0.049808,
+            0.493447,
+            0.020472
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 5360,
+      "fractureValidation": {
+        "intactVolume": 0.0028241096723983,
+        "shardsVolume": 0.0028241096703519215,
+        "relativeError": 7.246100524423582e-10,
+        "closedShards": 16
+      }
+    },
+    "vase_amphora": {
+      "bundle": "vessels.glb",
+      "node": "vase_amphora",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "vase_amphora_intact",
+      "shards": [
+        "vase_amphora_shard_000",
+        "vase_amphora_shard_001",
+        "vase_amphora_shard_002",
+        "vase_amphora_shard_003",
+        "vase_amphora_shard_004",
+        "vase_amphora_shard_005",
+        "vase_amphora_shard_006",
+        "vase_amphora_shard_007",
+        "vase_amphora_shard_008",
+        "vase_amphora_shard_009",
+        "vase_amphora_shard_010",
+        "vase_amphora_shard_011",
+        "vase_amphora_shard_012",
+        "vase_amphora_shard_013",
+        "vase_amphora_shard_014",
+        "vase_amphora_shard_015"
+      ],
+      "persistent": [
+        "vase_amphora_base"
+      ],
+      "wallThickness": 0.007,
+      "construction": "v1 Blender silhouette retained; UVs and material slots corrected; new reference donor pending",
+      "meshes": [
+        {
+          "node": "vase_amphora_base",
+          "role": "persistent-base",
+          "triangles": 192,
+          "vertices": 98,
+          "bounds": {
+            "min": [
+              -0.105,
+              0.0,
+              -0.105
+            ],
+            "max": [
+              0.105,
+              0.013,
+              0.105
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "gold_trim"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_intact",
+          "role": "intact",
+          "triangles": 2520,
+          "vertices": 1266,
+          "bounds": {
+            "min": [
+              -0.277,
+              0.0,
+              -0.200546
+            ],
+            "max": [
+              0.277,
+              0.55,
+              0.200546
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_000",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.136793
+            ],
+            "max": [
+              0.200546,
+              0.2255,
+              -0.0
+            ]
+          },
+          "translation": [
+            0.142703,
+            0.129185,
+            -0.058926
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_001",
+          "role": "shard",
+          "triangles": 512,
+          "vertices": 260,
+          "bounds": {
+            "min": [
+              0.049301,
+              0.185125,
+              -0.13495
+            ],
+            "max": [
+              0.277,
+              0.55,
+              0.018
+            ]
+          },
+          "translation": [
+            0.173738,
+            0.352419,
+            -0.019605
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_002",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.200546
+            ],
+            "max": [
+              0.136793,
+              0.244305,
+              -0.0
+            ]
+          },
+          "translation": [
+            0.058814,
+            0.134392,
+            -0.142431
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_003",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              0.0,
+              0.244305,
+              -0.196727
+            ],
+            "max": [
+              0.134188,
+              0.55,
+              -0.049301
+            ]
+          },
+          "translation": [
+            0.04713,
+            0.408217,
+            -0.114135
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_004",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              -0.136793,
+              0.0,
+              -0.200546
+            ],
+            "max": [
+              0.0,
+              0.191498,
+              -0.0
+            ]
+          },
+          "translation": [
+            -0.059129,
+            0.119769,
+            -0.143194
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_005",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              -0.136327,
+              0.191498,
+              -0.199863
+            ],
+            "max": [
+              0.0,
+              0.55,
+              -0.049301
+            ]
+          },
+          "translation": [
+            -0.047319,
+            0.399416,
+            -0.114594
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_006",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              -0.200546,
+              0.0,
+              -0.136793
+            ],
+            "max": [
+              0.0,
+              0.268175,
+              -0.0
+            ]
+          },
+          "translation": [
+            -0.142086,
+            0.141002,
+            -0.058671
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_007",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              -0.19531,
+              0.268175,
+              -0.133221
+            ],
+            "max": [
+              -0.049301,
+              0.55,
+              -0.0
+            ]
+          },
+          "translation": [
+            -0.113927,
+            0.412196,
+            -0.047044
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_008",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              -0.200546,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.0,
+              0.182339,
+              0.136793
+            ]
+          },
+          "translation": [
+            -0.143327,
+            0.117232,
+            0.059184
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_009",
+          "role": "shard",
+          "triangles": 512,
+          "vertices": 260,
+          "bounds": {
+            "min": [
+              -0.277,
+              0.182339,
+              -0.018
+            ],
+            "max": [
+              -0.049301,
+              0.55,
+              0.136698
+            ]
+          },
+          "translation": [
+            -0.173894,
+            0.349431,
+            0.019669
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_010",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              -0.136793,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.0,
+              0.260867,
+              0.200546
+            ]
+          },
+          "translation": [
+            -0.058715,
+            0.138978,
+            0.142191
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_011",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              -0.133517,
+              0.260867,
+              0.049301
+            ],
+            "max": [
+              0.0,
+              0.55,
+              0.195744
+            ]
+          },
+          "translation": [
+            -0.04707,
+            0.410978,
+            0.113991
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_012",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.136793,
+              0.204713,
+              0.200546
+            ]
+          },
+          "translation": [
+            0.05905,
+            0.123428,
+            0.143003
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_013",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              0.0,
+              0.204713,
+              0.049301
+            ],
+            "max": [
+              0.135792,
+              0.55,
+              0.199078
+            ]
+          },
+          "translation": [
+            0.047272,
+            0.401619,
+            0.114479
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_014",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              -0.0
+            ],
+            "max": [
+              0.200546,
+              0.227719,
+              0.136793
+            ]
+          },
+          "translation": [
+            0.142671,
+            0.129799,
+            0.058913
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_015",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [
+              0.049301,
+              0.227719,
+              -0.0
+            ],
+            "max": [
+              0.197712,
+              0.55,
+              0.13486
+            ]
+          },
+          "translation": [
+            0.114279,
+            0.405453,
+            0.047189
+          ],
+          "materials": [
+            "glass_shell"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 6016,
+      "fractureValidation": {
+        "intactVolume": 0.0058094952312844035,
+        "shardsVolume": 0.005809495437239982,
+        "relativeError": 3.545154439644513e-08,
+        "closedShards": 16
+      }
+    }
+  },
+  "bundle": {
+    "name": "vessels.glb",
+    "bytes": 3391920,
+    "sha256": "40c58723fea8c6d60b7b00393a3d9264a741e96b546deb7e5e43cb9f4544432b"
+  },
+  "source": "build_vessels.py",
+  "status": "glass-geometry-review; Meshy ornament donors pending authentication"
+}

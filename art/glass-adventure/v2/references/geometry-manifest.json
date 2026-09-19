@@ -1,0 +1,59 @@
+[
+  {
+    "id": "laurel-goblet-geometry",
+    "reference": "art/glass-adventure/v2/references/laurel-goblet.png",
+    "prompt": "Use case: precise-object-edit. Edit this product reference into an unambiguous image-to-3D reconstruction reference. Preserve the EXACT object's silhouette, proportions, camera angle, fluting, stem, handles, gold ornaments and overall geometry. Change ONLY the transparent glass material into opaque matte light-grey modelling clay. Retain gold ornaments as slightly darker matte tan clay so their boundaries remain clear. Preserve real openings and hollow cavities: visible inside of the bowl or vase rim must be matte grey too, with shaded inner wall and rim thickness, not filled solid and not a black flat disk. A seated decanter stopper stays seated. No transparency, refraction, reflections or painted highlights. Uniform light neutral background, soft diffuse studio light, complete object centered, no labels, no other objects. This is a geometry guide only; clear crystal and real metallic gold will be reinstated as separate PBR materials in Blender.",
+    "project_path": "art/glass-adventure/v2/references/laurel-goblet-geometry.png",
+    "sha256": "eb4e159843ba62b92228e96eda8663f7c6cac710269d755ce6dea1e20ef8bbbf",
+    "source_generated_file": "exec-848a665c-1fbf-4af4-a4a0-03309f7cadc6.png"
+  },
+  {
+    "id": "fluted-carafe-geometry",
+    "reference": "art/glass-adventure/v2/references/fluted-carafe.png",
+    "prompt": "Use case: precise-object-edit. Edit this product reference into an unambiguous image-to-3D reconstruction reference. Preserve the EXACT object's silhouette, proportions, camera angle, fluting, stem, handles, gold ornaments and overall geometry. Change ONLY the transparent glass material into opaque matte light-grey modelling clay. Retain gold ornaments as slightly darker matte tan clay so their boundaries remain clear. Preserve real openings and hollow cavities: visible inside of the bowl or vase rim must be matte grey too, with shaded inner wall and rim thickness, not filled solid and not a black flat disk. A seated decanter stopper stays seated. No transparency, refraction, reflections or painted highlights. Uniform light neutral background, soft diffuse studio light, complete object centered, no labels, no other objects. This is a geometry guide only; clear crystal and real metallic gold will be reinstated as separate PBR materials in Blender.",
+    "project_path": "art/glass-adventure/v2/references/fluted-carafe-geometry.png",
+    "sha256": "0e175e71d11d481e41b3d84467745264bb1886ea27f573ea417e50e9b99210ca",
+    "source_generated_file": "exec-6eeb5357-ccaa-4a77-8862-748e5adce4b0.png"
+  },
+  {
+    "id": "moon-amphora-geometry",
+    "reference": "art/glass-adventure/v2/references/moon-amphora.png",
+    "prompt": "Use case: precise-object-edit. Edit this product reference into an unambiguous image-to-3D reconstruction reference. Preserve the EXACT object's silhouette, proportions, camera angle, fluting, stem, handles, gold ornaments and overall geometry. Change ONLY the transparent glass material into opaque matte light-grey modelling clay. Retain gold ornaments as slightly darker matte tan clay so their boundaries remain clear. Preserve real openings and hollow cavities: visible inside of the bowl or vase rim must be matte grey too, with shaded inner wall and rim thickness, not filled solid and not a black flat disk. A seated decanter stopper stays seated. No transparency, refraction, reflections or painted highlights. Uniform light neutral background, soft diffuse studio light, complete object centered, no labels, no other objects. This is a geometry guide only; clear crystal and real metallic gold will be reinstated as separate PBR materials in Blender.",
+    "project_path": "art/glass-adventure/v2/references/moon-amphora-geometry.png",
+    "sha256": "90c15e8b3a8fe40ae96e6e68073a9129044dcd346ccc8cf1823f4ec4f07b6706",
+    "source_generated_file": "exec-3903988c-c554-45ea-8268-0a98cb7341cf.png"
+  },
+  {
+    "id": "rose-bud-vase-geometry",
+    "reference": "art/glass-adventure/v2/references/rose-bud-vase.png",
+    "prompt": "Use case: precise-object-edit. Edit this product reference into an unambiguous image-to-3D reconstruction reference. Preserve the EXACT object's silhouette, proportions, camera angle, fluting, stem, handles, gold ornaments and overall geometry. Change ONLY the transparent glass material into opaque matte light-grey modelling clay. Retain gold ornaments as slightly darker matte tan clay so their boundaries remain clear. Preserve real openings and hollow cavities: visible inside of the bowl or vase rim must be matte grey too, with shaded inner wall and rim thickness, not filled solid and not a black flat disk. A seated decanter stopper stays seated. No transparency, refraction, reflections or painted highlights. Uniform light neutral background, soft diffuse studio light, complete object centered, no labels, no other objects. This is a geometry guide only; clear crystal and real metallic gold will be reinstated as separate PBR materials in Blender.",
+    "project_path": "art/glass-adventure/v2/references/rose-bud-vase-geometry.png",
+    "sha256": "1091022d936457d64a6ff6325a487762d1b27653520f2ec63824fcbaa49cc79e",
+    "source_generated_file": "exec-5f817516-569e-4f63-a6a4-76a209678812.png"
+  },
+  {
+    "id": "cut-crystal-decanter-geometry",
+    "reference": "art/glass-adventure/v2/references/cut-crystal-decanter.png",
+    "prompt": "Use case: precise-object-edit. Edit this product reference into an unambiguous image-to-3D reconstruction reference. Preserve the EXACT object's silhouette, proportions, camera angle, fluting, stem, handles, gold ornaments and overall geometry. Change ONLY the transparent glass material into opaque matte light-grey modelling clay. Retain gold ornaments as slightly darker matte tan clay so their boundaries remain clear. Preserve real openings and hollow cavities: visible inside of the bowl or vase rim must be matte grey too, with shaded inner wall and rim thickness, not filled solid and not a black flat disk. A seated decanter stopper stays seated. No transparency, refraction, reflections or painted highlights. Uniform light neutral background, soft diffuse studio light, complete object centered, no labels, no other objects. This is a geometry guide only; clear crystal and real metallic gold will be reinstated as separate PBR materials in Blender.",
+    "project_path": "art/glass-adventure/v2/references/cut-crystal-decanter-geometry.png",
+    "sha256": "082c20375b7f88fbf66141f26b63f254010274141a403be3ba1efe75783ddb55",
+    "source_generated_file": "exec-c9051c3c-5894-45ba-82e6-62dac83fd6aa.png",
+    "superseded_by": "cut-crystal-decanter-geometry-v2",
+    "rejection_reason": "Incorrect hollow opening in the seated stopper; corrected to solid top."
+  },
+  {
+    "id": "aurora-coupe-geometry",
+    "reference": "art/glass-adventure/v2/references/aurora-coupe.png",
+    "prompt": "Use case: precise-object-edit. Edit this product reference into an unambiguous image-to-3D reconstruction reference. Preserve the EXACT object's silhouette, proportions, camera angle, fluting, stem, handles, gold ornaments and overall geometry. Change ONLY the transparent glass material into opaque matte light-grey modelling clay. Retain gold ornaments as slightly darker matte tan clay so their boundaries remain clear. Preserve real openings and hollow cavities: visible inside of the bowl or vase rim must be matte grey too, with shaded inner wall and rim thickness, not filled solid and not a black flat disk. A seated decanter stopper stays seated. No transparency, refraction, reflections or painted highlights. Uniform light neutral background, soft diffuse studio light, complete object centered, no labels, no other objects. This is a geometry guide only; clear crystal and real metallic gold will be reinstated as separate PBR materials in Blender.",
+    "project_path": "art/glass-adventure/v2/references/aurora-coupe-geometry.png",
+    "sha256": "f3aada297a70421a633f0bfc67345dc98af5c22f00216348003bf791452d8568",
+    "source_generated_file": "exec-a5e1fe61-07d7-455a-8cf5-d79211ccf727.png"
+  },
+  {
+    "id": "cut-crystal-decanter-geometry-v2",
+    "source_generated_file": "exec-dab1da09-edfe-4eca-a7cb-e29394a5bd29.png",
+    "project_path": "art/glass-adventure/v2/references/cut-crystal-decanter-geometry-v2.png",
+    "prompt": "Use case: precise-object-edit. Keep this entire matte grey clay decanter geometry reference unchanged, except correct the TOP of the seated stopper: close the visible oval hole at its top with a solid flat octagonal top facet of matching opaque matte grey clay. It is a removable SOLID cut-crystal stopper, not a hollow vase or second opening. Preserve exact bottle outline, gold collar, faceting, base, camera and lighting. No new details, no text.",
+    "sha256": "057871be73627bd1871d378e942b04cf4fed2df6e175daf3591a76c6814ceb11"
+  }
+]

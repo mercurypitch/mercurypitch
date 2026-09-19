@@ -1,0 +1,118 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "inputVolume": 0.0022432275839182557,
+  "inputTriangles": 46264,
+  "meshes": [
+    {
+      "key": "shard_000",
+      "triangles": 3020,
+      "volume": 5.759158098813205e-05
+    },
+    {
+      "key": "shard_001",
+      "triangles": 2330,
+      "volume": 0.00010933121267558077
+    },
+    {
+      "key": "shard_002",
+      "triangles": 4414,
+      "volume": 0.00012240653900690512
+    },
+    {
+      "key": "shard_003",
+      "triangles": 2524,
+      "volume": 0.0001189275566076905
+    },
+    {
+      "key": "shard_004",
+      "triangles": 4310,
+      "volume": 0.00013074142595156647
+    },
+    {
+      "key": "shard_005",
+      "triangles": 2036,
+      "volume": 9.628375642146133e-05
+    },
+    {
+      "key": "shard_006",
+      "triangles": 1698,
+      "volume": 8.203768575728782e-05
+    },
+    {
+      "key": "shard_007",
+      "triangles": 3660,
+      "volume": 0.00013142737663048238
+    },
+    {
+      "key": "shard_008",
+      "triangles": 1036,
+      "volume": 6.052967950823903e-05
+    },
+    {
+      "key": "shard_009",
+      "triangles": 2248,
+      "volume": 0.00011604545222532621
+    },
+    {
+      "key": "shard_010",
+      "triangles": 2614,
+      "volume": 0.00012290431340616418
+    },
+    {
+      "key": "shard_011",
+      "triangles": 4748,
+      "volume": 0.00013136119983565476
+    },
+    {
+      "key": "shard_012",
+      "triangles": 2116,
+      "volume": 8.870902683153014e-05
+    },
+    {
+      "key": "shard_013",
+      "triangles": 2106,
+      "volume": 8.381110531743353e-05
+    },
+    {
+      "key": "shard_014",
+      "triangles": 4004,
+      "volume": 0.00011156869537681788
+    },
+    {
+      "key": "shard_015",
+      "triangles": 3168,
+      "volume": 0.00010759602057041618
+    },
+    {
+      "key": "shard_016",
+      "triangles": 3444,
+      "volume": 0.00011058143082810909
+    },
+    {
+      "key": "shard_017",
+      "triangles": 2616,
+      "volume": 9.196028127728225e-05
+    },
+    {
+      "key": "shard_018",
+      "triangles": 3736,
+      "volume": 0.00011053556467588404
+    },
+    {
+      "key": "shard_019",
+      "triangles": 1524,
+      "volume": 6.209810471607918e-05
+    },
+    {
+      "key": "shard_020",
+      "triangles": 1802,
+      "volume": 9.241182001916186e-05
+    },
+    {
+      "key": "shard_021",
+      "triangles": 3952,
+      "volume": 0.00010436775529105042
+    }
+  ],
+  "relativeVolumeError": 1.933289658629685e-16
+}

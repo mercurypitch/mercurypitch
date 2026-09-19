@@ -1,0 +1,106 @@
+{
+  "stem": "museum-screen-bay-01-final-v1",
+  "glbSha256": "b65b69a09f2c2a5ae33c71cf00e7e5ea6d6aeb97d28856c0635f598e596838a8",
+  "coordinateSpace": "Blender Z up, bay front viewed along +Y",
+  "bounds": {
+    "min": [
+      -1.6009081602096558,
+      -0.10334718227386475,
+      0.0
+    ],
+    "max": [
+      1.6009082794189453,
+      0.10334718227386475,
+      3.5999999046325684
+    ],
+    "size": [
+      3.2018165588378906,
+      0.2066943645477295,
+      3.5999999046325684
+    ]
+  },
+  "centralProbes": [
+    {
+      "x": -0.48027248382568355,
+      "z": 1.367999963760376,
+      "blocked": true
+    },
+    {
+      "x": 0.0,
+      "z": 1.367999963760376,
+      "blocked": true
+    },
+    {
+      "x": 0.48027248382568355,
+      "z": 1.367999963760376,
+      "blocked": true
+    },
+    {
+      "x": -0.48027248382568355,
+      "z": 1.7279999542236328,
+      "blocked": true
+    },
+    {
+      "x": 0.0,
+      "z": 1.7279999542236328,
+      "blocked": true
+    },
+    {
+      "x": 0.48027248382568355,
+      "z": 1.7279999542236328,
+      "blocked": true
+    },
+    {
+      "x": -0.48027248382568355,
+      "z": 2.0879999446868895,
+      "blocked": true
+    },
+    {
+      "x": 0.0,
+      "z": 2.0879999446868895,
+      "blocked": true
+    },
+    {
+      "x": 0.48027248382568355,
+      "z": 2.0879999446868895,
+      "blocked": true
+    },
+    {
+      "x": -0.48027248382568355,
+      "z": 2.4479999351501465,
+      "blocked": true
+    },
+    {
+      "x": 0.0,
+      "z": 2.4479999351501465,
+      "blocked": true
+    },
+    {
+      "x": 0.48027248382568355,
+      "z": 2.4479999351501465,
+      "blocked": true
+    }
+  ],
+  "centralWindowClear": false,
+  "centralScreenOpaque": true,
+  "horizontalSections": [
+    {
+      "height": 1.367999963760376,
+      "centralClearWidth": null
+    },
+    {
+      "height": 1.7279999542236328,
+      "centralClearWidth": null
+    },
+    {
+      "height": 2.0879999446868895,
+      "centralClearWidth": null
+    },
+    {
+      "height": 2.4479999351501465,
+      "centralClearWidth": null
+    }
+  ],
+  "verticalCenterOpening": null,
+  "measurementLimit": "Finite geometric ray samples. Does not establish collision readiness or a traversable door; sill and cornice remain real source geometry."
+}

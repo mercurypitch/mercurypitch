@@ -1,0 +1,1884 @@
+{
+  "version": 1,
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "builder": "art/glass-adventure/build_assets.py",
+  "blenderVersion": "5.2.1 LTS",
+  "assets": {
+    "platform_terrace": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_terrace",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 3.3,
+        "depth": 3.3,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_terrace_museum_brass",
+          "role": "decoration",
+          "triangles": 1600,
+          "vertices": 832,
+          "bounds": {
+            "min": [-1.641925, -1.127758, -1.641925],
+            "max": [1.641925, 0.0115, 1.641925]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_terrace_museum_cyan",
+          "role": "decoration",
+          "triangles": 96,
+          "vertices": 48,
+          "bounds": {
+            "min": [-1.631946, -0.175392, -1.631946],
+            "max": [1.631946, -0.154608, 1.631946]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_cyan"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_terrace_museum_ivory",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-1.6, -0.0435, -1.6],
+            "max": [1.6, 0.0015, 1.6]
+          },
+          "translation": [0.0, -0.021, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_terrace_museum_obsidian",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-1.65, -0.2, -1.65],
+            "max": [1.65, 0.0, 1.65]
+          },
+          "translation": [0.0, -0.1, -0.0],
+          "materials": ["museum_obsidian"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_terrace_museum_petrol",
+          "role": "decoration",
+          "triangles": 22,
+          "vertices": 16,
+          "bounds": {
+            "min": [-1.432937, -1.122, -1.432937],
+            "max": [1.432937, -0.18, 1.432937]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_petrol"],
+          "nonManifoldEdges": 8,
+          "hasUV": false
+        }
+      ],
+      "trianglesIncludingHiddenShards": 1934
+    },
+    "platform_island": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_island",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 1.375,
+        "depth": 1.375,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_island_museum_brass",
+          "role": "decoration",
+          "triangles": 1600,
+          "vertices": 832,
+          "bounds": {
+            "min": [-0.679421, -0.474489, -0.679421],
+            "max": [0.679421, 0.0115, 0.679421]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_island_museum_cyan",
+          "role": "decoration",
+          "triangles": 96,
+          "vertices": 48,
+          "bounds": {
+            "min": [-0.669443, -0.175392, -0.669443],
+            "max": [0.669443, -0.154608, 0.669443]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_cyan"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_island_museum_ivory",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.6375, -0.0435, -0.6375],
+            "max": [0.6375, 0.0015, 0.6375]
+          },
+          "translation": [0.0, -0.021, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_island_museum_obsidian",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.6875, -0.2, -0.6875],
+            "max": [0.6875, 0.0, 0.6875]
+          },
+          "translation": [0.0, -0.1, -0.0],
+          "materials": ["museum_obsidian"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_island_museum_petrol",
+          "role": "decoration",
+          "triangles": 22,
+          "vertices": 16,
+          "bounds": {
+            "min": [-0.597057, -0.4675, -0.597057],
+            "max": [0.597057, -0.18, 0.597057]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_petrol"],
+          "nonManifoldEdges": 8,
+          "hasUV": false
+        }
+      ],
+      "trianglesIncludingHiddenShards": 1934
+    },
+    "platform_ledge": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_ledge",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 0.77,
+        "depth": 2.2,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_ledge_museum_brass",
+          "role": "decoration",
+          "triangles": 1600,
+          "vertices": 832,
+          "bounds": {
+            "min": [-0.376992, -0.271971, -1.091916],
+            "max": [0.376992, 0.0115, 1.091916]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_ledge_museum_cyan",
+          "role": "decoration",
+          "triangles": 96,
+          "vertices": 48,
+          "bounds": {
+            "min": [-0.366994, -0.175392, -1.081939],
+            "max": [0.366994, -0.154608, 1.081939]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_cyan"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_ledge_museum_ivory",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.335, -0.0435, -1.05],
+            "max": [0.335, 0.0015, 1.05]
+          },
+          "translation": [0.0, -0.021, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_ledge_museum_obsidian",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.385, -0.2, -1.1],
+            "max": [0.385, 0.0, 1.1]
+          },
+          "translation": [0.0, -0.1, -0.0],
+          "materials": ["museum_obsidian"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_ledge_museum_petrol",
+          "role": "decoration",
+          "triangles": 22,
+          "vertices": 16,
+          "bounds": {
+            "min": [-0.334352, -0.2618, -0.955291],
+            "max": [0.334352, -0.18, 0.955291]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_petrol"],
+          "nonManifoldEdges": 8,
+          "hasUV": false
+        }
+      ],
+      "trianglesIncludingHiddenShards": 1934
+    },
+    "platform_bridge": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_bridge",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 1.1,
+        "depth": 3.3,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_bridge_museum_brass",
+          "role": "decoration",
+          "triangles": 2192,
+          "vertices": 1132,
+          "bounds": {
+            "min": [-0.541993, -0.640311, -1.661682],
+            "max": [0.541993, 0.0115, 1.661682]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_bridge_museum_cyan",
+          "role": "decoration",
+          "triangles": 96,
+          "vertices": 48,
+          "bounds": {
+            "min": [-0.531995, -0.175392, -1.631942],
+            "max": [0.531995, -0.154608, 1.631942]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_cyan"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_bridge_museum_ivory",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.5, -0.0435, -1.6],
+            "max": [0.5, 0.0015, 1.6]
+          },
+          "translation": [0.0, -0.021, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_bridge_museum_obsidian",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.55, -0.2, -1.65],
+            "max": [0.55, 0.0, 1.65]
+          },
+          "translation": [0.0, -0.1, -0.0],
+          "materials": ["museum_obsidian"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_bridge_museum_petrol",
+          "role": "decoration",
+          "triangles": 22,
+          "vertices": 16,
+          "bounds": {
+            "min": [-0.477646, -0.374, -1.432937],
+            "max": [0.477646, -0.18, 1.432937]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_petrol"],
+          "nonManifoldEdges": 8,
+          "hasUV": false
+        }
+      ],
+      "trianglesIncludingHiddenShards": 2526
+    },
+    "platform_plinth": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_plinth",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 1.375,
+        "depth": 1.375,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "moving-platform",
+      "meshes": [
+        {
+          "node": "platform_plinth_museum_brass",
+          "role": "decoration",
+          "triangles": 1600,
+          "vertices": 832,
+          "bounds": {
+            "min": [-0.679421, -0.474489, -0.679421],
+            "max": [0.679421, 0.0115, 0.679421]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_plinth_museum_cyan",
+          "role": "decoration",
+          "triangles": 672,
+          "vertices": 336,
+          "bounds": {
+            "min": [-0.669443, -0.472124, -0.669443],
+            "max": [0.669443, -0.154608, 0.669443]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_cyan"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_plinth_museum_ivory",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.6375, -0.0435, -0.6375],
+            "max": [0.6375, 0.0015, 0.6375]
+          },
+          "translation": [0.0, -0.021, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_plinth_museum_obsidian",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.6875, -0.2, -0.6875],
+            "max": [0.6875, 0.0, 0.6875]
+          },
+          "translation": [0.0, -0.1, -0.0],
+          "materials": ["museum_obsidian"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_plinth_museum_petrol",
+          "role": "decoration",
+          "triangles": 22,
+          "vertices": 16,
+          "bounds": {
+            "min": [-0.597057, -0.4675, -0.597057],
+            "max": [0.597057, -0.18, 0.597057]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_petrol"],
+          "nonManifoldEdges": 8,
+          "hasUV": false
+        }
+      ],
+      "trianglesIncludingHiddenShards": 2510
+    },
+    "platform_ramp": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_ramp",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "ramp",
+        "width": 1.375,
+        "depth": 2.2,
+        "rise": 0.55,
+        "lowEdgeZ": -1.1
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_ramp_museum_brass",
+          "role": "decoration",
+          "triangles": 136,
+          "vertices": 88,
+          "bounds": {
+            "min": [-0.6655, -0.010123, -1.103781],
+            "max": [0.6655, 0.570123, 1.103781]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "platform_ramp_museum_ivory",
+          "role": "decoration",
+          "triangles": 12,
+          "vertices": 8,
+          "bounds": {
+            "min": [-0.6875, -0.2, -1.1],
+            "max": [0.6875, 0.55, 1.1]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        }
+      ],
+      "trianglesIncludingHiddenShards": 148
+    },
+    "museum_column": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_column",
+      "pivot": "foot-center",
+      "role": "non-colliding-ornament",
+      "meshes": [
+        {
+          "node": "museum_column_museum_brass",
+          "role": "decoration",
+          "triangles": 2880,
+          "vertices": 1440,
+          "bounds": {
+            "min": [-0.189, 0.152206, -0.189],
+            "max": [0.189, 2.087794, 0.189]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": false
+        },
+        {
+          "node": "museum_column_museum_ivory",
+          "role": "decoration",
+          "triangles": 888,
+          "vertices": 450,
+          "bounds": {
+            "min": [-0.21, 0.0, -0.21],
+            "max": [0.21, 2.18, 0.21]
+          },
+          "translation": [0.0, 2.14, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 3768
+    },
+    "museum_arch": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_arch",
+      "pivot": "foot-center",
+      "role": "non-colliding-ornament",
+      "meshes": [
+        {
+          "node": "museum_arch_museum_brass",
+          "role": "decoration",
+          "triangles": 1192,
+          "vertices": 604,
+          "bounds": {
+            "min": [-1.23, 0.0, -0.22],
+            "max": [1.23, 2.411258, 0.22]
+          },
+          "translation": [-1.05, 0.055, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_arch_museum_ivory",
+          "role": "decoration",
+          "triangles": 868,
+          "vertices": 440,
+          "bounds": {
+            "min": [-1.199884, 0.0, -0.15],
+            "max": [1.199884, 2.55, 0.15]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_ivory"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_arch_museum_petrol",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.09, 2.275, -0.185],
+            "max": [0.09, 2.505, 0.185]
+          },
+          "translation": [0.0, 2.39, -0.0],
+          "materials": ["museum_petrol"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 2168
+    },
+    "museum_astrolabe": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_astrolabe",
+      "pivot": "foot-center",
+      "role": "non-colliding-panorama",
+      "meshyTask": "01a0a1c0-6929-7636-be07-ac4e3dab7514",
+      "sourceSha256": "7d42c758ff6d41cd6b2e86c874dbfecd6eb8c80bb4c5406ac4c69dfa1b6c698b",
+      "meshes": [
+        {
+          "node": "museum_astrolabe_museum_brass",
+          "role": "decoration",
+          "triangles": 6167,
+          "vertices": 9828,
+          "bounds": {
+            "min": [-0.997063, 0.0, -0.694097],
+            "max": [0.997063, 2.4, 0.694097]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 9699,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 6167
+    },
+    "vase_rounded": {
+      "bundle": "vessels.glb",
+      "node": "vase_rounded",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "vase_rounded_intact",
+      "shards": [
+        "vase_rounded_shard_000",
+        "vase_rounded_shard_001",
+        "vase_rounded_shard_002",
+        "vase_rounded_shard_003",
+        "vase_rounded_shard_004",
+        "vase_rounded_shard_005",
+        "vase_rounded_shard_006",
+        "vase_rounded_shard_007",
+        "vase_rounded_shard_008",
+        "vase_rounded_shard_009",
+        "vase_rounded_shard_010",
+        "vase_rounded_shard_011",
+        "vase_rounded_shard_012",
+        "vase_rounded_shard_013",
+        "vase_rounded_shard_014",
+        "vase_rounded_shard_015"
+      ],
+      "persistent": ["vase_rounded_base"],
+      "wallThickness": 0.007,
+      "meshes": [
+        {
+          "node": "vase_rounded_base",
+          "role": "persistent-base",
+          "triangles": 192,
+          "vertices": 98,
+          "bounds": {
+            "min": [-0.0945, 0.0, -0.0945],
+            "max": [0.0945, 0.013, 0.0945]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_intact",
+          "role": "intact",
+          "triangles": 1920,
+          "vertices": 962,
+          "bounds": {
+            "min": [-0.155, 0.0, -0.155],
+            "max": [0.155, 0.36, 0.155]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_000",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.107728],
+            "max": [0.15235, 0.1476, -0.0]
+          },
+          "translation": [0.111924, 0.081305, -0.04636],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_001",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.040305, 0.1476, -0.109602],
+            "max": [0.155, 0.36, -0.0]
+          },
+          "translation": [0.093227, 0.267933, -0.038616],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_002",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.153119],
+            "max": [0.108272, 0.159909, -0.0]
+          },
+          "translation": [0.046439, 0.084713, -0.112114],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_003",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.0, 0.159909, -0.155],
+            "max": [0.109602, 0.36, -0.040305]
+          },
+          "translation": [0.038663, 0.269985, -0.093342],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_004",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.106744, 0.0, -0.150959],
+            "max": [0.0, 0.125344, -0.0]
+          },
+          "translation": [-0.046218, 0.075142, -0.111579],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_005",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.109602, 0.125344, -0.155],
+            "max": [0.0, 0.36, -0.040305]
+          },
+          "translation": [-0.03853, 0.264224, -0.09302],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_006",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.154096, 0.0, -0.108962],
+            "max": [0.0, 0.175533, -0.0]
+          },
+          "translation": [-0.112356, 0.08904, -0.04654],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_007",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.155, 0.175533, -0.109602],
+            "max": [-0.040305, 0.36, -0.0]
+          },
+          "translation": [-0.093487, 0.272589, -0.038724],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_008",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.150584, 0.0, -0.0],
+            "max": [0.0, 0.119349, 0.106479]
+          },
+          "translation": [-0.111487, 0.073481, 0.046179],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_009",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.155, 0.119349, -0.0],
+            "max": [-0.040305, 0.36, 0.109602]
+          },
+          "translation": [-0.092964, 0.263225, 0.038507],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_010",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.108751, 0.0, -0.0],
+            "max": [0.0, 0.170749, 0.153797]
+          },
+          "translation": [-0.046509, 0.087715, 0.112282],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_011",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.109602, 0.170749, 0.040305],
+            "max": [0.0, 0.36, 0.155]
+          },
+          "translation": [-0.038705, 0.271791, 0.093443],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_012",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.0],
+            "max": [0.107126, 0.133994, 0.1515]
+          },
+          "translation": [0.046273, 0.077537, 0.111713],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_013",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.0, 0.133994, 0.040305],
+            "max": [0.109602, 0.36, 0.155]
+          },
+          "translation": [0.038563, 0.265666, 0.0931],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_014",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.0],
+            "max": [0.152441, 0.149052, 0.107792]
+          },
+          "translation": [0.111946, 0.081707, 0.04637],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_rounded_shard_015",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.040305, 0.149052, -0.0],
+            "max": [0.155, 0.36, 0.109602]
+          },
+          "translation": [0.09324, 0.268175, 0.038621],
+          "materials": ["glass_rose"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 4816,
+      "fractureValidation": {
+        "intactVolume": 0.0026963832790583785,
+        "shardsVolume": 0.002696383220912983,
+        "relativeError": 2.1564217545766625e-8,
+        "closedShards": 16
+      }
+    },
+    "vase_fluted": {
+      "bundle": "vessels.glb",
+      "node": "vase_fluted",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "vase_fluted_intact",
+      "shards": [
+        "vase_fluted_shard_000",
+        "vase_fluted_shard_001",
+        "vase_fluted_shard_002",
+        "vase_fluted_shard_003",
+        "vase_fluted_shard_004",
+        "vase_fluted_shard_005",
+        "vase_fluted_shard_006",
+        "vase_fluted_shard_007",
+        "vase_fluted_shard_008",
+        "vase_fluted_shard_009",
+        "vase_fluted_shard_010",
+        "vase_fluted_shard_011",
+        "vase_fluted_shard_012",
+        "vase_fluted_shard_013",
+        "vase_fluted_shard_014",
+        "vase_fluted_shard_015"
+      ],
+      "persistent": ["vase_fluted_base"],
+      "wallThickness": 0.007,
+      "meshes": [
+        {
+          "node": "vase_fluted_base",
+          "role": "persistent-base",
+          "triangles": 192,
+          "vertices": 98,
+          "bounds": {
+            "min": [-0.0735, 0.0, -0.0735],
+            "max": [0.0735, 0.013, 0.0735]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_intact",
+          "role": "intact",
+          "triangles": 2176,
+          "vertices": 1090,
+          "bounds": {
+            "min": [-0.130625, 0.0, -0.130625],
+            "max": [0.130625, 0.69, 0.130625]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_000",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [0.0, 0.0, -0.084411],
+            "max": [0.130625, 0.2829, -0.0]
+          },
+          "translation": [0.088914, 0.153737, -0.036544],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_001",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.020934, 0.2829, -0.064044],
+            "max": [0.099108, 0.69, -0.0]
+          },
+          "translation": [0.049974, 0.492984, -0.02054],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_002",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [0.0, 0.0, -0.130625],
+            "max": [0.084411, 0.306491, -0.0]
+          },
+          "translation": [0.035791, 0.158854, -0.087081],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_003",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.0, 0.306491, -0.089247],
+            "max": [0.057672, 0.69, -0.020934]
+          },
+          "translation": [0.019961, 0.496915, -0.048566],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_004",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [-0.084411, 0.0, -0.130625],
+            "max": [0.0, 0.240243, -0.0]
+          },
+          "translation": [-0.037906, 0.144486, -0.092228],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_005",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.075566, 0.240243, -0.116938],
+            "max": [0.0, 0.69, -0.020934]
+          },
+          "translation": [-0.021587, 0.485874, -0.052521],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_006",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [-0.130625, 0.0, -0.084411],
+            "max": [0.0, 0.336438, -0.0]
+          },
+          "translation": [-0.084755, 0.165348, -0.034835],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_007",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.076729, 0.336438, -0.049583],
+            "max": [-0.020934, 0.69, -0.0]
+          },
+          "translation": [-0.046778, 0.501906, -0.019226],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_008",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.130625, 0.0, -0.0],
+            "max": [0.0, 0.228752, 0.084411]
+          },
+          "translation": [-0.091248, 0.114854, 0.037504],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_009",
+          "role": "shard",
+          "triangles": 248,
+          "vertices": 126,
+          "bounds": {
+            "min": [-0.118568, 0.228752, -0.0],
+            "max": [-0.020934, 0.69, 0.07662]
+          },
+          "translation": [-0.059098, 0.449108, 0.02429],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_010",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [-0.084411, 0.0, -0.0],
+            "max": [0.0, 0.327269, 0.130625]
+          },
+          "translation": [-0.035128, 0.163359, 0.085467],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_011",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.05206, 0.327269, 0.020934],
+            "max": [0.0, 0.69, 0.080562]
+          },
+          "translation": [-0.019451, 0.500378, 0.047326],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_012",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [0.0, 0.0, -0.0],
+            "max": [0.084411, 0.256822, 0.130625]
+          },
+          "translation": [0.037377, 0.148082, 0.09094],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_013",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.0, 0.256822, 0.020934],
+            "max": [0.071088, 0.69, 0.110008]
+          },
+          "translation": [0.02118, 0.488637, 0.051531],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_014",
+          "role": "shard",
+          "triangles": 162,
+          "vertices": 83,
+          "bounds": {
+            "min": [0.0, 0.0, -0.0],
+            "max": [0.130625, 0.285683, 0.084411]
+          },
+          "translation": [0.088698, 0.154341, 0.036455],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_fluted_shard_015",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.020934, 0.285683, -0.0],
+            "max": [0.097944, 0.69, 0.063292]
+          },
+          "translation": [0.049808, 0.493447, 0.020472],
+          "materials": ["glass_aqua"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 5360,
+      "fractureValidation": {
+        "intactVolume": 0.0028241097042943225,
+        "shardsVolume": 0.0028241097015886786,
+        "relativeError": 9.580519710541527e-10,
+        "closedShards": 16
+      }
+    },
+    "vase_amphora": {
+      "bundle": "vessels.glb",
+      "node": "vase_amphora",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "vase_amphora_intact",
+      "shards": [
+        "vase_amphora_shard_000",
+        "vase_amphora_shard_001",
+        "vase_amphora_shard_002",
+        "vase_amphora_shard_003",
+        "vase_amphora_shard_004",
+        "vase_amphora_shard_005",
+        "vase_amphora_shard_006",
+        "vase_amphora_shard_007",
+        "vase_amphora_shard_008",
+        "vase_amphora_shard_009",
+        "vase_amphora_shard_010",
+        "vase_amphora_shard_011",
+        "vase_amphora_shard_012",
+        "vase_amphora_shard_013",
+        "vase_amphora_shard_014",
+        "vase_amphora_shard_015"
+      ],
+      "persistent": ["vase_amphora_base"],
+      "wallThickness": 0.007,
+      "meshes": [
+        {
+          "node": "vase_amphora_base",
+          "role": "persistent-base",
+          "triangles": 192,
+          "vertices": 98,
+          "bounds": {
+            "min": [-0.105, 0.0, -0.105],
+            "max": [0.105, 0.013, 0.105]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_intact",
+          "role": "intact",
+          "triangles": 2520,
+          "vertices": 1266,
+          "bounds": {
+            "min": [-0.277, 0.0, -0.200546],
+            "max": [0.277, 0.55, 0.200546]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_000",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.136793],
+            "max": [0.200546, 0.2255, -0.0]
+          },
+          "translation": [0.142703, 0.129185, -0.058926],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_001",
+          "role": "shard",
+          "triangles": 512,
+          "vertices": 260,
+          "bounds": {
+            "min": [0.049301, 0.185125, -0.13495],
+            "max": [0.277, 0.55, 0.018]
+          },
+          "translation": [0.173738, 0.352419, -0.019605],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_002",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.200546],
+            "max": [0.136793, 0.244305, -0.0]
+          },
+          "translation": [0.058814, 0.134392, -0.142431],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_003",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.0, 0.244305, -0.196727],
+            "max": [0.134188, 0.55, -0.049301]
+          },
+          "translation": [0.04713, 0.408217, -0.114135],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_004",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.136793, 0.0, -0.200546],
+            "max": [0.0, 0.191498, -0.0]
+          },
+          "translation": [-0.059129, 0.119769, -0.143194],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_005",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.136327, 0.191498, -0.199863],
+            "max": [0.0, 0.55, -0.049301]
+          },
+          "translation": [-0.047319, 0.399416, -0.114594],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_006",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.200546, 0.0, -0.136793],
+            "max": [0.0, 0.268175, -0.0]
+          },
+          "translation": [-0.142086, 0.141002, -0.058671],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_007",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.19531, 0.268175, -0.133221],
+            "max": [-0.049301, 0.55, -0.0]
+          },
+          "translation": [-0.113927, 0.412196, -0.047044],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_008",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.200546, 0.0, -0.0],
+            "max": [0.0, 0.182339, 0.136793]
+          },
+          "translation": [-0.143327, 0.117232, 0.059184],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_009",
+          "role": "shard",
+          "triangles": 512,
+          "vertices": 260,
+          "bounds": {
+            "min": [-0.277, 0.182339, -0.018],
+            "max": [-0.049301, 0.55, 0.136698]
+          },
+          "translation": [-0.173894, 0.349431, 0.019669],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_010",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [-0.136793, 0.0, -0.0],
+            "max": [0.0, 0.260867, 0.200546]
+          },
+          "translation": [-0.058715, 0.138978, 0.142191],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_011",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [-0.133517, 0.260867, 0.049301],
+            "max": [0.0, 0.55, 0.195744]
+          },
+          "translation": [-0.04707, 0.410978, 0.113991],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_012",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.0],
+            "max": [0.136793, 0.204713, 0.200546]
+          },
+          "translation": [0.05905, 0.123428, 0.143003],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_013",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.0, 0.204713, 0.049301],
+            "max": [0.135792, 0.55, 0.199078]
+          },
+          "translation": [0.047272, 0.401619, 0.114479],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_014",
+          "role": "shard",
+          "triangles": 126,
+          "vertices": 65,
+          "bounds": {
+            "min": [0.0, 0.0, -0.0],
+            "max": [0.200546, 0.227719, 0.136793]
+          },
+          "translation": [0.142671, 0.129799, 0.058913],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "vase_amphora_shard_015",
+          "role": "shard",
+          "triangles": 212,
+          "vertices": 108,
+          "bounds": {
+            "min": [0.049301, 0.227719, -0.0],
+            "max": [0.197712, 0.55, 0.13486]
+          },
+          "translation": [0.114279, 0.405453, 0.047189],
+          "materials": ["glass_honey"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 6016,
+      "fractureValidation": {
+        "intactVolume": 0.0058094953680240405,
+        "shardsVolume": 0.005809495538015197,
+        "relativeError": 2.9260916103563935e-8,
+        "closedShards": 16
+      }
+    },
+    "legend_cash": {
+      "bundle": "legend-slab.glb",
+      "node": "legend_cash",
+      "pivot": "foot-center",
+      "role": "breakable",
+      "intact": "legend_cash_intact",
+      "shards": [
+        "legend_cash_shard_000",
+        "legend_cash_shard_001",
+        "legend_cash_shard_002",
+        "legend_cash_shard_003",
+        "legend_cash_shard_004",
+        "legend_cash_shard_005",
+        "legend_cash_shard_006",
+        "legend_cash_shard_007",
+        "legend_cash_shard_008",
+        "legend_cash_shard_009",
+        "legend_cash_shard_010",
+        "legend_cash_shard_011",
+        "legend_cash_shard_012",
+        "legend_cash_shard_013",
+        "legend_cash_shard_014",
+        "legend_cash_shard_015"
+      ],
+      "persistent": [
+        "legend_cash_frame_vertical_-0.374",
+        "legend_cash_frame_vertical_0.374",
+        "legend_cash_frame_horizontal_-0.025",
+        "legend_cash_frame_horizontal_1.105",
+        "legend_cash_base"
+      ],
+      "portraitUV": {
+        "u": "x / 0.72 + 0.5",
+        "v": "y / 1.08",
+        "front": "+Z",
+        "imageEmbedded": true
+      },
+      "portraitSourceSha256": "10234fdd681e9f5dceb9953622646519a706714e2c465d0d69059cc92b23666d",
+      "meshes": [
+        {
+          "node": "legend_cash_base",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.44, -0.09, -0.137],
+            "max": [0.44, 0.0, 0.113]
+          },
+          "translation": [0.0, -0.045, -0.012],
+          "materials": ["museum_obsidian"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_frame_horizontal_-0.025",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.3925, -0.0385, -0.0325],
+            "max": [0.3925, -0.0115, 0.0325]
+          },
+          "translation": [0.0, -0.025, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_frame_horizontal_1.105",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.3925, 1.0915, -0.0325],
+            "max": [0.3925, 1.1185, 0.0325]
+          },
+          "translation": [0.0, 1.105, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_frame_vertical_-0.374",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [-0.3865, -0.03, -0.0325],
+            "max": [-0.3615, 1.11, 0.0325]
+          },
+          "translation": [-0.374, 0.54, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_frame_vertical_0.374",
+          "role": "decoration",
+          "triangles": 108,
+          "vertices": 56,
+          "bounds": {
+            "min": [0.3615, -0.03, -0.0325],
+            "max": [0.3865, 1.11, 0.0325]
+          },
+          "translation": [0.374, 0.54, -0.0],
+          "materials": ["museum_brass"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_intact",
+          "role": "intact",
+          "triangles": 12,
+          "vertices": 8,
+          "bounds": {
+            "min": [-0.36, 0.0, -0.0225],
+            "max": [0.36, 1.08, 0.0225]
+          },
+          "translation": [0.0, 0.0, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_000",
+          "role": "shard",
+          "triangles": 12,
+          "vertices": 8,
+          "bounds": {
+            "min": [-0.36, 0.0, -0.0225],
+            "max": [-0.148877, 0.27144, 0.0225]
+          },
+          "translation": [-0.259446, 0.134689, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_001",
+          "role": "shard",
+          "triangles": 20,
+          "vertices": 12,
+          "bounds": {
+            "min": [-0.168907, 0.0, -0.0225],
+            "max": [0.035712, 0.30421, 0.0225]
+          },
+          "translation": [-0.076984, 0.189763, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_002",
+          "role": "shard",
+          "triangles": 16,
+          "vertices": 10,
+          "bounds": {
+            "min": [-0.002848, 0.0, -0.0225],
+            "max": [0.202996, 0.287777, 0.0225]
+          },
+          "translation": [0.117059, 0.167775, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_003",
+          "role": "shard",
+          "triangles": 12,
+          "vertices": 8,
+          "bounds": {
+            "min": [0.182491, 0.0, -0.0225],
+            "max": [0.36, 0.289262, 0.0225]
+          },
+          "translation": [0.276372, 0.141993, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_004",
+          "role": "shard",
+          "triangles": 16,
+          "vertices": 10,
+          "bounds": {
+            "min": [-0.36, 0.267317, -0.0225],
+            "max": [-0.124746, 0.529383, 0.0225]
+          },
+          "translation": [-0.247433, 0.37712, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_005",
+          "role": "shard",
+          "triangles": 20,
+          "vertices": 12,
+          "bounds": {
+            "min": [-0.243544, 0.290538, -0.0225],
+            "max": [-0.02305, 0.580093, 0.0225]
+          },
+          "translation": [-0.110143, 0.471449, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_006",
+          "role": "shard",
+          "triangles": 20,
+          "vertices": 12,
+          "bounds": {
+            "min": [-0.052236, 0.272389, -0.0225],
+            "max": [0.166942, 0.553774, 0.0225]
+          },
+          "translation": [0.076001, 0.42063, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_007",
+          "role": "shard",
+          "triangles": 16,
+          "vertices": 10,
+          "bounds": {
+            "min": [0.16472, 0.278708, -0.0225],
+            "max": [0.36, 0.552756, 0.0225]
+          },
+          "translation": [0.246831, 0.388073, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_008",
+          "role": "shard",
+          "triangles": 20,
+          "vertices": 12,
+          "bounds": {
+            "min": [-0.36, 0.526922, -0.0225],
+            "max": [-0.171525, 0.830664, 0.0225]
+          },
+          "translation": [-0.262616, 0.684251, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_009",
+          "role": "shard",
+          "triangles": 12,
+          "vertices": 8,
+          "bounds": {
+            "min": [-0.205832, 0.5716, -0.0225],
+            "max": [-0.00944, 0.808432, 0.0225]
+          },
+          "translation": [-0.108139, 0.687728, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_010",
+          "role": "shard",
+          "triangles": 24,
+          "vertices": 14,
+          "bounds": {
+            "min": [-0.04576, 0.552871, -0.0225],
+            "max": [0.188451, 0.804489, 0.0225]
+          },
+          "translation": [0.063253, 0.689375, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_011",
+          "role": "shard",
+          "triangles": 16,
+          "vertices": 10,
+          "bounds": {
+            "min": [0.163919, 0.53186, -0.0225],
+            "max": [0.36, 0.781146, 0.0225]
+          },
+          "translation": [0.247418, 0.63599, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_012",
+          "role": "shard",
+          "triangles": 12,
+          "vertices": 8,
+          "bounds": {
+            "min": [-0.36, 0.83001, -0.0225],
+            "max": [-0.114632, 1.08, 0.0225]
+          },
+          "translation": [-0.267357, 0.955169, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_013",
+          "role": "shard",
+          "triangles": 20,
+          "vertices": 12,
+          "bounds": {
+            "min": [-0.234796, 0.790787, -0.0225],
+            "max": [0.014512, 1.08, 0.0225]
+          },
+          "translation": [-0.097546, 0.899062, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_014",
+          "role": "shard",
+          "triangles": 12,
+          "vertices": 8,
+          "bounds": {
+            "min": [-0.035086, 0.791689, -0.0225],
+            "max": [0.192946, 1.08, 0.0225]
+          },
+          "translation": [0.081628, 0.939045, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "legend_cash_shard_015",
+          "role": "shard",
+          "triangles": 16,
+          "vertices": 10,
+          "bounds": {
+            "min": [0.154139, 0.760414, -0.0225],
+            "max": [0.36, 1.08, 0.0225]
+          },
+          "translation": [0.251107, 0.89865, -0.0],
+          "materials": ["legend_edge", "legend_portrait"],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 816,
+      "fractureValidation": {
+        "intactVolume": 0.034992004171371625,
+        "shardsVolume": 0.03499200410953727,
+        "relativeError": 1.7670996144216443e-9,
+        "closedShards": 16
+      }
+    }
+  },
+  "assetUrls": {
+    "museum-kit": "platform-kit.glb",
+    "vessel-vase": "vessels.glb",
+    "vessel-fluted": "vessels.glb",
+    "legend-slab": "legend-slab.glb",
+    "legend-johnny-cash": "legend-johnny-cash.webp",
+    "floor-marble": "floor-marble.webp",
+    "museum-sky": "museum-sky.webp",
+    "vessels": "vessels.glb"
+  },
+  "textures": [
+    {
+      "id": "legend-johnny-cash",
+      "source": "art/glass-adventure/textures/legend-johnny-cash.png",
+      "sourceSha256": "a1578f3116ddb7cd1a9a554a6219657ffa64541dce7df8df720a0aadb760e4f2",
+      "runtime": "legend-johnny-cash.webp",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 568870,
+      "sha256": "9a44d12d318a1fa081a63b5ede408ceec1648f8e7a6c214272752bae8038bff5",
+      "embeddedJpeg": "legend-johnny-cash-runtime.jpg",
+      "embeddedJpegSha256": "10234fdd681e9f5dceb9953622646519a706714e2c465d0d69059cc92b23666d",
+      "generation": "Built-in imagegen, root task, 2026-09-14",
+      "treatment": "RGB WebP/JPEG quality 90, no crop; bounded Lanczos resize only"
+    },
+    {
+      "id": "floor-marble",
+      "source": "art/glass-adventure/textures/floor-marble.png",
+      "sourceSha256": "3ce57617802f9c0d8e04fbc9f965c0df1ab5eb34eea461823a10bc23e5ee41e8",
+      "runtime": "floor-marble.webp",
+      "width": 1024,
+      "height": 1024,
+      "bytes": 118674,
+      "sha256": "0af5812b44c95964073be6e2ed6895256504ec08a8609610fddc3d76a5168122",
+      "embeddedJpeg": "floor-marble-runtime.jpg",
+      "embeddedJpegSha256": "ef546762ef4dc1a8dc6fbada93a0b88ad62f50139bfbc95c4e01b4928227326c",
+      "generation": "Built-in imagegen, root task, 2026-09-14",
+      "treatment": "RGB WebP/JPEG quality 90, no crop; bounded Lanczos resize only"
+    },
+    {
+      "id": "museum-sky",
+      "source": "art/glass-adventure/textures/museum-sky.png",
+      "sourceSha256": "6f843d97bd10a35b5dbe9377604ba71fe541d52098c7723c96ee1c557a5943b1",
+      "runtime": "museum-sky.webp",
+      "width": 1774,
+      "height": 887,
+      "bytes": 179224,
+      "sha256": "098c976aeb6992ec09def1575a0b8fb173b128a530c06a572c4163f2d4a03c65",
+      "generation": "Built-in imagegen, root task, 2026-09-14",
+      "treatment": "RGB WebP quality 92, method 6; no resize or crop",
+      "prompt": "art/glass-adventure/sky-prompt.md"
+    }
+  ],
+  "bundles": {
+    "platform-kit.glb": {
+      "bytes": 944260,
+      "sha256": "dd64110ede5f283b0eadf28ed02c5a8ff7ee957d844928ff10907f1b8c9ef83b"
+    },
+    "vessels.glb": {
+      "bytes": 442928,
+      "sha256": "ab521342177578aeb8aa13932ded620790203946f1c32d6f267bb094a4077f71"
+    },
+    "legend-slab.glb": {
+      "bytes": 709632,
+      "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79"
+    }
+  }
+}

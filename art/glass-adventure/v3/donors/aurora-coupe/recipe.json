@@ -1,0 +1,16 @@
+{
+  "name": "aurora-coupe",
+  "inspectionName": "aurora-coupe-high-source",
+  "donor": "art/glass-adventure/v2/meshy/aurora-coupe-01/pre-remeshed.glb",
+  "sourceSha256": "7d943707eff4cbfe362c5f654f599d93bbf27f690db39bdeea9aa01c9810a894",
+  "nodePrefix": "coupe_aurora",
+  "heightMetres": 0.4,
+  "inspectionDecision": "Actual source is one fully manifold connected surface, with an open bowl, fluted body, decorated rim and faceted stem. Reduce the high-detail Meshy surface instead of using pinched remeshed geometry. No hollowing or replacement form. UV/masked physical-gold finish will be transferred from original textured donor after topology passes.",
+  "repair": {
+    "skipCoincidentWeld": true,
+    "targetTriangles": 30000,
+    "smoothSurface": true
+  },
+  "shardCount": 23,
+  "seed": 20260917
+}

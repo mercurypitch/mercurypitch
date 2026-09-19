@@ -1,0 +1,20 @@
+[
+  {
+    "method": "Built-in ChatGPT image generation",
+    "date": "2026-09-14",
+    "selectedMaster": "concepts/floating-museum-direction.png",
+    "prompt": "Use case: stylized-concept. Asset type: environment art direction for an actual playable 3D platformer named Glassworks. Create one beautiful wide composition of a floating glass museum, seen at a readable third-person platform game camera angle, with exquisitely crafted ivory stone terraces with pale teal oxidized-metal inlays and gold edge details, arc bridges between islands, sculptural arches, translucent crystal gardens and jewel-like vessels displayed on pedestals, a distant cosmic ocean of softly lit clouds, warm apricot horizon against deep petrol sky. Richly dressed and cohesive, tactile and inviting, crisp actual geometry, like a lovingly art-directed premium indie adventure. Paths are broad enough to walk on; glass wine goblets and rounded/fluted vases are the focal points. Include a dimensional freestanding emerald-blue glass portrait slab with gold inlay as a distant exhibit. A tiny cute polished mercury droplet mascot with dark eyes stands in the foreground as scale reference. Avoid dark empty void, generic floating cubes, neon grids, UI, text, logos, watermark. Mood: wonder, warm museum light, glass caustics and visible highlights. Output a landscape image useful as game environment visual target."
+  },
+  {
+    "method": "Built-in ChatGPT image generation",
+    "date": "2026-09-14",
+    "selectedMaster": "textures/legend-johnny-cash.png",
+    "prompt": "Use case: stylized-concept. Asset type: flat portrait texture mapped inside a breakable dimensional glass museum slab in a beautiful 3D platformer. Create a single upright 2:3 portrait illustration of Johnny Cash, instantly recognizable mature face and characteristic swept-back dark hair, bust and the top of an acoustic guitar. Art medium: exquisite stained and etched glass in petrol blue, turquoise, smoky emerald, warm champagne gold fine lead lines, bold large readable planes and an expressive friendly caricature, rich jewel luminosity. Head occupies upper middle 55% of height; shoulders and guitar below. This is the front-on orthographic flat design of the portrait ONLY, edge-to-edge rectangular glass pattern. No photographed 3D object, no frame, no environment, no stand, no perspective, no dropshadow, no text/letters/logos/signatures/URLs, no prebroken shards, no visible cracks. Keep forms bold and face readable even at small gameplay distance. Entire surface should feel dimensional and luminous within the stained glass illustration, with simple darker glass near the edges."
+  },
+  {
+    "method": "Built-in ChatGPT image generation",
+    "date": "2026-09-14",
+    "selectedMaster": "textures/floor-marble.png",
+    "prompt": "Use case: stylized-concept. Asset type: seamless square albedo base-color texture for marble platforms in a floating glass museum 3D game. Flat orthographic top-down material scan filling the entire image. Warm ivory alabaster with very subtle fine gray-green and pale champagne veins, gently mottled mineral body, beautiful polished hand-finished marble. Restrained contrast so it is readable as walkable ground, no gold inlay lines (those are separate geometry), no objects, no tiles, no border, no lighting, no shadows, no highlights, no vignette, no perspective. Seamlessly tileable on all four sides. This is a practical game surface texture, not an image of a room. Texture only, no text, no logos."
+  }
+]

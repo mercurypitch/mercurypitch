@@ -1,0 +1,2018 @@
+{
+  "schema": 1,
+  "description": "Immutable binary source-art inventory for the museum visuals/audio/enclosure authoring wave. These paths use Git LFS. Playable exports are stored separately in ordinary Git.",
+  "files": [
+    {
+      "path": "v2/architecture-review.png",
+      "bytes": 1456035,
+      "sha256": "c9e1e08739d7534f9c19ea98c1ee924002b291250ec6cf32383fde4f27bd995e"
+    },
+    {
+      "path": "v2/fractures-review.png",
+      "bytes": 1975707,
+      "sha256": "989f104062242a7b81c3fc395ebecb226cc61353b01e158940bf53b5f93e45ae"
+    },
+    {
+      "path": "v2/garden-review.png",
+      "bytes": 1316926,
+      "sha256": "8271913cb29a7e75e0404e3e7efe21d10fc86d864a4dd3cd8576cb48ca83d802"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/donor.glb",
+      "bytes": 7957896,
+      "sha256": "cc78471e673f2c26a4dc86b0c70130c26a38a47e23ca0af78fe00ec903631879"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/pre-remeshed.glb",
+      "bytes": 35124992,
+      "sha256": "7d943707eff4cbfe362c5f654f599d93bbf27f690db39bdeea9aa01c9810a894"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/texture_urls-0-base_color.png",
+      "bytes": 4834585,
+      "sha256": "f42c0b6c0ddd418abd6e4b641ca3a42127e37cb41d156de98e96e6d22cca1186"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/texture_urls-0-metallic.png",
+      "bytes": 588953,
+      "sha256": "ccaf3dd6c8c11bab822fe009d803d8e4bbb66dcb4a5dfa0fd161fef525432bac"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/texture_urls-0-normal.png",
+      "bytes": 4028063,
+      "sha256": "70bed7f16fb17231e7974f7ae390469feac01641a776dfd8ad45c7e65f9241fc"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/texture_urls-0-roughness.png",
+      "bytes": 1355631,
+      "sha256": "8da7b1de8228b29fa5f06ffc31ea0fcd89f68e251f42702f425d85683a9e25a1"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/thumbnail_url.png",
+      "bytes": 153002,
+      "sha256": "c22708cee659468f667bbedd25ba7df9a253d40c36108db2501902c01f63ffa5"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/thumbnail_urls-back.png",
+      "bytes": 133634,
+      "sha256": "03a41d54aaf5024c8c73cf370713e98fc861fbfb517ffc58c06aaa588fa2f78c"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/thumbnail_urls-front.png",
+      "bytes": 153002,
+      "sha256": "c22708cee659468f667bbedd25ba7df9a253d40c36108db2501902c01f63ffa5"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/thumbnail_urls-left.png",
+      "bytes": 144388,
+      "sha256": "c424a06913c04417ebc32f0869f9e272ec8070d6ac827e7e175b0cacc08fc455"
+    },
+    {
+      "path": "v2/meshy/aurora-coupe-01/thumbnail_urls-right.png",
+      "bytes": 144300,
+      "sha256": "42b1a91849bc35834c73bc317aa7ebfe2ee88be442b3aa66812fa87a27225c73"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/donor.glb",
+      "bytes": 8516056,
+      "sha256": "5d8a946752bed1044eaa6c2bc103c02392aa43b9439dfa78aefff563a9655d70"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/pre-remeshed.glb",
+      "bytes": 35239140,
+      "sha256": "1372b1f338ad94314bf3c314b67f91a279f7091d62a0cf02a9bf00f02a1fb141"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/texture_urls-0-base_color.png",
+      "bytes": 4703816,
+      "sha256": "db72c6b385403754f7f8bc35c2e176979d71d9558e130745d3a4aaa9aafdf33b"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/texture_urls-0-metallic.png",
+      "bytes": 159860,
+      "sha256": "da30d6d533760e6e7be8ff5840eb103fe7a070549ac1f9980f71e42c08d75b33"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/texture_urls-0-normal.png",
+      "bytes": 4631751,
+      "sha256": "ebc12ff48d8f07a1bcbf1eaa65f1677215f90671a3d686b6c0848d3600c8045f"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/texture_urls-0-roughness.png",
+      "bytes": 1401087,
+      "sha256": "388006f919793602405ce365bf023baaf67702912e2ba787034d143eefdb97fb"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/thumbnail_url.png",
+      "bytes": 112886,
+      "sha256": "22d93547ee9da75aa6af7714a1c3aecc83015f65cb56cc4ef1ae25f07a904bd5"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/thumbnail_urls-back.png",
+      "bytes": 111303,
+      "sha256": "3782b0f3b9b5f42d6442736e4643d5c2b0be2e41e2129f91332f45cad98bdccd"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/thumbnail_urls-front.png",
+      "bytes": 112886,
+      "sha256": "22d93547ee9da75aa6af7714a1c3aecc83015f65cb56cc4ef1ae25f07a904bd5"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/thumbnail_urls-left.png",
+      "bytes": 112851,
+      "sha256": "202561693bdd5ac3ae2ca78777ec27cd063f1b98d79f0fd8a54a3d69696f35b1"
+    },
+    {
+      "path": "v2/meshy/cut-crystal-decanter-01/thumbnail_urls-right.png",
+      "bytes": 113258,
+      "sha256": "c6d121a6bf596b825e0b017ffb755966b112e4c07efde0e87454e27de6d55518"
+    },
+    {
+      "path": "v2/meshy/fluted-carafe-01/donor.glb",
+      "bytes": 927260,
+      "sha256": "c83457224bbb8b3cab5518d8e04f8f94b3309120a89b9d9845f5e483c458baf3"
+    },
+    {
+      "path": "v2/meshy/fluted-carafe-01/pre-remeshed.glb",
+      "bytes": 35753760,
+      "sha256": "43f46d00db29eac7bfe4246ed2ad70a0d8f43cf48e49b80173d44119656d743e"
+    },
+    {
+      "path": "v2/meshy/fluted-carafe-01/thumbnail_url.png",
+      "bytes": 60976,
+      "sha256": "8238ac724c579d4d7be5c9effdc06c8d08f0112248e1ee5538634de1fc7eeece"
+    },
+    {
+      "path": "v2/meshy/fluted-carafe-01/thumbnail_urls-back.png",
+      "bytes": 62710,
+      "sha256": "ec61ef26819a732c0b344dfdda0a7cf7889a3e8b2c363fc65dab151767df624b"
+    },
+    {
+      "path": "v2/meshy/fluted-carafe-01/thumbnail_urls-front.png",
+      "bytes": 60976,
+      "sha256": "8238ac724c579d4d7be5c9effdc06c8d08f0112248e1ee5538634de1fc7eeece"
+    },
+    {
+      "path": "v2/meshy/fluted-carafe-01/thumbnail_urls-left.png",
+      "bytes": 65484,
+      "sha256": "daa1ca5193e6a62e58a577eefbd85843bb936cff9ef1d5e9eccf8acf5549ea21"
+    },
+    {
+      "path": "v2/meshy/fluted-carafe-01/thumbnail_urls-right.png",
+      "bytes": 65646,
+      "sha256": "8188d0599a556dce4eb3950b6ee0253568071430bb2396f51f42fe8ed01b515f"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/donor.glb",
+      "bytes": 10764276,
+      "sha256": "04ed9131edecd348ffcfa6beeed5efb668adb422fb3c1eb8e8ca319c17b480c3"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/pre-remeshed.glb",
+      "bytes": 35060520,
+      "sha256": "8b6ae399bf33d9f9ed7ca4bc771e85aed5db66f98192ea2c42d77423898d81b2"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/texture_urls-0-base_color.png",
+      "bytes": 6062055,
+      "sha256": "6ec66c35d7de3949e1d0f1282ba3f28cebadec66edfaea4e08faa531a67041db"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/texture_urls-0-metallic.png",
+      "bytes": 694284,
+      "sha256": "5e6a7b90db4703b43fc92c242aae5a34a432a909effdb5b6b68b04147f4f9e1a"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/texture_urls-0-normal.png",
+      "bytes": 5667287,
+      "sha256": "ae10860993b0a0444325d737adbebfbbc5e2314c923741aec08be1fbc28281e3"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/texture_urls-0-roughness.png",
+      "bytes": 1442516,
+      "sha256": "baac8e491997d55f24c0e3d6b78929e145b68a64e928975d39e4edadd5ed64b5"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/thumbnail_url.png",
+      "bytes": 110189,
+      "sha256": "90c09a8071aa79769ef8b51b5635f598f2368c92b4d6cbbd23e8e2ac3934164e"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/thumbnail_urls-back.png",
+      "bytes": 101267,
+      "sha256": "70c412e9043eaf47aec14cd7ec2f0cf4fa53dafae94e1a9f8bae60bb977cb6e2"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/thumbnail_urls-front.png",
+      "bytes": 110189,
+      "sha256": "90c09a8071aa79769ef8b51b5635f598f2368c92b4d6cbbd23e8e2ac3934164e"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/thumbnail_urls-left.png",
+      "bytes": 72175,
+      "sha256": "0b80b575096853ed07b88415b1a43e4146cf05be702e79e8ae4b804948e2d3e7"
+    },
+    {
+      "path": "v2/meshy/garden-arcade-01/thumbnail_urls-right.png",
+      "bytes": 61051,
+      "sha256": "705a197264b00de1b5b24202270b83514e8af37b15b0d9b73627e81f9bd27d5f"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/donor.glb",
+      "bytes": 9035956,
+      "sha256": "28745214840c9903badc944268ee1feed18c7041207e76a4d8b173a7a87e7312"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/pre-remeshed.glb",
+      "bytes": 35050068,
+      "sha256": "023812a70fb40dd286f0ead637d7fc755a355ad80c32ea23b4a6324af4a0a07d"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/texture_urls-0-base_color.png",
+      "bytes": 4937167,
+      "sha256": "5635f537cf35a24dbcb1909cee4b389edda5497dab60a44cc2350dcddabbce7f"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/texture_urls-0-metallic.png",
+      "bytes": 338486,
+      "sha256": "7718f661c7c2bc545207947ea30c3847068f31af459b72f5a6991351bad319b0"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/texture_urls-0-normal.png",
+      "bytes": 4871668,
+      "sha256": "493c50575f60fc17f8be18fb5ac2161b54d973ba514d3d27ad1c17aef68118d4"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/texture_urls-0-roughness.png",
+      "bytes": 1308719,
+      "sha256": "530ef80e7ec90542e2a860fe696fe45f5535249b03bc5c15eb29426440862a96"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/thumbnail_url.png",
+      "bytes": 61671,
+      "sha256": "dc6310ed65f61ba8f1f9aa19124af5c2e4fe2b264a0f0869ed42d4c646954cc5"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/thumbnail_urls-back.png",
+      "bytes": 56451,
+      "sha256": "b53c32e174ac4ce06eb357fb5eccb09e6f443529dc19a898586e5b22abe83225"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/thumbnail_urls-front.png",
+      "bytes": 61671,
+      "sha256": "dc6310ed65f61ba8f1f9aa19124af5c2e4fe2b264a0f0869ed42d4c646954cc5"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/thumbnail_urls-left.png",
+      "bytes": 62838,
+      "sha256": "363f45444e943fb25edaba3d0a15a2fae9d506727df676c1d1332cbad09802ca"
+    },
+    {
+      "path": "v2/meshy/gilded-column-01/thumbnail_urls-right.png",
+      "bytes": 62723,
+      "sha256": "8f27c3e126f4fd95102b9fb5dc8717bf8ee1de4b885b306d99b8e8e51e9f8d86"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/donor.glb",
+      "bytes": 7328104,
+      "sha256": "bbbab5288e53e1b84da84276a7c39cfe713856593d0e255360e9a94b80b4b938"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/pre-remeshed.glb",
+      "bytes": 35288180,
+      "sha256": "e129fcd5b268813135b6c5b5022ee58dad458412a0347c44b4098f4f315203b0"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/texture_urls-0-base_color.png",
+      "bytes": 3997800,
+      "sha256": "3c192e02252dbc7c833b3925cef807616396530f404b9eb51a011715e621878e"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/texture_urls-0-metallic.png",
+      "bytes": 640817,
+      "sha256": "6f86d4325ec24fe4832122bd5f8a348c08be838eb57357cf0fc1371a8589579b"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/texture_urls-0-normal.png",
+      "bytes": 3616007,
+      "sha256": "b5fc4ab143ec62da0f7d338e0f8784e08035116028909830a68c7d007dfa4bfc"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/texture_urls-0-roughness.png",
+      "bytes": 1357320,
+      "sha256": "58160f5edd2eaeb5fa28525f4ad3e4ff2b911abd66838c1d2bd847dff0847cf4"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/thumbnail_url.png",
+      "bytes": 134637,
+      "sha256": "fcc872cc4b553f0ab4f35417c8a982e2f7872a79482e50a0c869f81328b5af11"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/thumbnail_urls-back.png",
+      "bytes": 124362,
+      "sha256": "6dd1345754e3d2c9aa62358e6189ceca50ee2ea511072bb16f0443596d148c48"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/thumbnail_urls-front.png",
+      "bytes": 134637,
+      "sha256": "fcc872cc4b553f0ab4f35417c8a982e2f7872a79482e50a0c869f81328b5af11"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/thumbnail_urls-left.png",
+      "bytes": 124959,
+      "sha256": "a17676917eb7f40505eaacd9d7d4f1dd7c6925f431ab1760a6785d70a8aab6d8"
+    },
+    {
+      "path": "v2/meshy/moon-amphora-01/thumbnail_urls-right.png",
+      "bytes": 123463,
+      "sha256": "7570085c097258d19c42dfe32fd7cae5606b32b9074d4c59dfd2f8cd193a90d7"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/donor.glb",
+      "bytes": 10945016,
+      "sha256": "9ba95fb57fdc3022b0dae0ccf098a9a83b59c54998fda6582505e840d7c1783c"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/pre-remeshed.glb",
+      "bytes": 35182104,
+      "sha256": "fecf9addb503d69ca0751bf3a8b8ae6d11553acc7168473fe936e7762f975d3f"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/texture_urls-0-base_color.png",
+      "bytes": 4834009,
+      "sha256": "5d67be4861f20b8110d5ec86771fb296ddd73d6794fe32bc4c8e255a43a72e11"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/texture_urls-0-metallic.png",
+      "bytes": 309449,
+      "sha256": "7f920ea26a8984379785051baa3a803b188b6a4d6993cbc9c607ff6c9f3369f7"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/texture_urls-0-normal.png",
+      "bytes": 4714468,
+      "sha256": "342c1a87b9066498837dd4a81e0a309873a06ffabf91cf2dda5bd60f3ba9ed13"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/texture_urls-0-roughness.png",
+      "bytes": 1317974,
+      "sha256": "752396e048bcfe9857cc97ce8f8dc9dbff61c993accfe78cdb4019487217a339"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/thumbnail_url.png",
+      "bytes": 172952,
+      "sha256": "3232a5ca087b1697299f92b3c5a82fba6a2ede2300f898d53190ecd019d2a3f2"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/thumbnail_urls-back.png",
+      "bytes": 135927,
+      "sha256": "cc93386a1a87d91b2fbee3c220edaab2962a6f3a4e3a8b5ff5ef33ebbedaa0b7"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/thumbnail_urls-front.png",
+      "bytes": 172952,
+      "sha256": "3232a5ca087b1697299f92b3c5a82fba6a2ede2300f898d53190ecd019d2a3f2"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/thumbnail_urls-left.png",
+      "bytes": 74125,
+      "sha256": "28eda6c779603483e74bff7f740a8457fdbcd58cc7aa613d8f77aaa1d66495ea"
+    },
+    {
+      "path": "v2/meshy/museum-screen-bay-01/thumbnail_urls-right.png",
+      "bytes": 58472,
+      "sha256": "aa68648ac9f609a80b165e52b1ffd35e2da4a9940e3587e7e71a3a88c00bf67c"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/donor.glb",
+      "bytes": 11623312,
+      "sha256": "8470eaf0a5227050f5d83923b68c09bd799a453d9cdb977702a8eb349bb66377"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/pre-remeshed.glb",
+      "bytes": 35628816,
+      "sha256": "1abb9f5f07f94159ef5245b4fb2fec55d19ce5cbce27aabc6e8de047297a3be4"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/texture_urls-0-base_color.png",
+      "bytes": 4918310,
+      "sha256": "a5d03cd17bac766b0be33adfe1f98e24a7f0301d53ac272ee5f72f179b26cc04"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/texture_urls-0-metallic.png",
+      "bytes": 314360,
+      "sha256": "290a041620edb50ff8ebfd7084d6b9c9f0efbd0606a1621ba110762f1ed002e3"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/texture_urls-0-normal.png",
+      "bytes": 5265288,
+      "sha256": "be593f9daabbc02490de3382b004acdba36157ee57793ee0a22d3a7c19f13b62"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/texture_urls-0-roughness.png",
+      "bytes": 1250574,
+      "sha256": "2dc2cee8bef1580f4ff9df99282d3be9e8f0d47d4e99971449434612944b6f41"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/thumbnail_url.png",
+      "bytes": 165857,
+      "sha256": "3401f66d2e35316371185e10df471f8727f16160419073a0977f0a4af4712ceb"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/thumbnail_urls-back.png",
+      "bytes": 159242,
+      "sha256": "cf61377bd90e40bbc6ddbd280133565f302c99461fea848482b38cfd51832ce0"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/thumbnail_urls-front.png",
+      "bytes": 165857,
+      "sha256": "3401f66d2e35316371185e10df471f8727f16160419073a0977f0a4af4712ceb"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/thumbnail_urls-left.png",
+      "bytes": 79285,
+      "sha256": "d865fd41ae3170a70114c08f1e0a4574e2210addd8ff8b46c4a27cffb060e4e9"
+    },
+    {
+      "path": "v2/meshy/museum-window-bay-01/thumbnail_urls-right.png",
+      "bytes": 76244,
+      "sha256": "25c42ad85d785ee2692a99a89ed6ced40b989c414516f84ef1bdfa51ab5ce94c"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/donor.glb",
+      "bytes": 10605376,
+      "sha256": "395e8cc88f76ad5811d1a70765a359dae85cae21cac1b0c343910450202580d0"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/pre-remeshed.glb",
+      "bytes": 35934624,
+      "sha256": "e7e5f84d1c8f7ac5b9d0325fdaeb415638c3930e8b7e4e3705793cc2dd0c8603"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/texture_urls-0-base_color.png",
+      "bytes": 4505738,
+      "sha256": "4834792a6c87134272a05d727d2d473eaf976499f3e3108867d4212474a4068e"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/texture_urls-0-metallic.png",
+      "bytes": 1081296,
+      "sha256": "d42f3171b271e41e6c840059dc69190b0af7f442064c91fbc643ad6133bb495e"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/texture_urls-0-normal.png",
+      "bytes": 4536331,
+      "sha256": "32bfd0470df7af662440edd383805e77d1492b3d5387d7b5e478a1a8678edcfe"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/texture_urls-0-roughness.png",
+      "bytes": 1324036,
+      "sha256": "716f263d300150fd519824b07de0154688807aaece7fdf6e91b563037b1b6522"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/thumbnail_url.png",
+      "bytes": 200389,
+      "sha256": "288e0d7e62f3b63ba4c127151816b50052da1a625dc31bd18f2858b3fd73994c"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/thumbnail_urls-back.png",
+      "bytes": 173729,
+      "sha256": "3ac3073a33b73810191f3da78067384bda1e25db995bcd5a2d3427a2d1839400"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/thumbnail_urls-front.png",
+      "bytes": 200389,
+      "sha256": "288e0d7e62f3b63ba4c127151816b50052da1a625dc31bd18f2858b3fd73994c"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/thumbnail_urls-left.png",
+      "bytes": 194696,
+      "sha256": "c8ed33640947dfc8219401c95610f895e5acd333caa4e58e0a1543e11a56fc81"
+    },
+    {
+      "path": "v2/meshy/observatory-canopy-01/thumbnail_urls-right.png",
+      "bytes": 195148,
+      "sha256": "a710d4b6e56cbcd9f04cca4d19b79201a34811af4d9a7c7c84ab5e86a674cbed"
+    },
+    {
+      "path": "v2/models/garden-kit.blend",
+      "bytes": 351591,
+      "sha256": "2597a21e76056e010314cb49c501eea2dfe335df6181c8faaa83d73b67add29c"
+    },
+    {
+      "path": "v2/models/museum-kit.blend",
+      "bytes": 892113,
+      "sha256": "4f18423211dec1304136da79342a35a5b7aac323b5a3a839372fb8b9d0d28ddc"
+    },
+    {
+      "path": "v2/models/vessels.blend",
+      "bytes": 1628442,
+      "sha256": "d10322b36a64e1f4f8d61dd11e068567364be52a303c723c9784ddb947e8fcf8"
+    },
+    {
+      "path": "v2/references/aurora-coupe-geometry.png",
+      "bytes": 1542445,
+      "sha256": "f3aada297a70421a633f0bfc67345dc98af5c22f00216348003bf791452d8568"
+    },
+    {
+      "path": "v2/references/aurora-coupe.png",
+      "bytes": 2066666,
+      "sha256": "35a454a25303070f856de1bec977718101a45f4119a480b1ed7271f366d13482"
+    },
+    {
+      "path": "v2/references/cut-crystal-decanter-geometry-v2.png",
+      "bytes": 1741257,
+      "sha256": "057871be73627bd1871d378e942b04cf4fed2df6e175daf3591a76c6814ceb11"
+    },
+    {
+      "path": "v2/references/cut-crystal-decanter-geometry.png",
+      "bytes": 1800539,
+      "sha256": "082c20375b7f88fbf66141f26b63f254010274141a403be3ba1efe75783ddb55"
+    },
+    {
+      "path": "v2/references/cut-crystal-decanter.png",
+      "bytes": 2379864,
+      "sha256": "1fae9b6cb608c772626bb69c70e4e5d65ad3f338a5dfde495c573e210419f230"
+    },
+    {
+      "path": "v2/references/fluted-carafe-geometry.png",
+      "bytes": 1717506,
+      "sha256": "0e175e71d11d481e41b3d84467745264bb1886ea27f573ea417e50e9b99210ca"
+    },
+    {
+      "path": "v2/references/fluted-carafe.png",
+      "bytes": 2103781,
+      "sha256": "b390816701c813fa3c9cdbb528b41f3797482254ba28f1deaf610c56a5e64aba"
+    },
+    {
+      "path": "v2/references/garden-arcade.png",
+      "bytes": 1948609,
+      "sha256": "8454afdf73479b603136406630978e3e26f452336a4ac9e5a866f24c20cf645a"
+    },
+    {
+      "path": "v2/references/gilded-column.png",
+      "bytes": 1767740,
+      "sha256": "9e7873c48554d651c7f2fc1265749a17bca34b87402ade8dc193bcf14ce4423b"
+    },
+    {
+      "path": "v2/references/laurel-goblet-geometry.png",
+      "bytes": 1841622,
+      "sha256": "eb4e159843ba62b92228e96eda8663f7c6cac710269d755ce6dea1e20ef8bbbf"
+    },
+    {
+      "path": "v2/references/laurel-goblet.png",
+      "bytes": 2119199,
+      "sha256": "4a689c0e85febe1c53ad9c19b4514db16002bd635db700293daf4a32b020963d"
+    },
+    {
+      "path": "v2/references/moon-amphora-geometry.png",
+      "bytes": 1888718,
+      "sha256": "90c15e8b3a8fe40ae96e6e68073a9129044dcd346ccc8cf1823f4ec4f07b6706"
+    },
+    {
+      "path": "v2/references/moon-amphora.png",
+      "bytes": 2378452,
+      "sha256": "ec80832f412e050452f37e3757578eaab0c28ab7ec74e94fe4dc43c7d90470a6"
+    },
+    {
+      "path": "v2/references/museum-screen-bay-01.png",
+      "bytes": 1798219,
+      "sha256": "4e661383e1abb732f60cb25a206aa6c1edd373feb1a26a00e4edd3e4b4b21683"
+    },
+    {
+      "path": "v2/references/museum-window-bay-01.png",
+      "bytes": 1560214,
+      "sha256": "e2bd466cf0a777bd97a37e170f3476d2f269af7123354f385c5cf8a755679041"
+    },
+    {
+      "path": "v2/references/observatory-canopy.png",
+      "bytes": 1936562,
+      "sha256": "6f685f91fe03689d7d26f123138ce14d59457f4811298d2a631849af7a14fe3a"
+    },
+    {
+      "path": "v2/references/rose-bud-vase-geometry.png",
+      "bytes": 1626854,
+      "sha256": "1091022d936457d64a6ff6325a487762d1b27653520f2ec63824fcbaa49cc79e"
+    },
+    {
+      "path": "v2/references/rose-bud-vase.png",
+      "bytes": 2146020,
+      "sha256": "1a80f769427a59bc7e0931d32117819dfead297a370b36a2e8be0828484e155b"
+    },
+    {
+      "path": "v2/runtime-review.png",
+      "bytes": 1367640,
+      "sha256": "c6e294576d67cbf6d6dfa9042beca73fb533ef8c3296ab78026a2357168330e3"
+    },
+    {
+      "path": "v2/source-pbr/Marble004/1K-PNG/Marble004_1K-PNG_Color.png",
+      "bytes": 998415,
+      "sha256": "5dce6cc6441fcf2682a5217ac1c8a6b3efda386e66e090f215262adf5439130a"
+    },
+    {
+      "path": "v2/source-pbr/Marble004/1K-PNG/Marble004_1K-PNG_NormalGL.png",
+      "bytes": 4903513,
+      "sha256": "b48a853fa49425d76288081e2a72c811692b19084ca6d911455bff0e35ca24fd"
+    },
+    {
+      "path": "v2/source-pbr/Marble004/1K-PNG/Marble004_1K-PNG_Roughness.png",
+      "bytes": 596077,
+      "sha256": "247f91e6ff818a3ebb0301b3dca4cdba79f30b3a274d1dfab56a0c76b8e6df47"
+    },
+    {
+      "path": "v2/source-pbr/Marble004/Marble004_1K-PNG.zip",
+      "bytes": 14372939,
+      "sha256": "82b44b9dbf59300715686e3cc97676e34d34a82a47cfb5a5308c16c8c5d7ef8e"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_Color.png",
+      "bytes": 1871383,
+      "sha256": "1702b28a34989389f1bfdf55943f323110c844c16bb6f5cd2e1409fb313f87da"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_NormalGL.png",
+      "bytes": 3381773,
+      "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_Roughness.png",
+      "bytes": 448294,
+      "sha256": "25cfa4d95ee494eb49cd0f72438f57472a81b6c247a17256bedc7f8299a10281"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_Color.jpg",
+      "bytes": 5262421,
+      "sha256": "bf14b2a8ebff0221682a0d81ac62b5a5b221f572e928b1c46e0505529ac480b2"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_NormalGL.jpg",
+      "bytes": 1411112,
+      "sha256": "757a906468468b6edf08bdb31b11f21d6d28853fd0765edb12357313a90ec213"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_Roughness.jpg",
+      "bytes": 1904788,
+      "sha256": "612a01d5ae74e696aee68c2d0fb9b2a1153eb167cf958211e6e6a2cb836d55f2"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/Marble009_1K-PNG.zip",
+      "bytes": 12479175,
+      "sha256": "06bfda486311b784e081b324b790d5047f3d14634afe721204e62550066e5cac"
+    },
+    {
+      "path": "v2/source-pbr/Marble009/Marble009_2K-JPG.zip",
+      "bytes": 14545401,
+      "sha256": "8b63736e59bd3b77cf08a2760942947d9e19c47ad07d0d544edef39fb136d1b2"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_Color.png",
+      "bytes": 2046204,
+      "sha256": "c3a903a10a1e8273789cd40e3d49fd2cb2e39abcb579294fe8820dc218b55dd6"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_NormalGL.png",
+      "bytes": 3488070,
+      "sha256": "d35c6f6a2c57e1853c92b6131be7943cbb2542c95288c238b9ac84188bbb9552"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/1K-PNG/Marble012_1K-PNG_Roughness.png",
+      "bytes": 496768,
+      "sha256": "8c1e88602a73f3cc546bbe9803e5184e32f9f606d293c00023ca8107f52a4d93"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_Color.jpg",
+      "bytes": 5139092,
+      "sha256": "1e1ef2d556dcda237181590b4a7543a66ea49223ccf2d455000e05f37e8a8ec5"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_NormalGL.jpg",
+      "bytes": 1418258,
+      "sha256": "0e295859c9e55ba2dd147aed37a674aba90decaf91d3622d5aa8386441020649"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/2K-JPG/Marble012_2K-JPG_Roughness.jpg",
+      "bytes": 2166701,
+      "sha256": "d4a906a9739f30f386914a8b8393e64100f340851dc50328e5b91e24fa95ce7a"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/Marble012_1K-PNG.zip",
+      "bytes": 12909875,
+      "sha256": "7c733a107be2cc068c8d7a4fb36b548b8e6fdadec5db3dec04b063357078e72b"
+    },
+    {
+      "path": "v2/source-pbr/Marble012/Marble012_2K-JPG.zip",
+      "bytes": 14792073,
+      "sha256": "585c73d1e2dc8747074ef4fa4027795e3556fbe0fa43362c90c90b633f6956db"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Color.png",
+      "bytes": 125306,
+      "sha256": "46712eb6b19970d00ac0f35a26035045521531bdd40c415382f7338ab8dd10ea"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Metalness.png",
+      "bytes": 798,
+      "sha256": "218dc8075081832ce2b9466d33e82d745508eeffed758cd110789b24989c7086"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_NormalGL.png",
+      "bytes": 2692053,
+      "sha256": "dbf71f799e62f7a9e394ee604a58388b710ded74c839b4b63b3dbbe454c4429d"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/1K-PNG/Metal034_1K-PNG_Roughness.png",
+      "bytes": 193213,
+      "sha256": "8fe69c25a7dbf2d593ea192d49b756cb60900a8917bcfe7ec4525d5ad44e149e"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Color.jpg",
+      "bytes": 387086,
+      "sha256": "6081cee1f5f79feb15264b1ec12726be9d4a2f9950e37411f3cb137b20436fef"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Metalness.jpg",
+      "bytes": 16545,
+      "sha256": "b65d6b9091747bd81ee58adedcb6209d8ee21b2bde9298d7216989ada85ef622"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_NormalGL.jpg",
+      "bytes": 1366956,
+      "sha256": "e3d541476b30d1645bf0857f54b68338486c48202fa4da285f26d1d4f28e72c1"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/2K-JPG/Metal034_2K-JPG_Roughness.jpg",
+      "bytes": 968605,
+      "sha256": "db38a0b751700bfa56e317e81311bcca4da6f94d598ec84c5da313e220d711fd"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/Metal034_1K-PNG.zip",
+      "bytes": 9007048,
+      "sha256": "1b9e6359607618bd3d07ea2faa881ad3e59555adc244ca4eade215adeb323165"
+    },
+    {
+      "path": "v2/source-pbr/Metal034/Metal034_2K-JPG.zip",
+      "bytes": 8750881,
+      "sha256": "baede071b0300f0e2d698fa8e122a3e76909389b48d61e34d1a5c8ae7cf2b2c9"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_Color.png",
+      "bytes": 1489268,
+      "sha256": "561fd6ca43446da5680113ef8900ba136fb7c6be30b5aaad223c55627c0ef8b0"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_NormalGL.png",
+      "bytes": 2747140,
+      "sha256": "1c8e19590ad321430e7614b92e6a1a0a550f34c03e238ddf0d2d968d41fe5441"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/1K-PNG/Travertine001_1K-PNG_Roughness.png",
+      "bytes": 362372,
+      "sha256": "729ebff506fdeee407793a8394a7bf66ea79bd658a74a0593cc8c88d27ce725d"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_Color.jpg",
+      "bytes": 3944954,
+      "sha256": "a0724b7e885e9bf91f5424d44d693ba32e77968db54b2f873f07b9a2ef401eb7"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_NormalGL.jpg",
+      "bytes": 1305470,
+      "sha256": "b70acbbd8def7825ec3c7ec339240e777dd1e31e70059e93e8f3560ebf94166b"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/2K-JPG/Travertine001_2K-JPG_Roughness.jpg",
+      "bytes": 1402400,
+      "sha256": "7cadf976abeae9be87304eb21fbb378c20d96b330a28bc7d6e8c64fbff7051d5"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/Travertine001_1K-PNG.zip",
+      "bytes": 9705188,
+      "sha256": "be06e3b302d143f4614bb00cb3ce51caa2a766fa8feb886d8eeb44a8d4052865"
+    },
+    {
+      "path": "v2/source-pbr/Travertine001/Travertine001_2K-JPG.zip",
+      "bytes": 9619414,
+      "sha256": "eb22b7ac1c146c01f26e53791509907044b25499fd87fb4a809989e65dcf2a73"
+    },
+    {
+      "path": "v2/source-pbr/_previews/Marble001.webp",
+      "bytes": 126668,
+      "sha256": "cc74649b7ea0a3cacfe8db3a95d5c46b5444ae3aef1cd973231f6685933b6bed"
+    },
+    {
+      "path": "v2/source-pbr/_previews/Marble004.webp",
+      "bytes": 117754,
+      "sha256": "cc865b11ef54a5f972df70b2a1fdb38a95d66b653946f1e702524ee5736c7e0a"
+    },
+    {
+      "path": "v2/source-pbr/_previews/Marble009.webp",
+      "bytes": 543660,
+      "sha256": "abdeb48ecc8aac07e4f334485c4d9e19ac33e2cd11fd4b240ce35ecbb90354e9"
+    },
+    {
+      "path": "v2/source-pbr/_previews/Marble012.webp",
+      "bytes": 595568,
+      "sha256": "1b610cac5e47bc88790f659ef4f0e3d7166c979832adc4d16187fc75153d2746"
+    },
+    {
+      "path": "v2/source-pbr/_previews/Metal034.webp",
+      "bytes": 674464,
+      "sha256": "d8f23868ec640588fcf5ad32212d702a41a50510d573f6999b8dd568113ccd1b"
+    },
+    {
+      "path": "v2/source-pbr/_previews/Travertine001.webp",
+      "bytes": 372962,
+      "sha256": "2621cc748fe226bdb1f1ae90204412d8fb23a850a918794dc5f596b503a259d6"
+    },
+    {
+      "path": "v2/source-pbr/umhlanga_sunrise/umhlanga_sunrise_1k.hdr",
+      "bytes": 1577804,
+      "sha256": "5bbc697864531c5953e8f249dec85f7c3f4d585bbf6708105c0a4e5510c75c03"
+    },
+    {
+      "path": "v2/source-pbr/umhlanga_sunrise/umhlanga_sunrise_2k.hdr",
+      "bytes": 6186336,
+      "sha256": "d0e7e238728c659ba2f1deccf55e9547e7a73b5c36a86d05bddaa9d21fc7aa75"
+    },
+    {
+      "path": "v2/vessels-review.png",
+      "bytes": 1844471,
+      "sha256": "1e372519cd352eb1f222145da0d0d4a66c4333cc6fd75b0830ce734ef070c98e"
+    },
+    {
+      "path": "v3/architecture/exports/garden-arcade-01-final-v1-textures/atlas-0.png",
+      "bytes": 2011357,
+      "sha256": "c8963d85bb49b5f6e7b49353ab82111da8562dd6547caeb1026bcd502b55d75c"
+    },
+    {
+      "path": "v3/architecture/exports/garden-arcade-01-final-v1-textures/atlas-1.png",
+      "bytes": 1446774,
+      "sha256": "6adff792aa9fff5404b2d9be986742420a4cb5f034b8dbe53f0864f0af7a7973"
+    },
+    {
+      "path": "v3/architecture/exports/garden-arcade-01-final-v1-textures/atlas-2.png",
+      "bytes": 1683616,
+      "sha256": "be3d065eebbd550b370b7bce5db3f0851b8477ae9f123f993591ee70155216b5"
+    },
+    {
+      "path": "v3/architecture/exports/garden-arcade-01-final-v1.glb",
+      "bytes": 6829416,
+      "sha256": "72714424b213c2d4d9c094f9b55f5257f7ee18163f7bcbd096f4066d1c872885"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v1-textures/atlas-0.png",
+      "bytes": 1754470,
+      "sha256": "c54d2b1454c3e191458268e45a23a9cffc63f0c32772c11cd1975704dcd06c1e"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v1-textures/atlas-1.png",
+      "bytes": 1212999,
+      "sha256": "39f472a0c87147d012e84d1c531af974849e06c38b877310b684fa6120129874"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v1-textures/atlas-2.png",
+      "bytes": 1541141,
+      "sha256": "b909623e3b6132c913c88f7f146d3d4ef4fd0d472770cd1bcfd9975fa930d161"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v1.glb",
+      "bytes": 5495932,
+      "sha256": "985abff1fbacc134f327be84a006d8336d554b9633878528c5babb2fc941eb4b"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v2-textures/atlas-0.png",
+      "bytes": 1754470,
+      "sha256": "c54d2b1454c3e191458268e45a23a9cffc63f0c32772c11cd1975704dcd06c1e"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v2-textures/atlas-1.png",
+      "bytes": 1212999,
+      "sha256": "39f472a0c87147d012e84d1c531af974849e06c38b877310b684fa6120129874"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v2-textures/atlas-2.png",
+      "bytes": 1541141,
+      "sha256": "b909623e3b6132c913c88f7f146d3d4ef4fd0d472770cd1bcfd9975fa930d161"
+    },
+    {
+      "path": "v3/architecture/exports/gilded-column-01-final-v2.glb",
+      "bytes": 6031316,
+      "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946"
+    },
+    {
+      "path": "v3/architecture/exports/observatory-canopy-01-final-v1-textures/atlas-0.png",
+      "bytes": 1756240,
+      "sha256": "325538e7e47b7e2fae4c60862619f17db57724295326a2fb884be7f9f7e8109b"
+    },
+    {
+      "path": "v3/architecture/exports/observatory-canopy-01-final-v1-textures/atlas-1.png",
+      "bytes": 1506757,
+      "sha256": "70a65138d623dd1c2ee1031ab9404135f6035b25f17645fd784798d291076a82"
+    },
+    {
+      "path": "v3/architecture/exports/observatory-canopy-01-final-v1-textures/atlas-2.png",
+      "bytes": 1485142,
+      "sha256": "d864e349c4d4ca3bc5f3f4fe36b9102563a3fa824d6c2069c49a99c5fdd4ff73"
+    },
+    {
+      "path": "v3/architecture/exports/observatory-canopy-01-final-v1.glb",
+      "bytes": 7545096,
+      "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b"
+    },
+    {
+      "path": "v3/architecture/proofs/garden-arcade-01-final-v1-back.png",
+      "bytes": 1250631,
+      "sha256": "efeb565b4ff6175f34ad189efd76002670cf57a66e8cdd210c3e5a6b12855586"
+    },
+    {
+      "path": "v3/architecture/proofs/garden-arcade-01-final-v1-front.png",
+      "bytes": 1246741,
+      "sha256": "d1b23e270563fa328c4a508fd46534e678ad88db10a5af959018ac9b524d2e4b"
+    },
+    {
+      "path": "v3/architecture/proofs/garden-arcade-01-final-v1-three-quarter.png",
+      "bytes": 1276633,
+      "sha256": "aed9cc0a61bdeb10d3d4cf1f59293d06a34324000d53b901b739eb0f7052f6a6"
+    },
+    {
+      "path": "v3/architecture/proofs/garden-arcade-01-raw-back.png",
+      "bytes": 1285304,
+      "sha256": "02c6b972d1a8bbb04f2c37dfdb85c33a26ecbc12e0bb1a8c79699d7d5ad180b6"
+    },
+    {
+      "path": "v3/architecture/proofs/garden-arcade-01-raw-front.png",
+      "bytes": 1267571,
+      "sha256": "b2a54087f9d15a1a003de4794d90f5ca5c2e3fa9b6b89eeb8118d757a5d0c604"
+    },
+    {
+      "path": "v3/architecture/proofs/garden-arcade-01-raw-three-quarter.png",
+      "bytes": 1297350,
+      "sha256": "e51cfd2624a8c0da2fa56f6fc4187d315b3e62c8675d0d7175011b58e6ae6014"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-final-v1-back.png",
+      "bytes": 875404,
+      "sha256": "f2e3e448e54fd28d44519ce0a086e2f768b958cbe310dd59f43faa4545d26745"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-final-v1-capital.png",
+      "bytes": 947131,
+      "sha256": "17d29933535054e60a66decf95c123b616d15f935c75e78442d047555ea6aaac"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-final-v1-three-quarter.png",
+      "bytes": 864911,
+      "sha256": "d0b7f55ab4f034e5f4c5808e3d37a08f78052f49239fbc82693711d731c0a8f8"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-final-v2-back.png",
+      "bytes": 864710,
+      "sha256": "95067e307ab4d80239c44452be85545122d3c65365a3a50c98adcb5ba8183b88"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-final-v2-capital.png",
+      "bytes": 908343,
+      "sha256": "a462871b359196dc63cf74b30686daa5dbd573fb6eaf3974755acec0c2971bfe"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-final-v2-three-quarter.png",
+      "bytes": 852846,
+      "sha256": "20909f4144d88d9070fefc365977ca62a4b26919024007e0376898202987326a"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-raw-back.png",
+      "bytes": 872316,
+      "sha256": "ed0e3ee77780c52f926fcd922cb2f4678d6a00b7bb76249a1c068fdaca2ed676"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-raw-capital.png",
+      "bytes": 936781,
+      "sha256": "b3cb9aa47783e65e88143d5eed1adddb8d3aef54acd6f51881949e34ef53edc5"
+    },
+    {
+      "path": "v3/architecture/proofs/gilded-column-01-raw-three-quarter.png",
+      "bytes": 859781,
+      "sha256": "d4262b467eb199288a2653ef7eed14ec54adab84cdba62290d19c40b5bb42a94"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-final-v1-back.png",
+      "bytes": 1235406,
+      "sha256": "bb3bada4fdc367ab5838fcf6dba22c5e5b52997519068050d30be5e10d33026e"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-final-v1-front.png",
+      "bytes": 1150608,
+      "sha256": "477c58f65a5f3e13e18b3529ab183066fe6ff2e0ad007b225bcccde645a0d2c6"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-final-v1-three-quarter.png",
+      "bytes": 1230633,
+      "sha256": "59447c0717f17a40fda6b75301fabc4d40fdbd9bfb05d800eaebc0761f50f9ff"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-final-v1-top.png",
+      "bytes": 1147164,
+      "sha256": "54db782a8fc834211b690173cefd8a6b1dad6cf9e55896f727489f61349c2aed"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-raw-back.png",
+      "bytes": 1255933,
+      "sha256": "a6e5bb3ff2690eb2df7545d8a67e308a35696085840ce0e7fb134c33c40014e1"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-raw-front.png",
+      "bytes": 1165986,
+      "sha256": "946d420f64556d37fbb3b3631d4d25b0c1eb43c4e1fa0295b6c0bdec5fa16b28"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-raw-three-quarter.png",
+      "bytes": 1250569,
+      "sha256": "333d84c27e03bb56e14d7e3d318e6990bddb6173bb4daa1364c251de7a4bfe2a"
+    },
+    {
+      "path": "v3/architecture/proofs/observatory-canopy-01-raw-top.png",
+      "bytes": 1162151,
+      "sha256": "3b77bf368e92802c027a9f6cd9bb3386644cc19da1f55720762a5e8884cdd355"
+    },
+    {
+      "path": "v3/architecture/raw/garden-arcade-01/donor.glb",
+      "bytes": 10764276,
+      "sha256": "04ed9131edecd348ffcfa6beeed5efb668adb422fb3c1eb8e8ca319c17b480c3"
+    },
+    {
+      "path": "v3/architecture/raw/gilded-column-01/donor.glb",
+      "bytes": 9035956,
+      "sha256": "28745214840c9903badc944268ee1feed18c7041207e76a4d8b173a7a87e7312"
+    },
+    {
+      "path": "v3/architecture/raw/gilded-column-01/textures/basecolor.jpg",
+      "bytes": 3326197,
+      "sha256": "c9a3c85dd8aed713dacc3ce163c976b35021a88a8ef98f49f9835de6b641e5dc"
+    },
+    {
+      "path": "v3/architecture/raw/gilded-column-01/textures/metallic-roughness.jpg",
+      "bytes": 1976601,
+      "sha256": "e6fd181c0423dca0e45ff521b1f9f142265f3e3a401d9ff5e4d0843195688b2c"
+    },
+    {
+      "path": "v3/architecture/raw/gilded-column-01/textures/normal.jpg",
+      "bytes": 2533862,
+      "sha256": "0d59e39dfb54947136cec642ec768397a7b5d6dc5eff7ee3a480823cc05e2844"
+    },
+    {
+      "path": "v3/architecture/raw/observatory-canopy-01/donor.glb",
+      "bytes": 10605376,
+      "sha256": "395e8cc88f76ad5811d1a70765a359dae85cae21cac1b0c343910450202580d0"
+    },
+    {
+      "path": "v3/architecture/sources/garden-arcade-01-final-v1.blend",
+      "bytes": 10929276,
+      "sha256": "aa5fcb1015257022c0ed6c26116e5bbd752d1157200c24b0940cbf79fe7e1c8c"
+    },
+    {
+      "path": "v3/architecture/sources/garden-arcade-01-imported.blend",
+      "bytes": 10929103,
+      "sha256": "d9ba1983cf85d8b7e27616bf97692a899e75ced729e3d751c9b816977a0d36f4"
+    },
+    {
+      "path": "v3/architecture/sources/gilded-column-01-final-v1.blend",
+      "bytes": 8657030,
+      "sha256": "8df33ac68e4aca329378d0b3fa8a63fd0f7beea5d50eacb4e1d943dce98bd367"
+    },
+    {
+      "path": "v3/architecture/sources/gilded-column-01-final-v2.blend",
+      "bytes": 9157850,
+      "sha256": "30317e0c10ddcbf82945a37ff53c554115dedeec2a5dd2ab4e2f6dd06ec471b3"
+    },
+    {
+      "path": "v3/architecture/sources/gilded-column-01-imported.blend",
+      "bytes": 9157791,
+      "sha256": "1e1106eb701950c6fe5f69a1ac434c7d8c718366ee394f35b0097086d5c928ac"
+    },
+    {
+      "path": "v3/architecture/sources/observatory-canopy-01-final-v1.blend",
+      "bytes": 10717213,
+      "sha256": "1b964872a410b9ce71eda61a5b9264760bc4fe32a1ae041a4cd4b3f231eb7d37"
+    },
+    {
+      "path": "v3/architecture/sources/observatory-canopy-01-imported.blend",
+      "bytes": 10715038,
+      "sha256": "d6a3cd3ec33e54f7484f41e8769206df9158d624dab34f4b3953172212229518"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/clean-surface-lod.blend",
+      "bytes": 10059035,
+      "sha256": "4341d2211dac9e414695ee818d2518e6060ba2c358e692427969be1a04e9eeb9"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/clean-voxel-trial.blend",
+      "bytes": 34016146,
+      "sha256": "d28ab21a4028504839ee32a5d9147254e849818dc633b198f92a5b00885da7a8"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/contact-relax-3mm-trial.blend",
+      "bytes": 1146558,
+      "sha256": "5ee57559bd70e5d21c2eaf0e888807b6b05b29bb5d37c27917e617bd18ef6ca4"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/coupe-lod-100k.blend",
+      "bytes": 6331942,
+      "sha256": "f50cbb806ad5915a78ec7c15a855a1f53fbe0134d66e9b67267027c8db081b2f"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/coupe-lod-50k-repaired.blend",
+      "bytes": 3167767,
+      "sha256": "1d5a4682f3f6d74ecde68710c8b34a851d53d589345724e17d62b6185ac7dc1c"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/coupe-lod-50k.blend",
+      "bytes": 3169754,
+      "sha256": "8fbca0018f48eede0ac61a5313483918c12ae2d2df90242863a97dc71a7da0ac"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/finalized-fracture.png",
+      "bytes": 1526066,
+      "sha256": "f53736e3da7e2ca8864394389fb4b9981c1aa6b16f012d96329cb6b04b73d839"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/finalized-intact.png",
+      "bytes": 1560814,
+      "sha256": "21247dcb4f81721cf2cc525f79b4956f812ffe2a82d2fc9edffc90752728ad50"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/finalized.blend",
+      "bytes": 5183455,
+      "sha256": "4c38555ad2a8739b1c5ec537b95aee3553510b0c6cd2429b2f4d230827e356e1"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/fracture-work/cut-input.npz",
+      "bytes": 2660111,
+      "sha256": "cb4f427d7e36466183b77d18844e017c804d244484825e3ee0b8fd5c54e322c6"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/fracture-work/cut-output.npz",
+      "bytes": 1626875,
+      "sha256": "6a76e21f26a6ab9b04f1c8d404f9354bb297035dda60b222b41b57dfa9156293"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/inspection-front.png",
+      "bytes": 873119,
+      "sha256": "4eb68835b965084ac467bac591b61d96ede70253c3ba396a3d530309d4cfc160"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/inspection-mouth.png",
+      "bytes": 908576,
+      "sha256": "d2396e789d695eab5321cbd9823d3d0027310fe8e9f8346299592498e6d8460b"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/inspection-three-quarter.png",
+      "bytes": 882222,
+      "sha256": "4047fec4fe12dd7237770da7ee42fd2513ee061d2cd33c43d2c14e715cebf1d0"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/optical-prepared.blend",
+      "bytes": 3173828,
+      "sha256": "ec07aa06239bb5d82ab07d4db831e7818a20cf247e29fe334955d9a6aa5ecce7"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/optical-preview.png",
+      "bytes": 1560821,
+      "sha256": "62a6f360900a344b059eca4b25d86134625917bde5622330ab4ffde882f7b5a7"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/prepared.blend",
+      "bytes": 1171248,
+      "sha256": "48909502e92703c60eaacafa5f8dd78468aa784ff1d9e24ecfcd0ddc117a02b1"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/raw-import.blend",
+      "bytes": 7982337,
+      "sha256": "76d38e575e5d4b1321201a94582c74df4d272342756aaea833672a37b9a31583"
+    },
+    {
+      "path": "v3/donors/aurora-coupe/ready-intact.blend",
+      "bytes": 3174356,
+      "sha256": "2ed0aaaf806f1b89d748f29216730f7dfeb2266180cca002070ca0d6d3d5c106"
+    },
+    {
+      "path": "v3/donors/aurora-coupe-high-source/raw-import.blend",
+      "bytes": 53236960,
+      "sha256": "3e301c49684aae6c0dd8f939251ce18d5e9f47529616095bb0c70c688709828e"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/finalized-fracture.png",
+      "bytes": 1410698,
+      "sha256": "90403e6c696f569bd30ff6daa628caec2fcc5cfaa3d03c52687adabb3f09e894"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/finalized-intact.png",
+      "bytes": 1346192,
+      "sha256": "111a665650b6c79f5daccdcafdb1312855718242f2d7d40ceb4c7d6efb88924e"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/finalized.blend",
+      "bytes": 3889165,
+      "sha256": "86580f2c376a68bd963ca7f395b036ba73c69b37e19928882ed697728349fc81"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/fracture-work/cut-input.npz",
+      "bytes": 2195652,
+      "sha256": "f9decf29e89bff08fb090bb7c37d843a22afab6c2d0cdfc9db1e8b143ae5679f"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/fracture-work/cut-output.npz",
+      "bytes": 1506794,
+      "sha256": "82dfc7da7605c1d09020ba0271ff1af515dc57abd0e27c0c0ca4e7e063c9b789"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/inspection-front.png",
+      "bytes": 856838,
+      "sha256": "08e4b364f8c560ae1b36fefc906c9ef20338c5ed2331fce7052fba3f65339ca7"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/inspection-mouth.png",
+      "bytes": 795070,
+      "sha256": "bf28ef07b7e7d960c83a063ff8da5d81dda8debd54cd4afd8543cf3b544c0412"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/inspection-three-quarter.png",
+      "bytes": 859444,
+      "sha256": "5b16d0aa9bb497a057fd84711664a0f88392dd3da310650c139ff009ad097695"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-proof-high-source/cut-band.png",
+      "bytes": 951269,
+      "sha256": "75f2262b1d9560e8d783813b3389ce8fa05880352ad5a27490785bdd938d116c"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-proof-high-source/three-quarter.png",
+      "bytes": 779066,
+      "sha256": "6ec59d0637eb2ef4558fbea6bb2777a052842872158543d52c5b01e007f5c53f"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-proof-v10/cut-band.png",
+      "bytes": 943413,
+      "sha256": "85e62d039647dc2f9c7ff0d8e5c706cb8de0d7b3b808796647f7dff1bea56d3e"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-proof-v10/open-mouth.png",
+      "bytes": 747098,
+      "sha256": "e4cb78b5739f20ee0af3d9cba18ad7caaee8aebb82787abf070a210a2787bd34"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-proof-v10/three-quarter.png",
+      "bytes": 770937,
+      "sha256": "17154d57686553f6fd11ee06c42eecc957b279e8f13c632a2d3e7b625a1331a8"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-source-clean.blend",
+      "bytes": 21208402,
+      "sha256": "b760ce24eb4a8eca9d43bafd7fdcae827df5ec9d64f7b11d004126062277909f"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-source.blend",
+      "bytes": 1125708,
+      "sha256": "06fc650a86cf3118bf1916fc50351acc019a9ef56e8578b34ca9c1fbee98c2bf"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v1.blend",
+      "bytes": 2112325,
+      "sha256": "b2034a73d200434483e286951ac58157248895ec40b51b0102feade528e15e77"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v10.blend",
+      "bytes": 1346150,
+      "sha256": "a124421396438bec812eefcb0250dd666b1e61393fc4c751b86c31590da1c9d0"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v2.blend",
+      "bytes": 2071346,
+      "sha256": "3c8bc9aac638f931a3775feb68713c435de400f80e62cc801616276778601648"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v3.blend",
+      "bytes": 2071596,
+      "sha256": "94134850678d749e6696286542d8e3ac6142217315a24666cb3da7ae9d7803cc"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v4.blend",
+      "bytes": 1589959,
+      "sha256": "42baa5f6b0d6b7a85929dcbfc5d19de96180e52ff505d63ba4127d3ee65bf7a9"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v5.blend",
+      "bytes": 1580579,
+      "sha256": "1365992c7a873f5776f226f3e117386d3d0cd2d180c523f2de70af2e3aef49a5"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v7.blend",
+      "bytes": 23274190,
+      "sha256": "bd8a21b908d9afec677e3e7d8bb1d9cfc28ea8a3018b4b93273584d383807c27"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v8.blend",
+      "bytes": 5358019,
+      "sha256": "d1d4d12602b74214d136f0e32a0ba05dd1becfb347b0316ddb99f10b79ddc275"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/prepared-cavity-v9.blend",
+      "bytes": 2681267,
+      "sha256": "99a33e3d0a59e746b0b6c7a5ca9658b7d6cda696c3da6c8cb023431163dd9469"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/raw-import.blend",
+      "bytes": 8669456,
+      "sha256": "0543bed566f2e4d31f8495dc6d5669cda62af18cdf385b90aedc57c0c9370923"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter/ready-intact.blend",
+      "bytes": 1868461,
+      "sha256": "e16b401d330b72700d5bbc764e1944a9ee813d58e0ddc0a94be918847943c0e5"
+    },
+    {
+      "path": "v3/donors/cut-crystal-decanter-high-source/raw-import.blend",
+      "bytes": 53430806,
+      "sha256": "f1e29ea31f8d0a543da795e56f3b3333bfbb5ce38b3c1c2811d5c2f0ffe7add4"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/adaptive-voxel-trial.blend",
+      "bytes": 28811727,
+      "sha256": "4d01003c7b85610ea35c978ba26da69fb89a00119dbae7172e2eb0b5cb5e0951"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/clean-surface-lod.blend",
+      "bytes": 10630901,
+      "sha256": "7bed8a2ca68d3ba77bcd4221e3d00fef2465c0ebca95cd02b684b754d77d0297"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/clean-voxel-trial.blend",
+      "bytes": 68901453,
+      "sha256": "e65c2f8f74d564107df1cfb3e85c9042ad8eaf38f9f6d19ac35c1515d617fd7c"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/contact-relax-3mm-trial.blend",
+      "bytes": 1977268,
+      "sha256": "fc61ee9c89c91be4295c58dd2c2a296501cd24c12da9ef811be7babe5e0b8193"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/contact-relax-trial.blend",
+      "bytes": 1977287,
+      "sha256": "78db71b4606873dff320fd6442d484a5b245b52bd55d3eada672816e61d2769b"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/finalized-fracture.png",
+      "bytes": 1362264,
+      "sha256": "6721b355afc2877338b8184c475f8f0acab6246ba2c4dd1fa084746e5a25563b"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/finalized-intact.png",
+      "bytes": 1351341,
+      "sha256": "f97d98c927a2410f2381631c72a84dd74dc58398dfc9007df761f6849104c69a"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/finalized.blend",
+      "bytes": 5683069,
+      "sha256": "a338510338ed129a8ebaabe4cd2ed674488a953c789eff869f2422622c26696b"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/fracture-work/cut-input.npz",
+      "bytes": 2654329,
+      "sha256": "15c73d13c4d37445f3de37bd221e7e8939758d707e2847c5fef65a0989e321d3"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/fracture-work/cut-output.npz",
+      "bytes": 1846190,
+      "sha256": "a07c1740c3ddab20669949d0a6c878b640a35285d25780529fef0b985ef63ffe"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/inspection-front.png",
+      "bytes": 798358,
+      "sha256": "f05f6e4238207e1252bde8767428dd0c8e962f14efcc0be1ef99f7a5e3e2fff1"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/inspection-mouth.png",
+      "bytes": 771416,
+      "sha256": "c70fce140c85fa9637a9644647c668ad33275fdfa52df62d8efccfbaf0718815"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/inspection-three-quarter.png",
+      "bytes": 794193,
+      "sha256": "17c57ba23b30012c7faa671bb2aeffb2136abca753f068fa5b01915980de2447"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/manifold-input.npz",
+      "bytes": 540172,
+      "sha256": "f117ed5212501761d0ab50f32e20d4e671cfa7cd1ee9617a27401bad15a5d972"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/manifold-output.npz",
+      "bytes": 1140861,
+      "sha256": "5c750fa0d08d642bb3abbfe4bbcaf20dff6b75fd20213c27bcc0deb99ce18e04"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/manifold-trial.blend",
+      "bytes": 4141030,
+      "sha256": "ed4acae02e17c2c2314f156cf2feff57529a9834824462e2f0dbe3c8bae0b6f9"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/prepared-resolved.blend",
+      "bytes": 1987813,
+      "sha256": "dc4131a6634a9c035b9e5dcf6af70d901e8e1abbca6fd319b7bfa101e0c05210"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/prepared.blend",
+      "bytes": 1977514,
+      "sha256": "9997a571078c0c4bb3e32f7f8309001ba374b22f6b6dc88c1414961358630ec4"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/raw-import.blend",
+      "bytes": 1155718,
+      "sha256": "8786d4e34571904067a8afb181cfa29cd7f4e5a7a4bfc08a64251f0e37d3ccf4"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/ready-intact.blend",
+      "bytes": 3355652,
+      "sha256": "78069822c370bd8d91580bb62c75ac9aa129c8b1ef9b3bdbf3cd34ed81b0c702"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/retopology-trial.blend",
+      "bytes": 87575568,
+      "sha256": "de869f39ed2a9b74fdacdcf5acbc833c38a348f5d5c40f668b6cadbf5ec0356d"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/solid-source-1mm.npz",
+      "bytes": 2826191,
+      "sha256": "52d279a76f857d4b186cd3fc541fba19f46995dec70cc59a10ee75fbf40fae1d"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/solid-source-500um.blend",
+      "bytes": 9992380,
+      "sha256": "8f7459528f2c63749322bec56aed7502426aa860831de106d32bd8376101ea94"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/solid-source-500um.npz",
+      "bytes": 2695914,
+      "sha256": "5ee93e855e7b6d809b367c28110ed05da07d9b00fe1f8d0b1338b97801c9b8e0"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/solid-source-input.npz",
+      "bytes": 19669383,
+      "sha256": "e275057f83c6995d4895b2eb7ba35693908288d7e1e0a5f43455d6bae25f4219"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/solid-source-output.npz",
+      "bytes": 11844419,
+      "sha256": "ecb7c5859af076f2b580b6daf137e15ca0b73997fb6590ebd1c63b140f5e4619"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/solid-source-trial.blend",
+      "bytes": 43129926,
+      "sha256": "180bb592c4f913ebaf46ab40222c5fe591267aaeea8075e43abad799bc168441"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/topology-diagnostic.blend",
+      "bytes": 1053630,
+      "sha256": "af39dd8422277b051bb8f857ed3b0cf1d0ddb21038ed4b3a1399f3060c03b2ae"
+    },
+    {
+      "path": "v3/donors/fluted-carafe/voxel-trial.blend",
+      "bytes": 1861649,
+      "sha256": "1662068d9e326d5c2ffe98f182d796ec85c3ec17b7075bb76ba52d782040ed01"
+    },
+    {
+      "path": "v3/donors/fluted-carafe-high-source/raw-import.blend",
+      "bytes": 55060133,
+      "sha256": "c4c722af4fd0f8c3a66ef15622acc69576618bfc4daafe66632834a90abbf9b8"
+    },
+    {
+      "path": "v3/donors/moon-amphora/clean-lod-v2-mouth.png",
+      "bytes": 845526,
+      "sha256": "14de34c1b7f5743eb6f85dd562505042970496f322e64f353175198680390f10"
+    },
+    {
+      "path": "v3/donors/moon-amphora/clean-lod-v2-three-quarter.png",
+      "bytes": 704114,
+      "sha256": "c920fe35f4ca13d91291b92f16047c12feaa778ea64b8f082b9cb16022cd26dc"
+    },
+    {
+      "path": "v3/donors/moon-amphora/clean-lod-v2.blend",
+      "bytes": 10233309,
+      "sha256": "d60899af9b1713ac36200371dd7a1de21768f5e1fda1df7e694d6eeb87e53c3e"
+    },
+    {
+      "path": "v3/donors/moon-amphora/clean-surface-lod.blend",
+      "bytes": 10233322,
+      "sha256": "e181eeeac639cab8e5e2432c985ccaac2786035eb0c60d1cc8d5321e5cf4fa31"
+    },
+    {
+      "path": "v3/donors/moon-amphora/clean-voxel-trial.blend",
+      "bytes": 59922645,
+      "sha256": "7751f48a30cf34984a6c8fbb446329f8a639718ffdef64d51681245a9ea178be"
+    },
+    {
+      "path": "v3/donors/moon-amphora/finalized-fracture.png",
+      "bytes": 1577658,
+      "sha256": "382837be68586909b2003cf3f080782d7b9c810da752ed8ed7b30e24cff28d63"
+    },
+    {
+      "path": "v3/donors/moon-amphora/finalized-intact.png",
+      "bytes": 1534788,
+      "sha256": "d5499b6381a2a1b4429106239a26f1d3108ecec746e97b7be6d7b686f0ab1b8f"
+    },
+    {
+      "path": "v3/donors/moon-amphora/finalized.blend",
+      "bytes": 9057645,
+      "sha256": "307f3739354fb5fe514753ee34aa4d0cffb7c566e1abaec568dfda8ad1375a54"
+    },
+    {
+      "path": "v3/donors/moon-amphora/fine-060-lod100k-mouth.png",
+      "bytes": 854259,
+      "sha256": "4ac3bdfe78f168a93fca172747e529f4a5faaed8f93fab5d14ee5b271503a054"
+    },
+    {
+      "path": "v3/donors/moon-amphora/fine-060-lod100k-three-quarter.png",
+      "bytes": 709474,
+      "sha256": "af2beb7a2bb9a33bd8e32307365d7e21e576fa8f644b4db1f9f2f40a0c48ea40"
+    },
+    {
+      "path": "v3/donors/moon-amphora/fine-060-lod100k.blend",
+      "bytes": 3938923,
+      "sha256": "435d800de2742eb9c9b19383dd8480bea22487717ee442096700674e8cd28c27"
+    },
+    {
+      "path": "v3/donors/moon-amphora/fracture-work/cut-input.npz",
+      "bytes": 4626889,
+      "sha256": "a3727aa945a345e48b7b5e40f650cd79b508f14df960521a7804520d501c24d5"
+    },
+    {
+      "path": "v3/donors/moon-amphora/fracture-work/cut-output.npz",
+      "bytes": 2638602,
+      "sha256": "f7665f135495ee6dbd144363fa0149ea490b5cca6bec01a63cb0ab22384161be"
+    },
+    {
+      "path": "v3/donors/moon-amphora/high-source-mouth.png",
+      "bytes": 873003,
+      "sha256": "c072f603bb45b0686bfed5d33af7108c5384cef5e191333539e71d8cd63069ae"
+    },
+    {
+      "path": "v3/donors/moon-amphora/high-source-three-quarter.png",
+      "bytes": 719307,
+      "sha256": "a9940007802a9db3553b6bb9fb8975835dc1822d50eec8692d67e049128becf4"
+    },
+    {
+      "path": "v3/donors/moon-amphora/inspection-front.png",
+      "bytes": 906288,
+      "sha256": "428cf3e23c2932747e8e085e23099b44c6c8b0baf4c8f42b755f5e6e4ecf81c8"
+    },
+    {
+      "path": "v3/donors/moon-amphora/inspection-mouth.png",
+      "bytes": 829089,
+      "sha256": "c43a002ab9a80db069b4a19b9b47d189ddfc9f85e5efa92616dd9d1514ae13f8"
+    },
+    {
+      "path": "v3/donors/moon-amphora/inspection-three-quarter.png",
+      "bytes": 896445,
+      "sha256": "50c4a0bf8bde36721554db765e423987a6a4490fc62ceff3cedb4d8146bb7054"
+    },
+    {
+      "path": "v3/donors/moon-amphora/prepared.blend",
+      "bytes": 1967791,
+      "sha256": "4cc32726ce1b7d1968d122fb4837ebd35c59154cca3a9008ad05ca9c4d8c269a"
+    },
+    {
+      "path": "v3/donors/moon-amphora/raw-import.blend",
+      "bytes": 7448797,
+      "sha256": "b17c26c91684b290fe1949e383d3fb4fceab181c625a10a78dcb04451e1391ed"
+    },
+    {
+      "path": "v3/donors/moon-amphora/ready-intact.blend",
+      "bytes": 5154702,
+      "sha256": "e65ea3f8caf1bc41083a5e9470b644e6e62c5ec7d8d87e34d38152c68ed12614"
+    },
+    {
+      "path": "v3/donors/moon-amphora/resolved-material-boundaries.json.gz",
+      "bytes": 36264,
+      "sha256": "301051139b6c5575bae53c4b10696c26135b2de89e62ff18fb0376adca0e52ca"
+    },
+    {
+      "path": "v3/donors/moon-amphora/reviewed-shell.blend",
+      "bytes": 3937544,
+      "sha256": "d52449f509dac8f693537e2780aa215c28a05ed2bcd69071fd90d6797097e1dd"
+    },
+    {
+      "path": "v3/donors/moon-amphora-high-source/raw-import.blend",
+      "bytes": 54136140,
+      "sha256": "45642f7210629faf3f90ee91211fe1ff6b2df974979b031376914335bc511c96"
+    },
+    {
+      "path": "v3/exports/aurora-coupe.glb",
+      "bytes": 7218784,
+      "sha256": "61e0c2d373204eb6929df3e4834ccca1ae1d2f9d27d9ee55d398e2cb6d70e024"
+    },
+    {
+      "path": "v3/exports/cut-crystal-decanter.glb",
+      "bytes": 8264408,
+      "sha256": "2fb379b4effb24169d0181764735481313a1e53c71e23d85e575d77d54244533"
+    },
+    {
+      "path": "v3/exports/fluted-carafe.glb",
+      "bytes": 9121856,
+      "sha256": "a23ffab3b2e37ef38a5c9cc5648241b47fcca55775c46863ed1726940f4862fa"
+    },
+    {
+      "path": "v3/exports/moon-amphora.glb",
+      "bytes": 11461724,
+      "sha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251"
+    },
+    {
+      "path": "v3/material-regions/aurora-coupe/coupe-regions-diagnostic.png",
+      "bytes": 582835,
+      "sha256": "3fbb13609759ced7daa0dec17eb5f0082167498f32150f0d7c77f0638c96ff87"
+    },
+    {
+      "path": "v3/material-regions/aurora-coupe/coupe-sampled-atlas.png",
+      "bytes": 5176126,
+      "sha256": "494d89f77d6005910beed3985f098a3181b4999c5d1a15843fad1886bbf6510b"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v1/source-atlas-swatches.png",
+      "bytes": 5139536,
+      "sha256": "280087eed8b57d5ccb70021e12c8aaa58c955732a6233dbdb0535734756e4d44"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v10/face-labels.json.gz",
+      "bytes": 2244168,
+      "sha256": "ca80d720dab4f93d02df90eb4d40216a52ce03621cf114e7795d314c72fc41d1"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v10/regions-back.png",
+      "bytes": 659028,
+      "sha256": "f6d8eea4b726a23f5478bdc69408e3a7c1b55b372dc146c17d7cdc1e544d11a3"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v10/regions-three-quarter.png",
+      "bytes": 643042,
+      "sha256": "246c1ac53846d467baa17e87defcfecadf57c4de5e9028459629133214b0617f"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v10/source-atlas-swatches.png",
+      "bytes": 5138751,
+      "sha256": "5a61160bd972a90f6da024268d0ad6c4d5dfaccf86d6963c8b51b3e1c86f6cc2"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v2/face-labels.json.gz",
+      "bytes": 2370141,
+      "sha256": "250f40818ddecb49fb322c9e74f9cd137c3fb12677bcbebea0d812ae46fd64c2"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v2/regions-back.png",
+      "bytes": 665482,
+      "sha256": "edd36a9bd5313f1024df1ed974eb1e2a8f8a87b2df2845e445251d504b18a0b1"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v2/regions-three-quarter.png",
+      "bytes": 649991,
+      "sha256": "f7a2060df22bb9c75cc5b668a3293fc87960d3b44148e334c30635266744e470"
+    },
+    {
+      "path": "v3/material-regions/cut-crystal-decanter/proof-v2/source-atlas-swatches.png",
+      "bytes": 5138751,
+      "sha256": "5a61160bd972a90f6da024268d0ad6c4d5dfaccf86d6963c8b51b3e1c86f6cc2"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v1/source-atlas-swatches.png",
+      "bytes": 4346885,
+      "sha256": "9660dc4dffc679ab1680e1e1eb2bd11545816ae393d6bf625aa88eba79cb6aa3"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v2/face-labels.json.gz",
+      "bytes": 2950206,
+      "sha256": "a90e231796031b5134cdf76c9f5af7c1a1b2135c5198a4a9074574f976d719ae"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v2/regions-back.png",
+      "bytes": 714524,
+      "sha256": "c8567a7e58acc094e8bf65c4a7f72445a663de01d724b48ec917f5a6b3d3746d"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v2/regions-three-quarter.png",
+      "bytes": 694566,
+      "sha256": "1871f032e65b5a84c64f3bbc8650700bca941defde1ddd33c9b2367e30d51f1c"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v2/source-atlas-swatches.png",
+      "bytes": 4345919,
+      "sha256": "7894aa5e9f84574e0575f991071a3a438986414885eee66c087cece0b5b804ea"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v3/face-labels.json.gz",
+      "bytes": 5669666,
+      "sha256": "67ae599457e066fb3af36f1fc553e969f6cb08f163e706555faacd5dde6c6db1"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v3/regions-back.png",
+      "bytes": 711836,
+      "sha256": "b922fe3f512885c87bf7862bfe007d937db3431b6d1013ecdbd8159127a3ec4b"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v3/regions-three-quarter.png",
+      "bytes": 691260,
+      "sha256": "98cad53b1c7c32c448f6d8805d7258a36efaf9f08e8db0b8f45f6f72268bfea3"
+    },
+    {
+      "path": "v3/material-regions/moon-amphora/proof-v3/source-atlas-swatches.png",
+      "bytes": 4345919,
+      "sha256": "7894aa5e9f84574e0575f991071a3a438986414885eee66c087cece0b5b804ea"
+    },
+    {
+      "path": "v4/architecture/bootstrap.blend",
+      "bytes": 85696,
+      "sha256": "c9e0c5360b0ed91d802c5d8ed6404e7ebf28d758c8d1220cdf6f84bdf01aa751"
+    },
+    {
+      "path": "v4/architecture/exports/museum-screen-bay-01-final-v1-textures/atlas-0.png",
+      "bytes": 1720729,
+      "sha256": "ba9ac6742b9db607f3d08f9a92ce59e58dac4cf32686b7932563a94c99e7f7ad"
+    },
+    {
+      "path": "v4/architecture/exports/museum-screen-bay-01-final-v1-textures/atlas-1.png",
+      "bytes": 1235350,
+      "sha256": "4797c4ecef9cb1112279c1dd2a596ab835f05adb39c996268f95c73ebb01b9bd"
+    },
+    {
+      "path": "v4/architecture/exports/museum-screen-bay-01-final-v1-textures/atlas-2.png",
+      "bytes": 1726511,
+      "sha256": "e52a9a50f98697fed3c38acf8af2330898607a334ac7042cf1f84468305ed953"
+    },
+    {
+      "path": "v4/architecture/exports/museum-screen-bay-01-final-v1.glb",
+      "bytes": 5972500,
+      "sha256": "b65b69a09f2c2a5ae33c71cf00e7e5ea6d6aeb97d28856c0635f598e596838a8"
+    },
+    {
+      "path": "v4/architecture/exports/museum-window-bay-01-final-v1-textures/atlas-0.png",
+      "bytes": 1723780,
+      "sha256": "d11dc8408e7ffe6979b5fbe067b2776c7826f2ed1a7b8cc44a8fab99f68dd156"
+    },
+    {
+      "path": "v4/architecture/exports/museum-window-bay-01-final-v1-textures/atlas-1.png",
+      "bytes": 1193544,
+      "sha256": "867b29e5069545e7b043bc67ed02e2b84b71c94ea3ece9d1f560f41ce82bb0ea"
+    },
+    {
+      "path": "v4/architecture/exports/museum-window-bay-01-final-v1-textures/atlas-2.png",
+      "bytes": 1882660,
+      "sha256": "d732d553d47483e85bae3808457dee0e85c553396cb075d3293b891aaed38426"
+    },
+    {
+      "path": "v4/architecture/exports/museum-window-bay-01-final-v1.glb",
+      "bytes": 6335148,
+      "sha256": "f89dd6f919cc066c84d1673afe50d3a567437f78d9038fc318743429e6e1ff81"
+    },
+    {
+      "path": "v4/architecture/proofs/museum-screen-bay-01-final-three-quarter.png",
+      "bytes": 1120489,
+      "sha256": "d029b299eaae15391c8cae59b097de82da617d0877e7bd4ca109c774437350a1"
+    },
+    {
+      "path": "v4/architecture/proofs/museum-screen-bay-01-raw-back.png",
+      "bytes": 1128658,
+      "sha256": "73e1c86870d360d9fa1c41ad4753da1531cedc17215b5ea686707bb11a1a649d"
+    },
+    {
+      "path": "v4/architecture/proofs/museum-screen-bay-01-raw-front.png",
+      "bytes": 1153018,
+      "sha256": "11e0ac187a5fff3401df76d504eaad987d6d07abe3e229358519cbeb72698545"
+    },
+    {
+      "path": "v4/architecture/proofs/museum-window-bay-01-final-three-quarter.png",
+      "bytes": 1124720,
+      "sha256": "1bdea8087447fb228ee8ab1cba5ad31c861eb15a1a121f8082bb617e88042c2e"
+    },
+    {
+      "path": "v4/architecture/proofs/museum-window-bay-01-raw-back.png",
+      "bytes": 1162280,
+      "sha256": "6fca09e062ba5209738a111f4737b43d082924f2fb1e97cf6ae3ef3cc67831a1"
+    },
+    {
+      "path": "v4/architecture/proofs/museum-window-bay-01-raw-front.png",
+      "bytes": 1155739,
+      "sha256": "3dd70d8ff8e64acd9b4d4253be24b9974caf7639f969b2de2ecc3a65f974cc99"
+    },
+    {
+      "path": "v4/architecture/raw/museum-screen-bay-01/donor.glb",
+      "bytes": 10945016,
+      "sha256": "9ba95fb57fdc3022b0dae0ccf098a9a83b59c54998fda6582505e840d7c1783c"
+    },
+    {
+      "path": "v4/architecture/raw/museum-window-bay-01/donor.glb",
+      "bytes": 11623312,
+      "sha256": "8470eaf0a5227050f5d83923b68c09bd799a453d9cdb977702a8eb349bb66377"
+    },
+    {
+      "path": "v4/architecture/sources/museum-screen-bay-01-final-v1.blend",
+      "bytes": 11155222,
+      "sha256": "e1c6042593ba9d9c4f622097d63ee0a8e78542eae2305cf1060eecd68d536e13"
+    },
+    {
+      "path": "v4/architecture/sources/museum-screen-bay-01-imported.blend",
+      "bytes": 11155054,
+      "sha256": "c5063983403b1fab59b1b2b0da0787fc65ca6d32e3f3ad2681701dc07d81bd75"
+    },
+    {
+      "path": "v4/architecture/sources/museum-window-bay-01-final-v1.blend",
+      "bytes": 11828464,
+      "sha256": "f4c0add1d78e64e43eb1f22c439ab626a8aac5074dbbee67e6fc05084d3b6010"
+    },
+    {
+      "path": "v4/architecture/sources/museum-window-bay-01-imported.blend",
+      "bytes": 11828075,
+      "sha256": "8611b430278faadf9ad24c9d626144c02a845913073369bba0dd42fcc91a2891"
+    },
+    {
+      "path": "v4/enclosure-study/enclosure-study-v1.blend",
+      "bytes": 55527302,
+      "sha256": "150f6cce530399e8e04a7e6220d05c871b43b612f38b32c4d82ddca10a645a1d"
+    },
+    {
+      "path": "v4/enclosure-study/enclosure-study-v1.glb",
+      "bytes": 57286688,
+      "sha256": "370b3d0a38eabd25858bd2b40e500126ed50289caa7ca3803f341df507523e38"
+    },
+    {
+      "path": "v4/enclosure-study/proofs/browser-interior.png",
+      "bytes": 961615,
+      "sha256": "b7f21fb35960bafda71195bbd40ab34e41b7377220e50ff17b3b6e73b5fbf5c7"
+    },
+    {
+      "path": "v4/enclosure-study/proofs/browser-overview.png",
+      "bytes": 855281,
+      "sha256": "d2651a44836417e3a03a458181b124d620063f92fe17a5408acfe09699f21400"
+    },
+    {
+      "path": "v4/enclosure-study/proofs/interior.png",
+      "bytes": 1446013,
+      "sha256": "48497f0063a8fee62cf71c9001df33c2298f7bd978eb71353a4e4e6ce9255e8f"
+    },
+    {
+      "path": "v4/enclosure-study/proofs/room-overview.png",
+      "bytes": 1454160,
+      "sha256": "cd12852cf24a54de3ba95925eed40bb978b9f7babfd1793e085cb690f2d51f87"
+    },
+    {
+      "path": "v4/enclosure-study/proofs/window-sightline.png",
+      "bytes": 1351984,
+      "sha256": "147eb9af1a8b3adb51ffc2d196116186710b6598e82725d35e0e20fe7b25ae22"
+    },
+    {
+      "path": "audio/v1/masters/A01_Non-musical Environmental Soundscape For An Open-air Marble Museum High Above....wav",
+      "bytes": 2394638,
+      "sha256": "73722439d53831ccf04d840a8f27914a9c6ee8dc42ced50b044f73a3990ff1e0"
+    },
+    {
+      "path": "audio/v1/masters/A02_Quiet Non-musical Ambience Beside A Small Ornamental Water Basin In A Floatin....wav",
+      "bytes": 2625038,
+      "sha256": "7a360fd45d345c8ce5cabfb6ad5c5284bf8e135bda097b70d5a3af813a3f75bd"
+    },
+    {
+      "path": "audio/v1/masters/A03_V2_Very Sparse Non-musical Atmospheric Soundscape Inside An Open Marble Pavilion....wav",
+      "bytes": 2770958,
+      "sha256": "606082d874bf26f21b7db985a0b7588d5cd84861f75d7c82ab03071eb74fd30a"
+    },
+    {
+      "path": "audio/v1/masters/A03_Very Sparse Non-musical Atmospheric Soundscape Inside An Open Marble Pavilion....wav",
+      "bytes": 2817038,
+      "sha256": "3cd382151c30583c9b6b0c68d5e8b153549a4b402260e07e720f6d41b9773577"
+    },
+    {
+      "path": "audio/v1/masters/M01_Crystal Light.wav",
+      "bytes": 29205520,
+      "sha256": "73c2541111441285644c5525272db146ba5b8e11cb338c83cef87e31c2f6dae0"
+    },
+    {
+      "path": "audio/v1/masters/M02_Museum Quiet.wav",
+      "bytes": 34550812,
+      "sha256": "8709ad711a0c750618800e848c03253a6f6433a7bd7d91c11a192922b48a9d96"
+    },
+    {
+      "path": "audio/v1/masters/M03_Curious Garden.wav",
+      "bytes": 23030800,
+      "sha256": "03c16631a2029d74f83f569c46407eaf5d2927caff175665f5fbd6821a387b3f"
+    },
+    {
+      "path": "audio/v1/masters/M04_Welcome to the Tutorial.wav",
+      "bytes": 21671440,
+      "sha256": "7af1ddd3cb693c9cce555a16bd4dfda835f943655c83f1e2e1f1e2fb17735596"
+    },
+    {
+      "path": "audio/v1/masters/M05_Earned Delight.wav",
+      "bytes": 3423754,
+      "sha256": "3d437a2134c29dc668313a13846ac5889f014882914cbe00d8c1be31407f2e87"
+    },
+    {
+      "path": "audio/v1/masters/M06_Nocturnal Puzzle.wav",
+      "bytes": 34550800,
+      "sha256": "b89acae56ab63cb7320f9e2e1bb7fbcf7d70bcacbf8efeb2a2a38b42024f0003"
+    },
+    {
+      "path": "audio/v1/previews/a01-v1.mp3",
+      "bytes": 270044,
+      "sha256": "37e5524a58609cc4bd58fbd13a323f44214a58e7ea420ec22cd4efc0b07a227d"
+    },
+    {
+      "path": "audio/v1/previews/a02-v1.mp3",
+      "bytes": 276548,
+      "sha256": "30f2464164c3bc12de6377c2dc61840ad80615e375b0a0113ebc5a1c8a99ab40"
+    },
+    {
+      "path": "audio/v1/previews/a03-v1.mp3",
+      "bytes": 320252,
+      "sha256": "706340ea70d50b6fd7405394ac21534e31e3bdcb6fdee757838e5d13714198b3"
+    },
+    {
+      "path": "audio/v1/previews/a03-v2.mp3",
+      "bytes": 299756,
+      "sha256": "cee0a0c472324f5dd5115bc7c0298fdef6222653281c3a24ddac8a0d1b8457e7"
+    },
+    {
+      "path": "audio/v1/previews/m01-v1.mp3",
+      "bytes": 3407060,
+      "sha256": "4f9d85c485bcd462b9850bfedaf6b9edc4bd58ce30804d38eb9c9aa185169aaf"
+    },
+    {
+      "path": "audio/v1/previews/m02-v1.mp3",
+      "bytes": 4024364,
+      "sha256": "386ecc6e376434d5c719f25815cc2a2e8345390d6e120d725de133c5f2a194e2"
+    },
+    {
+      "path": "audio/v1/previews/m03-v1.mp3",
+      "bytes": 2783228,
+      "sha256": "6be3a1de15460542ef1b282abede6bf42114f9420a1d4ebb026c07864182bc4e"
+    },
+    {
+      "path": "audio/v1/previews/m04-v1.mp3",
+      "bytes": 2561708,
+      "sha256": "5fad45b10a381ec6e83821b477285ed6410c54b48b7e8ed615239d1f3123d57b"
+    },
+    {
+      "path": "audio/v1/previews/m05-v1.mp3",
+      "bytes": 391964,
+      "sha256": "4575847810ab94cb5cca84c3717fd9abc0d5be79fc45a0ddd9a45de7be0b4af8"
+    },
+    {
+      "path": "audio/v1/previews/m06-v1.mp3",
+      "bytes": 3932828,
+      "sha256": "739dbe32d5fe1e2ac89bb54836f95edac49f50f4dce9051c39e7545f91a785d3"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/a01-loop.flac",
+      "bytes": 1963651,
+      "sha256": "0cba920152448b08f762e6ef2aa5d23b54fbdef7eda1045cf8d75216c5d36949"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/a01-seam-audition.wav",
+      "bytes": 1587702,
+      "sha256": "bb1c741011659ebf78e12141d8145f12bf7c4aceb9f703f0f6e4982218c47844"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/a02-loop.flac",
+      "bytes": 1736597,
+      "sha256": "a72459097b11fcfc936b9da578dc5448794682ef4c4b61d243878b57a22041c1"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/a02-seam-audition.wav",
+      "bytes": 1587702,
+      "sha256": "cef5ae1d23574a8169d65edcaadbd4738b47085763ba72e373ef98f457c2ba12"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/a03-loop.flac",
+      "bytes": 2180533,
+      "sha256": "331a691172dd6b76e6947661979e4a9fa83ed0f9b8b4901dd99606c48e4b530f"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/a03-seam-audition.wav",
+      "bytes": 1587702,
+      "sha256": "94c4dc62054a4320f13adf58e5a1a78ae3e1ba1a9b634e783078b7220eadfdb8"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/m01-loop.flac",
+      "bytes": 24509993,
+      "sha256": "8f9e1964eb11769a268fa1b72b3919b96609b122603432b609a5f642043c01ac"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/m01-seam-audition.wav",
+      "bytes": 1587702,
+      "sha256": "0076c91c1d15686627b063c08f05f84f73f77657d29fab1ebcf1fb4c60375269"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/m03-loop.flac",
+      "bytes": 20307116,
+      "sha256": "a80463a56beed7173392918c01e1704d460e2614a52d556fe659456f58e8bc3d"
+    },
+    {
+      "path": "audio/v1/runtime-derivatives/m03-seam-audition.wav",
+      "bytes": 1587702,
+      "sha256": "d5f4e74751b7a531f064f6dc24caa336f6d4519e8fd4b7f380537dbb74b0c5e6"
+    }
+  ],
+  "fileCount": 402,
+  "totalBytes": 2274070310
+}

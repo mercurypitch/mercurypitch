@@ -1,0 +1,43 @@
+[
+  {
+    "id": "legend-johnny-cash",
+    "source": "art/glass-adventure/textures/legend-johnny-cash.png",
+    "sourceSha256": "a1578f3116ddb7cd1a9a554a6219657ffa64541dce7df8df720a0aadb760e4f2",
+    "runtime": "legend-johnny-cash.webp",
+    "width": 1024,
+    "height": 1536,
+    "bytes": 568870,
+    "sha256": "9a44d12d318a1fa081a63b5ede408ceec1648f8e7a6c214272752bae8038bff5",
+    "embeddedJpeg": "legend-johnny-cash-runtime.jpg",
+    "embeddedJpegSha256": "10234fdd681e9f5dceb9953622646519a706714e2c465d0d69059cc92b23666d",
+    "generation": "Built-in imagegen, root task, 2026-09-14",
+    "treatment": "RGB WebP/JPEG quality 90, no crop; bounded Lanczos resize only"
+  },
+  {
+    "id": "floor-marble",
+    "source": "art/glass-adventure/textures/floor-marble.png",
+    "sourceSha256": "3ce57617802f9c0d8e04fbc9f965c0df1ab5eb34eea461823a10bc23e5ee41e8",
+    "runtime": "floor-marble.webp",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 118674,
+    "sha256": "0af5812b44c95964073be6e2ed6895256504ec08a8609610fddc3d76a5168122",
+    "embeddedJpeg": "floor-marble-runtime.jpg",
+    "embeddedJpegSha256": "ef546762ef4dc1a8dc6fbada93a0b88ad62f50139bfbc95c4e01b4928227326c",
+    "generation": "Built-in imagegen, root task, 2026-09-14",
+    "treatment": "RGB WebP/JPEG quality 90, no crop; bounded Lanczos resize only"
+  },
+  {
+    "id": "museum-sky",
+    "source": "art/glass-adventure/textures/museum-sky.png",
+    "sourceSha256": "6f843d97bd10a35b5dbe9377604ba71fe541d52098c7723c96ee1c557a5943b1",
+    "runtime": "museum-sky.webp",
+    "width": 1774,
+    "height": 887,
+    "bytes": 179224,
+    "sha256": "098c976aeb6992ec09def1575a0b8fb173b128a530c06a572c4163f2d4a03c65",
+    "generation": "Built-in imagegen, root task, 2026-09-14",
+    "treatment": "RGB WebP quality 92, method 6; no resize or crop",
+    "prompt": "art/glass-adventure/sky-prompt.md"
+  }
+]

@@ -42,7 +42,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: '**/games-off.e2e.ts',
+      testIgnore: ['**/games-off.e2e.ts', '**/glass-adventure-*.e2e.ts'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-adventure',
+      testMatch: '**/glass-adventure-*.e2e.ts',
       use: { ...devices['Desktop Chrome'] },
     },
     {
