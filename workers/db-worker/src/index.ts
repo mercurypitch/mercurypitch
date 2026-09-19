@@ -16,6 +16,7 @@
 
 import { FUNNEL_EVENT_NAMES } from '../../../src/lib/funnel-event-catalog'
 import { resolveAdmin, resolveAdminWithIdentity } from './access'
+import { handleAccountNoticeRoute } from './account-notices'
 import type { AuthUser, Env } from './auth'
 import { checkRateLimit, getAuth, handleAuth, rateLimitSubject, timingSafeEqual, TOKEN_TTL_SECONDS, } from './auth'
 import { sweepExpiredSessions } from './auth-sessions'
@@ -2331,6 +2332,17 @@ async function handleRequest(
     () => isAdmin(request, env),
   )
   if (newsletterResponse) return newsletterResponse
+
+  // Mail owed to every account holder, whatever they said about the
+  // newsletter. Both routes are admin-only; see account-notices.ts.
+  const noticeResponse = await handleAccountNoticeRoute(
+    request,
+    env,
+    url.pathname,
+    respondNoStore,
+    () => isAdmin(request, env),
+  )
+  if (noticeResponse) return noticeResponse
 
   // Ahead of handleAuth so the import runs one way: twofa-routes imports
   // auth.ts for getAuth and the session issuer, and auth.ts never imports it.

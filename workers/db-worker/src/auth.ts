@@ -3335,6 +3335,11 @@ const USER_OWNED_TABLES: { table: string; column: string }[] = [
   // erased account must not leave one. Same reasoning as promoRedemptions:
   // the foreign key cascades, and this line is the promise that it does.
   { table: 'newsletterSends', column: 'userId' },
+  // Which account notices went to this account. The same reasoning, with
+  // one difference worth writing down: the notice itself (`accountNotices`,
+  // no user id) is kept, because that a breach notice went out is a record
+  // we owe a regulator. Who it went to is a record of them, and goes.
+  { table: 'accountNoticeSends', column: 'userId' },
   // An approved-but-uncollected device link names the account it would sign
   // a television into. Rows are short-lived, but the sweep only runs when
   // the NEXT device asks for a code — so with nobody linking anything, an

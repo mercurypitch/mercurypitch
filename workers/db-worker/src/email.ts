@@ -946,6 +946,216 @@ ${footerHtml('You can change this any time in Settings &rsaquo; Account at ')}
   return { subject: v.subject, html, text }
 }
 
+// ── Account notice ───────────────────────────────────────────────────
+//
+// The opposite of the newsletter in the one way that matters. That mail goes
+// to people who said yes and carries the way back out; this one goes to every
+// account holder because we owe it to them -- a breach, a change to the
+// terms, an account about to be deleted for inactivity -- and there is no way
+// out of it, so it carries none. No unsubscribe link, and no List-Unsubscribe
+// header: offering a switch that does nothing would be the lie.
+//
+// What it carries instead is the reason it arrived. Somebody who unticked the
+// box and still got mail from us is owed that sentence.
+//
+// Nothing here sells anything, on purpose. The day this template carries a
+// product update is the day it needs consent it does not have.
+
+export type AccountNoticeKind = 'security' | 'legal' | 'account'
+
+export interface AccountNoticeVars {
+  displayName?: string | null
+  kind: AccountNoticeKind
+  /** Subject line, and the headline, so the inbox and the page agree. */
+  subject: string
+  /** The grey preview line inbox lists show beside the subject. */
+  preheader: string
+  /** The notice itself. A blank line starts a new paragraph. */
+  intro: string
+  /** Optional titled parts: "What happened", "What you can do". */
+  items: NewsletterItem[]
+  /** The operator's rehearsal copy. Marked in the subject and the body, so a
+   *  forwarded test can never be read as the notice having gone out. */
+  test?: boolean
+}
+
+const NOTICE_LABEL: Record<AccountNoticeKind, string> = {
+  security: 'Security notice',
+  legal: 'Legal notice',
+  account: 'About your account',
+}
+
+const NOTICE_REASON =
+  'You are getting this because you have a MercuryPitch account. It is a service message about that account, not a product update, so it goes to every account holder whatever their newsletter setting.'
+
+/** Said on every security notice, because the mail that follows a breach is
+ *  the one a phisher most wants to imitate. */
+const NOTICE_NEVER_ASKS =
+  'We will never ask for your password by email. A message that does is not from us, whatever it looks like.'
+
+const TEST_BANNER =
+  'This is a test copy. The notice has not been sent to anyone else.'
+
+/** Blank lines separate paragraphs; a single newline is a line break. */
+function noticeParagraphs(text: string): string[] {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph !== '')
+}
+
+function paragraphsHtml(text: string, style: string): string {
+  return noticeParagraphs(text)
+    .map(
+      (paragraph) =>
+        `<p style="${style}">${escapeHtml(paragraph).replace(/\n/g, '<br>')}</p>`,
+    )
+    .join('\n              ')
+}
+
+/** Pure renderer for one account notice. No I/O, so a dry run can show it. */
+export function renderAccountNotice(v: AccountNoticeVars): RenderedEmail {
+  const name = v.displayName?.trim()
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi there,'
+  // The plain-text part is not HTML, so the name goes in as typed.
+  const greetingText = name ? `Hi ${name},` : 'Hi there,'
+  const subject = v.test === true ? `[TEST] ${v.subject}` : v.subject
+  const label = NOTICE_LABEL[v.kind]
+
+  const itemsHtml = v.items
+    .map((item) => {
+      const link =
+        item.href === undefined || item.href === ''
+          ? ''
+          : `<p style="margin:12px 0 0; font-size:15px;">
+                       <a href="${escapeHtml(item.href)}" style="color:${C.blue}; text-decoration:underline;">${escapeHtml(item.cta ?? 'Read more')}</a>
+                     </p>`
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                       style="background:${C.panel}; border:1px solid ${C.border}; border-radius:12px; margin:0 0 16px;">
+                  <tr>
+                    <td style="padding:20px 22px;">
+                      <div style="font-size:17px; line-height:1.35; font-weight:700; color:${C.text};">
+                        ${escapeHtml(item.title)}
+                      </div>
+                      ${paragraphsHtml(item.body, `margin:8px 0 0; font-size:15px; line-height:1.6; color:${C.muted};`)}
+                      ${link}
+                    </td>
+                  </tr>
+                </table>`
+    })
+    .join('\n                ')
+
+  const testHtml =
+    v.test === true
+      ? `<p style="margin:0 0 18px; padding:10px 12px; border:1px solid ${C.borderAccent}; border-radius:8px; font-size:14px; line-height:1.5; color:${C.text};">
+                ${escapeHtml(TEST_BANNER)}
+              </p>`
+      : ''
+
+  const neverAsksHtml =
+    v.kind === 'security'
+      ? `<p style="margin:0 0 10px; font-size:13px; line-height:1.6; color:${C.text};">
+                  ${escapeHtml(NOTICE_NEVER_ASKS)}
+                </p>`
+      : ''
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
+    ${escapeHtml(v.preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+          <!-- wordmark -->
+          <tr>
+            <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
+                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
+              </a>
+            </td>
+          </tr>
+
+          <!-- body card -->
+          <tr>
+            <td style="background:${C.card}; border:1px solid ${C.border}; border-radius:14px; padding:32px 32px 28px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${C.text};">
+
+              ${testHtml}
+              <p style="margin:0 0 8px; font-size:12px; line-height:1.4; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:${C.muted};">
+                ${escapeHtml(label)}
+              </p>
+              <h1 style="margin:0 0 14px; font-size:24px; line-height:1.25; font-weight:700; color:${C.text};">
+                ${escapeHtml(v.subject)}
+              </h1>
+
+              <p style="margin:0 0 18px; font-size:16px; line-height:1.6; color:${C.text};">
+                ${greeting}
+              </p>
+              ${paragraphsHtml(v.intro, `margin:0 0 18px; font-size:16px; line-height:1.6; color:${C.text};`)}
+
+              ${itemsHtml}
+
+              <p style="margin:18px 0 0; font-size:15px; line-height:1.6; color:${C.muted};">
+                Questions? Reply to this email and a person will read it.
+              </p>
+
+              <div style="border-top:1px solid ${C.border}; margin:26px 0 0; padding-top:18px;">
+                ${neverAsksHtml}
+                <p style="margin:0; font-size:13px; line-height:1.6; color:${C.muted};">
+                  ${escapeHtml(NOTICE_REASON)}
+                </p>
+              </div>
+
+            </td>
+          </tr>
+${footerHtml('You have an account at ')}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+  const itemsText = v.items
+    .map((item) => {
+      const link =
+        item.href === undefined || item.href === '' ? '' : `\n\n  ${item.href}`
+      const body = noticeParagraphs(item.body)
+        .map((paragraph) => `  ${paragraph.replace(/\n/g, '\n  ')}`)
+        .join('\n\n')
+      return `* ${item.title}\n${body}${link}`
+    })
+    .join('\n\n')
+
+  const text = [
+    ...(v.test === true ? [TEST_BANNER, ''] : []),
+    `${label.toUpperCase()}: ${v.subject}`,
+    '',
+    greetingText,
+    '',
+    noticeParagraphs(v.intro).join('\n\n'),
+    ...(itemsText === '' ? [] : ['', itemsText]),
+    '',
+    'Questions? Reply to this email and a person will read it.',
+    '',
+    '--',
+    ...(v.kind === 'security' ? [NOTICE_NEVER_ASKS] : []),
+    NOTICE_REASON,
+  ].join('\n')
+
+  return { subject, html, text }
+}
+
 export interface ResendConfig {
   /** Resend API key. When absent, sending is skipped (feature off). */
   apiKey?: string
@@ -1145,6 +1355,25 @@ export async function sendNewsletterIssue(
     'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
   })
   if (result.ok) console.log(`[email] newsletter sent to ${to}`)
+  return result
+}
+
+/**
+ * Send one account notice to one recipient. Returns the provider's message id
+ * so the caller can log the send; `ok:false` means nothing was sent.
+ *
+ * Deliberately WITHOUT the List-Unsubscribe headers the newsletter sets. They
+ * are for mail somebody can opt out of, and this is not: a header promising
+ * an unsubscribe that the worker would then have to ignore is worse than no
+ * header. Service mail is exempt from the bulk-sender rule that requires it.
+ */
+export async function sendAccountNotice(
+  cfg: ResendConfig,
+  to: string,
+  vars: AccountNoticeVars,
+): Promise<ResendResult> {
+  const result = await resendPost(cfg, to, renderAccountNotice(vars))
+  if (result.ok) console.log(`[email] account notice sent to ${to}`)
   return result
 }
 
