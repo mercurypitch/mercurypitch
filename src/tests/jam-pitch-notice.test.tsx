@@ -18,7 +18,7 @@ import type { JamSong } from '@/lib/jam/jam-song'
 import type { JamSongNote } from '@/lib/jam/types'
 import type { VocalAnalysis } from '@/lib/pitch-pipeline'
 import { abandonJamSongPitch, provideJamSongPitch, setJamPitchProvisionSeams, } from '@/stores/jam-pitch-provision-store'
-import { setJamIsHost, setJamPeers, setJamPitchHistory, setJamSong, setJamSongParts, } from '@/stores/jam-store'
+import { jamSong, setJamIsHost, setJamPeers, setJamPitchHistory, setJamSong, setJamSongParts, } from '@/stores/jam-store'
 
 vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
@@ -220,7 +220,12 @@ describe('the lane area with no pitch guide', () => {
 // had happened at all looked exactly alike -- and "was it cleaned up?"
 // had no answer on the screen.
 
-describe('the caption over a pitch guide', () => {
+// A caption used to sit over the lanes for the whole song, saying where the
+// pitch guide came from. Owner report (2026-09-20, tablet): it is a row the
+// lanes cannot spare on a small screen, to say something once. A guide made
+// in the room is announced by a toast; the lanes speak only while one is
+// being worked out, or when there will not be one.
+describe('the lanes once a song has its pitch guide', () => {
   beforeEach(() => {
     vi.stubGlobal('requestAnimationFrame', () => 1)
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
@@ -242,22 +247,28 @@ describe('the caption over a pitch guide', () => {
     setJamIsHost(false)
   })
 
-  const caption = (): string | null =>
-    screen.queryByTestId('jam-pitch-credit')?.textContent ?? null
+  /** Anything at all above the lanes. */
+  const aboveTheLanes = (): Element | null =>
+    screen.queryByTestId('jam-pitch-notice') ??
+    screen.queryByTestId('jam-pitch-credit')
 
-  it('says a stored guide is the one saved on this device', () => {
-    setJamSong(song({ notes: [NOTE], notesFrom: 'saved' }))
+  it.each(['saved', 'edited', 'room'] as const)(
+    'take no row to say the guide is the %s one',
+    (notesFrom) => {
+      setJamSong(song({ notes: [NOTE], notesFrom }))
+      mountLanes()
+      expect(aboveTheLanes()).toBeNull()
+    },
+  )
+
+  it("take no row to tell a guest the guide is the host's", () => {
+    setJamIsHost(false)
+    setJamSong(song({ notes: [NOTE], origin: 'url' }))
     mountLanes()
-    expect(caption()).toBe('Pitch guide: saved on this device')
+    expect(aboveTheLanes()).toBeNull()
   })
 
-  it("says so when it is the singer's own correction", () => {
-    setJamSong(song({ notes: [NOTE], notesFrom: 'edited' }))
-    mountLanes()
-    expect(caption()).toBe('Pitch guide: the one you corrected in Karaoke')
-  })
-
-  it('credits the room for a line worked out here', async () => {
+  it('give the row back when a guide made in the room lands', async () => {
     setJamPitchProvisionSeams({
       loadVocalSamples: async () => SAMPLES,
       analyze: async () => emptyAnalysis([60]),
@@ -273,52 +284,7 @@ describe('the caption over a pitch guide', () => {
       onNotes: (_id, notes) =>
         setJamSong({ ...loaded, notes, notesFrom: 'room' }),
     })
-    await waitFor(() =>
-      expect(caption()).toBe('Pitch guide: worked out in this room'),
-    )
-  })
-
-  it('tells a guest whose line it is', () => {
-    setJamIsHost(false)
-    // Over the wire a song carries notes and no word about where they came
-    // from: provenance is a fact about the host's device, not the room's.
-    setJamSong(song({ notes: [NOTE], origin: 'url' }))
-    mountLanes()
-    expect(caption()).toBe('Pitch guide: from the host')
-  })
-
-  it('is a caption, not an announcement', () => {
-    setJamSong(song({ notes: [NOTE], notesFrom: 'saved' }))
-    mountLanes()
-    const line = screen.getByTestId('jam-pitch-credit')
-    // Read aloud on every song load, it would be the room talking over
-    // the singer.
-    expect(line.getAttribute('role')).toBeNull()
-    expect(line.getAttribute('aria-live')).toBeNull()
-  })
-
-  it('keeps quiet while a guide is still being worked out', async () => {
-    setJamPitchProvisionSeams({
-      loadVocalSamples: async () => SAMPLES,
-      analyze: async () => new Promise<VocalAnalysis>(() => undefined),
-      save: async () => undefined,
-    })
-    const loaded = song({ notes: [NOTE], notesFrom: 'raw' })
-    setJamSong(loaded)
-    mountLanes()
-
-    provideJamSongPitch({
-      song: loaded,
-      isHost: true,
-      onNotes: () => undefined,
-    })
-    await screen.findByRole('progressbar')
-    expect(caption()).toBeNull()
-  })
-
-  it('has nothing to say when there is no guide', () => {
-    setJamSong(song())
-    mountLanes()
-    expect(caption()).toBeNull()
+    await waitFor(() => expect(jamSong()?.notesFrom).toBe('room'))
+    await waitFor(() => expect(aboveTheLanes()).toBeNull())
   })
 })

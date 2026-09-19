@@ -160,14 +160,6 @@ export type JamPitchBanner =
   /** There is a line, and this is where it came from. */
   | { kind: 'ready'; credit: JamGuideCredit }
 
-/** The words for a credit. Plain ones: a singer reads this mid-song. */
-export const GUIDE_CREDIT_TEXT: Record<JamGuideCredit, string> = {
-  saved: 'Pitch guide: saved on this device',
-  edited: 'Pitch guide: the one you corrected in Karaoke',
-  room: 'Pitch guide: worked out in this room',
-  host: 'Pitch guide: from the host',
-}
-
 /**
  * What to draw over the lanes.
  *
