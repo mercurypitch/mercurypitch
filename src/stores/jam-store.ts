@@ -454,10 +454,18 @@ export function selectJamSong(song: JamSong): boolean {
  * Host-only for the broadcast. A guest attaching lyrics updates their own
  * view -- which is a fair thing to want if they found the words first --
  * but must not rewrite what the room is singing from.
+ *
+ * Ignored when the song has moved on, the same as a pitch line. Words are
+ * found by a search that takes seconds and chosen from a list that was read
+ * for one song; taking "the loaded song" on trust put one song's words on
+ * another whenever the host switched in between.
  */
-export function attachJamSongLyrics(lines: LyricsLineTiming[]): void {
+export function attachJamSongLyrics(
+  songId: string,
+  lines: LyricsLineTiming[],
+): void {
   const song = jamSong()
-  if (song === null || lines.length === 0) return
+  if (song === null || song.id !== songId || lines.length === 0) return
   const next = { ...song, lines }
   setJamSong(next)
   // The words changed, so the lines scored against them are stale.

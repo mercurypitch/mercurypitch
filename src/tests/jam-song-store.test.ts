@@ -601,6 +601,9 @@ describe('who can actually hear the song', () => {
 })
 
 describe('attaching lyrics to a loaded song', () => {
+  /** The id `song()` builds with. */
+  const LOADED_ID = 'demo'
+
   beforeEach(() => {
     store.clearJamSong()
     store.setJamError(null)
@@ -613,7 +616,7 @@ describe('attaching lyrics to a loaded song', () => {
 
   it('gives the loaded song its words', () => {
     store.selectJamSong(song({ lines: [] }))
-    store.attachJamSongLyrics([{ text: 'found', startSec: 1 }])
+    store.attachJamSongLyrics(LOADED_ID, [{ text: 'found', startSec: 1 }])
     expect(store.jamSong()?.lines).toEqual([{ text: 'found', startSec: 1 }])
   })
 
@@ -628,20 +631,31 @@ describe('attaching lyrics to a loaded song', () => {
       voiced: true,
       noteCount: 2,
     })
-    store.attachJamSongLyrics([{ text: 'found', startSec: 1 }])
+    store.attachJamSongLyrics(LOADED_ID, [{ text: 'found', startSec: 1 }])
     expect(store.jamSongRunScore()).toBeNull()
   })
 
   it('ignores an empty result rather than blanking the column', () => {
     store.selectJamSong(song())
     const before = store.jamSong()?.lines
-    store.attachJamSongLyrics([])
+    store.attachJamSongLyrics(LOADED_ID, [])
     expect(store.jamSong()?.lines).toEqual(before)
   })
 
   it('does nothing when no song is loaded', () => {
-    store.attachJamSongLyrics([{ text: 'x', startSec: 0 }])
+    store.attachJamSongLyrics(LOADED_ID, [{ text: 'x', startSec: 0 }])
     expect(store.jamSong()).toBeNull()
+  })
+
+  it('leaves the words alone once the room has moved on to another song', () => {
+    // A search answers seconds later, and a version list is read for one
+    // song. Either can arrive after the host has picked something else.
+    store.selectJamSong(song({ id: 'session:next' }))
+    const before = store.jamSong()?.lines
+    store.attachJamSongLyrics(LOADED_ID, [
+      { text: 'for the last song', startSec: 1 },
+    ])
+    expect(store.jamSong()?.lines).toEqual(before)
   })
 })
 

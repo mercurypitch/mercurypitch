@@ -115,7 +115,10 @@ export const JamLyricsFinder: Component = () => {
         )
         return
       }
-      attachJamSongLyrics(lines)
+      // By id: the fetch above can take seconds, and the host is free to
+      // pick another song while it runs. The words still belong to the song
+      // they were chosen for, so they are saved either way.
+      attachJamSongLyrics(song.id, lines)
       await persistSongLyrics(
         sessionId,
         found.text,
@@ -139,7 +142,7 @@ export const JamLyricsFinder: Component = () => {
       return
     }
     setError(null)
-    attachJamSongLyrics(lines)
+    attachJamSongLyrics(song.id, lines)
     await persistSongLyrics(sessionId, text, `${song.title}.lrc`)
   }
 
