@@ -639,6 +639,29 @@ name, never a shared one. Verify with `ANALYZE=1 pnpm build` and then
 `grep <chunk> dist/*.html` — absent from every entry HTML is the only proof.
 **See:** `vite.config.ts` `manualChunks`; `src/lib/jam/stem-encoder.ts:36`.
 
+### A `manualChunks` rule that names a feature owns every helper the feature reaches
+
+**Symptom:** the Voice Mirror, Karaoke Night, Glass and the crawlable vocal
+pages each downloaded about 3.1 MB of JavaScript before first paint to run
+about 90 modules. Importing a 30-line helper from the jam room broke Piano
+Night's audit.
+**Cause:** a module named into a manual chunk takes every static dependency
+that has no name of its own with it, transitively
+(`addStaticDependenciesToManualChunk`). Three rules named whole features by
+component name (`community`, `advanced`, `library`), so the first of them to
+reach a shared helper owned it, and a page that needed the helper loaded the
+chunk -- and the other two, because they import each other. Every per-module
+pin in the config was this bug, patched once.
+**Rule:** never name a component or a feature into a chunk. Name leaves and
+vendor packages; let Rollup place shared app code by which entries reach it.
+`build:e2e` weighs every emitted document
+(`assert-first-paint-budgets.mjs`), and a breach names the heaviest chunks. Do
+not reach for `output.experimentalMinChunkSize` to cut the request count: at
+10 KB it put `pitch-core` into Piano Night (298 KB to 542 KB, failing its
+audit) and gave the script-free 404 page 256 KB of JavaScript.
+**See:** `vite.config.ts` `manualChunks`,
+`scripts/assert-first-paint-budgets.mjs`, `src/e2e/every-document-boots.spec.ts`.
+
 ### Keep every runtime dependency of `pitch-core` on its side of the chunk boundary
 
 **Symptom:** the production build completed, but the app stayed blank with
