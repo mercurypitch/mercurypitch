@@ -7,10 +7,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { EXERCISE_LONG_NOTE, EXERCISE_SCALE_RUNNER, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from '@/features/exercises/types'
+import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import type { PathWeek } from '@/features/path/path-content'
-import { jamAscentEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEntries, jamSongEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
+import { jamAscentEntries, jamExampleRowEntries, jamExerciseEntries, jamMelodyEntries, jamSessionRowEntries, jamWeeklyEntry, } from '@/lib/jam/jam-catalog'
 import type { JamSessionRow } from '@/lib/jam/jam-session-songs'
-import type { JamSong } from '@/lib/jam/jam-song'
 import type { MelodyData, MelodyItem } from '@/types'
 
 function entryNamed(octave: number, name: string) {
@@ -144,22 +144,55 @@ describe('jamMelodyEntries', () => {
 })
 
 describe('jam song catalogue loading boundaries', () => {
-  it('drops an unavailable demo without hiding a playable one', () => {
-    const song: JamSong = {
-      id: 'demo',
-      title: 'Goodbye to Spring',
+  const example = (over: Partial<DemoSongManifest> = {}) =>
+    ({
+      slug: 'josephine',
+      title: "I'll Be Right Behind You, Josephine",
       artist: 'Josh Woodward',
-      stems: { instrumental: '/demo/instrumental.mp3' },
-      lines: [],
-      notes: [],
-      durationSec: 246,
-      origin: 'url',
-    }
+      attribution: { text: '', url: '', license: '', licenseUrl: '' },
+      stems: { instrumental: '/demo/instrumental.m4a' },
+      durationSec: 258,
+      ...over,
+    }) as DemoSongManifest
 
-    const entries = jamSongEntries([null, song])
-    expect(entries).toHaveLength(1)
-    expect(entries[0]?.name).toBe('Goodbye to Spring')
-    expect(entries[0]?.buildSong()).toBe(song)
+  it('lists every example, not the one Karaoke Night opens on', () => {
+    // The shelf used to hold one song. The rest arrived as library rows with
+    // no audio behind them in this browser, and could not be loaded at all.
+    const entries = jamExampleRowEntries(
+      [
+        example({ slug: 'karaoke-night', title: 'Goodbye to Spring' }),
+        example(),
+      ],
+      async () => null,
+    )
+    expect(entries.map((e) => e.name)).toEqual([
+      'Goodbye to Spring',
+      "I'll Be Right Behind You, Josephine",
+    ])
+    expect(entries.map((e) => e.targetId)).toEqual([
+      'karaoke-night-demo',
+      'karaoke-night-demo:josephine',
+    ])
+    expect(entries[1]?.detail).toBe('Josh Woodward · 4:18')
+  })
+
+  it('lists an example without fetching its words until chosen', async () => {
+    const hydrate = vi.fn(async () => null)
+    const manifest = example()
+    const entry = jamExampleRowEntries([manifest], hydrate)[0]
+    expect(hydrate).not.toHaveBeenCalled()
+
+    await expect(entry?.buildSong()).resolves.toBeNull()
+    expect(hydrate).toHaveBeenCalledOnce()
+    expect(hydrate).toHaveBeenCalledWith(manifest)
+  })
+
+  it('says nothing about a length nobody wrote down', () => {
+    const entry = jamExampleRowEntries(
+      [example({ durationSec: undefined })],
+      async () => null,
+    )[0]
+    expect(entry?.detail).toBe('Josh Woodward')
   })
 
   it('lists a separated session without reading its stems until chosen', async () => {
@@ -178,6 +211,8 @@ describe('jam song catalogue loading boundaries', () => {
     const entry = jamSessionRowEntries([row], hydrate)[0]
     expect(entry?.name).toBe('My rehearsal')
     expect(entry?.detail).toBe('your separation')
+    // The id the room will carry, so a list can mark the row that is running.
+    expect(entry?.targetId).toBe('session:local-song')
     expect(hydrate).not.toHaveBeenCalled()
 
     await expect(entry?.buildSong()).resolves.toBeNull()

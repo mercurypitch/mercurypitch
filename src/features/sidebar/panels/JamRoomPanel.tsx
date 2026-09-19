@@ -4,6 +4,11 @@
 // rail is the only roster) and the room's main area keeps every pixel
 // for the stage. Renders nothing until a room is actually active.
 //
+// Below the roster: what the room can sing. The popup over the transport
+// is the same list, but it closes the moment a song is picked -- so going
+// from one song to the next was open, scroll, tap, every time. This one
+// stays put, which is what makes an evening of songs one tap each.
+//
 // Default export: loaded lazily by the registry so the jam stack stays
 // out of the shell chunk.
 
@@ -11,14 +16,30 @@ import type { Component } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { JamPeerList } from '@/components/jam/JamPeerList'
+import { JamPickerList } from '@/components/jam/JamPickerList'
 import { JamPitchDisplay } from '@/components/jam/JamPitchDisplay'
-import { jamConnectedPeers, jamIsMuted, jamPeers, jamRoomId, jamState, } from '@/stores/jam-store'
+import { isMobile } from '@/lib/use-viewport'
+import { jamConnectedPeers, jamExerciseMelody, jamIsHost, jamIsMuted, jamPeers, jamRoomId, jamSong, jamState, } from '@/stores/jam-store'
+import { setSidebarOpen, sidebarOpen } from '@/stores/ui-store'
 import styles from './JamRail.module.css'
 
 const JamRoomPanel: Component = () => {
   const [linkCopied, setLinkCopied] = createSignal(false)
   const roomLink = (): string =>
     `${window.location.origin}/#/jam:${jamRoomId() ?? ''}`
+  /** What the room is running, by name -- all a guest needs to know. */
+  const nowSinging = (): string =>
+    jamSong()?.title ?? jamExerciseMelody()?.name ?? ''
+  /**
+   * Whether the list can be seen at all.
+   *
+   * On a phone the rail is a drawer that slides off-screen rather than
+   * leaving the page, so a closed one kept every row mounted: a second set
+   * of song buttons nobody can see, in the tab order and in the way of
+   * anything looking a song up by name. The list is rebuilt whenever the
+   * library ticks, too -- work worth doing only for a list on screen.
+   */
+  const listOnScreen = (): boolean => !isMobile() || sidebarOpen()
 
   return (
     <Show when={jamState() === 'active'}>
@@ -49,6 +70,41 @@ const JamRoomPanel: Component = () => {
           </div>
           <JamPeerList peers={jamPeers()} />
           <JamPitchDisplay />
+        </div>
+      </CollapsibleSection>
+      <CollapsibleSection
+        title="Songs and drills"
+        storageKey="sidebar-jam-picker-open"
+      >
+        <div data-tour="jam.rail-picker">
+          <Show
+            when={jamIsHost()}
+            fallback={
+              // The host's list is the host's library: their separations,
+              // their melodies. Showing a guest their OWN would offer rows
+              // they cannot pick, so a guest is told the one true thing.
+              <p class={styles.guestNote}>
+                <Show
+                  when={nowSinging() !== ''}
+                  fallback="Nothing is loaded yet."
+                >
+                  Now in the room: <strong>{nowSinging()}</strong>.
+                </Show>{' '}
+                The host picks what the room sings.
+              </p>
+            }
+          >
+            {/* On a phone the rail is a drawer over the stage, so a pick
+                folds it away; on a desk it stays, which is the point. */}
+            <Show when={listOnScreen()}>
+              <JamPickerList
+                variant="rail"
+                onPicked={() => {
+                  if (isMobile()) setSidebarOpen(false)
+                }}
+              />
+            </Show>
+          </Show>
         </div>
       </CollapsibleSection>
     </Show>
