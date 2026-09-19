@@ -644,3 +644,52 @@ describe('attaching lyrics to a loaded song', () => {
     expect(store.jamSong()).toBeNull()
   })
 })
+
+describe('attaching a pitch line to a loaded song', () => {
+  const NOTES = [{ midi: 60, startSec: 0, endSec: 1 }]
+
+  beforeEach(() => {
+    store.clearJamSong()
+    store.setJamError(null)
+    store.setJamPeers([])
+    store.setJamIsHost(false)
+    store.setJamPeerId(null)
+  })
+
+  it('gives the loaded song its target notes', () => {
+    store.selectJamSong(song())
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSong()?.notes).toEqual(NOTES)
+  })
+
+  it('leaves the transport exactly where it was', () => {
+    // The whole reason a late line is sent as a manifest update rather
+    // than as a new song: an analysis finishing mid-verse must not
+    // restart the song under whoever is singing it.
+    store.selectJamSong(song())
+    store.setJamSongPositionSec(42)
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSongPositionSec()).toBe(42)
+    expect(store.jamSong()?.id).toBe('demo')
+  })
+
+  it('ignores a line meant for a song the room has moved on from', () => {
+    // An analysis outlives the song that started it. Applying its result
+    // to whatever is loaded now would draw one song's melody over
+    // another's words.
+    store.selectJamSong(song())
+    store.attachJamSongNotes('some-other-song', NOTES)
+    expect(store.jamSong()?.notes).toEqual([])
+  })
+
+  it('ignores an empty result rather than announcing nothing', () => {
+    store.selectJamSong(song({ notes: NOTES }))
+    store.attachJamSongNotes('demo', [])
+    expect(store.jamSong()?.notes).toEqual(NOTES)
+  })
+
+  it('does nothing when no song is loaded', () => {
+    store.attachJamSongNotes('demo', NOTES)
+    expect(store.jamSong()).toBeNull()
+  })
+})

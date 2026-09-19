@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import { lineAt } from '@/lib/jam/jam-song'
-import { demoSongToJamSong, lrcToSongLines, stripWordTimings, } from '@/lib/jam/jam-song-sources'
+import { demoSongToJamSong, jamSongSessionId, lrcToSongLines, sessionToJamSong, stripWordTimings, } from '@/lib/jam/jam-song-sources'
 
 const manifest = (over: Partial<DemoSongManifest> = {}) =>
   ({
@@ -127,5 +127,32 @@ describe('demoSongToJamSong', () => {
     // The audio element knows the real one once it loads.
     const s = demoSongToJamSong(manifest({ durationSec: undefined }))
     expect(s?.durationSec).toBe(0)
+  })
+})
+
+describe('jamSongSessionId', () => {
+  it('finds the session behind a separated song', () => {
+    expect(jamSongSessionId('session:9f2c')).toBe('9f2c')
+  })
+
+  it('finds the demo, whose song id IS its session id', () => {
+    expect(jamSongSessionId('karaoke-night-demo')).toBe('karaoke-night-demo')
+  })
+
+  it('agrees with the ids the builders actually mint', () => {
+    // The one property that matters: whatever sessionToJamSong writes,
+    // this reads back. A prefix changed in one place and not the other
+    // would silently stop every local song being analysable.
+    const built = sessionToJamSong(
+      { sessionId: 'abc', originalFile: { name: 'x.mp3' } },
+      { instrumental: 'blob:i' },
+    )
+    expect(jamSongSessionId(built!.id)).toBe('abc')
+  })
+
+  it('has nothing to offer for a song that carries its own notes', () => {
+    for (const id of ['', 'session:', 'exercise:scale', 'melody:7', 'weekly']) {
+      expect(jamSongSessionId(id)).toBeNull()
+    }
   })
 })
