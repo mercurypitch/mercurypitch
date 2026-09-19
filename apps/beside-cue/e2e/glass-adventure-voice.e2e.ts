@@ -26,7 +26,10 @@ test.use({
     ],
   },
 })
-test.setTimeout(60_000)
+// A full voice success includes two SwiftShader scene boots: the initial
+// museum and a reload that proves saved progress restores. Shared CI runners
+// can spend more than 20 seconds releasing and rebuilding the WebGL scene.
+test.setTimeout(120_000)
 
 async function openMuseum(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -98,7 +101,7 @@ async function openMuseum(page: Page): Promise<void> {
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
     'true',
-    { timeout: 20_000 },
+    { timeout: 40_000 },
   )
   await expect(
     page.getByRole('button', { name: 'Sing to the glass' }),
@@ -185,7 +188,7 @@ test('silence cannot earn progress; a fresh comfortable hold breaks and survives
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
     'true',
-    { timeout: 20_000 },
+    { timeout: 40_000 },
   )
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-completed',
