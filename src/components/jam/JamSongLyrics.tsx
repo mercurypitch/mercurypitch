@@ -474,6 +474,9 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
             {(line, i) => (
               <div
                 data-line={i()}
+                // Present only where a click really does jump the song: the
+                // stylesheet hangs the pointer cursor on it.
+                data-seekable={props.onSeek !== undefined ? '' : undefined}
                 class={styles.line}
                 style={colorTokenVars(
                   '--singer-color',
