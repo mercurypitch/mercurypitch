@@ -2326,6 +2326,9 @@ async function handleRequest(
     env,
     url.pathname,
     respondNoStore,
+    // Lazy: only the two admin routes ask, and the public unsubscribe link
+    // should not pay for an Access JWT verification.
+    () => isAdmin(request, env),
   )
   if (newsletterResponse) return newsletterResponse
 

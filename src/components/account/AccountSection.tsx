@@ -15,6 +15,7 @@ import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
 import { SupporterBadge } from '@/components/billing/SupporterBadge'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CheckSmall, Pencil, X } from '@/components/icons'
+import { MercuryCheckbox } from '@/components/MercuryCheckbox'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
@@ -525,18 +526,14 @@ export const AccountSection: Component = () => {
             sufficient — nothing is published until this is on. */}
         <Show when={me() != null}>
           <div class={styles.accountField}>
-            <label class={styles.optInRow}>
-              <input
-                type="checkbox"
-                checked={optIn()}
-                disabled={busy()}
-                data-testid="leaderboard-optin"
-                onChange={(e) =>
-                  void setLeaderboardOptIn(e.currentTarget.checked)
-                }
-              />
-              <span>Show me on the public leaderboard</span>
-            </label>
+            <MercuryCheckbox
+              checked={optIn()}
+              disabled={busy()}
+              testId="leaderboard-optin"
+              onChange={(next) => void setLeaderboardOptIn(next)}
+            >
+              Show me on the public leaderboard
+            </MercuryCheckbox>
             <p class={styles.fieldHint}>
               Off by default. Exercise and challenge results rank once you've
               practiced a few days running; free practice and your streak are
@@ -549,16 +546,14 @@ export const AccountSection: Component = () => {
             address to send anything to. */}
         <Show when={me() != null && isUpgraded()}>
           <div class={styles.accountField}>
-            <label class={styles.optInRow}>
-              <input
-                type="checkbox"
-                checked={wantsUpdates()}
-                disabled={busy()}
-                data-testid="newsletter-optin"
-                onChange={(e) => void setWantsUpdates(e.currentTarget.checked)}
-              />
-              <span>Send me product updates</span>
-            </label>
+            <MercuryCheckbox
+              checked={wantsUpdates()}
+              disabled={busy()}
+              testId="newsletter-optin"
+              onChange={(next) => void setWantsUpdates(next)}
+            >
+              Send me product updates
+            </MercuryCheckbox>
             <p class={styles.fieldHint}>
               Off by default. Big new features and milestones only, never more
               than once a month, and never your practice data. Every email has

@@ -18,6 +18,16 @@
   user-select: none;
 }
 
+/* Beside a sentence rather than a phrase: the box lines up with the first
+   line of text instead of floating halfway down the paragraph. */
+.alignStart {
+  align-items: flex-start;
+}
+
+.alignStart .box {
+  margin-top: 1px;
+}
+
 .wrap input {
   position: absolute;
   width: 0;

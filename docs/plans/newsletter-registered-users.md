@@ -1,7 +1,9 @@
 # Newsletter for registered users
 
-**Date**: 2026-09-19 · **Status**: proposed, decisions locked (§9). Phase 1 and
-2 are one PR; phase 3 is the sender and can follow.
+**Date**: 2026-09-19 · **Status**: BUILT (#824) — all three phases, one PR.
+Decisions locked (§9) and all of them held. What remains is operational, not
+code: set `NEWSLETTER_LINK_SECRET` on prod, and add the newsletter line to the
+landing's privacy notice (disjoint-colliders).
 
 A singer who makes an account can ask to hear from us when something real
 ships. Nothing else: no digests, no re-engagement nags, no "we noticed you
@@ -240,5 +242,12 @@ the first opt-in.
 3. **Sender.** The script, the admin recipients route, `newsletterSends`, and
    the privacy note on the landing. Nothing mails anybody until this lands.
 
-Phases 1 and 2 are one PR. Phase 3 follows, because the first send is a
-decision, not a deploy.
+All three shipped together in #824. Phase 3 came out slightly different from
+the sketch above, in one way worth recording: the **worker** sends, not the
+script. `POST /api/newsletter/send` takes the issue's content and does the
+rest, because it already holds `NEWSLETTER_LINK_SECRET` and `RESEND_API_KEY`
+and the operator's laptop should hold neither. `scripts/send-newsletter.mjs`
+is a client — it posts copy and prints what came back.
+
+The privacy-notice line on the landing is the one piece still outstanding; it
+lives in the `disjoint-colliders` repo, not here.

@@ -785,6 +785,167 @@ export function renderLoginCode(v: LoginCodeVars): RenderedEmail {
 
 // ── Sending (Resend) ─────────────────────────────────────────────────
 
+// ── Newsletter issue ─────────────────────────────────────────────────
+//
+// The one message here that is MARKETING rather than transactional, and the
+// difference is the whole design. A transactional mail is sent because
+// somebody just did something; this one is sent because somebody said yes
+// once, possibly months ago, so every copy has to carry the way back out.
+//
+// The unsubscribe URL is per recipient and is minted by the worker, never by
+// the operator's machine — the signing key stays a worker secret. See
+// newsletter.ts.
+
+export interface NewsletterItem {
+  title: string
+  body: string
+  href?: string
+  cta?: string
+}
+
+export interface NewsletterIssueVars {
+  displayName?: string | null
+  /** Subject line, and the headline, so the inbox and the page agree. */
+  subject: string
+  /** The grey preview line inbox lists show beside the subject. */
+  preheader: string
+  /** A sentence or two before the items. */
+  intro: string
+  items: NewsletterItem[]
+  /** This recipient's one-click way out. Required: no link, no send. */
+  unsubscribeUrl: string
+}
+
+/** Pure renderer for one newsletter issue. No I/O, so a script can preview it. */
+export function renderNewsletterIssue(v: NewsletterIssueVars): RenderedEmail {
+  const name = v.displayName?.trim()
+  const greeting = name ? `Hi ${escapeHtml(name)},` : 'Hi there,'
+  const unsub = escapeHtml(v.unsubscribeUrl)
+
+  const itemsHtml = v.items
+    .map((item) => {
+      const link =
+        item.href === undefined || item.href === ''
+          ? ''
+          : `<p style="margin:12px 0 0; font-size:15px;">
+                       <a href="${escapeHtml(item.href)}" style="color:${C.blue}; text-decoration:none; font-weight:600;">${escapeHtml(item.cta ?? 'Take a look')} &rsaquo;</a>
+                     </p>`
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                       style="background:${C.panel}; border:1px solid ${C.border}; border-radius:12px; margin:0 0 16px;">
+                  <tr>
+                    <td style="padding:20px 22px;">
+                      <div style="font-size:17px; line-height:1.35; font-weight:700; color:${C.text};">
+                        ${escapeHtml(item.title)}
+                      </div>
+                      <p style="margin:8px 0 0; font-size:15px; line-height:1.6; color:${C.muted};">
+                        ${escapeHtml(item.body)}
+                      </p>
+                      ${link}
+                    </td>
+                  </tr>
+                </table>`
+    })
+    .join('\n                ')
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>${escapeHtml(v.subject)}</title>
+</head>
+<body style="margin:0; padding:0; background:${C.page}; -webkit-text-size-adjust:100%;">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:${C.page}; font-size:1px; line-height:1px;">
+    ${escapeHtml(v.preheader)}&#8203;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;&#847;
+  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+
+          <!-- wordmark -->
+          <tr>
+            <td style="padding:4px 4px 16px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <a href="${APP_URL}" style="text-decoration:none; color:${C.text}; font-size:18px; font-weight:700; letter-spacing:.2px;">
+                <span style="color:${C.blue};">Mercury</span><span style="color:${C.purple};">Pitch</span>
+              </a>
+            </td>
+          </tr>
+
+          <!-- body card -->
+          <tr>
+            <td style="background:${C.card}; border:1px solid ${C.border}; border-radius:14px; padding:32px 32px 28px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${C.text};">
+
+              <h1 style="margin:0 0 14px; font-size:24px; line-height:1.25; font-weight:700; color:${C.text};">
+                ${escapeHtml(v.subject)}
+              </h1>
+
+              <p style="margin:0 0 18px; font-size:16px; line-height:1.6; color:${C.text};">
+                ${greeting}
+              </p>
+              <p style="margin:0 0 24px; font-size:16px; line-height:1.6; color:${C.muted};">
+                ${escapeHtml(v.intro)}
+              </p>
+
+              ${itemsHtml}
+
+              <!-- CTA -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 8px;">
+                <tr>
+                  <td align="center" bgcolor="${C.blue}" style="border-radius:10px;">
+                    <a href="${APP_URL}"
+                      style="display:inline-block; padding:13px 26px; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#04121f; text-decoration:none; border-radius:10px;">
+                      Open MercuryPitch
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="border-top:1px solid ${C.border}; margin:26px 0 0; padding-top:18px;">
+                <p style="margin:0; font-size:13px; line-height:1.6; color:${C.muted};">
+                  You are getting this because you asked for product updates.
+                  <a href="${unsub}" style="color:${C.blue}; text-decoration:underline;">Unsubscribe</a>
+                  — one click, no sign-in, and it takes effect immediately.
+                </p>
+              </div>
+
+            </td>
+          </tr>
+${footerHtml('You can change this any time in Settings &rsaquo; Account at ')}
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+  const itemsText = v.items
+    .map((item) => {
+      const link =
+        item.href === undefined || item.href === '' ? '' : `\n  ${item.href}`
+      return `* ${item.title}\n  ${item.body}${link}`
+    })
+    .join('\n\n')
+
+  const text = [
+    greeting,
+    '',
+    v.intro,
+    '',
+    itemsText,
+    '',
+    `Open MercuryPitch: ${APP_URL}`,
+    '',
+    '--',
+    'You are getting this because you asked for product updates at mercurypitch.com.',
+    `Unsubscribe: ${v.unsubscribeUrl}`,
+  ].join('\n')
+
+  return { subject: v.subject, html, text }
+}
+
 export interface ResendConfig {
   /** Resend API key. When absent, sending is skipped (feature off). */
   apiKey?: string
@@ -802,23 +963,37 @@ export interface ResendConfig {
 const DEFAULT_FROM = 'MercuryPitch <hello@mercurypitch.com>'
 const DEFAULT_REPLY_TO = 'hello@mercurypitch.com'
 
+/** What Resend said. `id` is its message id, kept only by the newsletter so a
+ *  bounce can be traced back to one send. */
+export interface ResendResult {
+  ok: boolean
+  id?: string
+}
+
 /**
- * Best-effort POST to Resend. Returns true if accepted, false if skipped
+ * Best-effort POST to Resend. Returns ok:true if accepted, ok:false if skipped
  * (no key / no recipient) or the API rejected it. NEVER throws — callers must
  * not let an email failure roll back a signup or a paid credit grant.
  */
-async function resendSend(
+async function resendPost(
   cfg: ResendConfig,
   to: string,
   rendered: RenderedEmail,
-): Promise<boolean> {
+  /**
+   * Extra RFC-5322 headers. Only the newsletter uses this, for
+   * List-Unsubscribe — which Gmail and Yahoo have required of bulk senders
+   * since 2024, and without which a marketing send lands in spam however
+   * clean the list is.
+   */
+  headers?: Record<string, string>,
+): Promise<ResendResult> {
   if (!cfg.apiKey) {
     console.log('[email] RESEND_API_KEY unset — email skipped')
-    return false
+    return { ok: false }
   }
   if (!to || !to.includes('@')) {
     console.log('[email] no recipient email — email skipped')
-    return false
+    return { ok: false }
   }
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -834,19 +1009,38 @@ async function resendSend(
         subject: rendered.subject,
         html: rendered.html,
         text: rendered.text,
+        ...(headers === undefined ? {} : { headers }),
       }),
     })
     if (!res.ok) {
       console.error(
         `[email] Resend rejected (${res.status}): ${await res.text()}`,
       )
-      return false
+      return { ok: false }
     }
-    return true
+    // The id is a nicety, not the verdict: a 200 with an unreadable body is
+    // still a send, and treating it as a failure would mail somebody twice.
+    let id: string | undefined
+    try {
+      const body = (await res.json()) as { id?: unknown }
+      if (typeof body.id === 'string') id = body.id
+    } catch {
+      /* accepted, id unknown */
+    }
+    return { ok: true, id }
   } catch (err) {
     console.error(`[email] Resend request failed: ${String(err)}`)
-    return false
+    return { ok: false }
   }
+}
+
+/** resendPost for the callers that only care whether it went. */
+async function resendSend(
+  cfg: ResendConfig,
+  to: string,
+  rendered: RenderedEmail,
+): Promise<boolean> {
+  return (await resendPost(cfg, to, rendered)).ok
 }
 
 /** Send the purchase thank-you email. Best-effort; see resendSend. */
@@ -928,6 +1122,30 @@ export async function sendLoginCode(
   const ok = await resendSend(cfg, to, renderLoginCode(vars))
   if (ok) console.log(`[email] sign-in code sent to ${to}`)
   return ok
+}
+
+/**
+ * Send one newsletter issue to one recipient. Returns the provider's message
+ * id so the caller can log the send; `ok:false` means nothing was sent.
+ *
+ * Unlike the transactional senders this sets List-Unsubscribe and
+ * List-Unsubscribe-Post, which Gmail and Yahoo require of anyone sending bulk
+ * mail. The POST variant is what makes the inbox's own "unsubscribe" button
+ * appear, and the worker's unsubscribe route accepts POST for exactly that.
+ * It is also why `unsubscribeUrl` is not optional: without a working link this
+ * mail must not go out at all.
+ */
+export async function sendNewsletterIssue(
+  cfg: ResendConfig,
+  to: string,
+  vars: NewsletterIssueVars,
+): Promise<ResendResult> {
+  const result = await resendPost(cfg, to, renderNewsletterIssue(vars), {
+    'List-Unsubscribe': `<${vars.unsubscribeUrl}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+  })
+  if (result.ok) console.log(`[email] newsletter sent to ${to}`)
+  return result
 }
 
 // ── Wiring ───────────────────────────────────────────────────────────
