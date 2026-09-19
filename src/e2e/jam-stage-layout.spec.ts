@@ -19,15 +19,26 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 import { dismissOverlays } from './helpers/ui'
 
 /** A4, which the seeded targets sit around. */
 const TONE = writeToneWav(440, 6)
 
-/** Where the owner picks the screenshots up. */
-const SHOTS = '/home/maff/agent-out/mercurypitch/2026-09-19/jam-zoom'
-mkdirSync(SHOTS, { recursive: true })
+/**
+ * Where a screenshot goes.
+ *
+ * Playwright's own per-test folder by default, so the spec carries no
+ * machine's directory layout around with it. Point JAM_STAGE_ARTIFACTS at
+ * somewhere a person will actually look to collect them instead.
+ */
+function shot(name: string): string {
+  const directory = process.env.JAM_STAGE_ARTIFACTS
+  if (directory === undefined) return test.info().outputPath(name)
+  mkdirSync(directory, { recursive: true })
+  return join(directory, name)
+}
 
 const DEMO_SESSION_ID = 'karaoke-night-demo'
 
@@ -334,7 +345,7 @@ test.describe('the song stage on a desktop', () => {
 
     const atOne = await laneInk(page)
     expect(atOne.painted).toBeGreaterThan(200)
-    await page.screenshot({ path: `${SHOTS}/desktop-zoom-1x.png` })
+    await page.screenshot({ path: shot('desktop-zoom-1x.png') })
 
     const zoomIn = page.getByLabel('Look closer at the pitch lanes')
     await zoomIn.click()
@@ -343,7 +354,7 @@ test.describe('the song stage on a desktop', () => {
     await expect(zoom).toHaveAttribute('data-zoom', '1.953')
     await page.waitForTimeout(500)
     const atTwo = await laneInk(page)
-    await page.screenshot({ path: `${SHOTS}/desktop-zoom-2x.png` })
+    await page.screenshot({ path: shot('desktop-zoom-2x.png') })
 
     // The point of the whole feature: everything is bigger, and less of
     // the song fits. A note is wider and a pill is taller.
@@ -361,7 +372,7 @@ test.describe('the song stage on a desktop', () => {
     await page.waitForTimeout(500)
     const atMax = await laneInk(page)
     expect(atMax.widestRun).toBeGreaterThan(atTwo.widestRun)
-    await page.screenshot({ path: `${SHOTS}/desktop-zoom-max.png` })
+    await page.screenshot({ path: shot('desktop-zoom-max.png') })
 
     // Ctrl+wheel always zooms, wherever the lane list stands.
     const lanes = page.locator('canvas').nth(1)
@@ -396,7 +407,7 @@ test.describe('the song stage on a desktop', () => {
     await expect(split).toHaveAttribute('data-layout', 'wide')
     await expect(handle).toHaveAttribute('aria-orientation', 'vertical')
     await expect(handle).toHaveAttribute('aria-valuenow', '50')
-    await page.screenshot({ path: `${SHOTS}/desktop-split-default.png` })
+    await page.screenshot({ path: shot('desktop-split-default.png') })
 
     const splitBox = await split.boundingBox()
     const handleBox = await handle.boundingBox()
@@ -411,7 +422,7 @@ test.describe('the song stage on a desktop', () => {
     const narrowed = Number(await handle.getAttribute('aria-valuenow'))
     const expected = 50 - (200 / (splitBox?.width ?? 1)) * 100
     expect(Math.abs(narrowed - expected)).toBeLessThanOrEqual(2)
-    await page.screenshot({ path: `${SHOTS}/desktop-split-lanes-wide.png` })
+    await page.screenshot({ path: shot('desktop-split-lanes-wide.png') })
 
     // Past the end it stops rather than collapsing a side.
     await page.mouse.move(grabX - 200, midY)
@@ -419,7 +430,7 @@ test.describe('the song stage on a desktop', () => {
     await page.mouse.move((splitBox?.x ?? 0) - 400, midY, { steps: 8 })
     await page.mouse.up()
     await expect(handle).toHaveAttribute('aria-valuenow', '25')
-    await page.screenshot({ path: `${SHOTS}/desktop-split-min.png` })
+    await page.screenshot({ path: shot('desktop-split-min.png') })
 
     const nowBox = await handle.boundingBox()
     await page.mouse.move((nowBox?.x ?? 0) + (nowBox?.width ?? 0) / 2, midY)
@@ -431,7 +442,7 @@ test.describe('the song stage on a desktop', () => {
     )
     await page.mouse.up()
     await expect(handle).toHaveAttribute('aria-valuenow', '75')
-    await page.screenshot({ path: `${SHOTS}/desktop-split-max.png` })
+    await page.screenshot({ path: shot('desktop-split-max.png') })
 
     // The keyboard reaches all of it too.
     await handle.focus()
@@ -477,7 +488,7 @@ test.describe('the song stage on a desktop', () => {
     const scroll = page.locator('[data-align]').first()
     // Centred out of the box: a lyric column is read like a teleprompter.
     await expect(scroll).toHaveAttribute('data-align', 'center')
-    await page.screenshot({ path: `${SHOTS}/desktop-align-center.png` })
+    await page.screenshot({ path: shot('desktop-align-center.png') })
 
     // Picked with the words hard left, where the column is widest and a
     // short line is most obviously short.
@@ -485,11 +496,11 @@ test.describe('the song stage on a desktop', () => {
     const line = await shortestLyricLine(page)
     const left = await lyricTextBox(page, line)
     expect(left).not.toBeNull()
-    await page.screenshot({ path: `${SHOTS}/desktop-align-left.png` })
+    await page.screenshot({ path: shot('desktop-align-left.png') })
 
     await setAlign(page, 'right')
     const right = await lyricTextBox(page, line)
-    await page.screenshot({ path: `${SHOTS}/desktop-align-right.png` })
+    await page.screenshot({ path: shot('desktop-align-right.png') })
 
     await setAlign(page, 'center')
     const centered = await lyricTextBox(page, line)
@@ -530,7 +541,7 @@ test.describe('the song stage on a desktop', () => {
     await expect(split).toHaveAttribute('data-layout', 'solo')
     await expect(page.getByTestId('jam-split-handle')).toHaveCount(0)
     await expect(page.getByTestId('jam-lane-zoom')).toHaveCount(0)
-    await page.screenshot({ path: `${SHOTS}/desktop-lanes-hidden.png` })
+    await page.screenshot({ path: shot('desktop-lanes-hidden.png') })
 
     // The words take the whole stage rather than half of it.
     const splitBox = await split.boundingBox()
@@ -573,7 +584,7 @@ test.describe('the song stage on a phone', () => {
     await expect(split).toHaveAttribute('data-layout', 'stacked')
     await expect(handle).toHaveAttribute('aria-orientation', 'horizontal')
     await expect(handle).toHaveAttribute('aria-valuenow', '60')
-    await page.screenshot({ path: `${SHOTS}/phone-stacked-default.png` })
+    await page.screenshot({ path: shot('phone-stacked-default.png') })
 
     // A thumb has to be able to find it.
     const handleBox = await handle.boundingBox()
@@ -589,7 +600,7 @@ test.describe('the song stage on a phone', () => {
     const raised = Number(await handle.getAttribute('aria-valuenow'))
     const expected = 60 - (150 / (splitBox?.height ?? 1)) * 100
     expect(Math.abs(raised - expected)).toBeLessThanOrEqual(3)
-    await page.screenshot({ path: `${SHOTS}/phone-stacked-lanes-tall.png` })
+    await page.screenshot({ path: shot('phone-stacked-lanes-tall.png') })
 
     // Its own remembered share: moving it here left the desktop alone.
     const stored = await page.evaluate(() => [
@@ -613,7 +624,7 @@ test.describe('the song stage on a phone', () => {
     await expect(zoom).toHaveAttribute('data-zoom', '1.000')
     await page.getByTitle('Unmute microphone').click()
     await page.waitForTimeout(1200)
-    await page.screenshot({ path: `${SHOTS}/phone-zoom-1x.png` })
+    await page.screenshot({ path: shot('phone-zoom-1x.png') })
     const atOne = await laneInk(page)
 
     const lane = page.locator('canvas').nth(1)
@@ -653,7 +664,7 @@ test.describe('the song stage on a phone', () => {
     await page.waitForTimeout(500)
     const atTwo = await laneInk(page)
     expect(atTwo.widestRun).toBeGreaterThan(atOne.widestRun)
-    await page.screenshot({ path: `${SHOTS}/phone-zoom-2x.png` })
+    await page.screenshot({ path: shot('phone-zoom-2x.png') })
 
     // The buttons are still reachable with a thumb on a coarse pointer.
     const zoomIn = page.getByLabel('Look closer at the pitch lanes')
@@ -669,7 +680,7 @@ test.describe('the song stage on a phone', () => {
     const left = await lyricTextBox(page, line)
     await setAlign(page, 'center')
     const centered = await lyricTextBox(page, line)
-    await page.screenshot({ path: `${SHOTS}/phone-align-center.png` })
+    await page.screenshot({ path: shot('phone-align-center.png') })
     expect(left?.textLeft ?? 0).toBeLessThan(centered?.textLeft ?? 0)
     expect(
       Math.abs((centered?.textCenter ?? 0) - (centered?.rowCenter ?? 0)),
