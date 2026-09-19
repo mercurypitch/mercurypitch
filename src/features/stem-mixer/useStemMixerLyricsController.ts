@@ -9,6 +9,7 @@ import { createPersistedSignal } from '@/lib/storage'
 export type LyricsAlign = 'left' | 'center' | 'right'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { deleteLyricsFromDb, loadLyricsFromDb, saveLyricsToDb, } from '@/db/services/lyrics-db-service'
+import { isDemoSessionId, seedDemoLyricsForSession, } from '@/features/karaoke-night/demo-song'
 import type { RepeatRange } from '@/lib/canonical-lrc'
 import { applyRepeatBlocks, buildCanonicalEntries } from '@/lib/canonical-lrc'
 import { buildLrcTextFromCanonical, buildWordLevelLrc, formatTimeLrc, } from '@/lib/lrc-generator'
@@ -31,6 +32,13 @@ import { useLrcGenController } from './useLrcGenController'
 import { useLyricsBlocksController } from './useLyricsBlocksController'
 import { useLyricsScrollController } from './useLyricsScrollController'
 
+/**
+ * How long the stage waits for an example's authored lyrics before it goes
+ * online for them. Long enough for a lyrics file on a slow phone connection;
+ * short enough that a dead one still ends in the finder, not a spinner.
+ */
+export const EXAMPLE_LYRICS_WAIT_MS = 8000
+
 // ── Deps ──────────────────────────────────────────────────────────
 
 export interface StemMixerLyricsDeps {
@@ -52,6 +60,9 @@ export interface StemMixerLyricsDeps {
    *  the last word across the silence before the next line. Optional: hosts
    *  without pitch analysis keep the estimate-based behavior. */
   melodyNotes?: () => SungNote[]
+  /** How long to wait for an example's authored lyrics before going online
+   *  for them. Defaults to `EXAMPLE_LYRICS_WAIT_MS`. */
+  exampleLyricsWaitMs?: number
 }
 
 // ── Controller return type ────────────────────────────────────────
@@ -777,10 +788,61 @@ export function useStemMixerLyricsController(
     if (seed !== '') await handleSongPickerRefine()
   }
 
+  /**
+   * Wait for an example's own lyrics to be in the store.
+   *
+   * An example ships with its lyrics, and whoever stages it is meant to seed
+   * them first. The song card does. A song sheet pick, a playlist step and
+   * the in-app mixer open it by its row instead — and the row can be in the
+   * library before the lyrics are, because they are written second and an
+   * author can attach them to a song that is already out. Going online at
+   * that point offers the singer a search for words we already have.
+   *
+   * Bounded, because the stage must not hang on a slow connection, and
+   * cancellable like the search it stands in front of. `false` means the
+   * singer cancelled and nothing further should happen on their behalf.
+   */
+  const waitForExampleLyrics = async (): Promise<boolean> => {
+    const controller = new AbortController()
+    abortRef = controller
+    let timedOut = false
+    const timer = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, deps.exampleLyricsWaitMs ?? EXAMPLE_LYRICS_WAIT_MS)
+    setLyricsLoading(true)
+    try {
+      await Promise.race([
+        // Quiet by contract, and guarded anyway: a rejection here would
+        // strand the spinner.
+        seedDemoLyricsForSession(deps.sessionId, controller.signal).catch(
+          () => {},
+        ),
+        new Promise<void>((resolve) => {
+          controller.signal.addEventListener('abort', () => resolve(), {
+            once: true,
+          })
+        }),
+      ])
+    } finally {
+      clearTimeout(timer)
+      if (abortRef === controller) abortRef = null
+    }
+    // A cancel has already put the panel back the way `cancelSearch` wants
+    // it. Otherwise the spinner stays up: the caller takes it down once it
+    // has looked in the store, so "nothing yet" never flashes in between.
+    return !(controller.signal.aborted && !timedOut)
+  }
+
   const loadLyrics = async () => {
     // Populate the local cache from IndexedDB
     if (_lyricsCache() === null) {
-      const dbData = await loadLyricsFromDb(deps.sessionId)
+      let dbData = await loadLyricsFromDb(deps.sessionId)
+      if (dbData === null && isDemoSessionId(deps.sessionId)) {
+        if (!(await waitForExampleLyrics())) return
+        dbData = await loadLyricsFromDb(deps.sessionId)
+        setLyricsLoading(false)
+      }
       if (dbData !== null) {
         _setLyricsCache(dbData as CachedLyricsPayload)
       }
