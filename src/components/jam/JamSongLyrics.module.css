@@ -12,6 +12,28 @@
   overflow: hidden;
 }
 
+/* ── Panel header ───────────────────────────────────────────────────
+   One slim row, for everybody. The assign bar underneath is host-only,
+   so a guest's lyric column used to have no chrome at all -- and no way
+   to say how they want to read it. */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 4px 8px 4px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.headerLabel {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
 .scroll {
   flex: 1;
   min-height: 0;
@@ -32,8 +54,7 @@
   position: relative;
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   padding: 6px 8px;
   border-radius: 6px;
   font-size: 1rem;
@@ -95,7 +116,17 @@
 }
 
 .lineText {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Everything on the row that is not the words. */
+.lineTrail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .lineTime {
@@ -104,6 +135,54 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
   opacity: 0.7;
+}
+
+/* ── Alignment ──────────────────────────────────────────────────────
+   Left and right leave the furniture in the flow at the trailing edge,
+   where it costs nothing. Middle cannot: a row with a score and a name
+   would centre its words in whatever is left over, so the same lyric
+   sits in a different place depending on whether it has been scored yet
+   -- which reads as the column twitching, not as centring. So in Middle
+   the furniture leaves the flow and the row reserves the same gutter on
+   both sides, and the words sit on the PANEL's axis whatever the row
+   carries. */
+.scroll[data-align='left'] .lineText {
+  text-align: left;
+}
+
+.scroll[data-align='right'] .lineText {
+  text-align: right;
+}
+
+.scroll[data-align='center'] .lineText {
+  text-align: center;
+}
+
+.scroll[data-align='center'] .line {
+  /* A share of the ROW, not a fixed guess. 4.25rem is right beside a
+     half-width stage and a third of the width once the seam is dragged
+     to its 25% clamp -- at which point the words break to one per line
+     and the column is unreadable. A percentage in `padding-inline`
+     resolves against the row's inline size, which IS the column, so the
+     reserve follows whatever the viewer chose. (Note the warning in the
+     phone block below: that trap is percentages in the BLOCK direction,
+     which also resolve against width. This one is inline.) */
+  padding-inline: clamp(1.25rem, 12%, 4.25rem);
+}
+
+.scroll[data-align='center'] .lineTrail {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.scroll[data-align='center'] .rest {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-right: 0;
 }
 
 .empty {

@@ -9,6 +9,7 @@
 
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
+import { LyricsAlignSelect } from '@/components/LyricsAlignSelect'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { formatClock } from '@/lib/format-time'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
@@ -16,6 +17,7 @@ import { canAttachLyrics } from '@/lib/jam/jam-lyrics-attach'
 import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
 import { blockOfLine, groupLinesBySinger } from '@/lib/jam/jam-song-blocks'
 import { EVERYONE, singerOfLine } from '@/lib/jam/jam-song-parts'
+import { jamLyricsAlign, setJamLyricsAlign } from '@/lib/jam/jam-view-prefs'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { assignJamSongLines, jamAssignBrush, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
@@ -210,6 +212,17 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
 
   return (
     <div class={styles.panel}>
+      {/* One slim row that everybody gets. The assign bar below is
+          host-only, so until now a guest's lyric column had no chrome at
+          all and no way to say how they want to read it. */}
+      <div class={styles.header}>
+        <span class={styles.headerLabel}>Lyrics</span>
+        <LyricsAlignSelect
+          lyricsAlign={jamLyricsAlign}
+          setLyricsAlign={setJamLyricsAlign}
+          hitTarget="roomy"
+        />
+      </div>
       {/* Inside the panel, not above it. An outer wrapper made the panel a
           flex sibling of the bar, and the scroll box then sized itself
           against the wrong box and overflowed -- on a phone that clipped
@@ -237,6 +250,7 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
         <div
           class={styles.scroll}
           ref={scrollRef}
+          data-align={jamLyricsAlign()}
           style={colorTokenVars(
             '--brush-color',
             colors()[jamAssignBrush() ?? ''] ?? 'rgba(255,255,255,0.6)',
@@ -318,59 +332,76 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                   )}
                 </Show>
                 <span class={styles.lineText}>{line.text}</span>
-                {/* The name rides the FIRST line of a block and nothing
-                    else. Repeating it down a six-line verse is six times
-                    the ink for one fact, and the tint already says the run
-                    belongs together. */}
-                <Show
-                  when={
-                    blockOfLine(blocks(), i())?.fromLine === i() &&
-                    singerOfLine(jamSongParts(), i()) !== null
-                  }
-                >
-                  <span class={styles.singerName}>
-                    {nameOf(singerOfLine(jamSongParts(), i()) ?? '')}
-                  </span>
-                </Show>
-                {/* Only on lines already sung: a score appearing beside the
-                    line you are singing would be judging a phrase that is
-                    not finished. */}
-                <Show when={props.scores?.()[i()]}>
-                  {(s) => (
-                    <span
-                      class={styles.lineScore}
-                      classList={{
-                        [styles[`lineScore_${scoreBand(s().score)}`] ?? '']:
-                          true,
-                      }}
-                      aria-label={`${s().score} out of 100`}
-                    >
-                      {s().score}
-                    </span>
-                  )}
-                </Show>
-                {/* Host-only, and quiet until wanted: a button per line is
-                    a lot of furniture over a lyric sheet, so it only inks
-                    in on hover, on focus, or once the line HAS a singer. */}
-                <Show when={jamIsHost()}>
-                  <button
-                    type="button"
-                    class={styles.assignBtn}
-                    classList={{
-                      [styles.assignBtnSet]:
-                        singerOfLine(jamSongParts(), i()) !== null,
-                    }}
-                    title="Who sings this line"
-                    aria-label={`Who sings line ${i() + 1}`}
-                    onClick={(e) => {
-                      // Or the row's seek would fire underneath it.
-                      e.stopPropagation()
-                      setAssigning(assigning() === i() ? null : i())
-                    }}
+                {/* Everything that is not the words, in one box. Centred
+                    alignment lifts this box out of the flow so the lyric
+                    can sit on the PANEL's axis rather than on whatever
+                    axis is left once a score and a name have had their
+                    share -- which is what made "centred" look off-centre
+                    on exactly the lines a singer looks at most. */}
+                <span class={styles.lineTrail}>
+                  {/* The name rides the FIRST line of a block and nothing
+                      else. Repeating it down a six-line verse is six times
+                      the ink for one fact, and the tint already says the run
+                      belongs together. */}
+                  <Show
+                    when={
+                      blockOfLine(blocks(), i())?.fromLine === i() &&
+                      singerOfLine(jamSongParts(), i()) !== null
+                    }
                   >
-                    <SingerIcon />
-                  </button>
-                </Show>
+                    <span class={styles.singerName}>
+                      {nameOf(singerOfLine(jamSongParts(), i()) ?? '')}
+                    </span>
+                  </Show>
+                  {/* Only on lines already sung: a score appearing beside the
+                      line you are singing would be judging a phrase that is
+                      not finished. */}
+                  <Show when={props.scores?.()[i()]}>
+                    {(s) => (
+                      <span
+                        class={styles.lineScore}
+                        classList={{
+                          [styles[`lineScore_${scoreBand(s().score)}`] ?? '']:
+                            true,
+                        }}
+                        aria-label={`${s().score} out of 100`}
+                      >
+                        {s().score}
+                      </span>
+                    )}
+                  </Show>
+                  <Show when={props.showNotes}>
+                    <span class={styles.lineTime}>
+                      {formatClock(line.startSec)}
+                    </span>
+                  </Show>
+                  {/* Host-only, and quiet until wanted: a button per line is
+                      a lot of furniture over a lyric sheet, so it only inks
+                      in on hover, on focus, or once the line HAS a singer. */}
+                  <Show when={jamIsHost()}>
+                    <button
+                      type="button"
+                      class={styles.assignBtn}
+                      classList={{
+                        [styles.assignBtnSet]:
+                          singerOfLine(jamSongParts(), i()) !== null,
+                      }}
+                      title="Who sings this line"
+                      aria-label={`Who sings line ${i() + 1}`}
+                      onClick={(e) => {
+                        // Or the row's seek would fire underneath it.
+                        e.stopPropagation()
+                        setAssigning(assigning() === i() ? null : i())
+                      }}
+                    >
+                      <SingerIcon />
+                    </button>
+                  </Show>
+                </span>
+                {/* Outside the trail: the popover is positioned against
+                    the ROW, and a trail box that centring makes absolute
+                    would otherwise become its containing block and drop
+                    the menu into the middle of the line. */}
                 <Show when={jamIsHost() && assigning() === i()}>
                   <div class={styles.assign}>
                     <For
@@ -400,11 +431,6 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                       )}
                     </For>
                   </div>
-                </Show>
-                <Show when={props.showNotes}>
-                  <span class={styles.lineTime}>
-                    {formatClock(line.startSec)}
-                  </span>
                 </Show>
               </div>
             )}

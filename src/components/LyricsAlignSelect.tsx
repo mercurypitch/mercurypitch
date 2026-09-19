@@ -13,8 +13,13 @@
 // mistake docs/agent/MISTAKES.md already records (clipped by the panel,
 // stacked under the sidebar, no outside-click close). It also gets keyboard
 // support and touch pickers for free.
+//
+// The chip owns its own stylesheet. It used to be styled from the string in
+// StemMixer.tsx, which meant it rendered as a bare <span> anywhere the mixer
+// was not mounted — and a jam room's lyric column is such a place.
 
 import type { Accessor, Component, Setter } from 'solid-js'
+import './LyricsAlignSelect.css'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
 
@@ -63,15 +68,28 @@ function alignIcon(align: LyricsAlign) {
   )
 }
 
+/**
+ * How much room the host can spare for the chip.
+ *
+ * `compact` matches the other chips in the mixer's dense header, which
+ * has six controls competing for one row. `roomy` grows it past the 24px
+ * touch floor on a coarse pointer, for headers that can afford it.
+ * Explicit at every call site rather than defaulted, so a new host has to
+ * decide rather than inherit somebody else's crowding.
+ */
+export type LyricsAlignHitTarget = 'compact' | 'roomy'
+
 export interface LyricsAlignSelectProps {
   lyricsAlign: Accessor<LyricsAlign>
   setLyricsAlign: Setter<LyricsAlign>
+  hitTarget: LyricsAlignHitTarget
 }
 
 export const LyricsAlignSelect: Component<LyricsAlignSelectProps> = (props) => {
   return (
     <span
       class="sm-lyrics-align-select"
+      data-hit-target={props.hitTarget}
       title={`Lyric alignment: ${ALIGN_LABELS[props.lyricsAlign()]}`}
     >
       {alignIcon(props.lyricsAlign())}
