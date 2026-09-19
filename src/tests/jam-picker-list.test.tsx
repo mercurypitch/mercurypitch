@@ -17,8 +17,13 @@ import type { MelodyData } from '@/types'
 const exampleSong = vi.fn<(m: DemoSongManifest) => Promise<JamSong | null>>()
 const selectJamSong = vi.fn<(song: JamSong) => boolean>(() => true)
 const selectJamExercise = vi.fn()
-/** Which side of the phone breakpoint the panel thinks it is on. */
-const viewport = vi.hoisted(() => ({ phone: false }))
+/**
+ * The two things a page can be asked about its screen, kept apart because
+ * they ARE apart: `phone` is the width the sidebar becomes a drawer at, and
+ * `touch` is a finger instead of a mouse. A tablet is the second without
+ * the first.
+ */
+const viewport = vi.hoisted(() => ({ phone: false, touch: false }))
 
 const EXAMPLES: DemoSongManifest[] = ['Goodbye to Spring', 'Josephine'].map(
   (title, i) => ({
@@ -37,7 +42,9 @@ vi.mock('@/features/karaoke-night/demo-song', async (original) => ({
 }))
 vi.mock('@/lib/use-viewport', async (original) => ({
   ...(await original<typeof ViewportModule>()),
-  isMobile: () => viewport.phone,
+  isNarrow: () => viewport.phone,
+  // True on a phone as well: a narrow screen is "mobile" whatever points at it.
+  isMobile: () => viewport.phone || viewport.touch,
 }))
 vi.mock('@/features/challenges/weekly-service', () => ({
   getActiveWeekly: async () => null,
@@ -72,6 +79,7 @@ const song = (id: string, title = 'Josephine'): JamSong => ({
 beforeEach(async () => {
   localStorage.clear()
   viewport.phone = false
+  viewport.touch = false
   setSidebarOpen(false)
   setJamState('idle')
   setJamSong(null)
@@ -224,6 +232,27 @@ describe('the room panel in the sidebar', () => {
 
     setSidebarOpen(true)
     expect(await josephine()).toBeTruthy()
+  })
+
+  // Owner report (2026-09-20, tablet): the songs were in the popup and the
+  // sidebar had none. The list asked "is this a touch device" when it meant
+  // "is the sidebar a drawer", and a tablet is a touch device whose sidebar
+  // is on the page at full width and never opens as a drawer at all.
+  it('gives a tablet its list: a touch screen is not a drawer', async () => {
+    viewport.touch = true
+    render(() => <JamRoomPanel />)
+    expect(sidebarOpen()).toBe(false)
+    expect(await josephine()).toBeTruthy()
+  })
+
+  it('leaves a tablet sidebar alone after a pick, like a desk', async () => {
+    viewport.touch = true
+    setSidebarOpen(true)
+    exampleSong.mockResolvedValue(song('karaoke-night-demo:josephine'))
+    render(() => <JamRoomPanel />)
+    fireEvent.click(await josephine())
+    await waitFor(() => expect(selectJamSong).toHaveBeenCalled())
+    expect(sidebarOpen()).toBe(true)
   })
 
   it('folds the phone drawer away once a song is picked', async () => {

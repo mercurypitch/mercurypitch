@@ -154,3 +154,46 @@ test.describe('the same list on a phone', () => {
     await expect(page.getByTestId('jam-split-handle')).toBeVisible()
   })
 })
+
+test.describe('the same list on a tablet', () => {
+  // Owner report (2026-09-20): on a tablet the songs were in the popup and
+  // the sidebar had none. The list was mounted "unless this is a touch
+  // device with its drawer shut" -- and a tablet is a touch device whose
+  // sidebar is on the page at full width and never opens as a drawer. Wide
+  // AND touch is the combination no other describe here has.
+  test.use({ viewport: { width: 1180, height: 820 }, hasTouch: true })
+
+  test('is in the sidebar without anything being opened @smoke', async ({
+    page,
+  }) => {
+    await serveDemoStems(page)
+    await openRoom(page)
+
+    const row = rail(page).getByRole('button', { name: /Goodbye to Spring/ })
+    await expect(row).toBeVisible()
+    await expect(row).toBeInViewport()
+
+    await row.click()
+    await expect(page.getByTestId('jam-split-handle')).toBeVisible()
+    // The sidebar is part of the page here, so a pick leaves it where it is.
+    await expect(row).toBeVisible()
+    await expect(row).toHaveAttribute('aria-current', 'true')
+  })
+
+  test('sits clear of the listening pill above it @smoke', async ({ page }) => {
+    await serveDemoStems(page)
+    await openRoom(page)
+
+    const pill = page.getByText('Listening...')
+    const header = page.getByRole('button', { name: /^Songs and drills/ })
+    await expect(pill).toBeVisible()
+    await expect(header).toBeVisible()
+    const above = await pill.locator('..').boundingBox()
+    const below = await header.boundingBox()
+    expect(above).not.toBeNull()
+    expect(below).not.toBeNull()
+    // The two sections share one sidebar panel, which spaces panels and not
+    // what is inside them: the header used to start where the pill ended.
+    expect(below!.y - (above!.y + above!.height)).toBeGreaterThanOrEqual(8)
+  })
+})
