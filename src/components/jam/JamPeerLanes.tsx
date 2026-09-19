@@ -15,6 +15,8 @@ import type { Component } from 'solid-js'
 import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { laneSecToX, laneWindow, liveSampleX, NOW_AT, WINDOW_SEC, } from '@/lib/jam/jam-lane-geometry'
+import type { NoteAccuracy } from '@/lib/jam/jam-pitch-view'
+import { blankNoteAccuracy, easeToward, JAM_BAND_FALLBACK, jamPitchBand, judgeAgainstNote, noteVerdict, observeNoteFrame, sampleMidi, tintForVerdict, } from '@/lib/jam/jam-pitch-view'
 import { groupLinesBySinger, isComingUp, LEAD_IN_SEC, noteSingers, } from '@/lib/jam/jam-song-blocks'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { JamSongNote, TimeStampedPitchSample } from '@/lib/jam/types'
@@ -59,9 +61,28 @@ const NOTE_ALPHA = {
  */
 const GAP_BREAK_MS = 250
 
-/** The vocal range a lane spans, in MIDI. Roughly E2 to C6. */
-const MIDI_MIN = 40
-const MIDI_MAX = 84
+/**
+ * How tall a note pill is drawn, by how well it was sung.
+ *
+ * Height, not only colour: a singer who cannot tell green from amber
+ * can still see which pills came out solid. The neutral value is what
+ * every pill used to be.
+ */
+const PILL_HEIGHT = {
+  perfect: 9,
+  close: 6,
+  miss: 4,
+  neutral: 6,
+} as const
+
+/**
+ * The faintest a note may be drawn once it has been judged.
+ *
+ * Notes nobody was given are drawn very quiet, which is right while
+ * they are ahead of you and wrong the moment you are singing one --
+ * the verdict is the whole point and it cannot be read at 0.22.
+ */
+const JUDGED_ALPHA_FLOOR = 0.5
 
 export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
   const colors = createMemo(() => {
@@ -141,6 +162,15 @@ const Lane: Component<{
     const ctx = canvasRef?.getContext('2d') ?? null
     if (ctx === null || canvasRef === undefined) return
     const canvas = canvasRef
+    // Eased so the lane does not pump every time somebody's range
+    // widens. NaN until the first frame decides where to start.
+    let bandMin = Number.NaN
+    let bandMax = Number.NaN
+    // How each note has gone so far, keyed by where it sits in the
+    // song. Keyed by position rather than by array index because the
+    // notes prop may hand back a fresh array each frame.
+    const accuracy = new Map<string, NoteAccuracy>()
+    let lastPos = 0
 
     const draw = () => {
       const w = canvas.clientWidth
@@ -156,8 +186,40 @@ const Lane: Component<{
       const samples: TimeStampedPitchSample[] =
         jamPitchHistory()[props.peerId] ?? []
       const now = Date.now()
+      const notes = props.notes?.() ?? []
+      const pos = props.positionSec?.() ?? 0
+
+      // A jump backwards is a restart or a seek, and the verdicts
+      // behind it are about a pass that is over.
+      if (pos < lastPos - 0.25) accuracy.clear()
+      lastPos = pos
+
+      // What this lane needs to show: the part being sung if there is
+      // one, otherwise wherever this singer actually is. Either way a
+      // few semitones, not the whole vocal range -- a lane 44 semitones
+      // tall gave a semitone barely a pixel, so a perfect note and a
+      // whole-tone miss drew the same picture.
+      const targetBand =
+        jamPitchBand(notes.map((n) => n.midi)) ??
+        jamPitchBand(
+          samples
+            .filter(
+              (s) =>
+                s.frequency > 0 &&
+                s.midi > 0 &&
+                s.clarity >= MIN_SUNG_CLARITY &&
+                now - s.timestamp <= WINDOW_SEC * 1000,
+            )
+            .map(sampleMidi),
+        ) ??
+        JAM_BAND_FALLBACK
+      bandMin = easeToward(bandMin, targetBand.minMidi)
+      bandMax = easeToward(bandMax, targetBand.maxMidi)
       const midiToY = (midi: number) =>
-        h - ((midi - MIDI_MIN) / (MIDI_MAX - MIDI_MIN)) * h
+        h - ((midi - bandMin) / (bandMax - bandMin)) * h
+
+      const latest: TimeStampedPitchSample | undefined =
+        samples[samples.length - 1]
 
       // A faint centre line gives the eye something to judge against when
       // a singer is silent; without it an empty lane looks broken.
@@ -171,8 +233,6 @@ const Lane: Component<{
       // The target line, behind the trail. Drawn from the SONG clock, not
       // from sample ages: the notes are pinned to the recording, and
       // sliding them by wall time would drift away from the music.
-      const notes = props.notes?.() ?? []
-      const pos = props.positionSec?.() ?? 0
       if (notes.length > 0) {
         const { from: windowFrom, to: windowTo } = laneWindow(pos)
         const secToX = (t: number) => laneSecToX(t, pos, w)
@@ -183,7 +243,11 @@ const Lane: Component<{
           if (n.endSec <= windowFrom || n.startSec >= windowTo) continue
           const owner = owners[i] ?? null
           const isMine = owner !== null && owner === props.peerId
-          const weight = isMine
+          // Notes nobody was given belong to everybody, so this singer
+          // is on the hook for them too -- and in a song with no parts
+          // assigned that is every note there is.
+          const singsThis = owner === null || owner === props.peerId
+          let weight: number = isMine
             ? n.startSec <= pos
               ? NOTE_ALPHA.mine
               : n.startSec - pos <= LEAD_IN_SEC
@@ -196,14 +260,37 @@ const Lane: Component<{
           const x = secToX(n.startSec)
           const width = Math.max(2, secToX(n.endSec) - x)
           const y = midiToY(n.midi)
+
+          // How this note is going, judged only while it is under the
+          // playhead. Silence counts as a frame, and counts against
+          // you: a note nobody sang is a note nobody hit, which is
+          // precisely the case worth showing.
+          let verdict = null
+          if (singsThis) {
+            const key = `${n.startSec.toFixed(3)}:${n.midi}`
+            let acc = accuracy.get(key)
+            if (n.startSec <= pos && pos < n.endSec) {
+              if (acc === undefined) {
+                acc = blankNoteAccuracy()
+                accuracy.set(key, acc)
+              }
+              observeNoteFrame(acc, judgeAgainstNote(latest, n.midi, now))
+            }
+            verdict = acc === undefined ? null : noteVerdict(acc)
+          }
+          if (verdict !== null) weight = Math.max(weight, JUDGED_ALPHA_FLOOR)
+
           // Your own notes take the lane's colour so the target and your
           // trail are visibly the same person's; everyone else's stay
           // neutral, or they would read as a second voice in your lane.
-          ctx.fillStyle = isMine
-            ? hexToRgba(props.color, weight)
-            : `rgba(255,255,255,${weight})`
+          // A judged note is pulled towards green, amber or red from
+          // there, rather than repainted, so it still reads as yours.
+          const base = isMine ? props.color : '#ffffff'
+          ctx.fillStyle = hexToRgba(tintForVerdict(base, verdict), weight)
+          const pillH =
+            verdict === null ? PILL_HEIGHT.neutral : PILL_HEIGHT[verdict]
           ctx.beginPath()
-          ctx.roundRect(x, y - 3, width, 6, 3)
+          ctx.roundRect(x, y - pillH / 2, width, pillH, pillH / 2)
           ctx.fill()
           // An outline on the ones about to arrive. Brightness alone is
           // hard to judge against a photo backdrop; an edge is not.
@@ -211,7 +298,13 @@ const Lane: Component<{
             ctx.strokeStyle = hexToRgba(props.color, 0.95)
             ctx.lineWidth = 1.5
             ctx.beginPath()
-            ctx.roundRect(x, y - 4.5, width, 9, 4)
+            ctx.roundRect(
+              x,
+              y - pillH / 2 - 1.5,
+              width,
+              pillH + 3,
+              pillH / 2 + 1,
+            )
             ctx.stroke()
           }
         }
@@ -250,7 +343,7 @@ const Lane: Component<{
         if (prevTs !== 0 && s.timestamp - prevTs > GAP_BREAK_MS) drawing = false
         prevTs = s.timestamp
         const x = liveSampleX(age, w)
-        const y = midiToY(s.midi)
+        const y = midiToY(sampleMidi(s))
         if (!drawing) {
           ctx.moveTo(x, y)
           drawing = true
