@@ -26,6 +26,26 @@ of pushing — a bad tag is a prod deploy.
    - `src/features/whats-new/whats-new-content.tsx` — only on a new
      `major.minor` line, which is the only thing the panel announces.
 
+0b. **Re-stamp the social cards** (same release PR, before the tag):
+
+```sh
+pnpm run og:versions
+```
+
+Every OG image URL carries the first eight hex digits of its sha256, so a
+recut card is a new address and the platforms re-fetch on their own. A
+silent no-op means the committed map already matches the bytes; a diff
+means a card was regenerated without one, and shipping that leaves the old
+picture in every link ever shared. `og-image-cache-busting.test.ts` recomputes the
+hashes from disk, so CI fails rather than letting it out — run it here so
+that failure does not arrive on the tag.
+
+0c. **Ship the landing first if the app now links to it.** The two deploy on
+separate tags (`mp-v*` for about.mercurypitch.com, `v*` for the app). A
+release that adds or changes a link into the landing — a new page, a new
+query parameter it has to read — must go out behind a landing release that
+already understands it, or the link lands on a page that ignores it.
+
 1. **Sync `main`.**
    - `git fetch origin --tags --prune`
    - `git checkout main`
