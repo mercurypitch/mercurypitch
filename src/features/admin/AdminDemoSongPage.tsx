@@ -29,7 +29,7 @@ import { AlertTriangle, CheckCircle, FileUpload, LinkChain, Plus, RotateCcw, } f
 import { showNotification } from '@/stores/notifications-store'
 import styles from './AdminDemoSongPage.module.css'
 import type { DemoSongDraft, DemoSongRecord } from './demo-song-admin-service'
-import { blankDemoSongDraft, DEFAULT_DEMO_SLUG, loadDemoSongs, loadShippedManifest, normalizeDemoSlug, readLyricsFile, recordToDraft, saveDemoSong, } from './demo-song-admin-service'
+import { blankDemoSongDraft, DEFAULT_DEMO_SLUG, describeLyricsFile, loadDemoSongs, loadShippedManifest, normalizeDemoSlug, readLyricsFile, recordToDraft, saveDemoSong, } from './demo-song-admin-service'
 
 interface AdminDemoSongPageProps {
   adminKey: string
@@ -176,12 +176,7 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
       return
     }
     edit('lyricsText', read.text)
-    const lines = read.text.trim().split('\n').length
-    setFileNote(
-      `Loaded ${file.name} — ${lines} ${lines === 1 ? 'line' : 'lines'}, ${
-        read.format === 'lrc' ? 'timed' : 'plain text'
-      }. Save to publish it.`,
-    )
+    setFileNote(describeLyricsFile(file.name, read))
   }
 
   const revertToShipped = (): void => {
@@ -475,7 +470,7 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
             >
               <input
                 type="file"
-                accept=".lrc,.txt"
+                accept=".lrc,.txt,.lyricsfile"
                 hidden
                 onChange={(e) => {
                   void takeFile(e.currentTarget.files?.[0])
@@ -484,7 +479,7 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
                 }}
               />
               <FileUpload />
-              <span>Drop a .lrc or .txt here, or browse</span>
+              <span>Drop a .lrc, .lyricsfile or .txt here, or browse</span>
               <span class={styles.hint}>
                 It fills the box below — nothing is sent until you save.
               </span>
@@ -513,6 +508,13 @@ export const AdminDemoSongPage: Component<AdminDemoSongPageProps> = (props) => {
                 }}
               />
             </label>
+            <Show when={draft().lyricsText.includes('[x-mp-timing:')}>
+              <p class={styles.hint}>
+                The first line is MercuryPitch's timing tag: the word ends and
+                split words that plain LRC has no room for. Leave it in — the
+                mixer reads it, and other players skip it.
+              </p>
+            </Show>
             <Show when={lyricsChanged() && saved() !== null}>
               <p class={styles.hint}>
                 Saving will bump the lyrics revision, so visitors who have not

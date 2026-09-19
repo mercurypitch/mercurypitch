@@ -8,9 +8,11 @@
 // seed simply gave up whenever a row existed. `shouldSeedLyrics` is the
 // narrow opening that fixes that without ever taking somebody's work.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
-import { DEMO_SESSION_ID, demoIsPlayable, demoSessionId, isDemoSessionId, LEGACY_SLUG, loadDemoSong, loadDemoSongs, shouldSeedLyrics, } from '@/features/karaoke-night/demo-song'
+import { DEMO_SESSION_ID, demoIsPlayable, demoLyricsText, demoSessionId, isDemoSessionId, LEGACY_SLUG, loadDemoSong, loadDemoSongs, shouldSeedLyrics, } from '@/features/karaoke-night/demo-song'
+import { parseLrcTimingMetadata } from '@/lib/lrc-timing-metadata'
+import { serialiseLyricsfile } from '@/lib/lyricsfile'
 
 const SHIPPED: DemoSongManifest = {
   title: 'Shipped Demo',
@@ -173,5 +175,82 @@ describe('loadDemoSong', () => {
       ),
     )
     await expect(loadDemoSong()).resolves.toBeNull()
+  })
+})
+
+describe('demoLyricsText', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const served = (body: string, ok = true) =>
+    vi.fn(async () => ({ ok, text: async () => body }) as Response)
+
+  const withLyrics = (lyrics: string): DemoSongManifest => ({
+    ...SHIPPED,
+    lyrics,
+  })
+
+  it('prefers pasted lyrics and never fetches for them', async () => {
+    const fetchSpy = served('[00:01.00]From the URL')
+    vi.stubGlobal('fetch', fetchSpy)
+    const out = await demoLyricsText({
+      ...withLyrics('https://r2.test/l.lrc'),
+      lyricsText: '[00:02.00]Pasted',
+    })
+    expect(out).toEqual({ text: '[00:02.00]Pasted', format: 'lrc' })
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('reads the format off the path, not the query string', async () => {
+    vi.stubGlobal('fetch', served('[00:01.00]Synced'))
+    // A cache-buster is a normal thing to put on an asset URL.
+    await expect(
+      demoLyricsText(withLyrics('https://r2.test/l.LRC?v=2')),
+    ).resolves.toEqual({ text: '[00:01.00]Synced', format: 'lrc' })
+    await expect(
+      demoLyricsText(withLyrics('https://r2.test/l.txt#top')),
+    ).resolves.toMatchObject({ format: 'txt' })
+  })
+
+  it('converts a .lyricsfile URL, word ends included', async () => {
+    const ends: number[] = []
+    ends[1] = 2.75
+    vi.stubGlobal(
+      'fetch',
+      served(
+        serialiseLyricsfile({
+          lines: [{ time: 1, text: 'Paper boats' }],
+          wordTimings: { 0: [1, 1.6] },
+          wordEndTimings: { 0: ends },
+        }),
+      ),
+    )
+    const out = await demoLyricsText(
+      withLyrics('https://r2.test/demo/lyrics.lyricsfile'),
+    )
+    expect(out?.format).toBe('lrc')
+    expect(out?.text).toContain('[00:01.00] Paper [00:01.60] boats')
+    expect(parseLrcTimingMetadata(out?.text ?? '')?.wordEndTimings[0][1]).toBe(
+      2.75,
+    )
+  })
+
+  it('seeds nothing rather than a page of YAML for a broken .lyricsfile', async () => {
+    vi.stubGlobal('fetch', served('title: not a lyricsfile'))
+    await expect(
+      demoLyricsText(withLyrics('https://r2.test/l.lyricsfile')),
+    ).resolves.toBeNull()
+  })
+
+  it('returns null for an unreachable or empty file', async () => {
+    vi.stubGlobal('fetch', served('anything', false))
+    await expect(
+      demoLyricsText(withLyrics('https://r2.test/l.lrc')),
+    ).resolves.toBeNull()
+    vi.stubGlobal('fetch', served('   \n'))
+    await expect(
+      demoLyricsText(withLyrics('https://r2.test/l.lrc')),
+    ).resolves.toBeNull()
   })
 })

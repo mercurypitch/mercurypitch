@@ -165,6 +165,60 @@ export async function saveDemoSong(
   }
 }
 
+/** What a lyrics file carries beyond its line and word starts. */
+export interface LyricsFileTiming {
+  /** Words with an authored end time. */
+  wordEnds: number
+  /** Words split into sub-word sweeps. */
+  splits: number
+}
+
+export type LyricsFileRead =
+  | {
+      ok: true
+      text: string
+      format: 'lrc' | 'txt'
+      /** Present when the text carries word ends or splits a singer will get. */
+      timing?: LyricsFileTiming
+      /**
+       * The text has an `x-mp-timing` tag that cannot be read. The lyrics
+       * still work; the word ends in it are lost, and the author should hear
+       * that here rather than find out on the stage.
+       */
+      timingUnreadable?: true
+    }
+  | { ok: false; error: string }
+
+const READABLE = ['lrc', 'txt', 'lyricsfile']
+
+function readAsText(file: File): Promise<string | null> {
+  return new Promise<string | null>((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => resolve(null)
+    reader.readAsText(file)
+  })
+}
+
+/** How much a parsed timing extension actually holds. */
+function countTiming(extension: {
+  wordEndTimings: Record<number, (number | undefined)[]>
+  wordSweepTimings: Record<number, Record<number, unknown[]>>
+}): LyricsFileTiming {
+  let wordEnds = 0
+  for (const line of Object.values(extension.wordEndTimings)) {
+    // Sparse: `forEach` skips the holes, which `length` would count.
+    line.forEach((end) => {
+      if (end !== undefined) wordEnds += 1
+    })
+  }
+  let splits = 0
+  for (const line of Object.values(extension.wordSweepTimings)) {
+    splits += Object.values(line).filter((points) => points.length > 0).length
+  }
+  return { wordEnds, splits }
+}
+
 /**
  * Read a dropped or browsed lyrics file into text.
  *
@@ -173,30 +227,94 @@ export async function saveDemoSong(
  * R2 round trip to reach a singer. Every failure is a returned error
  * rather than a throw: the author is mid-form, and losing their other
  * fields to an exception would cost far more than a bad file does.
+ *
+ * A `.lyricsfile` becomes enhanced LRC here, the same conversion the mixer's
+ * own import does, with its word ends and splits riding in the `x-mp-timing`
+ * tag. One stored text is enough: the singer's mixer derives either download
+ * from what it loaded, so there is no second copy to keep in step.
  */
-export async function readLyricsFile(
-  file: File,
-): Promise<
-  | { ok: true; text: string; format: 'lrc' | 'txt' }
-  | { ok: false; error: string }
-> {
-  const ext = file.name.split('.').pop()?.toLowerCase()
-  if (ext !== 'lrc' && ext !== 'txt') {
-    return { ok: false, error: 'Only .lrc and .txt files can be read.' }
+export async function readLyricsFile(file: File): Promise<LyricsFileRead> {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  if (!READABLE.includes(ext)) {
+    return {
+      ok: false,
+      error: 'Only .lrc, .lyricsfile and .txt files can be read.',
+    }
   }
-  const text = await new Promise<string | null>((resolve) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => resolve(null)
-    reader.readAsText(file)
-  })
-  if (text === null) return { ok: false, error: 'That file could not be read.' }
-  if (text.trim() === '') return { ok: false, error: 'That file is empty.' }
+  const raw = await readAsText(file)
+  if (raw === null) return { ok: false, error: 'That file could not be read.' }
+  if (raw.trim() === '') return { ok: false, error: 'That file is empty.' }
+
+  // Both loaded on demand: the YAML parser is heavy, and this page is the
+  // only thing in the studio that ever needs it.
+  const { hasLrcTimingMetadata, parseLrcTimingMetadata } =
+    await import('@/lib/lrc-timing-metadata')
+
+  let text = raw
+  if (ext === 'lyricsfile') {
+    const { lyricsfileToStoredLrc, parseLyricsfile } =
+      await import('@/lib/lyricsfile')
+    const parsed = await parseLyricsfile(raw)
+    if (parsed === null) {
+      return { ok: false, error: 'That is not a valid .lyricsfile.' }
+    }
+    text = lyricsfileToStoredLrc(parsed)
+  }
+
   // Inferred from the CONTENT, not the extension, because that is what
   // the runtime does (`demoLyricsText` looks for [mm:ss stamps). A .lrc
   // with its timestamps stripped is plain text, and the studio has to say
   // so rather than promise a sync the singer will not get.
-  return { ok: true, text, format: LRC_STAMP.test(text) ? 'lrc' : 'txt' }
+  const format = LRC_STAMP.test(text) ? 'lrc' : 'txt'
+  if (!hasLrcTimingMetadata(text)) return { ok: true, text, format }
+
+  const extension = parseLrcTimingMetadata(text)
+  if (extension === null) {
+    return { ok: true, text, format, timingUnreadable: true }
+  }
+  const timing = countTiming(extension)
+  return timing.wordEnds + timing.splits > 0
+    ? { ok: true, text, format, timing }
+    : { ok: true, text, format }
+}
+
+const plural = (n: number, one: string, many: string): string =>
+  `${n} ${n === 1 ? one : many}`
+
+/**
+ * What the studio says after a file lands in the box.
+ *
+ * The timing tag is a line of base64 at the top of the text, and to an
+ * author who has never seen one it looks exactly like a corrupted export.
+ * So the note names what it holds, in the author's terms, and says so just
+ * as plainly when it cannot be read.
+ */
+export function describeLyricsFile(
+  filename: string,
+  read: Extract<LyricsFileRead, { ok: true }>,
+): string {
+  const lines = read.text
+    .split('\n')
+    .filter((l) => l.trim() !== '' && !l.startsWith('[x-mp-timing:')).length
+  const parts = [
+    plural(lines, 'line', 'lines'),
+    read.format === 'lrc' ? 'timed' : 'plain text',
+  ]
+  if (read.timing !== undefined) {
+    const held: string[] = []
+    if (read.timing.wordEnds > 0) {
+      held.push(plural(read.timing.wordEnds, 'word end', 'word ends'))
+    }
+    if (read.timing.splits > 0) {
+      held.push(plural(read.timing.splits, 'split word', 'split words'))
+    }
+    parts.push(`with ${held.join(' and ')}`)
+  }
+  const warning =
+    read.timingUnreadable === true
+      ? ' Its timing tag could not be read, so the word ends in it will be ignored.'
+      : ''
+  return `Loaded ${filename} — ${parts.join(', ')}.${warning} Save to publish it.`
 }
 
 /**
