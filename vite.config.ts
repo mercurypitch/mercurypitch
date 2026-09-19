@@ -722,27 +722,31 @@ export default defineConfig(({ command, mode }) => {
               // and the karaoke entry statically pulls the whole thing.
               return 'pitch-core'
             }
-            if (
-              id.includes('CommunityShare') ||
-              id.includes('CommunityLeaderboard')
-            )
-              return 'community'
-            if (
-              id.includes('PitchTestingTab') ||
-              id.includes('PitchAlgorithmTester') ||
-              id.includes('VocalChallenges') ||
-              id.includes('VocalAnalysis') ||
-              id.includes('UvrPanel') ||
-              id.includes('UvrGuide') ||
-              id.includes('uvr-api') ||
-              id.includes('StemMixer')
-            )
-              return 'advanced'
-            if (
-              id.includes('LibraryModal') ||
-              id.includes('SessionLibraryModal')
-            )
-              return 'library'
+            // No rule names a whole FEATURE into a chunk. Three used to
+            // ('community', 'advanced', 'library', by component name), and
+            // they were the cause of most of the pins above.
+            //
+            // A module named into a manual chunk takes every static
+            // dependency that has no name of its own with it, transitively
+            // (Rollup's addStaticDependenciesToManualChunk). So "StemMixer
+            // goes in 'advanced'" also meant "and so does every unnamed
+            // helper the mixer reaches" -- and the first broad rule to reach
+            // a shared helper owned it. A standalone page that needed that
+            // one helper then loaded the whole chunk, and those chunks
+            // imported each other, so it loaded all of them: the Voice
+            // Mirror downloaded 3.1 MB to run 89 modules, needing 1 of 148
+            // in 'library', 1 of 30 in 'community' and 0 of 340 in
+            // 'advanced'.
+            //
+            // Left alone, Rollup places a module by which entries actually
+            // reach it, which is cycle-free by construction and is what a
+            // standalone page needs. The cost is more, smaller chunks for
+            // the main app (same bytes). What keeps this honest now is
+            // scripts/assert-first-paint-budgets.mjs, which weighs every
+            // document the build emits.
+            //
+            // Do not add a rule here that matches a component or a feature.
+            // Name a LEAF (no app imports of its own) or a vendor package.
           },
         },
       },
