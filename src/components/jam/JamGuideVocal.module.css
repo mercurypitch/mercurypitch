@@ -1,5 +1,6 @@
 /* JamGuideVocal — the karaoke pill, skinned for the jam room.
-   Placement is the consumer's (JamPanel); everything here is skin. */
+   Placement is the consumer's (the lyric panel's corner, or JamPanel's dock
+   on a phone); everything here is skin. */
 
 .pill {
   /* Smaller than the karaoke stage's: that one is the star of a
@@ -27,6 +28,13 @@
   --pill-off-color: var(--red, #f85149);
 
   flex-shrink: 0;
+}
+
+/* Over the lyric sheet. Two classes, so it outranks `.pill` whichever
+   stylesheet the bundler happens to put first. */
+.pill.overWords {
+  --pill-bg: color-mix(in srgb, var(--bg-primary, #0d1117) 90%, transparent);
+  --pill-border: color-mix(in srgb, var(--text-primary) 22%, transparent);
 }
 
 /* PillControl sets aria-pressed from its `off` prop, which is the only

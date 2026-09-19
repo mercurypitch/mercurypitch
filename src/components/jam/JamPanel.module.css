@@ -560,22 +560,36 @@
   display: none;
 }
 
-/* ── The guide-vocal control's two homes ────────────────────────────
-   With the transport controls on a desktop; docked above the tab bar on a
-   phone, where this row scrolls sideways and a control that can scroll out
-   of sight is not one you can grab mid-song.
+/* ── The guide-vocal control's other two homes ──────────────────────
+   Its first home is a corner of the words (JamSongLyrics `.corner`). Two
+   screens have no corner to give:
 
-   Both defaults declared HERE, above the phone block that swaps them. A
+   - a phone, where it is docked above the tab bar within reach of a thumb;
+   - a SHORT screen that is not a phone -- a phone on its side, a small
+     window. The words get a strip a line or two tall there, and a capsule
+     that opens 104px upward has nowhere to open into. It goes back to the
+     playback row, which is where it was before it had a corner.
+
+   The lyric panel hides its corner on exactly these two conditions, so
+   there is only ever one. Keep the three queries in step.
+
+   The defaults are declared HERE, above the blocks that turn them on. A
    media query adds no specificity, so a base rule written below one wins
    outright -- which is exactly how the live-pitch toggle ended up visible
    in two places at once. */
 .guideInline {
-  display: flex;
-  align-items: center;
+  display: none;
 }
 
 .guideDock {
   display: none;
+}
+
+@media (min-width: 641px) and (max-height: 600px) {
+  .guideInline {
+    display: flex;
+    align-items: center;
+  }
 }
 
 /* ── Phone layout ─────────────────────────────────────────────────── */
@@ -691,10 +705,6 @@
 
      One below the bubble's z-index, so an open chat window covers this
      rather than having a mic button floating over its messages. */
-  .guideInline {
-    display: none;
-  }
-
   .guideDock {
     display: flex;
     /* Bottom-aligned, not centred: the pill grows UPWARD out of its

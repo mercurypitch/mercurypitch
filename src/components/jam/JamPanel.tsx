@@ -933,18 +933,19 @@ export const JamPanel: Component = () => {
                   out of a song. Two play buttons writing one playing signal
                   is a room that stops for reasons nobody can see. */}
               <div class={panelStyles.exerciseBar}>
-                {/* The guide vocal, beside play and stop -- it belongs with
-                    the things that decide what you hear, not after the
-                    timeline where it read as part of the scrubber.
+                {/* The guide vocal used to lead this row on every screen. It
+                    is about what YOU hear, and it sat in front of the buttons
+                    that are about what the ROOM does -- so it floats in a
+                    corner of the words now (JamSongStage), and on a phone it
+                    is docked above the tab bar, below.
+
+                    This copy is what is left: a short screen (a phone on its
+                    side) has no corner tall enough for a capsule that opens
+                    upward, and the stylesheet shows this one there instead.
 
                     OUTSIDE the host gate that JamTransport puts around its
                     own buttons: the room's transport is the host's, but how
-                    loud the original singer is in your ears is yours.
-
-                    Hidden on a phone, where it is docked above the tab bar
-                    within reach of a thumb -- this row scrolls sideways
-                    there, and a control that can scroll out of sight is not
-                    one you can grab mid-song. */}
+                    loud the original singer is in your ears is yours. */}
                 <Show
                   when={jamIsSongRoom() && jamSong()?.stems.vocal !== undefined}
                 >
