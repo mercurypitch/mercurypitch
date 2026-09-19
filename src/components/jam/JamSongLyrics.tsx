@@ -185,6 +185,30 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
   const activeRest = () => restAt(rests(), props.positionSec())
 
   /**
+   * How tall the scroll box is, for the centring below.
+   *
+   * The box gets whatever the panel has left over, and that changes under
+   * a song that is standing still: the parts bar wraps onto a second row
+   * as the room fills, the seam is dragged, a phone is turned. Each one
+   * moves the MIDDLE of the box without moving the song, and the line
+   * being sung was left that far from it until the next one came along.
+   */
+  const [boxHeight, setBoxHeight] = createSignal(0)
+
+  /**
+   * Bound from the ref, not from onMount: the box lives under a <Show>
+   * and is rebuilt when a song gains its words, and an onMount binding
+   * would be left watching the element that no longer exists.
+   */
+  const watchBoxHeight = (box: HTMLDivElement): void => {
+    // jsdom has none. The line is still centred every time the song moves.
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => setBoxHeight(box.clientHeight))
+    observer.observe(box)
+    onCleanup(() => observer.disconnect())
+  }
+
+  /**
    * Keep the sung line centred in THIS panel.
    *
    * Not scrollIntoView: it scrolls every scrollable ancestor, so following
@@ -196,18 +220,38 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
    * NEXT line as much as the current one. The clamp is what makes the
    * first and last lines behave -- they simply stop at the ends instead of
    * needing half a panel of padding to centre into.
+   *
+   * It also follows the height of the box, which is read before the early
+   * returns so that it is tracked whether or not a line is current yet.
    */
-  createEffect(() => {
+  createEffect<number | undefined>((lastHeight) => {
+    const height = boxHeight()
     const i = currentIndex()
     const box = scrollRef
-    if (i < 0 || box === undefined) return
+    if (i < 0 || box === undefined) return height
     const el = box.querySelector<HTMLElement>(`[data-line="${i}"]`)
-    if (el === null) return
-    const target = el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2
+    if (el === null) return height
+    // Where the line sits in the box's own content, from the two rects.
+    // Not `el.offsetTop`: that is measured from the offsetParent, which
+    // here is the PANEL (its backdrop-filter makes it one) and not this
+    // box, so it counted the header and the parts bar as lyrics. The
+    // "centred" line sat that much too high -- about 85px, which on a
+    // phone's 210px box is the top edge.
+    const lineTop =
+      el.getBoundingClientRect().top -
+      box.getBoundingClientRect().top -
+      box.clientTop +
+      box.scrollTop
+    const target = lineTop - box.clientHeight / 2 + el.offsetHeight / 2
     box.scrollTo({
       top: Math.max(0, Math.min(target, box.scrollHeight - box.clientHeight)),
-      behavior: 'smooth',
+      // A new line glides into place. A new height must not: a dragged
+      // seam is sixty of these a second, each one restarting the glide,
+      // and the sung line would trail the pointer instead of staying put.
+      behavior:
+        lastHeight === undefined || height === lastHeight ? 'smooth' : 'auto',
     })
+    return height
   })
 
   return (
@@ -252,7 +296,10 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
             preview is the brush, and every row shows the same brush. */}
         <div
           class={styles.scroll}
-          ref={scrollRef}
+          ref={(box) => {
+            scrollRef = box
+            watchBoxHeight(box)
+          }}
           data-align={jamLyricsAlign()}
           style={colorTokenVars(
             '--brush-color',

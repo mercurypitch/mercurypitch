@@ -8,7 +8,8 @@
 // that replaced them with a real pointer, a real wheel and a real
 // two-finger pinch, because none of them can be proved in jsdom: the
 // lanes are a canvas, the split is a grid measured in percentages, and
-// the alignment only shows up in where the glyphs actually land.
+// the alignment only shows up in where the glyphs actually land. Nor can
+// where the sung line sits in its box, which is measured here too.
 //
 // This file exceeds 600 lines to keep the three controls on the one room
 // they share. Seeding the song, the fake microphone and the preview room
@@ -339,6 +340,34 @@ async function setAlign(page: Page, value: 'left' | 'center' | 'right') {
   )
 }
 
+/**
+ * How far a line's middle is from the middle of the box it scrolls in.
+ *
+ * `offBy` of zero is perfectly centred. Only ask it of a line the box CAN
+ * centre: one near either end of the song stops at the end instead, and
+ * asserting that it is centred would be asserting the clamp is broken.
+ * Line 6, where openSongRoom parks the song, is far enough in on both
+ * screens.
+ */
+async function lineOffCentre(page: Page, line: number) {
+  return await page.evaluate((index) => {
+    const row = document.querySelector(`[data-line="${index}"]`)
+    const box = row?.closest('[data-align]')
+    if (row === null || box === null || box === undefined) return null
+    const rowBox = row.getBoundingClientRect()
+    const boxBox = box.getBoundingClientRect()
+    return {
+      offBy: rowBox.top + rowBox.height / 2 - (boxBox.top + boxBox.height / 2),
+      scrollTop: box.scrollTop,
+      boxHeight: box.clientHeight,
+    }
+  }, line)
+}
+
+/** `lineOffCentre` as a distance, for polling: 99 while there is no line. */
+const offCentre = async (page: Page, line: number) =>
+  Math.abs((await lineOffCentre(page, line))?.offBy ?? 99)
+
 // ── Desktop ──────────────────────────────────────────────────────────
 
 test.describe('the song stage on a desktop', () => {
@@ -557,6 +586,21 @@ test.describe('the song stage on a desktop', () => {
     ).toBe('center')
   })
 
+  test('keeps the line being sung in the middle of the words @smoke', async ({
+    page,
+  }) => {
+    await openSongRoom(page)
+    // Parked on line 6, which is far enough into the song to be centred.
+    await expect
+      .poll(async () => (await lineOffCentre(page, 6))?.scrollTop ?? 0)
+      .toBeGreaterThan(0)
+    // The middle of the BOX. The sum used to start from the panel around
+    // it, which has a header and a parts bar on top, and left the sung
+    // line that much too high: 76px, or 100 once the parts bar wraps.
+    await expect.poll(() => offCentre(page, 6)).toBeLessThanOrEqual(4)
+    await page.screenshot({ path: shot('desktop-lyrics-centred.png') })
+  })
+
   test('has nothing to trade when the lanes are hidden @smoke', async ({
     page,
   }) => {
@@ -698,6 +742,33 @@ test.describe('the song stage on a phone', () => {
     const buttonBox = await zoomIn.boundingBox()
     expect(buttonBox?.height ?? 0).toBeGreaterThanOrEqual(24)
     expect(buttonBox?.width ?? 0).toBeGreaterThanOrEqual(24)
+  })
+
+  test('keeps the line being sung in the middle, however tall the words are @smoke', async ({
+    page,
+  }) => {
+    const { handle } = await openSongRoom(page)
+    // A phone's box is a little over 200px, and the old sum was out by
+    // more than 80: the line being sung sat on the top edge of it.
+    await expect.poll(() => offCentre(page, 6)).toBeLessThanOrEqual(4)
+    await page.screenshot({ path: shot('phone-lyrics-centred.png') })
+
+    // Drag the seam up. The words lose height under a song that is
+    // standing still, so nothing but the box has moved -- and the middle
+    // of it has. The line has to follow.
+    const tall = (await lineOffCentre(page, 6))?.boxHeight ?? 0
+    const handleBox = await handle.boundingBox()
+    const grabX = (handleBox?.x ?? 0) + (handleBox?.width ?? 0) / 2
+    const grabY = (handleBox?.y ?? 0) + (handleBox?.height ?? 0) / 2
+    await page.mouse.move(grabX, grabY)
+    await page.mouse.down()
+    await page.mouse.move(grabX, grabY - 70, { steps: 7 })
+    await page.mouse.up()
+    await expect
+      .poll(async () => (await lineOffCentre(page, 6))?.boxHeight ?? tall)
+      .toBeLessThan(tall - 40)
+    await expect.poll(() => offCentre(page, 6)).toBeLessThanOrEqual(4)
+    await page.screenshot({ path: shot('phone-lyrics-centred-short.png') })
   })
 
   test('aligns the words on a narrow column too @smoke', async ({ page }) => {
