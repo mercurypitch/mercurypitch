@@ -109,6 +109,12 @@ export interface JamPitchProvisionRequest {
   isHost: boolean
   /** Where the finished line goes. The store owns the song, not this. */
   onNotes: (songId: string, notes: JamSongNote[]) => void
+  /**
+   * Told when the host has looked and there is no line to be had, so the
+   * room can pass it on. A guest otherwise goes on reading that the host is
+   * the one who can make a pitch guide, about a song the host just tried.
+   */
+  onUnavailable?: (songId: string) => void
 }
 
 /**
@@ -173,6 +179,7 @@ function applyNeed(
         reason: need.reason,
         retryable: false,
       })
+      request.onUnavailable?.(songId)
       return
     case 'analyse':
       void runAnalysis(need.sessionId, need.vocalUrl, request)
@@ -225,6 +232,21 @@ async function runAnalysis(
       startSec: n.startSec,
       endSec: n.endSec,
     }))
+    if (notes.length === 0) {
+      // Not an error, and emphatically not something to retry by itself:
+      // re-running the same settings over the same samples produces the
+      // same nothing, forever, on a device that is now warm.
+      //
+      // And not something to write down. A stored analysis with no notes
+      // in it does not spare the next room the work -- an empty line reads
+      // back as "never analysed" -- while the mixer takes the record to
+      // mean the song HAS been analysed and stops offering to. Where a raw
+      // line was being replaced it would also destroy the only line there
+      // is.
+      inFlight = null
+      fail(songId, NOTHING_HEARD_REASON, true, request)
+      return
+    }
     // Persisted before it is announced, so a reload or a second room on
     // this device finds it rather than working it out again. A storage
     // failure is not worth losing the line over -- the room has the notes
@@ -232,14 +254,6 @@ async function runAnalysis(
     await seams.save(sessionId, analysis).catch(() => undefined)
     if (inFlight?.controller !== controller) return
     inFlight = null
-
-    if (notes.length === 0) {
-      // Not an error, and emphatically not something to retry by itself:
-      // re-running the same settings over the same samples produces the
-      // same nothing, forever, on a device that is now warm.
-      fail(songId, NOTHING_HEARD_REASON, true)
-      return
-    }
 
     batch(() => {
       setJamPitchProvision({ ...JAM_PITCH_IDLE, songId })
@@ -256,11 +270,23 @@ async function runAnalysis(
       return
     }
     console.error('[JamPitch] analysis failed', error)
-    fail(songId, FAILED_REASON, true)
+    fail(songId, FAILED_REASON, true, request)
   }
 }
 
-function fail(songId: string, reason: string, retryable: boolean): void {
+function fail(
+  songId: string,
+  reason: string,
+  retryable: boolean,
+  request: JamPitchProvisionRequest,
+): void {
+  if (request.song.notes.length > 0) {
+    // This run was replacing a raw line, and the raw line is still there.
+    // The singer has something to aim at and never asked for anything, so
+    // a warning about work they did not know was happening is only noise.
+    setJamPitchProvision({ ...JAM_PITCH_IDLE, songId })
+    return
+  }
   setJamPitchProvision({
     phase: 'unavailable',
     progress: 0,
@@ -268,5 +294,6 @@ function fail(songId: string, reason: string, retryable: boolean): void {
     reason,
     retryable,
   })
+  request.onUnavailable?.(songId)
   showNotification(reason, 'warning', { channel: CHANNEL })
 }
