@@ -15,7 +15,25 @@ test.use({
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
   },
 })
-test.setTimeout(90_000)
+test.setTimeout(120_000)
+
+async function suspendRasterOutput(page: Page): Promise<void> {
+  await page
+    .getByLabel('Floating glass museum')
+    .evaluate((canvas: HTMLCanvasElement) => {
+      const gl = canvas.getContext('webgl2')
+      if (gl === null)
+        throw new Error('The museum WebGL2 context is unavailable')
+      const noop = () => undefined
+      Object.defineProperties(gl, {
+        clear: { configurable: true, value: noop },
+        drawArrays: { configurable: true, value: noop },
+        drawArraysInstanced: { configurable: true, value: noop },
+        drawElements: { configurable: true, value: noop },
+        drawElementsInstanced: { configurable: true, value: noop },
+      })
+    })
+}
 
 async function openMuseum(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -69,8 +87,12 @@ async function openMuseum(page: Page): Promise<void> {
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
     'true',
-    { timeout: 30_000 },
+    { timeout: 40_000 },
   )
+  // These checks exercise audio lifecycle, native controls and layout after a
+  // real scene load. Stop pixel raster work so SwiftShader cannot delay the
+  // persistence reload while the game loop and UI continue normally.
+  await suspendRasterOutput(page)
 }
 
 test('exploration music stops before capture and stays stopped after background', async ({
@@ -185,7 +207,7 @@ for (const width of [390, 820, 1280]) {
     await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
       'data-ready',
       'true',
-      { timeout: 30_000 },
+      { timeout: 40_000 },
     )
     await page.getByRole('button', { name: 'Pause game' }).click()
     await expect(dialog.getByLabel('Mute music and ambience')).toBeChecked()
