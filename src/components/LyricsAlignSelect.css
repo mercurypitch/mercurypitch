@@ -1,0 +1,64 @@
+/* LyricsAlignSelect — the one-chip lyric alignment control.
+ *
+ * These rules lived inside the StemMixerStyles string, which is injected
+ * only where the mixer is mounted. The chip is shared now (a jam room's
+ * lyric column has one too), and a control that is unstyled outside one
+ * host is a control that reads as broken everywhere else. Global class
+ * names, unchanged, so every mixer layout keeps its existing appearance.
+ */
+
+.sm-lyrics-align-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.15rem;
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.2rem;
+  color: var(--fg-secondary, #8b949e);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sm-lyrics-align-select:hover,
+.sm-lyrics-align-select:focus-within {
+  border-color: var(--accent, #58a6ff);
+  color: var(--accent, #58a6ff);
+}
+
+/* Covers the chip so the whole thing is the hit target, and carries the
+   focus ring to the wrapper via :focus-within above. */
+.sm-lyrics-align-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The menu itself is drawn by the browser, so it needs real colours — an
+   inherited transparent background renders unreadable on Windows/Linux. */
+.sm-lyrics-align-select option {
+  background: var(--bg-secondary, #161b22);
+  color: var(--fg-primary, #e6edf3);
+}
+
+/* A thumb needs more than a 22x18 chip — but only where the host has the
+   room. The mixer's header has six chips in one row and asks for
+   `compact`; a jam room's header carries this one control and asks for
+   `roomy`, which clears the 24px touch floor. */
+@media (pointer: coarse) {
+  .sm-lyrics-align-select[data-hit-target='roomy'] {
+    width: 1.8rem;
+    height: 1.7rem;
+  }
+}

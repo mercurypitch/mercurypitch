@@ -103,6 +103,7 @@ export const StemMixerPerformanceWorkspace: Component<
               <LyricsAlignSelect
                 lyricsAlign={props.lyricsAlign}
                 setLyricsAlign={props.setLyricsAlign}
+                hitTarget="compact"
               />
               <Show when={lp().lyricsSource() === 'none'}>
                 <button

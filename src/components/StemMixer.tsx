@@ -7757,54 +7757,12 @@ export const StemMixerStyles: string = `
 .sm-perf-title {
   font-weight: 600;
 }
-/* Lyric alignment: one chip, not three buttons — see LyricsAlignSelect for
-   why. The icon is the visible control and the native <select> lies
-   transparently on top of it, so the browser draws the menu and we own no
-   popover positioning. Sized like the other header chips. */
-.sm-lyrics-align-select {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.35rem;
-  height: 1.15rem;
-  background: transparent;
-  border: 1px solid var(--border, #30363d);
-  border-radius: 0.2rem;
-  color: var(--fg-secondary, #8b949e);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.sm-lyrics-align-select:hover,
-.sm-lyrics-align-select:focus-within {
-  border-color: var(--accent, #58a6ff);
-  color: var(--accent, #58a6ff);
-}
-
-/* Covers the chip so the whole thing is the hit target, and carries the
-   focus ring to the wrapper via :focus-within above. */
-.sm-lyrics-align-select select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: none;
-  opacity: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  font: inherit;
-  cursor: pointer;
-}
-
-/* The menu itself is drawn by the browser, so it needs real colours — an
-   inherited transparent background renders unreadable on Windows/Linux. */
-.sm-lyrics-align-select option {
-  background: var(--bg-secondary, #161b22);
-  color: var(--fg-primary, #e6edf3);
-}
+/* Lyric alignment (.sm-lyrics-align-select) is styled by the component
+   itself now — LyricsAlignSelect.css, imported from LyricsAlignSelect.tsx.
+   It lived here while the mixer was its only host, which meant the chip
+   rendered unstyled anywhere the mixer was not mounted; a jam room's lyric
+   column is such a place. Same class name, so every mixer layout is
+   unchanged. */
 
 .sm-sidebar {
   width: 240px;
