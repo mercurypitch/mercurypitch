@@ -8,7 +8,7 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import type { WeeklyChallenge } from '@/features/challenges/weekly-service'
 import { getActiveWeekly } from '@/features/challenges/weekly-service'
-import { DEMO_SESSION_ID, loadDemoSong, } from '@/features/karaoke-night/demo-song'
+import { DEMO_SESSION_ID, demoLyricsText, loadDemoSong, } from '@/features/karaoke-night/demo-song'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { activePathWeek } from '@/features/path/path-progress'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
@@ -282,15 +282,15 @@ export const JamPanel: Component = () => {
           return
         }
         let lines: LyricsLineTiming[] = []
-        const lyricsUrl = manifest.lyrics ?? ''
-        if (lyricsUrl.toLowerCase().endsWith('.lrc')) {
-          // Straight from the URL rather than the local lyrics db: the room
-          // wants the timings, not a copy of someone's edits, and every peer
-          // must end up with the same lines.
-          const text = await fetch(lyricsUrl)
-            .then((r) => (r.ok ? r.text() : ''))
-            .catch(() => '')
-          if (text !== '') lines = lrcToSongLines(parseLrcFile(text))
+        // Straight from the manifest rather than the local lyrics db: the
+        // room wants the timings, not a copy of someone's edits, and every
+        // peer must end up with the same lines. demoLyricsText is the one
+        // reader that knows all three shapes the studio can publish --
+        // pasted text, a .lrc, and a .lyricsfile, which the room used to
+        // skip entirely because it only looked at the extension.
+        const lyrics = await demoLyricsText(manifest).catch(() => null)
+        if (lyrics !== null && lyrics.format === 'lrc') {
+          lines = lrcToSongLines(parseLrcFile(lyrics.text))
         }
         // The demo is a normal session as far as analysis is concerned, so
         // if it has been opened in the mixer once there is a vocal line to
