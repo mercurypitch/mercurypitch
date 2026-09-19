@@ -4,7 +4,7 @@ import { Settings, X } from '@/components/icons'
 import type { DragGestureOptions } from '@/components/shared/drag-gesture'
 import { dragGesture } from '@/components/shared/drag-gesture'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import type { AnalysisAlgorithm } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
+import type { AnalysisAlgorithm } from '@/lib/pitch-pipeline'
 import { NOTE_NAMES } from '@/lib/scale-data'
 import styles from './StemMixerPitchAnalysisPanel.module.css'
 
