@@ -9,6 +9,77 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.11] - 2026-09-20
+
+Four things from the owner's tablet pass over 0.9.10 on prod, all in the jam
+room.
+
+### The sidebar song list was empty on a tablet
+
+`JamRoomPanel` mounts `JamPickerList` only when the list is on screen, so a
+phone does not load a library behind a closed drawer:
+`!isMobile() || sidebarOpen()`. `isMobile()` is
+`(max-width: 768px), (pointer: coarse)` -- true for ANY touch screen. A tablet
+in landscape keeps the sidebar on the page at full width and never opens a
+drawer, so `sidebarOpen()` stayed false and the list was never mounted. The
+popup picker has no such gate, which is why the songs were there and not here.
+
+The question being asked was "is the sidebar a drawer", and the drawer is
+turned on by `AppSidebar.module.css` at `(max-width: 768px)`. That is
+`isNarrow()`. The pick handler closes the drawer on the same condition now.
+Two unit tests (a touch tablet mounts the list; a pick there leaves the
+sidebar alone) were written first and fail on the old panel; a browser spec
+runs the room at 1180x820 with `hasTouch`.
+
+### The list sat flush under the listening pill
+
+`AppSidebar` spaces its PANELS (`gap: 10px`), and the room card and the song
+list are two `CollapsibleSection`s inside one panel. They get a flex column
+with the same gap. The spec measures it.
+
+### The pitch-guide caption is gone; the notices stay
+
+`JamPeerLanes` drew "Pitch guide: saved on this device" (and three siblings)
+above the lanes whenever a guide existed -- a row taken for good to say
+something once. It is removed along with `GUIDE_CREDIT_TEXT`. The `working`
+and `unavailable` notices are untouched, and a guide made in the room is
+still announced by the existing "Pitch guide ready" toast. The banner's
+`ready` kind keeps its `credit`; nothing draws it.
+
+### The guide vocal has three homes, one at a time
+
+It led the playback row: the first button of the transport and the one thing
+in it that is not transport. It now floats over the words, the way the sing
+pill does on the karaoke stage.
+
+- `JamSongLyrics` takes `corner?: () => JSX.Element` and owns WHERE: right
+  corner for left and centre alignment, left corner for right alignment. The
+  right corner has the who-sings column at the trailing edge of every row
+  (16px gutter + 20px button), so the control is inset 52px. The scroller
+  gets 56px of bottom padding so the last line rests above it, and a song
+  with no words (the finder has the panel, and scrolls itself from another
+  stylesheet) gets the same room from `data-wordless` on the panel.
+- The control is built ONCE per appearance. The stage's song object is
+  replaced whenever its words, notes or parts change; an inline builder is a
+  new function each time, and the first version rebuilt the pill on every
+  such change -- which showed up as one browser test reading a null box, and
+  would have dropped a drag mid-song. The stage now passes one stable builder
+  behind a memo, and the panel builds untracked behind a boolean `when`.
+- Over text the room's glass is wrong (the level track opened with a lyric
+  running through it), so `JamGuideVocal` takes `overWords` for a near-solid
+  capsule.
+- A phone (`max-width: 640px`) keeps the dock above the tab bar. A SHORT
+  screen that is not a phone (`max-height: 600px`: a phone on its side, a
+  small window) leaves the words a strip a line or two tall, the capsule
+  opens 104px upward, and the panel clips what does not fit -- at 844x390
+  the control was invisible. There it goes back to the playback row. The
+  three media queries are mutually exclusive and a unit test reads both
+  stylesheets to keep them in step.
+
+Measured with a throwaway probe at the minimum split share: the expanded
+capsule fits at 1180x820, 820x1180, 1024x600 and 1366x640. Not tried on a
+real tablet or phone.
+
 ## [0.9.10] - 2026-09-19
 
 The 0.9.8 audit follow-ups (#822), the support address coming out of the
