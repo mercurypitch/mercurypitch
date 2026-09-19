@@ -17,6 +17,7 @@ import { createJamGuidePlayer } from '@/lib/jam/jam-guide-player'
 import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
 import { lyricLineProgress } from '@/lib/jam/jam-song'
+import { createJamSongTransport } from '@/lib/jam/jam-song-transport'
 import { followMediaClock } from '@/lib/jam/media-clock'
 import { initAudioEngine } from '@/stores/app-store'
 import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPlay, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
@@ -72,6 +73,36 @@ export const JamSongStage: Component = () => {
     context: () => engineContext,
   })
   onCleanup(() => guidePlayer.dispose())
+
+  /**
+   * Every audible edge of the backing track goes through here.
+   *
+   * The element used to be driven bare -- play(), pause(), currentTime --
+   * and each of those is a full-scale step in one sample. In a room that
+   * is a loud pop on every stop and every start, which is most of what a
+   * practice consists of. See jam-song-transport.ts for why it attaches
+   * to the graph lazily rather than on mount.
+   */
+  const transport = createJamSongTransport({
+    element: () => audioRef,
+    context: () => engineContext,
+  })
+  onCleanup(() => transport.dispose())
+
+  /**
+   * Have a context ready before anyone presses Play.
+   *
+   * Otherwise one exists only once the guide vocal has been unmuted, and
+   * a singer who never touches the guide would get the un-enveloped path
+   * for the whole session -- which is to say, the pop. Constructing the
+   * engine does not start it; the unlock listeners below resume it on the
+   * first tap in the room.
+   */
+  onMount(() => {
+    void initAudioEngine().then((engine) => {
+      engineContext ??= engine.getAudioContext()
+    })
+  })
 
   /**
    * Recovery for a context that went to sleep. The guide can be started
@@ -353,8 +384,7 @@ export const JamSongStage: Component = () => {
     // Token 0 is "nobody has asked yet" -- without this the effect would
     // rewind a freshly opened song to zero on mount.
     if (req.token === 0) return
-    const el = audioRef
-    if (el !== undefined) el.currentTime = req.toSec
+    transport.seek(req.toSec)
     // A buffer source cannot be seeked; restarting at the offset IS the
     // seek. Gated on wanted, not on playing(): a guide that ran off the
     // end of a short vocal stem is stopped, and a seek back into the song
@@ -372,20 +402,19 @@ export const JamSongStage: Component = () => {
    * resolved yet, which the browser resolves by staying paused.
    */
   createEffect(() => {
-    const el = audioRef
-    if (el === undefined) return
+    if (audioRef === undefined) return
     if (jamExercisePlaying() && !jamExercisePaused()) {
       // A refused play() used to be swallowed by an empty catch, which is
       // how a room could sit there "playing" in total silence. Autoplay
       // policy is the usual reason and the user can fix it in one tap, but
       // only if somebody tells them.
-      void el.play().catch((err: unknown) => {
+      void transport.play().catch((err: unknown) => {
         const why = explainPlayFailure(err)
         setJamError(why)
         if (!jamIsHost()) setJamExercisePaused(true)
       })
     } else {
-      el.pause()
+      transport.pause()
     }
   })
 
@@ -493,7 +522,7 @@ export const JamSongStage: Component = () => {
     const target = jamSongHostTarget()
     if (el === undefined || jamIsHost()) return
     if (Math.abs(el.currentTime - target) > RESYNC_THRESHOLD_SEC) {
-      el.currentTime = target
+      transport.seek(target)
     }
   })
 
