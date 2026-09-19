@@ -26,13 +26,15 @@ import { computeBackingSize } from '@/lib/canvas-size-sync'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { laneSecToX, laneWindow, laneWindowSec, liveSampleX, NOW_AT, } from '@/lib/jam/jam-lane-geometry'
 import { JAM_NOTE_LABEL_MIN_PILL, jamLaneMinSpan, jamPillHeight, jamTrailWidth, laneBandMidis, steppedJamZoom, zoomFromPinch, zoomFromWheel, } from '@/lib/jam/jam-lane-zoom'
+import { jamPitchBanner } from '@/lib/jam/jam-pitch-provision'
 import type { NoteAccuracy } from '@/lib/jam/jam-pitch-view'
 import { blankNoteAccuracy, easeToward, JAM_BAND_FALLBACK, jamPitchBand, judgeAgainstNote, midiLabel, noteVerdict, observeNoteFrame, sampleMidi, tintForVerdict, } from '@/lib/jam/jam-pitch-view'
 import { groupLinesBySinger, isComingUp, LEAD_IN_SEC, noteSingers, } from '@/lib/jam/jam-song-blocks'
 import { jamLaneZoom, setJamLaneZoom } from '@/lib/jam/jam-view-prefs'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { JamSongNote, TimeStampedPitchSample } from '@/lib/jam/types'
-import { jamPeers, jamPitchHistory, jamSong, jamSongParts, MIN_SUNG_CLARITY, } from '@/stores/jam-store'
+import { jamPitchProvision, retryJamSongPitch, } from '@/stores/jam-pitch-provision-store'
+import { jamIsHost, jamPeers, jamPitchHistory, jamSong, jamSongParts, MIN_SUNG_CLARITY, } from '@/stores/jam-store'
 import styles from './JamPeerLanes.module.css'
 
 interface JamPeerLanesProps {
@@ -196,34 +198,110 @@ export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
     })
   })
 
+  /**
+   * What, if anything, the lanes have to say for themselves.
+   *
+   * A blank lane is the one state a singer cannot read: a song with no
+   * pitch guide and a song whose guide failed to load looked identical,
+   * and both looked like a bug.
+   */
+  const banner = createMemo(() =>
+    jamPitchBanner(jamPitchProvision(), jamSong(), jamIsHost()),
+  )
+  const working = createMemo(() => {
+    const shown = banner()
+    return shown.kind === 'working' ? shown : null
+  })
+  const unavailable = createMemo(() => {
+    const shown = banner()
+    return shown.kind === 'unavailable' ? shown : null
+  })
+
   return (
     <div class={styles.root}>
-      <div class={styles.lanes} ref={listRef}>
-        <For each={lanes()}>
-          {(lane) => (
-            <Lane
-              peerId={lane.id}
-              name={lane.name}
-              color={colors()[lane.id] ?? '#58a6ff'}
-              notes={props.notes}
-              noteOwners={owners}
-              positionSec={props.positionSec}
-              cued={() =>
-                isComingUp(blocks(), lane.id, props.positionSec?.() ?? 0)
-              }
-            />
-          )}
-        </For>
-      </div>
-      {/* Outside the scroller on purpose: inside it, the control scrolls
-          away the moment a fourth singer joins. */}
-      <div class={styles.zoomDock}>
-        <JamLaneZoomControl
-          zoom={jamLaneZoom}
-          onZoomIn={() => setJamLaneZoom(steppedJamZoom(jamLaneZoom(), 1))}
-          onZoomOut={() => setJamLaneZoom(steppedJamZoom(jamLaneZoom(), -1))}
-          onReset={() => setJamLaneZoom(1)}
-        />
+      {/* Above the lanes, not over them: a song with no pitch guide is
+          still a song you can sing, so the lanes, the words and your own
+          trail all stay where they are and this explains the empty
+          target. Above rather than below because the room's chat bubble
+          is fixed in the viewport's bottom-right corner, and a strip
+          down there puts its one button underneath it. */}
+      <Show when={working()}>
+        {(shown) => (
+          <div
+            class={styles.notice}
+            data-state="working"
+            data-testid="jam-pitch-notice"
+          >
+            <span class={styles.noticeText} aria-live="polite">
+              Working out the pitch guide
+            </span>
+            <div
+              class={styles.progress}
+              role="progressbar"
+              aria-label="Working out the pitch guide"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={shown().progress}
+            >
+              <div
+                class={styles.progressFill}
+                style={{ width: `${shown().progress}%` }}
+              />
+            </div>
+            <span class={styles.percent}>{shown().progress}%</span>
+          </div>
+        )}
+      </Show>
+      <Show when={unavailable()}>
+        {(shown) => (
+          <div
+            class={styles.notice}
+            data-state="unavailable"
+            role="status"
+            aria-live="polite"
+            data-testid="jam-pitch-notice"
+          >
+            <span class={styles.noticeText}>{shown().message}</span>
+            <Show when={shown().retry}>
+              <button
+                type="button"
+                class={styles.retry}
+                onClick={() => retryJamSongPitch()}
+              >
+                Try again
+              </button>
+            </Show>
+          </div>
+        )}
+      </Show>
+      <div class={styles.laneArea}>
+        <div class={styles.lanes} ref={listRef}>
+          <For each={lanes()}>
+            {(lane) => (
+              <Lane
+                peerId={lane.id}
+                name={lane.name}
+                color={colors()[lane.id] ?? '#58a6ff'}
+                notes={props.notes}
+                noteOwners={owners}
+                positionSec={props.positionSec}
+                cued={() =>
+                  isComingUp(blocks(), lane.id, props.positionSec?.() ?? 0)
+                }
+              />
+            )}
+          </For>
+        </div>
+        {/* Outside the scroller on purpose: inside it, the control scrolls
+            away the moment a fourth singer joins. */}
+        <div class={styles.zoomDock}>
+          <JamLaneZoomControl
+            zoom={jamLaneZoom}
+            onZoomIn={() => setJamLaneZoom(steppedJamZoom(jamLaneZoom(), 1))}
+            onZoomOut={() => setJamLaneZoom(steppedJamZoom(jamLaneZoom(), -1))}
+            onReset={() => setJamLaneZoom(1)}
+          />
+        </div>
       </div>
     </div>
   )

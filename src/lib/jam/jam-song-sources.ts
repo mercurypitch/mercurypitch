@@ -12,6 +12,17 @@ import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
 import type { LrcLine } from '@/lib/lyrics-service'
 
 /**
+ * Song id of the Karaoke Night demo, which is also its session id: the
+ * demo stores lyrics, pitch analysis and scores in the local db exactly
+ * like a separation does (features/karaoke-night/demo-song's
+ * DEMO_SESSION_ID, spelled here so this module stays in its own layer).
+ */
+export const DEMO_SONG_ID = 'karaoke-night-demo'
+
+/** What a separated session's song id is prefixed with. */
+export const SESSION_SONG_PREFIX = 'session:'
+
+/**
  * LRC lines into song lines.
  *
  * LrcLine is already `{ time (seconds), text }`, so this is a rename plus
@@ -71,7 +82,7 @@ export function sessionToJamSong(
 ): JamSong | null {
   if (urls.instrumental === '') return null
   return {
-    id: `session:${session.sessionId}`,
+    id: `${SESSION_SONG_PREFIX}${session.sessionId}`,
     // The filename is the only name a separated session has; strip the
     // extension so the shelf does not read "my song.mp3".
     title: (session.originalFile?.name ?? 'Untitled')
@@ -103,6 +114,22 @@ export function sessionToJamSong(
  * instrumental: there is nothing to sing over, and a room that loads it
  * would be silent with no explanation.
  */
+/**
+ * The session id a room song's pitch analysis is stored under, or null.
+ *
+ * The two sources that can be analysed both carry one: a separated
+ * session is `session:<id>`, and the demo is the demo. Everything else a
+ * room can run -- a drill, a saved melody, the weekly challenge -- has
+ * its notes by construction and nothing to analyse.
+ */
+export function jamSongSessionId(songId: string): string | null {
+  if (songId.startsWith(SESSION_SONG_PREFIX)) {
+    const id = songId.slice(SESSION_SONG_PREFIX.length)
+    return id === '' ? null : id
+  }
+  return songId === DEMO_SONG_ID ? DEMO_SONG_ID : null
+}
+
 export function demoSongToJamSong(
   manifest: DemoSongManifest | null,
   lines: LyricsLineTiming[] = [],
@@ -111,7 +138,7 @@ export function demoSongToJamSong(
   const instrumental = manifest?.stems.instrumental ?? ''
   if (manifest === null || instrumental === '') return null
   return {
-    id: 'karaoke-night-demo',
+    id: DEMO_SONG_ID,
     title: manifest.title,
     artist: manifest.artist,
     stems: {
