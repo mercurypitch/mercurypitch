@@ -28,10 +28,11 @@ import { assignRange, isMyLine, rehomeDeparted } from '@/lib/jam/jam-song-parts'
 import { encodeStemsForShare, forgetPackedStems, getPackedStems, shareStemsWithPeers, } from '@/lib/jam/jam-song-share'
 import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
-import type { JamBackgroundCapabilityMessage, JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, JamRoomBackgroundState, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
+import type { JamBackgroundCapabilityMessage, JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, JamRoomBackgroundState, JamSongNote, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
 import { StemEncodeAbortedError } from '@/lib/portable/portable-audio'
 import { invalidatePremiumBackgroundAccess, premiumBackgroundCatalogState, refreshPremiumBackgroundCatalog, } from '@/stores/background-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
+import { abandonJamSongPitch, provideJamSongPitch, } from '@/stores/jam-pitch-provision-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyData } from '@/types'
 
@@ -431,6 +432,14 @@ export function selectJamSong(song: JamSong): boolean {
     notes: song.notes,
     durationSec: song.durationSec,
   })
+  // A song nobody has analysed arrives with no line to aim at. Work one
+  // out, in the background, without holding up a note of the singing --
+  // and tell the room either way rather than drawing a blank lane.
+  provideJamSongPitch({
+    song,
+    isHost: jamIsHost(),
+    onNotes: attachJamSongNotes,
+  })
   return true
 }
 
@@ -452,6 +461,27 @@ export function attachJamSongLyrics(lines: LyricsLineTiming[]): void {
   setJamSong(next)
   // The words changed, so the lines scored against them are stale.
   resetJamLineScores()
+  if (!jamIsHost()) return
+  broadcastSongWithParts()
+}
+
+/**
+ * Give the loaded song its target notes, after the fact.
+ *
+ * The same shape as attaching lyrics, for the same reason: peers follow
+ * the host's song, so a line only the host can see would leave everybody
+ * else singing at an empty lane. Re-sending the manifest under the SAME
+ * song id updates `notes` on every peer without touching the transport --
+ * the song does not restart, the playhead does not move, and whoever is
+ * mid-phrase stays mid-phrase.
+ *
+ * Ignored when the song has moved on. An analysis takes a while, and the
+ * singer is free to pick something else while it runs.
+ */
+export function attachJamSongNotes(songId: string, notes: JamSongNote[]): void {
+  const song = jamSong()
+  if (song === null || song.id !== songId || notes.length === 0) return
+  setJamSong({ ...song, notes })
   if (!jamIsHost()) return
   broadcastSongWithParts()
 }
@@ -1014,6 +1044,8 @@ export function clearJamSong(): void {
     resetJamLineScores()
   })
   revokeReceivedStems()
+  // Nothing to work a pitch line out for any more.
+  abandonJamSongPitch()
   // Several megabytes of packed audio for a song the room no longer has.
   forgetPackedStems()
   setJamShareState({ phase: 'idle', ratio: 0, message: '' })
@@ -2716,6 +2748,9 @@ function cleanupJam(): void {
   // song in memory until the tab closes.
   cancelJamSongShare()
   forgetPackedStems()
+  // Same reasoning one line up: a minute of detection for a room that is
+  // already behind you is a phone getting warm for nothing.
+  abandonJamSongPitch()
   clearPendingArrivals()
   setJamAssignBrush(null)
   songInbox.clear()
