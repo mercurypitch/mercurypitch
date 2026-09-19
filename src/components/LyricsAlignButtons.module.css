@@ -1,0 +1,76 @@
+/* LyricsAlignButtons — left / middle / right, as one segmented pill.
+
+   Drawn to sit beside the jam room's minus / readout / plus control and
+   read as its sibling: the same hairline, the same pill, the same quiet
+   buttons inside it. The one thing this control has that the other does
+   not is a state -- one of the three is ON -- and that takes the accent
+   the room's other "this one is chosen" marks already use (the mode
+   picker, the pitch toggle). */
+
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 999px;
+  /* The host's surface, handed in. On glass a bare hairline lets the
+     backdrop through the control; anywhere else, no fill is the honest
+     default -- the group sits on whatever its header is made of. */
+  background: var(--lyrics-align-surface, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* Square, and 24px is the floor: under it a pointer has to aim. A host
+     that is short of width may set --lyrics-align-target, and owns the
+     consequences. */
+  width: var(--lyrics-align-target, 24px);
+  height: var(--lyrics-align-target, 24px);
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+/* The glyph never takes the pointer: the button is the target, and a
+   click that lands on a 2px bar should not have to bubble to count. */
+.btn svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.btn:hover {
+  background: rgb(255 255 255 / 12%);
+  color: var(--text-primary);
+}
+
+/* The chosen one. After :hover on purpose -- hovering the button that is
+   already on should not make it look like one that is off. */
+.btnOn,
+.btnOn:hover {
+  background: var(--accent-dim, rgba(88, 166, 255, 0.15));
+  color: var(--accent, #58a6ff);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 1px;
+}
+
+/* A thumb needs a target a mouse does not. */
+@media (pointer: coarse) {
+  .btn {
+    width: var(--lyrics-align-target, 40px);
+    height: var(--lyrics-align-target, 40px);
+  }
+}

@@ -4,10 +4,14 @@
 //
 // The left half of a song room was hard-left with no header, which on a
 // wide stage left the words pinned against one edge and a hand's width
-// of nothing beside them. The mixer solved this once already with a
-// single chip, so the room reuses that chip rather than growing a second
-// idea of what "aligned" means -- but under its OWN storage key, because
-// centring a room's words must not re-centre somebody's stem editor.
+// of nothing beside them. The mixer solved this once already, so the room
+// keeps the mixer's three values and its glyphs rather than growing a
+// second idea of what "aligned" means -- but under its OWN storage key,
+// because centring a room's words must not re-centre somebody's stem
+// editor, and as three buttons rather than the mixer's one-chip select,
+// because this header has the room and that chip's menu is drawn by the
+// operating system. The buttons' own contract (one tab stop, arrows,
+// sizes) is in LyricsAlignButtons.test.tsx; this file is about the room.
 //
 // jsdom applies no CSS Modules, so the alignment itself is asserted
 // where it lives: the data-align attribute the rules hang off, and the
@@ -69,54 +73,63 @@ function ruleWith(needle: string): string {
   )
 }
 
-describe('the room lyric alignment chip', () => {
+describe('the room lyric alignment buttons', () => {
   beforeEach(() => {
     localStorage.clear()
     setJamLyricsAlign('center')
   })
 
-  it('sits in a header of its own, above the words', () => {
-    const { getByLabelText, getByText } = renderSheet()
+  it('sit in a header of their own, above the words', () => {
+    const { getByRole, getByText } = renderSheet()
     expect(getByText('Lyrics')).toBeInTheDocument()
-    expect(getByLabelText('Lyric alignment')).toBeInTheDocument()
+    const group = getByRole('radiogroup', { name: 'Lyric alignment' })
+    expect(group.querySelectorAll('[role="radio"]')).toHaveLength(3)
   })
 
-  it('starts centred, which is how a teleprompter is read', () => {
-    const { scroll } = renderSheet()
+  it('are buttons, not a menu the operating system draws', () => {
+    const { container } = renderSheet()
+    expect(container.querySelector('select')).toBeNull()
+  })
+
+  it('start centred, which is how a teleprompter is read', () => {
+    const { scroll, getByRole } = renderSheet()
     expect(scroll.dataset.align).toBe('center')
+    expect(getByRole('radio', { name: 'Middle' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 
-  it('moves the words when the chip changes', () => {
-    const { scroll, getByLabelText } = renderSheet()
-    const select = getByLabelText('Lyric alignment') as HTMLSelectElement
-    fireEvent.change(select, { target: { value: 'left' } })
+  it('move the words when another one is pressed', () => {
+    const { scroll, getByRole } = renderSheet()
+    fireEvent.click(getByRole('radio', { name: 'Left' }))
     expect(scroll.dataset.align).toBe('left')
-    fireEvent.change(select, { target: { value: 'right' } })
+    fireEvent.click(getByRole('radio', { name: 'Right' }))
     expect(scroll.dataset.align).toBe('right')
   })
 
-  it('remembers the choice on this device, under the room key', () => {
-    const { getByLabelText } = renderSheet()
-    fireEvent.change(getByLabelText('Lyric alignment'), {
-      target: { value: 'left' },
-    })
+  it('move the words from the keyboard too', () => {
+    const { scroll, getByRole } = renderSheet()
+    const middle = getByRole('radio', { name: 'Middle' })
+    middle.focus()
+    fireEvent.keyDown(middle, { key: 'ArrowLeft' })
+    expect(scroll.dataset.align).toBe('left')
+  })
+
+  it('remember the choice on this device, under the room key', () => {
+    const { getByRole } = renderSheet()
+    fireEvent.click(getByRole('radio', { name: 'Left' }))
     expect(localStorage.getItem(JAM_LYRICS_ALIGN_KEY)).toBe('left')
     // Not the mixer's: two panels, two settings.
     expect(localStorage.getItem('pitchperfect_lyrics_align')).toBeNull()
   })
 
-  it('reaches past the panel on a coarse pointer', () => {
-    // 1.35rem square is under the 24px touch floor. The room header has
-    // the space the mixer's does not, so it asks for the bigger target.
-    const { getByLabelText } = renderSheet()
-    const chip = getByLabelText('Lyric alignment').closest(
-      '.sm-lyrics-align-select',
+  it('wear the room glass rather than an opaque chip', () => {
+    // The group is a shared component that knows nothing about a room;
+    // the header hands it the surface the transparency slider drives.
+    expect(ruleWith('.header {')).toContain(
+      '--lyrics-align-surface: var(--jam-float',
     )
-    expect(chip).not.toBeNull()
-    expect((chip as HTMLElement).dataset.hitTarget).toBe('roomy')
-    const css = readFileSync('src/components/LyricsAlignSelect.css', 'utf8')
-    expect(css).toContain("[data-hit-target='roomy']")
-    expect(css).toContain('pointer: coarse')
   })
 })
 

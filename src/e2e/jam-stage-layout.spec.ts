@@ -1,5 +1,5 @@
 // ============================================================
-// Jam song stage — zoom, the lyric split, and the alignment chip
+// Jam song stage — zoom, the lyric split, and the alignment buttons
 // ============================================================
 //
 // The stage shipped with three constants where a preference belonged: an
@@ -9,6 +9,11 @@
 // two-finger pinch, because none of them can be proved in jsdom: the
 // lanes are a canvas, the split is a grid measured in percentages, and
 // the alignment only shows up in where the glyphs actually land.
+//
+// This file exceeds 600 lines to keep the three controls on the one room
+// they share. Seeding the song, the fake microphone and the preview room
+// are most of what any test here needs, so three specs would be three
+// copies of the set-up, drifting apart.
 //
 // The room is the preview room (VITE_JAM_MOCK_SIGNALING=1): two invented
 // peers, no fabricated pitch. The target notes are seeded into the
@@ -317,8 +322,17 @@ async function shortestLyricLine(page: Page): Promise<number> {
   return found.best
 }
 
+/** What each alignment's button is called. */
+const ALIGN_NAME = { left: 'Left', center: 'Middle', right: 'Right' } as const
+
+const alignRadio = (page: Page, value: 'left' | 'center' | 'right') =>
+  page
+    .getByRole('radiogroup', { name: 'Lyric alignment' })
+    .getByRole('radio', { name: ALIGN_NAME[value], exact: true })
+
 async function setAlign(page: Page, value: 'left' | 'center' | 'right') {
-  await page.getByLabel('Lyric alignment').selectOption(value)
+  await alignRadio(page, value).click()
+  await expect(alignRadio(page, value)).toHaveAttribute('aria-checked', 'true')
   await expect(page.locator('[data-align]').first()).toHaveAttribute(
     'data-align',
     value,
@@ -522,6 +536,19 @@ test.describe('the song stage on a desktop', () => {
     expect(left?.textLeft ?? 0).toBeLessThan(centered?.textLeft ?? 0)
     expect(centered?.textLeft ?? 0).toBeLessThan(right?.textLeft ?? 0)
 
+    // A real keyboard reaches it: the group is one tab stop, and an arrow
+    // moves the choice and the focus together. Proved here rather than
+    // only in jsdom because the handler is bound natively, and a native
+    // key handler is exactly what a synthetic event cannot vouch for.
+    await alignRadio(page, 'center').focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(scroll).toHaveAttribute('data-align', 'right')
+    await expect(alignRadio(page, 'right')).toBeFocused()
+    await page.keyboard.press('Home')
+    await expect(scroll).toHaveAttribute('data-align', 'left')
+    await page.keyboard.press('ArrowRight')
+    await expect(scroll).toHaveAttribute('data-align', 'center')
+
     // Remembered per device, under the room's own key.
     expect(
       await page.evaluate(() =>
@@ -675,6 +702,13 @@ test.describe('the song stage on a phone', () => {
 
   test('aligns the words on a narrow column too @smoke', async ({ page }) => {
     await openSongRoom(page)
+    // Three buttons where there was one chip, so each one has to be a
+    // target a thumb can hit without aiming.
+    for (const value of ['left', 'center', 'right'] as const) {
+      const box = await alignRadio(page, value).boundingBox()
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(40)
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(40)
+    }
     await setAlign(page, 'left')
     const line = await shortestLyricLine(page)
     const left = await lyricTextBox(page, line)

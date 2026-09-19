@@ -16,57 +16,18 @@
 //
 // The chip owns its own stylesheet. It used to be styled from the string in
 // StemMixer.tsx, which meant it rendered as a bare <span> anywhere the mixer
-// was not mounted — and a jam room's lyric column is such a place.
+// was not mounted.
+//
+// A header with room for three buttons wants LyricsAlignButtons instead —
+// same values, same accessor/setter pair, no operating-system menu. A jam
+// room's lyric column started on this chip and moved to that for exactly
+// that reason.
 
 import type { Accessor, Component, Setter } from 'solid-js'
 import './LyricsAlignSelect.css'
+import type { LyricsAlign } from '@/components/LyricsAlignIcon'
+import { isLyricsAlign, LYRICS_ALIGN_LABELS, LyricsAlignIcon, } from '@/components/LyricsAlignIcon'
 import { SafeSelect } from '@/components/shared/SafeSelect'
-import type { LyricsAlign } from '@/features/stem-mixer/useStemMixerLyricsController'
-
-const ALIGN_LABELS: Record<LyricsAlign, string> = {
-  left: 'Left',
-  center: 'Middle',
-  right: 'Right',
-}
-
-function isAlign(value: string): value is LyricsAlign {
-  return value === 'left' || value === 'center' || value === 'right'
-}
-
-/** Three lines anchored to the chosen edge. */
-function alignIcon(align: LyricsAlign) {
-  const widths = align === 'center' ? [14, 18, 12] : [18, 12, 16]
-  const xFor = (w: number) =>
-    align === 'left' ? 3 : align === 'right' ? 21 - w : 12 - w / 2
-  return (
-    <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true">
-      <rect
-        x={xFor(widths[0])}
-        y="3.5"
-        width={widths[0]}
-        height="2.5"
-        rx="1"
-        fill="currentColor"
-      />
-      <rect
-        x={xFor(widths[1])}
-        y="10.5"
-        width={widths[1]}
-        height="2.5"
-        rx="1"
-        fill="currentColor"
-      />
-      <rect
-        x={xFor(widths[2])}
-        y="17.5"
-        width={widths[2]}
-        height="2.5"
-        rx="1"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
 
 /**
  * How much room the host can spare for the chip.
@@ -90,9 +51,9 @@ export const LyricsAlignSelect: Component<LyricsAlignSelectProps> = (props) => {
     <span
       class="sm-lyrics-align-select"
       data-hit-target={props.hitTarget}
-      title={`Lyric alignment: ${ALIGN_LABELS[props.lyricsAlign()]}`}
+      title={`Lyric alignment: ${LYRICS_ALIGN_LABELS[props.lyricsAlign()]}`}
     >
-      {alignIcon(props.lyricsAlign())}
+      <LyricsAlignIcon align={props.lyricsAlign()} />
       {/* SafeSelect, not <select>: the workspace panels are draggable, so a
           transformed ancestor is one layout change away and that breaks the
           iOS picker outright. */}
@@ -101,7 +62,7 @@ export const LyricsAlignSelect: Component<LyricsAlignSelectProps> = (props) => {
         value={props.lyricsAlign()}
         onChange={(e) => {
           const next = e.currentTarget.value
-          if (isAlign(next)) props.setLyricsAlign(next)
+          if (isLyricsAlign(next)) props.setLyricsAlign(next)
         }}
         onClick={(e) => e.stopPropagation()}
       >
