@@ -274,11 +274,17 @@ export async function sessionSong(
 /**
  * One example song, hydrated for the room.
  *
- * Words straight from the manifest rather than the local lyrics db: the
- * room wants the timings, not a copy of someone's edits, and every peer
- * must end up with the same lines. demoLyricsText is the one reader that
- * knows all three shapes the studio can publish -- pasted text, a .lrc,
- * and a .lyricsfile.
+ * The words are the studio's unless the singer has their own. demoLyricsText
+ * is the one reader that knows all three shapes the studio can publish --
+ * pasted text, a .lrc, and a .lyricsfile -- and its copy is the freshest
+ * Original there is: a correction reaches the manifest before it reaches
+ * the copy stored on this device.
+ *
+ * An example somebody has corrected in the mixer is the exception, and the
+ * rule is the one every other song follows: the room opens on the words you
+ * last chose. Its stored copy lives under the example's own id, which is
+ * also where the version buttons read from, so what the room opens on is
+ * always one of the buttons. Peers are sent the host's lines either way.
  *
  * An example is a normal session as far as analysis is concerned, so if it
  * has been opened in the mixer once there is a vocal line to aim at; if
@@ -287,12 +293,19 @@ export async function sessionSong(
 export async function exampleSong(
   manifest: DemoSongManifest,
 ): Promise<JamSong | null> {
-  const lyrics = await demoLyricsText(manifest).catch(() => null)
+  const sessionId = exampleSongId(manifest.slug)
+  const [lyrics, stored, guide] = await Promise.all([
+    demoLyricsText(manifest).catch(() => null),
+    sessionLyricChoices(sessionId),
+    sessionSongGuide(sessionId),
+  ])
+  const theirs = stored.find((c) => c.active && c.kind !== 'imported')
   const lines =
-    lyrics !== null && lyrics.format === 'lrc'
-      ? lrcToSongLines(parseLrcFile(lyrics.text))
-      : []
-  const guide = await sessionSongGuide(exampleSongId(manifest.slug))
+    theirs !== undefined
+      ? theirs.lines
+      : lyrics !== null && lyrics.format === 'lrc'
+        ? lrcToSongLines(parseLrcFile(lyrics.text))
+        : []
   return withGuide(demoSongToJamSong(manifest, lines, guide.notes), guide)
 }
 

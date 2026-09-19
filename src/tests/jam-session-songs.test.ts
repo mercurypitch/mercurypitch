@@ -230,6 +230,8 @@ describe('sessionSong', () => {
 describe('exampleSong', () => {
   beforeEach(() => {
     loadPitchAnalysisFromDb.mockReset()
+    loadLyricsFromDb.mockReset()
+    loadLyricsFromDb.mockResolvedValue(null)
   })
 
   const manifest = {
@@ -252,12 +254,58 @@ describe('exampleSong', () => {
     )
   })
 
-  it('reads the words from the manifest, so every peer gets the same lines', async () => {
+  it('reads the words from the manifest when the singer has none of their own', async () => {
     const s = await exampleSong(manifest)
     expect(s?.lines.map((l) => l.text)).toEqual(['First line', 'Second line'])
-    expect(loadLyricsFromDb).not.toHaveBeenCalledWith(
+  })
+
+  it('opens on the version the singer last chose, when it is their own', async () => {
+    // The same rule as any other song: the room opens on the words you
+    // last chose in the mixer. An example somebody has corrected is no
+    // different, and its stored copy lives under the example's own id.
+    loadLyricsFromDb.mockResolvedValue({
+      text: '[00:01.40]First line, fixed\n[00:04.20]Second line',
+      format: 'lrc',
+      filename: 'x.lrc',
+      activeVersionKind: 'edited',
+      versions: [
+        { kind: 'imported', text: manifest.lyricsText, createdAt: 1 },
+        {
+          kind: 'edited',
+          text: '[00:01.40]First line, fixed\n[00:04.20]Second line',
+          createdAt: 2,
+        },
+      ],
+    })
+    const s = await exampleSong(manifest)
+    expect(loadLyricsFromDb).toHaveBeenCalledWith(
       'karaoke-night-demo:josephine',
     )
+    expect(s?.lines.map((l) => [l.text, l.startSec])).toEqual([
+      ['First line, fixed', 1.4],
+      ['Second line', 4.2],
+    ])
+  })
+
+  it('stays on the manifest while their Original is the one in use', async () => {
+    // The studio's copy is the Original, and it can be newer than the one
+    // stored here: a correction lands in the manifest first.
+    loadLyricsFromDb.mockResolvedValue({
+      text: '[00:01.00]First line, as first seeded\n[00:04.00]Second line',
+      format: 'lrc',
+      filename: 'x.lrc',
+      activeVersionKind: 'imported',
+      versions: [
+        {
+          kind: 'imported',
+          text: '[00:01.00]First line, as first seeded\n[00:04.00]Second line',
+          createdAt: 1,
+        },
+        { kind: 'edited', text: '[00:09.00]Theirs', createdAt: 2 },
+      ],
+    })
+    const s = await exampleSong(manifest)
+    expect(s?.lines.map((l) => l.text)).toEqual(['First line', 'Second line'])
   })
 
   it('aims at the pitch line saved under its own session', async () => {
