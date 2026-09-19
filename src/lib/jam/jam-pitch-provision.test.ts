@@ -9,7 +9,7 @@
 // picture -- and that picture looked like a broken app.
 
 import { describe, expect, it } from 'vitest'
-import { GUEST_NO_GUIDE_REASON, GUEST_WAITING_REASON, GUIDE_CREDIT_TEXT, JAM_PITCH_IDLE, jamPitchBanner, jamPitchNeed, NO_VOCAL_STEM_REASON, NOT_ANALYSABLE_REASON, VOCAL_LEFT_WITH_HOST_REASON, } from '@/lib/jam/jam-pitch-provision'
+import { GUEST_NO_GUIDE_REASON, GUEST_WAITING_REASON, JAM_PITCH_IDLE, jamPitchBanner, jamPitchNeed, NO_VOCAL_STEM_REASON, NOT_ANALYSABLE_REASON, VOCAL_LEFT_WITH_HOST_REASON, } from '@/lib/jam/jam-pitch-provision'
 import type { JamSong } from '@/lib/jam/jam-song'
 import type { JamSongNote } from '@/lib/jam/types'
 
@@ -195,12 +195,6 @@ describe('jamPitchBanner', () => {
     expect(jamPitchBanner(JAM_PITCH_IDLE, wired, true)).toEqual({
       kind: 'none',
     })
-  })
-
-  it('has plain words for every credit', () => {
-    for (const text of Object.values(GUIDE_CREDIT_TEXT)) {
-      expect(text).toMatch(/^Pitch guide: /)
-    }
   })
 
   it('shows the work while a raw line is being replaced', () => {

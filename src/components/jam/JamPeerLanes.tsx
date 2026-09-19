@@ -26,7 +26,7 @@ import { computeBackingSize } from '@/lib/canvas-size-sync'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { laneSecToX, laneWindow, laneWindowSec, liveSampleX, NOW_AT, } from '@/lib/jam/jam-lane-geometry'
 import { JAM_NOTE_LABEL_MIN_PILL, jamLaneMinSpan, jamPillHeight, jamTrailWidth, laneBandMidis, steppedJamZoom, zoomFromPinch, zoomFromWheel, } from '@/lib/jam/jam-lane-zoom'
-import { GUIDE_CREDIT_TEXT, jamPitchBanner, } from '@/lib/jam/jam-pitch-provision'
+import { jamPitchBanner } from '@/lib/jam/jam-pitch-provision'
 import type { NoteAccuracy } from '@/lib/jam/jam-pitch-view'
 import { blankNoteAccuracy, easeToward, JAM_BAND_FALLBACK, jamPitchBand, judgeAgainstNote, midiLabel, noteVerdict, observeNoteFrame, sampleMidi, tintForVerdict, } from '@/lib/jam/jam-pitch-view'
 import { groupLinesBySinger, isComingUp, LEAD_IN_SEC, noteSingers, } from '@/lib/jam/jam-song-blocks'
@@ -216,10 +216,6 @@ export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
     const shown = banner()
     return shown.kind === 'unavailable' ? shown : null
   })
-  const credit = createMemo(() => {
-    const shown = banner()
-    return shown.kind === 'ready' ? GUIDE_CREDIT_TEXT[shown.credit] : null
-  })
 
   return (
     <div class={styles.root}>
@@ -278,18 +274,12 @@ export const JamPeerLanes: Component<JamPeerLanesProps> = (props) => {
           </div>
         )}
       </Show>
-      {/* One quiet line once there IS a guide. The lanes used to say nothing
-          at this point, so a line cleaned up a minute ago and a room where
-          nothing had happened looked exactly alike. Not a notice: no box,
-          no live region -- it is a caption, and reading it aloud every time
-          a song loads would be the room talking over the singer. */}
-      <Show when={credit()}>
-        {(text) => (
-          <p class={styles.credit} data-testid="jam-pitch-credit">
-            {text()}
-          </p>
-        )}
-      </Show>
+      {/* Nothing once there IS a guide. A caption used to sit here saying
+          where the line came from, and it was a row taken from the lanes
+          for good to say something once -- on a phone or a tablet, a row
+          the lanes cannot spare. A guide worked out in the room is announced
+          by a toast when it lands; the lanes speak up only while one is
+          being made, or when there will not be one. */}
       <div class={styles.laneArea}>
         <div class={styles.lanes} ref={listRef}>
           <For each={lanes()}>
