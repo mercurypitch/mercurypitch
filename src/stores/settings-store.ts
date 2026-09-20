@@ -47,21 +47,108 @@ export type VocalRangePreset =
   | 'baritone'
   | 'bass'
 
-export const VOCAL_RANGES: Record<
-  VocalRangePreset,
-  { label: string; minOctave: number; maxOctave: number; defaultOctave: number }
-> = {
-  soprano: { label: 'Soprano', minOctave: 4, maxOctave: 6, defaultOctave: 4 },
+/**
+ * What each voice type can sing, and where it should be asked to start.
+ *
+ * In NOTES, not octaves. This table used to be three octave numbers a voice,
+ * and an octave is too blunt an instrument for a voice: baritone and bass
+ * were the same row (C2 to B4, start on A2), so a baritone's first scale ran
+ * C2 to C3 -- a fourth below the bottom of a baritone's range -- and an alto
+ * started on C3, under hers. The note values are the ones the rest of the app
+ * already agreed on (`VOICE_MIDI_RANGES`, `VOICE_TYPE_BANDS`, the tooltips in
+ * the voice-type selector); this was the one table that said otherwise, and
+ * the one every exercise read.
+ *
+ *   lowMidi / highMidi   the comfortable range: two octaves, the textbook one
+ *   anchorMidi           where an exercise starts. A natural note a fourth or
+ *                        so above the bottom, so that a one-octave run up
+ *                        from it stays clear of BOTH ends -- low in the middle
+ *                        rather than dead centre, because a beginner strains
+ *                        at the top long before the bottom
+ *   defaultOctave        the octave of C-rooted material -- the library's C
+ *                        major scales, the jam room's drills, a new melody in
+ *                        the editor -- that sits inside the range. Those can
+ *                        only move by octaves (their key is C), so this is
+ *                        coarser than the anchor: every low voice gets C3 to
+ *                        C4, every high one C4 to C5
+ *   minOctave/maxOctave  the octaves a piano roll has to SHOW to cover the
+ *                        range. Whole octaves because rows come in octaves
+ *
+ * `src/tests/vocal-range-presets.test.ts` pins the ladder: anchors strictly
+ * rising from bass to soprano, every run inside its range, and every row
+ * inside the band the voice-type detector uses for the same name.
+ */
+export interface VocalRange {
+  label: string
+  lowMidi: number
+  highMidi: number
+  anchorMidi: number
+  minOctave: number
+  maxOctave: number
+  defaultOctave: number
+}
+
+export const VOCAL_RANGES: Record<VocalRangePreset, VocalRange> = {
+  // C4 - C6, from E4
+  soprano: {
+    label: 'Soprano',
+    lowMidi: 60,
+    highMidi: 84,
+    anchorMidi: 64,
+    minOctave: 4,
+    maxOctave: 6,
+    defaultOctave: 4,
+  },
+  // A3 - A5, from C4
   'mezzo-soprano': {
     label: 'Mezzo-Soprano',
+    lowMidi: 57,
+    highMidi: 81,
+    anchorMidi: 60,
     minOctave: 3,
     maxOctave: 5,
     defaultOctave: 4,
   },
-  alto: { label: 'Alto', minOctave: 3, maxOctave: 5, defaultOctave: 3 },
-  tenor: { label: 'Tenor', minOctave: 3, maxOctave: 5, defaultOctave: 3 },
-  baritone: { label: 'Baritone', minOctave: 2, maxOctave: 4, defaultOctave: 2 },
-  bass: { label: 'Bass', minOctave: 2, maxOctave: 4, defaultOctave: 2 },
+  // F3 - F5, from A3
+  alto: {
+    label: 'Alto',
+    lowMidi: 53,
+    highMidi: 77,
+    anchorMidi: 57,
+    minOctave: 3,
+    maxOctave: 5,
+    defaultOctave: 4,
+  },
+  // C3 - C5, from E3
+  tenor: {
+    label: 'Tenor',
+    lowMidi: 48,
+    highMidi: 72,
+    anchorMidi: 52,
+    minOctave: 3,
+    maxOctave: 5,
+    defaultOctave: 3,
+  },
+  // G2 - G4, from C3
+  baritone: {
+    label: 'Baritone',
+    lowMidi: 43,
+    highMidi: 67,
+    anchorMidi: 48,
+    minOctave: 2,
+    maxOctave: 4,
+    defaultOctave: 3,
+  },
+  // E2 - E4, from A2
+  bass: {
+    label: 'Bass',
+    lowMidi: 40,
+    highMidi: 64,
+    anchorMidi: 45,
+    minOctave: 2,
+    maxOctave: 4,
+    defaultOctave: 3,
+  },
 }
 
 export interface SettingsConfig {
