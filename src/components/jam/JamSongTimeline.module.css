@@ -1,0 +1,94 @@
+/* JamSongTimeline -- where the song is, beside the controls that move it.
+   Placement is the consumer's (JamPanel's transport row); this is the bar. */
+
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 5px 8px;
+  /* Answers to its OWN width: beside the buttons it gets whatever they
+     leave, which on a tablet with the sidebar open is not much, and a
+     media query cannot know that. */
+  container-type: inline-size;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
+}
+
+/* The timeline takes whatever the chips leave. The floor is what keeps it
+   a target: under about this, a thumb cannot land on a bar of a song. */
+.scrub {
+  display: flex;
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.lineProgress {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--jam-glass, rgba(13, 17, 23, 0.6)) 78%,
+    transparent
+  );
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Your run score ─────────────────────────────────────────────────
+   Beside the timeline, not over the lyrics: mid-song a singer should be
+   able to ignore it entirely. */
+.runScore {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.runScore strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.runLabel {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+}
+
+.runLines {
+  font-size: 0.72rem;
+  color: var(--text-tertiary, var(--text-secondary));
+}
+
+/* Short of room, the take gives up its small print before the timeline
+   gives up any length. The score stays, and the label still says the rest
+   to anyone who asks for it. */
+@container (max-width: 470px) {
+  .runLines {
+    display: none;
+  }
+}
+
+/* Phone: the chips on one line, the timeline on a line of its own under
+   them, full width. Squeezed between them it was a scrub target a thumb
+   could not hit. */
+@media (max-width: 640px) {
+  .timeline {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .scrub {
+    flex: 1 1 100%;
+    order: 10;
+    min-width: 0;
+  }
+}

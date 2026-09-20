@@ -2477,6 +2477,18 @@ export const [jamSongSeekRequest, setJamSongSeekRequest] = createSignal<{
 
 let songSeekToken = 0
 
+/**
+ * How long the song's audio really is, once the element knows.
+ *
+ * The manifest's `durationSec` is what the song was SAID to be; the decoded
+ * file is what the playhead actually runs to, and they differ by enough to
+ * leave a timeline short of its end. Only the stage has the element, and
+ * the timeline no longer lives in the stage, so the stage reports it here.
+ * Null until the metadata is in, and again when the song goes.
+ */
+export const [jamSongMediaDurationSec, setJamSongMediaDurationSec] =
+  createSignal<number | null>(null)
+
 function requestSongSeek(toSec: number): void {
   songSeekToken += 1
   setJamSongSeekRequest({ toSec, token: songSeekToken })

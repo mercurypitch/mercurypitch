@@ -124,3 +124,11 @@
     font-size: 0.74rem;
   }
 }
+
+/* Which words are on the sheet, at the far end from who sings them. The
+   auto margin is what puts it there; when the column is too narrow for
+   both, the bar already wraps and this takes the next line's end. */
+.words {
+  display: flex;
+  margin-left: auto;
+}

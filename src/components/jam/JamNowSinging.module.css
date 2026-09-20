@@ -1,0 +1,91 @@
+/* JamNowSinging -- the song's name, as one more fact in the room's strip. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* As much of the name as the header can spare, and no more.
+
+     The strip this sits in WRAPS, and a wrapping row breaks on what each
+     item asks for before it shrinks anything -- so a chip that asked for
+     its whole name (`flex: 0 1 auto`) sent the people in the room to a
+     second line and made the header a row taller, which is the height
+     this whole change exists to win back. It asks for a few words
+     instead, and GROWS into whatever the line has left, up to the name's
+     own length and never past it. */
+  flex: 1 1 6.5rem;
+  /* Never less than it asked for, or a crowded strip squeezes it to a
+     note and an ellipsis; never more than the strip itself. */
+  min-width: min(6.5rem, 100%);
+  max-width: max-content;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: 999px;
+  /* The room's own glass, so the transparency slider carries it with the
+     room code beside it. */
+  background-color: var(--jam-control, rgba(13, 17, 23, 0.55));
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 6));
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.note {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artist {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* Tapped: the whole name, where it stands. On a desk the strip wraps
+   around it; on a phone the strip scrolls, so it stays on one line there
+   and is read by swiping. */
+.chip.open {
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+
+@media (min-width: 641px) {
+  .chip.open .name {
+    overflow: visible;
+    white-space: normal;
+  }
+}
+
+/* Phone: the strip is one line that scrolls, so nothing in it shrinks and
+   nothing grows. A cap instead, so the code and the people are still on
+   screen beside it. */
+@media (max-width: 640px) {
+  .chip {
+    flex: 0 0 auto;
+    max-width: 58vw;
+  }
+
+  .chip.open {
+    flex: 0 0 auto;
+    max-width: none;
+  }
+}

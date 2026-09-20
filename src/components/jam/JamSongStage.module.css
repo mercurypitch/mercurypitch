@@ -12,55 +12,10 @@
   overflow: hidden;
 }
 
-.transport {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-shrink: 0;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
-}
-
-/* The timeline takes whatever the controls leave. */
-.scrub {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-}
-
-.title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.artist {
-  font-weight: 400;
-  color: var(--text-secondary);
-}
-
-.lineProgress {
-  flex-shrink: 0;
-  padding: 3px 7px;
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 999px;
-  background: color-mix(
-    in srgb,
-    var(--jam-glass, rgba(13, 17, 23, 0.6)) 78%,
-    transparent
-  );
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
+/* The bar that led this stage -- song name, line count, score, timeline
+   -- is gone. The name is in the room's header (JamNowSinging) and the
+   rest is on the playback row (JamSongTimeline), so the words start a
+   row higher. */
 
 /* .buttons / .btn lived here for the stage's own Play and Stop. Those
    moved into the room's single transport bar (JamTransport) -- two sets
@@ -99,57 +54,9 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
-/* Phone: the row becomes two.
-   Title and lyric version are things that shrink; the timeline is the one
-   thing that must not, and squeezing it between them left a scrub target a
-   thumb could not hit -- with the guide-vocal slider, which used to live
-   in this row, expanding straight over it. So the timeline takes a line of
-   its own underneath, full width. */
-@media (max-width: 640px) {
-  .transport {
-    flex-wrap: wrap;
-    row-gap: 8px;
-    justify-content: flex-start;
-    gap: 8px;
-  }
-
-  .scrub {
-    flex: 1 1 100%;
-    order: 10;
-    min-width: 0;
-  }
-}
-
 /* The old `@media (max-width: 900px)` and `@media (max-height: 560px)`
    templates lived here. They are gone on purpose: a media query and the
    handle would be two authorities over the same tracks, and the media
    query wins whatever the viewer drags. The 900px cutoff now lives in
    JamSongStage's STACKED_QUERY, and a short screen is handled by the
    viewer moving the seam -- which they could not do before. */
-
-/* ── Your run score ─────────────────────────────────────────────────
-   Beside the title in the transport, not over the lyrics: mid-song a
-   singer should be able to ignore it entirely. */
-.runScore {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-
-.runScore strong {
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
-.runLabel {
-  color: var(--text-secondary);
-  font-size: 0.68rem;
-}
-
-.runLines {
-  font-size: 0.72rem;
-  color: var(--text-tertiary, var(--text-secondary));
-}

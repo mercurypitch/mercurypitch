@@ -69,7 +69,7 @@ test.describe('the song list in the room sidebar', () => {
     await expect(row).toContainText('In the room')
     await expect(
       page
-        .locator('#jam-panel button')
+        .locator('#jam-panel [data-variant="popup"] button')
         .filter({ hasText: 'Goodbye to Spring' }),
     ).toHaveCount(0)
   })
@@ -82,7 +82,7 @@ test.describe('the song list in the room sidebar', () => {
 
     await page.getByRole('button', { name: 'Choose a drill or a song' }).click()
     const inPopup = page
-      .locator('#jam-panel button')
+      .locator('#jam-panel [data-variant="popup"] button')
       .filter({ hasText: 'Goodbye to Spring' })
     await expect(inPopup).toBeVisible()
 

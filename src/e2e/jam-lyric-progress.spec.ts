@@ -24,7 +24,7 @@ test('keeps lyric position stable through click-seek and stop @smoke', async ({
 
   await page.getByRole('button', { name: 'Choose a drill or a song' }).click()
   await page
-    .locator('#jam-panel button')
+    .locator('#jam-panel [data-variant="popup"] button')
     .filter({ hasText: 'Goodbye to Spring' })
     .click()
 
