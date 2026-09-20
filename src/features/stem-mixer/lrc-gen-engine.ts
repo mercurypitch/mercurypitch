@@ -10,7 +10,7 @@
 
 import type { CanonicalLrcEntry, WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
 import { buildLrcToCanonicalMap } from '@/lib/canonical-lrc'
-import { buildLrcTextFromCanonical, estimateUnmappedTimes, formatTimeLrc, } from '@/lib/lrc-generator'
+import { buildLrcTextFromCanonical, estimateUnmappedTimes, formatTimeLrc, stampedLrcLine, } from '@/lib/lrc-generator'
 
 function isMappableLine(line: string | undefined): boolean {
   const text = line?.trim()
@@ -434,12 +434,7 @@ function plainLineToLrc(
   if (line.trim() === '') return ''
   const words = line.split(/\s+/).filter((word) => word.length > 0)
   if (wordTimes !== undefined && wordTimes.length > 0 && words.length > 0) {
-    return words
-      .map((word, wordIdx) => {
-        const time = wordTimes[wordIdx]
-        return time !== undefined ? `[${formatTimeLrc(time)}] ${word}` : word
-      })
-      .join(' ')
+    return stampedLrcLine(words, wordTimes, lineTime)
   }
   return `[${formatTimeLrc(lineTime)}] ${line}`
 }
