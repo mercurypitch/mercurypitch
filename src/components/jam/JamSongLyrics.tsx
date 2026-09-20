@@ -282,6 +282,17 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     }
 
     const onTouchMove = (event: TouchEvent): void => {
+      // A sweep is anchored, so this finger is painting and must not pan
+      // the words as well. The stylesheet says the same with `touch-action:
+      // none` on an armed row -- but that arrives as a class, with the
+      // brush, and a pan the browser starts anyway cancels the pointer and
+      // the sweep with it ("the parts assignment also didn't work", from a
+      // tablet). Said here too, it does not depend on the browser having
+      // caught up with the class.
+      if (paintFrom() !== null) {
+        if (event.cancelable) event.preventDefault()
+        return
+      }
       if (pinchStartDistance <= 0) return
       const [a, b, extra] = fingersHere(event)
       if (a === undefined || b === undefined || extra !== undefined) return
@@ -670,6 +681,9 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
             handsOff.bind(box)
           }}
           data-align={jamLyricsAlign()}
+          // A finger has no cursor to turn into a crosshair, so the sheet
+          // itself says when a drag will paint instead of scroll.
+          data-armed={painting() ? '' : undefined}
           style={{
             ...colorTokenVars(
               '--brush-color',
