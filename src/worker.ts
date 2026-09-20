@@ -5,6 +5,8 @@ import type { UvrInputBucket } from './lib/runpod-bridge'
 import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
 import { getMeteringConfig } from './lib/uvr-metering'
 import { verifyBearer } from './lib/verify-jwt'
+import { handleOgCardRequest } from './og-card-handler'
+import { decorateVoiceprintMeta } from './og-voiceprint-meta'
 import { handleShareRequest } from './share-handler'
 
 export { ContainerProxy }
@@ -295,6 +297,11 @@ export default {
     }
 
     // Share link shortener — /api/share/*  →  KV-backed
+    if (url.pathname.startsWith('/api/og/')) {
+      const ogResp = await handleOgCardRequest(request, env)
+      if (ogResp !== null) return ogResp
+    }
+
     if (url.pathname.startsWith('/api/share/')) {
       const shareResp = await handleShareRequest(request, env)
       if (shareResp) return shareResp
@@ -343,7 +350,12 @@ export default {
     if (isMirrorPath && method === 'GET') {
       const mirrorUrl = new URL(request.url)
       mirrorUrl.pathname = '/mirror'
-      return env.ASSETS.fetch(new Request(mirrorUrl.toString(), request))
+      const mirrorResp = await env.ASSETS.fetch(
+        new Request(mirrorUrl.toString(), request),
+      )
+      // A shared voiceprint has to unfurl as itself. Crawlers never run the
+      // code that reads `?v=`, so the card has to be true in the HTML.
+      return decorateVoiceprintMeta(mirrorResp, url)
     }
 
     // Vocal range — same local analysis engine, but a distinct document whose

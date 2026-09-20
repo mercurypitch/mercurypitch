@@ -29,10 +29,52 @@ const SHARE_TAG = 'utm_source=voiceprint&utm_medium=share'
 /** The query parameter carrying the encoded voiceprint. */
 export const VOICEPRINT_PARAM = 'v'
 
+/** The query parameter naming the stored card an unfurl should use. */
+export const OG_CARD_PARAM = 'og'
+
 /** The tagged Mirror URL with no voiceprint attached — what a card shares
  *  when there is nothing to carry. The single definition of this string;
  *  `card-renderer` re-exports it rather than keeping its own copy. */
 export const MIRROR_SHARE_URL = `${SHARE_BASE}?${SHARE_TAG}`
+
+const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+
+/**
+ * A fresh id for a card this device is about to upload.
+ *
+ * Chosen here rather than asked of the server, so that the share sheet
+ * opens on the same tap that produced it — Safari only honours a share
+ * that begins inside the gesture, and a round trip would land outside it.
+ * Ten base62 characters, the same shape and entropy as a share id.
+ */
+export function newOgCardId(): string {
+  const bytes = new Uint8Array(10)
+  // `globalThis.` on purpose: the bare global is on the restricted list,
+  // and this module is read by the worker as well as the browser.
+  globalThis.crypto.getRandomValues(bytes)
+  let id = ''
+  for (let i = 0; i < 10; i++) id += BASE62[bytes[i] % 62]
+  return id
+}
+
+/**
+ * Store the card so the link unfurls as itself.
+ *
+ * Deliberately not awaited by its callers: the share sheet must never wait
+ * on the network, and a failed upload costs only a stock unfurl. Errors are
+ * swallowed here rather than left to an unowned tail — a rejected
+ * fire-and-forget fetch outliving its test file fails an otherwise green
+ * run.
+ */
+export function uploadOgCard(id: string, png: Blob): void {
+  void fetch(`/api/og/card/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'image/png' },
+    body: png,
+  }).catch(() => {
+    // Nothing to do and nothing to tell the singer: the link still works.
+  })
+}
 
 export interface ShareableVoiceprint {
   lowMidi?: number | null
@@ -51,6 +93,7 @@ export function voiceprintShareUrl(
   summary: ShareableVoiceprint | null | undefined,
   twin?: string | null,
   displayName?: string | null,
+  ogCardId?: string | null,
 ): string {
   if (summary == null) return MIRROR_SHARE_URL
 
@@ -59,7 +102,13 @@ export function voiceprintShareUrl(
   // open the recipient on an error instead of the ordinary invitation.
   if (decodeSharePayload(encoded) == null) return MIRROR_SHARE_URL
 
-  return `${SHARE_BASE}?${VOICEPRINT_PARAM}=${encoded}&${SHARE_TAG}`
+  // `og` names the stored card the link should unfurl with. It is only a
+  // picture: the voiceprint itself travels in `v`, so a link whose card has
+  // expired still opens on the right take.
+  const card =
+    ogCardId != null && ogCardId !== '' ? `&${OG_CARD_PARAM}=${ogCardId}` : ''
+
+  return `${SHARE_BASE}?${VOICEPRINT_PARAM}=${encoded}${card}&${SHARE_TAG}`
 }
 
 /**

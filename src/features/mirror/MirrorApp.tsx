@@ -26,7 +26,7 @@ import { summarize } from '@/lib/mirror/metrics'
 import { hasSeenHowItWorks, markHowItWorksSeen } from '@/lib/mirror/onboarding'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
-import { MIRROR_SHARE_URL, parseVoiceprintLink, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
+import { MIRROR_SHARE_URL, newOgCardId, parseVoiceprintLink, uploadOgCard, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
@@ -1058,10 +1058,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
    *  whoever opens it sees the voiceprint they were sent rather than an
    *  empty Mirror asking them to sing — which is what the generic link did,
    *  and why shared sessions used to last about three seconds. */
-  function shareLink(): string {
+  function shareLink(ogCardId?: string): string {
     const result = session().result
     if (!result) return MIRROR_SHARE_URL
-    return voiceprintShareUrl(summarize(result), sharedTwin())
+    return voiceprintShareUrl(summarize(result), sharedTwin(), null, ogCardId)
   }
 
   /** Personal, distinct download names — never a model or asset name.
@@ -1089,19 +1089,21 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   async function onShare(withTwin = false): Promise<void> {
     const card = withTwin && twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
-    const link = shareLink()
+    const png = await cardToPngBlob(card)
+    // The card leaves the device only because the singer chose to share it,
+    // and the upload starts here rather than inside the sheet: an id picked
+    // locally means no round trip stands between the tap and the share.
+    const ogCardId = newOgCardId()
+    uploadOgCard(ogCardId, png)
+    const link = shareLink(ogCardId)
     const twin = sharedTwin()
-    const outcome = await shareCard(
-      await cardToPngBlob(card),
-      cardFilename(withTwin),
-      {
-        title: 'My voiceprint',
-        text:
-          withTwin && twin !== null
-            ? twinShareText(twin, link)
-            : defaultShareText(link),
-      },
-    )
+    const outcome = await shareCard(png, cardFilename(withTwin), {
+      title: 'My voiceprint',
+      text:
+        withTwin && twin !== null
+          ? twinShareText(twin, link)
+          : defaultShareText(link),
+    })
     // Closing the sheet without sending is neither a share nor a save —
     // don't count it (card_shared feeds a live Ads conversion) and don't
     // claim anything in the status line.

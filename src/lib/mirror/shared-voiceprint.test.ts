@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { decodeSharePayload, encodeVoiceprintForShare } from '@/lib/share-codec'
-import { formatSpan, parseVoiceprintLink, sharedRangeNotes, sharedVoiceprintTitle, VOICEPRINT_PARAM, voiceprintShareUrl, } from './shared-voiceprint'
+import { formatSpan, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, sharedRangeNotes, sharedVoiceprintTitle, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareUrl, } from './shared-voiceprint'
 
 const FULL = {
   lowMidi: 48,
@@ -150,5 +150,73 @@ describe('sharedRangeNotes', () => {
   it('is null when the take measured no range', () => {
     expect(sharedRangeNotes({ ac: 12 })).toBeNull()
     expect(sharedRangeNotes({ lo: 48 })).toBeNull()
+  })
+})
+
+describe('newOgCardId', () => {
+  it('is ten base62 characters, the same shape as a share id', () => {
+    for (let i = 0; i < 50; i++) {
+      expect(newOgCardId()).toMatch(/^[0-9A-Za-z]{10}$/)
+    }
+  })
+
+  it('does not repeat itself', () => {
+    const seen = new Set(Array.from({ length: 200 }, () => newOgCardId()))
+    expect(seen.size).toBe(200)
+  })
+})
+
+describe('a link naming a stored card', () => {
+  it('carries the card id alongside the voiceprint and the tag', () => {
+    const url = voiceprintShareUrl(FULL, 'Adele', null, 'aB3xY9zQ01')
+    expect(url).toContain(`${OG_CARD_PARAM}=aB3xY9zQ01`)
+    expect(url).toContain(`${VOICEPRINT_PARAM}=`)
+    expect(url).toContain('utm_source=voiceprint')
+  })
+
+  it('omits the card when none was stored', () => {
+    expect(voiceprintShareUrl(FULL, 'Adele')).not.toContain(`${OG_CARD_PARAM}=`)
+    expect(voiceprintShareUrl(FULL, 'Adele', null, '')).not.toContain(
+      `${OG_CARD_PARAM}=`,
+    )
+  })
+
+  it('still decodes the voiceprint with a card id present', () => {
+    const url = voiceprintShareUrl(FULL, 'Adele', null, 'aB3xY9zQ01')
+    const data = parseVoiceprintLink(url.slice(url.indexOf('?')))
+    expect(data?.lo).toBe(48)
+    expect(data?.tw).toBe('Adele')
+  })
+})
+
+describe('uploadOgCard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('PUTs the card to its own id', () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(null)))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const png = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' })
+    uploadOgCard('aB3xY9zQ01', png)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/og/card/aB3xY9zQ01',
+      expect.objectContaining({ method: 'PUT' }),
+    )
+  })
+
+  it('swallows a failure rather than leaving an unowned rejection', async () => {
+    // A rejected fire-and-forget outliving its test file fails an otherwise
+    // green run, and the singer has nothing to do about it either way.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('offline'))),
+    )
+    expect(() =>
+      uploadOgCard('aB3xY9zQ01', new Blob([new Uint8Array([1])])),
+    ).not.toThrow()
+    await new Promise((r) => setTimeout(r, 0))
   })
 })
