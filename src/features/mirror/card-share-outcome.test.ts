@@ -59,3 +59,41 @@ describe('shareCard', () => {
     expect(click).toHaveBeenCalledTimes(1)
   })
 })
+
+// A shared voiceprint stores its card so the link can unfurl as itself. That
+// is the one thing in the Mirror that leaves the device, so it must happen
+// only when a link is really on its way out.
+describe('shareCard — onSheetOpening', () => {
+  it('runs before the sheet opens, inside the same tap', async () => {
+    const order: string[] = []
+    mockShare(() => {
+      order.push('share')
+      return Promise.resolve()
+    })
+    await shareCard(blob, 'card.png', {
+      onSheetOpening: () => order.push('opening'),
+    })
+    expect(order).toEqual(['opening', 'share'])
+  })
+
+  it('never runs where the card is only saved', async () => {
+    // No share sheet: the picture downloads and the text, link included, is
+    // thrown away. Storing a card for a link nobody was given would send it
+    // off the device for nothing.
+    mockShare(undefined)
+    vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const onSheetOpening = vi.fn()
+    expect(await shareCard(blob, 'card.png', { onSheetOpening })).toBe(
+      'downloaded',
+    )
+    expect(onSheetOpening).not.toHaveBeenCalled()
+  })
+
+  it('runs once even when the sheet then refuses the data', async () => {
+    mockShare(() => Promise.reject(new DOMException('nope', 'NotAllowedError')))
+    vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const onSheetOpening = vi.fn()
+    await shareCard(blob, 'card.png', { onSheetOpening })
+    expect(onSheetOpening).toHaveBeenCalledTimes(1)
+  })
+})
