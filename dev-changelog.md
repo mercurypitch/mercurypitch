@@ -648,6 +648,32 @@ page. Nothing had tested the share path in a browser at all.
   sites. Onboarding's Twin beat gets the same pill in the onboarding palette
   rather than the 0.75rem footnote it was borrowing.
 
+**What a second review pass changed before the merge.**
+
+- **A share the sheet never took now hands the link over anyway.** `shareCard`
+  called `onLinkLeaving` before `navigator.share` and, on any non-abort
+  rejection, saved the picture and stopped -- on the reasoning that the sheet
+  already had the link. It does not: Chrome rejects with `NotAllowedError`
+  when the tap's activation has expired, which drawing two 1080px cards is
+  enough to cause on a slow phone, and then no sheet ever opened. That path
+  now falls through to the desktop one (save, copy the link), and the store
+  callback is fired once whichever way the link leaves.
+- **A refused clipboard on the Share path said nothing.** Firefox and Safari
+  reject a `writeText` that did not begin inside the tap, so a share on those
+  desktops saved a file and left the link unmentioned -- the very gap this
+  work set out to close. `shareOutcomeMessage(outcome, carriedLink)` now
+  points at Copy link for the callers that passed one; the account page says
+  the same in a notice. Free-sing passes no link and its wording is unchanged.
+- **Copy link is guarded while it is running.** Every tap mints an id and
+  stores a card, and the store allows ten a minute from one address: ten
+  impatient taps and the card for the link you actually send is refused.
+- **The status line is announced.** It was built with its text already in it,
+  which a screen reader does not read out; the live region is now mounted
+  empty and filled, with the pill itself `aria-hidden`.
+- Also: `SyncTransferChip` still carried the old `var(--z-toast, 11000)`
+  fallback, and `z-scale.test.ts` now states what it cannot see (inline
+  styles, stylesheets inside a `.tsx`, `var(--x, N)`, `!important`).
+
 Not tested by anything here: `HTMLRewriter` itself (no Workers test pool; a
 stand-in records what would be written), and an unfurl in a real chat app.
 

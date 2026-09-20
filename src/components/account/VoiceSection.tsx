@@ -121,21 +121,38 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
           'Card saved, and the link is copied. Paste it beside the picture.',
           'success',
         )
+      // Firefox and Safari refuse a clipboard write that did not start in
+      // the tap, and drawing the card takes longer than that. Point at the
+      // button that always works rather than leaving the link unmentioned.
+      if (outcome === 'downloaded')
+        showNotification(
+          'Card saved. The link did not copy here — use Copy link for that.',
+          'info',
+        )
     } finally {
       setSharing(false)
     }
   }
 
+  const [copyingLink, setCopyingLink] = createSignal(false)
+
   const copyLatestLink = async () => {
     const record = latest()
-    if (record == null) return
-    const outcome = await copyVoiceprintRecordLink(record)
-    showNotification(
-      outcome === 'copied'
-        ? 'Link copied. Paste it anywhere and it shows your card.'
-        : 'The link could not be copied here.',
-      outcome === 'copied' ? 'success' : 'error',
-    )
+    // Guarded like the share beside it: every tap mints an id and stores a
+    // card, and the store takes ten a minute from one address.
+    if (record == null || copyingLink()) return
+    setCopyingLink(true)
+    try {
+      const outcome = await copyVoiceprintRecordLink(record)
+      showNotification(
+        outcome === 'copied'
+          ? 'Link copied. Paste it anywhere and it shows your card.'
+          : 'The link could not be copied here.',
+        outcome === 'copied' ? 'success' : 'error',
+      )
+    } finally {
+      setCopyingLink(false)
+    }
   }
 
   /** The raster portrait for the current twin, if one has been drawn. */
@@ -353,6 +370,7 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
                   type="button"
                   class={styles.shareBtn}
                   data-testid="voiceprint-copy-link"
+                  disabled={copyingLink()}
                   onClick={() => void copyLatestLink()}
                   title="Copy a link that opens this voiceprint"
                 >
