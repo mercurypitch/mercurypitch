@@ -16,6 +16,12 @@ const ASSETS: Record<MercNarrationCue, string> = {
   'tutorial-note': 'merc-voice-welcome',
   'required-break': 'merc-voice-path-open',
   'optional-break': 'merc-voice-optional-break',
+  'beautiful-mess': 'merc-voice-beautiful-mess',
+  'little-disaster': 'merc-voice-little-disaster',
+  sparkling: 'merc-voice-sparkling',
+  'glass-had-plans': 'merc-voice-glass-had-plans',
+  'music-to-my-ears': 'merc-voice-music-to-my-ears',
+  'cracking-performance': 'merc-voice-cracking-performance',
 }
 
 function readPreferences(

@@ -8,10 +8,24 @@ import type { AnimationAction, Mesh } from 'three'
 import { AnimationMixer, Box3, Group, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameSnapshot } from '../contracts'
+import { MOVEMENT } from '../core/movement'
 import { disposeObject } from './dispose'
 
 const TURN_RESPONSE = 10
 const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
+const MINIMUM_MOVE_TIME_SCALE = 0.35
+const MAXIMUM_MOVE_TIME_SCALE = 2.4
+
+export function mercMoveTimeScale(horizontalSpeed: number): number {
+  const speed =
+    Number.isFinite(horizontalSpeed) && horizontalSpeed > 0
+      ? horizontalSpeed
+      : MOVEMENT.speed
+  return Math.max(
+    MINIMUM_MOVE_TIME_SCALE,
+    Math.min(MAXIMUM_MOVE_TIME_SCALE, speed / MOVEMENT.speed),
+  )
+}
 
 export async function loadAdventureMerc(url: string) {
   const gltf = await new GLTFLoader().loadAsync(url)
@@ -56,7 +70,7 @@ export async function loadAdventureMerc(url: string) {
   let squash = 0
   let celebrateUntil = 0
   let completed = 0
-  const play = (name: string, still: boolean) => {
+  const play = (name: string, still: boolean, timeScale = 1) => {
     const clip = clips.get(name)
     if (!clip) return
     if (name !== clipName) {
@@ -70,7 +84,7 @@ export async function loadAdventureMerc(url: string) {
       if (previous) current.crossFadeFrom(previous, 0.16, false)
       clipName = name
     }
-    if (current) current.timeScale = still ? 0 : 1
+    if (current) current.timeScale = still ? 0 : timeScale
   }
   return {
     root,
@@ -84,7 +98,8 @@ export async function loadAdventureMerc(url: string) {
       const active = snapshot.breakables.some(
         (item) => item.phase === 'charging' || item.phase === 'listening',
       )
-      const moving = Math.hypot(player.velocity.x, player.velocity.z) > 0.08
+      const horizontalSpeed = Math.hypot(player.velocity.x, player.velocity.z)
+      const moving = horizontalSpeed > 0.08
       // The authored fall clip topples into a puddle. Normal airborne travel
       // keeps the upright pose; physics and stretch carry the jump.
       const name =
@@ -97,7 +112,11 @@ export async function loadAdventureMerc(url: string) {
               : moving
                 ? 'move'
                 : 'listen'
-      play(name, reducedMotion && !moving && !active)
+      play(
+        name,
+        reducedMotion && !moving && !active,
+        name === 'move' ? mercMoveTimeScale(horizontalSpeed) : 1,
+      )
       mixer.update(Math.max(0, dt))
       if (player.grounded && !wasGrounded) squash = 0.18
       wasGrounded = player.grounded

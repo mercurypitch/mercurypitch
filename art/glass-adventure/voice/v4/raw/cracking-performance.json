@@ -1,0 +1,30 @@
+{
+  "revision": "merc-break-reactions-v4-2026-09-20",
+  "id": "cracking-performance",
+  "text": "Now that was a cracking performance.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "Now that was a cracking performance.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 209206
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-20T13:58:04.676Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "s0w7Oarcch6G1ZRBThWr",
+  "character_cost": "20",
+  "bytes": 130560,
+  "sha256": "ac27ed842aa146d10dfba4498da33845b48731d27ad9ab018c77afa43fc8ac1b",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 2.72,
+  "completed_at": "2026-09-20T13:58:07.817Z"
+}

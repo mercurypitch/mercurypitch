@@ -5,9 +5,17 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
-import { loadAdventureMerc } from './merc'
+import { loadAdventureMerc, mercMoveTimeScale } from './merc'
 
 afterEach(() => vi.restoreAllMocks())
+
+it('matches Merc move cadence to pace while bounding feathered and future speeds', () => {
+  expect(mercMoveTimeScale(1.15)).toBeCloseTo(1)
+  expect(mercMoveTimeScale(1.55)).toBeCloseTo(1.55 / 1.15)
+  expect(mercMoveTimeScale(2.7)).toBeCloseTo(2.7 / 1.15)
+  expect(mercMoveTimeScale(0.09)).toBe(0.35)
+  expect(mercMoveTimeScale(6)).toBe(2.4)
+})
 
 async function parseActualMerc() {
   const source = await readFile(

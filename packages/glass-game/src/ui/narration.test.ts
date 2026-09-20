@@ -11,7 +11,7 @@ function deferred() {
   return { promise, resolve }
 }
 
-function fixture(initiallyEnabled = true) {
+function fixture(initiallyEnabled = true, random: () => number = () => 0) {
   let allowed = true
   let enabled = initiallyEnabled
   const audio: GlassMercNarration = {
@@ -24,7 +24,7 @@ function fixture(initiallyEnabled = true) {
     }),
     dispose: vi.fn(),
   }
-  const subject = createAdventureNarration(audio, () => allowed)
+  const subject = createAdventureNarration(audio, () => allowed, random)
   return {
     audio,
     subject,
@@ -74,10 +74,38 @@ describe('adventure narration', () => {
 
   it('maps required and optional successes to their approved cues', () => {
     const { audio, subject } = fixture()
-    subject.breakCompleted(false)
-    subject.breakCompleted(true)
+    expect(subject.breakCompleted(false)).toEqual({
+      cue: 'required-break',
+      caption: 'Beautiful. A new path is open.',
+    })
+    expect(subject.breakCompleted(true)).toEqual({
+      cue: 'optional-break',
+      caption: 'Gorgeous. Absolutely gorgeous.',
+    })
     expect(audio.play).toHaveBeenNthCalledWith(1, 'required-break')
     expect(audio.play).toHaveBeenNthCalledWith(2, 'optional-break')
+  })
+
+  it('alternates required path guidance with shuffled reactions', () => {
+    const { audio, subject } = fixture()
+
+    expect(subject.breakCompleted(false).cue).toBe('required-break')
+    expect(subject.breakCompleted(false).cue).toBe('optional-break')
+    expect(subject.breakCompleted(false).cue).toBe('required-break')
+
+    expect(audio.play).toHaveBeenNthCalledWith(1, 'required-break')
+    expect(audio.play).toHaveBeenNthCalledWith(2, 'optional-break')
+    expect(audio.play).toHaveBeenNthCalledWith(3, 'required-break')
+  })
+
+  it('still returns the selected caption while narration is disabled', () => {
+    const { audio, subject } = fixture(false)
+
+    expect(subject.breakCompleted(false)).toEqual({
+      cue: 'required-break',
+      caption: 'Beautiful. A new path is open.',
+    })
+    expect(audio.play).not.toHaveBeenCalled()
   })
 
   it('invalidates narration synchronously and holds every cue through capture', async () => {
@@ -93,7 +121,7 @@ describe('adventure narration', () => {
     subject.releaseVoice()
     expect(audio.play).not.toHaveBeenCalled()
     subject.breakCompleted(false)
-    expect(audio.play).toHaveBeenCalledExactlyOnceWith('required-break')
+    expect(audio.play).toHaveBeenCalledExactlyOnceWith('optional-break')
   })
 
   it('consumes a pending welcome before capture so it cannot replace the success cue', async () => {

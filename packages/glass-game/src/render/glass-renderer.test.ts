@@ -65,6 +65,9 @@ vi.mock('./museum', () => ({
     materialLibrary: { materials: new Set(), dispose: vi.fn() },
   }),
 }))
+vi.mock('./resonance-portal', () => ({
+  createResonancePortal: () => ({ root: new Group(), update: vi.fn() }),
+}))
 import { createGlassRenderer } from './glass-renderer'
 
 function browserFixture() {

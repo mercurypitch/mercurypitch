@@ -141,6 +141,28 @@
   box-shadow: 0 3px 16px #143d4b15;
   pointer-events: none;
 }
+.narrationCaption {
+  position: absolute;
+  left: 50%;
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 76px));
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(72%, 460px);
+  padding: 9px 16px;
+  border: 1px solid #fff4;
+  border-radius: 18px;
+  background: #173f49e8;
+  color: #fff9e6;
+  text-align: center;
+  font-size: 14px;
+  box-shadow: 0 4px 20px #102f3940;
+  pointer-events: none;
+}
+.narrationCaption strong {
+  margin-right: 0.55em;
+  color: #f0cd7e;
+  font-weight: 600;
+}
 .error {
   position: absolute;
   top: 150px;
@@ -569,6 +591,12 @@
     max-width: 75%;
     font-size: 12px;
     padding: 8px 12px;
+  }
+  .narrationCaption {
+    bottom: max(156px, calc(env(safe-area-inset-bottom) + 144px));
+    max-width: 70%;
+    padding: 8px 12px;
+    font-size: 12px;
   }
   .encounterOffer {
     bottom: max(180px, calc(env(safe-area-inset-bottom) + 165px));

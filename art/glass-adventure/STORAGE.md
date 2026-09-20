@@ -52,7 +52,7 @@ the source of truth.
   smaller exports and reports their source hashes.
 - `voice/v1`: twelve original Merc voice-design previews, four principal
   audition reels, isolated lines, exact scripts/settings, hashes and a browser
-  listening page. D Gentle Whimsical is the current owner favorite. No candidate is activated in the game until the owner makes the final choice.
+  listening page. The owner has since selected and activated original D2.
 - `voice/v2`: nine additional raw previews and three close variations on D, with
   audition reels, isolated lines, exact prompts/settings and audit records.
   The second listening page compares unchanged D2 with E1/F1/G1.
@@ -62,5 +62,8 @@ from the archived source and automated verification records.
 
 Merc's final first voice is original D2 Gentle Whimsical. `voice/v3` preserves
 selection and the verified ElevenLabs enrollment; `voice/RUNTIME.md` documents
-the three exact approved clips used by the game and their lifecycle policy.
+the first three exact approved clips used by the game and their lifecycle policy.
+`voice/v4` adds six new D2 glass reactions, preserving provider PCM, lossless
+WAVs, generation receipts and independent transcript audits. Its MP3 derivatives
+join the original gorgeous line in a seven-line game reaction pool.
 No old audition or lossless original was removed.

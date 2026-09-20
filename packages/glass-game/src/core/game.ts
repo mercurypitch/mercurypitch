@@ -3,6 +3,7 @@
 import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PlatformDefinition, } from '../contracts'
 import type { CourseCollider } from './collision'
 import { containsBody, FLAT_COURSE_COLLIDER } from './collision'
+import { crossesExitPortal, deriveExitPortalGeometry } from './exit-portal'
 import type { HoldJudge } from './hold'
 import { createHoldJudge } from './hold'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
@@ -38,6 +39,7 @@ export function createGlassGame(
   let elapsedSeconds = 0
   let accumulator = 0
   const brokenAt = new Map<string, number>()
+  const exitPortal = deriveExitPortalGeometry(level.exit)
 
   const platforms = () =>
     getActiveCourseSolids(level, completed).filter(
@@ -137,12 +139,14 @@ export function createGlassGame(
         accumulator = Math.max(0, accumulator - MOVEMENT.fixedStep)
         steps++
         const activeSolids = getActiveCourseSolids(level, completed)
+        const previousPosition = { ...player.position }
         const step = stepMovement(
           player,
           input,
           MOVEMENT.fixedStep,
           activeSolids,
           collider,
+          level.movement,
         )
         if (step.jumped) events.push({ type: 'jumped' })
         if (step.landed) events.push({ type: 'landed' })
@@ -181,20 +185,20 @@ export function createGlassGame(
             checkpointId = closestCheckpoint
             events.push({ type: 'checkpoint', id: checkpointId })
           }
-          const exit = level.exit
-          if (
-            requirementsMet(exit.requiresCompleted, completed) &&
-            Math.abs(player.position.y - exit.top) < 0.05 &&
-            player.position.x >= exit.minX &&
-            player.position.x <= exit.maxX &&
-            player.position.z >= exit.minZ &&
-            player.position.z <= exit.maxZ
-          ) {
-            complete = true
-            releaseMovement(player)
-            events.push({ type: 'complete' })
-            break
-          }
+        }
+        if (
+          requirementsMet(level.exit.requiresCompleted, completed) &&
+          crossesExitPortal(
+            previousPosition,
+            player.position,
+            exitPortal,
+            MOVEMENT,
+          )
+        ) {
+          complete = true
+          releaseMovement(player)
+          events.push({ type: 'complete' })
+          break
         }
       }
       if (accumulator >= MOVEMENT.fixedStep) accumulator %= MOVEMENT.fixedStep

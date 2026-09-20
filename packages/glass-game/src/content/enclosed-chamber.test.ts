@@ -120,7 +120,7 @@ describe('enclosed chamber content', () => {
     expect(level.authored).toEqual({
       levelId: 'glassworks-chamber',
       layoutId: 'chamber',
-      contentRevision: 1,
+      contentRevision: 2,
     })
     expect(level.spawn).toMatchObject({
       position: { x: 0, y: 0, z: -2.8 },

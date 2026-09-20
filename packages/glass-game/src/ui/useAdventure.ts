@@ -6,6 +6,7 @@ import { createGlassGame } from '../core/game'
 import type { GlassGameHost, GlassSound, GlassVoiceSession, MuseumAudioPreferences, } from '../host'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
+import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { createAdventureInput } from './input'
 import { microphoneError } from './mic-error'
 import { createAdventureNarration } from './narration'
@@ -20,6 +21,9 @@ export function useAdventure(
   const game = createGlassGame(level, host.loadProgress(level.id))
   const input = createAdventureInput()
   const [snapshot, setSnapshot] = createSignal(game.snapshot())
+  const [completionPresented, setCompletionPresented] = createSignal(
+    game.snapshot().complete,
+  )
   const [ready, setReady] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
   const [voiceMode, setVoiceMode] = createSignal<VoiceMode>('off')
@@ -28,6 +32,7 @@ export function useAdventure(
     level.guidance?.openingNotice ??
       'Explore the museum and approach a glass exhibit.',
   )
+  const [narrationCaption, setNarrationCaption] = createSignal('')
   const [paused, setPaused] = createSignal(false)
   const [tutorial, setTutorial] = createSignal(
     host.readPreference('tutorial') !== 'seen',
@@ -68,6 +73,9 @@ export function useAdventure(
   let samples: PitchObservation[] = []
   let soundTimer: ReturnType<typeof setTimeout> | undefined
   let noticeTimer: ReturnType<typeof setTimeout> | undefined
+  let narrationCaptionTimer: ReturnType<typeof setTimeout> | undefined
+  let completionTimer: ReturnType<typeof setTimeout> | undefined
+  let reducedMotion = false
   game.setPaused(untrack(tutorial))
 
   function refresh(): void {
@@ -94,6 +102,7 @@ export function useAdventure(
   }
 
   function cancel(): void {
+    clearNarrationCaption()
     narration.pause()
     stopCapture()
     stopSound()
@@ -109,6 +118,34 @@ export function useAdventure(
     noticeTimer = setTimeout(() => {
       if (alive) setNotice('')
     }, 5000)
+  }
+
+  function clearNarrationCaption(): void {
+    clearTimeout(narrationCaptionTimer)
+    narrationCaptionTimer = undefined
+    setNarrationCaption('')
+  }
+
+  function showNarrationCaption(caption: string): void {
+    clearNarrationCaption()
+    setNarrationCaption(caption)
+    narrationCaptionTimer = setTimeout(() => {
+      if (alive) setNarrationCaption('')
+    }, 5000)
+  }
+
+  function presentCompletion(): void {
+    clearTimeout(completionTimer)
+    completionTimer = undefined
+    if (alive) setCompletionPresented(true)
+  }
+
+  function scheduleCompletionFallback(): void {
+    clearTimeout(completionTimer)
+    const seconds = reducedMotion
+      ? EXIT_REDUCED_CELEBRATION_SECONDS
+      : EXIT_CELEBRATION_SECONDS
+    completionTimer = setTimeout(presentCompletion, seconds * 1000 + 100)
   }
 
   function events(batch: GameEvent[]): void {
@@ -127,18 +164,24 @@ export function useAdventure(
         const item = level.breakables.find(
           (candidate) => candidate.id === event.id,
         )
-        narration.breakCompleted(item?.optional === true)
+        const reaction = narration.breakCompleted(item?.optional === true)
+        showNarrationCaption(reaction.caption)
         const authoredNotice = level.guidance?.encounterSuccessNotices?.find(
           (notice) => notice.encounterId === event.id,
         )?.notice
         announce(
           authoredNotice ??
             (item?.optional === true
-              ? 'One more beautiful mess.'
+              ? 'Optional exhibit opened. Explore, or continue to the exit.'
               : 'Beautiful. A new path is open.'),
         )
-      } else if (event.type === 'checkpoint' || event.type === 'complete') {
+      } else if (event.type === 'checkpoint') {
         host.saveProgress(game.saveProgress())
+      } else if (event.type === 'complete') {
+        host.saveProgress(game.saveProgress())
+        input.clear()
+        renderer?.cancelHeadingFollow()
+        scheduleCompletionFallback()
       } else if (event.type === 'respawn') {
         input.clear()
         renderer?.cancelHeadingFollow()
@@ -171,6 +214,7 @@ export function useAdventure(
   }
 
   async function start(): Promise<void> {
+    clearNarrationCaption()
     const id = game.snapshot().nearbyBreakableId
     if (
       id === null ||
@@ -327,10 +371,13 @@ export function useAdventure(
   }
 
   onMount(() => {
+    reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
     try {
       renderer = createGlassRenderer(mount(), level, host.assetUrl, {
-        reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)')
-          .matches,
+        reducedMotion,
+        onExitCelebrationComplete: presentCompletion,
         onAssetError: () => {
           if (alive)
             announce(
@@ -449,6 +496,8 @@ export function useAdventure(
     alive = false
     cancelAnimationFrame(frameId)
     clearTimeout(noticeTimer)
+    clearNarrationCaption()
+    clearTimeout(completionTimer)
     stopCapture()
     stopSound()
     soundscape.dispose()
@@ -458,12 +507,14 @@ export function useAdventure(
   })
   return {
     snapshot,
+    completionPresented,
     ready,
     error,
     voiceMode,
     pitch,
     target,
     notice,
+    narrationCaption,
     paused,
     tutorial,
     input,

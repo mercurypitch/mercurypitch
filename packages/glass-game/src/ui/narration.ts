@@ -1,10 +1,11 @@
 // Merc narration lifecycle — gameplay cues yield synchronously to voice capture and session stops.
-import type { GlassMercNarration, MercNarrationCue, MercNarrationPreferences, } from '../host'
+import type { GlassMercNarration, MercNarrationCue, MercNarrationLine, MercNarrationPreferences, } from '../host'
+import { createMercReactionSelector, MERC_PATH_OPEN_LINE, } from './merc-reactions'
 
 export interface AdventureNarration {
   preferences(): MercNarrationPreferences | undefined
   welcomeGesture(): void
-  breakCompleted(optional: boolean): void
+  breakCompleted(optional: boolean): MercNarrationLine
   silenceForVoice(): Promise<void>
   releaseVoice(): void
   pause(): void
@@ -15,12 +16,15 @@ export interface AdventureNarration {
 export function createAdventureNarration(
   audio: GlassMercNarration | undefined,
   canPlay: () => boolean,
+  random: () => number = Math.random,
 ): AdventureNarration {
   let welcomeConsumed = audio?.preferences().enabled === false
   let welcomePending = false
   let welcomeGeneration = 0
   let voiceHeld = false
   let disposed = false
+  let requiredUsesPathOpen = true
+  const reactions = createMercReactionSelector(random)
 
   function invalidateWelcomeAttempt(): void {
     welcomeGeneration++
@@ -29,7 +33,14 @@ export function createAdventureNarration(
   }
 
   function play(cue: MercNarrationCue): void {
-    if (!audio || disposed || voiceHeld || !canPlay()) return
+    if (
+      !audio ||
+      !audio.preferences().enabled ||
+      disposed ||
+      voiceHeld ||
+      !canPlay()
+    )
+      return
     void audio.play(cue)
   }
 
@@ -63,7 +74,13 @@ export function createAdventureNarration(
       )
     },
     breakCompleted(optional) {
-      play(optional ? 'optional-break' : 'required-break')
+      const line =
+        optional || !requiredUsesPathOpen
+          ? reactions.next()
+          : MERC_PATH_OPEN_LINE
+      if (!optional) requiredUsesPathOpen = !requiredUsesPathOpen
+      play(line.cue)
+      return line
     },
     silenceForVoice() {
       if (disposed) return Promise.resolve()

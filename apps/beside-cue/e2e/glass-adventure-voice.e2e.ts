@@ -352,6 +352,12 @@ test('silence cannot earn progress; a fresh comfortable hold breaks and survives
   await expect
     .poll(() => page.evaluate(() => window.glassVoiceFixture.narrationStarts))
     .toBe(1)
+  await expect(page.getByTestId('merc-narration-caption')).toHaveText(
+    'Merc: Beautiful. A new path is open.',
+  )
+  await page.getByRole('button', { name: 'Pause game', exact: true }).click()
+  await expect(page.getByTestId('merc-narration-caption')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Back to the museum' }).click()
   await expectMicrophoneOff(page)
   const saved = await page.evaluate(
     () =>

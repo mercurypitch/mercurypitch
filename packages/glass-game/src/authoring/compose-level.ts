@@ -1,6 +1,7 @@
 // Level composer — coordinate focused authoring stages into one validated runtime definition.
 
 import type { LevelDefinition } from '../contracts'
+import { LEVEL_MOVEMENT_LIMITS } from '../contracts'
 import { applyActivationOverrides } from './activation-overrides'
 import { compileGuidance, validateVisualCoverage, } from './authored-presentation-validation'
 import { compileRoom } from './compile-room'
@@ -33,6 +34,30 @@ function validateSourceHeader(
       'invalid-number',
       'fallBelow',
       'Fall threshold must be finite.',
+    )
+  if (
+    source.movement !== undefined &&
+    (![
+      source.movement.walkSpeed,
+      source.movement.runSpeed,
+      source.movement.runDelaySeconds,
+      source.movement.runRampSeconds,
+    ].every(Number.isFinite) ||
+      source.movement.walkSpeed <= 0 ||
+      source.movement.runSpeed < source.movement.walkSpeed ||
+      source.movement.runSpeed > LEVEL_MOVEMENT_LIMITS.maximumSpeed ||
+      source.movement.runDelaySeconds < 0 ||
+      source.movement.runDelaySeconds >
+        LEVEL_MOVEMENT_LIMITS.maximumRunDelaySeconds ||
+      source.movement.runRampSeconds <= 0 ||
+      source.movement.runRampSeconds >
+        LEVEL_MOVEMENT_LIMITS.maximumRunRampSeconds)
+  )
+    diagnostic(
+      diagnostics,
+      'invalid-movement',
+      'movement',
+      `Movement must use finite values with 0 < walkSpeed <= runSpeed <= ${LEVEL_MOVEMENT_LIMITS.maximumSpeed}, 0 <= runDelaySeconds <= ${LEVEL_MOVEMENT_LIMITS.maximumRunDelaySeconds}, and 0 < runRampSeconds <= ${LEVEL_MOVEMENT_LIMITS.maximumRunRampSeconds}.`,
     )
   if (!validBounds3(source.worldBounds))
     diagnostic(
@@ -400,6 +425,9 @@ export function composeLevel(
       layoutId: source.layoutId,
       contentRevision: source.contentRevision,
     },
+    ...(source.movement === undefined
+      ? {}
+      : { movement: { ...source.movement } }),
     ...(guidance === undefined ? {} : { guidance }),
     spawn: {
       position: { ...(spawn?.value.position ?? { x: 0, y: 0, z: 0 }) },

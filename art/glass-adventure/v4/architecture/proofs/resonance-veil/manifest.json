@@ -1,0 +1,166 @@
+[
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "veil-locked",
+      "x": 12.096037511825562,
+      "z": 10.6,
+      "yaw": 3.141592653589793,
+      "distance": 2.4
+    },
+    "file": "800-veil-locked.png",
+    "metrics": {
+      "drawCalls": 89,
+      "triangles": 689687,
+      "textures": 27,
+      "geometries": 105
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "veil-open",
+      "x": 12.096037511825562,
+      "z": 10.6,
+      "yaw": 3.141592653589793,
+      "distance": 2.4,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ]
+    },
+    "file": "800-veil-open.png",
+    "metrics": {
+      "drawCalls": 79,
+      "triangles": 572948,
+      "textures": 27,
+      "geometries": 105
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "veil-release",
+      "x": 12.096037511825562,
+      "z": 12.7,
+      "yaw": 3.141592653589793,
+      "distance": 3.6,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ],
+      "celebrate": true
+    },
+    "file": "800-veil-release.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 563148,
+      "textures": 27,
+      "geometries": 106
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pageErrors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "veil-locked",
+      "x": 12.096037511825562,
+      "z": 10.6,
+      "yaw": 3.141592653589793,
+      "distance": 2.4
+    },
+    "file": "390-veil-locked.png",
+    "metrics": {
+      "drawCalls": 91,
+      "triangles": 711903,
+      "textures": 27,
+      "geometries": 105
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "veil-open",
+      "x": 12.096037511825562,
+      "z": 10.6,
+      "yaw": 3.141592653589793,
+      "distance": 2.4,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ]
+    },
+    "file": "390-veil-open.png",
+    "metrics": {
+      "drawCalls": 81,
+      "triangles": 595164,
+      "textures": 27,
+      "geometries": 105
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "veil-release",
+      "x": 12.096037511825562,
+      "z": 12.7,
+      "yaw": 3.141592653589793,
+      "distance": 3.6,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ],
+      "celebrate": true
+    },
+    "file": "390-veil-release.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 563148,
+      "textures": 27,
+      "geometries": 106
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pageErrors": []
+  }
+]

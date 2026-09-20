@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "character": "Merc",
+  "voiceId": "B4fBPRmasEsTgd6YlSok",
+  "selection": "D2 Gentle Whimsical",
+  "model": "eleven_v3",
+  "files": [
+    {
+      "cue": "beautiful-mess",
+      "assetId": "merc-voice-beautiful-mess",
+      "text": "Another beautiful mess.",
+      "file": "merc-d2-beautiful-mess.mp3",
+      "source": "art/glass-adventure/voice/v4/masters/merc-d2-beautiful-mess.wav",
+      "bytes": 35756,
+      "sha256": "487fa0effa01ec61ea36fd63cd28558e5f5f9abb1deb4c6209d55f7646adba12"
+    },
+    {
+      "cue": "little-disaster",
+      "assetId": "merc-voice-little-disaster",
+      "text": "A little note. A lovely little disaster.",
+      "file": "merc-d2-little-disaster.mp3",
+      "source": "art/glass-adventure/voice/v4/masters/merc-d2-little-disaster.wav",
+      "bytes": 52652,
+      "sha256": "cfb3d50a916545f63a51ca0a536960bdd35ee0c9b70677451d2c3188473f14b4"
+    },
+    {
+      "cue": "sparkling",
+      "assetId": "merc-voice-sparkling",
+      "text": "That was positively sparkling.",
+      "file": "merc-d2-sparkling.mp3",
+      "source": "art/glass-adventure/voice/v4/masters/merc-d2-sparkling.wav",
+      "bytes": 39596,
+      "sha256": "288aa99afa6ac0c1cde188069e47b314f9fd305d60bc8e9814b881a803c31f45"
+    },
+    {
+      "cue": "glass-had-plans",
+      "assetId": "merc-voice-glass-had-plans",
+      "text": "That glass had plans. So did you.",
+      "file": "merc-d2-glass-had-plans.mp3",
+      "source": "art/glass-adventure/voice/v4/masters/merc-d2-glass-had-plans.wav",
+      "bytes": 51116,
+      "sha256": "d765be8a4dc875fc354a36813bcc1795fd30101ab339b9aae63e8561e30f171b"
+    },
+    {
+      "cue": "music-to-my-ears",
+      "assetId": "merc-voice-music-to-my-ears",
+      "text": "Music to my ears. Confetti to my feet.",
+      "file": "merc-d2-music-to-my-ears.mp3",
+      "source": "art/glass-adventure/voice/v4/masters/merc-d2-music-to-my-ears.wav",
+      "bytes": 52652,
+      "sha256": "c60af501407e8009b55d39d460cf3261f9b1328b8c452fe63cd075daaacaabab"
+    },
+    {
+      "cue": "cracking-performance",
+      "assetId": "merc-voice-cracking-performance",
+      "text": "Now that was a cracking performance.",
+      "file": "merc-d2-cracking-performance.mp3",
+      "source": "art/glass-adventure/voice/v4/masters/merc-d2-cracking-performance.wav",
+      "bytes": 44972,
+      "sha256": "a428b54e62b4d91a182f349fd5035fb6765582b526b6f60757238ba37a0d5d0e"
+    }
+  ]
+}

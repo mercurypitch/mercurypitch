@@ -48,6 +48,46 @@ function codes(
 }
 
 describe('authoring validation', () => {
+  it('accepts bounded level movement tuning and rejects unsafe budgets', () => {
+    const movement = {
+      walkSpeed: 1.55,
+      runSpeed: 2.7,
+      runDelaySeconds: 0.6,
+      runRampSeconds: 0.8,
+    }
+    const configured = composeLevel(
+      { ...FOUNDATION_STRAIGHT_SOURCE, movement },
+      FOUNDATION_AUTHORING_CATALOG,
+    )
+    expect(configured.movement).toEqual(movement)
+    expect(
+      composeLevel(FOUNDATION_STRAIGHT_SOURCE, FOUNDATION_AUTHORING_CATALOG)
+        .movement,
+    ).toBeUndefined()
+
+    for (const invalid of [
+      { ...movement, walkSpeed: 0 },
+      { ...movement, runSpeed: 1 },
+      { ...movement, runSpeed: 6.01 },
+      { ...movement, runDelaySeconds: -0.01 },
+      { ...movement, runDelaySeconds: 5.01 },
+      { ...movement, runRampSeconds: 0 },
+      { ...movement, runRampSeconds: Number.NaN },
+      { ...movement, runRampSeconds: 5.01 },
+    ]) {
+      const diagnostics = diagnosticsFrom({
+        ...FOUNDATION_STRAIGHT_SOURCE,
+        movement: invalid,
+      })
+      expect(diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'invalid-movement',
+          path: 'movement',
+        }),
+      )
+    }
+  })
+
   it('rejects unsupported room rotations and scales without compiling non-finite geometry', () => {
     const room = FOUNDATION_STRAIGHT_SOURCE.rooms[0]
     const malformed = [

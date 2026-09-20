@@ -33,6 +33,19 @@ const files: Record<string, string> = {
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
+  ...Object.fromEntries(
+    [
+      'beautiful-mess',
+      'little-disaster',
+      'sparkling',
+      'glass-had-plans',
+      'music-to-my-ears',
+      'cracking-performance',
+    ].map((cue) => [
+      `merc-voice-${cue}`,
+      `adventure-voice-v2/merc-d2-${cue}.mp3`,
+    ]),
+  ),
   'audio-m01-loop': 'adventure-audio-v1/m01-loop.mp3',
   'audio-m03-loop': 'adventure-audio-v1/m03-loop.mp3',
   'audio-a01-loop': 'adventure-audio-v1/a01-loop.mp3',

@@ -1,0 +1,30 @@
+{
+  "revision": "merc-break-reactions-v4-2026-09-20",
+  "id": "glass-had-plans",
+  "text": "That glass had plans. So did you.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "That glass had plans. So did you.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 209204
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-20T13:58:01.480Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "bUUvDYosVT94XCvsnnhI",
+  "character_cost": "18",
+  "bytes": 149760,
+  "sha256": "52b3c24f3adcf9eaac69c3c97e9c8e1745a82c4040d21fff3dc2cc79de717179",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 3.12,
+  "completed_at": "2026-09-20T13:58:03.044Z"
+}

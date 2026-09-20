@@ -7,18 +7,26 @@ The earlier audition manifests record their historical generation state.
 
 ## First game integration
 
-| Cue | Exact approved line | Trigger |
-| --- | --- | --- |
-| Welcome | A little note can break glass. | First eligible movement/orbit/tutorial-close gesture after the scene is ready |
-| Required glass | Beautiful. A new path is open. | Required exhibit breaks |
-| Optional glass | Gorgeous. Absolutely gorgeous. | Optional exhibit breaks |
+| Cue            | Exact approved line                         | Trigger                                                                       |
+| -------------- | ------------------------------------------- | ----------------------------------------------------------------------------- |
+| Welcome        | A little note can break glass.              | First eligible movement/orbit/tutorial-close gesture after the scene is ready |
+| Required glass | Beautiful. A new path is open.              | First required break, alternating with the reaction pool afterward            |
+| Glass reaction | Seven short lines, listed in `v4/README.md` | Optional breaks and alternating required breaks                               |
 
 The three runtime MP3s are exact copies of the approved v1 D2 isolated clips,
 not regenerated performances. They total 140,144 bytes. The ordinary-Git
 runtime manifest is `apps/beside-cue/public/games/adventure-voice-v1/manifest.json`;
 it records original source paths, byte sizes and SHA-256 hashes. Original raw
 PCM, WAV reels, clips and every alternative stay in the LFS authoring archive.
-No new spoken-line generation was required.
+No regeneration was required for those first three clips. Six additional D2
+reactions are now generated and preserved in `v4/`, with ordinary-Git runtime
+exports in `adventure-voice-v2/`. The original gorgeous line joins them in a
+seven-line shuffled deck. Every line is used before reshuffling, with no repeat
+across the shuffle boundary. Selection is session-local, not a persistent reward.
+
+The same typed record selects audio and its exact caption. Captions remain
+available with Merc voice disabled; authored route guidance stays separate.
+The short caption clears on microphone start, interruption or five seconds.
 
 ## Playback policy
 

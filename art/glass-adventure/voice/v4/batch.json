@@ -1,0 +1,22 @@
+{
+  "revision": "merc-break-reactions-v4-2026-09-20",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "voice_name": "Merc V1 Gentle Whimsical D2",
+  "model_id": "eleven_v3",
+  "output_format": "pcm_24000",
+  "voice_settings": {
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0,
+    "use_speaker_boost": false,
+    "speed": 1
+  },
+  "lines": [
+    { "id": "beautiful-mess", "text": "Another beautiful mess.", "seed": 209201 },
+    { "id": "little-disaster", "text": "A little note. A lovely little disaster.", "seed": 209202 },
+    { "id": "sparkling", "text": "That was positively sparkling.", "seed": 209203 },
+    { "id": "glass-had-plans", "text": "That glass had plans. So did you.", "seed": 209204 },
+    { "id": "music-to-my-ears", "text": "Music to my ears. Confetti to my feet.", "seed": 209205 },
+    { "id": "cracking-performance", "text": "Now that was a cracking performance.", "seed": 209206 }
+  ]
+}

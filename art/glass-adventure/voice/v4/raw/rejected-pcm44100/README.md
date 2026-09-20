@@ -1,0 +1,1 @@
+First request was rejected with HTTP 403 and produced no audio. The original generator did not save the error body, so the exact cause is unconfirmed. A bounded follow-up uses lossless 24 kHz PCM, which does not require the Pro-only 44.1 kHz format. No ambiguous request is retried.

@@ -1,6 +1,7 @@
 // Merc narration tests — real controller races around fake browser transport and audio clocks.
 import { resetSharedAudioContext, sharedAudioContextOwners, suspendSharedAudioContext, } from '@irchiinnuss/audio-io/shared-audio-context'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MercNarrationCue } from '../host'
 import { createBrowserMercNarration } from './merc-narration'
 
 class ParamFake {
@@ -128,6 +129,27 @@ describe('Merc narration', () => {
     narration.dispose()
     await vi.advanceTimersByTimeAsync(120)
     expect(sharedAudioContextOwners()).toHaveLength(0)
+  })
+
+  it.each<[MercNarrationCue, string]>([
+    ['optional-break', 'merc-voice-optional-break'],
+    ['beautiful-mess', 'merc-voice-beautiful-mess'],
+    ['little-disaster', 'merc-voice-little-disaster'],
+    ['sparkling', 'merc-voice-sparkling'],
+    ['glass-had-plans', 'merc-voice-glass-had-plans'],
+    ['music-to-my-ears', 'merc-voice-music-to-my-ears'],
+    ['cracking-performance', 'merc-voice-cracking-performance'],
+  ])('maps reaction %s to stable asset %s', async (cue, asset) => {
+    const narration = createBrowserMercNarration(options)
+
+    await expect(narration.play(cue)).resolves.toBe(true)
+
+    expect(fetcher).toHaveBeenCalledWith(
+      `/assets/${asset}.mp3`,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+    narration.dispose()
+    await vi.advanceTimersByTimeAsync(120)
   })
 
   it('invalidates pending decode before microphone capture and ignores its late result', async () => {

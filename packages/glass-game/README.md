@@ -41,6 +41,23 @@ Floor support uses the foot centre so Merc falls from exposed edges and across v
 
 Compiled identities include level, layout, room, member type and local ID. Reordering arrays does not change them. `contentRevision` is metadata, not an automatic progress reset; moving a saved checkpoint or changing prerequisites still needs a deliberate compatibility decision. The explicit `spawnCheckpoint` controls fresh and reset visits independently of checkpoint sorting. Each layout has a distinct progress namespace; original Glassworks IDs remain unchanged.
 
+Optional level `movement` sets `walkSpeed`, `runSpeed`, `runDelaySeconds` and
+`runRampSeconds`. The chamber uses 1.55m/s easing to 2.7m/s after 0.6s of sustained
+near-full input, over a further 0.8s. Small stick input stays proportional to
+walking speed; release, a major turn, blockage and respawn reset the run-up.
+Authoring rejects nonfinite/unsafe values (speed above 6m/s, delay or ramp above
+5s). Levels without configuration retain the original 1.15m/s behavior. Test
+full-speed stops, corners, gaps and jumps when authoring a different budget.
+
+The exit's thinner horizontal axis determines the Resonance Veil's normal;
+the other axis determines its width. Rendering and completion share this
+geometry. A swept player crossing through its 1.5m-high aperture works walking
+or jumping, from either direction, with body-radius clearance at the edges.
+Required encounters still gate completion. Success is saved immediately, then
+the veil releases light for 1.2s (0.24s with reduced motion) before the results
+panel. Saved completed visits show the panel immediately. This is a finish
+presentation, not a campaign transition, portrait reward or score mechanic.
+
 `getActiveCourseSolids` is the shared authority for physics, visible proxies and camera obstacles. The renderer consumes `snapshot.activeSolidIds`, so a saved open gate is absent immediately, without depending on an animation. Static imported art needs matching proxies and reviewed dimensions before replacing these visible shapes. Room `cameraBounds` are transformed metadata; this milestone uses mesh obstruction, not a new room-constrained camera or streaming system.
 
 In a games-enabled Vite development server, open `/glass-game/?layout=straight` or `/glass-game/?layout=quarter-turn`. The default `/glass-game/` still opens Glassworks directly without BesideCue onboarding. Development proof content uses a separate package entry; the query selector is excluded from production. There is no public campaign selector, new voice judge, grade system or store-profile change in this milestone.

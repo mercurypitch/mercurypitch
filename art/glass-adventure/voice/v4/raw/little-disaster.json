@@ -1,0 +1,30 @@
+{
+  "revision": "merc-break-reactions-v4-2026-09-20",
+  "id": "little-disaster",
+  "text": "A little note. A lovely little disaster.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "A little note. A lovely little disaster.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 209202
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-20T13:57:56.236Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "xuumxBkaGmPIReSM2eov",
+  "character_cost": "22",
+  "bytes": 153600,
+  "sha256": "9b6434953843795dedf61b3c3f7ebf68fc420d51d23f81dcfb67b3551ef13c18",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 3.2,
+  "completed_at": "2026-09-20T13:57:59.455Z"
+}

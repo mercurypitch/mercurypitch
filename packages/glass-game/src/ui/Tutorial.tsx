@@ -4,6 +4,7 @@ import { focusDialog, trapDialogKeys } from './dialog-focus'
 import styles from './GlassAdventure.module.css'
 
 interface TutorialProps {
+  autoRun?: boolean
   onClose(): void
 }
 export function Tutorial(props: TutorialProps) {
@@ -109,7 +110,9 @@ export function Tutorial(props: TutorialProps) {
         </p>
         <p class={styles.tutorialAside}>
           {page() === 0
-            ? 'Miss a jump? You return to a safe spot. Your broken glass stays broken.'
+            ? props.autoRun === true
+              ? 'Keep moving to ease into a run; small thumbstick moves stay gentle. Falls return you to safety.'
+              : 'Miss a jump? You return to a safe spot. Your broken glass stays broken.'
             : 'No shouting and no rush. Cancel whenever you want to take a breath.'}
         </p>
         <div class={styles.tutorialBottom}>

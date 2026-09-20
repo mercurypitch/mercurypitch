@@ -18,6 +18,23 @@ const floor: PlatformDefinition = {
   kind: 'deck',
   material: 'stone',
 }
+const pacedMovement = {
+  walkSpeed: 1.55,
+  runSpeed: 2.7,
+  runDelaySeconds: 0.6,
+  runRampSeconds: 0.8,
+}
+
+function moveFor(
+  state: ReturnType<typeof createMovement>,
+  input: MovementInput,
+  seconds: number,
+  dt = MOVEMENT.fixedStep,
+  course: readonly PlatformDefinition[] = [floor],
+): void {
+  for (let elapsed = 0; elapsed < seconds - dt / 2; elapsed += dt)
+    stepMovement(state, input, dt, course, FLAT_COURSE_COLLIDER, pacedMovement)
+}
 
 describe('manual adventure movement', () => {
   it('moves freely on x/z without a diagonal speed bonus', () => {
@@ -39,6 +56,107 @@ describe('manual adventure movement', () => {
     expect(Math.hypot(diagonal.velocity.x, diagonal.velocity.z)).toBeCloseTo(
       1.15,
     )
+  })
+
+  it('preserves legacy pace without a level movement configuration', () => {
+    const state = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    for (let i = 0; i < 360; i++)
+      stepMovement(state, { ...idle, moveX: 1 }, MOVEMENT.fixedStep, [floor])
+
+    expect(state.velocity.x).toBeCloseTo(MOVEMENT.speed)
+    expect(state.position.x).toBeCloseTo(3.37, 1)
+  })
+
+  it('walks first, then ramps gently to the configured run speed', () => {
+    const state = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    const full = { ...idle, moveX: 1 }
+
+    moveFor(state, full, 0.5)
+    expect(state.velocity.x).toBeCloseTo(pacedMovement.walkSpeed, 2)
+    expect(state.runSeconds).toBeCloseTo(0.5, 2)
+
+    moveFor(state, full, 0.5)
+    expect(state.velocity.x).toBeGreaterThan(pacedMovement.walkSpeed)
+    expect(state.velocity.x).toBeLessThan(pacedMovement.runSpeed)
+
+    moveFor(state, full, 0.6)
+    expect(state.velocity.x).toBeCloseTo(pacedMovement.runSpeed, 2)
+    expect(state.runSeconds).toBeCloseTo(
+      pacedMovement.runDelaySeconds + pacedMovement.runRampSeconds,
+    )
+  })
+
+  it('keeps feathered analog movement at walking pace and normalizes a full diagonal', () => {
+    const feathered = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    const diagonal = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    moveFor(feathered, { ...idle, moveX: 0.5 }, 2)
+    moveFor(diagonal, { ...idle, moveX: 1, moveZ: 1 }, 2)
+
+    expect(feathered.velocity.x).toBeCloseTo(pacedMovement.walkSpeed * 0.5)
+    expect(feathered.runSeconds).toBe(0)
+    expect(Math.hypot(diagonal.velocity.x, diagonal.velocity.z)).toBeCloseTo(
+      pacedMovement.runSpeed,
+    )
+  })
+
+  it('resets run-up on stop, reversal and lifecycle release', () => {
+    const state = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    moveFor(state, { ...idle, moveX: 1 }, 1.6)
+    expect(state.velocity.x).toBeCloseTo(pacedMovement.runSpeed, 2)
+
+    const releasedAt = state.position.x
+    moveFor(state, idle, 0.2)
+    expect(state.runSeconds).toBe(0)
+    expect(state.velocity.x).toBe(0)
+    expect(state.position.x - releasedAt).toBeLessThan(0.25)
+
+    moveFor(state, { ...idle, moveX: 1 }, 0.7)
+    expect(state.runSeconds).toBeGreaterThan(0.6)
+    moveFor(state, { ...idle, moveX: -1 }, MOVEMENT.fixedStep)
+    expect(state.runSeconds).toBe(0)
+
+    moveFor(state, { ...idle, moveX: -1 }, 0.7)
+    releaseMovement(state)
+    expect(state.runSeconds).toBe(0)
+  })
+
+  it('does not charge run-up while pushing into a wall', () => {
+    const wall = {
+      ...floor,
+      id: 'run-wall',
+      minX: 1,
+      maxX: 1.05,
+      top: 1,
+      thickness: 1,
+    }
+    const state = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    moveFor(state, { ...idle, moveX: 1 }, 2, MOVEMENT.fixedStep, [floor, wall])
+
+    expect(state.position.x).toBeCloseTo(1 - MOVEMENT.radius)
+    expect(state.velocity.x).toBe(0)
+    expect(state.runSeconds).toBe(0)
+
+    moveFor(state, { ...idle, moveZ: 1 }, 0.2, MOVEMENT.fixedStep, [
+      floor,
+      wall,
+    ])
+    expect(Math.abs(state.velocity.z)).toBeLessThanOrEqual(
+      pacedMovement.walkSpeed,
+    )
+  })
+
+  it('reaches the same bounded run across fixed-step partitions', () => {
+    const fine = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    const coarse = createMovement({ x: 0, y: 0, z: 0 }, 0)
+    const full = { ...idle, moveZ: -1 }
+    moveFor(fine, full, 1.8, 1 / 120)
+    moveFor(coarse, full, 1.8, 1 / 60)
+
+    expect(fine.velocity.z).toBeCloseTo(-pacedMovement.runSpeed, 2)
+    expect(coarse.velocity.z).toBeCloseTo(fine.velocity.z, 2)
+    expect(coarse.position.z).toBeCloseTo(fine.position.z, 1)
+    expect(fine.runSeconds).toBeLessThanOrEqual(1.4)
+    expect(coarse.runSeconds).toBeLessThanOrEqual(1.4)
   })
 
   it('holding jump only jumps once, including after landing', () => {

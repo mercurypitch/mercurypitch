@@ -57,7 +57,9 @@ function validateSelection() {
     selection.runtime_integration_in_enrollment_scope !== false ||
     selection.production_line_generation_in_enrollment_scope !== false
   )
-    throw new Error('Enrollment scope must exclude runtime and line generation.')
+    throw new Error(
+      'Enrollment scope must exclude runtime and line generation.',
+    )
 
   const candidate = sourceManifest.candidates.find(
     (item) => item.id === 'd' && item.selected_take === 'd2',
@@ -138,7 +140,9 @@ async function searchVoices(key, { name, voiceId } = {}) {
     })
     if (!response.ok) {
       const detail = await providerError(response, key)
-      const error = new Error(`Voice search failed with HTTP ${response.status}.`)
+      const error = new Error(
+        `Voice search failed with HTTP ${response.status}.`,
+      )
       error.provider = { http_status: response.status, ...detail }
       throw error
     }
@@ -219,7 +223,8 @@ try {
       JSON.stringify({
         status: 'already-complete',
         voice_id: existingReceipt.permanent_voice?.voice_id ?? null,
-        voice_name: existingReceipt.permanent_voice?.name ?? selection.voice_name,
+        voice_name:
+          existingReceipt.permanent_voice?.name ?? selection.voice_name,
       }),
     )
     process.exit(0)
@@ -244,7 +249,8 @@ try {
     checked_at: new Date().toISOString(),
     http_status: error.provider?.http_status ?? null,
     provider_status: error.provider?.provider_status ?? null,
-    provider_message: error.provider?.provider_message ?? safeMessage(error.message, key),
+    provider_message:
+      error.provider?.provider_message ?? safeMessage(error.message, key),
   }
   await saveJsonAtomic(resolve(root, 'preflight-search.json'), summary)
   throw error
@@ -254,7 +260,9 @@ const exactNameMatches = existingVoices.filter(
   (voice) => voice.name === selection.voice_name,
 )
 if (exactNameMatches.length > 1)
-  throw new Error('Multiple exact-name voices exist; reconcile before enrollment.')
+  throw new Error(
+    'Multiple exact-name voices exist; reconcile before enrollment.',
+  )
 if (exactNameMatches.length === 1) {
   const existing = exactNameMatches[0]
   if (
@@ -316,10 +324,8 @@ const receipt = {
   runtime_integrated: false,
   production_lines_generated: false,
   official_documentation: {
-    create:
-      'https://elevenlabs.io/docs/api-reference/text-to-voice/create',
-    list_voices:
-      'https://elevenlabs.io/docs/api-reference/voices/search',
+    create: 'https://elevenlabs.io/docs/api-reference/text-to-voice/create',
+    list_voices: 'https://elevenlabs.io/docs/api-reference/voices/search',
   },
 }
 await saveJson(receiptPath, receipt, { flag: 'wx' })

@@ -2481,8 +2481,103 @@
       "path": "v4/architecture/proofs/playable-v1/390-merc-voice-settings.png",
       "bytes": 75041,
       "sha256": "97f7a099fcd7563918c17a6d0e4e9086daa24b2ea0ecc9b5079a77968f333115"
+    },
+    {
+      "path": "voice/v4/masters/merc-d2-beautiful-mess.wav",
+      "bytes": 103758,
+      "sha256": "090514e8b528a374a68dbe34edf40a47ceff6cf58e8c78f1a73fb2e39bb600c0"
+    },
+    {
+      "path": "voice/v4/masters/merc-d2-cracking-performance.wav",
+      "bytes": 130638,
+      "sha256": "1ebf5cf27479c3669e573cbf4c339675f6df3ce6f261a7fe2c126590dd8a1dd1"
+    },
+    {
+      "path": "voice/v4/masters/merc-d2-glass-had-plans.wav",
+      "bytes": 149838,
+      "sha256": "146e1747696d5e2a0c4b8c7411bf6bf13acd477932abc548dc68784fb577b937"
+    },
+    {
+      "path": "voice/v4/masters/merc-d2-little-disaster.wav",
+      "bytes": 153678,
+      "sha256": "3c62c60948c0b4a15c398f5bcf504388051685f6bca6e3a19d6403b12b7ee621"
+    },
+    {
+      "path": "voice/v4/masters/merc-d2-music-to-my-ears.wav",
+      "bytes": 153678,
+      "sha256": "5c2dd3912ea8e615174b508e0d8df970652c5f936b4dcb448a4fd9d10fdeee2f"
+    },
+    {
+      "path": "voice/v4/masters/merc-d2-sparkling.wav",
+      "bytes": 115278,
+      "sha256": "c1f225a7d48edc34c352407e2ab7ac933de399dda0bdaead3618d9c54c78294a"
+    },
+    {
+      "path": "voice/v4/raw/beautiful-mess.pcm",
+      "bytes": 103680,
+      "sha256": "97be1e32b2add1e2292198917b74d30529b64a3a2240a0310e2fce79ddc2302d"
+    },
+    {
+      "path": "voice/v4/raw/cracking-performance.pcm",
+      "bytes": 130560,
+      "sha256": "ac27ed842aa146d10dfba4498da33845b48731d27ad9ab018c77afa43fc8ac1b"
+    },
+    {
+      "path": "voice/v4/raw/glass-had-plans.pcm",
+      "bytes": 149760,
+      "sha256": "52b3c24f3adcf9eaac69c3c97e9c8e1745a82c4040d21fff3dc2cc79de717179"
+    },
+    {
+      "path": "voice/v4/raw/little-disaster.pcm",
+      "bytes": 153600,
+      "sha256": "9b6434953843795dedf61b3c3f7ebf68fc420d51d23f81dcfb67b3551ef13c18"
+    },
+    {
+      "path": "voice/v4/raw/music-to-my-ears.pcm",
+      "bytes": 153600,
+      "sha256": "867e8c158addf0d3bfdd84dc7d632a2aece6d8232edce6945422921220745085"
+    },
+    {
+      "path": "voice/v4/raw/sparkling.pcm",
+      "bytes": 115200,
+      "sha256": "b7fbaf0f00983e4e2d747210277cf5beed4054cf6d9fcf6a518229932fe161fc"
+    },
+    {
+      "path": "v4/architecture/proofs/resonance-veil/390-veil-locked.png",
+      "bytes": 340732,
+      "sha256": "875ea08af040a348273d1e4460c36804fd62544f20351bb46c4e623fe8771ff7"
+    },
+    {
+      "path": "v4/architecture/proofs/resonance-veil/390-veil-open.png",
+      "bytes": 333945,
+      "sha256": "297c36267d474cd6ea7cdc3d2018b3d284be90805da169f556ee2fd44f7f3aa4"
+    },
+    {
+      "path": "v4/architecture/proofs/resonance-veil/390-veil-release.png",
+      "bytes": 322486,
+      "sha256": "7d1521131703bf85e3b74c263ac6cba34d295ee936dd3f8a384f136dbd55cdf1"
+    },
+    {
+      "path": "v4/architecture/proofs/resonance-veil/800-veil-locked.png",
+      "bytes": 520317,
+      "sha256": "654200c86dd6c0fdb1d95f995aa2afba44688d51b0297ecaef3301f7ae0d08b3"
+    },
+    {
+      "path": "v4/architecture/proofs/resonance-veil/800-veil-open.png",
+      "bytes": 514456,
+      "sha256": "723e41f0292e2f90b61d1ad0e0bd21b7d5e2357c6d161113f28f2a96e018a9ab"
+    },
+    {
+      "path": "v4/architecture/proofs/resonance-veil/800-veil-release.png",
+      "bytes": 516894,
+      "sha256": "1dab03cb806d1f5cdea963bbce3c81718cce3a6ea49b892023d22ee108b56cef"
+    },
+    {
+      "path": "v4/architecture/proofs/resonance-veil/390-reaction-caption.png",
+      "bytes": 360190,
+      "sha256": "839cf75e3bb096989a0542c499adaae7356cbdc14d084f38b7f0fd872d30a1d6"
     }
   ],
-  "fileCount": 496,
-  "totalBytes": 2339030127
+  "fileCount": 515,
+  "totalBytes": 2343552415
 }

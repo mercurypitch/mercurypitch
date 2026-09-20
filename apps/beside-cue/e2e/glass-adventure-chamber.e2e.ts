@@ -95,8 +95,8 @@ async function walk(
   await page.keyboard.down(key)
   let reached = false
   try {
-    // The longest leg is 12m; Merc's accepted walking speed is 1.15m/s.
-    // Allow acceleration and observation margin within a bounded 19.2s.
+    // Follow actual position so this route also checks authored run-up tuning.
+    // Bound traversal to 19.2s, including acceleration and observation margin.
     for (let frame = 0; frame < 600; frame++) {
       await page.clock.runFor(32)
       // Every join in the required route is level and continuously supported.
@@ -244,6 +244,7 @@ test('the enclosed route loads its art, respects both gates and crosses every se
   await page.keyboard.down('KeyW')
   await page.clock.runFor(1000)
   await page.keyboard.up('KeyW')
+  await page.clock.runFor(400)
   await expect(page.getByRole('dialog')).toBeVisible()
   const saved = await page.evaluate(
     (key) => JSON.parse(localStorage.getItem(key) ?? 'null') as unknown,

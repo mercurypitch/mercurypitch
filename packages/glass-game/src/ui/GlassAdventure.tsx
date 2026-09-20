@@ -219,6 +219,23 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           {adventure.notice()}
         </p>
       </Show>
+      <Show
+        when={
+          adventure.narrationCaption() &&
+          !adventure.tutorial() &&
+          !adventure.paused()
+        }
+      >
+        <p
+          class={styles.narrationCaption}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-testid="merc-narration-caption"
+        >
+          <strong>Merc:</strong> {adventure.narrationCaption()}
+        </p>
+      </Show>
       <Show when={adventure.error()}>
         <div class={styles.error} role="alert">
           {adventure.error()}
@@ -346,7 +363,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         </div>
       </Show>
       <Show when={adventure.tutorial()}>
-        <Tutorial onClose={adventure.closeTutorial} />
+        <Tutorial
+          onClose={adventure.closeTutorial}
+          autoRun={
+            (level.movement?.runSpeed ?? 0) > (level.movement?.walkSpeed ?? 0)
+          }
+        />
       </Show>
       <Show when={adventure.paused() && !adventure.tutorial()}>
         <div class={styles.scrim}>
@@ -475,7 +497,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       </Show>
       <Show
         when={
-          adventure.snapshot().complete &&
+          adventure.completionPresented() &&
           !adventure.paused() &&
           !adventure.tutorial()
         }

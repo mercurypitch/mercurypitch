@@ -175,12 +175,26 @@ export interface LevelPresentationDefinition {
   assetRecipeIds: readonly string[]
 }
 
+export interface LevelMovementDefinition {
+  walkSpeed: number
+  runSpeed: number
+  runDelaySeconds: number
+  runRampSeconds: number
+}
+
+export const LEVEL_MOVEMENT_LIMITS = {
+  maximumSpeed: 6,
+  maximumRunDelaySeconds: 5,
+  maximumRunRampSeconds: 5,
+} as const
+
 export interface LevelDefinition {
   id: string
   title: string
   authored?: AuthoredLevelIdentity
   guidance?: LevelGuidanceDefinition
   presentation?: LevelPresentationDefinition
+  movement?: LevelMovementDefinition
   spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]
   solids?: readonly SolidPropDefinition[]

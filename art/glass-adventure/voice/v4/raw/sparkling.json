@@ -1,0 +1,30 @@
+{
+  "revision": "merc-break-reactions-v4-2026-09-20",
+  "id": "sparkling",
+  "text": "That was positively sparkling.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "That was positively sparkling.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 209203
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-20T13:57:59.456Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "2wgIOYXL7RkjJrHQ27Wy",
+  "character_cost": "16",
+  "bytes": 115200,
+  "sha256": "b7fbaf0f00983e4e2d747210277cf5beed4054cf6d9fcf6a518229932fe161fc",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 2.4,
+  "completed_at": "2026-09-20T13:58:01.480Z"
+}

@@ -12,6 +12,27 @@ test.use({
 // before passing on retry; this is an allowance, not a hardware performance gate.
 test.setTimeout(180_000)
 
+const RASTER_METHODS = [
+  'clear',
+  'drawArrays',
+  'drawArraysInstanced',
+  'drawElements',
+  'drawElementsInstanced',
+] as const
+
+async function omitRasterOutput(page: Page): Promise<void> {
+  // This spec asserts controller state and accessible UI. Keep the real scene
+  // graph, input, RAF and physics paths, while omitting only SwiftShader pixel
+  // output that can turn a few virtual frames into a minute of CI work.
+  await page.addInitScript((methods) => {
+    for (const name of methods)
+      Object.defineProperty(WebGL2RenderingContext.prototype, name, {
+        configurable: true,
+        value: () => undefined,
+      })
+  }, RASTER_METHODS)
+}
+
 async function openMuseum(page: Page): Promise<void> {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
@@ -21,6 +42,7 @@ async function openMuseum(page: Page): Promise<void> {
   page.on('requestfailed', (request) =>
     errors.push(`${request.url()} ${request.failure()?.errorText}`),
   )
+  await omitRasterOutput(page)
   await page.addInitScript(() =>
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen'),
   )
@@ -46,63 +68,6 @@ async function value(page: Page, key: string): Promise<number> {
   )
 }
 
-const RASTER_METHODS = [
-  'clear',
-  'drawArrays',
-  'drawArraysInstanced',
-  'drawElements',
-  'drawElementsInstanced',
-] as const
-
-async function runIdleWithoutRaster(
-  page: Page,
-  duration: number,
-): Promise<void> {
-  // Keep the controller RAF and its clamped quiet-time dt advancing while
-  // omitting only stationary SwiftShader draws that do not affect the check.
-  const canvas = page.getByLabel('Floating glass museum')
-  await canvas.evaluate((element: HTMLCanvasElement, methods) => {
-    const gl = element.getContext('webgl2')
-    if (gl === null) throw new Error('The museum WebGL2 context is unavailable')
-    const context = gl as WebGL2RenderingContext & {
-      __controlsRasterMethods?: Record<string, (...args: unknown[]) => unknown>
-    }
-    context.__controlsRasterMethods = Object.fromEntries(
-      methods.map((name) => [
-        name,
-        (context[name] as (...args: unknown[]) => unknown).bind(context),
-      ]),
-    )
-    for (const name of methods)
-      Object.defineProperty(context, name, {
-        configurable: true,
-        value: () => undefined,
-      })
-  }, RASTER_METHODS)
-  try {
-    await page.clock.runFor(duration)
-  } finally {
-    await canvas.evaluate((element: HTMLCanvasElement, methods) => {
-      const gl = element.getContext('webgl2') as
-        | (WebGL2RenderingContext & {
-            __controlsRasterMethods?: Record<
-              string,
-              (...args: unknown[]) => unknown
-            >
-          })
-        | null
-      if (gl === null || gl.__controlsRasterMethods === undefined)
-        throw new Error('The museum raster output was not suspended')
-      for (const name of methods)
-        Object.defineProperty(gl, name, {
-          configurable: true,
-          value: gl.__controlsRasterMethods[name],
-        })
-      delete gl.__controlsRasterMethods
-    }, RASTER_METHODS)
-  }
-}
-
 test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops @smoke', async ({
   page,
 }) => {
@@ -115,7 +80,7 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await page.clock.runFor(32)
   const draggedYaw = await value(page, 'camera-yaw')
   expect(Math.abs(draggedYaw - initialYaw)).toBeGreaterThan(0.2)
-  await runIdleWithoutRaster(page, 1_900)
+  await page.clock.runFor(1_900)
   const heldStart = {
     x: await value(page, 'player-x'),
     z: await value(page, 'player-z'),
@@ -147,7 +112,7 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
   await page.mouse.up()
 
-  await runIdleWithoutRaster(page, 1_900)
+  await page.clock.runFor(1_900)
   expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
   const strafeStart = {
     x: await value(page, 'player-x'),
@@ -210,7 +175,7 @@ test('wheel zoom and a short side step complete the same heading turn @smoke', a
     await page.keyboard.down('KeyA')
     await page.clock.runFor(200)
     await page.keyboard.up('KeyA')
-    await runIdleWithoutRaster(page, 1_200)
+    await page.clock.runFor(1_200)
     const dx = (await value(page, 'player-x')) - start[0]
     const dz = (await value(page, 'player-z')) - start[1]
     expect(Math.hypot(dx, dz)).toBeGreaterThan(0.15)
@@ -225,7 +190,7 @@ test('wheel zoom and a short side step complete the same heading turn @smoke', a
   await page.mouse.up()
   await page.clock.runFor(32)
   const manualYaw = await value(page, 'camera-yaw')
-  await runIdleWithoutRaster(page, 1_200)
+  await page.clock.runFor(1_200)
   expect(await value(page, 'camera-yaw')).toBeCloseTo(manualYaw, 5)
   // Move immediately after a second look gesture, without waiting out a long
   // quiet timer. The short movement must still leave a turn to finish.
@@ -237,7 +202,7 @@ test('wheel zoom and a short side step complete the same heading turn @smoke', a
   await page.keyboard.down('KeyA')
   await page.clock.runFor(200)
   await page.keyboard.up('KeyA')
-  await runIdleWithoutRaster(page, 1_200)
+  await page.clock.runFor(1_200)
   const heading = Math.atan2(
     start[0] - (await value(page, 'player-x')),
     start[1] - (await value(page, 'player-z')),
@@ -263,7 +228,7 @@ test('changing a held key chord steers from the current view @smoke', async ({
   await page.mouse.down()
   await page.mouse.move(360, 210, { steps: 3 })
   await page.mouse.up()
-  await runIdleWithoutRaster(page, 250)
+  await page.clock.runFor(250)
   await page.keyboard.down('KeyA')
   await page.clock.runFor(200)
 
@@ -384,6 +349,7 @@ test('a completed gallery restores, then replay starts a fresh visit', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 640, height: 480 })
+  await omitRasterOutput(page)
   await page.addInitScript(() => {
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
     localStorage.setItem(
@@ -410,6 +376,9 @@ test('a completed gallery restores, then replay starts a fresh visit', async ({
     '3',
   )
   await page.getByRole('button', { name: 'Play this gallery again' }).click()
+  await expect(page.getByLabel('0 of 3 main exhibits opened')).toBeVisible({
+    timeout: 30_000,
+  })
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
     'true',
@@ -417,7 +386,6 @@ test('a completed gallery restores, then replay starts a fresh visit', async ({
   )
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-completed',
-    '0',
   )
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-checkpoint',

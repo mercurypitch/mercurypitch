@@ -1,6 +1,6 @@
 // Level authoring contracts — reusable local room data compiled into runtime definitions.
 
-import type { Bounds3, BoundsXZ, CheckpointDefinition, HoldDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
+import type { Bounds3, BoundsXZ, CheckpointDefinition, HoldDefinition, LevelMovementDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
 
 export type QuarterTurn = 0 | 1 | 2 | 3
 
@@ -123,6 +123,7 @@ export interface AuthoredLevelSource {
   layoutId: string
   contentRevision: number
   title: string
+  movement?: LevelMovementDefinition
   guidance?: AuthoredLevelGuidance
   rooms: readonly RoomPlacement[]
   exhibits: readonly ExhibitPlacement[]

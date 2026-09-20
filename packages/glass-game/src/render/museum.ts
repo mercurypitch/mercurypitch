@@ -315,21 +315,6 @@ export function createMuseum(
     )
     root.add(arch)
   }
-  const exit = level.exit
-  const portal = new Group()
-  portal.position.set(
-    (exit.minX + exit.maxX) / 2,
-    exit.top + 0.75,
-    (exit.minZ + exit.maxZ) / 2,
-  )
-  const halo = new Mesh(new TorusGeometry(0.59, 0.035, 8, 64), materials.gold)
-  portal.add(halo)
-  const inner = new Mesh(
-    new TorusGeometry(0.52, 0.014, 6, 64),
-    new MeshBasicMaterial({ color: 0xaaffee }),
-  )
-  portal.add(inner)
-  root.add(portal)
   return {
     root,
     materialLibrary,
@@ -481,9 +466,6 @@ export function createMuseum(
         ;(pad.material as MeshBasicMaterial).opacity =
           snapshot.nearbyBreakableId === id ? 0.55 : 0.18
       })
-      inner.visible = exit.requiresCompleted.every((id) =>
-        snapshot.completedBreakableIds.includes(id),
-      )
     },
   }
 }

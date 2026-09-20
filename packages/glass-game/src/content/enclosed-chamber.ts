@@ -7,8 +7,14 @@ import { ENCLOSED_CHAMBER_HALF, ENCLOSED_MUSEUM_AUTHORING_CATALOG, } from './enc
 export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
   levelId: 'glassworks-chamber',
   layoutId: 'chamber',
-  contentRevision: 1,
+  contentRevision: 2,
   title: 'The Enclosed Gallery',
+  movement: {
+    walkSpeed: 1.55,
+    runSpeed: 2.7,
+    runDelaySeconds: 0.6,
+    runRampSeconds: 0.8,
+  },
   guidance: {
     subtitle: 'The first enclosed gallery',
     openingNotice: 'Follow the gold inlay to the threshold goblet.',
@@ -20,7 +26,8 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       },
       {
         encounterId: 'passage-decanter',
-        notice: 'The terrace is open. Step into the sky.',
+        notice:
+          'The terrace is open. Walk or jump through the shimmering veil to finish.',
       },
       {
         encounterId: 'window-coupe',

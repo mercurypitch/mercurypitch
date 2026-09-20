@@ -50,8 +50,14 @@ assert(
   'D voice description mismatch.',
 )
 assert(receipt.status === 'complete', 'Enrollment receipt is not complete.')
-assert(receipt.calls_completed === 0 || receipt.calls_completed === 1, 'Call bound failed.')
-assert(receipt.credentials_persisted === false, 'Credential persistence flag failed.')
+assert(
+  receipt.calls_completed === 0 || receipt.calls_completed === 1,
+  'Call bound failed.',
+)
+assert(
+  receipt.credentials_persisted === false,
+  'Credential persistence flag failed.',
+)
 assert(enrolled.status === 'available', 'Permanent voice is not available.')
 assert(
   typeof enrolled.voice_id === 'string' && enrolled.voice_id.length > 0,
@@ -67,7 +73,10 @@ assert(
   enrolled.source.raw_sha256 === selection.source.raw_sha256,
   'Permanent source hash mismatch.',
 )
-assert(enrolled.runtime_integrated === false, 'Runtime was unexpectedly integrated.')
+assert(
+  enrolled.runtime_integrated === false,
+  'Runtime was unexpectedly integrated.',
+)
 assert(
   enrolled.production_lines_generated === false,
   'Production lines were unexpectedly generated.',

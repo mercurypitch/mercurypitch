@@ -41,6 +41,17 @@ export type MercNarrationCue =
   | 'tutorial-note'
   | 'required-break'
   | 'optional-break'
+  | 'beautiful-mess'
+  | 'little-disaster'
+  | 'sparkling'
+  | 'glass-had-plans'
+  | 'music-to-my-ears'
+  | 'cracking-performance'
+
+export interface MercNarrationLine {
+  readonly cue: MercNarrationCue
+  readonly caption: string
+}
 
 export interface MercNarrationPreferences {
   enabled: boolean

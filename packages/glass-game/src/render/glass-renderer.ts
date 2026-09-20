@@ -14,6 +14,7 @@ import { createMuseumEnvironment } from './environment'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
+import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumSceneRecipe, getMuseumVisualRecipe, } from './scene-catalog'
 import { createVessel } from './vessels'
 
@@ -21,6 +22,7 @@ export interface GlassRendererOptions {
   reducedMotion?: boolean
   onAssetError?: (id: string, error: unknown) => void
   onContextLost?: () => void
+  onExitCelebrationComplete?: () => void
 }
 
 export interface GlassRenderer {
@@ -114,6 +116,12 @@ export function createGlassRenderer(
   }
   const museum = createMuseum(level, materials)
   scene.add(museum.root)
+  const portal = createResonancePortal(
+    level.exit,
+    materials,
+    options.reducedMotion ?? false,
+  )
+  scene.add(portal.root)
   const contact = createContactShadow(level)
   scene.add(contact.mesh)
   const vessels = new Map(
@@ -185,6 +193,7 @@ export function createGlassRenderer(
           position,
           [
             contact.mesh,
+            portal.root,
             ...[...vessels.values()].map((vessel) => vessel.root),
             ...(merc ? [merc.root] : []),
           ],
@@ -220,6 +229,7 @@ export function createGlassRenderer(
       latest = snapshot
       const dt = snapshot.paused ? 0 : Math.max(0, Math.min(0.05, delta))
       museum.update(snapshot)
+      if (portal.update(snapshot, dt)) options.onExitCelebrationComplete?.()
       camera.setOccluders(museum.cameraOccluders())
       camera.update(snapshot, dt)
       contact.update(snapshot)
