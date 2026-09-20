@@ -130,7 +130,11 @@ function sing(game: GlassGame, encounterId: string): void {
   )?.challenge
   expect(challenge).toBeDefined()
   const stepsToSing =
-    challenge?.kind === 'hold' ? [challenge.step] : (challenge?.steps ?? [])
+    challenge?.kind === 'ordered-pair'
+      ? challenge.steps
+      : challenge
+        ? [challenge.step]
+        : []
   const events: GameEvent[] = []
   let sequence = 0
   for (const step of stepsToSing) {
@@ -164,9 +168,9 @@ function overlap(left: Bounds3, right: Bounds3, axis: 'x' | 'z'): number {
 function targets(
   challenge: (typeof TWIN_GALLERIES.breakables)[number]['challenge'],
 ): PitchTargetId[] {
-  return challenge.kind === 'hold'
-    ? [challenge.step.target]
-    : challenge.steps.map((step) => step.target)
+  return challenge.kind === 'ordered-pair'
+    ? challenge.steps.map((step) => step.target)
+    : [challenge.step.target]
 }
 
 describe('Twin Galleries blockout', () => {
@@ -348,14 +352,17 @@ describe('Twin Galleries blockout', () => {
       coveredSolidIds: [ids.harpBase],
     })
     expect(TWIN_GALLERIES_V6_HANDOFF.exhibits).toMatchObject({
-      'lower-urn': {
-        currentPrefabId: 'glassworks-journey-amphora',
-      },
       'upper-decanter': {
         currentPrefabId: 'glassworks-journey-fluted',
       },
     })
     expect(TWIN_GALLERIES_V6_HANDOFF.integratedExhibits).toEqual({
+      'lower-urn': {
+        currentPrefabId: 'twin-galleries-amber-urn',
+        assetRecipeId: 'amber-v6',
+        source:
+          'art/glass-adventure/v6-level2/exports/amber-cadence-urn-fracture-v2.glb',
+      },
       'court-echo': {
         currentPrefabId: 'twin-galleries-opaline-echo',
         assetRecipeId: 'opaline-v6',
@@ -377,6 +384,7 @@ describe('Twin Galleries blockout', () => {
         'interval-painting-v6',
         'twin-tone-harp-v6',
         'opaline-v6',
+        'amber-v6',
       ]),
     )
   })

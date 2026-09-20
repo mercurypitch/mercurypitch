@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Original fictional Twin Galleries paintings, the preserved listening-court harp and the Opaline Echo fracture.",
+  "description": "Original Twin Galleries paintings, preserved listening-court harp, and approved hollow vessel fractures.",
   "sourceReceipt": "art/glass-adventure/v6-level2/imagegen-receipt.json",
   "encoding": "Full-resolution RGB WebP, quality 88, method 6. Source masters unchanged.",
   "assets": [
@@ -64,6 +64,26 @@
       "textureCount": 5,
       "maximumTextureDimensions": [1024, 1024],
       "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only the declared intact and shard nodes."
+    },
+    {
+      "id": "amber-v6",
+      "file": "amber-cadence-urn.glb",
+      "node": "breakable_l2_low_amber_urn",
+      "intactNode": "breakable_l2_low_amber_urn_intact",
+      "shardPrefix": "breakable_l2_low_amber_urn_shard_",
+      "shardCount": 16,
+      "source": "art/glass-adventure/v6-level2/sources/amber-cadence-urn-fracture-v2.blend",
+      "sourceSha256": "461ac348fc0197cf3bb4ef105505d2752382e08152aa2b93072048bd60810ab7",
+      "runtimeSource": "art/glass-adventure/v6-level2/exports/amber-cadence-urn-fracture-v2.glb",
+      "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353",
+      "dimensions": [
+        0.9315478801727295, 0.9315483570098877, 0.7200000286102295
+      ],
+      "intactTriangles": 9864,
+      "triangles": 26488,
+      "textureCount": 4,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only declared intact and shard nodes."
     }
   ]
 }

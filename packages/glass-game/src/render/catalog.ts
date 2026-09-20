@@ -98,6 +98,16 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     displayHeight: 0.62,
     fallbackShape: 'rounded',
   },
+  'amber-v6': {
+    ...CLEAR_GLASS,
+    bundle: 'amber-v6',
+    intactNode: 'breakable_l2_low_amber_urn_intact',
+    shardPrefix: 'breakable_l2_low_amber_urn_shard_',
+    shardCount: 16,
+    displayHeight: 0.72,
+    fallbackShape: 'rounded',
+    fragmentBudget: 16,
+  },
   'opaline-v6': {
     ...CLEAR_GLASS,
     bundle: 'opaline-v6',

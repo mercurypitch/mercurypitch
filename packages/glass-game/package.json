@@ -10,7 +10,8 @@
     "./development-levels": "./src/content/development-levels.ts",
     "./solid": "./src/ui/GlassAdventure.tsx",
     "./campaign": "./src/ui/GlassCampaign.tsx",
-    "./browser": "./src/browser/browser-host.ts"
+    "./browser": "./src/browser/browser-host.ts",
+    "./assets": "./src/browser/assets.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",

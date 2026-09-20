@@ -42,11 +42,14 @@ ASSETS = {
         "cavitySegments": 24,
         "shards": 16,
         "seed": 20260921,
-        "bodyTransmission": 0.10,
+        "bodyTransmission": 0.0,
         "bodyColor": (0.95, 0.52, 0.30),
         "cavityColor": (0.58, 0.25, 0.12),
         "cutColor": (0.94, 0.50, 0.28),
-        "repair": "exact-self-union",
+        "repair": "exact-self-union-local-residue",
+        "surfaceMaterial": "amber_shell",
+        "materialStrategy": "opaque-donor-atlas",
+        "normalMapStrength": 0.35,
     },
     "opaline-echo-amphora": {
         "donor": "meshy/opaline-echo-amphora-donor.glb",
@@ -292,6 +295,110 @@ def exact_self_union(obj: bpy.types.Object) -> dict[str, object]:
     return {"method": "Blender exact self-union", "before": before, "after": after}
 
 
+def repair_amber_union_residue(obj: bpy.types.Object) -> dict[str, object]:
+    """Remove two audited sub-centimetre exact-boolean residues without remeshing."""
+
+    union = exact_self_union(obj)
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bad_edges = [edge for edge in bm.edges if not edge.is_manifold or not edge.is_contiguous]
+    bad_vertices = {vertex for edge in bad_edges for vertex in edge.verts}
+    if len(bad_edges) != 3 or len(bad_vertices) != 4:
+        bm.free()
+        raise ValueError(
+            "Amber exact-union residue changed: "
+            + json.dumps({"edges": len(bad_edges), "vertices": len(bad_vertices)})
+        )
+    residue_points = [vertex.co.copy() for vertex in bad_vertices]
+    residue_low, residue_high = point_bounds(residue_points)
+    if max(residue_high - residue_low) > 0.04:
+        bm.free()
+        raise ValueError("Amber exact-union residue exceeded audited 4 cm region")
+    incident_faces = {face for edge in bad_edges for face in edge.link_faces}
+    bmesh.ops.delete(bm, geom=list(incident_faces), context="FACES")
+    wires = [edge for edge in bm.edges if not edge.link_faces]
+    if wires:
+        bmesh.ops.delete(bm, geom=wires, context="EDGES")
+    first_boundary = [edge for edge in bm.edges if edge.is_boundary]
+    if not first_boundary:
+        bm.free()
+        raise ValueError("Amber local residue removal did not expose a patch boundary")
+    bmesh.ops.holes_fill(bm, edges=first_boundary, sides=0)
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
+    bmesh.ops.triangulate(bm, faces=list(bm.faces))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+
+    bowties = [vertex for vertex in bm.verts if not vertex.is_manifold]
+    if len(bowties) != 1:
+        bm.free()
+        raise ValueError(f"Expected one audited Amber bow-tie vertex, found {len(bowties)}")
+    vertex = bowties[0]
+    remaining = set(vertex.link_faces)
+    components: list[set[bmesh.types.BMFace]] = []
+    while remaining:
+        seed = remaining.pop()
+        component = {seed}
+        pending = [seed]
+        while pending:
+            face = pending.pop()
+            for edge in face.edges:
+                if vertex not in edge.verts:
+                    continue
+                for neighbour in edge.link_faces:
+                    if neighbour in remaining:
+                        remaining.remove(neighbour)
+                        component.add(neighbour)
+                        pending.append(neighbour)
+        components.append(component)
+    components.sort(key=len, reverse=True)
+    fan_sizes = [len(component) for component in components]
+    if fan_sizes != [5, 3]:
+        bm.free()
+        raise ValueError(f"Amber bow-tie face fans changed: {fan_sizes}")
+    trimmed_faces = list(components[1])
+    bowtie_location = list(vertex.co)
+    bmesh.ops.delete(bm, geom=trimmed_faces, context="FACES")
+    wires = [edge for edge in bm.edges if not edge.link_faces]
+    if wires:
+        bmesh.ops.delete(bm, geom=wires, context="EDGES")
+    second_boundary = [edge for edge in bm.edges if edge.is_boundary]
+    if not second_boundary:
+        bm.free()
+        raise ValueError("Amber bow-tie trim did not expose a patch boundary")
+    bmesh.ops.holes_fill(bm, edges=second_boundary, sides=0)
+    bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
+    bmesh.ops.triangulate(bm, faces=list(bm.faces))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    after = topology(obj)
+    if not topology_passes(after):
+        raise ValueError("Amber bounded residue repair failed: " + json.dumps(after))
+    return {
+        "method": "exact self-union followed by two bounded local face-fan patches",
+        "exactSelfUnion": union,
+        "unionResidue": {
+            "nonManifoldEdges": len(bad_edges),
+            "vertices": len(bad_vertices),
+            "boundsMetres": {
+                "min": list(residue_low),
+                "max": list(residue_high),
+                "dimensions": list(residue_high - residue_low),
+            },
+            "deletedIncidentFaces": len(incident_faces),
+            "patchBoundaryEdges": len(first_boundary),
+        },
+        "bowTieResidue": {
+            "vertexMetres": bowtie_location,
+            "faceFanSizes": fan_sizes,
+            "deletedSmallerFanFaces": len(trimmed_faces),
+            "patchBoundaryEdges": len(second_boundary),
+        },
+        "after": after,
+    }
+
+
 def decimate(obj: bpy.types.Object, target: int) -> dict[str, object]:
     before = len(obj.data.polygons)
     if before <= target:
@@ -411,23 +518,24 @@ def classify_materials(
     if uv_layer is None:
         raise ValueError("Expected donor UV0")
     body = source.copy()
-    body.name = "glass_shell"
+    body_name = str(config.get("surfaceMaterial", "glass_shell"))
+    body.name = body_name
     body_shader = body.node_tree.nodes.get("Principled BSDF")
     body_shader.inputs["Transmission Weight"].default_value = config["bodyTransmission"]
     body_shader.inputs["IOR"].default_value = 1.47
-    trim = source.copy()
-    trim.name = "opaque_trim"
-    trim_shader = trim.node_tree.nodes.get("Principled BSDF")
-    trim_shader.inputs["Transmission Weight"].default_value = 0.0
     cavity = physical_material("cavity_surface", config["cavityColor"], 0.22, config["bodyTransmission"])
     fracture = physical_material("glass_cut", config["cutColor"], 0.28, config["bodyTransmission"] * 0.65)
-    materials = {
-        "glass_shell": body,
-        "opaque_trim": trim,
-        "cavity_surface": cavity,
-        "glass_cut": fracture,
-    }
     if slug == "opaline-echo-amphora":
+        trim = source.copy()
+        trim.name = "opaque_trim"
+        trim_shader = trim.node_tree.nodes.get("Principled BSDF")
+        trim_shader.inputs["Transmission Weight"].default_value = 0.0
+        materials = {
+            body_name: body,
+            "opaque_trim": trim,
+            "cavity_surface": cavity,
+            "glass_cut": fracture,
+        }
         rgb = base_pixels[:, :, :3]
         metallic = metal_pixels[:, :, metal_channel]
         chroma = np.max(rgb, axis=2) - np.min(rgb, axis=2)
@@ -462,7 +570,7 @@ def classify_materials(
         body.node_tree.links.new(
             mask_node.outputs["Color"], body_shader.inputs["Transmission Weight"]
         )
-        labels = ["glass_shell"] * len(obj.data.polygons)
+        labels = [body_name] * len(obj.data.polygons)
         region_report = {
             "method": "continuous texture-space transmission mask; no per-face glass/opaque boundary",
             "maskImage": mask.name,
@@ -479,45 +587,37 @@ def classify_materials(
                 "goldWarmExcessSmoothstep": [0.04, 0.20],
                 "goldMetallicSmoothstep": [0.45, 0.85],
             },
-            "faceAssignments": {"glass_shell": len(labels), "opaque_trim": 0},
+            "faceAssignments": {body_name: len(labels), "opaque_trim": 0},
+            "geometryChanged": False,
+        }
+    elif config.get("materialStrategy") == "opaque-donor-atlas":
+        normal_input = body_shader.inputs["Normal"]
+        if not normal_input.is_linked or normal_input.links[0].from_node.type != "NORMAL_MAP":
+            raise ValueError("Opaque donor surface lost its authored normal-map node")
+        normal_input.links[0].from_node.inputs["Strength"].default_value = float(
+            config["normalMapStrength"]
+        )
+        materials = {
+            body_name: body,
+            "cavity_surface": cavity,
+            "glass_cut": fracture,
+        }
+        labels = [body_name] * len(obj.data.polygons)
+        region_report = {
+            "method": "single coherent opaque donor PBR atlas across the exterior",
+            "surfaceMaterial": body_name,
+            "sourceTextureDimensions": {
+                "baseColor": [int(base_image.size[0]), int(base_image.size[1])],
+                "metallicRoughness": [int(metal_image.size[0]), int(metal_image.size[1])],
+            },
+            "faceAssignments": {body_name: len(labels)},
+            "transmission": 0.0,
+            "normalMapStrength": float(config["normalMapStrength"]),
+            "reason": "Preserves the approved peach ceramic body and donor-authored gold, ivory, and jewel cues without triangle-level material boundaries.",
             "geometryChanged": False,
         }
     else:
-        labels = []
-        diagnostics = []
-        for face in obj.data.polygons:
-            colors = [
-                sample_pixel(base_pixels, uv_layer.data[index].uv)
-                for index in face.loop_indices
-            ]
-            metals = [
-                sample_pixel(metal_pixels, uv_layer.data[index].uv)[metal_channel]
-                for index in face.loop_indices
-            ]
-            rgb = np.mean(colors, axis=0)
-            metallic = float(np.mean(metals))
-            neutral_ivory = float(np.max(rgb) - np.min(rgb)) < 0.13 and float(np.mean(rgb)) > 0.62
-            green_jewel = rgb[1] > rgb[0] * 1.08 and rgb[1] > rgb[2] * 1.05
-            trim_choice = metallic > 0.28 or neutral_ivory or green_jewel
-            label = "opaque_trim" if trim_choice else "glass_shell"
-            labels.append(label)
-            diagnostics.append(
-                {
-                    "face": face.index,
-                    "rgbSrgb": [float(value) for value in rgb],
-                    "metallic": metallic,
-                    "label": label,
-                }
-            )
-        region_report = {
-            "method": "face-corner sampling of donor base-color and packed metallic atlas",
-            "thresholds": {"metallic": 0.28, "assetSpecificColorRules": True},
-            "faceAssignments": {
-                name: labels.count(name) for name in ("glass_shell", "opaque_trim")
-            },
-            "faces": diagnostics,
-            "geometryChanged": False,
-        }
+        raise ValueError(f"Unsupported material strategy for {slug}")
     obj.data.materials.clear()
     for material in materials.values():
         obj.data.materials.append(material)
@@ -526,7 +626,7 @@ def classify_materials(
         face.material_index = names.index(label)
     for image in {base_image, metal_image}:
         image.pack()
-    for material in (body, trim):
+    for material in materials.values():
         for node in material.node_tree.nodes:
             if node.type == "TEX_IMAGE" and node.image:
                 node.image.pack()
@@ -815,6 +915,8 @@ def prepare(slug: str, config: dict[str, object]) -> dict[str, object]:
     cleanup = {"weld": weld_and_triangulate(obj)}
     if config["repair"] == "remove-two-triangle-flaps":
         cleanup["localRepair"] = remove_opaline_flaps(obj)
+    elif config["repair"] == "exact-self-union-local-residue":
+        cleanup["localRepair"] = repair_amber_union_residue(obj)
     else:
         cleanup["localRepair"] = exact_self_union(obj)
         cleanup["collapsedComponents"] = solid.remove_collapsed_components(obj)
@@ -1096,7 +1198,8 @@ def validate(slug: str, config: dict[str, object]) -> dict[str, object]:
     if dimension_error > 1e-5:
         raise ValueError(f"Reimport changed intact dimensions: {dimension_error}")
     material_names = sorted(material.name for material in bpy.data.materials)
-    required_materials = {"glass_shell", "cavity_surface", "glass_cut"}
+    surface_material = str(config.get("surfaceMaterial", "glass_shell"))
+    required_materials = {surface_material, "cavity_surface", "glass_cut"}
     if not required_materials <= set(material_names):
         raise ValueError(f"Missing exported materials: {required_materials - set(material_names)}")
     encoded_materials = {material["name"]: material for material in encoded["materials"]}
@@ -1107,33 +1210,61 @@ def validate(slug: str, config: dict[str, object]) -> dict[str, object]:
         .get("transmissionFactor", 0.0)
         for name in required_materials
     }
-    if (
-        transmissions["glass_shell"] < 0.45
-        or transmissions["cavity_surface"] < 0.45
-        or transmissions["glass_cut"] < 0.30
-    ):
-        raise ValueError("GLB physical-material contract failed: " + json.dumps(transmissions))
-    shell_transmission = (
-        encoded_materials["glass_shell"]
-        .get("extensions", {})
-        .get("KHR_materials_transmission", {})
-    )
-    if "transmissionTexture" not in shell_transmission:
-        raise ValueError("GLB lost the continuous opaline transmission texture")
-    transmission_texture = shell_transmission["transmissionTexture"]
-    texture_index = transmission_texture["index"]
-    texture_definition = encoded["textures"][texture_index]
-    image_index = texture_definition["source"]
-    image_definition = encoded["images"][image_index]
-    mask_name = preparation["materialRegions"]["maskImage"]
-    if image_definition.get("name") != mask_name:
-        raise ValueError(f"Transmission mask binding changed: {image_definition}")
-    imported_mask = bpy.data.images.get(mask_name)
-    if imported_mask is None:
-        raise ValueError(f"GLB import lost transmission mask image {mask_name}")
-    embedded_mask_dimensions = [int(imported_mask.size[0]), int(imported_mask.size[1])]
-    if embedded_mask_dimensions != [1024, 1024]:
-        raise ValueError(f"Runtime transmission mask dimensions changed: {embedded_mask_dimensions}")
+    transmission_mask_report = None
+    if slug == "opaline-echo-amphora":
+        if (
+            transmissions[surface_material] < 0.45
+            or transmissions["cavity_surface"] < 0.45
+            or transmissions["glass_cut"] < 0.30
+        ):
+            raise ValueError("GLB physical-material contract failed: " + json.dumps(transmissions))
+        shell_transmission = (
+            encoded_materials[surface_material]
+            .get("extensions", {})
+            .get("KHR_materials_transmission", {})
+        )
+        if "transmissionTexture" not in shell_transmission:
+            raise ValueError("GLB lost the continuous opaline transmission texture")
+        transmission_texture = shell_transmission["transmissionTexture"]
+        texture_index = transmission_texture["index"]
+        texture_definition = encoded["textures"][texture_index]
+        image_index = texture_definition["source"]
+        image_definition = encoded["images"][image_index]
+        mask_name = preparation["materialRegions"]["maskImage"]
+        if image_definition.get("name") != mask_name:
+            raise ValueError(f"Transmission mask binding changed: {image_definition}")
+        imported_mask = bpy.data.images.get(mask_name)
+        if imported_mask is None:
+            raise ValueError(f"GLB import lost transmission mask image {mask_name}")
+        embedded_mask_dimensions = [int(imported_mask.size[0]), int(imported_mask.size[1])]
+        if embedded_mask_dimensions != [1024, 1024]:
+            raise ValueError(f"Runtime transmission mask dimensions changed: {embedded_mask_dimensions}")
+        transmission_mask_report = {
+            "material": surface_material,
+            "textureIndex": texture_index,
+            "texCoord": transmission_texture.get("texCoord", 0),
+            "imageIndex": image_index,
+            "imageName": mask_name,
+            "mimeType": image_definition.get("mimeType"),
+            "sourceDimensions": preparation["materialRegions"]["maskDimensions"],
+            "embeddedRuntimeDimensions": embedded_mask_dimensions,
+            "runtimeDownsampleMaximum": 1024,
+        }
+    elif config.get("materialStrategy") == "opaque-donor-atlas":
+        if any(value > 1e-6 for value in transmissions.values()):
+            raise ValueError("Opaque material contract gained transmission: " + json.dumps(transmissions))
+        surface_pbr = encoded_materials[surface_material].get("pbrMetallicRoughness", {})
+        if "baseColorTexture" not in surface_pbr or "metallicRoughnessTexture" not in surface_pbr:
+            raise ValueError("Opaque donor surface lost its PBR atlas bindings")
+        oversized = {
+            image.name: [int(image.size[0]), int(image.size[1])]
+            for image in bpy.data.images
+            if image.type == "IMAGE" and max(image.size) > 1024
+        }
+        if oversized:
+            raise ValueError("Runtime atlas exceeded 1K maximum: " + json.dumps(oversized))
+    else:
+        raise ValueError(f"No validation material contract for {slug}")
     node_mesh_indices = {
         node["name"]: node.get("mesh")
         for node in encoded["nodes"]
@@ -1181,17 +1312,7 @@ def validate(slug: str, config: dict[str, object]) -> dict[str, object]:
             }
             for name in sorted(required_materials)
         },
-        "transmissionMask": {
-            "material": "glass_shell",
-            "textureIndex": texture_index,
-            "texCoord": transmission_texture.get("texCoord", 0),
-            "imageIndex": image_index,
-            "imageName": mask_name,
-            "mimeType": image_definition.get("mimeType"),
-            "sourceDimensions": preparation["materialRegions"]["maskDimensions"],
-            "embeddedRuntimeDimensions": embedded_mask_dimensions,
-            "runtimeDownsampleMaximum": 1024,
-        },
+        "transmissionMask": transmission_mask_report,
         "uv0NormalsPreserved": True,
         "renderPrimitiveCount": len(rendered_primitives),
         "tangentsOnEveryRenderedPrimitive": True,

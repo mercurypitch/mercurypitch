@@ -121,6 +121,12 @@ export const TWIN_GALLERIES_OPALINE_ECHO = {
   variant: 'opaline-v6',
 }
 
+export const TWIN_GALLERIES_AMBER_URN = {
+  ...GLASSWORKS_JOURNEY_AMPHORA,
+  id: 'twin-galleries-amber-urn',
+  variant: 'amber-v6',
+}
+
 const listeningBridgeBays = flattenBays([
   museumScreenBay({
     id: 'west-south-screen',
@@ -206,11 +212,6 @@ export const TWIN_GALLERIES_LISTENING_BRIDGE_ROOM: RoomPrefab = {
 /** Exact handoff seams for V6 sources that are not yet runtime-safe. */
 export const TWIN_GALLERIES_V6_HANDOFF = {
   exhibits: {
-    'lower-urn': {
-      currentPrefabId: 'glassworks-journey-amphora',
-      futureSource:
-        'art/glass-adventure/v6-level2/exports/amber-cadence-urn-game-v1.glb',
-    },
     'upper-decanter': {
       currentPrefabId: 'glassworks-journey-fluted',
       futureSource:
@@ -218,6 +219,12 @@ export const TWIN_GALLERIES_V6_HANDOFF = {
     },
   },
   integratedExhibits: {
+    'lower-urn': {
+      currentPrefabId: TWIN_GALLERIES_AMBER_URN.id,
+      assetRecipeId: TWIN_GALLERIES_AMBER_URN.variant,
+      source:
+        'art/glass-adventure/v6-level2/exports/amber-cadence-urn-fracture-v2.glb',
+    },
     'court-echo': {
       currentPrefabId: TWIN_GALLERIES_OPALINE_ECHO.id,
       assetRecipeId: TWIN_GALLERIES_OPALINE_ECHO.variant,
@@ -243,6 +250,7 @@ export const TWIN_GALLERIES_AUTHORING_CATALOG: LevelAuthoringCatalog = {
   exhibits: {
     ...GLASSWORKS_JOURNEY_AUTHORING_CATALOG.exhibits,
     [TWIN_GALLERIES_OPALINE_ECHO.id]: TWIN_GALLERIES_OPALINE_ECHO,
+    [TWIN_GALLERIES_AMBER_URN.id]: TWIN_GALLERIES_AMBER_URN,
   },
   availableAssetRecipeIds: [
     ...GLASSWORKS_JOURNEY_AUTHORING_CATALOG.availableAssetRecipeIds,
@@ -251,5 +259,6 @@ export const TWIN_GALLERIES_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     'interval-painting-v6',
     'twin-tone-harp-v6',
     'opaline-v6',
+    'amber-v6',
   ],
 }

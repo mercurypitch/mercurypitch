@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "created": "2026-09-21",
+  "generator": "ChatGPT image generation",
+  "reference": "art/glass-adventure/v5/paintings/garden-master.png",
+  "artworks": [
+    {
+      "id": "listening-garden",
+      "prompt": "Use case: stylized-concept. Create a single original museum painting texture, portrait 2:3, completely edge-to-edge flat artwork, no picture frame, no wall, no typography, no watermark. Reference image only for our Glassworks art direction: exquisite jade and teal mineral washes, ivory, delicate gold leaf linework, translucent crystal botany, polished premium illustrative painting with real tactile detail. Beautiful restrained color and a strong readable focal silhouette. This painting will hang in a fictional floating museum's Resonance Conservatory in a whimsical voice-learning 3D game.Subject: THE GARDEN THAT LISTENED. A luminous pale-celadon orchid unfurling above a perfectly still circular pool in a marble conservatory. Two graceful gold wave ribbons ripple through the surrounding elongated crystal fern leaves, a visual rhythm of rising and falling with generous breathing spaces. Botanical Art Nouveau composition but original, no famous artist reproduction. A few deep indigo glass seedpods and tiny ivory blossoms, soft dawn glow, moonstone droplets. The whole composition quietly teaches stillness becoming gentle movement. Distinct from reference fern spiral: use a large central orchid and horizontal ripple pool at lower third.",
+      "originalFile": "exec-70a02056-206c-4333-82b8-53bb268f92ea.png"
+    },
+    {
+      "id": "wave-keeper",
+      "prompt": "Use case: stylized-concept. Create a single original museum painting texture, portrait 2:3, completely edge-to-edge flat artwork, no picture frame, no wall, no typography, no watermark. Reference image only for our Glassworks art direction: exquisite jade and teal mineral washes, ivory, delicate gold leaf linework, translucent crystal botany, polished premium illustrative painting with real tactile detail. Beautiful restrained color and a strong readable focal silhouette. This painting will hang in a fictional floating museum's Resonance Conservatory in a whimsical voice-learning 3D game.Subject: THE KEEPER OF GENTLE WAVES. An entirely imaginary youthful adult muse with softly closed eyes and a serene open singing mouth, sculptural profile facing left, beautiful celadon glass and moonstone hair flowing in two graceful undulations among crystal orchids and fine gold threads. Warm golden ear and throat highlights, pale ivory face with subtle green reflections, deep forest-teal background, few amethyst accents. An elegant full-height singing portrait, emotionally warm and whimsical, not sad. No real-person resemblance. The gold ribbons describe a soft oscillation around a calm centre, never loud lightning. Rich ornamental illustration, crisp jewel-like detail, gentle dimensional modeling, harmonious readable shape.",
+      "originalFile": "exec-3633d0e5-fca1-455f-81d4-abc9cf249ce7.png"
+    }
+  ]
+}

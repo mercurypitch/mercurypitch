@@ -1,0 +1,1061 @@
+{
+  "schema": 1,
+  "assetId": "amber-cadence-urn",
+  "normalization": {
+    "uniformScale": 0.49094984214499265,
+    "sourceFootCentre": [
+      -0.0009929835796356201,
+      0.0009014606475830078,
+      -0.7305649518966675
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.46577394008636475,
+        -0.46577417850494385,
+        0.0
+      ],
+      "max": [
+        0.46577394008636475,
+        0.46577417850494385,
+        0.7200000286102295
+      ]
+    },
+    "dimensionsMetres": [
+      0.9315478801727295,
+      0.9315483570098877,
+      0.7200000286102295
+    ]
+  },
+  "weld": {
+    "vertices": 10006,
+    "faces": 9340,
+    "weldedVertices": 4672,
+    "weldedFaces": 9340
+  },
+  "exactSelfUnion": {
+    "method": "Blender exact self-union",
+    "before": {
+      "triangles": 9340,
+      "vertices": 4672,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 9,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.2562703865825123
+    },
+    "after": {
+      "triangles": 9366,
+      "vertices": 4684,
+      "nonManifoldEdges": 3,
+      "nonManifoldVertices": 5,
+      "nonContiguousEdges": 3,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.2562703685298584
+    }
+  },
+  "collapsedComponents": {
+    "removedComponents": 0,
+    "removedFaces": 0,
+    "components": []
+  },
+  "baseline": {
+    "triangles": 9366,
+    "vertices": 4684,
+    "nonManifoldEdges": 3,
+    "nonManifoldVertices": 5,
+    "nonContiguousEdges": 3,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.2562703685298584
+  },
+  "baselineBadRegion": {
+    "edges": [
+      {
+        "vertices": [
+          [
+            -0.20116081833839417,
+            0.29401201009750366,
+            0.5346221923828125
+          ],
+          [
+            -0.1858465075492859,
+            0.3110395073890686,
+            0.5266131162643433
+          ]
+        ],
+        "linkedFaces": 4,
+        "lengthMetres": 0.024261267855763435,
+        "manifold": false,
+        "contiguous": false
+      },
+      {
+        "vertices": [
+          [
+            -0.18610557913780212,
+            0.3110664486885071,
+            0.5266234278678894
+          ],
+          [
+            -0.17161937057971954,
+            0.32208696007728577,
+            0.5236814022064209
+          ]
+        ],
+        "linkedFaces": 4,
+        "lengthMetres": 0.018437935039401054,
+        "manifold": false,
+        "contiguous": false
+      },
+      {
+        "vertices": [
+          [
+            -0.1858465075492859,
+            0.3110395073890686,
+            0.5266131162643433
+          ],
+          [
+            -0.18610557913780212,
+            0.3110664486885071,
+            0.5266234278678894
+          ]
+        ],
+        "linkedFaces": 4,
+        "lengthMetres": 0.0002606727066449821,
+        "manifold": false,
+        "contiguous": false
+      }
+    ],
+    "vertexCount": 4,
+    "boundsMetres": {
+      "min": [
+        -0.20116081833839417,
+        0.29401201009750366,
+        0.5236814022064209
+      ],
+      "max": [
+        -0.17161937057971954,
+        0.32208696007728577,
+        0.5346221923828125
+      ],
+      "dimensions": [
+        0.02954144775867462,
+        0.028074949979782104,
+        0.010940790176391602
+      ]
+    }
+  },
+  "trials": [
+    {
+      "method": "remove doubles plus dissolve degenerate",
+      "distanceMetres": 1e-07,
+      "topology": {
+        "triangles": 9366,
+        "vertices": 4684,
+        "nonManifoldEdges": 3,
+        "nonManifoldVertices": 5,
+        "nonContiguousEdges": 3,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.2562703755399537
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [
+          {
+            "vertices": [
+              [
+                -0.20116081833839417,
+                0.29401201009750366,
+                0.5346221923828125
+              ],
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.024261267855763435,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ],
+              [
+                -0.17161937057971954,
+                0.32208696007728577,
+                0.5236814022064209
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.018437935039401054,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ],
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.0002606727066449821,
+            "manifold": false,
+            "contiguous": false
+          }
+        ],
+        "vertexCount": 4,
+        "boundsMetres": {
+          "min": [
+            -0.20116081833839417,
+            0.29401201009750366,
+            0.5236814022064209
+          ],
+          "max": [
+            -0.17161937057971954,
+            0.32208696007728577,
+            0.5346221923828125
+          ],
+          "dimensions": [
+            0.02954144775867462,
+            0.028074949979782104,
+            0.010940790176391602
+          ]
+        }
+      }
+    },
+    {
+      "method": "remove doubles plus dissolve degenerate",
+      "distanceMetres": 1e-06,
+      "topology": {
+        "triangles": 9366,
+        "vertices": 4684,
+        "nonManifoldEdges": 3,
+        "nonManifoldVertices": 5,
+        "nonContiguousEdges": 3,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.2562703755399537
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [
+          {
+            "vertices": [
+              [
+                -0.20116081833839417,
+                0.29401201009750366,
+                0.5346221923828125
+              ],
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.024261267855763435,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ],
+              [
+                -0.17161937057971954,
+                0.32208696007728577,
+                0.5236814022064209
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.018437935039401054,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ],
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.0002606727066449821,
+            "manifold": false,
+            "contiguous": false
+          }
+        ],
+        "vertexCount": 4,
+        "boundsMetres": {
+          "min": [
+            -0.20116081833839417,
+            0.29401201009750366,
+            0.5236814022064209
+          ],
+          "max": [
+            -0.17161937057971954,
+            0.32208696007728577,
+            0.5346221923828125
+          ],
+          "dimensions": [
+            0.02954144775867462,
+            0.028074949979782104,
+            0.010940790176391602
+          ]
+        }
+      }
+    },
+    {
+      "method": "remove doubles plus dissolve degenerate",
+      "distanceMetres": 1e-05,
+      "topology": {
+        "triangles": 9366,
+        "vertices": 4684,
+        "nonManifoldEdges": 3,
+        "nonManifoldVertices": 5,
+        "nonContiguousEdges": 3,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.2562703755399537
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [
+          {
+            "vertices": [
+              [
+                -0.20116081833839417,
+                0.29401201009750366,
+                0.5346221923828125
+              ],
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.024261267855763435,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ],
+              [
+                -0.17161937057971954,
+                0.32208696007728577,
+                0.5236814022064209
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.018437935039401054,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ],
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.0002606727066449821,
+            "manifold": false,
+            "contiguous": false
+          }
+        ],
+        "vertexCount": 4,
+        "boundsMetres": {
+          "min": [
+            -0.20116081833839417,
+            0.29401201009750366,
+            0.5236814022064209
+          ],
+          "max": [
+            -0.17161937057971954,
+            0.32208696007728577,
+            0.5346221923828125
+          ],
+          "dimensions": [
+            0.02954144775867462,
+            0.028074949979782104,
+            0.010940790176391602
+          ]
+        }
+      }
+    },
+    {
+      "method": "remove doubles plus dissolve degenerate",
+      "distanceMetres": 5e-05,
+      "topology": {
+        "triangles": 9366,
+        "vertices": 4684,
+        "nonManifoldEdges": 4,
+        "nonManifoldVertices": 7,
+        "nonContiguousEdges": 4,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": true,
+        "signedVolume": 0.2562703755372396
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [
+          {
+            "vertices": [
+              [
+                -0.20116081833839417,
+                0.29401201009750366,
+                0.5346221923828125
+              ],
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.024261267855763435,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ],
+              [
+                -0.17161937057971954,
+                0.32208696007728577,
+                0.5236814022064209
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.018437935039401054,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ],
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.0002606727066449821,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                0.2742376923561096,
+                -0.13063131272792816,
+                0.19498756527900696
+              ],
+              [
+                0.27442488074302673,
+                -0.13061746954917908,
+                0.1952325403690338
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.0003086161450482905,
+            "manifold": false,
+            "contiguous": false
+          }
+        ],
+        "vertexCount": 6,
+        "boundsMetres": {
+          "min": [
+            -0.20116081833839417,
+            -0.13063131272792816,
+            0.19498756527900696
+          ],
+          "max": [
+            0.27442488074302673,
+            0.32208696007728577,
+            0.5346221923828125
+          ],
+          "dimensions": [
+            0.4755856990814209,
+            0.45271825790405273,
+            0.33963462710380554
+          ]
+        }
+      }
+    },
+    {
+      "method": "remove doubles plus dissolve degenerate",
+      "distanceMetres": 0.0001,
+      "topology": {
+        "triangles": 9366,
+        "vertices": 4684,
+        "nonManifoldEdges": 4,
+        "nonManifoldVertices": 7,
+        "nonContiguousEdges": 4,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": true,
+        "signedVolume": 0.2562703755372396
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [
+          {
+            "vertices": [
+              [
+                -0.20116081833839417,
+                0.29401201009750366,
+                0.5346221923828125
+              ],
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.024261267855763435,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ],
+              [
+                -0.17161937057971954,
+                0.32208696007728577,
+                0.5236814022064209
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.018437935039401054,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                -0.1858465075492859,
+                0.3110395073890686,
+                0.5266131162643433
+              ],
+              [
+                -0.18610557913780212,
+                0.3110664486885071,
+                0.5266234278678894
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.0002606727066449821,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                0.2742376923561096,
+                -0.13063131272792816,
+                0.19498756527900696
+              ],
+              [
+                0.27442488074302673,
+                -0.13061746954917908,
+                0.1952325403690338
+              ]
+            ],
+            "linkedFaces": 4,
+            "lengthMetres": 0.0003086161450482905,
+            "manifold": false,
+            "contiguous": false
+          }
+        ],
+        "vertexCount": 6,
+        "boundsMetres": {
+          "min": [
+            -0.20116081833839417,
+            -0.13063131272792816,
+            0.19498756527900696
+          ],
+          "max": [
+            0.27442488074302673,
+            0.32208696007728577,
+            0.5346221923828125
+          ],
+          "dimensions": [
+            0.4755856990814209,
+            0.45271825790405273,
+            0.33963462710380554
+          ]
+        }
+      }
+    },
+    {
+      "method": "delete faces incident to residual edges, then fill local boundary",
+      "topology": {
+        "triangles": 9358,
+        "vertices": 4682,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 1,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.2562717077814806
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [],
+        "vertexCount": 0
+      }
+    },
+    {
+      "method": "local repatch plus split disconnected face fans at bow-tie vertices",
+      "splitActions": [
+        {
+          "vertexMetres": [
+            0.2720372974872589,
+            -0.1294691115617752,
+            0.19337581098079681
+          ],
+          "faceFanSizes": [
+            5,
+            3
+          ]
+        }
+      ],
+      "topology": {
+        "triangles": 9358,
+        "vertices": 4686,
+        "nonManifoldEdges": 6,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 6,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.2562717186653937
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [
+          {
+            "vertices": [
+              [
+                0.2742410898208618,
+                -0.13064579665660858,
+                0.1949724704027176
+              ],
+              [
+                0.27442488074302673,
+                -0.13061746954917908,
+                0.1952325403690338
+              ]
+            ],
+            "linkedFaces": 1,
+            "lengthMetres": 0.0003197153564542532,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                0.2868610918521881,
+                -0.13721314072608948,
+                0.20435261726379395
+              ],
+              [
+                0.27442488074302673,
+                -0.13061746954917908,
+                0.1952325403690338
+              ]
+            ],
+            "linkedFaces": 1,
+            "lengthMetres": 0.016773134469985962,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                0.2868610918521881,
+                -0.13721314072608948,
+                0.20435261726379395
+              ],
+              [
+                0.2742410898208618,
+                -0.13064579665660858,
+                0.1949724704027176
+              ]
+            ],
+            "linkedFaces": 1,
+            "lengthMetres": 0.017040587961673737,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                0.2742410898208618,
+                -0.13064579665660858,
+                0.1949724704027176
+              ],
+              [
+                0.27442488074302673,
+                -0.13061746954917908,
+                0.1952325403690338
+              ]
+            ],
+            "linkedFaces": 1,
+            "lengthMetres": 0.0003197153564542532,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                0.2868610918521881,
+                -0.13721314072608948,
+                0.20435261726379395
+              ],
+              [
+                0.27442488074302673,
+                -0.13061746954917908,
+                0.1952325403690338
+              ]
+            ],
+            "linkedFaces": 1,
+            "lengthMetres": 0.016773134469985962,
+            "manifold": false,
+            "contiguous": false
+          },
+          {
+            "vertices": [
+              [
+                0.2868610918521881,
+                -0.13721314072608948,
+                0.20435261726379395
+              ],
+              [
+                0.2742410898208618,
+                -0.13064579665660858,
+                0.1949724704027176
+              ]
+            ],
+            "linkedFaces": 1,
+            "lengthMetres": 0.017040587961673737,
+            "manifold": false,
+            "contiguous": false
+          }
+        ],
+        "vertexCount": 6,
+        "boundsMetres": {
+          "min": [
+            0.2742410898208618,
+            -0.13721314072608948,
+            0.1949724704027176
+          ],
+          "max": [
+            0.2868610918521881,
+            -0.13061746954917908,
+            0.20435261726379395
+          ],
+          "dimensions": [
+            0.012620002031326294,
+            0.0065956711769104,
+            0.009380146861076355
+          ]
+        }
+      }
+    },
+    {
+      "method": "local repatch followed by exact self-union",
+      "exactSelfUnion": {
+        "method": "Blender exact self-union",
+        "before": {
+          "triangles": 9358,
+          "vertices": 4682,
+          "nonManifoldEdges": 0,
+          "nonManifoldVertices": 1,
+          "nonContiguousEdges": 0,
+          "selfIntersectionPairs": 0,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.2562717077814806
+        },
+        "after": {
+          "triangles": 8,
+          "vertices": 6,
+          "nonManifoldEdges": 0,
+          "nonManifoldVertices": 0,
+          "nonContiguousEdges": 0,
+          "selfIntersectionPairs": 0,
+          "blenderMeshInvalid": false,
+          "signedVolume": 3.505047682936264e-09
+        }
+      },
+      "topology": {
+        "triangles": 8,
+        "vertices": 6,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 3.505047682936264e-09
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.16071222722530365,
+          "p50": 0.5223306715488434,
+          "p95": 0.7291259318590164,
+          "p99": 0.7712992817163468,
+          "max": 0.8003731369972229
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [],
+        "vertexCount": 0
+      }
+    },
+    {
+      "method": "local repatch plus delete smaller disconnected face fan and refill",
+      "trimActions": [
+        {
+          "vertexMetres": [
+            0.2720372974872589,
+            -0.1294691115617752,
+            0.19337581098079681
+          ],
+          "faceFanSizes": [
+            5,
+            3
+          ],
+          "deletedFaces": 3
+        }
+      ],
+      "topology": {
+        "triangles": 9356,
+        "vertices": 4682,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.25627170777844566
+      },
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 1.4901161193847656e-08
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0015188269317150116
+        },
+        "sourceSampleCount": 10006
+      },
+      "badRegion": {
+        "edges": [],
+        "vertexCount": 0
+      }
+    }
+  ]
+}

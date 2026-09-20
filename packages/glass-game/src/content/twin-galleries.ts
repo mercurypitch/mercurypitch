@@ -293,7 +293,7 @@ export const TWIN_GALLERIES_SOURCE: AuthoredLevelSource = {
       id: 'lower-urn',
       roomId: 'warm',
       mountId: 'required-display',
-      prefabId: 'glassworks-journey-amphora',
+      prefabId: 'twin-galleries-amber-urn',
       label: 'Amber cadence urn',
       optional: false,
       challenge: holdChallenge('low'),

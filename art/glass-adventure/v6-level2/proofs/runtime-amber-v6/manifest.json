@@ -1,0 +1,71 @@
+{
+  "scope": "Actual Twin Galleries renderer proof of the public vessel intact and authored-fracture states; not an FPS or gameplay acceptance result.",
+  "viewport": {
+    "width": 1024,
+    "height": 768
+  },
+  "files": {
+    "intact": "1024-amber-v6-intact.png",
+    "shattering": "1024-amber-v6-shattering.png"
+  },
+  "asset": {
+    "id": "amber-v6",
+    "file": "amber-cadence-urn.glb",
+    "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353",
+    "intactNode": "breakable_l2_low_amber_urn_intact",
+    "shardPrefix": "breakable_l2_low_amber_urn_shard_",
+    "shardCount": 16
+  },
+  "setup": {
+    "levelId": "glassworks-twin-galleries/twin-galleries",
+    "target": {
+      "id": "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+      "variant": "amber-v6",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0.8
+      },
+      "anchor": {
+        "x": 0,
+        "y": 0,
+        "z": -0.05
+      }
+    },
+    "player": {
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -0.05
+      },
+      "velocity": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "grounded": true,
+      "facingYaw": -3.141592653589793
+    },
+    "metrics": {
+      "drawCalls": 493,
+      "triangles": 3466042,
+      "textures": 56,
+      "geometries": 180,
+      "reflectionCaptures": 62,
+      "reflectionTargetPixels": 110592
+    },
+    "errors": []
+  },
+  "shattering": {
+    "metrics": {
+      "drawCalls": 624,
+      "triangles": 3486578,
+      "textures": 56,
+      "geometries": 197,
+      "reflectionCaptures": 64,
+      "reflectionTargetPixels": 110592
+    },
+    "errors": []
+  },
+  "pageErrors": []
+}
