@@ -77,8 +77,8 @@ export interface VoiceprintShareData {
   hi: number // highMidi
   st: number // semitones
   tw?: string // twin legend name
-  ac?: number // accuracy, median cents
-  sd?: number // steadiness, cents on holds
+  ac?: number // accuracy score, 0-100 -- the number the card prints
+  sd?: number // steadiness score, 0-100 -- likewise, and NOT cents
   vb?: [number, number] // vibrato Hz, cents
   on?: number // onset ms
   n?: string // display name — opt-in, absent by default

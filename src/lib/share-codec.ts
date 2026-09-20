@@ -79,8 +79,8 @@ export interface VoiceprintShareData {
   lo?: number // lowMidi
   hi?: number // highMidi
   st?: number // semitones of range
-  ac?: number // accuracy, median cents
-  sd?: number // steadiness, cents on holds
+  ac?: number // accuracy score, 0-100 -- the number the card prints
+  sd?: number // steadiness score, 0-100 -- likewise, and NOT cents
   tw?: string // twin legend name
   n?: string // display name — opt-in
 }
@@ -293,6 +293,21 @@ export function encodeVoiceprintForShare(
 
 // ── Decode ────────────────────────────────────────────────────
 
+/** The most each voiceprint number can be. Notes are MIDI, so 127; a span
+ *  cannot outrun the keyboard it is measured on; accuracy and steadiness are
+ *  the card's two scores, which stop at 100. */
+const VOICEPRINT_NUMBER_LIMITS = [
+  ['lo', 127],
+  ['hi', 127],
+  ['st', 127],
+  ['ac', 100],
+  ['sd', 100],
+] as const
+
+/** A twin or a display name is a name. Longer than this is someone using
+ *  the link to put a paragraph on our page. */
+const VOICEPRINT_TEXT_MAX = 80
+
 function validateShareData(t: string, d: unknown): boolean {
   if (d == null || typeof d !== 'object') return false
   const o = d as Record<string, unknown>
@@ -310,15 +325,27 @@ function validateShareData(t: string, d: unknown): boolean {
         Array.isArray(o.seg)
       )
     case 'voiceprint': {
-      const numeric = ['lo', 'hi', 'st', 'ac', 'sd'] as const
       const text = ['tw', 'n'] as const
-      if (numeric.some((k) => o[k] !== undefined && typeof o[k] !== 'number'))
+      // Anyone can write a link, so a number has to be one a take could have
+      // produced. `1e999` parses to Infinity, and a note named from it reads
+      // "undefinedNaN" on a page and in an unfurl that both carry our name.
+      for (const [key, max] of VOICEPRINT_NUMBER_LIMITS) {
+        const value = o[key]
+        if (value === undefined) continue
+        if (typeof value !== 'number' || !Number.isFinite(value)) return false
+        if (value < 0 || value > max) return false
+      }
+      if (typeof o.lo === 'number' && typeof o.hi === 'number' && o.hi < o.lo)
         return false
-      if (text.some((k) => o[k] !== undefined && typeof o[k] !== 'string'))
-        return false
+      for (const key of text) {
+        const value = o[key]
+        if (value === undefined) continue
+        if (typeof value !== 'string') return false
+        if (value.length > VOICEPRINT_TEXT_MAX) return false
+      }
       // A card with no numbers on it is not a voiceprint; reject rather than
       // render an empty frame to someone who followed a link to see one.
-      return numeric.some((k) => typeof o[k] === 'number')
+      return VOICEPRINT_NUMBER_LIMITS.some(([k]) => typeof o[k] === 'number')
     }
     default:
       return false

@@ -69,13 +69,13 @@ export function SharedVoiceprintWelcome(
               <Show when={props.data.ac != null}>
                 <div class="shared-vp-stat">
                   <dt>Accuracy</dt>
-                  <dd>±{props.data.ac}¢</dd>
+                  <dd>{props.data.ac} / 100</dd>
                 </div>
               </Show>
               <Show when={props.data.sd != null}>
                 <div class="shared-vp-stat">
                   <dt>Steadiness</dt>
-                  <dd>±{props.data.sd}¢ on holds</dd>
+                  <dd>{props.data.sd} / 100</dd>
                 </div>
               </Show>
             </dl>
