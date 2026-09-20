@@ -12,12 +12,18 @@
 // letters reads as a label, and nobody presses a label.
 
 import type { Component } from 'solid-js'
-import { createSignal, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, onCleanup, Show } from 'solid-js'
+import { Portal } from 'solid-js/web'
+import { createPortalSkinBridge } from '@/components/portal-skin'
 import { jamRoomLink } from '@/lib/jam/jam-room-link'
 import styles from './JamRoomCode.module.css'
 
 /** How long the tick stays before the mark goes back to "copy". */
 const COPIED_MS = 2000
+/** Between the pill and the note under it. */
+const NOTE_GAP = 6
+/** Clear of the viewport edge, so the note never sits flush against it. */
+const NOTE_MARGIN = 8
 
 export interface JamRoomCodeProps {
   roomId: string
@@ -63,10 +69,44 @@ const DoneMark: Component = () => (
 
 export const JamRoomCode: Component<JamRoomCodeProps> = (props) => {
   const [copied, setCopied] = createSignal(false)
+  const [noteAt, setNoteAt] = createSignal({ x: 0, y: 0 })
+  const portalSkin = createPortalSkinBridge(copied)
+  let button: HTMLButtonElement | undefined
+  let note: HTMLSpanElement | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
 
   onCleanup(() => {
     if (timer !== undefined) clearTimeout(timer)
+  })
+
+  /** Under the pill and centred on it, pulled back inside the window. */
+  const placeNote = (): void => {
+    if (button === undefined) return
+    const pill = button.getBoundingClientRect()
+    const width = note?.offsetWidth ?? 0
+    const widest = Math.max(
+      NOTE_MARGIN,
+      window.innerWidth - width - NOTE_MARGIN,
+    )
+    const x = pill.left + pill.width / 2 - width / 2
+    setNoteAt({
+      x: Math.min(Math.max(NOTE_MARGIN, x), widest),
+      y: pill.bottom + NOTE_GAP,
+    })
+  }
+
+  // The note is drawn from the page's own root (see below), so it is placed
+  // by hand and has to be told when the pill moves under it: the sidebar's
+  // card scrolls, and a tablet turned on its side re-lays the header.
+  createEffect(() => {
+    if (!copied()) return
+    placeNote()
+    window.addEventListener('scroll', placeNote, true)
+    window.addEventListener('resize', placeNote)
+    onCleanup(() => {
+      window.removeEventListener('scroll', placeNote, true)
+      window.removeEventListener('resize', placeNote)
+    })
   })
 
   /**
@@ -96,6 +136,10 @@ export const JamRoomCode: Component<JamRoomCodeProps> = (props) => {
 
   return (
     <button
+      ref={(element) => {
+        button = element
+        portalSkin.anchorRef(element)
+      }}
       type="button"
       class={styles.code}
       classList={{
@@ -119,13 +163,37 @@ export const JamRoomCode: Component<JamRoomCodeProps> = (props) => {
       <Show when={copied()} fallback={<CopyMark />}>
         <DoneMark />
       </Show>
-      {/* Said aloud, and shown under the pill rather than inside it: a
-          touch screen has no tooltip, and swapping the code for the word
-          "Copied" would hide the one thing people read out. It hangs below
-          on its own layer, so the header does not move when it appears. */}
-      <span class={styles.toast} role="status" aria-live="polite">
+      {/* Said aloud from here, where a screen reader is already listening
+          by the time there is something to say. Nothing is drawn: the note
+          people see is the one below. */}
+      <span class={styles.spoken} role="status" aria-live="polite">
         <Show when={copied()}>Link copied</Show>
       </span>
+      {/* Shown under the pill rather than inside it: a touch screen has no
+          tooltip, and swapping the code for the word "Copied" would hide the
+          one thing people read out.
+
+          Drawn from the page's root, not from the header. The header is a
+          layer of its own and the playback row under it is a later one, so
+          a note that lived in here was painted first and covered: whatever
+          z-index it had only ordered it among the header's own children. */}
+      <Show when={copied()}>
+        <Portal>
+          <span
+            ref={note}
+            class={styles.toast}
+            data-testid="jam-room-code-note"
+            aria-hidden="true"
+            style={{
+              ...portalSkin.style(),
+              left: `${noteAt().x}px`,
+              top: `${noteAt().y}px`,
+            }}
+          >
+            Link copied
+          </span>
+        </Portal>
+      </Show>
     </button>
   )
 }
