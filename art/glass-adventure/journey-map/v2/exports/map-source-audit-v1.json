@@ -1,0 +1,4965 @@
+{
+  "schema": 1,
+  "method": "Fresh Blender open/import; read-only object, mesh, material, bounds, and image inventory.",
+  "sources": [
+    {
+      "file": "art/glass-adventure/v2/models/museum-kit.blend",
+      "bytes": 892113,
+      "sha256": "4f18423211dec1304136da79342a35a5b7aac323b5a3a839372fb8b9d0d28ddc",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "museum_arcade_bay",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arcade_bay_museum_brass",
+          "type": "MESH",
+          "parent": "museum_arcade_bay",
+          "mesh": "museum_arcade_bay_arch_bead_-0.135",
+          "triangles": 244,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.4388907551765442,
+              -0.15000000596046448,
+              0.31860190629959106
+            ],
+            "max": [
+              0.4388907551765442,
+              0.15000000596046448,
+              0.8550000190734863
+            ],
+            "dimensions": [
+              0.8777815103530884,
+              0.30000001192092896,
+              0.5363981127738953
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arcade_bay_museum_ivory",
+          "type": "MESH",
+          "parent": "museum_arcade_bay",
+          "mesh": "Cube.210",
+          "triangles": 88,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.5999999642372131,
+              -0.18000000715255737,
+              0.0
+            ],
+            "max": [
+              0.5999999046325684,
+              0.18000000715255737,
+              0.06499999761581421
+            ],
+            "dimensions": [
+              1.1999998092651367,
+              0.36000001430511475,
+              0.06499999761581421
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arcade_bay_museum_limestone",
+          "type": "MESH",
+          "parent": "museum_arcade_bay",
+          "mesh": "Cube.209",
+          "triangles": 196,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.5600000023841858,
+              -0.1550000011920929,
+              -0.012500002980232239
+            ],
+            "max": [
+              0.559999942779541,
+              0.1550000011920929,
+              0.7931993007659912
+            ],
+            "dimensions": [
+              1.119999885559082,
+              0.3100000023841858,
+              0.8056992888450623
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arch",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arch_museum_brass",
+          "type": "MESH",
+          "parent": "museum_arch",
+          "mesh": "museum_arch_arch_bead_-0.155",
+          "triangles": 372,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.8539705872535706,
+              -0.17000000178813934,
+              1.279272437095642
+            ],
+            "max": [
+              0.8539705872535706,
+              0.17000000178813934,
+              2.2749998569488525
+            ],
+            "dimensions": [
+              1.7079411745071411,
+              0.3400000035762787,
+              0.9957274198532104
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arch_museum_ivory",
+          "type": "MESH",
+          "parent": "museum_arch",
+          "mesh": "Cube.205",
+          "triangles": 88,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -1.0149999856948853,
+              -0.20000000298023224,
+              0.0
+            ],
+            "max": [
+              1.0149999856948853,
+              0.20000000298023224,
+              0.06499999761581421
+            ],
+            "dimensions": [
+              2.0299999713897705,
+              0.4000000059604645,
+              0.06499999761581421
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arch_museum_limestone",
+          "type": "MESH",
+          "parent": "museum_arch",
+          "mesh": "Cube.204",
+          "triangles": 244,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.9749999642372131,
+              -0.17499999701976776,
+              -0.012499988079071045
+            ],
+            "max": [
+              0.9750000238418579,
+              0.17499999701976776,
+              2.2138092517852783
+            ],
+            "dimensions": [
+              1.9500000476837158,
+              0.3499999940395355,
+              2.226309299468994
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_balustrade",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_balustrade_museum_ivory",
+          "type": "MESH",
+          "parent": "museum_balustrade",
+          "mesh": "baluster_0",
+          "triangles": 1960,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.5020000338554382,
+              -0.041999999433755875,
+              0.05999999865889549
+            ],
+            "max": [
+              0.5018000602722168,
+              0.041999999433755875,
+              0.38999998569488525
+            ],
+            "dimensions": [
+              1.0038001537322998,
+              0.08399999886751175,
+              0.32999998331069946
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_balustrade_museum_limestone",
+          "type": "MESH",
+          "parent": "museum_balustrade",
+          "mesh": "Cube.214",
+          "triangles": 88,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.550000011920929,
+              -0.0949999988079071,
+              0.0
+            ],
+            "max": [
+              0.550000011920929,
+              0.0949999988079071,
+              0.4675000011920929
+            ],
+            "dimensions": [
+              1.100000023841858,
+              0.1899999976158142,
+              0.4675000011920929
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_column",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_column_museum_brass",
+          "type": "MESH",
+          "parent": "museum_column",
+          "mesh": "museum_column_bead_0",
+          "triangles": 800,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.1850000023841858,
+              -0.1850000023841858,
+              0.17100000381469727
+            ],
+            "max": [
+              0.1850000023841858,
+              0.1850000023841858,
+              2.003999948501587
+            ],
+            "dimensions": [
+              0.3700000047683716,
+              0.3700000047683716,
+              1.8329999446868896
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_column_museum_ivory",
+          "type": "MESH",
+          "parent": "museum_column",
+          "mesh": "museum_column_capital_leaf_0",
+          "triangles": 640,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.21594443917274475,
+              -0.21594443917274475,
+              1.8700000047683716
+            ],
+            "max": [
+              0.21594443917274475,
+              0.21594443917274475,
+              2.0799999237060547
+            ],
+            "dimensions": [
+              0.4318888783454895,
+              0.4318888783454895,
+              0.2099999189376831
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_column_museum_limestone",
+          "type": "MESH",
+          "parent": "museum_column",
+          "mesh": "Cube.203",
+          "triangles": 944,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.23000000417232513,
+              -0.23000000417232513,
+              0.0
+            ],
+            "max": [
+              0.23000000417232513,
+              0.23000000417232513,
+              2.184999942779541
+            ],
+            "dimensions": [
+              0.46000000834465027,
+              0.46000000834465027,
+              2.184999942779541
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_rotunda",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_rotunda_museum_brass",
+          "type": "MESH",
+          "parent": "museum_rotunda",
+          "mesh": "rotunda_column_0_bead_0",
+          "triangles": 8752,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -1.3569955825805664,
+              -1.3569954633712769,
+              0.1451146900653839
+            ],
+            "max": [
+              1.3569954633712769,
+              1.3569954633712769,
+              2.8139941692352295
+            ],
+            "dimensions": [
+              2.713991165161133,
+              2.7139909267425537,
+              2.668879508972168
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_rotunda_museum_ivory",
+          "type": "MESH",
+          "parent": "museum_rotunda",
+          "mesh": "rotunda_column_0_capital_leaf_0",
+          "triangles": 5632,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -1.383255958557129,
+              -1.3832556009292603,
+              1.5869266986846924
+            ],
+            "max": [
+              1.3832557201385498,
+              1.3832556009292603,
+              2.119999885559082
+            ],
+            "dimensions": [
+              2.7665116786956787,
+              2.7665112018585205,
+              0.5330731868743896
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_rotunda_museum_limestone",
+          "type": "MESH",
+          "parent": "museum_rotunda",
+          "mesh": "Cube.219",
+          "triangles": 7552,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -1.395183801651001,
+              -1.3951835632324219,
+              0.0
+            ],
+            "max": [
+              1.3951835632324219,
+              1.3951835632324219,
+              1.8542430400848389
+            ],
+            "dimensions": [
+              2.790367364883423,
+              2.7903671264648438,
+              1.8542430400848389
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_brass",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "platform_bridge_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 1996,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.5199999809265137,
+              -1.6200000047683716,
+              -0.7315678000450134
+            ],
+            "max": [
+              0.5199999809265137,
+              1.6200001239776611,
+              -0.07099997997283936
+            ],
+            "dimensions": [
+              1.0399999618530273,
+              3.2400002479553223,
+              0.6605678200721741
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "Cube.134",
+          "triangles": 748,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.5999999642372131,
+              -1.7000000476837158,
+              -0.9500000476837158
+            ],
+            "max": [
+              0.5999999046325684,
+              1.7000000476837158,
+              0.0
+            ],
+            "dimensions": [
+              1.1999998092651367,
+              3.4000000953674316,
+              0.9500000476837158
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_limestone",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "Cube.133",
+          "triangles": 1744,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.5600000023841858,
+              -1.6600000858306885,
+              -1.059999942779541
+            ],
+            "max": [
+              0.559999942779541,
+              1.6600000858306885,
+              -0.08250004053115845
+            ],
+            "dimensions": [
+              1.119999885559082,
+              3.320000171661377,
+              0.9774999022483826
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "platform_bridge_teal_border",
+          "triangles": 8,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.46000000834465027,
+              -1.559999942779541,
+              0.0020000000949949026
+            ],
+            "max": [
+              0.46000000834465027,
+              1.559999942779541,
+              0.0020000000949949026
+            ],
+            "dimensions": [
+              0.9200000166893005,
+              3.119999885559082,
+              0.0
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_brass",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "platform_island_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 2716,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.6575000286102295,
+              -0.6575000286102295,
+              -0.7320462465286255
+            ],
+            "max": [
+              0.6575000286102295,
+              0.6575000286102295,
+              0.009000003337860107
+            ],
+            "dimensions": [
+              1.315000057220459,
+              1.315000057220459,
+              0.7410462498664856
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "Cube.072",
+          "triangles": 396,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.737500011920929,
+              -0.737500011920929,
+              -0.9500000476837158
+            ],
+            "max": [
+              0.737500011920929,
+              0.7374999523162842,
+              0.0
+            ],
+            "dimensions": [
+              1.475000023841858,
+              1.4749999046325684,
+              0.9500000476837158
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_limestone",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "Cube.071",
+          "triangles": 960,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.6974999904632568,
+              -0.6974999904632568,
+              -1.059999942779541
+            ],
+            "max": [
+              0.6975000500679016,
+              0.6974999904632568,
+              -0.08250004053115845
+            ],
+            "dimensions": [
+              1.3949999809265137,
+              1.3949999809265137,
+              0.9774999022483826
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "platform_island_inlaid_petal_0",
+          "triangles": 184,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.5975000262260437,
+              -0.5975000262260437,
+              0.0020000000949949026
+            ],
+            "max": [
+              0.5975000262260437,
+              0.5975000262260437,
+              0.0020000000949949026
+            ],
+            "dimensions": [
+              1.1950000524520874,
+              1.1950000524520874,
+              0.0
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_brass",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "platform_ledge_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 1508,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.35500001907348633,
+              -1.0700000524520874,
+              -0.7315678000450134
+            ],
+            "max": [
+              0.35500001907348633,
+              1.0699999332427979,
+              -0.07099997997283936
+            ],
+            "dimensions": [
+              0.7100000381469727,
+              2.1399998664855957,
+              0.6605678200721741
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "Cube.098",
+          "triangles": 572,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.4350000023841858,
+              -1.149999976158142,
+              -0.9500000476837158
+            ],
+            "max": [
+              0.4350000023841858,
+              1.1500000953674316,
+              0.0
+            ],
+            "dimensions": [
+              0.8700000047683716,
+              2.3000001907348633,
+              0.9500000476837158
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_limestone",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "Cube.097",
+          "triangles": 1352,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.39499998092651367,
+              -1.1100000143051147,
+              -1.059999942779541
+            ],
+            "max": [
+              0.39499998092651367,
+              1.1099998950958252,
+              -0.08250004053115845
+            ],
+            "dimensions": [
+              0.7899999618530273,
+              2.2199997901916504,
+              0.9774999022483826
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "platform_ledge_teal_border",
+          "triangles": 8,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.29499998688697815,
+              -1.0099999904632568,
+              0.0020000000949949026
+            ],
+            "max": [
+              0.29499998688697815,
+              1.0099999904632568,
+              0.0020000000949949026
+            ],
+            "dimensions": [
+              0.5899999737739563,
+              2.0199999809265137,
+              0.0
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_brass",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "platform_plinth_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 2972,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.6575000286102295,
+              -0.6575000286102295,
+              -1.0870000123977661
+            ],
+            "max": [
+              0.6575000286102295,
+              0.6575000286102295,
+              0.009000003337860107
+            ],
+            "dimensions": [
+              1.315000057220459,
+              1.315000057220459,
+              1.0959999561309814
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "Cube.180",
+          "triangles": 396,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.737500011920929,
+              -0.737500011920929,
+              -0.9500000476837158
+            ],
+            "max": [
+              0.737500011920929,
+              0.7374999523162842,
+              0.0
+            ],
+            "dimensions": [
+              1.475000023841858,
+              1.4749999046325684,
+              0.9500000476837158
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_limestone",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "Cube.179",
+          "triangles": 960,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -0.6974999904632568,
+              -0.6974999904632568,
+              -1.059999942779541
+            ],
+            "max": [
+              0.6975000500679016,
+              0.6974999904632568,
+              -0.08250004053115845
+            ],
+            "dimensions": [
+              1.3949999809265137,
+              1.3949999809265137,
+              0.9774999022483826
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "platform_plinth_inlaid_petal_0",
+          "triangles": 184,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.5975000262260437,
+              -0.5975000262260437,
+              0.0020000000949949026
+            ],
+            "max": [
+              0.5975000262260437,
+              0.5975000262260437,
+              0.0020000000949949026
+            ],
+            "dimensions": [
+              1.1950000524520874,
+              1.1950000524520874,
+              0.0
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_brass",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "platform_terrace_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 6108,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -1.6200000047683716,
+              -1.7089444398880005,
+              -0.7315678000450134
+            ],
+            "max": [
+              1.6200000047683716,
+              1.70894455909729,
+              0.009000003337860107
+            ],
+            "dimensions": [
+              3.240000009536743,
+              3.41788911819458,
+              0.7405678033828735
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "Cube.006",
+          "triangles": 1100,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -1.7000000476837158,
+              -1.7000000476837158,
+              -0.9500000476837158
+            ],
+            "max": [
+              1.6999999284744263,
+              1.7000000476837158,
+              0.0
+            ],
+            "dimensions": [
+              3.4000000953674316,
+              3.4000000953674316,
+              0.9500000476837158
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_limestone",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "Cube.005",
+          "triangles": 2528,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -1.6600000858306885,
+              -1.6600000858306885,
+              -1.059999942779541
+            ],
+            "max": [
+              1.659999966621399,
+              1.6600000858306885,
+              -0.08250004053115845
+            ],
+            "dimensions": [
+              3.320000171661377,
+              3.320000171661377,
+              0.9774999022483826
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "platform_terrace_inlaid_petal_0",
+          "triangles": 184,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -1.559999942779541,
+              -1.559999942779541,
+              0.0020000000949949026
+            ],
+            "max": [
+              1.559999942779541,
+              1.559999942779541,
+              0.0020000000949949026
+            ],
+            "dimensions": [
+              3.119999885559082,
+              3.119999885559082,
+              0.0
+            ]
+          },
+          "hiddenRender": false
+        }
+      ],
+      "sceneTriangles": 54224,
+      "uniqueMeshTriangles": 54224,
+      "images": []
+    },
+    {
+      "file": "art/glass-adventure/v2/models/garden-kit.blend",
+      "bytes": 351591,
+      "sha256": "2597a21e76056e010314cb49c501eea2dfe335df6181c8faaa83d73b67add29c",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "garden_foliage",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "garden_foliage_garden_palette",
+          "type": "MESH",
+          "parent": "garden_foliage",
+          "mesh": "garden_foliage_leaf_0_0",
+          "triangles": 2812,
+          "materials": [
+            "garden_palette"
+          ],
+          "bounds": {
+            "min": [
+              -0.6813020706176758,
+              -0.25493359565734863,
+              -0.030000001192092896
+            ],
+            "max": [
+              0.6600000262260437,
+              0.23499999940395355,
+              0.39127257466316223
+            ],
+            "dimensions": [
+              1.3413021564483643,
+              0.4899336099624634,
+              0.4212725758552551
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "garden_foliage_museum_ivory",
+          "type": "MESH",
+          "parent": "garden_foliage",
+          "mesh": "Cube.008",
+          "triangles": 540,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.699999988079071,
+              -0.2749999761581421,
+              -0.11999998986721039
+            ],
+            "max": [
+              0.699999988079071,
+              0.2750000059604645,
+              0.0
+            ],
+            "dimensions": [
+              1.399999976158142,
+              0.5499999523162842,
+              0.11999998986721039
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "garden_perimeter",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "garden_perimeter_garden_palette",
+          "type": "MESH",
+          "parent": "garden_perimeter",
+          "mesh": "garden_perimeter_flower_0_petal_0",
+          "triangles": 4012,
+          "materials": [
+            "garden_palette"
+          ],
+          "bounds": {
+            "min": [
+              -0.6603459715843201,
+              -0.23499999940395355,
+              -0.030000001192092896
+            ],
+            "max": [
+              0.6600000262260437,
+              0.23805676400661469,
+              0.4439184069633484
+            ],
+            "dimensions": [
+              1.3203459978103638,
+              0.47305676341056824,
+              0.4739184081554413
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "garden_perimeter_museum_ivory",
+          "type": "MESH",
+          "parent": "garden_perimeter",
+          "mesh": "Cube.002",
+          "triangles": 540,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.699999988079071,
+              -0.2749999761581421,
+              -0.11999998986721039
+            ],
+            "max": [
+              0.699999988079071,
+              0.2750000059604645,
+              0.0
+            ],
+            "dimensions": [
+              1.399999976158142,
+              0.5499999523162842,
+              0.11999998986721039
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "island_root",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "island_root_museum_limestone",
+          "type": "MESH",
+          "parent": "island_root",
+          "mesh": "Icosphere.010",
+          "triangles": 480,
+          "materials": [
+            "museum_limestone"
+          ],
+          "bounds": {
+            "min": [
+              -1.4359816312789917,
+              -1.4495067596435547,
+              -2.5949041843414307
+            ],
+            "max": [
+              1.4134060144424438,
+              1.411199688911438,
+              -0.05372589826583862
+            ],
+            "dimensions": [
+              2.8493876457214355,
+              2.860706329345703,
+              2.5411782264709473
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "ivy_trail",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "ivy_trail_garden_palette",
+          "type": "MESH",
+          "parent": "ivy_trail",
+          "mesh": "ivy_leaf_0_0",
+          "triangles": 1056,
+          "materials": [
+            "garden_palette"
+          ],
+          "bounds": {
+            "min": [
+              -0.506230890750885,
+              -0.2214844971895218,
+              -0.9985026717185974
+            ],
+            "max": [
+              0.4805248975753784,
+              0.06063537672162056,
+              0.0027893264777958393
+            ],
+            "dimensions": [
+              0.9867557883262634,
+              0.28211987018585205,
+              1.0012919902801514
+            ]
+          },
+          "hiddenRender": false
+        }
+      ],
+      "sceneTriangles": 9440,
+      "uniqueMeshTriangles": 9440,
+      "images": []
+    },
+    {
+      "file": "art/glass-adventure/museum-kit.blend",
+      "bytes": 1533100,
+      "sha256": "54977238975f07adfe18f2b8d0c0f7e65a0c71a394a8d6d9275eb98c88209680",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "legend_cash",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "legend_cash_base",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "Cube.021",
+          "triangles": 108,
+          "materials": [
+            "museum_obsidian"
+          ],
+          "bounds": {
+            "min": [
+              -0.4399999976158142,
+              -0.11299999803304672,
+              -0.09000000357627869
+            ],
+            "max": [
+              0.4399999976158142,
+              0.13699999451637268,
+              0.0
+            ],
+            "dimensions": [
+              0.8799999952316284,
+              0.25,
+              0.09000000357627869
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "legend_cash_frame_horizontal_-0.025",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "Cube.019",
+          "triangles": 108,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.39250001311302185,
+              -0.032499998807907104,
+              -0.03849999979138374
+            ],
+            "max": [
+              0.39250001311302185,
+              0.032499998807907104,
+              -0.011500000022351742
+            ],
+            "dimensions": [
+              0.7850000262260437,
+              0.06499999761581421,
+              0.026999998837709427
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "legend_cash_frame_horizontal_1.105",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "Cube.020",
+          "triangles": 108,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.39250001311302185,
+              -0.032499998807907104,
+              1.0915000438690186
+            ],
+            "max": [
+              0.39250001311302185,
+              0.032499998807907104,
+              1.118499994277954
+            ],
+            "dimensions": [
+              0.7850000262260437,
+              0.06499999761581421,
+              0.026999950408935547
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "legend_cash_frame_vertical_-0.374",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "Cube.017",
+          "triangles": 108,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.3865000009536743,
+              -0.032499998807907104,
+              -0.029999971389770508
+            ],
+            "max": [
+              -0.3615000247955322,
+              0.032499998807907104,
+              1.1100000143051147
+            ],
+            "dimensions": [
+              0.02499997615814209,
+              0.06499999761581421,
+              1.1399999856948853
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "legend_cash_frame_vertical_0.374",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "Cube.018",
+          "triangles": 108,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              0.3615000247955322,
+              -0.032499998807907104,
+              -0.029999971389770508
+            ],
+            "max": [
+              0.3865000009536743,
+              0.032499998807907104,
+              1.1100000143051147
+            ],
+            "dimensions": [
+              0.02499997615814209,
+              0.06499999761581421,
+              1.1399999856948853
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "legend_cash_intact",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_intact",
+          "triangles": 12,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.36000001430511475,
+              -0.02250000089406967,
+              0.0
+            ],
+            "max": [
+              0.36000001430511475,
+              0.02250000089406967,
+              1.0800000429153442
+            ],
+            "dimensions": [
+              0.7200000286102295,
+              0.04500000178813934,
+              1.0800000429153442
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "legend_cash_shard_000",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_000",
+          "triangles": 12,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.36000001430511475,
+              -0.02250000089406967,
+              0.0
+            ],
+            "max": [
+              -0.14887695014476776,
+              0.02250000089406967,
+              0.27143988013267517
+            ],
+            "dimensions": [
+              0.21112306416034698,
+              0.04500000178813934,
+              0.27143988013267517
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_001",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_001",
+          "triangles": 20,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.16890650987625122,
+              -0.02250000089406967,
+              0.0
+            ],
+            "max": [
+              0.0357121080160141,
+              0.02250000089406967,
+              0.3042104244232178
+            ],
+            "dimensions": [
+              0.20461861789226532,
+              0.04500000178813934,
+              0.3042104244232178
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_002",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_002",
+          "triangles": 16,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.002847902476787567,
+              -0.02250000089406967,
+              0.0
+            ],
+            "max": [
+              0.2029964029788971,
+              0.02250000089406967,
+              0.28777676820755005
+            ],
+            "dimensions": [
+              0.20584431290626526,
+              0.04500000178813934,
+              0.28777676820755005
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_003",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_003",
+          "triangles": 12,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              0.18249139189720154,
+              -0.02250000089406967,
+              0.0
+            ],
+            "max": [
+              0.36000001430511475,
+              0.02250000089406967,
+              0.2892622649669647
+            ],
+            "dimensions": [
+              0.1775086224079132,
+              0.04500000178813934,
+              0.2892622649669647
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_004",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_004",
+          "triangles": 16,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.36000001430511475,
+              -0.02250000089406967,
+              0.2673174738883972
+            ],
+            "max": [
+              -0.12474612146615982,
+              0.02250000089406967,
+              0.5293826460838318
+            ],
+            "dimensions": [
+              0.23525390028953552,
+              0.04500000178813934,
+              0.26206517219543457
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_005",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_005",
+          "triangles": 20,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.24354404211044312,
+              -0.02250000089406967,
+              0.2905384302139282
+            ],
+            "max": [
+              -0.023049622774124146,
+              0.02250000089406967,
+              0.5800933241844177
+            ],
+            "dimensions": [
+              0.22049441933631897,
+              0.04500000178813934,
+              0.2895548939704895
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_006",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_006",
+          "triangles": 20,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.05223564803600311,
+              -0.02250000089406967,
+              0.27238914370536804
+            ],
+            "max": [
+              0.16694238781929016,
+              0.02250000089406967,
+              0.5537739992141724
+            ],
+            "dimensions": [
+              0.21917803585529327,
+              0.04500000178813934,
+              0.2813848555088043
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_007",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_007",
+          "triangles": 16,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              0.1647202968597412,
+              -0.02250000089406967,
+              0.27870774269104004
+            ],
+            "max": [
+              0.36000001430511475,
+              0.02250000089406967,
+              0.5527564287185669
+            ],
+            "dimensions": [
+              0.19527971744537354,
+              0.04500000178813934,
+              0.27404868602752686
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_008",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_008",
+          "triangles": 20,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.36000001430511475,
+              -0.02250000089406967,
+              0.526921808719635
+            ],
+            "max": [
+              -0.1715250462293625,
+              0.02250000089406967,
+              0.8306640982627869
+            ],
+            "dimensions": [
+              0.18847496807575226,
+              0.04500000178813934,
+              0.30374228954315186
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_009",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_009",
+          "triangles": 12,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.20583173632621765,
+              -0.02250000089406967,
+              0.5715997219085693
+            ],
+            "max": [
+              -0.009440235793590546,
+              0.02250000089406967,
+              0.8084319233894348
+            ],
+            "dimensions": [
+              0.1963914930820465,
+              0.04500000178813934,
+              0.23683220148086548
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_010",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_010",
+          "triangles": 24,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.04575981944799423,
+              -0.02250000089406967,
+              0.5528709292411804
+            ],
+            "max": [
+              0.18845084309577942,
+              0.02250000089406967,
+              0.804489254951477
+            ],
+            "dimensions": [
+              0.23421066999435425,
+              0.04500000178813934,
+              0.25161832571029663
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_011",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_011",
+          "triangles": 16,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              0.16391929984092712,
+              -0.02250000089406967,
+              0.5318595170974731
+            ],
+            "max": [
+              0.36000001430511475,
+              0.02250000089406967,
+              0.7811455726623535
+            ],
+            "dimensions": [
+              0.19608071446418762,
+              0.04500000178813934,
+              0.24928605556488037
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_012",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_012",
+          "triangles": 12,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.36000001430511475,
+              -0.02250000089406967,
+              0.8300102949142456
+            ],
+            "max": [
+              -0.11463172733783722,
+              0.02250000089406967,
+              1.0800000429153442
+            ],
+            "dimensions": [
+              0.24536828696727753,
+              0.04500000178813934,
+              0.24998974800109863
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_013",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_013",
+          "triangles": 20,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.23479638993740082,
+              -0.02250000089406967,
+              0.7907868027687073
+            ],
+            "max": [
+              0.014511838555335999,
+              0.02250000089406967,
+              1.0800000429153442
+            ],
+            "dimensions": [
+              0.24930822849273682,
+              0.04500000178813934,
+              0.28921324014663696
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_014",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_014",
+          "triangles": 12,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              -0.0350862592458725,
+              -0.02250000089406967,
+              0.7916890382766724
+            ],
+            "max": [
+              0.19294582307338715,
+              0.02250000089406967,
+              1.0800000429153442
+            ],
+            "dimensions": [
+              0.22803208231925964,
+              0.04500000178813934,
+              0.2883110046386719
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "legend_cash_shard_015",
+          "type": "MESH",
+          "parent": "legend_cash",
+          "mesh": "legend_cash_shard_015",
+          "triangles": 16,
+          "materials": [
+            "legend_edge",
+            "legend_portrait"
+          ],
+          "bounds": {
+            "min": [
+              0.15413902699947357,
+              -0.02250000089406967,
+              0.760413646697998
+            ],
+            "max": [
+              0.36000001430511475,
+              0.02250000089406967,
+              1.0800000429153442
+            ],
+            "dimensions": [
+              0.20586098730564117,
+              0.04500000178813934,
+              0.3195863962173462
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "museum_arch",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arch_museum_brass",
+          "type": "MESH",
+          "parent": "museum_arch",
+          "mesh": "Cube.013",
+          "triangles": 1192,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -1.2300000190734863,
+              -0.2199999988079071,
+              0.0
+            ],
+            "max": [
+              1.2300000190734863,
+              0.2199999988079071,
+              2.4112584590911865
+            ],
+            "dimensions": [
+              2.4600000381469727,
+              0.4399999976158142,
+              2.4112584590911865
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arch_museum_ivory",
+          "type": "MESH",
+          "parent": "museum_arch",
+          "mesh": "museum_arch_ivory_vault",
+          "triangles": 868,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -1.199884295463562,
+              -0.15000000596046448,
+              0.0
+            ],
+            "max": [
+              1.199884295463562,
+              0.15000000596046448,
+              2.5500001907348633
+            ],
+            "dimensions": [
+              2.399768590927124,
+              0.30000001192092896,
+              2.5500001907348633
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_arch_museum_petrol",
+          "type": "MESH",
+          "parent": "museum_arch",
+          "mesh": "Cube.016",
+          "triangles": 108,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.09000000357627869,
+              -0.1850000023841858,
+              2.2750000953674316
+            ],
+            "max": [
+              0.09000000357627869,
+              0.1850000023841858,
+              2.505000114440918
+            ],
+            "dimensions": [
+              0.18000000715255737,
+              0.3700000047683716,
+              0.23000001907348633
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_astrolabe",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_astrolabe_museum_brass",
+          "type": "MESH",
+          "parent": "museum_astrolabe",
+          "mesh": "output_unwrapped",
+          "triangles": 6167,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.9970631003379822,
+              -0.6940966248512268,
+              0.0
+            ],
+            "max": [
+              0.9970631003379822,
+              0.6940966248512268,
+              2.3999998569488525
+            ],
+            "dimensions": [
+              1.9941262006759644,
+              1.3881932497024536,
+              2.3999998569488525
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_column",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_column_museum_brass",
+          "type": "MESH",
+          "parent": "museum_column",
+          "mesh": "museum_column_gilt_00",
+          "triangles": 2880,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.18900001049041748,
+              -0.18900001049041748,
+              0.15220576524734497
+            ],
+            "max": [
+              0.18900001049041748,
+              0.18900001049041748,
+              2.087794065475464
+            ],
+            "dimensions": [
+              0.37800002098083496,
+              0.37800002098083496,
+              1.9355883598327637
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "museum_column_museum_ivory",
+          "type": "MESH",
+          "parent": "museum_column",
+          "mesh": "Cube.011",
+          "triangles": 888,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.20999999344348907,
+              -0.20999999344348907,
+              0.0
+            ],
+            "max": [
+              0.20999999344348907,
+              0.20999999344348907,
+              2.180000066757202
+            ],
+            "dimensions": [
+              0.41999998688697815,
+              0.41999998688697815,
+              2.180000066757202
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_brass",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "platform_bridge_floor_inner",
+          "triangles": 2192,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.5419925451278687,
+              -1.6616822481155396,
+              -0.6403108835220337
+            ],
+            "max": [
+              0.5419925451278687,
+              1.6616822481155396,
+              0.011500000953674316
+            ],
+            "dimensions": [
+              1.0839850902557373,
+              3.323364496231079,
+              0.651810884475708
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_cyan",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "platform_bridge_light_seam",
+          "triangles": 96,
+          "materials": [
+            "museum_cyan"
+          ],
+          "bounds": {
+            "min": [
+              -0.5319947004318237,
+              -1.6319419145584106,
+              -0.17539231479167938
+            ],
+            "max": [
+              0.5319947004318237,
+              1.6319419145584106,
+              -0.15460769832134247
+            ],
+            "dimensions": [
+              1.0639894008636475,
+              3.2638838291168213,
+              0.020784616470336914
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "Cube.007",
+          "triangles": 108,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.5,
+              -1.600000023841858,
+              -0.04349999874830246
+            ],
+            "max": [
+              0.5,
+              1.600000023841858,
+              0.0015000011771917343
+            ],
+            "dimensions": [
+              1.0,
+              3.200000047683716,
+              0.04500000178813934
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_obsidian",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "Cube.006",
+          "triangles": 108,
+          "materials": [
+            "museum_obsidian"
+          ],
+          "bounds": {
+            "min": [
+              -0.550000011920929,
+              -1.649999976158142,
+              -0.20000000298023224
+            ],
+            "max": [
+              0.550000011920929,
+              1.649999976158142,
+              0.0
+            ],
+            "dimensions": [
+              1.100000023841858,
+              3.299999952316284,
+              0.20000000298023224
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_bridge_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_bridge",
+          "mesh": "platform_bridge_suspended_hull",
+          "triangles": 22,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.47764572501182556,
+              -1.4329371452331543,
+              -0.37400001287460327
+            ],
+            "max": [
+              0.47764572501182556,
+              1.4329371452331543,
+              -0.18000000715255737
+            ],
+            "dimensions": [
+              0.9552914500236511,
+              2.8658742904663086,
+              0.1940000057220459
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_brass",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "platform_island_floor_inner",
+          "triangles": 1600,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.6794210076332092,
+              -0.6794210076332092,
+              -0.4744889438152313
+            ],
+            "max": [
+              0.6794210076332092,
+              0.6794210076332092,
+              0.011500000953674316
+            ],
+            "dimensions": [
+              1.3588420152664185,
+              1.3588420152664185,
+              0.48598894476890564
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_cyan",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "platform_island_light_seam",
+          "triangles": 96,
+          "materials": [
+            "museum_cyan"
+          ],
+          "bounds": {
+            "min": [
+              -0.6694433689117432,
+              -0.6694433689117432,
+              -0.17539231479167938
+            ],
+            "max": [
+              0.6694433689117432,
+              0.6694433689117432,
+              -0.15460769832134247
+            ],
+            "dimensions": [
+              1.3388867378234863,
+              1.3388867378234863,
+              0.020784616470336914
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "Cube.003",
+          "triangles": 108,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.637499988079071,
+              -0.637499988079071,
+              -0.04349999874830246
+            ],
+            "max": [
+              0.637499988079071,
+              0.637499988079071,
+              0.0015000011771917343
+            ],
+            "dimensions": [
+              1.274999976158142,
+              1.274999976158142,
+              0.04500000178813934
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_obsidian",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "Cube.002",
+          "triangles": 108,
+          "materials": [
+            "museum_obsidian"
+          ],
+          "bounds": {
+            "min": [
+              -0.6875,
+              -0.6875,
+              -0.20000000298023224
+            ],
+            "max": [
+              0.6875,
+              0.6875,
+              0.0
+            ],
+            "dimensions": [
+              1.375,
+              1.375,
+              0.20000000298023224
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_island_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_island",
+          "mesh": "platform_island_suspended_hull",
+          "triangles": 22,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.5970571637153625,
+              -0.5970571637153625,
+              -0.4675000011920929
+            ],
+            "max": [
+              0.5970571637153625,
+              0.5970571637153625,
+              -0.18000000715255737
+            ],
+            "dimensions": [
+              1.194114327430725,
+              1.194114327430725,
+              0.2874999940395355
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_brass",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "platform_ledge_floor_inner",
+          "triangles": 1600,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.3769916296005249,
+              -1.0919157266616821,
+              -0.2719712257385254
+            ],
+            "max": [
+              0.3769916296005249,
+              1.0919157266616821,
+              0.011500000953674316
+            ],
+            "dimensions": [
+              0.7539832592010498,
+              2.1838314533233643,
+              0.2834712266921997
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_cyan",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "platform_ledge_light_seam",
+          "triangles": 96,
+          "materials": [
+            "museum_cyan"
+          ],
+          "bounds": {
+            "min": [
+              -0.3669940233230591,
+              -1.081938624382019,
+              -0.17539231479167938
+            ],
+            "max": [
+              0.3669940233230591,
+              1.081938624382019,
+              -0.15460769832134247
+            ],
+            "dimensions": [
+              0.7339880466461182,
+              2.163877248764038,
+              0.020784616470336914
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "Cube.005",
+          "triangles": 108,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.33500000834465027,
+              -1.0499999523162842,
+              -0.04349999874830246
+            ],
+            "max": [
+              0.33500000834465027,
+              1.0499999523162842,
+              0.0015000011771917343
+            ],
+            "dimensions": [
+              0.6700000166893005,
+              2.0999999046325684,
+              0.04500000178813934
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_obsidian",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "Cube.004",
+          "triangles": 108,
+          "materials": [
+            "museum_obsidian"
+          ],
+          "bounds": {
+            "min": [
+              -0.38499999046325684,
+              -1.100000023841858,
+              -0.20000000298023224
+            ],
+            "max": [
+              0.38499999046325684,
+              1.100000023841858,
+              0.0
+            ],
+            "dimensions": [
+              0.7699999809265137,
+              2.200000047683716,
+              0.20000000298023224
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ledge_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_ledge",
+          "mesh": "platform_ledge_suspended_hull",
+          "triangles": 22,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.3343520164489746,
+              -0.9552914500236511,
+              -0.26179999113082886
+            ],
+            "max": [
+              0.3343520164489746,
+              0.9552914500236511,
+              -0.18000000715255737
+            ],
+            "dimensions": [
+              0.6687040328979492,
+              1.9105829000473022,
+              0.08179998397827148
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_brass",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "platform_plinth_floor_inner",
+          "triangles": 1600,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.6794210076332092,
+              -0.6794210076332092,
+              -0.4744889438152313
+            ],
+            "max": [
+              0.6794210076332092,
+              0.6794210076332092,
+              0.011500000953674316
+            ],
+            "dimensions": [
+              1.3588420152664185,
+              1.3588420152664185,
+              0.48598894476890564
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_cyan",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "platform_plinth_levitation_ring",
+          "triangles": 672,
+          "materials": [
+            "museum_cyan"
+          ],
+          "bounds": {
+            "min": [
+              -0.6694433689117432,
+              -0.6694433689117432,
+              -0.4721243679523468
+            ],
+            "max": [
+              0.6694433689117432,
+              0.6694433689117432,
+              -0.15460769832134247
+            ],
+            "dimensions": [
+              1.3388867378234863,
+              1.3388867378234863,
+              0.3175166845321655
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "Cube.009",
+          "triangles": 108,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.637499988079071,
+              -0.637499988079071,
+              -0.04349999874830246
+            ],
+            "max": [
+              0.637499988079071,
+              0.637499988079071,
+              0.0015000011771917343
+            ],
+            "dimensions": [
+              1.274999976158142,
+              1.274999976158142,
+              0.04500000178813934
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_obsidian",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "Cube.008",
+          "triangles": 108,
+          "materials": [
+            "museum_obsidian"
+          ],
+          "bounds": {
+            "min": [
+              -0.6875,
+              -0.6875,
+              -0.20000000298023224
+            ],
+            "max": [
+              0.6875,
+              0.6875,
+              0.0
+            ],
+            "dimensions": [
+              1.375,
+              1.375,
+              0.20000000298023224
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_plinth_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_plinth",
+          "mesh": "platform_plinth_suspended_hull",
+          "triangles": 22,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -0.5970571637153625,
+              -0.5970571637153625,
+              -0.4675000011920929
+            ],
+            "max": [
+              0.5970571637153625,
+              0.5970571637153625,
+              -0.18000000715255737
+            ],
+            "dimensions": [
+              1.194114327430725,
+              1.194114327430725,
+              0.2874999940395355
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ramp",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ramp_museum_brass",
+          "type": "MESH",
+          "parent": "platform_ramp",
+          "mesh": "platform_ramp_gold_rail_-1",
+          "triangles": 136,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.6654999852180481,
+              -1.103780746459961,
+              -0.010123024694621563
+            ],
+            "max": [
+              0.6654999852180481,
+              1.103780746459961,
+              0.570123016834259
+            ],
+            "dimensions": [
+              1.3309999704360962,
+              2.207561492919922,
+              0.5802460312843323
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_ramp_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_ramp",
+          "mesh": "platform_ramp_stone",
+          "triangles": 12,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -0.6875,
+              -1.100000023841858,
+              -0.20000000298023224
+            ],
+            "max": [
+              0.6875,
+              1.100000023841858,
+              0.550000011920929
+            ],
+            "dimensions": [
+              1.375,
+              2.200000047683716,
+              0.75
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_brass",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "platform_terrace_floor_inner",
+          "triangles": 1600,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -1.6419246196746826,
+              -1.6419246196746826,
+              -1.127758264541626
+            ],
+            "max": [
+              1.6419246196746826,
+              1.6419246196746826,
+              0.011500000953674316
+            ],
+            "dimensions": [
+              3.2838492393493652,
+              3.2838492393493652,
+              1.1392582654953003
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_cyan",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "platform_terrace_light_seam",
+          "triangles": 96,
+          "materials": [
+            "museum_cyan"
+          ],
+          "bounds": {
+            "min": [
+              -1.6319464445114136,
+              -1.6319464445114136,
+              -0.17539231479167938
+            ],
+            "max": [
+              1.6319464445114136,
+              1.6319464445114136,
+              -0.15460769832134247
+            ],
+            "dimensions": [
+              3.263892889022827,
+              3.263892889022827,
+              0.020784616470336914
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_ivory",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "Cube.001",
+          "triangles": 108,
+          "materials": [
+            "museum_ivory"
+          ],
+          "bounds": {
+            "min": [
+              -1.600000023841858,
+              -1.600000023841858,
+              -0.04349999874830246
+            ],
+            "max": [
+              1.600000023841858,
+              1.600000023841858,
+              0.0015000011771917343
+            ],
+            "dimensions": [
+              3.200000047683716,
+              3.200000047683716,
+              0.04500000178813934
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_obsidian",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "Cube",
+          "triangles": 108,
+          "materials": [
+            "museum_obsidian"
+          ],
+          "bounds": {
+            "min": [
+              -1.649999976158142,
+              -1.649999976158142,
+              -0.20000000298023224
+            ],
+            "max": [
+              1.649999976158142,
+              1.649999976158142,
+              0.0
+            ],
+            "dimensions": [
+              3.299999952316284,
+              3.299999952316284,
+              0.20000000298023224
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "platform_terrace_museum_petrol",
+          "type": "MESH",
+          "parent": "platform_terrace",
+          "mesh": "platform_terrace_suspended_hull",
+          "triangles": 22,
+          "materials": [
+            "museum_petrol"
+          ],
+          "bounds": {
+            "min": [
+              -1.4329371452331543,
+              -1.4329371452331543,
+              -1.121999979019165
+            ],
+            "max": [
+              1.4329371452331543,
+              1.4329371452331543,
+              -0.18000000715255737
+            ],
+            "dimensions": [
+              2.8658742904663086,
+              2.8658742904663086,
+              0.9419999718666077
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_amphora",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_amphora_base",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_base",
+          "triangles": 192,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.10499999672174454,
+              -0.10499999672174454,
+              0.0
+            ],
+            "max": [
+              0.10499999672174454,
+              0.10499999672174454,
+              0.013000000268220901
+            ],
+            "dimensions": [
+              0.20999999344348907,
+              0.20999999344348907,
+              0.013000000268220901
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_amphora_intact",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_intact",
+          "triangles": 2520,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.2770000100135803,
+              -0.200545996427536,
+              0.0
+            ],
+            "max": [
+              0.2770000100135803,
+              0.200545996427536,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.5540000200271606,
+              0.401091992855072,
+              0.550000011920929
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_amphora_shard_000",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_000",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.200545996427536,
+              0.1367926299571991,
+              0.22550000250339508
+            ],
+            "dimensions": [
+              0.200545996427536,
+              0.1367926299571991,
+              0.22550000250339508
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_001",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_001",
+          "triangles": 512,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.049300894141197205,
+              -0.017999999225139618,
+              0.18512459099292755
+            ],
+            "max": [
+              0.2770000100135803,
+              0.13494963943958282,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.22769911587238312,
+              0.15294963121414185,
+              0.3648754358291626
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_002",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_002",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.1367926299571991,
+              0.200545996427536,
+              0.24430471658706665
+            ],
+            "dimensions": [
+              0.1367926299571991,
+              0.200545996427536,
+              0.24430471658706665
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_003",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_003",
+          "triangles": 212,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.049300894141197205,
+              0.24430471658706665
+            ],
+            "max": [
+              0.1341879516839981,
+              0.19672736525535583,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.1341879516839981,
+              0.14742647111415863,
+              0.3056952953338623
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_004",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_004",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.1367926299571991,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.200545996427536,
+              0.19149836897850037
+            ],
+            "dimensions": [
+              0.1367926299571991,
+              0.200545996427536,
+              0.19149836897850037
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_005",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_005",
+          "triangles": 212,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.1363268941640854,
+              0.049300894141197205,
+              0.19149836897850037
+            ],
+            "max": [
+              0.0,
+              0.19986319541931152,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.1363268941640854,
+              0.15056230127811432,
+              0.3585016429424286
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_006",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_006",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.200545996427536,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.1367926299571991,
+              0.2681751549243927
+            ],
+            "dimensions": [
+              0.200545996427536,
+              0.1367926299571991,
+              0.2681751549243927
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_007",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_007",
+          "triangles": 212,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.1953098624944687,
+              0.0,
+              0.2681751549243927
+            ],
+            "max": [
+              -0.049300894141197205,
+              0.13322106003761292,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.14600896835327148,
+              0.13322106003761292,
+              0.28182485699653625
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_008",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_008",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.200545996427536,
+              -0.1367926299571991,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.0,
+              0.18233880400657654
+            ],
+            "dimensions": [
+              0.200545996427536,
+              0.1367926299571991,
+              0.18233880400657654
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_009",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_009",
+          "triangles": 512,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.2770000100135803,
+              -0.1366979032754898,
+              0.18233880400657654
+            ],
+            "max": [
+              -0.04930088669061661,
+              0.01799999736249447,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.2276991307735443,
+              0.15469789505004883,
+              0.3676612079143524
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_010",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_010",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.1367926299571991,
+              -0.200545996427536,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.0,
+              0.26086652278900146
+            ],
+            "dimensions": [
+              0.1367926299571991,
+              0.200545996427536,
+              0.26086652278900146
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_011",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_011",
+          "triangles": 212,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              -0.1335171014070511,
+              -0.1957438737154007,
+              0.26086652278900146
+            ],
+            "max": [
+              0.0,
+              -0.049300894141197205,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.1335171014070511,
+              0.1464429795742035,
+              0.2891334891319275
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_012",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_012",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.200545996427536,
+              0.0
+            ],
+            "max": [
+              0.1367926299571991,
+              0.0,
+              0.20471343398094177
+            ],
+            "dimensions": [
+              0.1367926299571991,
+              0.200545996427536,
+              0.20471343398094177
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_013",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_013",
+          "triangles": 212,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.19907844066619873,
+              0.20471343398094177
+            ],
+            "max": [
+              0.1357915997505188,
+              -0.049300894141197205,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.1357915997505188,
+              0.14977754652500153,
+              0.3452865779399872
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_014",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_014",
+          "triangles": 126,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.1367926299571991,
+              0.0
+            ],
+            "max": [
+              0.200545996427536,
+              0.0,
+              0.22771859169006348
+            ],
+            "dimensions": [
+              0.200545996427536,
+              0.1367926299571991,
+              0.22771859169006348
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_amphora_shard_015",
+          "type": "MESH",
+          "parent": "vase_amphora",
+          "mesh": "vase_amphora_shard_015",
+          "triangles": 212,
+          "materials": [
+            "glass_honey"
+          ],
+          "bounds": {
+            "min": [
+              0.049300894141197205,
+              -0.13485977053642273,
+              0.22771859169006348
+            ],
+            "max": [
+              0.19771231710910797,
+              0.0,
+              0.550000011920929
+            ],
+            "dimensions": [
+              0.14841142296791077,
+              0.13485977053642273,
+              0.3222814202308655
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_fluted_base",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_base",
+          "triangles": 192,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.07349999994039536,
+              -0.07349999994039536,
+              0.0
+            ],
+            "max": [
+              0.07349999994039536,
+              0.07349999994039536,
+              0.013000000268220901
+            ],
+            "dimensions": [
+              0.1469999998807907,
+              0.1469999998807907,
+              0.013000000268220901
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_fluted_intact",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_intact",
+          "triangles": 2176,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.13062499463558197,
+              -0.13062499463558197,
+              0.0
+            ],
+            "max": [
+              0.13062499463558197,
+              0.13062499463558197,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.26124998927116394,
+              0.26124998927116394,
+              0.6899999976158142
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_fluted_shard_000",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_000",
+          "triangles": 162,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.13062499463558197,
+              0.08441086858510971,
+              0.28290000557899475
+            ],
+            "dimensions": [
+              0.13062499463558197,
+              0.08441086858510971,
+              0.28290000557899475
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_001",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_001",
+          "triangles": 212,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.02093389630317688,
+              0.0,
+              0.28290000557899475
+            ],
+            "max": [
+              0.09910780191421509,
+              0.06404421478509903,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.07817390561103821,
+              0.06404421478509903,
+              0.40709999203681946
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_002",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_002",
+          "triangles": 162,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.08441086858510971,
+              0.13062499463558197,
+              0.3064913749694824
+            ],
+            "dimensions": [
+              0.08441086858510971,
+              0.13062499463558197,
+              0.3064913749694824
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_003",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_003",
+          "triangles": 212,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.02093389630317688,
+              0.3064913749694824
+            ],
+            "max": [
+              0.057671837508678436,
+              0.08924660831689835,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.057671837508678436,
+              0.06831271201372147,
+              0.3835086226463318
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_004",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_004",
+          "triangles": 162,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.08441086858510971,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.13062499463558197,
+              0.24024340510368347
+            ],
+            "dimensions": [
+              0.08441086858510971,
+              0.13062499463558197,
+              0.24024340510368347
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_005",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_005",
+          "triangles": 212,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.07556639611721039,
+              0.02093389630317688,
+              0.24024340510368347
+            ],
+            "max": [
+              0.0,
+              0.11693824827671051,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.07556639611721039,
+              0.09600435197353363,
+              0.44975659251213074
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_006",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_006",
+          "triangles": 162,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.13062499463558197,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.08441086858510971,
+              0.3364379107952118
+            ],
+            "dimensions": [
+              0.13062499463558197,
+              0.08441086858510971,
+              0.3364379107952118
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_007",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_007",
+          "triangles": 212,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.0767289474606514,
+              0.0,
+              0.3364379107952118
+            ],
+            "max": [
+              -0.02093389630317688,
+              0.0495828352868557,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.05579505115747452,
+              0.0495828352868557,
+              0.3535620868206024
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_008",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_008",
+          "triangles": 126,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.13062499463558197,
+              -0.08441086858510971,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.0,
+              0.22875231504440308
+            ],
+            "dimensions": [
+              0.13062499463558197,
+              0.08441086858510971,
+              0.22875231504440308
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_009",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_009",
+          "triangles": 248,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.11856799572706223,
+              -0.07661954313516617,
+              0.22875231504440308
+            ],
+            "max": [
+              -0.02093389630317688,
+              0.0,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.09763409942388535,
+              0.07661954313516617,
+              0.46124768257141113
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_010",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_010",
+          "triangles": 162,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.08441086858510971,
+              -0.13062499463558197,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.0,
+              0.32726889848709106
+            ],
+            "dimensions": [
+              0.08441086858510971,
+              0.13062499463558197,
+              0.32726889848709106
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_011",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_011",
+          "triangles": 212,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              -0.05205952003598213,
+              -0.08056160062551498,
+              0.32726889848709106
+            ],
+            "max": [
+              0.0,
+              -0.02093389630317688,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.05205952003598213,
+              0.059627704322338104,
+              0.36273109912872314
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_012",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_012",
+          "triangles": 162,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.13062499463558197,
+              0.0
+            ],
+            "max": [
+              0.08441086858510971,
+              0.0,
+              0.2568223178386688
+            ],
+            "dimensions": [
+              0.08441086858510971,
+              0.13062499463558197,
+              0.2568223178386688
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_013",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_013",
+          "triangles": 212,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.11000827699899673,
+              0.2568223178386688
+            ],
+            "max": [
+              0.07108818739652634,
+              -0.02093389630317688,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.07108818739652634,
+              0.08907438069581985,
+              0.4331776797771454
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_014",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_014",
+          "triangles": 162,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.08441086858510971,
+              0.0
+            ],
+            "max": [
+              0.13062499463558197,
+              0.0,
+              0.2856833338737488
+            ],
+            "dimensions": [
+              0.13062499463558197,
+              0.08441086858510971,
+              0.2856833338737488
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_fluted_shard_015",
+          "type": "MESH",
+          "parent": "vase_fluted",
+          "mesh": "vase_fluted_shard_015",
+          "triangles": 212,
+          "materials": [
+            "glass_aqua"
+          ],
+          "bounds": {
+            "min": [
+              0.02093389630317688,
+              -0.06329239904880524,
+              0.2856833338737488
+            ],
+            "max": [
+              0.09794436395168304,
+              0.0,
+              0.6899999976158142
+            ],
+            "dimensions": [
+              0.07701046764850616,
+              0.06329239904880524,
+              0.40431666374206543
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_rounded_base",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_base",
+          "triangles": 192,
+          "materials": [
+            "museum_brass"
+          ],
+          "bounds": {
+            "min": [
+              -0.09449999779462814,
+              -0.09449999779462814,
+              0.0
+            ],
+            "max": [
+              0.09449999779462814,
+              0.09449999779462814,
+              0.013000000268220901
+            ],
+            "dimensions": [
+              0.1889999955892563,
+              0.1889999955892563,
+              0.013000000268220901
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_rounded_intact",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_intact",
+          "triangles": 1920,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.1550000011920929,
+              -0.1550000011920929,
+              0.0
+            ],
+            "max": [
+              0.1550000011920929,
+              0.1550000011920929,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.3100000023841858,
+              0.3100000023841858,
+              0.36000001430511475
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "vase_rounded_shard_000",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_000",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.15234999358654022,
+              0.10772772133350372,
+              0.147599995136261
+            ],
+            "dimensions": [
+              0.15234999358654022,
+              0.10772772133350372,
+              0.147599995136261
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_001",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_001",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.040305085480213165,
+              0.0,
+              0.147599995136261
+            ],
+            "max": [
+              0.1550000011920929,
+              0.10960154980421066,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.11469491571187973,
+              0.10960154980421066,
+              0.21240001916885376
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_002",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_002",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.10827168077230453,
+              0.1531192809343338,
+              0.15990854799747467
+            ],
+            "dimensions": [
+              0.10827168077230453,
+              0.1531192809343338,
+              0.15990854799747467
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_003",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_003",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              0.040305085480213165,
+              0.15990854799747467
+            ],
+            "max": [
+              0.10960154980421066,
+              0.1550000011920929,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.10960154980421066,
+              0.11469491571187973,
+              0.20009146630764008
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_004",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_004",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.10674414783716202,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.15095902979373932,
+              0.125344380736351
+            ],
+            "dimensions": [
+              0.10674414783716202,
+              0.15095902979373932,
+              0.125344380736351
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_005",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_005",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.10960155725479126,
+              0.040305085480213165,
+              0.125344380736351
+            ],
+            "max": [
+              0.0,
+              0.1550000011920929,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.10960155725479126,
+              0.11469491571187973,
+              0.23465563356876373
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_006",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_006",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.15409579873085022,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.10896218568086624,
+              0.17553283274173737
+            ],
+            "dimensions": [
+              0.15409579873085022,
+              0.10896218568086624,
+              0.17553283274173737
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_007",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_007",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.1550000011920929,
+              0.0,
+              0.17553283274173737
+            ],
+            "max": [
+              -0.040305085480213165,
+              0.10960154980421066,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.11469491571187973,
+              0.10960154980421066,
+              0.18446718156337738
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_008",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_008",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.15058431029319763,
+              -0.10647919028997421,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.0,
+              0.11934904009103775
+            ],
+            "dimensions": [
+              0.15058431029319763,
+              0.10647919028997421,
+              0.11934904009103775
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_009",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_009",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.1550000011920929,
+              -0.10960154980421066,
+              0.11934903264045715
+            ],
+            "max": [
+              -0.040305085480213165,
+              0.0,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.11469491571187973,
+              0.10960154980421066,
+              0.2406509816646576
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_010",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_010",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.10875076800584793,
+              -0.15379680693149567,
+              0.0
+            ],
+            "max": [
+              0.0,
+              0.0,
+              0.1707489937543869
+            ],
+            "dimensions": [
+              0.10875076800584793,
+              0.15379680693149567,
+              0.1707489937543869
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_011",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_011",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              -0.10960154235363007,
+              -0.1550000011920929,
+              0.1707489937543869
+            ],
+            "max": [
+              0.0,
+              -0.040305085480213165,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.10960154235363007,
+              0.11469491571187973,
+              0.18925102055072784
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_012",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_012",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.1514996439218521,
+              0.0
+            ],
+            "max": [
+              0.10712642222642899,
+              0.0,
+              0.13399425148963928
+            ],
+            "dimensions": [
+              0.10712642222642899,
+              0.1514996439218521,
+              0.13399425148963928
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_013",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_013",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.1550000011920929,
+              0.13399425148963928
+            ],
+            "max": [
+              0.10960154980421066,
+              -0.040305085480213165,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.10960154980421066,
+              0.11469491571187973,
+              0.22600576281547546
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_014",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_014",
+          "triangles": 126,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.0,
+              -0.10779189318418503,
+              0.0
+            ],
+            "max": [
+              0.15244075655937195,
+              0.0,
+              0.14905217289924622
+            ],
+            "dimensions": [
+              0.15244075655937195,
+              0.10779189318418503,
+              0.14905217289924622
+            ]
+          },
+          "hiddenRender": true
+        },
+        {
+          "name": "vase_rounded_shard_015",
+          "type": "MESH",
+          "parent": "vase_rounded",
+          "mesh": "vase_rounded_shard_015",
+          "triangles": 212,
+          "materials": [
+            "glass_rose"
+          ],
+          "bounds": {
+            "min": [
+              0.040305085480213165,
+              -0.10960155725479126,
+              0.14905217289924622
+            ],
+            "max": [
+              0.1550000011920929,
+              0.0,
+              0.36000001430511475
+            ],
+            "dimensions": [
+              0.11469491571187973,
+              0.10960155725479126,
+              0.21094784140586853
+            ]
+          },
+          "hiddenRender": true
+        }
+      ],
+      "sceneTriangles": 30833,
+      "uniqueMeshTriangles": 40097,
+      "images": [
+        {
+          "name": "floor-marble-runtime.jpg",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "//textures/floor-marble-runtime.jpg",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "legend-johnny-cash-runtime.jpg",
+          "dimensions": [
+            1024,
+            1536
+          ],
+          "packed": true,
+          "file": "//textures/legend-johnny-cash-runtime.jpg",
+          "colorSpace": "sRGB"
+        }
+      ]
+    },
+    {
+      "file": "art/glass-adventure/v3/architecture/exports/observatory-canopy-01-final-v1.glb",
+      "bytes": 7545096,
+      "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "meshy_observatory_canopy",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "observatory_canopy_mesh",
+          "type": "MESH",
+          "parent": "meshy_observatory_canopy",
+          "mesh": "Mesh_0",
+          "triangles": 40424,
+          "materials": [
+            "meshy_observatory_canopy_atlas"
+          ],
+          "bounds": {
+            "min": [
+              -1.3103201389312744,
+              -1.3108813762664795,
+              0.0
+            ],
+            "max": [
+              1.3103201389312744,
+              1.3108813762664795,
+              3.0
+            ],
+            "dimensions": [
+              2.620640277862549,
+              2.621762752532959,
+              3.0
+            ]
+          },
+          "hiddenRender": false
+        }
+      ],
+      "sceneTriangles": 40424,
+      "uniqueMeshTriangles": 40424,
+      "images": [
+        {
+          "name": "atlas-0",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "atlas-1",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "atlas-2",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        }
+      ]
+    },
+    {
+      "file": "art/glass-adventure/v3/architecture/exports/gilded-column-01-final-v2.glb",
+      "bytes": 6031316,
+      "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "gilded_column_mesh",
+          "type": "MESH",
+          "parent": "meshy_gilded_column",
+          "mesh": "Mesh_0",
+          "triangles": 23148,
+          "materials": [
+            "meshy_gilded_column_atlas"
+          ],
+          "bounds": {
+            "min": [
+              -0.3869359791278839,
+              -0.3872489035129547,
+              0.0
+            ],
+            "max": [
+              0.3869359791278839,
+              0.3872488737106323,
+              3.0
+            ],
+            "dimensions": [
+              0.7738719582557678,
+              0.7744977474212646,
+              3.0
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "meshy_gilded_column",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        }
+      ],
+      "sceneTriangles": 23148,
+      "uniqueMeshTriangles": 23148,
+      "images": [
+        {
+          "name": "atlas-0",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "atlas-1",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "atlas-2",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        }
+      ]
+    },
+    {
+      "file": "art/glass-adventure/v3/architecture/exports/garden-arcade-01-final-v1.glb",
+      "bytes": 6829416,
+      "sha256": "72714424b213c2d4d9c094f9b55f5257f7ee18163f7bcbd096f4066d1c872885",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "garden_arcade_mesh",
+          "type": "MESH",
+          "parent": "meshy_garden_arcade",
+          "mesh": "Mesh_0",
+          "triangles": 28161,
+          "materials": [
+            "meshy_garden_arcade_atlas"
+          ],
+          "bounds": {
+            "min": [
+              -2.8317337036132812,
+              -0.4091845750808716,
+              0.0
+            ],
+            "max": [
+              2.8317337036132812,
+              0.4091845452785492,
+              3.0
+            ],
+            "dimensions": [
+              5.6634674072265625,
+              0.8183691501617432,
+              3.0
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "meshy_garden_arcade",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        }
+      ],
+      "sceneTriangles": 28161,
+      "uniqueMeshTriangles": 28161,
+      "images": [
+        {
+          "name": "atlas-0",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "atlas-1",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "atlas-2",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        }
+      ]
+    },
+    {
+      "file": "art/glass-adventure/v5/exports/crystal-planter.glb",
+      "bytes": 5196452,
+      "sha256": "0e0054fb80ea69b3773f814c0aac8203eb14ab1906fc8af33c7599330a95352b",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "decor_crystal_planter",
+          "type": "MESH",
+          "parent": null,
+          "mesh": "decor_crystal_planter_mesh",
+          "triangles": 9236,
+          "materials": [
+            "meshy_crystal_planter_atlas"
+          ],
+          "bounds": {
+            "min": [
+              -0.4869749844074249,
+              -0.4561788737773895,
+              0.0
+            ],
+            "max": [
+              0.4869749844074249,
+              0.4561788737773895,
+              1.3999998569488525
+            ],
+            "dimensions": [
+              0.9739499688148499,
+              0.912357747554779,
+              1.3999998569488525
+            ]
+          },
+          "hiddenRender": false
+        }
+      ],
+      "sceneTriangles": 9236,
+      "uniqueMeshTriangles": 9236,
+      "images": [
+        {
+          "name": "crystal-planter-basecolor",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "crystal-planter-emission",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "crystal-planter-normal",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "crystal-planter-orm",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        }
+      ]
+    },
+    {
+      "file": "art/glass-adventure/v5/exports/gallery-frame.glb",
+      "bytes": 4044552,
+      "sha256": "8fc53cd3401f6ecb0d2450a40452f35f44eb734204cf4b25f103f0b6661de973",
+      "scene": "Scene",
+      "collections": [],
+      "objects": [
+        {
+          "name": "decor_gallery_frame",
+          "type": "EMPTY",
+          "parent": null,
+          "mesh": null,
+          "triangles": 0,
+          "materials": [],
+          "bounds": null,
+          "hiddenRender": false
+        },
+        {
+          "name": "gallery_frame_mesh",
+          "type": "MESH",
+          "parent": "decor_gallery_frame",
+          "mesh": "Mesh_0",
+          "triangles": 6910,
+          "materials": [
+            "meshy_gallery_frame_atlas"
+          ],
+          "bounds": {
+            "min": [
+              -0.5582624673843384,
+              -0.03839010372757912,
+              -0.8999999761581421
+            ],
+            "max": [
+              0.5582624673843384,
+              0.03839010372757912,
+              0.8999999761581421
+            ],
+            "dimensions": [
+              1.1165249347686768,
+              0.07678020745515823,
+              1.7999999523162842
+            ]
+          },
+          "hiddenRender": false
+        },
+        {
+          "name": "gallery_frame_surface",
+          "type": "MESH",
+          "parent": "decor_gallery_frame",
+          "mesh": "Mesh_0.001",
+          "triangles": 55,
+          "materials": [
+            "decor_surface"
+          ],
+          "bounds": {
+            "min": [
+              -0.3949415385723114,
+              0.017141126096248627,
+              -0.7627828121185303
+            ],
+            "max": [
+              0.3946371376514435,
+              0.017141126096248627,
+              0.7362371683120728
+            ],
+            "dimensions": [
+              0.7895786762237549,
+              0.0,
+              1.499019980430603
+            ]
+          },
+          "hiddenRender": false
+        }
+      ],
+      "sceneTriangles": 6965,
+      "uniqueMeshTriangles": 6965,
+      "images": [
+        {
+          "name": "atlas-0",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "atlas-1",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "atlas-2",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "atlas-3",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true,
+          "file": "",
+          "colorSpace": "Non-Color"
+        }
+      ]
+    }
+  ]
+}

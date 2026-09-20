@@ -1,0 +1,1035 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-map-kit-v1",
+  "status": "structurally validated and visually approved reusable map-scale kit; four-island proof assembly is non-runtime",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "sources": {
+    "platform": {
+      "file": "art/glass-adventure/museum-kit.blend",
+      "bytes": 1533100,
+      "sha256": "54977238975f07adfe18f2b8d0c0f7e65a0c71a394a8d6d9275eb98c88209680"
+    },
+    "cliff": {
+      "file": "art/glass-adventure/v2/models/garden-kit.blend",
+      "bytes": 351591,
+      "sha256": "2597a21e76056e010314cb49c501eea2dfe335df6181c8faaa83d73b67add29c"
+    },
+    "canopy": {
+      "file": "art/glass-adventure/v3/architecture/exports/observatory-canopy-01-final-v1.glb",
+      "bytes": 7545096,
+      "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b"
+    },
+    "column": {
+      "file": "art/glass-adventure/v3/architecture/exports/gilded-column-01-final-v2.glb",
+      "bytes": 6031316,
+      "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946"
+    },
+    "planter": {
+      "file": "art/glass-adventure/v5/exports/crystal-planter.glb",
+      "bytes": 5196452,
+      "sha256": "0e0054fb80ea69b3773f814c0aac8203eb14ab1906fc8af33c7599330a95352b"
+    },
+    "frame": {
+      "file": "art/glass-adventure/v5/exports/gallery-frame.glb",
+      "bytes": 4044552,
+      "sha256": "8fc53cd3401f6ecb0d2450a40452f35f44eb734204cf4b25f103f0b6661de973"
+    }
+  },
+  "lods": {
+    "canopy": {
+      "source": "art/glass-adventure/v3/architecture/exports/observatory-canopy-01-final-v1.glb",
+      "sourceBytes": 7545096,
+      "sourceSha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+      "targetTriangles": 6500,
+      "sourceTriangles": 40424,
+      "lodTriangles": 6500,
+      "meshes": [
+        {
+          "mesh": "map_lod_canopy_00_mesh",
+          "sourceTriangles": 40424,
+          "targetTriangles": 6500,
+          "lodTriangles": 6500
+        }
+      ],
+      "textures": [
+        {
+          "name": "map_canopy_texture_00",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "map_canopy_texture_01",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "map_canopy_texture_02",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ],
+      "finalNode": "map_canopy",
+      "dimensionsGlTfYUpMetres": [
+        2.65055513381958,
+        3.032888412475586,
+        2.676977276802063
+      ]
+    },
+    "column": {
+      "source": "art/glass-adventure/v3/architecture/exports/gilded-column-01-final-v2.glb",
+      "sourceBytes": 6031316,
+      "sourceSha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946",
+      "targetTriangles": 1800,
+      "sourceTriangles": 23148,
+      "lodTriangles": 1800,
+      "meshes": [
+        {
+          "mesh": "map_lod_column_00_mesh",
+          "sourceTriangles": 23148,
+          "targetTriangles": 1800,
+          "lodTriangles": 1800
+        }
+      ],
+      "textures": [
+        {
+          "name": "map_column_texture_00",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "map_column_texture_01",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "map_column_texture_02",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ],
+      "finalNode": "map_column",
+      "dimensionsGlTfYUpMetres": [
+        0.7763852477073669,
+        3.0223662853240967,
+        0.7982811033725739
+      ]
+    },
+    "planter": {
+      "source": "art/glass-adventure/v5/exports/crystal-planter.glb",
+      "sourceBytes": 5196452,
+      "sourceSha256": "0e0054fb80ea69b3773f814c0aac8203eb14ab1906fc8af33c7599330a95352b",
+      "targetTriangles": 1800,
+      "sourceTriangles": 9236,
+      "lodTriangles": 1800,
+      "meshes": [
+        {
+          "mesh": "map_lod_planter_00_mesh",
+          "sourceTriangles": 9236,
+          "targetTriangles": 1800,
+          "lodTriangles": 1800
+        }
+      ],
+      "textures": [
+        {
+          "name": "map_planter_texture_00",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "map_planter_texture_01",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "map_planter_texture_02",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "map_planter_texture_03",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ],
+      "finalNode": "map_planter",
+      "dimensionsGlTfYUpMetres": [
+        1.034750610589981,
+        1.4503891468048096,
+        0.9520938992500305
+      ]
+    },
+    "frame": {
+      "source": "art/glass-adventure/v5/exports/gallery-frame.glb",
+      "sourceBytes": 4044552,
+      "sourceSha256": "8fc53cd3401f6ecb0d2450a40452f35f44eb734204cf4b25f103f0b6661de973",
+      "targetTriangles": 1000,
+      "sourceTriangles": 6965,
+      "lodTriangles": 1000,
+      "meshes": [
+        {
+          "mesh": "map_lod_frame_00_mesh",
+          "sourceTriangles": 6910,
+          "targetTriangles": 945,
+          "lodTriangles": 945
+        },
+        {
+          "mesh": "map_lod_frame_01_mesh",
+          "sourceTriangles": 55,
+          "targetTriangles": 55,
+          "lodTriangles": 55
+        }
+      ],
+      "textures": [
+        {
+          "name": "map_frame_texture_00",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "map_frame_texture_01",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "map_frame_texture_02",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "map_frame_texture_03",
+          "sourceDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeDimensions": [
+            512,
+            512
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ],
+      "finalNode": "map_frame",
+      "dimensionsGlTfYUpMetres": [
+        1.1162577867507935,
+        1.8059673309326172,
+        0.09435027837753296
+      ]
+    }
+  },
+  "kitParts": {
+    "map_canopy": {
+      "anchor": "ground Y=0",
+      "authoringBoundsZUp": {
+        "min": [
+          -1.3242326974868774,
+          -1.3384428024291992,
+          0.0
+        ],
+        "max": [
+          1.3263224363327026,
+          1.3385344743728638,
+          3.032888412475586
+        ]
+      },
+      "dimensionsGlTfYUpMetres": [
+        2.65055513381958,
+        3.032888412475586,
+        2.676977276802063
+      ],
+      "triangles": 6500,
+      "materialSlots": [
+        "map_canopy_atlas_00"
+      ]
+    },
+    "map_column": {
+      "anchor": "ground Y=0",
+      "authoringBoundsZUp": {
+        "min": [
+          -0.3881431519985199,
+          -0.4068868160247803,
+          0.0
+        ],
+        "max": [
+          0.38824209570884705,
+          0.3913942873477936,
+          3.0223662853240967
+        ]
+      },
+      "dimensionsGlTfYUpMetres": [
+        0.7763852477073669,
+        3.0223662853240967,
+        0.7982811033725739
+      ],
+      "triangles": 1800,
+      "materialSlots": [
+        "map_column_atlas_00"
+      ]
+    },
+    "map_planter": {
+      "anchor": "ground Y=0",
+      "authoringBoundsZUp": {
+        "min": [
+          -0.5355704426765442,
+          -0.47057071328163147,
+          0.0
+        ],
+        "max": [
+          0.4991801679134369,
+          0.48152318596839905,
+          1.4503891468048096
+        ]
+      },
+      "dimensionsGlTfYUpMetres": [
+        1.034750610589981,
+        1.4503891468048096,
+        0.9520938992500305
+      ],
+      "triangles": 1800,
+      "materialSlots": [
+        "map_planter_atlas_00"
+      ]
+    },
+    "map_frame": {
+      "anchor": "ground Y=0",
+      "authoringBoundsZUp": {
+        "min": [
+          -0.5590804815292358,
+          -0.03913600742816925,
+          0.0
+        ],
+        "max": [
+          0.5571773052215576,
+          0.05521427094936371,
+          1.8059673309326172
+        ]
+      },
+      "dimensionsGlTfYUpMetres": [
+        1.1162577867507935,
+        1.8059673309326172,
+        0.09435027837753296
+      ],
+      "triangles": 1000,
+      "materialSlots": [
+        "map_frame_atlas_01",
+        "map_frame_atlas_00"
+      ]
+    },
+    "map_platform": {
+      "anchor": "walking/top surface Y=0",
+      "authoringBoundsZUp": {
+        "min": [
+          -1.6440867185592651,
+          -1.6440867185592651,
+          -1.2277582883834839
+        ],
+        "max": [
+          1.6440867185592651,
+          1.6440867185592651,
+          0.0
+        ]
+      },
+      "dimensionsGlTfYUpMetres": [
+        3.2881734371185303,
+        1.2277582883834839,
+        3.2881734371185303
+      ],
+      "triangles": 7640,
+      "materialSlots": [
+        "map_champagne_gold",
+        "map_celadon_inlay",
+        "map_ivory_marble",
+        "map_archival_marble",
+        "map_dark_jade"
+      ]
+    },
+    "map_bridge": {
+      "anchor": "walking/top surface Y=0",
+      "authoringBoundsZUp": {
+        "min": [
+          -0.550000011920929,
+          -1.6616822481155396,
+          -0.7403109073638916
+        ],
+        "max": [
+          0.550000011920929,
+          1.6616822481155396,
+          0.0
+        ]
+      },
+      "dimensionsGlTfYUpMetres": [
+        1.100000023841858,
+        0.7403109073638916,
+        3.323364496231079
+      ],
+      "triangles": 2502,
+      "materialSlots": [
+        "map_champagne_gold",
+        "map_celadon_inlay",
+        "map_ivory_marble",
+        "map_archival_marble",
+        "map_dark_jade"
+      ]
+    },
+    "map_island_root": {
+      "anchor": "walking/top surface Y=0",
+      "authoringBoundsZUp": {
+        "min": [
+          -1.3339288234710693,
+          -1.3227819204330444,
+          -4.524509429931641
+        ],
+        "max": [
+          1.2878023386001587,
+          1.2795201539993286,
+          0.0
+        ]
+      },
+      "dimensionsGlTfYUpMetres": [
+        2.621731162071228,
+        4.524509429931641,
+        2.602302074432373
+      ],
+      "triangles": 480,
+      "materialSlots": [
+        "map_cliff_limestone"
+      ]
+    }
+  },
+  "proceduralMapParts": {
+    "terraceTriangles": 7640,
+    "bridgeTriangles": 2502,
+    "cliffTriangles": 480,
+    "domeTrianglesEach": 220,
+    "method": "Existing authored platform/bridge/cliff meshes plus bounded Blender finishing: donor terrace square-to-disc rounding, donor cliff taper/deepening, and low-poly hemisphere inserts for amber/celadon identification."
+  },
+  "localFinishing": {
+    "map_platform": "One deterministic subdivision pass followed by square-to-disc rounding and an 8% depth taper; original donor material bands and UV interpolation retained.",
+    "map_island_root": "Original 480-triangle donor topology retained; deterministic depth stretch, radial taper, and bounded angular crag variation applied with top anchor preserved.",
+    "newExternalGeneration": false
+  },
+  "materialStrategy": {
+    "donorAtlases": "Four accepted donor atlases retained once each, reduced from 1K runtime maps to packed 512px map-camera derivatives.",
+    "sharing": "All repeated canopy, column, planter, frame, terrace, bridge, and cliff nodes share mesh/material/image datablocks.",
+    "simplePalette": [
+      "map_amber_dome",
+      "map_archival_marble",
+      "map_celadon_dome",
+      "map_celadon_inlay",
+      "map_champagne_gold",
+      "map_cliff_limestone",
+      "map_dark_jade",
+      "map_garden_foliage",
+      "map_ivory_marble"
+    ],
+    "runtimeGlassNote": "Amber/celadon dome inserts belong to the Blender proof assembly only. The reusable runtime GLB has no transmission extension; the live scene supplies its own map-scale dome materials."
+  },
+  "proofAssemblyStages": [
+    {
+      "node": "stage_first_light",
+      "stageId": "first-light",
+      "originMetres": [
+        -5.199999809265137,
+        -1.399999976158142,
+        0.15000000596046448
+      ],
+      "baseTopLocalMetres": 0.0115,
+      "boundsWorldMetres": {
+        "min": [
+          -7.008495330810547,
+          -3.2084953784942627,
+          -4.826960563659668
+        ],
+        "max": [
+          -3.3915042877197266,
+          0.4084954261779785,
+          2.727626323699951
+        ],
+        "dimensions": [
+          3.6169910430908203,
+          3.616990804672241,
+          7.554586887359619
+        ]
+      },
+      "meshNodes": 5,
+      "renderedTriangles": 18220
+    },
+    {
+      "node": "stage_glassworks_journey",
+      "stageId": "glassworks-journey",
+      "originMetres": [
+        -1.7999999523162842,
+        1.5499999523162842,
+        0.550000011920929
+      ],
+      "baseTopLocalMetres": 0.0115,
+      "boundsWorldMetres": {
+        "min": [
+          -3.7071404457092285,
+          -0.35714054107666016,
+          -4.69843053817749
+        ],
+        "max": [
+          0.10714054107666016,
+          3.4571404457092285,
+          3.4005861282348633
+        ],
+        "dimensions": [
+          3.8142809867858887,
+          3.8142809867858887,
+          8.099016189575195
+        ]
+      },
+      "meshNodes": 8,
+      "renderedTriangles": 22820
+    },
+    {
+      "node": "stage_twin_galleries",
+      "stageId": "twin-galleries",
+      "originMetres": [
+        1.899999976158142,
+        -0.15000000596046448,
+        0.3499999940395355
+      ],
+      "baseTopLocalMetres": 0.0115,
+      "boundsWorldMetres": {
+        "min": [
+          -0.43460309505462646,
+          -2.4846031665802,
+          -6.074803352355957
+        ],
+        "max": [
+          4.234602928161621,
+          2.184602975845337,
+          2.13907527923584
+        ],
+        "dimensions": [
+          4.669206142425537,
+          4.669206142425537,
+          8.213878631591797
+        ]
+      },
+      "meshNodes": 8,
+      "renderedTriangles": 24360
+    },
+    {
+      "node": "stage_resonance_conservatory",
+      "stageId": "resonance-conservatory",
+      "originMetres": [
+        5.300000190734863,
+        2.1500000953674316,
+        0.8999999761581421
+      ],
+      "baseTopLocalMetres": 0.0115,
+      "boundsWorldMetres": {
+        "min": [
+          3.1955692768096924,
+          0.04556918144226074,
+          -4.891371726989746
+        ],
+        "max": [
+          7.404431343078613,
+          4.254430770874023,
+          4.02354621887207
+        ],
+        "dimensions": [
+          4.2088623046875,
+          4.208861351013184,
+          8.914917945861816
+        ]
+      },
+      "meshNodes": 10,
+      "renderedTriangles": 26420
+    }
+  ],
+  "proofAssemblyBudget": {
+    "targetRenderedTrianglesMaxExclusive": 150000,
+    "renderedTriangles": 99326,
+    "targetDrawsMaxExclusive": 100,
+    "estimatedDraws": 65,
+    "meshNodes": 34,
+    "uniqueMeshDatablocks": 9,
+    "calculation": "Rendered triangle count sums every visible mesh instance; draw estimate sums material slots per visible mesh node."
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-map-kit-v1.blend",
+    "bytes": 7020371,
+    "sha256": "8212d4d757c3b55040a15c4d5d1fccedd97bdf8e7633ece33bb6fd37194a953a",
+    "missingExternalFiles": []
+  },
+  "proofAssemblyBlend": {
+    "file": "sources/floating-museum-four-island-proof-v1.blend",
+    "bytes": 7018705,
+    "sha256": "508bd79627e4b247431a1ae4e2ea803a25ff046590065681c37554e80074c01c"
+  },
+  "glb": {
+    "file": "exports/floating-museum-map-kit-v1.glb",
+    "bytes": 6831200,
+    "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709",
+    "nodes": 8,
+    "meshes": 7,
+    "primitives": 16,
+    "materials": 11,
+    "images": 14,
+    "textures": 14,
+    "requiredNamedNodesPresent": true,
+    "extensionsUsed": []
+  },
+  "validation": {
+    "packedSource": true,
+    "requiredNamedNodes": true,
+    "budgetPassed": true,
+    "visualProof": "approved after isolated Blender review: rounded marble terraces, taller pale limestone crags, readable gold/celadon accents, and distinct pavilion silhouettes",
+    "runtimeIntegration": "not performed",
+    "freshGlbReimport": true,
+    "exactTriangleParity": true,
+    "anchorsPassed": true,
+    "embeddedImagesAtOrBelow512": true
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/journey-map/v2/production/build_map_lod_kit.py",
+    "blender": "5.2.2 LTS"
+  },
+  "freshReimport": {
+    "blender": "5.2.2 LTS",
+    "nodes": {
+      "map_bridge": {
+        "triangles": 2502,
+        "materials": [
+          "map_champagne_gold",
+          "map_celadon_inlay",
+          "map_ivory_marble",
+          "map_archival_marble",
+          "map_dark_jade"
+        ],
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -0.550000011920929,
+            -1.6616822481155396,
+            -0.7403109073638916
+          ],
+          "max": [
+            0.550000011920929,
+            1.6616822481155396,
+            0.0
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          1.100000023841858,
+          0.7403109073638916,
+          3.323364496231079
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": [
+          "UVMap"
+        ]
+      },
+      "map_canopy": {
+        "triangles": 6500,
+        "materials": [
+          "map_canopy_atlas_00"
+        ],
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -1.3242326974868774,
+            -1.3384428024291992,
+            0.0
+          ],
+          "max": [
+            1.3263224363327026,
+            1.3385344743728638,
+            3.032888412475586
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          2.65055513381958,
+          3.032888412475586,
+          2.676977276802063
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": [
+          "UVMap"
+        ]
+      },
+      "map_column": {
+        "triangles": 1800,
+        "materials": [
+          "map_column_atlas_00"
+        ],
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -0.3881431519985199,
+            -0.4068868160247803,
+            0.0
+          ],
+          "max": [
+            0.38824209570884705,
+            0.3913942873477936,
+            3.0223662853240967
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          0.7763852477073669,
+          3.0223662853240967,
+          0.7982811033725739
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": [
+          "UVMap"
+        ]
+      },
+      "map_frame": {
+        "triangles": 1000,
+        "materials": [
+          "map_frame_atlas_01",
+          "map_frame_atlas_00"
+        ],
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -0.5590804815292358,
+            -0.03913600742816925,
+            0.0
+          ],
+          "max": [
+            0.5571773052215576,
+            0.05521427094936371,
+            1.8059673309326172
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          1.1162577867507935,
+          1.8059673309326172,
+          0.09435027837753296
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": [
+          "UVMap"
+        ]
+      },
+      "map_island_root": {
+        "triangles": 480,
+        "materials": [
+          "map_cliff_limestone"
+        ],
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -1.3339288234710693,
+            -1.3227819204330444,
+            -4.524509429931641
+          ],
+          "max": [
+            1.2878023386001587,
+            1.2795201539993286,
+            0.0
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          2.621731162071228,
+          4.524509429931641,
+          2.602302074432373
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": [
+          "UVMap"
+        ]
+      },
+      "map_planter": {
+        "triangles": 1800,
+        "materials": [
+          "map_planter_atlas_00"
+        ],
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -0.5355704426765442,
+            -0.47057071328163147,
+            0.0
+          ],
+          "max": [
+            0.4991801679134369,
+            0.48152318596839905,
+            1.4503891468048096
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          1.034750610589981,
+          1.4503891468048096,
+          0.9520938992500305
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": [
+          "UVMap"
+        ]
+      },
+      "map_platform": {
+        "triangles": 7640,
+        "materials": [
+          "map_champagne_gold",
+          "map_celadon_inlay",
+          "map_ivory_marble",
+          "map_archival_marble",
+          "map_dark_jade"
+        ],
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -1.6440867185592651,
+            -1.6440867185592651,
+            -1.2277582883834839
+          ],
+          "max": [
+            1.6440867185592651,
+            1.6440867185592651,
+            0.0
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          3.2881734371185303,
+          1.2277582883834839,
+          3.2881734371185303
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": [
+          "UVMap"
+        ]
+      }
+    },
+    "images": [
+      {
+        "name": "map_canopy_texture_00",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "sRGB"
+      },
+      {
+        "name": "map_canopy_texture_01",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "map_canopy_texture_02",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "map_column_texture_00",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "sRGB"
+      },
+      {
+        "name": "map_column_texture_01",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "map_column_texture_02",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "map_frame_texture_00",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "sRGB"
+      },
+      {
+        "name": "map_frame_texture_01",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "map_frame_texture_02",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "sRGB"
+      },
+      {
+        "name": "map_frame_texture_03",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "map_planter_texture_00",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "sRGB"
+      },
+      {
+        "name": "map_planter_texture_01",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "sRGB"
+      },
+      {
+        "name": "map_planter_texture_02",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "map_planter_texture_03",
+        "dimensions": [
+          512,
+          512
+        ],
+        "packed": true,
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "root": "map_kit_root",
+    "coordinates": "Fresh GLB reimport into Blender Z-up; dimensions listed in glTF X/Y/Z order."
+  },
+  "proofs": [
+    {
+      "file": "proofs/floating-museum-four-island-proof-v1.png",
+      "bytes": 1453672,
+      "sha256": "a01e55cd2d0ee3a8c5f41a812c9a225f6dcbf42524253150e89d43bbd49602bb"
+    },
+    {
+      "file": "proofs/floating-museum-map-kit-lineup-v1.png",
+      "bytes": 1192509,
+      "sha256": "d25b841970ed0bc02d8a0b21e621faf444ed5794babfcba053a6baf738880436"
+    }
+  ],
+  "proofRender": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/journey-map/v2/production/render_map_proofs.py",
+    "blender": "5.2.2 LTS",
+    "lighting": "Warm sky fill with amber key, neutral-blue fill, and pale celadon rim; isolated EEVEE proof only."
+  }
+}
