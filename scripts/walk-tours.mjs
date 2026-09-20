@@ -12,7 +12,8 @@
 //   MOBILE=1 node scripts/walk-tours.mjs                  # iPhone-sized viewport
 //
 // build:tours builds with an EMPTY VITE_API_BASE_URL so the app runs on
-// the local Dexie adapter. A plain production build bakes in the real
+// the local Dexie adapter, and with VITE_JAM_MOCK_SIGNALING=1 so "Create
+// Room" opens the preview room instead of asking a signalling server. A plain production build bakes in the real
 // api.mercurypitch.com — walking that would create a junk anonymous user
 // in prod D1 per run and go flaky whenever the API hiccups, so this
 // script refuses to walk a remote-API bundle (see the HybridAdapter
@@ -25,10 +26,15 @@
 //                (default: read from package.json)
 //   CHROMIUM     chromium executable path (default: Playwright's own
 //                install; falls back to /opt/pw-browsers/chromium)
+//   ONLY         comma-separated tour names to walk instead of all of them,
+//                as they are printed here (e.g. ONLY="Jam,Jam (inside a room)")
 //
 // Exits 0 when every step of every tour spotlights a visible element;
 // exits 1 and prints MISS lines otherwise. The Karaoke mixer tour is not
-// walked — its targets only exist once a song is loaded in the mixer.
+// walked — its targets only exist once a song is loaded in the mixer. The
+// Jam tab has two tours (the lobby's and the room's) and both are: "Jam" in
+// the Guide starts whichever screen is up, so the second walk opens the
+// preview room first.
 // ============================================================
 import { readFileSync } from 'node:fs'
 import { chromium } from '@playwright/test'
@@ -68,6 +74,14 @@ const PAGE_TOURS = [
 // targets exist on a cold start — the pill is in every view and the rest are
 // Settings rows — so it can and should be walked.
 const CONTEXTUAL_TOURS = ['Voice control']
+// The Jam tab's second tour. Walked as "Jam" from inside a room; this is the
+// name it is printed (and asked for, with ONLY) under.
+const JAM_ROOM_TOUR = 'Jam (inside a room)'
+const ONLY =
+  process.env.ONLY === undefined || process.env.ONLY.trim() === ''
+    ? null
+    : new Set(process.env.ONLY.split(',').map((name) => name.trim()))
+const wanted = (name) => ONLY === null || ONLY.has(name)
 
 const launchOpts = {}
 if (process.env.CHROMIUM) launchOpts.executablePath = process.env.CHROMIUM
@@ -162,7 +176,7 @@ let totalSteps = 0
 let missing = 0
 let skipped = 0
 
-async function walkTour(name) {
+async function walkTour(name, label = name) {
   await openGuide()
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   await page
@@ -175,11 +189,11 @@ async function walkTour(name) {
   try {
     await tooltip.waitFor({ state: 'visible', timeout: 6000 })
   } catch {
-    console.log(`\n### ${name}: TOUR DID NOT START`)
+    console.log(`\n### ${label}: TOUR DID NOT START`)
     missing++
     return
   }
-  console.log(`\n### ${name}`)
+  console.log(`\n### ${label}`)
   const seen = new Set()
   for (let i = 0; i < 40; i++) {
     // Let step preparation settle: tab switch, sidebar drawer, reveals,
@@ -222,9 +236,39 @@ async function walkTour(name) {
   await page.waitForTimeout(400)
 }
 
-for (const t of [...SECTION_TOURS, ...PAGE_TOURS, ...CONTEXTUAL_TOURS]) {
-  await walkTour(t)
+/**
+ * The room's own tour, from inside a room.
+ *
+ * build:tours has no signalling server, so Create Room opens the preview room
+ * -- real UI, invented peers, nothing on the wire. Left again afterwards, or
+ * every tour after this one would start from inside it.
+ */
+async function walkJamRoomTour() {
+  await page.goto(`${BASE}/#/jam`)
+  const create = page.getByRole('button', { name: 'Create Room' })
+  try {
+    await create.waitFor({ state: 'visible', timeout: 15000 })
+    await create.click()
+    await page.waitForSelector('[data-testid="jam-room-header"]', {
+      timeout: 15000,
+    })
+  } catch {
+    console.log(`\n### ${JAM_ROOM_TOUR}: COULD NOT OPEN A ROOM`)
+    missing++
+    return
+  }
+  await walkTour('Jam', JAM_ROOM_TOUR)
+  await page
+    .getByTitle('Leave room')
+    .click()
+    .catch(() => {})
+  await page.waitForTimeout(600)
 }
+
+for (const t of [...SECTION_TOURS, ...PAGE_TOURS, ...CONTEXTUAL_TOURS]) {
+  if (wanted(t)) await walkTour(t)
+}
+if (wanted(JAM_ROOM_TOUR)) await walkJamRoomTour()
 
 console.log(
   `\nTOTAL steps: ${totalSteps}, steps without visible spotlight: ${missing}` +

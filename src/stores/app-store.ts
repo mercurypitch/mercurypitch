@@ -25,6 +25,7 @@ import { TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, 
 import type { InstrumentType } from '@/lib/audio-engine'
 import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
+import { jamRoomIsOpen } from '@/lib/jam/jam-room-presence'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import { isNarrow } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
@@ -1544,9 +1545,111 @@ const JAM_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Inside a room',
     description:
-      'Once connected you get a shared stage with synced playback, live pitch from every singer, host-controlled BPM, plus chat, camera, and one-tap invites. The host picks the songs and drills from the list in the sidebar.',
+      'Once you are in, everyone shares one stage: the same moment of the song, each singer’s live pitch, chat and cameras. The room has a tour of its own. Press Tour again when you get there.',
     targetSelector: '[data-tour="jam.actions"]',
     placement: 'top',
+    requiredTab: TAB_JAM,
+  },
+]
+
+/**
+ * The room's own tour.
+ *
+ * The Jam tab is two screens under one tab, and the four steps above are the
+ * lobby's: a name, a room to make, a code to type. Inside a room none of
+ * those exist, and Tour used to play them anyway -- four tooltips pointing
+ * at nothing. `pageTourSteps` picks between the two.
+ *
+ * Every target is there for a host and a guest alike, and with or without
+ * something loaded. The one exception is the playback capsule, which a guest
+ * on a phone does not have; that step is then read without a spotlight, and
+ * says whose buttons they are. What only exists once a song is loaded (the
+ * Parts bar, the word controls) is told from the stage's step rather than
+ * given steps that would miss in an empty room.
+ */
+export const JAM_ROOM_TOUR_STEPS: WalkthroughStep[] = [
+  {
+    title: 'Your room',
+    description:
+      'The top line is the room at a glance: what it is singing, its code, and everyone who is in it.',
+    // The whole header, not the block with the name and the strip in it:
+    // under 900px that block is `display: contents`, which has no box for a
+    // spotlight to land on.
+    targetSelector: '[data-testid="jam-room-header"]',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+  },
+  {
+    title: 'Bring people in',
+    description:
+      'The code is a button. Press it and the link to this room is copied, and whoever opens the link lands here. They can also type the code on the Jam page.',
+    targetSelector: '[data-testid="jam-room-code"]',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+  },
+  {
+    title: 'Your side of the room',
+    description:
+      'Mute or unmute yourself, turn your camera on, set how much of the backdrop shows through, open the invite with its QR code, or leave.',
+    targetSelector: '[data-tour="jam.room-actions"]',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+    viewport: 'desktop',
+  },
+  {
+    title: 'Your side of the room',
+    description:
+      'Your microphone and the way out stay in reach. The menu button holds the rest: your camera, the live pitch, and the invite with its QR code.',
+    targetSelector: '[data-tour="jam.room-actions"]',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+    viewport: 'mobile',
+  },
+  {
+    title: 'Who is here',
+    description:
+      'Everyone in the room, who is muted, and the note you are singing right now.',
+    targetSelector: '[data-tour="jam.rail-room"]',
+    placement: 'right',
+    requiredTab: TAB_JAM,
+    inSidebar: true,
+    reveal: '[data-collapsible="sidebar-jam-room-open"]',
+  },
+  {
+    title: 'Choose what to sing',
+    description:
+      'The host chooses for everyone: a drill, or a song from their library. The first of the playback buttons opens the same list.',
+    targetSelector: '[data-tour="jam.rail-picker"]',
+    placement: 'right',
+    requiredTab: TAB_JAM,
+    inSidebar: true,
+    reveal: '[data-collapsible="sidebar-jam-picker-open"]',
+  },
+  {
+    title: 'Play it for the room',
+    description:
+      'Play, pause and stop move the whole room together, so everyone is at the same moment of the song. They are the host’s buttons; a guest follows along.',
+    targetSelector: '[data-testid="jam-controls"]',
+    placement: 'bottom',
+    requiredTab: TAB_JAM,
+  },
+  {
+    title: 'The stage',
+    description:
+      'What the room is singing moves through here, with every singer’s pitch drawn live in their own colour. With a song loaded the words sit beside it: drag them to read ahead, and the host can hand lines to singers from the Parts bar.',
+    targetSelector: '[data-tour="jam.stage"]',
+    placement: 'top',
+    requiredTab: TAB_JAM,
+  },
+  {
+    title: 'Talk to the room',
+    description:
+      'Chat with everyone here. When cameras are on, their pictures sit beside it.',
+    targetSelector: '[data-tour="jam.chat"]',
+    // Beside it, not above: the bubble is in the corner, and a card above a
+    // corner is pulled back inside the screen until its pointer aims a
+    // hand's width off the button.
+    placement: 'left',
     requiredTab: TAB_JAM,
   },
 ]
@@ -1937,7 +2040,8 @@ export const PAGE_TOUR_CATALOG: {
   {
     tab: TAB_JAM,
     title: 'Jam',
-    description: 'Create or join a real-time jam room and sing together',
+    description:
+      'Create or join a jam room and sing together; inside a room, a tour of the room',
   },
   {
     tab: TAB_COMMUNITY,
@@ -1975,9 +2079,23 @@ export const PAGE_TOUR_CATALOG: {
  */
 export const TOURS_AVAILABLE = !IS_NATIVE_BUILD
 
+/**
+ * The tour for the screen a tab is showing right now.
+ *
+ * One tab, one tour -- except the Jam tab, which is the lobby until a room
+ * opens and the room after that. The room outlives a tab switch (the panel
+ * unmounts, the store does not), so this asks the store and not the panel:
+ * started from the Guide on another tab, the tour still gets the screen the
+ * Jam tab is about to show.
+ */
+export function pageTourSteps(tab: ActiveTab): WalkthroughStep[] | undefined {
+  if (tab === TAB_JAM && jamRoomIsOpen()) return JAM_ROOM_TOUR_STEPS
+  return PAGE_TOURS[tab]
+}
+
 export function hasPageTour(tab: ActiveTab): boolean {
   if (!TOURS_AVAILABLE) return false
-  const steps = PAGE_TOURS[tab]
+  const steps = pageTourSteps(tab)
   return steps !== undefined && forThisViewport(steps).length > 0
 }
 
@@ -1992,7 +2110,7 @@ export function startTour(steps: WalkthroughStep[]): void {
 
 /** Start the spotlight tour for a given tab (no-op if it has none). */
 export function startPageTour(tab: ActiveTab): void {
-  const steps = PAGE_TOURS[tab]
+  const steps = pageTourSteps(tab)
   if (steps === undefined) return
   const forView = forThisViewport(steps)
   if (forView.length === 0) return

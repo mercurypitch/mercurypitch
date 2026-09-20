@@ -52,6 +52,7 @@ export const JamChatWidget: Component = () => {
       class={styles.widgetContainer}
       // The camera tray docks beside this box and reads its size to do it.
       data-jam-chat=""
+      data-tour="jam.chat"
     >
       <Show when={isOpen()}>
         <div class={styles.chatWindow}>
