@@ -8,6 +8,7 @@ import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
 import { createAdventureInput } from './input'
 import { microphoneError } from './mic-error'
+import { createAdventureNarration } from './narration'
 import { createAdventureSoundscape } from './soundscape'
 
 type VoiceMode = 'off' | 'permission' | 'finding' | 'reference' | 'singing'
@@ -40,6 +41,13 @@ export function useAdventure(
     (previous) =>
       museumSoundscape(level, game.snapshot().player.position, previous),
     () => alive && ready() && !paused() && !tutorial() && !graphicsFailed,
+  )
+  const narration = createAdventureNarration(
+    host.createNarration?.(),
+    () => alive && ready() && !paused() && !tutorial() && !graphicsFailed,
+  )
+  const [narrationPreferences, setNarrationPreferences] = createSignal(
+    narration.preferences(),
   )
   const storedNote = Number(host.readPreference('comfortable-note') ?? '')
   const [target, setTarget] = createSignal<number | null>(
@@ -76,6 +84,7 @@ export function useAdventure(
     samples = []
     setPitch(null)
     setVoiceMode('off')
+    narration.releaseVoice()
   }
 
   function stopSound(): void {
@@ -85,6 +94,7 @@ export function useAdventure(
   }
 
   function cancel(): void {
+    narration.pause()
     stopCapture()
     stopSound()
     game.cancelEncounter()
@@ -117,6 +127,7 @@ export function useAdventure(
         const item = level.breakables.find(
           (candidate) => candidate.id === event.id,
         )
+        narration.breakCompleted(item?.optional === true)
         const authoredNotice = level.guidance?.encounterSuccessNotices?.find(
           (notice) => notice.encounterId === event.id,
         )?.notice
@@ -182,8 +193,13 @@ export function useAdventure(
     refresh()
     try {
       // Start the microphone and context inside this gesture, but do not feed
-      // our own fading music into calibration or pitch detection.
-      await session.start(soundscape.silenceForVoice())
+      // our own fading music or narration into calibration or pitch detection.
+      // Both services invalidate pending playback before either promise yields.
+      const quiet = Promise.all([
+        soundscape.silenceForVoice(),
+        narration.silenceForVoice(),
+      ]).then(() => undefined)
+      await session.start(quiet)
       if (!alive || currentToken !== token) {
         session.stop()
         return
@@ -272,7 +288,7 @@ export function useAdventure(
     game.setPaused(paused())
     input.clear()
     refresh()
-    soundscape.activate()
+    gameplayGesture()
   }
 
   function showTutorial(): void {
@@ -298,6 +314,16 @@ export function useAdventure(
   function changeAudio(patch: Partial<MuseumAudioPreferences>): void {
     music?.setPreferences(patch)
     setAudioPreferences(music?.preferences())
+  }
+
+  function changeNarration(enabled: boolean): void {
+    narration.setEnabled(enabled)
+    setNarrationPreferences(narration.preferences())
+  }
+
+  function gameplayGesture(): void {
+    soundscape.activate()
+    narration.welcomeGesture()
   }
 
   onMount(() => {
@@ -370,7 +396,7 @@ export function useAdventure(
       }
       if (tutorial() || paused()) return
       if (input.key(event, true)) {
-        soundscape.activate()
+        gameplayGesture()
         return
       }
       if (
@@ -383,10 +409,22 @@ export function useAdventure(
         void start()
       }
       if (event.code === 'KeyR') renderer?.recenter()
-      if (event.code === 'KeyQ') renderer?.orbit(-0.08, 0)
-      if (event.code === 'KeyE') renderer?.orbit(0.08, 0)
-      if (event.code === 'KeyI') renderer?.orbit(0, -0.05)
-      if (event.code === 'KeyK') renderer?.orbit(0, 0.05)
+      if (event.code === 'KeyQ') {
+        gameplayGesture()
+        renderer?.orbit(-0.08, 0)
+      }
+      if (event.code === 'KeyE') {
+        gameplayGesture()
+        renderer?.orbit(0.08, 0)
+      }
+      if (event.code === 'KeyI') {
+        gameplayGesture()
+        renderer?.orbit(0, -0.05)
+      }
+      if (event.code === 'KeyK') {
+        gameplayGesture()
+        renderer?.orbit(0, 0.05)
+      }
     }
     const keyUp = (event: KeyboardEvent): void => {
       input.key(event, false)
@@ -414,6 +452,7 @@ export function useAdventure(
     stopCapture()
     stopSound()
     soundscape.dispose()
+    narration.dispose()
     input.clear()
     renderer?.dispose()
   })
@@ -438,7 +477,9 @@ export function useAdventure(
     replay,
     audioPreferences,
     changeAudio,
-    enableMusic: soundscape.activate,
+    narrationPreferences,
+    changeNarration,
+    gameplayGesture,
     cameraYaw: () => {
       snapshot()
       return renderer?.getCameraYaw() ?? 0

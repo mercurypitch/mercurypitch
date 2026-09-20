@@ -2476,8 +2476,13 @@
       "path": "v4/architecture/proofs/playable-v1/800-turn.png",
       "bytes": 553919,
       "sha256": "b40e98a1d65da4525caa6ad5cd48b6ceba1c7cd407273bba103d979bbc0d5f87"
+    },
+    {
+      "path": "v4/architecture/proofs/playable-v1/390-merc-voice-settings.png",
+      "bytes": 75041,
+      "sha256": "97f7a099fcd7563918c17a6d0e4e9086daa24b2ea0ecc9b5079a77968f333115"
     }
   ],
-  "fileCount": 495,
-  "totalBytes": 2338955086
+  "fileCount": 496,
+  "totalBytes": 2339030127
 }

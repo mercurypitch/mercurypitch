@@ -1,6 +1,7 @@
 // Browser host — storage, microphone and audio adapters for either product shell.
 import type { GlassGameHost } from '../host'
 import { createBrowserGlassSound } from './glass-sound'
+import { createBrowserMercNarration } from './merc-narration'
 import { createBrowserMuseumAudio } from './museum-audio'
 import { createBrowserVoice } from './voice-session'
 
@@ -33,6 +34,12 @@ export function createBrowserGlassHost(
     createSound: createBrowserGlassSound,
     createMusic: () =>
       createBrowserMuseumAudio({
+        assetUrl: options.assetUrl,
+        readPreference: read,
+        writePreference: write,
+      }),
+    createNarration: () =>
+      createBrowserMercNarration({
         assetUrl: options.assetUrl,
         readPreference: read,
         writePreference: write,

@@ -14,6 +14,7 @@ declare global {
   interface Window {
     glassVoiceFixture: {
       sources: VoiceSource[]
+      readonly narrationStarts: number
       deferNextPermission(): void
       grantPermission(): Promise<void>
       denyPermission(): void
@@ -57,6 +58,14 @@ async function openMuseum(page: Page): Promise<void> {
       )
     }
     let amplitude = 0
+    let narrationStarts = 0
+    const startBuffer = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      // Reference notes are oscillators; crack noise is shorter than 0.8s.
+      // This observes actual spoken buffer playback without replacing it.
+      if (!this.loop && (this.buffer?.duration ?? 0) > 0.8) narrationStarts++
+      startBuffer.apply(this, args)
+    }
     let nextPermission: 'grant' | 'defer' = 'grant'
     const sources: VoiceSource[] = []
     const pendingPermissions: PendingPermission[] = []
@@ -97,6 +106,9 @@ async function openMuseum(page: Page): Promise<void> {
     }
     window.glassVoiceFixture = {
       sources,
+      get narrationStarts() {
+        return narrationStarts
+      },
       deferNextPermission() {
         nextPermission = 'defer'
       },
@@ -337,6 +349,9 @@ test('silence cannot earn progress; a fresh comfortable hold breaks and survives
     '1',
     { timeout: 15_000 },
   )
+  await expect
+    .poll(() => page.evaluate(() => window.glassVoiceFixture.narrationStarts))
+    .toBe(1)
   await expectMicrophoneOff(page)
   const saved = await page.evaluate(
     () =>
@@ -359,6 +374,9 @@ test('silence cannot earn progress; a fresh comfortable hold breaks and survives
   )
   expect(
     await page.evaluate(() => window.glassVoiceFixture.sources.length),
+  ).toBe(0)
+  expect(
+    await page.evaluate(() => window.glassVoiceFixture.narrationStarts),
   ).toBe(0)
   expect(errors).toEqual([])
 })

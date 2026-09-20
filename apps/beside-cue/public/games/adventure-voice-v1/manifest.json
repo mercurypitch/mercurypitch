@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "character": "Merc",
+  "selection": "D2 Gentle Whimsical",
+  "selectionApproved": "2026-09-20",
+  "derivation": "Exact approved audition MP3 clips; no regeneration or retiming.",
+  "files": [
+    {
+      "cue": "welcome",
+      "assetId": "merc-voice-welcome",
+      "file": "merc-d2-welcome.mp3",
+      "source": "art/glass-adventure/voice/v1/lines/merc-d-gentle-whimsical-01-ui-tutorial-promise.mp3",
+      "bytes": 39749,
+      "sha256": "79d400fd9fd11ce55787dafe7c12739732a5cafa8532c802f48aa8a9c61f872b"
+    },
+    {
+      "cue": "path-open",
+      "assetId": "merc-voice-path-open",
+      "file": "merc-d2-path-open.mp3",
+      "source": "art/glass-adventure/voice/v1/lines/merc-d-gentle-whimsical-03-ui-path-open.mp3",
+      "bytes": 48108,
+      "sha256": "dc651eebf540ba62417b1f012a727c8f6233511f833a58dd2616f41f3883cf28"
+    },
+    {
+      "cue": "optional-break",
+      "assetId": "merc-voice-optional-break",
+      "file": "merc-d2-optional-break.mp3",
+      "source": "art/glass-adventure/voice/v1/lines/merc-d-gentle-whimsical-04-proposed-shatter-gorgeous.mp3",
+      "bytes": 52287,
+      "sha256": "8c715c803003c6b08aeb1fda9ee5b8f6cb79cf69572b4a11bfd9054a29a1feec"
+    }
+  ]
+}

@@ -59,3 +59,8 @@ the source of truth.
 
 Device performance and owner acceptance of the enclosed route remain separate
 from the archived source and automated verification records.
+
+Merc's final first voice is original D2 Gentle Whimsical. `voice/v3` preserves
+selection and the verified ElevenLabs enrollment; `voice/RUNTIME.md` documents
+the three exact approved clips used by the game and their lifecycle policy.
+No old audition or lossless original was removed.

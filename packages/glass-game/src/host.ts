@@ -37,11 +37,32 @@ export interface GlassMuseumAudio {
   dispose(): void
 }
 
+export type MercNarrationCue =
+  | 'tutorial-note'
+  | 'required-break'
+  | 'optional-break'
+
+export interface MercNarrationPreferences {
+  enabled: boolean
+}
+
+export interface GlassMercNarration {
+  /** Replace any older cue; false means playback was unavailable or retired. */
+  play(cue: MercNarrationCue): Promise<boolean>
+  /** Invalidate pending work immediately; resolve once the audible tail is gone. */
+  silenceForVoice(): Promise<void>
+  pause(): void
+  preferences(): MercNarrationPreferences
+  setPreferences(patch: Partial<MercNarrationPreferences>): void
+  dispose(): void
+}
+
 export interface GlassGameHost {
   assetUrl(id: string): string
   createVoice(): GlassVoiceSession
   createSound(): GlassSound
   createMusic?(): GlassMuseumAudio
+  createNarration?(): GlassMercNarration
   loadProgress(levelId: string): unknown
   saveProgress(progress: SavedProgress): void
   readPreference(key: string): string | null

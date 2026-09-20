@@ -1,0 +1,20 @@
+{
+  "revision": "merc-voice-selection-v3-2026-09-20",
+  "status": "available",
+  "verified_at": "2026-09-20T11:54:02.965Z",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "voice_name": "Merc V1 Gentle Whimsical D2",
+  "provider_name": "Merc V1 Gentle Whimsical D2",
+  "provider_category": "generated",
+  "provider_description_matches": true,
+  "source": {
+    "audition_revision": "merc-voice-auditions-v1-2026-09-20",
+    "direction": "d",
+    "take": "d2",
+    "generated_voice_id": "B4fBPRmasEsTgd6YlSok",
+    "raw_sha256": "18ef65ad51174c15a14b5da154102bc6e54e9c43b033cb995dbd374310c3c3e8"
+  },
+  "enrollment_mode": "created",
+  "runtime_integrated": false,
+  "production_lines_generated": false
+}

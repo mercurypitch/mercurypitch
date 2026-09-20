@@ -172,6 +172,8 @@ for (const width of [390, 820, 1280]) {
     await expect(music).toBeFocused()
     await page.keyboard.press('Tab')
     await expect(ambience).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(dialog.getByLabel('Merc voice', { exact: true })).toBeFocused()
     await dialog.getByLabel('Mute music and ambience').focus()
     await page.keyboard.press('Shift+Tab')
     await expect(
@@ -191,6 +193,8 @@ for (const width of [390, 820, 1280]) {
     await page.keyboard.press('End')
     await expect(ambience).toHaveValue('100')
     await dialog.getByLabel('Mute music and ambience').check()
+    await expect(dialog.getByLabel('Merc voice', { exact: true })).toBeChecked()
+    await dialog.getByLabel('Merc voice', { exact: true }).uncheck()
     expect(await page.evaluate(() => window.museumMusicProbe.starts)).toBe(0)
     const overflow = await dialog.evaluate((node) => ({
       panel: node.scrollWidth > node.clientWidth,
@@ -221,5 +225,8 @@ for (const width of [390, 820, 1280]) {
     await expect(dialog.getByLabel('Mute music and ambience')).toBeChecked()
     await expect(music).toHaveValue('1')
     await expect(ambience).toHaveValue('100')
+    await expect(
+      dialog.getByLabel('Merc voice', { exact: true }),
+    ).not.toBeChecked()
   })
 }

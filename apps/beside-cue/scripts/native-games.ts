@@ -57,6 +57,10 @@ export const requiredGameAssets = [
   'games/adventure-audio-v1/a01-loop.mp3',
   'games/adventure-audio-v1/a02-loop.mp3',
   'games/adventure-audio-v1/a03-loop.mp3',
+  'games/adventure-voice-v1/manifest.json',
+  'games/adventure-voice-v1/merc-d2-welcome.mp3',
+  'games/adventure-voice-v1/merc-d2-path-open.mp3',
+  'games/adventure-voice-v1/merc-d2-optional-break.mp3',
 ] as const
 
 export function parseOptions(args: string[]): NativeGamesOptions {
