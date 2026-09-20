@@ -35,6 +35,20 @@ function fixture(initiallyEnabled = true, random: () => number = () => 0) {
 }
 
 describe('adventure narration', () => {
+  it('preserves an unattempted welcome while the initial scene is loading', async () => {
+    const { audio, subject, allow } = fixture()
+    allow(false)
+    subject.pause()
+    subject.welcomeGesture()
+    expect(audio.play).not.toHaveBeenCalled()
+
+    allow(true)
+    subject.welcomeGesture()
+    await Promise.resolve()
+    subject.welcomeGesture()
+    expect(audio.play).toHaveBeenCalledExactlyOnceWith('tutorial-note')
+  })
+
   it('plays the welcome once and coalesces gestures while startup is pending', async () => {
     const { audio, subject, allow } = fixture()
     allow(false)

@@ -26,10 +26,10 @@ export function createAdventureNarration(
   let requiredUsesPathOpen = true
   const reactions = createMercReactionSelector(random)
 
-  function invalidateWelcomeAttempt(): void {
+  function invalidateWelcomeAttempt(consume = true): void {
     welcomeGeneration++
     welcomePending = false
-    welcomeConsumed = true
+    welcomeConsumed = consume
   }
 
   function play(cue: MercNarrationCue): void {
@@ -93,7 +93,9 @@ export function createAdventureNarration(
     },
     pause() {
       if (disposed) return
-      invalidateWelcomeAttempt()
+      // Loading pauses before the first gesture; only retire a welcome that
+      // was attempted, so the first ready interaction can still introduce Merc.
+      invalidateWelcomeAttempt(welcomeConsumed || welcomePending)
       audio?.pause()
     },
     setEnabled(enabled) {
