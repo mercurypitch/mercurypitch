@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.11] - 2026-09-20
 
 Four things from the owner's tablet pass over 0.9.10 on prod, all in the jam
-room.
+room -- and then two more from the pass over those: the room's rows, and a
+lyric sheet that would not be scrolled.
 
 ### The sidebar song list was empty on a tablet
 
@@ -79,6 +80,112 @@ pill does on the karaoke stage.
 Measured with a throwaway probe at the minimum split share: the expanded
 capsule fits at 1180x820, 820x1180, 1024x600 and 1366x640. Not tried on a
 real tablet or phone.
+
+### Two rows above the words, not three
+
+Owner report: "our song takes too much space in the third row". A song room
+had the header, the playback controls, then `JamSongStage`'s own bar (name,
+line count, take, timeline, Original/Edited). The owner's second proposal is
+what shipped: `<room name> <song name> <rest>` in the header, and the timeline
+after the playback controls.
+
+- **`JamNowSinging`** is the first item of `.roomStrip`. A button: the `title`
+  attribute carries the whole name for a hover, a tap toggles `aria-expanded`
+  and lets the name wrap where it stands (no popover -- the strip is a sideways
+  scroller on a phone and would clip one). It closes for a new song, keyed on a
+  MEMO of the id: the song object is replaced whenever the pitch guide lands or
+  the words are edited, and `on(() => jamSong()?.id)` re-fires for each. The
+  unit test for "stays open through an update to the same song" found that.
+- **`JamSongTimeline`** is the old bar minus the name, mounted in
+  `.transportRow` as a SIBLING of `.exerciseBar` (on a phone the bar is a
+  sideways scroller, and a timeline must not slide out from under the thumb
+  dragging it -- so the scroller moved from the row to the bar). It can live
+  outside the stage because a seek was already a request the stage answers
+  (`jamSongSeekRequest`); the one thing it still needed from the element was
+  the file's real length, which the stage now reports through
+  `jamSongMediaDurationSec` from `durationchange`. That reset is keyed on a
+  memo of the source for the same reason as the chip -- an element whose
+  source has not changed never reports its length twice, so forgetting it on
+  every song-object update would be for good. A browser test holds the
+  timeline at the file's 4 s through the pitch guide landing.
+- **Measured, not assumed.** The first cut made things WORSE at the owner's
+  size. With the sidebar open an 1180px tablet has 856px of room:
+  - the chip (`flex: 0 1 auto`) wrapped the strip and the header went 38px to
+    60px. A wrapping row breaks on what an item ASKS for before it shrinks
+    anything, so the chip now asks for 6.5rem and grows (`flex: 1 1 6.5rem;
+max-width: max-content`), with a floor so it is never squeezed to a note
+    and an ellipsis (it was 22px wide at one point);
+  - the squeeze then landed on the room's name, which broke over two lines
+    (38px to 48px). Above 900px the title does not shrink and the strip does;
+  - the timeline wrapped under the buttons whenever Original/Edited was in it:
+    a host's bar is 434px, which leaves 410. The picker moved to `JamAssignBar`
+    -- the other host-only bar, which already edits the sheet under it -- and
+    stays on the timeline only in the phone layout, where that bar is two lines
+    with a half-empty first one. One instance at a time, chosen by
+    `jamPhoneLayout()` (640px, the stylesheets' number; `isNarrow()` is 768 and
+    would disagree with them in between);
+  - the row's wrap point is a LENGTH (`flex: 1 1 380px`), not `auto`: the line
+    chip becomes "Break · next 12 / 26" and a take score appears mid-song, and a
+    row that broke on its content would jump under the singer. A container
+    query drops the take's small print under 470px before the timeline loses
+    any length.
+- **Tablet upright.** Beside a fixed 366px of room buttons there is no row
+  left, and the strip was already stacked one pill per line (92px of header for
+  a room of one, before this change). 641-900px now gets the phone's answer:
+  name and buttons, then the strip on a line of its own. 73px.
+- Result at 1180x820, sidebar open, a real host's bar: header 38px, one 44px
+  row, words from y=172 instead of about 217; timeline 216px long. At
+  1366/1280: 402/316px. A bar crowded past 380px of leftovers (a part badge in
+  Harmony or Relay; the preview room's 243px note) wraps the timeline under
+  the buttons, which is the old height and no worse. The preview note is why
+  the tablet browser test hides it: it is 243px that only a spec's room has.
+
+### The lyric sheet would not be scrolled
+
+Owner report: "the lyrics when playback is running now stick the current line
+into the middle of the panel, and do not allow scroll". `JamSongLyrics`'s
+follower read `lineIndexAt(lines, positionSec())` through a plain function, so
+it re-ran -- and re-centred -- on every tick of the song's clock. A scroll
+lasted a frame.
+
+- `currentIndex` is a memo, so the follower hears about a new LINE and nothing
+  else, and carries `{layout, lines, centred}` from run to run.
+- `lyrics-hands-off.ts` says when the words are in somebody's hands, from INPUT
+  events -- wheel (not ctrl+wheel, that is the size), a one-finger touchmove (not
+  two, that is the pinch), scroll keys, a press on the scrollbar -- and never
+  from `scroll`, which cannot tell the reader's scroll from the sheet's own
+  glide. `scroll` only EXTENDS a hold that input opened, which is how a fling
+  is covered. A finger resting on the glass holds for as long as it rests.
+- It never stays away: `held()` is tracked, so when the hands go the follower
+  runs again and asks where the song is NOW. The first version raised an
+  `owed` flag during the hold instead; a pause that settles a hair under a
+  line's start and back raised it, nothing could lower it, and a stopped song
+  pulled the sheet back to a line it had never left -- the browser spec caught
+  that about one run in three.
+- The run-in (a stop, a scrub to the top) takes the sheet to the top; a break
+  between lines leaves it alone. A new layout still re-pins at once, unless the
+  hands are on it.
+- `jam-lyrics-follow.spec.ts` drives a real wheel and a real CDP finger against
+  a playing song. Its tone is served in RANGES: a plain `route.fulfill` makes
+  an element that is not seekable at all, and a jump to the middle lands on
+  zero -- no other jam spec plays from the middle, so none had noticed.
+
+### The karaoke sheet: what the owner "sometimes saw"
+
+"I saw this sometimes happen on karaoke night and stem mixer components ...
+worth auditing." `useLyricsScrollController` had three defects, each with a
+test that fails on the old controller:
+
+1. **Scrolling UP switched following off for good.** `isBackOnActiveLine` only
+   asked whether the line's top was above the settle line, which is true of a
+   line scrolled off the TOP of the panel as well. It is two-sided now.
+2. **Nothing ever gave following back.** Only scrolling the sung line into view
+   did. `FOLLOW_RESUME_MS` (3.5 s of no scrolling) does now.
+3. **One glide's timer unmarked the next.** Each automatic scroll set a
+   timeout to clear the "this scroll is mine" mark; a second glide inside that
+   window had its mark cleared early, and its own scroll events then read as
+   the reader's -- following switched off by itself, mid-song. One timer,
+   cleared when a new glide starts, released on `scrollend` where there is one.
 
 ### Three `manualChunks` rules deleted; every document weighed
 

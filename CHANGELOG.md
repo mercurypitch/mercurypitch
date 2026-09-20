@@ -7,8 +7,8 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
 ## [0.9.11] - 2026-09-20
 
-A tablet's jam room gets its song list back, and the original singer's
-volume moves out of the playback row.
+A tablet's jam room gets its song list back and a row of its screen, and the
+words scroll under your finger while the song plays.
 
 ### Changed
 
@@ -18,6 +18,11 @@ volume moves out of the playback row.
 - **A ready pitch guide no longer takes a row of the lanes.** You still get
   the "Pitch guide ready" notice. The row appears only while a guide is being
   worked out, or when there will not be one.
+- **A jam room keeps two rows above the words, not three.** The song's name
+  moved into the room's header, with the rest of it on a hover or a tap. The
+  timeline sits beside the playback buttons.
+- **Original and Edited words are chosen above the words**, next to who sings
+  which line.
 - **The standalone pages start on about a tenth of the code.** The Voice
   Mirror, Karaoke Night, Glass and the vocal range test each fetched most of
   the studio before they could open. Now they fetch their own part.
@@ -34,6 +39,11 @@ volume moves out of the playback row.
   any screen wide enough to show it.
 - **The song list no longer touches the listening pill** above it in the jam
   room sidebar.
+- **You can scroll a jam room's lyrics while the song plays.** The sheet now
+  moves when a new line starts, waits while your hand is on it, and catches
+  up when you let go.
+- **Karaoke lyrics follow again after you scroll up.** Following used to stay
+  off until the next song. It resumes a few seconds after you stop scrolling.
 
 ## [0.9.10] - 2026-09-19
 

@@ -903,6 +903,57 @@ commit, so there is never a moment when two copies exist.
 **See:** `src/features/stem-mixer/lrc-gen-engine.ts` (`composeGenResult` now
 calls it)
 
+### `on(() => thing()?.field)` fires for every new object, not every new value
+
+**Symptom:** the song name in the jam header snapped shut under the finger
+that had just opened it; and, in the same change, the timeline forgot the
+audio file's real length for good.
+**Cause:** `on(source, fn)` re-runs whenever `source`'s dependencies change,
+and compares nothing. `jamSong()` is replaced every time the pitch guide lands
+or the words are edited, with the same `id` and the same stem under it, so
+"when the song changes" fired for each of those too. The second case is the
+worse one: an `<audio>` whose `src` has not changed never fires
+`durationchange` again, so a reset keyed this way is never undone.
+**Rule:** key "when X changes" on a `createMemo` of the value you mean. A memo
+only notifies when its result differs; a bare accessor notifies when anything
+it read did.
+**See:** `JamNowSinging.tsx` (`songId`), `JamSongStage.tsx`
+(`instrumentalSrc`), `src/tests/jam-now-singing.test.tsx`,
+`src/e2e/jam-room-rows.spec.ts` ("draws the timeline to the length of the
+FILE, and keeps it").
+
+### A wrapping flex row breaks on what an item asks for, before it shrinks anything
+
+**Symptom:** adding one chip to the jam header made it a row taller at 1180px
+and 1280px (38px to 60px), although the chip had `flex: 0 1 auto` and
+`min-width: 0` and was "allowed to shrink".
+**Cause:** with `flex-wrap: wrap`, lines are broken using each item's
+hypothetical size -- its max-content, capped by `max-width` -- and shrinking
+only happens within a line afterwards. An item that asks for its whole content
+is never shrunk to stay on the line; it is moved to the next one. The second
+half of the trap: once the strip could shrink, the squeeze was shared with its
+SIBLING, and the room's name broke over two lines.
+**Rule:** for "as much as fits" inside a wrapping row, ask for little and grow:
+`flex: 1 1 <a few words>; max-width: max-content; min-width: min(<the same>,
+100%)`. Give the sibling that must not give `flex-shrink: 0`. And when a wrap
+point must not move while the content changes (a row that would jump
+mid-song), make the basis a LENGTH, never `auto`.
+**See:** `JamNowSinging.module.css`, `Jam.module.css` (`.roomInfo > .title`),
+`JamPanel.module.css` (`.songTimeline`), `src/e2e/jam-room-rows.spec.ts`.
+
+### Audio served by `route.fulfill` cannot be seeked
+
+**Symptom:** a browser spec clicked a lyric line, saw "Line 13 / 24", pressed
+Play, and the song played from the top. `audio.seekable` was empty.
+**Cause:** a plain `route.fulfill({ body })` answers 200 with the whole file
+and no `Accept-Ranges`, and Chromium treats that element as not seekable --
+every `currentTime = x` lands on zero. The store had the new position, which
+is why the label was right until the first tick of the clock overwrote it.
+Specs that never play from the middle do not notice.
+**Rule:** a spec that seeks must answer the `Range` header with a 206 and a
+`Content-Range`, and wait for `seekable` to reach the end before it seeks.
+**See:** `serveSeekableTone` in `src/e2e/jam-lyrics-follow.spec.ts`.
+
 ### An explicit `min-height` removes a flex item's min-content floor
 
 **Symptom:** in the mapper's marker mode with the font zoomed up, a lyric line
