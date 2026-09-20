@@ -24,6 +24,11 @@ volume moves out of the playback row.
 
 ### Fixed
 
+- **Exercises for a baritone or a bass started far too low.** Both got a
+  scale from C2, under even a bass's range. Every voice now starts inside its
+  own range, each a little higher than the one below.
+- **Singing Zen exercises start in your range.** They all began around middle
+  C whatever your voice. The low voices now get them an octave down.
 - **Your songs were missing from the jam room sidebar on a tablet.** They
   loaded in the song picker and nowhere else. The sidebar list now fills on
   any screen wide enough to show it.
