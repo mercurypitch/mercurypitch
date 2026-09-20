@@ -10,6 +10,12 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 A tablet's jam room gets its song list back and a row of its screen, and the
 words scroll under your finger while the song plays.
 
+### Added
+
+- **A jam room has a tour of its own.** Tour in the sidebar replayed the steps
+  for creating a room, which point at nothing once you are inside. It now
+  walks the code, the song list, the playback buttons, the stage and the chat.
+
 ### Changed
 
 - **The original singer's volume sits over the words in a jam room.** It was
@@ -35,6 +41,9 @@ words scroll under your finger while the song plays.
 - **The room code is the button that copies the link.** It had a "Copy link"
   button beside it. Now you tap the code. The invite window still offers
   the two apart.
+- **The buttons over a jam room's words are smaller on a tablet.** Left,
+  middle, right and the size buttons were a phone's size there, much taller
+  than the pitch lanes' zoom beside them. A phone keeps the big ones.
 - **The standalone pages start on about a tenth of the code.** The Voice
   Mirror, Karaoke Night, Glass and the vocal range test each fetched most of
   the studio before they could open. Now they fetch their own part.
@@ -65,6 +74,10 @@ words scroll under your finger while the song plays.
 - **A drag that lost your finger can be started again.** A divider or a
   slider could end up tappable but stuck until you reopened the room. The
   next press now starts over.
+- **"Link copied" shows over the playback buttons**, not behind them.
+- **Handing out lines on a touch screen says what it does.** While a singer
+  is picked the words wear a frame in their colour, and a tablet is told the
+  words scroll again after Done.
 - **Smaller things.** Words you scrolled on a paused song stay put when
   somebody joins. Every invite link shows the Jam picture in a chat. The
   chat button is named for screen readers.

@@ -963,3 +963,42 @@ I have not executed this against D1, so I cannot state with certainty whether th
 **Failure scenario.** A client paginating with `GET /api/sessionRecords?limit=50&offset=${cursor}` where `cursor` is accidentally the string 'undefined' or an empty-ish non-numeric produces `offset=undefined`; `Number('undefined')` is NaN, which is bound into `LIMIT ? OFFSET ?`. Either D1 rejects the statement and the top-level handler answers 500 for what should be a 400, or SQLite reads the NULL as offset 0 and the client silently re-reads page 1 on every request, never advancing and never seeing an error.
 
 **Suggested fix.** Mirror the limit and the leaderboard handler: `const parsedOffset = offsetRaw === null ? undefined : Number(offsetRaw); offset: Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : undefined` — or return `null` (400 'Invalid query') for a non-numeric offset, matching how a bad `orderBy` is handled at index.ts:224.
+
+## Device reports that were not reproduced
+
+Kept here so the next report lands on what is already known rather than
+starting over. Each says what was checked, what was changed anyway, and what
+would tell the causes apart.
+
+### [unconfirmed] Tablet: the jam room's words stop answering a one-finger drag until a reload
+
+`src/components/jam/JamSongLyrics.tsx` — status: reported twice from one
+tablet (2026-09-20, an 1180x820 touch screen), never reproduced.
+
+First report: the divider between the words and the pitch lanes could be
+tapped but not dragged, and handing out lines in Parts did nothing. Second
+report: the divider worked, the words would not scroll under a finger, a
+desktop wheel was fine. A reload mended both.
+
+**Checked and fine.** One finger scrolls the sheet under real touch points
+(`jam-lyrics-follow.spec.ts`). Nothing in the room listens for touches above
+the lyric box; `useScrollLock` only sets `overflow: hidden` on the body; the
+pinch handler cancels a touchmove only with exactly two fingers inside the box;
+the follower can move the sheet but never stops a scroll.
+
+**Changed anyway (0.9.11).** `dragGesture` starts over when a press finds the
+old pointer's capture gone (the one real stuck state found, and a match for
+"tap works, drag does not"). An armed Parts brush is the one state that looks
+exactly like the second report -- under a finger an armed sheet paints and does
+not scroll, until Done or a reload -- so the sheet now wears a frame while
+armed, a touch screen is told the words scroll again after Done, and a sweep
+cancels the browser's pan itself as well as by class. None of these was shown
+to be the cause.
+
+**If it comes back,** three things on the screen tell the causes apart, with
+no console: is a name lit in Parts, or Done showing (an armed brush); does the
+100% over the words change while dragging (the sheet thinks two fingers are
+down); does tapping a line still jump the song (the sheet is getting touches
+at all). Not tried, because it cannot be checked from here: dropping the
+dynamic `touch-action: none` for the cancel alone, which would take a stale
+class out of the picture on WebKit.

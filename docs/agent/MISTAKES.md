@@ -398,6 +398,34 @@ another one. What it does, and what any replacement must also do:
 **See:** `src/components/InfoPopover.tsx`, and the badge hints in
 `VocalChallenges.tsx` for a call site.
 
+**Bitten again, 0.9.11:** `JamRoomCode`'s "Link copied" note hung under the
+pill from inside the room header (`position: absolute; z-index: 5`) and was
+painted under the playback row, because the header is a stacking context and
+the row below it is a later one. The rule is not only for panels you open: a
+note that must be over everything is portalled too. The browser check for it
+has to make the note take presses for a moment -- a hit test skips whatever is
+`pointer-events: none`, so `elementFromPoint` never returns the note itself.
+
+### One tab can be two screens, and a tour is per screen
+
+**Symptom:** inside a jam room the sidebar's Tour played the lobby's steps:
+four tooltips pointing at a name field and a Create button that were not
+there.
+**Cause:** tours were keyed by tab (`PAGE_TOURS[tab]`), and the Jam tab is the
+lobby until a room opens and the room after that.
+**Rule:** when a tab has more than one screen, pick the tour from the state
+that decides the screen (`pageTourSteps` in `app-store.ts`), and ask the STORE
+that owns that state, not the panel: a panel unmounts on a tab switch and the
+room does not. Do not import a feature's store into `app-store.ts` to ask --
+it is in every page's first paint. A file that imports nothing holds a reader
+and the feature's store provides it (`src/lib/jam/jam-room-presence.ts`).
+
+**And a target needs a box.** The room tour's first step pointed at the block
+holding the room's name and its strip, which is `display: contents` under
+900px: no box, so no spotlight, on a phone and on a tablet held upright only.
+A desk walk never sees it. Point a step at something that is drawn at every
+width, and walk a new tour at three widths (`jam-room-tour.spec.ts` does).
+
 ### Supply semantic colours at a standalone portal's call site
 
 **Symptom:** Guitar Night's removal confirmation had transparent panels and an invisible action.

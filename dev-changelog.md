@@ -396,6 +396,113 @@ song where the reader put it` failed once in each of two full jam runs on
 - The chat bubble and its close button were drawings with no name; both are
   labelled now.
 
+### A second pass on the room, from the same tablet
+
+Owner, on the preview of the section above: "much improved", and four more.
+
+- **The Jam tab has two tours.** Tour in the sidebar played the lobby's four
+  steps inside a room, where a name field, a Create button and a code field do
+  not exist: four tooltips about nothing. `JAM_ROOM_TOUR_STEPS` (new, eight
+  steps) is the room's: the header, the code, the header's buttons (one step
+  per viewport, because a phone folds most of them behind a menu), the roster,
+  the song list, the playback capsule, the stage, the chat. `pageTourSteps(tab)`
+  picks between the two, and `hasPageTour` / `startPageTour` go through it, so
+  the sidebar's Tour, the Guide dialog and the first-visit offer all get the
+  right one without knowing there are two. The lobby's last step now says the
+  room has a tour of its own.
+- **How the tour store knows a room is open.** Not by importing the jam store:
+  that brings the peer service, the pitch detector and the song transfer into
+  whatever imports it, and the tour store is in every page's first paint.
+  `src/lib/jam/jam-room-presence.ts` imports nothing and holds one reader;
+  the jam store hands it its own `jamState` signal when it loads. Until
+  then there is no store and so no room, which is the right answer too. Asked
+  of the STORE and not of the panel on purpose: the panel unmounts on a tab
+  switch and the room does not, so a tour started from the Guide on another
+  tab still gets the screen the Jam tab is about to show. It reads a signal,
+  so the sidebar's `<Show>` follows a room opening and closing.
+- **New hooks**: `jam.room-actions`, `jam.stage` (on the song
+  stage AND the drill canvases, so "the stage" is whichever is up), `jam.chat`.
+  `tour-selectors-exist.test.ts` now checks `reveal` selectors too, and the
+  room's tour with the rest. The first step points at the whole header and
+  not at the block holding the name and the strip: under 900px that block is
+  `display: contents`, which has no box, and the phone walk caught it as a
+  step with no spotlight. `jam-room-tour.spec.ts` walks all eight steps on
+  a desk, the owner's tablet and a phone and wants a visible spotlight on each
+  -- this tour is on the PR gate, not only in the release walk.
+  `scripts/walk-tours.mjs` walks it too (it opens the preview room first) and
+  grew `ONLY="Jam,Jam (inside a room)"` for walking a few.
+- **The lyric header's buttons on a tablet.** Not a bug: every touch screen
+  got a phone's 40px targets, 46 with the ring, a 51px row -- next to a lane
+  zoom that is 28px on the same screen. A touch screen wider than the room's
+  phone block (641px and up) now takes the lane zoom's size for both pills; a
+  phone keeps 40. The container steps were a phone's arithmetic, and one of
+  them (down to 32px under 276px) would have made a tablet's buttons GROW as
+  the column narrowed, so they are split: the old steps under
+  `(pointer: coarse) and (max-width: 640px)`, and a tablet's own (264 / 216 /
+  172px, from 94 + 108px of controls) beside them.
+- **"Link copied" was painted under the playback row.** It hung under the pill
+  from inside the header, `position: absolute; z-index: 5`. The header is a
+  stacking context and the row below it a later one, so the z-index only
+  ordered the note among the header's own children. It is portalled to the
+  body now, fixed, on the layer of the app's other floating notes (9000),
+  placed from the pill's box and re-placed on scroll and resize, with the
+  caller's skin carried over (`createPortalSkinBridge`). The `role="status"`
+  stays in the button, visually hidden, so the region exists before the words
+  arrive; the visible copy is `aria-hidden`. `MISTAKES.md` already had this
+  rule, for popovers; it has this case under it now.
+  The browser check makes the note take presses for the length of the
+  question, because a hit test skips whatever lets presses through and the
+  note does.
+
+#### The touch report, again
+
+"The touch and drag to move the lyrics up/down doesn't work on my tablet",
+then: a reload mended it, the divider DID work this time, a desktop wheel is
+fine. Not reproduced, for the second time.
+
+What was checked, and is fine:
+
+- One finger scrolls the sheet in a real-touch browser test (CDP touch points,
+  1180x820), on this branch.
+- Nothing in the room listens for touches above the lyric box. The tour engine
+  has no scroll lock; `useScrollLock` sets `overflow: hidden` on the body and
+  nothing else, which does not stop an inner scroller.
+- The pinch handler cancels a touchmove only with exactly two fingers inside
+  the box. One finger is never cancelled, whatever state it was left in.
+- The follower never stops a scroll; it can only move the sheet afterwards.
+
+What was found: **an armed brush.** With a singer picked in the Parts bar the
+rows are `touch-action: none` and a drag paints. A mouse still has its wheel;
+a finger has nothing, so under a finger an armed sheet does not scroll at all,
+it stays that way until Done, and with "Everyone" armed over unassigned lines a
+drag changes nothing anyone can see. The divider is unaffected and a reload
+puts the brush down -- which is the second report exactly. It was not shown to
+be what happened.
+
+So, without changing the gesture:
+
+- the sheet says when it is armed (`data-armed`, a ring in the brush's colour):
+  a finger has no cursor to turn into a crosshair;
+- the Parts bar tells a touch screen "Drag down their lines. Done to scroll
+  again." -- INSTEAD of the mouse's sentence, not after it: two sentences put
+  Done on a third row of a tablet's lyric column, and a row is 32px of words;
+- a sweep in progress cancels the browser's pan from the sheet's own
+  non-passive `touchmove`, as well as by the class. The class arrives with the
+  brush, and a pan the browser starts anyway cancels the pointer and the sweep
+  with it, which is what the FIRST report's "the parts assignment also didn't
+  work" would look like. Also unproven; it costs two comparisons.
+
+Left alone: replacing the dynamic `touch-action: none` with the cancel alone.
+It would take a stale class out of the picture in both directions, but painting
+under a finger works on the owner's tablet today and that swap cannot be tried
+on one from here.
+
+If it happens again, three things on the screen tell the causes apart, and none
+needs a console (a tablet has none): is a name lit in Parts, or Done showing;
+does the 100% in the words' header change while dragging (the sheet thinks two
+fingers are down); does tapping a line still jump the song (the sheet is
+getting touches at all).
+
 ### Three `manualChunks` rules deleted; every document weighed
 
 The owner's question after the jam room broke Piano Night's audit by importing
