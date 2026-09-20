@@ -654,6 +654,13 @@ value is dropped is a plausible-looking dead path.
 **See:** `src/features/editor/useEditorController.ts`, `src/lib/piano-roll.ts`
 import handler, issue #813.
 
+### Finish a committed camera turn independently of movement speed
+
+**Symptom:** a short left/right step turns Merc 90 degrees but leaves the camera halfway around; immediately after zoom, it does not turn at all.
+**Cause:** follow ran only above a velocity threshold, and wheel zoom reset the same quiet timer as manual orbit. Sustained-motion tests missed both interactions.
+**Rule:** separate zoom from orbit ownership, finish a heading committed by real movement after stopping, and cancel it on manual look/lifecycle changes. Test brief input plus release at several zoom distances; preserve a stable movement basis so follow cannot create circles.
+**See:** `packages/glass-game/src/render/camera.test.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

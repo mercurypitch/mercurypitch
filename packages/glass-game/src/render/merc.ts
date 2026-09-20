@@ -10,6 +10,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameSnapshot } from '../contracts'
 import { disposeObject } from './dispose'
 
+const TURN_RESPONSE = 10
+const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
+
 export async function loadAdventureMerc(url: string) {
   const gltf = await new GLTFLoader().loadAsync(url)
   const body = gltf.scene
@@ -112,7 +115,10 @@ export async function loadAdventureMerc(url: string) {
         Math.sin(desiredYaw - root.rotation.y),
         Math.cos(desiredYaw - root.rotation.y),
       )
-      root.rotation.y += angle * Math.min(1, dt * 15)
+      const turnDt = Number.isFinite(dt) ? Math.max(0, Math.min(0.05, dt)) : 0
+      const blended = angle * (1 - Math.exp(-TURN_RESPONSE * turnDt))
+      const maximumStep = MAXIMUM_TURN_RADIANS_PER_SECOND * turnDt
+      root.rotation.y += Math.max(-maximumStep, Math.min(maximumStep, blended))
     },
     dispose() {
       mixer.stopAllAction()

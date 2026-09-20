@@ -6,9 +6,10 @@ import type { Object3D } from 'three'
 import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 
-const FOLLOW_RESUME_SECONDS = 1.75
+const ORBIT_FOLLOW_GRACE_SECONDS = 0.2
 const FOLLOW_RESPONSE = 5
 const MAXIMUM_FOLLOW_RADIANS_PER_SECOND = 2.8
+const FOLLOW_COMPLETE_RADIANS = 0.01
 const MOVING_SPEED = 0.05
 const MAXIMUM_OBSTRUCTION_PITCH = 1.35
 const OBSTRUCTION_LIFT_PITCHES = [
@@ -67,7 +68,8 @@ export function createAdventureCamera(
   // following view back into camera-relative input would turn a strafe into a
   // self-reinforcing circle.
   let movementReferenceYaw = yaw
-  let manualQuietSeconds = FOLLOW_RESUME_SECONDS
+  let orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
+  let committedHeading: number | null = null
   let movementActive = false
   let orbitActive = false
   let obstructionLifted = false
@@ -153,10 +155,18 @@ export function createAdventureCamera(
       movementActive = active
       if (!active) movementReferenceYaw = yaw
     },
+    cancelHeadingFollow() {
+      committedHeading = null
+      movementActive = false
+      movementReferenceYaw = yaw
+    },
     setOrbitActive(active: boolean) {
       orbitActive = active
-      manualQuietSeconds = 0
-      if (active) movementReferenceYaw = yaw
+      orbitQuietSeconds = 0
+      if (active) {
+        movementReferenceYaw = yaw
+        committedHeading = null
+      }
     },
     orbit(dx: number, dy: number) {
       const safeX = Number.isFinite(dx) ? dx : 0
@@ -171,19 +181,19 @@ export function createAdventureCamera(
       pitch = nextPitch
       if (safeX !== 0 || safeY !== 0) {
         movementReferenceYaw = yaw
-        manualQuietSeconds = 0
+        orbitQuietSeconds = 0
+        committedHeading = null
       }
     },
     zoom(delta: number) {
-      if (Number.isFinite(delta) && delta !== 0) {
+      if (Number.isFinite(delta) && delta !== 0)
         distance = MathUtils.clamp(distance + delta, 1.8, 6.5)
-        manualQuietSeconds = 0
-      }
     },
     recenter() {
       yaw += shortestAngleDelta(yaw, facing)
       movementReferenceYaw = yaw
-      manualQuietSeconds = FOLLOW_RESUME_SECONDS
+      orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
+      committedHeading = null
     },
     update(snapshot: GameSnapshot, dt: number) {
       const safeDt = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, 0.05) : 0
@@ -196,29 +206,42 @@ export function createAdventureCamera(
       target.lerp(desired, snapPitch ? 1 : 1 - Math.exp(-12 * safeDt))
       firstFrame = false
       if (!snapshot.paused && !orbitActive)
-        manualQuietSeconds = Math.min(
-          FOLLOW_RESUME_SECONDS,
-          manualQuietSeconds + safeDt,
+        orbitQuietSeconds = Math.min(
+          ORBIT_FOLLOW_GRACE_SECONDS,
+          orbitQuietSeconds + safeDt,
         )
       const moving =
         Math.hypot(snapshot.player.velocity.x, snapshot.player.velocity.z) >
         MOVING_SPEED
+      const followsHeading =
+        options.reducedMotion !== true &&
+        !snapshot.paused &&
+        snapshot.phase === 'idle' &&
+        !teleport
+      if (!followsHeading) committedHeading = null
+      else if (movementActive && moving && !orbitActive)
+        committedHeading = facing
       // Input intent, rather than velocity, defines one movement contact. A
       // collision can stop Merc without releasing the held key/stick; keeping
       // the basis there avoids turning a wall contact into camera feedback.
       if (!movementActive) movementReferenceYaw = yaw
       if (
-        options.reducedMotion !== true &&
-        moving &&
+        followsHeading &&
+        committedHeading !== null &&
         !orbitActive &&
-        !snapshot.paused &&
-        snapshot.phase === 'idle' &&
-        manualQuietSeconds >= FOLLOW_RESUME_SECONDS
+        orbitQuietSeconds >= ORBIT_FOLLOW_GRACE_SECONDS
       ) {
-        const delta = shortestAngleDelta(yaw, facing)
+        const delta = shortestAngleDelta(yaw, committedHeading)
         const blended = delta * (1 - Math.exp(-FOLLOW_RESPONSE * safeDt))
         const maximumStep = MAXIMUM_FOLLOW_RADIANS_PER_SECOND * safeDt
         yaw += MathUtils.clamp(blended, -maximumStep, maximumStep)
+        if (
+          Math.abs(shortestAngleDelta(yaw, committedHeading)) <=
+          FOLLOW_COMPLETE_RADIANS
+        ) {
+          yaw += shortestAngleDelta(yaw, committedHeading)
+          committedHeading = null
+        }
       }
       const portrait = camera.aspect < 1 ? 1.15 : 1
       const reach = distance * portrait

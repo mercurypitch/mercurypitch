@@ -67,7 +67,11 @@ Each sound owner holds a separate shared-context lease and bus. Cancellation req
 
 Pause, background and unmount cancel microphone capture and pending reference ownership. Returning does not automatically restart the voice challenge. Save success separately from scene effects and retain it after falls, reloads or backgrounding.
 
-A visible-window blur only clears held keys, stick/jump contacts and camera capture. It does not open Pause or retire a pending permission request; the host's hidden-page/pagehide/native-inactive events still do. The camera follows Merc's heading while moving, with a held manual orbit and 1.75 s quiet interval taking precedence. Recenter retains zoom/pitch, and reduced-motion mode keeps automatic heading rotation off. Held movement keeps a stable basis so automatic camera rotation cannot steer it into a circle. When a nearby wall compresses the view, bounded steeper camera rays can find room above it; easing and clearance hysteresis retain the player's chosen pitch for open space.
+A visible-window blur only clears held keys, stick/jump contacts and camera capture. It does not open Pause or retire a pending permission request; the host's hidden-page/pagehide/native-inactive events still do.
+
+Movement commits a camera heading that can finish settling after a short step ends. Manual orbit cancels that commitment and owns the view while held; an idle manual view stays put. Movement after released orbit resumes follow with a 0.2 s grace. Zoom only changes distance, so scrolling cannot suppress a turn. Pause, encounters and teleports cancel pending alignment. Recenter retains zoom/pitch, and reduced-motion mode keeps automatic heading rotation off. Merc's visible turn is smoothed independently of physical running speed and jump reach.
+
+Held movement keeps a stable basis so automatic camera rotation cannot steer it into a circle. That reference currently resets on neutral input or manual orbit; continuous changes of stick direction still use the held reference. When a nearby wall compresses the view, bounded steeper camera rays can find room above it; easing and clearance hysteresis retain the player's chosen pitch for open space. This obstruction fallback is not final room-aware framing: the enclosed-level milestone still needs full-character and landing visibility at doorways, corners and ceilings.
 
 ## Museum soundtrack
 

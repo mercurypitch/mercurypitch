@@ -9,24 +9,28 @@ import { loadAdventureMerc } from './merc'
 
 afterEach(() => vi.restoreAllMocks())
 
+async function parseActualMerc() {
+  const source = await readFile(
+    fileURLToPath(
+      new URL(
+        '../../../../apps/beside-cue/public/games/glass3d/merc.glb',
+        import.meta.url,
+      ),
+    ),
+  )
+  return new GLTFLoader().parseAsync(
+    source.buffer.slice(
+      source.byteOffset,
+      source.byteOffset + source.byteLength,
+    ),
+    '',
+  )
+}
+
 it.each([false, true])(
   'keeps the actual Merc rig upright on repeated jumps with reduced motion=%s',
   async (reducedMotion) => {
-    const source = await readFile(
-      fileURLToPath(
-        new URL(
-          '../../../../apps/beside-cue/public/games/glass3d/merc.glb',
-          import.meta.url,
-        ),
-      ),
-    )
-    const gltf = await new GLTFLoader().parseAsync(
-      source.buffer.slice(
-        source.byteOffset,
-        source.byteOffset + source.byteLength,
-      ),
-      '',
-    )
+    const gltf = await parseActualMerc()
     vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf)
     const actor = await loadAdventureMerc('local-test-merc.glb')
     const snapshot = createGlassGame(GLASSWORKS).snapshot()
@@ -51,3 +55,31 @@ it.each([false, true])(
     }
   },
 )
+
+it('turns toward a side step smoothly and independently of frame cadence', async () => {
+  const load = vi.spyOn(GLTFLoader.prototype, 'loadAsync')
+  const turnFor = async (dt: number, frames: number): Promise<number> => {
+    load.mockResolvedValueOnce(await parseActualMerc())
+    const actor = await loadAdventureMerc('local-test-merc.glb')
+    const snapshot = createGlassGame(GLASSWORKS).snapshot()
+    snapshot.player.facingYaw = -Math.PI / 2
+    snapshot.player.velocity.x = 1
+    try {
+      for (let frame = 0; frame < frames; frame++)
+        actor.update(snapshot, dt, false)
+      return actor.root.rotation.y
+    } finally {
+      actor.dispose()
+    }
+  }
+
+  const firstLongFrame = await turnFor(0.05, 1)
+  const sixtyFps = await turnFor(1 / 60, 12)
+  const thirtyFps = await turnFor(1 / 30, 6)
+
+  expect(firstLongFrame).toBeGreaterThan(0)
+  expect(firstLongFrame).toBeLessThan(0.4)
+  expect(sixtyFps).toBeGreaterThan(1)
+  expect(sixtyFps).toBeLessThan(1.35)
+  expect(thirtyFps).toBeCloseTo(sixtyFps, 5)
+})

@@ -150,9 +150,9 @@ describe('camera-relative traversal', () => {
     expect(rig.yaw()).toBeCloseTo(chosenYaw)
     expect(rig.movementYaw()).toBeCloseTo(chosenYaw)
     rig.setOrbitActive(false)
-    updateFor(rig, moving, 1.5)
+    updateFor(rig, moving, 0.15)
     expect(rig.yaw()).toBeCloseTo(chosenYaw)
-    updateFor(rig, moving, 0.5)
+    updateFor(rig, moving, 0.15)
     expect(
       Math.abs(angleError(rig.yaw(), moving.player.facingYaw)),
     ).toBeLessThan(Math.abs(angleError(chosenYaw, moving.player.facingYaw)))
@@ -160,8 +160,104 @@ describe('camera-relative traversal', () => {
     rig.orbit(0.35, 0)
     expect(rig.movementYaw()).toBeCloseTo(rig.yaw())
     const secondOrbit = rig.yaw()
-    updateFor(rig, moving, 1)
+    updateFor(rig, moving, 0.15)
     expect(rig.yaw()).toBeCloseTo(secondOrbit)
+    updateFor(rig, moving, 0.15)
+    expect(
+      Math.abs(angleError(rig.yaw(), moving.player.facingYaw)),
+    ).toBeLessThan(Math.abs(angleError(secondOrbit, moving.player.facingYaw)))
+  })
+  it.each([false, true])(
+    'finishes a short side-step heading after movement stops with zoom=%s',
+    (zoomed) => {
+      const game = createGlassGame(OPEN_ROOM)
+      const rig = createAdventureCamera(OPEN_ROOM)
+      if (zoomed) rig.zoom(1)
+      rig.setMovementActive(true)
+
+      for (let frame = 0; frame < 12; frame++) {
+        const movement = cameraRelativeMovement(-1, 0, rig.movementYaw())
+        game.step({ ...movement, jumpDown: false }, FRAME)
+        rig.update(game.snapshot(), FRAME)
+      }
+      const committedFacing = game.snapshot().player.facingYaw
+      expect(Math.abs(angleError(rig.yaw(), committedFacing))).toBeGreaterThan(
+        0.5,
+      )
+
+      rig.setMovementActive(false)
+      for (let frame = 0; frame < 72; frame++) {
+        game.step({ moveX: 0, moveZ: 0, jumpDown: false }, FRAME)
+        rig.update(game.snapshot(), FRAME)
+      }
+
+      expect(Math.abs(angleError(rig.yaw(), committedFacing))).toBeLessThan(
+        0.04,
+      )
+    },
+  )
+  it('cancels a pending heading when manual orbit takes ownership', () => {
+    const rig = createAdventureCamera(GLASSWORKS)
+    const state = createGlassGame(GLASSWORKS).snapshot()
+    const moving = withMotion(state, 0)
+    rig.setMovementActive(true)
+    updateFor(rig, moving, 0.2)
+
+    rig.setOrbitActive(true)
+    rig.orbit(-0.45, 0)
+    const chosenYaw = rig.yaw()
+    rig.setOrbitActive(false)
+    rig.setMovementActive(false)
+    // Braking velocity after a released contact is not fresh movement intent.
+    updateFor(rig, moving, 0.2)
+    updateFor(rig, withMotion(moving, 0, { speed: 0 }), 2)
+
+    expect(rig.yaw()).toBeCloseTo(chosenYaw)
+  })
+  it('cancels a pending heading across a short respawn', () => {
+    const rig = createAdventureCamera(GLASSWORKS)
+    const state = createGlassGame(GLASSWORKS).snapshot()
+    const moving = withMotion(state, 0)
+    rig.setMovementActive(true)
+    updateFor(rig, moving, 0.2)
+    const beforeRespawn = rig.yaw()
+
+    rig.cancelHeadingFollow()
+    const shortRespawn = withMotion(
+      {
+        ...state,
+        player: {
+          ...state.player,
+          position: {
+            ...state.player.position,
+            x: state.player.position.x + 1,
+          },
+        },
+      },
+      0,
+      { speed: 0 },
+    )
+    updateFor(rig, shortRespawn, 2)
+
+    expect(rig.yaw()).toBeCloseTo(beforeRespawn)
+    expect(rig.movementYaw()).toBeCloseTo(rig.yaw())
+  })
+  it.each([
+    ['pause', { paused: true }],
+    ['encounter', { phase: 'listening' as const }],
+  ])('drops a pending heading during %s', (_, unavailable) => {
+    const rig = createAdventureCamera(GLASSWORKS)
+    const state = createGlassGame(GLASSWORKS).snapshot()
+    const moving = withMotion(state, 0)
+    rig.setMovementActive(true)
+    updateFor(rig, moving, 0.2)
+
+    rig.update({ ...moving, ...unavailable }, FRAME)
+    rig.setMovementActive(false)
+    const blockedYaw = rig.yaw()
+    updateFor(rig, withMotion(moving, 0, { speed: 0 }), 2)
+
+    expect(rig.yaw()).toBeCloseTo(blockedYaw)
   })
   it('keeps a sustained camera-relative direction straight after follow resumes', () => {
     const game = createGlassGame(OPEN_ROOM)

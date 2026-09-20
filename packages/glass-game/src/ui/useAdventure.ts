@@ -125,6 +125,7 @@ export function useAdventure(
         host.saveProgress(game.saveProgress())
       } else if (event.type === 'respawn') {
         input.clear()
+        renderer?.cancelHeadingFollow()
         announce('Back on solid ground. Your progress is safe.')
       }
     }

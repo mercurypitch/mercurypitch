@@ -194,6 +194,66 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
+test('wheel zoom and a short side step complete the same heading turn @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 480 })
+  await openMuseum(page)
+  await page.mouse.move(320, 250)
+
+  // Real wheel input exercises the UI-to-rig path at near, far and middle zoom.
+  // Derive Merc's heading from actual travel, independently of the camera API.
+  for (const wheel of [-1_100, 2_350, -1_250]) {
+    await page.mouse.wheel(0, wheel)
+    await page.clock.runFor(32)
+    const start = [await value(page, 'player-x'), await value(page, 'player-z')]
+    await page.keyboard.down('KeyA')
+    await page.clock.runFor(200)
+    await page.keyboard.up('KeyA')
+    await runIdleWithoutRaster(page, 1_200)
+    const dx = (await value(page, 'player-x')) - start[0]
+    const dz = (await value(page, 'player-z')) - start[1]
+    expect(Math.hypot(dx, dz)).toBeGreaterThan(0.15)
+    const heading = Math.atan2(-dx, -dz)
+    const view = await value(page, 'camera-yaw')
+    const error = Math.atan2(Math.sin(heading - view), Math.cos(heading - view))
+    expect(Math.abs(error)).toBeLessThan(0.04)
+  }
+
+  await page.mouse.down()
+  await page.mouse.move(410, 250, { steps: 5 })
+  await page.mouse.up()
+  await page.clock.runFor(32)
+  const manualYaw = await value(page, 'camera-yaw')
+  await runIdleWithoutRaster(page, 1_200)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(manualYaw, 5)
+  // Move immediately after a second look gesture, without waiting out a long
+  // quiet timer. The short movement must still leave a turn to finish.
+  await page.mouse.down()
+  await page.mouse.move(430, 250, { steps: 3 })
+  await page.mouse.up()
+  await page.clock.runFor(32)
+  const start = [await value(page, 'player-x'), await value(page, 'player-z')]
+  await page.keyboard.down('KeyA')
+  await page.clock.runFor(200)
+  await page.keyboard.up('KeyA')
+  await runIdleWithoutRaster(page, 1_200)
+  const heading = Math.atan2(
+    start[0] - (await value(page, 'player-x')),
+    start[1] - (await value(page, 'player-z')),
+  )
+  expect(
+    Math.hypot(
+      start[0] - (await value(page, 'player-x')),
+      start[1] - (await value(page, 'player-z')),
+    ),
+  ).toBeGreaterThan(0.15)
+  const difference = heading - (await value(page, 'camera-yaw'))
+  expect(
+    Math.abs(Math.atan2(Math.sin(difference), Math.cos(difference))),
+  ).toBeLessThan(0.04)
+})
+
 test.describe('phone', () => {
   test.use({
     viewport: { width: 390, height: 844 },
