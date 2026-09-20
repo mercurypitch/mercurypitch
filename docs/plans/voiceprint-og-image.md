@@ -75,8 +75,8 @@ So the overlay step is never the cheap part. Either the numbers are baked in by 
 
 ## Decision
 
-**A**, chosen by the owner on 2026-09-20: *"sharing not theirs image in OG image is not
-interesting."* Correct — an unfurl showing a legend card that is not the sender's own take
+**A**, chosen by the owner on 2026-09-20: _"sharing not theirs image in OG image is not
+interesting."_ Correct — an unfurl showing a legend card that is not the sender's own take
 is decoration, and decoration does not get forwarded.
 
 B is left written down above because it remains the cheap fallback if storage ever becomes
