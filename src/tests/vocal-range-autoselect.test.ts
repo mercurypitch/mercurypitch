@@ -72,13 +72,16 @@ beforeEach(() => {
 })
 
 describe('vocalRangeMelodyId', () => {
-  it('roots the scale in the voice type default octave', () => {
-    // Straight off VOCAL_RANGES.defaultOctave: bass/baritone 2, tenor/alto 3,
-    // soprano/mezzo 4.
-    expect(vocalRangeMelodyId('bass')).toBe('scale-major-c2')
-    expect(vocalRangeMelodyId('baritone')).toBe('scale-major-c2')
+  it('roots the scale in the octave of C major that sits inside the range', () => {
+    // C3 to C4 is inside every low voice (bass E2-E4, baritone G2-G4, tenor
+    // C3-C5); C4 to C5 inside every high one. Bass and baritone used to get
+    // C2 to C3, which starts a third under a bass and a fifth under a
+    // baritone -- the owner's report, 2026-09-20: "I can't even go to C2".
+    // An alto got C3 to C4, the bottom of which is under hers.
+    expect(vocalRangeMelodyId('bass')).toBe('scale-major-c3')
+    expect(vocalRangeMelodyId('baritone')).toBe('scale-major-c3')
     expect(vocalRangeMelodyId('tenor')).toBe('scale-major-c3')
-    expect(vocalRangeMelodyId('alto')).toBe('scale-major-c3')
+    expect(vocalRangeMelodyId('alto')).toBe('scale-major-c4')
     expect(vocalRangeMelodyId('soprano')).toBe('scale-major-c4')
     expect(vocalRangeMelodyId('mezzo-soprano')).toBe('scale-major-c4')
   })
@@ -123,11 +126,11 @@ describe('pickVocalRangeMelody', () => {
     // melody item would look right for a tenor and wrong for everyone else.
     const session = sessionOf('default', [
       { id: 'item-a', type: 'melody', startBeat: 0, label: 'C', melodyId: 'scale-major-c3' }, // prettier-ignore
-      { id: 'item-b', type: 'melody', startBeat: 16, label: 'Low C', melodyId: 'scale-major-c2' }, // prettier-ignore
+      { id: 'item-b', type: 'melody', startBeat: 16, label: 'High C', melodyId: 'scale-major-c4' }, // prettier-ignore
     ])
 
-    expect(pickVocalRangeMelody(session, 'bass', () => true, null)).toBe(
-      'scale-major-c2',
+    expect(pickVocalRangeMelody(session, 'soprano', () => true, null)).toBe(
+      'scale-major-c4',
     )
   })
 
@@ -145,9 +148,11 @@ describe('pickVocalRangeMelody', () => {
     const { session, melodyExists } = await seededApp()
 
     // The shipped default session holds C and G major in octave 3 only, so a
-    // bass finds nothing to open even with a fully stocked library. Quietly
-    // is the only acceptable way to find nothing.
-    expect(pickVocalRangeMelody(session, 'bass', melodyExists, null)).toBeNull()
+    // soprano finds nothing to open even with a fully stocked library.
+    // Quietly is the only acceptable way to find nothing.
+    expect(
+      pickVocalRangeMelody(session, 'soprano', melodyExists, null),
+    ).toBeNull()
   })
 
   it('ignores rests, which have no melody to open', () => {
@@ -228,21 +233,38 @@ describe('pickVocalRangeMelody leaves the roll alone when it holds real work', (
   it('still swaps one of its own scales for another', () => {
     const session = sessionOf('default', [
       { id: 'item-a', type: 'melody', startBeat: 0, label: 'C3', melodyId: 'scale-major-c3' }, // prettier-ignore
-      { id: 'item-b', type: 'melody', startBeat: 16, label: 'C2', melodyId: 'scale-major-c2' }, // prettier-ignore
+      { id: 'item-b', type: 'melody', startBeat: 16, label: 'C4', melodyId: 'scale-major-c4' }, // prettier-ignore
     ])
 
-    // The feature itself: a bass arrives on the tenor's scale — which is what
-    // a fresh install loads — and gets their own. Replacing a scale this put
-    // there is the one replacement it is entitled to make.
+    // The feature itself: a soprano arrives on the tenor's scale — which is
+    // what a fresh install loads — and gets her own. Replacing a scale this
+    // put there is the one replacement it is entitled to make.
     expect(
-      pickVocalRangeMelody(session, 'bass', () => true, 'scale-major-c3'),
-    ).toBe('scale-major-c2')
+      pickVocalRangeMelody(session, 'soprano', () => true, 'scale-major-c3'),
+    ).toBe('scale-major-c4')
+  })
+
+  it('takes back the low scale the old table sent baritones and basses to', () => {
+    // C2 to C3 is in their piano roll because THIS put it there. It has to
+    // go on counting as one of its own, or the corrected table never reaches
+    // the two voices it was corrected for.
+    const session = sessionOf('default', [
+      { id: 'item-a', type: 'melody', startBeat: 0, label: 'C2', melodyId: 'scale-major-c2' }, // prettier-ignore
+      { id: 'item-b', type: 'melody', startBeat: 16, label: 'C3', melodyId: 'scale-major-c3' }, // prettier-ignore
+    ])
+
+    for (const preset of ['baritone', 'bass'] as const) {
+      expect(
+        pickVocalRangeMelody(session, preset, () => true, 'scale-major-c2'),
+      ).toBe('scale-major-c3')
+    }
   })
 })
 
 describe('isVocalRangeMelody', () => {
   it('claims exactly the scales the auto-select can load', () => {
-    // Octaves 2, 3 and 4 — every VOCAL_RANGES.defaultOctave there is.
+    // Octaves 3 and 4 — every VOCAL_RANGES.defaultOctave there is — and
+    // octave 2, which no voice is sent to now and two used to be.
     expect(isVocalRangeMelody('scale-major-c2')).toBe(true)
     expect(isVocalRangeMelody('scale-major-c3')).toBe(true)
     expect(isVocalRangeMelody('scale-major-c4')).toBe(true)

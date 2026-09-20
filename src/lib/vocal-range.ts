@@ -5,6 +5,11 @@ import type { PlaybackSession } from '@/types'
 
 /**
  * Return the comfortable MIDI range for a given voice type preset.
+ *
+ * The notes themselves (`VOCAL_RANGES`), not the octaves that contain them:
+ * "C of the lowest octave to B of the highest" gave a baritone C2 to B4,
+ * which is a fourth lower and a third higher than a baritone sings, and
+ * everything that fits a phrase into this range then fitted it too low.
  */
 export function getComfortableMidiRange(preset: VocalRangePreset): {
   min: number
@@ -13,10 +18,56 @@ export function getComfortableMidiRange(preset: VocalRangePreset): {
 } {
   const range = VOCAL_RANGES[preset]
   return {
-    min: (range.minOctave + 1) * 12, // C of minOctave
-    max: (range.maxOctave + 1) * 12 + 11, // B of maxOctave
-    default: (range.defaultOctave + 1) * 12, // C of defaultOctave
+    min: range.lowMidi,
+    max: range.highMidi,
+    default: range.anchorMidi,
   }
+}
+
+/**
+ * How many semitones -- always whole octaves -- bring a span of notes into
+ * the singer's range.
+ *
+ * Octaves only, so the contour and every pitch class survive. When more than
+ * one octave fits, the one whose centre sits closest to the middle of the
+ * range wins; a span too wide to fit at all is centred and allowed to spill
+ * equally at both ends.
+ */
+export function octaveShiftIntoRange(
+  lowMidi: number,
+  highMidi: number,
+  preset: VocalRangePreset,
+): number {
+  const { min, max } = getComfortableMidiRange(preset)
+  const spanCentre = (lowMidi + highMidi) / 2
+  const rangeCentre = (min + max) / 2
+
+  // Octave shifts that keep the whole span inside [min, max]. The loop
+  // starts at the smallest multiple of 12 that lifts the bottom to (or past)
+  // the floor, so every shift it yields respects the bottom by construction.
+  const fits: number[] = []
+  for (
+    let shift = Math.ceil((min - lowMidi) / 12) * 12;
+    highMidi + shift <= max;
+    shift += 12
+  ) {
+    fits.push(shift)
+  }
+
+  const best =
+    fits.length > 0
+      ? fits.reduce((a, b) =>
+          Math.abs(spanCentre + b - rangeCentre) <
+          Math.abs(spanCentre + a - rangeCentre)
+            ? b
+            : a,
+        )
+      : // Too wide to fit: centre it. Rounded to whole octaves so the
+        // pitch classes still match what the session card named.
+        Math.round((rangeCentre - spanCentre) / 12) * 12
+  // `Math.ceil(-0 / 12) * 12` is -0, and a shift of minus nothing reads as a
+  // change to anything comparing with Object.is.
+  return best === 0 ? 0 : best
 }
 
 /**
@@ -41,36 +92,11 @@ export function fitPhraseToRange(
   const midis = notes.map(noteToMidi)
   if (midis.some(Number.isNaN)) return notes
 
-  const { min, max } = getComfortableMidiRange(preset)
-  const lo = Math.min(...midis)
-  const hi = Math.max(...midis)
-  const phraseCentre = (lo + hi) / 2
-  const rangeCentre = (min + max) / 2
-
-  // Octave shifts that keep the whole phrase inside [min, max]. The loop
-  // starts at the smallest multiple of 12 that lifts `lo` to (or past) the
-  // floor, so every shift it yields respects the bottom by construction.
-  const fits: number[] = []
-  for (
-    let shift = Math.ceil((min - lo) / 12) * 12;
-    hi + shift <= max;
-    shift += 12
-  ) {
-    fits.push(shift)
-  }
-
-  const best =
-    fits.length > 0
-      ? fits.reduce((a, b) =>
-          Math.abs(phraseCentre + b - rangeCentre) <
-          Math.abs(phraseCentre + a - rangeCentre)
-            ? b
-            : a,
-        )
-      : // Too wide to fit: centre it. Rounded to whole octaves so the
-        // pitch classes still match what the session card named.
-        Math.round((rangeCentre - phraseCentre) / 12) * 12
-
+  const best = octaveShiftIntoRange(
+    Math.min(...midis),
+    Math.max(...midis),
+    preset,
+  )
   return best === 0 ? notes : midis.map((midi) => midiToNoteName(midi + best))
 }
 
@@ -96,17 +122,15 @@ export function fitScaleBaseNote(
 }
 
 /**
- * Returns a sensible default note name (e.g. 'A3') for the given voice type.
- * Tenor/baritone/bass default to A in their default octave; higher voices
- * default to C.
+ * Where an exercise starts for this voice type (e.g. 'C3' for a baritone).
+ *
+ * The preset's anchor: a one-octave run up from it stays inside the range
+ * with room at both ends. It used to be "A of the default octave" for the low
+ * voices and "C of it" for the high ones, which put a baritone on A2 and an
+ * alto on C3 -- the second of those below the bottom of her range.
  */
 export function getDefaultNote(preset: VocalRangePreset): string {
-  const range = VOCAL_RANGES[preset]
-  if (preset === 'soprano' || preset === 'mezzo-soprano' || preset === 'alto') {
-    return midiToNoteName((range.defaultOctave + 1) * 12) // C of default octave
-  }
-  // tenor, baritone, bass — use A in the default octave
-  return midiToNoteName(12 * (range.defaultOctave + 1) + 9) // A of default octave
+  return midiToNoteName(VOCAL_RANGES[preset].anchorMidi)
 }
 
 /**
@@ -123,9 +147,12 @@ export function getNoteOptions(preset: VocalRangePreset): string[] {
 }
 
 /**
- * The library melody a voice type should open on: the major scale rooted in
- * that voice's default octave, so a bass lands on `scale-major-c2` and a
- * soprano on `scale-major-c4`.
+ * The library melody a voice type should open on: the C major scale in the
+ * octave that sits inside that voice's range, so a baritone lands on
+ * `scale-major-c3` (C3 to C4) and a soprano on `scale-major-c4`.
+ *
+ * No voice lands on `scale-major-c2` any more. C2 to C3 starts a major third
+ * under the bottom of a BASS; it was the default for baritones too.
  */
 export function vocalRangeMelodyId(preset: VocalRangePreset): string {
   return `scale-major-c${VOCAL_RANGES[preset].defaultOctave}`
@@ -135,9 +162,14 @@ export function vocalRangeMelodyId(preset: VocalRangePreset): string {
  * Every melody the auto-select is allowed to put in the roll — and therefore
  * the only ones it is allowed to take back out.
  */
-const VOCAL_RANGE_MELODY_IDS: ReadonlySet<string> = new Set(
-  (Object.keys(VOCAL_RANGES) as VocalRangePreset[]).map(vocalRangeMelodyId),
-)
+const VOCAL_RANGE_MELODY_IDS: ReadonlySet<string> = new Set([
+  ...(Object.keys(VOCAL_RANGES) as VocalRangePreset[]).map(vocalRangeMelodyId),
+  // No voice is sent here any more, but every baritone and bass WAS, and it
+  // is still sitting in their piano roll. If the auto-select stopped calling
+  // it its own, it would read as the singer's work and never be taken back
+  // out -- the one group the corrected table exists for would not get it.
+  'scale-major-c2',
+])
 
 /** Is this melody one the auto-select put there itself? */
 export function isVocalRangeMelody(melodyId: string): boolean {
