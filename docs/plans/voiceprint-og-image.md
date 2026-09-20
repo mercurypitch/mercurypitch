@@ -100,9 +100,13 @@ share — which, at a 1.3% share-to-return rate today, is nearly everyone.
 - **The upload is `shareCard`'s `onSheetOpening`**, not a call made before `shareCard`. A
   browser with no share sheet saves the picture and drops the link, so the earlier order
   uploaded a card on a plain save.
+- **The stored card is a JPEG, not the PNG the share sheet gets.** Measured over all 31
+  twins the square card is 1.8-2.3 MB as a PNG and at most 270 KB as a JPEG. The "~300 KB a
+  card" and "under 100 MB" figures elsewhere in this plan hold for the JPEG only; as a PNG
+  one twin was over the cap, and WhatsApp skips a preview image that large.
 - **The stored card is always 1080 square.** A data card shared as a 1080x1920 story draws
-  a second, square card for the unfurl; the store checks the PNG's IHDR and refuses any
-  other size. One constant, `OG_CARD_SIZE`.
+  a second, square card for the unfurl; the store reads the size from the JPEG's frame
+  header and refuses any other. One constant, `OG_CARD_SIZE`.
 - **The rewrite asks the store before promising the picture.** A card that expired, or has
   not landed yet, keeps the stock image instead of an `og:image` that answers 404.
 - **Accuracy and steadiness are 0-100 scores, not cents**, and are written `87/100`.

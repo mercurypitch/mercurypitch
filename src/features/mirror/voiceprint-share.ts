@@ -10,8 +10,8 @@
 // through the same renderer and the same Web Share / download fallback.
 
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
-import { newOgCardId, uploadOgCard, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
-import { cardToPngBlob, datedFilename, shareCard, twinShareText, } from './card-renderer'
+import { linkNamesCard, newOgCardId, uploadOgCard, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
+import { cardToPngBlob, cardToUnfurlBlob, datedFilename, shareCard, twinShareText, } from './card-renderer'
 import { renderSummaryCard } from './shared-voiceprint-card'
 
 /**
@@ -40,18 +40,23 @@ export async function shareVoiceprintRecord(
   const canvas = await renderVoiceprintCard(record, variant)
   if (canvas === null) return 'unavailable'
 
-  const blob = await cardToPngBlob(canvas)
+  const [blob, unfurl] = await Promise.all([
+    cardToPngBlob(canvas),
+    cardToUnfurlBlob(canvas),
+  ])
   const ogCardId = newOgCardId()
+  const link = voiceprintShareUrl(record.summary, record.twin, null, ogCardId)
   return shareCard(blob, datedFilename('voiceprint'), {
     title: 'My voiceprint',
-    text: twinShareText(
-      record.twin ?? 'My twin',
-      voiceprintShareUrl(record.summary, record.twin, null, ogCardId),
-    ),
+    text: twinShareText(record.twin ?? 'My twin', link),
     // Only when a sheet is opening: a browser without one saves the picture
     // and drops the link, and a card stored for a link nobody was given is
     // a card sent off the device for nothing. (The twin card is square, so
     // it is already the picture an unfurl wants.)
-    onSheetOpening: () => uploadOgCard(ogCardId, blob),
+    onSheetOpening: () => {
+      if (unfurl !== null && linkNamesCard(link, ogCardId)) {
+        uploadOgCard(ogCardId, unfurl)
+      }
+    },
   })
 }

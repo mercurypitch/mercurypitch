@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { decodeSharePayload, encodeVoiceprintForShare } from '@/lib/share-codec'
-import { formatSpan, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, sharedRangeNotes, sharedVoiceprintTitle, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareBase, voiceprintShareUrl, } from './shared-voiceprint'
+import { formatSpan, linkNamesCard, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, sharedRangeNotes, sharedVoiceprintTitle, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareBase, voiceprintShareUrl, } from './shared-voiceprint'
 
 const FULL = {
   lowMidi: 48,
@@ -189,6 +189,21 @@ describe('a link naming a stored card', () => {
   })
 })
 
+describe('linkNamesCard', () => {
+  it('is true of a link built with that card', () => {
+    const link = voiceprintShareUrl(FULL, 'Freddie Mercury', null, 'aB3xY9zQ01')
+    expect(linkNamesCard(link, 'aB3xY9zQ01')).toBe(true)
+    expect(linkNamesCard(link, 'aB3xY9zQ02')).toBe(false)
+  })
+
+  it('is false when there was nothing to encode, so nothing is stored', () => {
+    // A take that measured nothing shares the bare Mirror URL. A card
+    // uploaded beside it would be a card nobody can ever be shown.
+    const link = voiceprintShareUrl({}, 'Freddie Mercury', null, 'aB3xY9zQ01')
+    expect(linkNamesCard(link, 'aB3xY9zQ01')).toBe(false)
+  })
+})
+
 describe('uploadOgCard', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -198,12 +213,17 @@ describe('uploadOgCard', () => {
     const fetchMock = vi.fn(() => Promise.resolve(new Response(null)))
     vi.stubGlobal('fetch', fetchMock)
 
-    const png = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' })
-    uploadOgCard('aB3xY9zQ01', png)
+    const card = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' })
+    uploadOgCard('aB3xY9zQ01', card)
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/og/card/aB3xY9zQ01',
-      expect.objectContaining({ method: 'PUT' }),
+      expect.objectContaining({
+        method: 'PUT',
+        body: card,
+        // Said as what it is: the store takes a JPEG and nothing else.
+        headers: { 'Content-Type': 'image/jpeg' },
+      }),
     )
   })
 

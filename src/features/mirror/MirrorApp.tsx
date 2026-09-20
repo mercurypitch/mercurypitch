@@ -26,14 +26,14 @@ import { summarize } from '@/lib/mirror/metrics'
 import { hasSeenHowItWorks, markHowItWorksSeen } from '@/lib/mirror/onboarding'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
-import { MIRROR_SHARE_URL, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
+import { linkNamesCard, MIRROR_SHARE_URL, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { VoiceprintShareData } from '@/lib/share-codec'
 import type { CardFormat } from './card-renderer'
-import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, defaultShareText, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, twinShareText, } from './card-renderer'
+import { cardToPngBlob, cardToUnfurlBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, defaultShareText, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, twinShareText, } from './card-renderer'
 import { CardOptionsSheet } from './CardOptionsSheet'
 import { CosmicMode } from './CosmicMode'
 import type { MirrorEntryIntent } from './entry-intent'
@@ -1097,11 +1097,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     // alone — what lands in the share sheet is still the format they chose.
     const unfurlCard =
       card.width === card.height ? card : buildStoryCard('square')
-    const [png, unfurlPng] = await Promise.all([
+    const [png, unfurl] = await Promise.all([
       cardToPngBlob(card),
-      unfurlCard === null || unfurlCard === card
-        ? null
-        : cardToPngBlob(unfurlCard),
+      unfurlCard === null ? null : cardToUnfurlBlob(unfurlCard),
     ])
     // The id is picked here so the link can be written before anything is
     // stored: Safari only keeps the share gesture alive if nothing awaits
@@ -1122,7 +1120,11 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
       // that remains: closing the sheet without sending still leaves the
       // card in the store. It expires in 30 days, and nobody can reach it
       // without the id, which never left here.
-      onSheetOpening: () => uploadOgCard(ogCardId, unfurlPng ?? png),
+      onSheetOpening: () => {
+        if (unfurl !== null && linkNamesCard(link, ogCardId)) {
+          uploadOgCard(ogCardId, unfurl)
+        }
+      },
     })
     // Closing the sheet without sending is neither a share nor a save —
     // don't count it (card_shared feeds a live Ads conversion) and don't

@@ -819,6 +819,30 @@ export function cardToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   })
 }
 
+/**
+ * The picture a shared link unfurls with: the same card, as a JPEG.
+ *
+ * Not the PNG the share sheet gets. Over all 31 twins the square card is 1.8
+ * to 2.3 MB as a PNG — a painted portrait is the worst case for lossless —
+ * and at most 270 KB like this. It has to be uploaded in the few seconds
+ * between the tap and the first crawler, often over a phone's connection,
+ * and WhatsApp skips a preview image of PNG size altogether.
+ *
+ * Null when the browser hands back anything but a JPEG; the store takes
+ * nothing else, and an unfurl with the stock picture is the right fallback.
+ */
+export function cardToUnfurlBlob(
+  canvas: HTMLCanvasElement,
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => resolve(blob?.type === 'image/jpeg' ? blob : null),
+      'image/jpeg',
+      0.88,
+    )
+  })
+}
+
 /** Append the local date (ISO, sortable) to a download name so a folder of
  *  voiceprints tracks progress chronologically — e.g. "voiceprint-2026-07-07.png". */
 export function datedFilename(base: string): string {

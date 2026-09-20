@@ -525,9 +525,9 @@ card from the numbers, with a written fallback when there is no twin portrait;
 **#838, the unfurl.** Crawlers run no JavaScript, so the picture has to exist
 as a URL. The app picks a card id itself (a server-assigned one would put a
 round trip between the tap and the sheet, which Safari refuses), uploads the
-PNG it already drew to `PUT /api/og/card/:id`, and the worker rewrites the
+card it already drew to `PUT /api/og/card/:id`, and the worker rewrites the
 Mirror document's social tags per request. Stored in the existing
-`SHARE_STORE` under an `og:` prefix, 30-day TTL, 2 MB cap, rate limited per
+`SHARE_STORE` under an `og:` prefix, 30-day TTL, 1 MB cap, rate limited per
 address, never overwritten. **No new Cloudflare resource**: dev, preview and
 prod all already bind that namespace.
 
@@ -545,10 +545,19 @@ deploy job and nothing else. Read properly:
   them as `±N¢`, so a take scoring 87 read "accuracy ±87¢": nearly a semitone
   out, the opposite of what it says. Now `87 / 100` and `accuracy 87/100`, and
   the decoder stops at 100.
+- **The card was too heavy to be a preview.** The PR put a card at about
+  300 KB. Measured over all 31 twins in a real browser, the square twin card
+  is 1.8 to 2.3 MB as a PNG (a painted portrait is the worst case for
+  lossless): David Bowie's was over the 2 MB cap and would never have stored,
+  a month of shares is half a gigabyte rather than "under 100 MB", the upload
+  is still running when the first crawler arrives, and WhatsApp skips a
+  preview image that large. The unfurl card is now a JPEG (`cardToUnfurlBlob`,
+  at most 270 KB); the share sheet still gets the PNG. The store takes JPEG
+  only, reads the size from the frame header, and serves `:id.jpg`.
 - **A tall card behind square tags.** The data card can be shared as a
   1080x1920 story; the tags declare 1080 square and X crops a `summary` from
   the middle. A story share now draws a second, square card for the unfurl
-  only, and the store refuses any PNG whose IHDR is not 1080x1080 (one
+  only, and the store refuses any picture that is not 1080x1080 (one
   constant, `OG_CARD_SIZE`, for the app, the store and the tags).
 - **The card left the device on a plain save.** The upload ran before
   `shareCard`, whose fallback on a browser with no share sheet downloads the
@@ -571,11 +580,11 @@ deploy job and nothing else. Read properly:
   neither the card nor (until a release) the code. `voiceprintShareBase()`
   keeps links at home on `dev.mercurypitch.com` and `*.workers.dev`; everywhere
   else is unchanged. Without it this could only be tried on prod.
-- The stored PNG is served `nosniff` with a `default-src 'none'; sandbox` CSP:
+- The stored card is served `nosniff` with a `default-src 'none'; sandbox` CSP:
   a stranger's bytes under our domain are an image and nothing else.
 
 **Accepted, not fixed.** The store is an unauthenticated upload of a
-card-sized PNG, and `tw`/`n` are free text: a crafted link can unfurl with
+card-sized JPEG, and `tw`/`n` are free text: a crafted link can unfurl with
 someone else's picture and a short title under our name. Bounded by the rate
 limit, the size check, the 64-character clip and the 30 days; removing it
 means drawing the card server-side. KV is not read-your-writes across

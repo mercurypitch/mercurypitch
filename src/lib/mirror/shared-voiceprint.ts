@@ -99,14 +99,23 @@ export function newOgCardId(): string {
  * fire-and-forget fetch outliving its test file fails an otherwise green
  * run.
  */
-export function uploadOgCard(id: string, png: Blob): void {
+export function uploadOgCard(id: string, card: Blob): void {
   void fetch(`/api/og/card/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'image/png' },
-    body: png,
+    headers: { 'Content-Type': card.type },
+    body: card,
   }).catch(() => {
     // Nothing to do and nothing to tell the singer: the link still works.
   })
+}
+
+/**
+ * Whether this link asks for that card. A take with nothing worth encoding
+ * shares the bare Mirror URL, which names no card — and a card stored for a
+ * link that does not mention it has left the device for nothing.
+ */
+export function linkNamesCard(link: string, id: string): boolean {
+  return link.includes(`&${OG_CARD_PARAM}=${id}&`)
 }
 
 export interface ShareableVoiceprint {
