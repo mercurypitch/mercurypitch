@@ -102,7 +102,7 @@ jobs:
                 [[ -z "$file" ]] && continue
 
                 case "$file" in
-                  package.json|pnpm-lock.yaml|pnpm-workspace.yaml|eslint.config.js|.prettierrc.json|.github/workflows/*.yml|.github/workflows/*.yaml)
+                  package.json|pnpm-lock.yaml|pnpm-workspace.yaml|eslint.config.js|.prettierrc.json|.gitattributes|.github/workflows/*.yml|.github/workflows/*.yaml)
                     root=true
                     beside=true
                     db=true
@@ -125,7 +125,13 @@ jobs:
                     # so a change here cannot break the web build.
                     mercurypitch=true
                     ;;
-                  apps/beside-cue/*|packages/beside-cue-core/*|packages/glass-game/*)
+                  apps/beside-cue/public/games/*|packages/glass-game/*)
+                    # Root /glass-game consumes these canonical shared bytes
+                    # and package modules as well as the Beside Cue host.
+                    root=true
+                    beside=true
+                    ;;
+                  apps/beside-cue/*|packages/beside-cue-core/*)
                     beside=true
                     ;;
                   packages/audio-io/*|packages/mobile-runtime/*|packages/pitch-engine/*|packages/purchase-kit/*)
@@ -290,8 +296,12 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
       - uses: ./.github/actions/setup
-
       # Each shard builds its own dist rather than downloading a shared
       # artifact. `dist` is 69 MB, so publishing it once and pulling it four
       # times costs more wall-clock than four parallel builds do — and it would
@@ -380,8 +390,12 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
       - uses: ./.github/actions/setup
-
       - name: Check Beside Cue
         run: pnpm beside-cue:check
 
@@ -414,8 +428,12 @@ jobs:
         shard: [1, 2]
     steps:
       - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
       - uses: ./.github/actions/setup
-
       - name: Install Chromium for Beside Cue browser tests
         run: pnpm exec playwright install --with-deps chromium
 
@@ -464,8 +482,12 @@ jobs:
           ]
     steps:
       - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
       - uses: ./.github/actions/setup
-
       - name: Install Chromium for Glass Adventure browser tests
         run: pnpm exec playwright install --with-deps chromium
 

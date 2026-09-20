@@ -2,6 +2,7 @@
 // Native games — explicitly pair the games web bundle with microphone access
 // ============================================================
 
+import { GLASS_GAME_REQUIRED_FILES } from '@irchiinnuss/glass-game/assets'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync, } from 'node:fs'
@@ -21,70 +22,15 @@ export const requiredGameAssets = [
   'models/swiftf0.onnx',
   'ort/ort-wasm-simd-threaded.mjs',
   'ort/ort-wasm-simd-threaded.wasm',
-  'games/glass3d/merc.glb',
-  'games/journey/merc-idle.webp',
-  'games/adventure/manifest.json',
-  'games/adventure/platform-kit.glb',
-  'games/adventure/vessels.glb',
-  'games/adventure/legend-slab.glb',
-  'games/adventure/floor-marble.webp',
-  'games/adventure/legend-johnny-cash.webp',
-  'games/adventure/museum-sky.webp',
-  'games/adventure-v2/manifest.json',
-  'games/adventure-v2/platform-kit.glb',
-  'games/adventure-v2/garden-kit.glb',
-  'games/adventure-v2/vessels.glb',
-  'games/adventure-v2/environment/golden-coast.hdr',
-  ...[
-    'warm-carrara',
-    'verde-marble',
-    'cream-limestone',
-    'brushed-brass',
-  ].flatMap((material) =>
-    ['basecolor', 'normal', 'roughness'].map(
-      (channel) => `games/adventure-v2/textures/${material}-${channel}.png`,
-    ),
-  ),
-  'games/adventure-v3/manifest.json',
-  'games/adventure-v3/fluted-carafe.glb',
-  'games/adventure-v3/moon-amphora.glb',
-  'games/adventure-v3/aurora-coupe.glb',
-  'games/adventure-v3/cut-crystal-decanter.glb',
-  'games/adventure-v3/gilded-column.glb',
-  'games/adventure-v3/garden-arcade.glb',
-  'games/adventure-v3/observatory-canopy.glb',
-  'games/adventure-v4/museum-window-bay.glb',
-  'games/adventure-v4/museum-screen-bay.glb',
-  'games/adventure-v5/manifest.json',
-  'games/adventure-v5/museum-decor.glb',
-  'games/adventure-v5/painting-garden.webp',
-  'games/adventure-v5/painting-archive.webp',
-  'games/adventure-v5/painting-portrait.webp',
-  'games/adventure-v6/manifest.json',
-  'games/adventure-v6/low-note-keeper.webp',
-  'games/adventure-v6/high-note-muse.webp',
-  'games/adventure-v6/interval-between.webp',
-  'games/adventure-v6/twin-tone-resonance-harp.glb',
-  'games/adventure-v6/opaline-echo-amphora.glb',
-  'games/adventure-audio-v1/m01-loop.mp3',
-  'games/adventure-audio-v1/m03-loop.mp3',
-  'games/adventure-audio-v1/a01-loop.mp3',
-  'games/adventure-audio-v1/a02-loop.mp3',
-  'games/adventure-audio-v1/a03-loop.mp3',
-  'games/adventure-voice-v1/manifest.json',
-  'games/adventure-voice-v1/merc-d2-welcome.mp3',
-  'games/adventure-voice-v1/merc-d2-path-open.mp3',
-  'games/adventure-voice-v1/merc-d2-optional-break.mp3',
-  'games/adventure-voice-v2/manifest.json',
-  ...[
-    'beautiful-mess',
-    'little-disaster',
-    'sparkling',
-    'glass-had-plans',
-    'music-to-my-ears',
-    'cracking-performance',
-  ].map((cue) => `games/adventure-voice-v2/merc-d2-${cue}.mp3`),
+  ...GLASS_GAME_REQUIRED_FILES.map((asset) => `games/${asset}`),
 ] as const
+
+const gitLfsPointerHeader = 'version https://git-lfs.github.com/spec/v1'
+
+interface GamesBundleDigest {
+  indexSha256: string
+  assetSha256: Readonly<Record<string, string>>
+}
 
 export function parseOptions(args: string[]): NativeGamesOptions {
   const options: NativeGamesOptions = {
@@ -128,8 +74,9 @@ export function gamesInfoPlist(canonical: string): string {
   return `${canonical.slice(0, rootEnd)}\t<key>NSMicrophoneUsageDescription</key>\n\t<string>Use your voice to play the optional mini-games. Audio is processed on this device.</string>\n${canonical.slice(rootEnd)}`
 }
 
-/** Reject incomplete/store output before Capacitor can overwrite native assets. */
-export function verifyGamesBundle(directory: string): string {
+/** Reject incomplete/store/LFS-pointer output before Capacitor can overwrite native assets. */
+export function verifyGamesBundle(directory: string): GamesBundleDigest {
+  const assetSha256: Record<string, string> = {}
   for (const asset of requiredGameAssets) {
     const target = resolve(directory, asset)
     if (
@@ -140,10 +87,20 @@ export function verifyGamesBundle(directory: string): string {
       throw new Error(
         `Games web bundle is missing ${asset}; build with VITE_BESIDE_CUE_GAMES=1 first`,
       )
+    const contents = readFileSync(target)
+    if (
+      contents.subarray(0, gitLfsPointerHeader.length).toString('utf8') ===
+      gitLfsPointerHeader
+    )
+      throw new Error(
+        `Games web bundle contains a Git LFS pointer for ${asset}; hydrate runtime assets before building`,
+      )
+    assetSha256[asset] = createHash('sha256').update(contents).digest('hex')
   }
-  return createHash('sha256')
-    .update(readFileSync(resolve(directory, 'index.html')))
-    .digest('hex')
+  return {
+    indexSha256: assetSha256['index.html'] ?? '',
+    assetSha256,
+  }
 }
 
 export function stageGamesProfile(
@@ -153,7 +110,7 @@ export function stageGamesProfile(
 ): void {
   // Validate the web bundle before producing any sync marker or generated plist.
   const output = resolve(appDirectory, 'dist')
-  const indexSha256 = prepareOnly ? undefined : verifyGamesBundle(output)
+  const bundle = prepareOnly ? undefined : verifyGamesBundle(output)
   if (platform === 'ios') {
     const target = resolve(appDirectory, 'ios/App/build/games/Info.plist')
     const source = readFileSync(
@@ -167,9 +124,77 @@ export function stageGamesProfile(
   if (!prepareOnly) {
     writeFileSync(
       resolve(output, 'native-games-profile.json'),
-      `${JSON.stringify({ schema: 1, profile: 'games', platform, indexSha256 }, null, 2)}\n`,
+      `${JSON.stringify(
+        {
+          schema: 3,
+          profile: 'games',
+          platform,
+          indexSha256: bundle?.indexSha256,
+          assetSha256: bundle?.assetSha256,
+          assets: requiredGameAssets,
+        },
+        null,
+        2,
+      )}\n`,
     )
   }
+}
+
+/** Prove Capacitor copied the complete, matching offline profile. */
+export function verifySyncedGamesProfile(
+  appDirectory: string,
+  platform: NativePlatform,
+): void {
+  const output =
+    platform === 'android'
+      ? resolve(appDirectory, 'android/app/src/main/assets/public')
+      : resolve(appDirectory, 'ios/App/App/public')
+  const markerPath = resolve(output, 'native-games-profile.json')
+  if (!existsSync(markerPath))
+    throw new Error(`Synced ${platform} games profile is missing its marker`)
+  const marker = JSON.parse(readFileSync(markerPath, 'utf8')) as {
+    schema?: number
+    profile?: string
+    platform?: string
+    indexSha256?: string
+    assetSha256?: unknown
+    assets?: unknown
+  }
+  if (
+    marker.schema !== 3 ||
+    marker.profile !== 'games' ||
+    marker.platform !== platform ||
+    !Array.isArray(marker.assets) ||
+    marker.assets.length !== requiredGameAssets.length ||
+    marker.assets.some((asset, index) => asset !== requiredGameAssets[index]) ||
+    typeof marker.assetSha256 !== 'object' ||
+    marker.assetSha256 === null ||
+    Array.isArray(marker.assetSha256) ||
+    Object.keys(marker.assetSha256).length !== requiredGameAssets.length
+  )
+    throw new Error(
+      `Synced ${platform} games profile does not match its bundle`,
+    )
+
+  const stampedSha256 = marker.assetSha256 as Record<string, unknown>
+  const source = verifyGamesBundle(resolve(appDirectory, 'dist'))
+  const synced = verifyGamesBundle(output)
+  for (const asset of requiredGameAssets) {
+    if (
+      typeof stampedSha256[asset] !== 'string' ||
+      stampedSha256[asset] !== source.assetSha256[asset]
+    )
+      throw new Error(`Source games profile changed at ${asset} after stamping`)
+    if (synced.assetSha256[asset] !== source.assetSha256[asset])
+      throw new Error(`Synced ${platform} games profile differs at ${asset}`)
+  }
+  if (
+    marker.indexSha256 !== source.indexSha256 ||
+    marker.indexSha256 !== synced.indexSha256
+  )
+    throw new Error(
+      `Synced ${platform} games profile does not match its bundle`,
+    )
 }
 
 function run(
@@ -223,6 +248,8 @@ Android needs JDK 21 and ANDROID_HOME. iOS packaging requires macOS/Xcode.`)
       env,
       180_000,
     )
+  if (!options.prepareOnly)
+    verifySyncedGamesProfile(appDirectory, options.platform)
   if (options.assemble)
     run(
       './gradlew',

@@ -1796,8 +1796,16 @@ const HOME_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Choose your next room',
     description:
-      'Jump straight into live practice, Karaoke, Piano Night, Guitar Night, Drum Night, focused drills, the voice lab, or a shared Jam room. And keep an eye on the last card: something new is being tuned.',
+      'Jump straight into Glassworks, live practice, Karaoke, Piano Night, Guitar Night, Drum Night, focused drills, the voice lab, or a shared Jam room.',
     targetSelector: '.home-destinations',
+    placement: 'top',
+    requiredTab: TAB_HOME,
+  },
+  {
+    title: 'A museum that listens',
+    description:
+      'Enter Glassworks with Merc, explore four galleries, and use the comfortable notes in your voice to sing each glass exhibit open.',
+    targetSelector: '[data-tour="home.glassworks"]',
     placement: 'top',
     requiredTab: TAB_HOME,
   },

@@ -1,0 +1,145 @@
+name: Beside Cue Games Native
+
+# Test-only native profiles for the optional Glassworks campaign. Store builds
+# stay on the games-off workflow; this never release-signs or publishes packages.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/beside-cue/**'
+      - 'packages/audio-io/**'
+      - 'packages/beside-cue-core/**'
+      - 'packages/glass-game/**'
+      - 'packages/ios-audio-session/**'
+      - 'packages/mobile-runtime/**'
+      - 'packages/pitch-engine/**'
+      - 'packages/purchase-kit/**'
+      - 'gradle/signing.gradle'
+      - '.gitattributes'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/actions/setup/**'
+      - '.github/workflows/beside-cue-games-native.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/beside-cue/**'
+      - 'packages/audio-io/**'
+      - 'packages/beside-cue-core/**'
+      - 'packages/glass-game/**'
+      - 'packages/ios-audio-session/**'
+      - 'packages/mobile-runtime/**'
+      - 'packages/pitch-engine/**'
+      - 'packages/purchase-kit/**'
+      - 'gradle/signing.gradle'
+      - '.gitattributes'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/actions/setup/**'
+      - '.github/workflows/beside-cue-games-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beside-cue-games-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  android:
+    name: Android games debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
+      - uses: ./.github/actions/setup
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK packages
+        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Build and verify the offline games profile
+        run: >-
+          pnpm --filter @irchiinnuss/beside-cue-app native:games --
+          --platform android --build
+
+      - name: Test, lint, and assemble the debug APKs
+        working-directory: apps/beside-cue/android
+        run: >-
+          ./gradlew -PbesideCueGames=1 test lint assembleDebug
+          :app:assembleDebugAndroidTest --no-daemon
+
+      - name: Keep the installable debug packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-games-android-debug
+          path: |
+            apps/beside-cue/android/app/build/outputs/apk/debug/app-debug.apk
+            apps/beside-cue/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  ios:
+    name: iOS games simulator
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
+      - uses: ./.github/actions/setup
+      - name: Build and verify the offline games profile
+        run: >-
+          pnpm --filter @irchiinnuss/beside-cue-app native:games --
+          --platform ios --build
+
+      - name: Build the unsigned simulator app
+        working-directory: apps/beside-cue/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            BESIDE_CUE_INFO_PLIST_PATH=build/games/Info.plist \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package the unsigned simulator app
+        run: >-
+          ditto -c -k --sequesterRsrc --keepParent
+          "$RUNNER_TEMP/DerivedData/Build/Products/Debug-iphonesimulator/App.app"
+          "$RUNNER_TEMP/beside-cue-games-ios-simulator.zip"
+
+      - name: Keep the unsigned simulator package
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-games-ios-simulator
+          path: ${{ runner.temp }}/beside-cue-games-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 7

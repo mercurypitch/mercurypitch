@@ -2,12 +2,12 @@
 // Native games profile tests — preserve store inputs and reject mismatched web output
 // ============================================================
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { gamesInfoPlist, parseOptions, requiredGameAssets, stageGamesProfile, } from './native-games.ts'
+import { gamesInfoPlist, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url))
@@ -30,12 +30,12 @@ afterEach(() => {
 })
 
 describe('explicit native games profile', () => {
-  it('keeps every declared game asset in the checked-in public sources', () => {
-    const gameAssets = requiredGameAssets.filter((asset) =>
-      asset.startsWith('games/'),
-    )
-    expect(gameAssets.length).toBeGreaterThan(0)
-    for (const asset of gameAssets) {
+  it('keeps every declared static source asset materialized in public', () => {
+    expect(requiredGameAssets.length).toBeGreaterThan(0)
+    for (const asset of requiredGameAssets.filter(
+      (candidate) =>
+        candidate.startsWith('games/') || candidate.startsWith('models/'),
+    )) {
       const source = resolve(publicDirectory, asset)
       expect(
         existsSync(source),
@@ -44,6 +44,13 @@ describe('explicit native games profile', () => {
       const stats = statSync(source)
       expect(stats.isFile(), `${asset} must be a file`).toBe(true)
       expect(stats.size, `${asset} must not be empty`).toBeGreaterThan(0)
+      expect(
+        readFileSync(source)
+          .subarray(0, 64)
+          .toString('utf8')
+          .startsWith('version https://git-lfs.github.com/spec/v1'),
+        `${asset} must contain materialized bytes rather than a Git LFS pointer`,
+      ).toBe(false)
     }
   })
 
@@ -117,11 +124,15 @@ describe('explicit native games profile', () => {
       ),
     )
     expect(first).toMatchObject({
-      schema: 1,
+      schema: 3,
       profile: 'games',
       platform: 'android',
+      assets: requiredGameAssets,
     })
     expect(first.indexSha256).toMatch(/^[a-f0-9]{64}$/u)
+    expect(Object.keys(first.assetSha256)).toEqual([...requiredGameAssets])
+    for (const asset of requiredGameAssets)
+      expect(first.assetSha256[asset]).toMatch(/^[a-f0-9]{64}$/u)
     put(directory, 'dist/index.html', 'new build')
     stageGamesProfile(directory, 'android', false)
     const second = JSON.parse(
@@ -131,6 +142,9 @@ describe('explicit native games profile', () => {
       ),
     )
     expect(second.indexSha256).not.toBe(first.indexSha256)
+    expect(second.assetSha256['index.html']).not.toBe(
+      first.assetSha256['index.html'],
+    )
   })
 
   it('rejects an empty model download even when every required path exists', () => {
@@ -143,6 +157,64 @@ describe('explicit native games profile', () => {
     expect(
       existsSync(resolve(directory, 'dist/native-games-profile.json')),
     ).toBe(false)
+  })
+
+  it('rejects a Git LFS pointer before stamping a native profile', () => {
+    const directory = fixture()
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    put(
+      directory,
+      'dist/games/adventure-v6/opaline-echo-amphora.glb',
+      'version https://git-lfs.github.com/spec/v1\n' +
+        'oid sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n' +
+        'size 123456\n',
+    )
+
+    expect(() => stageGamesProfile(directory, 'android', false)).toThrow(
+      'Git LFS pointer for games/adventure-v6/opaline-echo-amphora.glb',
+    )
+    expect(
+      existsSync(resolve(directory, 'dist/native-games-profile.json')),
+    ).toBe(false)
+  })
+
+  it('verifies every declared byte after Capacitor copies the native profile', () => {
+    const directory = fixture()
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    stageGamesProfile(directory, 'android', false)
+    const nativePublic = resolve(
+      directory,
+      'android/app/src/main/assets/public',
+    )
+    cpSync(resolve(directory, 'dist'), nativePublic, { recursive: true })
+
+    expect(() => verifySyncedGamesProfile(directory, 'android')).not.toThrow()
+    put(nativePublic, 'games/adventure-v6/opaline-echo-amphora.glb', 'corrupx')
+    expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
+      'differs at games/adventure-v6/opaline-echo-amphora.glb',
+    )
+    cpSync(resolve(directory, 'dist'), nativePublic, { recursive: true })
+    rmSync(resolve(nativePublic, 'games/adventure-v6/opaline-echo-amphora.glb'))
+    expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
+      'opaline-echo-amphora.glb',
+    )
+  })
+
+  it('rejects a copied marker for the other native platform', () => {
+    const directory = fixture()
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    stageGamesProfile(directory, 'android', false)
+    cpSync(
+      resolve(directory, 'dist'),
+      resolve(directory, 'ios/App/App/public'),
+      {
+        recursive: true,
+      },
+    )
+
+    expect(() => verifySyncedGamesProfile(directory, 'ios')).toThrow(
+      'does not match its bundle',
+    )
   })
 
   it('keeps canonical store permissions off and scopes the generated plist selector to the app target', () => {
@@ -164,6 +236,9 @@ describe('explicit native games profile', () => {
     expect(games).toContain(
       'android:name="android.hardware.microphone" android:required="false"',
     )
+    const gradle = readFileSync(resolve('android/app/build.gradle'), 'utf8')
+    expect(gradle).toContain('profile.schema != 3')
+    expect(gradle).toContain('profile.assetSha256[asset]')
     expect(
       readFileSync(resolve('ios/App/App/Info.plist'), 'utf8'),
     ).not.toContain('NSMicrophoneUsageDescription')

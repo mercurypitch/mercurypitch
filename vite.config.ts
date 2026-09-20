@@ -12,6 +12,7 @@ import { ENTRY_PAGES } from './src/seo/entry-pages'
 import { legacyCssFallbacksPlugin } from './tools/css-legacy-fallbacks'
 import { devLogRelayPlugin } from './tools/dev-log-relay'
 import { writeEntryPages } from './tools/generate-entry-pages'
+import { glassGameAssetsPlugin } from './tools/glass-game-assets'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -243,6 +244,7 @@ export default defineConfig(({ command, mode }) => {
       (isDev || wantsDevLogs) && !wantsPlainHttp ? ssl() : [],
       qrcode(),
       solidPlugin(),
+      glassGameAssetsPlugin(),
       // Embeds TGSL shader metadata for typegpu (the glass TypeGPU renderer's
       // vertexFn/fragmentFn closures) — same setup as chaos-master.
       typegpuPlugin({}),

@@ -17,9 +17,15 @@ importers:
       '@coderline/alphatab':
         specifier: ^1.8.3
         version: 1.8.3
+      '@fontsource-variable/gabarito':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@huggingface/transformers':
         specifier: ^4.2.0
         version: 4.2.0
+      '@irchiinnuss/glass-game':
+        specifier: workspace:*
+        version: link:packages/glass-game
       '@irchiinnuss/pitch-engine':
         specifier: workspace:*
         version: link:packages/pitch-engine

@@ -22,6 +22,9 @@ https://llmstxt.org.
 - [Karaoke Night](https://mercurypitch.com/karaoke-night): Turn a song you
   already own into karaoke. The vocal is separated out, the lyrics are timed to
   the words, and pitch is scored live against the original melody.
+- [Glassworks](https://mercurypitch.com/glass-game): Explore a floating museum
+  with Merc, discover comfortable notes, and sing glass exhibits open. Progress
+  stays in this browser and microphone audio is processed on this device.
 - [Break Glass](https://mercurypitch.com/glass): A sixty-second challenge that
   asks you to hold one pitch steady enough to break a pane of glass.
 - [Ear Lab](https://mercurypitch.com/ear-lab): Ear training that measures in

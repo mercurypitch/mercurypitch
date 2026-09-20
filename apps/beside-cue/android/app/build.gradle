@@ -66,15 +66,35 @@ android.applicationVariants.all { variant ->
                     throw new GradleException('Games profile needs a verified web bundle. Run pnpm native:games --platform android first.')
                 }
                 def profile = new groovy.json.JsonSlurper().parse(marker)
+                def sha256 = { File source ->
+                    def digest = java.security.MessageDigest.getInstance('SHA-256')
+                    source.withInputStream { input ->
+                        byte[] buffer = new byte[8192]
+                        int count
+                        while ((count = input.read(buffer)) != -1) {
+                            digest.update(buffer, 0, count)
+                        }
+                    }
+                    digest.digest().encodeHex().toString()
+                }
                 def index = new File(publicDir, 'index.html')
-                def indexHash = index.isFile() ? java.security.MessageDigest.getInstance('SHA-256').digest(index.bytes).encodeHex().toString() : ''
-                if (profile.schema != 1 || profile.profile != 'games' || profile.platform != 'android' || profile.indexSha256 != indexHash) {
+                def indexHash = index.isFile() ? sha256(index) : ''
+                if (profile.schema != 3 || profile.profile != 'games' || profile.platform != 'android' || profile.indexSha256 != indexHash || !(profile.assets instanceof List) || profile.assets.isEmpty() || !(profile.assetSha256 instanceof Map) || profile.assetSha256.size() != profile.assets.size()) {
                     throw new GradleException('Games web bundle provenance does not match this Android package. Run native:games again.')
                 }
-                for (asset in ['models/swiftf0.onnx', 'ort/ort-wasm-simd-threaded.mjs', 'ort/ort-wasm-simd-threaded.wasm', 'games/glass3d/merc.glb', 'games/adventure/manifest.json', 'games/adventure/platform-kit.glb', 'games/adventure/vessels.glb', 'games/adventure/legend-slab.glb', 'games/adventure/floor-marble.webp', 'games/adventure/legend-johnny-cash.webp', 'games/adventure/museum-sky.webp']) {
+                for (asset in profile.assets) {
                     def required = new File(publicDir, asset)
                     if (!required.isFile() || required.length() == 0) {
                         throw new GradleException("Games native bundle is missing ${asset}")
+                    }
+                    def prefixLength = Math.min(required.length(), 'version https://git-lfs.github.com/spec/v1'.length()) as int
+                    byte[] prefix = new byte[prefixLength]
+                    required.withInputStream { input -> input.read(prefix) }
+                    if (new String(prefix, java.nio.charset.StandardCharsets.UTF_8) == 'version https://git-lfs.github.com/spec/v1') {
+                        throw new GradleException("Games native bundle contains a Git LFS pointer for ${asset}")
+                    }
+                    if (profile.assetSha256[asset] != sha256(required)) {
+                        throw new GradleException("Games native bundle checksum differs for ${asset}")
                     }
                 }
             }

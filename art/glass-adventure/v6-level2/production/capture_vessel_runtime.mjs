@@ -11,8 +11,11 @@ const root = fileURLToPath(new URL('../../../../', import.meta.url)).replace(
 const base = process.env.GLASS_PROOF_BASE || 'https://localhost:5224'
 const assetBase = process.env.GLASS_PROOF_ASSET_BASE || '/glass-game-assets/'
 const assetId = process.env.GLASS_PROOF_ASSET || 'amber-v6'
-const encounter = process.env.GLASS_PROOF_ENCOUNTER || '/warm/encounter/lower-urn'
-const output = fileURLToPath(new URL(`../proofs/runtime-${assetId}/`, import.meta.url))
+const encounter =
+  process.env.GLASS_PROOF_ENCOUNTER || '/warm/encounter/lower-urn'
+const output = fileURLToPath(
+  new URL(`../proofs/runtime-${assetId}/`, import.meta.url),
+)
 await mkdir(output, { recursive: true })
 
 const publicManifest = JSON.parse(
@@ -88,14 +91,18 @@ try {
         for (const id of item.requiresCompleted || []) {
           if (required.has(id)) continue
           required.add(id)
-          includeRequirements(level.breakables.find((candidate) => candidate.id === id))
+          includeRequirements(
+            level.breakables.find((candidate) => candidate.id === id),
+          )
         }
       }
       includeRequirements(target)
       const game = createGlassGame(level, {
-        version: 1, levelId: level.id,
+        version: 1,
+        levelId: level.id,
         checkpointId: level.checkpoints[0].id,
-        completedBreakableIds: [...required], finished: false,
+        completedBreakableIds: [...required],
+        finished: false,
       })
       const snapshot = game.snapshot()
       snapshot.player.position = { ...target.anchor }

@@ -6,13 +6,16 @@ on:
       - opened
       - synchronize
       - reopened
-    # A preview deploys the MercuryPitch frontend and DB Worker. Documentation
-    # and the independently packaged Beside Cue app are validated by PR Gate,
-    # but cannot affect this deployment.
+    # A preview deploys the MercuryPitch frontend and DB Worker. Most Beside
+    # Cue files stay app-only, while its canonical game assets and the shared
+    # Glass Game package also feed MercuryPitch's /glass-game entry.
     paths:
       - 'src/**'
       - 'public/**'
       - 'assets/**'
+      - 'apps/beside-cue/public/games/**'
+      - 'packages/glass-game/**'
+      - 'tools/glass-game-assets.ts'
       - 'workers/db-worker/**'
       - 'scripts/gen-preview-definitions-sql.mjs'
       - '*.html'
@@ -25,6 +28,7 @@ on:
       - '.env.development'
       - '.env.production'
       - '.env'
+      - '.gitattributes'
       - '.github/workflows/build.yml'
       - '.github/workflows/pr-deployment-table.md'
   push:
@@ -101,6 +105,9 @@ jobs:
                 [[ -z "$file" ]] && continue
 
                 case "$file" in
+                  apps/beside-cue/public/games/*|packages/glass-game/*|tools/glass-game-assets.ts)
+                    deploy=true
+                    ;;
                   apps/beside-cue/*|packages/beside-cue-core/*|packages/mobile-runtime/*|packages/pitch-engine/*)
                     beside=true
                     ;;
@@ -131,6 +138,13 @@ jobs:
           if [[ "$EVENT_NAME" == "pull_request" && "$deploy" == false ]]; then
             echo "Preview skipped: this pull request changes only Beside Cue or documentation." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Hydrate runtime game assets
+        if: steps.preview-scope.outputs.deploy == 'true'
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
 
       - name: Debug Info
         if: steps.preview-scope.outputs.deploy == 'true'

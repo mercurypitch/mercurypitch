@@ -661,6 +661,7 @@ describe('navigation', () => {
       '/mirror',
       '/free-sing',
       '/karaoke-night',
+      '/glass-game',
       '/jam',
       '/piano-night',
       '/drum-night',
