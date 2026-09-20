@@ -15,7 +15,7 @@ Existing static playtest builds remain unchanged until a new build is ready.
 
 ## 1. Finish Twin Galleries production
 
-- [ ] Amber Cadence Urn: valid donor, hollow cavity, fracture, packed Blender
+- [x] Amber Cadence Urn: valid donor, hollow cavity, fracture, packed Blender
       project, materials, dimensions, topology and reconstruction receipts.
 - [ ] Celadon Lark Decanter: same production gates; preserve rejected remeshes.
 - [ ] Integrate both approved derivatives with catalog/native mappings and
@@ -31,61 +31,103 @@ topology checks just to finish an asset. Keep sources and derivative provenance.
 
 Pilot: Glassworks Journey. Singing quality and exploration are separate.
 
-- [ ] Data-owned reward configuration, finite once-per-exhibit discovery coins.
-- [ ] Confidence/freshness-aware, capture-time-weighted 1–3 singing stars;
+- [x] Data-owned reward configuration, finite once-per-exhibit discovery coins.
+- [x] Confidence/freshness-aware, capture-time-weighted 1–3 singing stars;
       insufficient reliable evidence is ungraded. No loudness or callback-count
       scoring. Document and test thresholds.
-- [ ] One original collectible portrait, earned on successful final required
+- [x] One original collectible portrait, earned on successful final required
       exhibit and persisted before departure. Stars never gate the route or
       portrait. Replay preserves personal bests and cannot duplicate coins.
-- [ ] Backward-compatible save parsing; old completions never invent grades.
-- [ ] One optional glazed artwork/window pilot with safe approach, retained
+- [x] Backward-compatible save parsing; old completions never invent grades.
+- [x] One optional glazed artwork/window pilot with safe approach, retained
       artwork/frame and consistent visible/collision state after breaking.
-- [ ] End card shows stars, discoveries and portrait separately; phone/tablet
+- [x] End card shows stars, discoveries and portrait separately; phone/tablet
       layout, reload, replay and cancellation evidence.
-- [ ] Commit and push this stage; record commit and CI result here.
+- [x] Commit and push this stage; record commit and CI result here.
+
+Checkpoint: `25dbb403`, pushed to PR #807. Focused tests 25/25; phone/tablet
+UI proofs in `../rewards-pilot/v1/proofs/manifest.json`. CI remains authoritative.
 
 No microphone recording, playback of recorded voice, cloud sharing, spending
 economy or journey-map implementation belongs to this pilot.
 
 ## 3. Resonance Conservatory
 
-- [ ] A typed settle-then-gentle-wave lesson with a capture-clock judge.
+- [x] A typed settle-then-gentle-wave lesson with a capture-clock judge.
       A steady hold, silence, stale observations, abrupt jumps and tracker
       jitter must not count as a pitch wave.
-- [ ] One encounter verified before extending the route. Comfortable calibrated
+- [x] One encounter verified before extending the route. Comfortable calibrated
       pitch, clear demonstration, resting/retry with no lives or forced speed.
-- [ ] A handcrafted garden wing assembled from reusable rooms and exhibits,
+- [x] A handcrafted garden wing assembled from reusable rooms and exhibits,
       distinct pacing/decor, checkpointed lesson progression and optional finds.
-- [ ] Shared campaign entry, tutorial and host mappings; no level-ID branches
+- [x] Shared campaign entry, tutorial and host mappings; no level-ID branches
       in gameplay. Test traversal, voice lifecycle and independent saves.
-- [ ] Commit/push and provide device singing test instructions. Automated
+- [x] Commit/push and provide device singing test instructions. Automated
       evidence is not a substitute for owner microphone acceptance.
+
+Checkpoint: `d2c6af3d`, pushed to PR #807. Reviewed judge/authoring/course
+suite 43/43; synthetic-microphone UI proofs at phone/tablet sizes are saved
+under `../v7-conservatory/proofs/`. Physical microphone acceptance remains open.
 
 ## 4. Shared web/native delivery
 
-- [ ] Audit and finish MercuryPitch entry/CTA into the shared campaign.
-- [ ] Verify selected-gallery loading, asset failure/retry, durable saves,
+- [x] Audit and finish MercuryPitch entry/CTA into the shared campaign.
+- [x] Verify selected-gallery loading, asset failure/retry, durable saves,
       background/resume and audio ownership across hosts.
-- [ ] Verify offline/native asset packaging and games-enabled Android/iOS build
+- [x] Verify offline/native asset packaging and games-enabled Android/iOS build
       routes while preserving the intentional games-off store profile.
 - [ ] Exercise available build/browser gates; name actual SDK/device limitations
       and provide install/test artifacts where the environment supports them.
 - [ ] Final PR review, relevant CI, stage commit/push and handoff.
 
+Implementation checkpoint: `35637b54`, pushed to PR #807. Root/browser delivery
+proofs are in `../delivery/v1/proofs/manifest.json`; native test workflow jobs
+must complete before claiming actual APK/simulator packaging success.
+
 ## Backlog: the museum journey map
 
 See [JOURNEY-MAP-AUDITION.md](./JOURNEY-MAP-AUDITION.md). Generate three visual
 directions now and let the owner audition them while the four stages proceed.
-Detailed map design and implementation wait for that visual choice.
+Owner selected A, Floating Museum, and then authorized a live 3D map with modeled
+islands, animated waterfalls and ambient sound after these four stages finish.
+B/C stay archived. Research/export budgets and implement that follow-up only
+after the agreed stage work; do not substitute a static image backdrop.
 
 ## Progress log
 
 - 2026-09-21: production, reward implementation and delivery audit started in
   parallel; map concepts requested with built-in image generation.
+- 2026-09-21: three map auditions saved and pushed in `732c2455`; A selected.
+  User authorized live map production as the next follow-up after stages 1–4.
 
 ## Resume rule
 
 Read this checklist, current Git status and the stage evidence before resuming.
 Only mark completed work with its source paths/tests/commit. Preserve owner
 changes and active agents' ownership; root owns review and Git operations.
+
+- 2026-09-21 checkpoint `e2279942`: Amber runtime/source/16-shard production
+  and shared neutral asset catalog pushed. Celadon rejected donors remain
+  preserved; a clearer opaque modeling guide is being tried as a new input.
+- 2026-09-21 checkpoint `25dbb403`: rewards pilot pushed; no physical voice
+  recording or sharing was introduced.
+- 2026-09-21 checkpoint `d2c6af3d`: Conservatory lesson and route pushed.
+  Final review corrected exact two-wave completion and impossible authored
+  speed/period bounds.
+- Shared delivery browser/build checks pass. Review found and fixed LFS-pointer
+  and per-file native sync integrity gaps: staging rejects pointers, schema 3
+  stamps all required hashes, Capacitor sync verifies copied bytes, and Android
+  verifies them again during asset merging. Focused staging/native tests 13/13.
+  Selective CI hydration excludes raw art and Blender sources. No games-enabled
+  Android/Xcode build success is claimed until the new CI jobs run.
+- Latest Conservatory CI passes Beside Cue/typecheck and mobile store builds.
+  Follow-ups are pushed: proof-script formatting in `35637b54`, and four-chapter
+  catalogue/durable replay-save assertions in `b0bcc9c9` (browser specs 9/9).
+- Celadon opaque guide is prepared. Automatic approval review blocked its
+  upload to Meshy pending exact-payload confirmation; no new job or credit was
+  submitted. Keep the currently integrated fluted decanter until an approved
+  replacement passes the same production gates. Local map LOD preparation may
+  continue independently while that answer is pending.
+- The approved live-map follow-up is being built from the already approved
+  local model kit while the independent Celadon upload remains pending. This
+  does not mark the outstanding Celadon production gate complete.

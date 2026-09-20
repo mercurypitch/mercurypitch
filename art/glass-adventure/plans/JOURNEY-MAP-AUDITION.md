@@ -1,6 +1,7 @@
 # Museum journey map — visual audition and backlog
 
-Status: three concepts ready for owner audition; not implemented. Updated 2026-09-21.
+Status: owner selected A, Floating Museum; live 3D implementation authorized
+after the current four stages. B and C stay archived. Updated 2026-09-21.
 
 ## Owner brief
 
@@ -49,9 +50,24 @@ concept proposals using our marble, gold, jade, glass and Merc vocabulary.
       `art/glass-adventure/journey-map/v1/`.
 - [x] Inspect all three and provide a local comparison page/inline previews.
 - [x] Notify owner that the map audition is ready while stages 1–4 continue.
-- [ ] Record visual choice or requested combination.
+- [x] Record visual choice: A, Floating Museum.
 - [ ] Later: detailed navigation/progression design, performance prototype and
       implementation as a separate follow-up.
+
+## Approved follow-up after stages 1–4
+
+The owner explicitly requested a live 3D museum map, with modeled gallery
+islands, animated waterfalls and tangible movement; not a static painting with
+particle effects over it. Research Blender/Meshy production and the exported
+runtime animation path, then build a bounded first implementation for playtest.
+Meshy credits and ElevenLabs water/ambient sound effects are authorized where
+needed. Retain all raw donors, packed Blender projects, prompts and receipts.
+Blender fluid simulation is an authoring option; the eventual browser runtime
+must have its own measured geometry, animation and GPU/memory budgets.
+
+This follow-up is sequenced after all four approved stages, not a replacement
+for unfinished vessel/reward/Conservatory/delivery work. The root checkpoint
+with the three audition images is `732c2455` on PR #807.
 
 Audition: [local comparison page](../journey-map/v1/review.html). Initial
 recommendation is A, Floating Museum, because it most directly continues the

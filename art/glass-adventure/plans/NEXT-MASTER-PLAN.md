@@ -13,7 +13,9 @@ rewards/portrait pilot, build the Resonance Conservatory, and verify shared
 web/native delivery. The active checklist is
 [APPROVED-FOUR-STAGES.md](./APPROVED-FOUR-STAGES.md). The later journey map has a
 [three-direction visual audition](./JOURNEY-MAP-AUDITION.md); implementation
-waits for that separate design step.
+now follows the owner-selected A, Floating Museum. A live 3D map is authorized
+after the four-stage pass; B/C remain archived. See
+[FLOATING-MUSEUM-LIVE.md](./FLOATING-MUSEUM-LIVE.md).
 
 The owner accepted the longer Journey and tablet controls, music, enclosure,
 decoration, Merc clearance and artwork inspection. The owner also completed Twin
@@ -21,7 +23,10 @@ Galleries and accepted its lower-note, higher-note and ordered-pair teaching.
 The mirror backing artifact is resolved. The current polish adds sharper
 close-up reflections, places artwork inspection in the first header row, and
 keeps the exit rim and finish sparkles above the floor. The shared campaign has
-three playable galleries with independent progress.
+four authored galleries with independent progress. The Conservatory is pushed
+in `d2c6af3d` with automated lesson/route/UI evidence; owner microphone acceptance
+is still pending. Shared web/native delivery is pushed in `35637b54`, with
+browser regression updates in `b0bcc9c9`.
 
 The detailed implementation, validation and next device test are in
 [TWIN-GALLERIES-IMPLEMENTATION.md](./TWIN-GALLERIES-IMPLEMENTATION.md).
@@ -31,19 +36,19 @@ Jam lyric gesture browser test failed on unchanged root-app code. New changes
 still require their own pushed-revision CI. Playtest acceptance
 and software render proofs are not measured device FPS/thermal evidence.
 
-| Area                 | Implemented                                                                                                                  | Still missing                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Integration          | Mini-game slice PRs #774–#782 and follow-ups #802/#803, #785, #804, #806 merged                                              | Standard store builds intentionally keep games disabled                              |
-| Controls             | Manual keyboard/touch movement and jump; follow/orbit/zoom camera; automatic run ramp; floor/prop/gate collision             | Physical-device tuning as new routes grow                                            |
-| Content architecture | Prefab composer, shared hold/pair lessons, validation, room ownership, independent saves and campaign transitions            | Further judge types and richer authoring tools                                       |
-| First Light          | Short enclosed tutorial and panorama; two required and one optional held-note exhibit                                        | Device regression through the shared campaign                                        |
-| Glassworks Journey   | Sixteen room/presentation instances; four required and four optional held-note encounters; garden, archive, salon, panorama  | Timed pacing study; ongoing room polish                                              |
-| Twin Galleries       | Eighteen connected placements; four required and three optional low/high encounters; owner accepted the learning sequence    | Timed pacing and sustained device performance; remaining V6 vessel production        |
-| Art                  | Meshy/Blender vessels and wall kit; original paintings including three Level 2 works, planters, varied floors; loading cover | Amber and Celadon still require production approval                                  |
-| Sound                | Approved M01/M03 music/ambience; Gentle Whimsical D2 Merc voice and shuffled reactions; two-note references; quiet capture   | Additional level-specific Merc narration                                             |
-| Rendering            | Conservative room visibility, camera obstruction, shadow tuning                                                              | Sustained real-device profiling, LOD/compression strategy if measurements require it |
-| Delivery             | Shared glass-game package and host adapters; standalone preview and BesideCue integration                                    | Final MercuryPitch entry/CTA, games-on native builds and publication                 |
-| Rewards              | Design documents only                                                                                                        | Coins, grades/stars, collection badges, portrait cards, recordings/replay/sharing    |
+| Area                 | Implemented                                                                                                                       | Still missing                                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Integration          | Mini-game slice PRs #774–#782 and follow-ups #802/#803, #785, #804, #806 merged                                                   | Standard store builds intentionally keep games disabled                                                        |
+| Controls             | Manual keyboard/touch movement and jump; follow/orbit/zoom camera; automatic run ramp; floor/prop/gate collision                  | Physical-device tuning as new routes grow                                                                      |
+| Content architecture | Prefab composer, shared hold/pair lessons, validation, room ownership, independent saves and campaign transitions                 | Further judge types and richer authoring tools                                                                 |
+| First Light          | Short enclosed tutorial and panorama; two required and one optional held-note exhibit                                             | Device regression through the shared campaign                                                                  |
+| Glassworks Journey   | Sixteen room/presentation instances; four required and five optional held-note encounters; garden, archive, salon, panorama       | Timed pacing study; ongoing room polish                                                                        |
+| Twin Galleries       | Eighteen connected placements; four required and three optional low/high encounters; owner accepted the learning sequence         | Timed pacing and sustained device performance; remaining V6 vessel production                                  |
+| Art                  | Meshy/Blender vessels and wall kit; original paintings including three Level 2 works, planters, varied floors; loading cover      | Amber approved and pushed; replacement Celadon guide upload awaits exact automatic-review-requested approval   |
+| Sound                | Approved M01/M03 music/ambience; Gentle Whimsical D2 Merc voice and shuffled reactions; two-note references; quiet capture        | Additional level-specific Merc narration                                                                       |
+| Rendering            | Conservative room visibility, camera obstruction, shadow tuning                                                                   | Sustained real-device profiling, LOD/compression strategy if measurements require it                           |
+| Delivery             | Shared package/hosts; canonical `/glass-game`, Home CTA, selective LFS hydration, all-file native hashes, games-on test workflows | New games-enabled Android/iOS CI artifacts pending; physical-device acceptance and publication remain separate |
+| Rewards              | Journey pilot committed/pushed (`25dbb403`): finite discovery tokens, final-portrait singing stars, durable portrait ownership    | Owner device acceptance; broader collection UI, recordings/replay/sharing remain future                        |
 
 ## Approved direction
 
@@ -133,14 +138,15 @@ inspection stories. The harp is now integrated in the listening court with a
 measured base proxy, 9,837-triangle render derivative and actual scene proof.
 Opaline V2 has a validated hollow cavity and 18-piece fracture; its continuous
 opal/gold/jade materials and optional court integration passed review, with
-actual intact and shattering render proofs. V1 is retained as rejected material evidence. Amber and
-Celadon remain source candidates. The extra
+actual intact and shattering render proofs. V1 is retained as rejected material evidence. Amber V2 is now approved and integrated in the lower gallery (`e2279942`),
+with a 16-piece hollow fracture and exact render/source receipts. Celadon is
+still being finalized; rejected remeshes remain archived. The extra
 five-credit Celadon remesh failed topology and was archived as rejected input.
 The route keeps approved existing breakable recipes until replacements pass. An intact download is
 not a finished breakable. Do not inflate the current level's download with
 unused candidates.
 
-### N5 — optional scoring/collection pilot (implementation authorized)
+### N5 — optional scoring/collection pilot (implemented and pushed)
 
 Separate exploration from singing evidence. Proposed: every successful break
 opens the route and grants its collectible; exploration coins count discovered
@@ -149,15 +155,23 @@ capture rather than callback counts. Insufficient evidence stays ungraded.
 Retries retain personal bests. Avoid rewarding loudness, long forced holds or
 penalizing microphone limitations. The approved pilot uses Glassworks Journey,
 1–3 singing stars, finite discovery coins and a completion portrait; implementation
-and validation are tracked in the four-stage checklist.
+and validation are tracked in the four-stage checklist. The first pilot grades
+only the final portrait singing (not all route exhibits); that scope is explicit
+on the end card. Portrait ownership never depends on stars. Old saves do not
+receive invented stars or discovery tokens.
 
-### N6 — Level 3: Resonance Conservatory
+### N6 — Level 3: Resonance Conservatory (implemented; final review)
 
 A garden of glass teaches settle → gentle pitch wave. First establish a stable
 note; then a broad, comfortable wave; finally repeat it in a longer enclosed-to-
 open route. Hold alone must not complete the wave phase, and noise/jitter must
 not masquerade as vibrato. Reuse the garden/harp/glass kit and new foliage only
-where it improves room identity. Tune against real microphones before expanding.
+where it improves room identity. The new authored route has 18 room/presentation placements, four required and
+three optional encounters plus two original paintings. Complete no-jump route
+traversal passes; phone/tablet lesson panels were rendered and cancelled without
+errors using synthetic microphone observations. Final review corrected an extrema-count issue: the demonstrated two waves
+now mean two waves followed by return to the settled note.
+Tune against real microphones before expanding.
 
 ### N7 — shared delivery and release readiness
 
@@ -183,8 +197,9 @@ just because a PR is green.
 
 The canonical `MECHANICS-MAP.md` maps historical work to the 3D game. Reuse
 comfortable-note calibration, fresh voiced-frame filtering, hold judging,
-reference playback and existing pitch/wave research. High/low is now the Twin Galleries encounter mechanic. Vibrato and
-call-and-response remain later localized encounters. Voice-controlled
+reference playback and existing pitch/wave research. High/low is now the Twin Galleries encounter mechanic. The Conservatory now implements a gentle pitch-wave teaching gesture; it is
+not an assessment of stylistic vibrato. Call-and-response remains a later
+localized encounter. Voice-controlled
 locomotion and compulsory fixed-camera-room movement were superseded by the
 owner's manual movement/free-3D choice. Existing mini-game prototypes are useful
 research evidence, not proof that their judges and teaching are integrated here.
