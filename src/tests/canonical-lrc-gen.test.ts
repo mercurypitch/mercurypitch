@@ -540,6 +540,25 @@ describe('REQ-UV-029: Word-level LRC parsing', () => {
     expect(entry.wordTimes![1]).toBe(152.0)
   })
 
+  it('reads the angle-bracket spelling, and keeps the stamps out of the text', () => {
+    // Unread, the stamps were not just lost: they arrived as words, so the
+    // panel showed `<00:24.21>` to the singer and shared the line out evenly.
+    const lrc = parseLrcFile(
+      '[00:10.00]Yeah, <00:10.21> I <00:10.41> will\n[00:12.00] <00:12.30> Be <00:12.80> there <00:13.40>',
+    )
+    const lines = buildCanonicalEntries(lrc).filter((e) => e.type === 'line')
+    expect(lines.map((e) => e.text)).toEqual(['Yeah, I will', 'Be there'])
+    expect(lines.map((e) => e.words)).toEqual([
+      ['Yeah,', 'I', 'will'],
+      ['Be', 'there'],
+    ])
+    expect(lines.map((e) => e.wordTimes)).toEqual([
+      [10, 10.21, 10.41],
+      [12.3, 12.8],
+    ])
+    for (const entry of lines) expect(entry.text).not.toMatch(/[<>[\]]|\d/)
+  })
+
   it('handles word with trailing comma', () => {
     const text = 'Only [04:13.28]horror, [04:13.95]only [04:14.38]pain'
     const result = parseLrcWordTimings(text, 252.83)

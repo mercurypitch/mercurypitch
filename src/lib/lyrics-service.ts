@@ -378,6 +378,34 @@ export function parseLrcOffsetTag(content: string): number {
   return -ms / 1000
 }
 
+/**
+ * One word stamp inside a line, in either spelling: the `[mm:ss.xx]` this app
+ * writes, or the `<mm:ss.xx>` the enhanced (A2) spec prescribes. Both are in
+ * the wild, and reading only the first cost a sheet from anywhere else its
+ * word times and put its stamps on screen as words.
+ *
+ * Two alternatives rather than one class of brackets, so that a stamp's
+ * brackets have to match. Groups 1-3 are the square spelling, 4-6 the angle.
+ * Everything that reads a word stamp reads it through this one pattern; the
+ * app only ever WRITES the square spelling, and no writer comes through here.
+ */
+const LRC_TS_GLOBAL =
+  /\[(\d{1,3}):(\d{2})(?:[.:](\d{2,3}))?\]|<(\d{1,3}):(\d{2})(?:[.:](\d{2,3}))?>/g
+
+/** Seconds from a stamp's minutes, seconds and optional 2- or 3-digit fraction. */
+function stampSeconds(
+  min: string,
+  sec: string,
+  frac: string | undefined,
+): number {
+  let ms = 0
+  if (frac !== undefined) {
+    ms = parseInt(frac, 10)
+    if (frac.length === 2) ms *= 10
+  }
+  return parseInt(min, 10) * 60 + parseInt(sec, 10) + ms / 1000
+}
+
 /** Seconds to `mm:ss.xx`, the form the inline word stamps are written in. */
 function toLrcStamp(time: number): string {
   const clamped = Math.max(0, time)
@@ -392,19 +420,26 @@ function toLrcStamp(time: number): string {
  * Applying a file offset to line starts alone would be worse than ignoring
  * it: `parseLrcWordTimings` reads these stamps as absolute times, so the
  * words would keep their original timing while their line moved.
+ *
+ * A moved stamp keeps the spelling it came in. That is not tidiness: a stamp
+ * before a line's first word times that word only in the angle spelling, so
+ * respelling it would make a file read differently for carrying an offset.
  */
 function shiftInlineLrcTimestamps(text: string, shiftSec: number): string {
   return text.replace(
     LRC_TS_GLOBAL,
-    (_whole, min: string, sec: string, frac?: string) => {
-      let ms = 0
-      if (frac !== undefined) {
-        ms = parseInt(frac, 10)
-        if (frac.length === 2) ms *= 10
-      }
-      const time = parseInt(min, 10) * 60 + parseInt(sec, 10) + ms / 1000
-      return `[${toLrcStamp(time + shiftSec)}]`
-    },
+    (
+      _whole,
+      min: string | undefined,
+      sec: string,
+      frac: string | undefined,
+      angleMin: string,
+      angleSec: string,
+      angleFrac: string | undefined,
+    ) =>
+      min !== undefined
+        ? `[${toLrcStamp(stampSeconds(min, sec, frac) + shiftSec)}]`
+        : `<${toLrcStamp(stampSeconds(angleMin, angleSec, angleFrac) + shiftSec)}>`,
   )
 }
 
@@ -444,11 +479,28 @@ export interface LrcWordTimings {
   wordTimes: number[] // start time (seconds) for each word
 }
 
-/** Regex that matches a single LRC timestamp anywhere in text. */
-const LRC_TS_GLOBAL = /\[(\d{1,3}):(\d{2})(?:[.:](\d{2,3}))?\]/g
+/** A word stamp found in a line: when it says, how it is spelled, where it sits. */
+interface InlineStamp {
+  time: number
+  /** Spelled `<..>`, the enhanced spec's way, rather than `[..]`. */
+  angle: boolean
+  start: number
+  end: number
+}
 
-/** Non-capturing variant for splitting text on timestamp boundaries. */
-const LRC_TS_SPLIT = /\[\d{1,3}:\d{2}(?:[.:]\d{2,3})?\]/g
+function readInlineStamp(match: RegExpMatchArray): InlineStamp {
+  const square = match[1] as string | undefined
+  const start = match.index ?? 0
+  return {
+    time:
+      square !== undefined
+        ? stampSeconds(square, match[2], match[3])
+        : stampSeconds(match[4], match[5], match[6]),
+    angle: square === undefined,
+    start,
+    end: start + match[0].length,
+  }
+}
 
 /**
  * Parse word-level timestamps from LRC line text.
@@ -461,65 +513,57 @@ const LRC_TS_SPLIT = /\[\d{1,3}:\d{2}(?:[.:]\d{2,3})?\]/g
  *   time, so `text` is `"First [00:22.35]word [00:22.70]here"`.
  *   This function extracts the remaining timestamps from within the text.
  *
+ * Enhanced (A2) LRC: `[00:06.47] <00:07.67> And <00:07.95> all <00:10.28>`
+ *   → the same, in the spec's spelling and the spec's layout: a stamp before
+ *   the first word, which is that word's start, and one after the last, which
+ *   is where it ends and starts nothing.
+ *
  * Returns null when there are no embedded timestamps (plain line).
  */
 export function parseLrcWordTimings(
   text: string,
   lineStartTime: number,
 ): LrcWordTimings | null {
-  // Collect all embedded timestamps
-  const times: number[] = []
-  const re = new RegExp(LRC_TS_GLOBAL)
-  let m: RegExpExecArray | null
-  while ((m = re.exec(text)) !== null) {
-    const mins = parseInt(m[1], 10)
-    const secs = parseInt(m[2], 10)
-    let ms = 0
-    if (m[3]) {
-      ms = parseInt(m[3], 10)
-      if (m[3].length === 2) ms *= 10
-    }
-    times.push(mins * 60 + secs + ms / 1000)
-  }
+  const stamps = Array.from(text.matchAll(LRC_TS_GLOBAL), readInlineStamp)
+  if (stamps.length === 0) return null
 
-  if (times.length === 0) return null
-
-  // Split text on timestamps to isolate word groups.
-  // Use non-capturing regex so String.split doesn't include timestamp digits
-  // as separate array elements.
-  const parts = text.split(LRC_TS_SPLIT).filter((s) => s.trim().length > 0)
-  if (parts.length === 0) return null
-
-  // First word starts at lineStartTime, subsequent at each embedded timestamp
   const words: string[] = []
   const wordTimes: number[] = []
-  for (let i = 0; i < parts.length; i++) {
-    const chunk = parts[i].trim()
-    const chunkWords = chunk.split(/\s+/).filter((w) => w.length > 0)
-    if (chunkWords.length === 0) continue
-    // First chunk may contain multiple words (before the first embedded timestamp)
-    if (i === 0) {
-      // All words in first chunk share the line start time
-      for (const w of chunkWords) {
-        words.push(w)
+
+  // The run of words after each stamp, and first (`s === -1`) the run before
+  // any of them. A run is read by POSITION: it belongs to the stamp it
+  // follows. Counting the non-empty runs against the stamps instead puts
+  // every word one stamp early as soon as a stamp has no words after it, and
+  // the spec's layout opens every line with one.
+  for (let s = -1; s < stamps.length; s++) {
+    const own = s < 0 ? undefined : stamps[s]
+    const next = stamps[s + 1] as InlineStamp | undefined
+    const run = text
+      .slice(own?.end ?? 0, next?.start ?? text.length)
+      .split(/\s+/)
+      .filter((w) => w.length > 0)
+    if (run.length === 0) continue
+
+    // Words with no stamp before them start with the line. So do the first
+    // words of a line that opens with a SQUARE stamp: a second one at the
+    // head of a line is standard LRC for "sung again at", not a word time.
+    // Only the angle spelling is unambiguous there.
+    if (own === undefined || (words.length === 0 && !own.angle)) {
+      for (const word of run) {
+        words.push(word)
         wordTimes.push(lineStartTime)
       }
-    } else {
-      // Subsequent chunks: first word gets the timestamp, remaining words are
-      // distributed between this timestamp and the next (or end of known times)
-      for (let j = 0; j < chunkWords.length; j++) {
-        words.push(chunkWords[j])
-        if (j === 0 && i - 1 < times.length) {
-          wordTimes.push(times[i - 1])
-        } else {
-          // Fallback: interpolate within the chunk
-          const t0 = i - 1 < times.length ? times[i - 1] : lineStartTime
-          const t1 = i < times.length ? times[i] : t0 + chunkWords.length * 0.3
-          const frac = j / chunkWords.length
-          wordTimes.push(t0 + frac * (t1 - t0))
-        }
-      }
+      continue
     }
+
+    // The first word takes the stamp; the rest of the run is shared out up
+    // to the next stamp, or at a guessed pace when nothing follows.
+    const t0 = own.time
+    const t1 = next?.time ?? t0 + run.length * 0.3
+    run.forEach((word, j) => {
+      words.push(word)
+      wordTimes.push(t0 + (j / run.length) * (t1 - t0))
+    })
   }
 
   return words.length > 0 ? { words, wordTimes } : null

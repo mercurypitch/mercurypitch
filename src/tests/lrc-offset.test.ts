@@ -144,6 +144,26 @@ describe('parseLrcFile honouring [offset:]', () => {
     expect(words?.wordTimes).toEqual([9.5, 10.5])
   })
 
+  it('moves the angle-bracket word stamps too', () => {
+    const [line] = parseLrcFile('[offset:+500]\n[00:10.00]one <00:11.00>two')
+    const words = parseLrcWordTimings(line.text, line.time)
+    expect(words?.words).toEqual(['one', 'two'])
+    expect(words?.wordTimes).toEqual([9.5, 10.5])
+  })
+
+  it('leaves a moved stamp in the spelling it was written in', () => {
+    // Respelling `<..>` as `[..]` would not be harmless: a stamp before the
+    // first word times that word only in the angle spelling, so a tagged file
+    // would read differently from the same file without its tag.
+    const [line] = parseLrcFile(
+      '[offset:-250]\n[00:06.47] <00:07.67> And <00:07.94> all [00:08.36] the',
+    )
+    expect(line.text).toBe('<00:07.92> And <00:08.19> all [00:08.61] the')
+    expect(parseLrcWordTimings(line.text, line.time)?.wordTimes).toEqual([
+      7.92, 8.19, 8.61,
+    ])
+  })
+
   it('does not let a large offset produce negative times', () => {
     const lines = parseLrcFile('[offset:+90000]\n[00:10.00]one\n[01:40.00]two')
     expect(lines.map((l) => l.time)).toEqual([0, 10])
