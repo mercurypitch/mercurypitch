@@ -31,9 +31,28 @@ declare const HTMLRewriter: { new (): Rewriter }
 /** The card is square — the app draws 1080x1080 and that is what we store. */
 const CARD_SIZE = '1080'
 
+/** A real voiceprint payload is ~200 characters. Anything far past that is
+ *  not one, and decoding it would be base64 plus JSON.parse on unbounded
+ *  attacker-controlled input, on every request to this document. */
+const MAX_PAYLOAD_CHARS = 4096
+
+/** Free text out of the payload lands in tags we publish under our own
+ *  domain. HTMLRewriter escapes it, so this is not an injection — but an
+ *  unfurl headline is still ours, and it should stay a short human name
+ *  rather than a paragraph someone chose. */
+function safeText(value: string | undefined, limit = 64): string | undefined {
+  if (value == null || value === '') return undefined
+  const collapsed = value.replace(/\s+/g, ' ').trim()
+  if (collapsed === '') return undefined
+  return collapsed.length > limit
+    ? `${collapsed.slice(0, limit - 1)}…`
+    : collapsed
+}
+
 function readVoiceprint(url: URL): VoiceprintShareData | null {
   const encoded = url.searchParams.get('v')
   if (encoded == null || encoded === '') return null
+  if (encoded.length > MAX_PAYLOAD_CHARS) return null
   const payload = decodeSharePayload(encoded)
   if (payload == null || payload.t !== 'voiceprint') return null
   return payload.d as VoiceprintShareData
@@ -58,14 +77,14 @@ export function voiceprintDescription(data: VoiceprintShareData): string {
 
 /** The headline an unfurl shows above the card. */
 export function voiceprintTitle(data: VoiceprintShareData): string {
-  const twin = data.tw
-  const name = data.n
+  const twin = safeText(data.tw)
+  const name = safeText(data.n)
   if (twin != null && twin !== '') {
     return name != null && name !== ''
       ? `${twin} is ${name}'s voice twin`
       : `${twin} is my voice twin`
   }
-  return sharedVoiceprintTitle(data)
+  return sharedVoiceprintTitle({ ...data, n: name })
 }
 
 /** Everything the social card should say for this request. */
@@ -135,6 +154,11 @@ export function decorateVoiceprintMeta(response: Response, url: URL): Response {
     rewriter = rewriter
       .on('meta[property="og:image"]', { element: set(image) })
       .on('meta[name="twitter:image"]', { element: set(image) })
+      // The document declares `summary_large_image`, which is 1.91:1. The
+      // card is square, and X crops rather than letterboxes — it would take
+      // a slice out of the middle and drop the portrait's head and the
+      // numbers under it. A square card is a `summary` card.
+      .on('meta[name="twitter:card"]', { element: set('summary') })
       .on('meta[property="og:image:width"]', { element: set(CARD_SIZE) })
       .on('meta[property="og:image:height"]', { element: set(CARD_SIZE) })
       .on('meta[property="og:image:alt"]', {

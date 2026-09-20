@@ -96,3 +96,33 @@ describe('voiceprintMetaTags', () => {
     )
   })
 })
+
+describe('hardening the tags we publish', () => {
+  it('ignores an implausibly long payload instead of decoding it', () => {
+    // Base64 plus JSON.parse on unbounded attacker-controlled input, on
+    // every request to this document, is not a thing to offer.
+    const huge = 'A'.repeat(5000)
+    expect(voiceprintMetaTags(at(`?v=${huge}`))).toBeNull()
+  })
+
+  it('keeps a twin name to a name-sized string', () => {
+    const shout =
+      'Your MercuryPitch account has been suspended, please verify it at example.com right now'
+    const title = voiceprintTitle({ lo: 48, hi: 74, tw: shout })
+    expect(title.length).toBeLessThanOrEqual(64 + ' is my voice twin'.length)
+    expect(title).toContain('…')
+  })
+
+  it('collapses whitespace so a headline cannot be shaped with newlines', () => {
+    expect(voiceprintTitle({ lo: 48, hi: 74, tw: 'Ad\n\n\t  ele' })).toBe(
+      'Ad ele is my voice twin',
+    )
+  })
+
+  it('treats a whitespace-only name as no name at all', () => {
+    expect(voiceprintTitle({ lo: 48, hi: 74, n: '   ' })).toBe('A voiceprint')
+    expect(voiceprintTitle({ lo: 48, hi: 74, tw: '  ', n: 'Marko' })).toBe(
+      "Marko's voiceprint",
+    )
+  })
+})
