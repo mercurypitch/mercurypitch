@@ -583,3 +583,65 @@ describe('loopLimit', () => {
     dispose()
   })
 })
+
+// ── The root follows the singer's range ─────────────────────────────
+//
+// Owner report (2026-09-20): a baritone's Ascent. Every catalogue exercise is
+// authored around C4, and with nothing to say otherwise that is where
+// everybody sang it -- `major-scale-ascending` ran C4 to C5 for a baritone,
+// the top of which is a fourth over his range.
+describe('the exercise root and the singer', () => {
+  const open = (
+    options: Partial<Parameters<typeof useZenPitchSession>[0]> = {},
+  ): { session: ZenPitchSession; dispose: () => void } => {
+    let session: ZenPitchSession | null = null
+    const dispose = createRoot((disposeRoot) => {
+      session = useZenPitchSession({
+        initialExerciseId: 'major-scale-ascending',
+        subscribeFrames: () => () => undefined,
+        micActive: () => false,
+        startMic: async () => true,
+        stopMic: () => undefined,
+        ...options,
+      })
+      return disposeRoot
+    })
+    return { session: session!, dispose }
+  }
+
+  it('sings the authored root when nobody says otherwise', () => {
+    // A weekly challenge is sung at its written pitch on purpose, and a
+    // warm-up sets its own root: both leave this out.
+    const { session, dispose } = open()
+    expect(session.rootMidi()).toBe(60)
+    dispose()
+  })
+
+  it('moves the root by the octaves it is told to, and is asked about the real span', () => {
+    const asked: Array<[number, number]> = []
+    const { session, dispose } = open({
+      octaveShiftFor: (low, high) => {
+        asked.push([low, high])
+        return -12
+      },
+    })
+    // A major scale from C4: the lowest note it asks for is the root and the
+    // highest is the octave, so that is the span the range has to hold.
+    expect(asked[0]).toEqual([60, 72])
+    expect(session.rootMidi()).toBe(48)
+    dispose()
+  })
+
+  it('fits the NEXT exercise too, not only the one it opened on', () => {
+    const authored = open()
+    authored.session.selectExercise('ng-five-tone')
+    const written = authored.session.rootMidi()
+    authored.dispose()
+
+    const { session, dispose } = open({ octaveShiftFor: () => -12 })
+    session.selectExercise('ng-five-tone')
+    expect(session.exerciseId()).toBe('ng-five-tone')
+    expect(session.rootMidi()).toBe(written - 12)
+    dispose()
+  })
+})

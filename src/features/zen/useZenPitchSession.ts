@@ -40,6 +40,19 @@ export interface UseZenPitchSessionOptions {
    */
   exerciseDefinitions?: readonly ZenExerciseDefinition[]
   initialCenterMidi?: number
+  /**
+   * How far to move an exercise's authored root so the exercise sits in the
+   * singer's range: given the lowest and highest note it would ask for,
+   * answer a shift in semitones (whole octaves, so the exercise keeps its
+   * key).
+   *
+   * Every catalogue exercise is authored around C4, and with no answer here
+   * that is where everybody sang it -- a baritone was handed a major scale
+   * from C4 to C5, the top of which is a fourth over his range. Left out,
+   * the authored root stands: a weekly challenge is sung at its written
+   * pitch on purpose, and a warm-up sets its own root.
+   */
+  octaveShiftFor?: (lowMidi: number, highMidi: number) => number
   subscribeFrames: (listener: (frame: PracticeFrame) => void) => () => void
   micActive: Accessor<boolean>
   startMic: () => Promise<boolean>
@@ -176,7 +189,19 @@ export function useZenPitchSession(
     launchedExercise ??
     resolveExercise(options.initialExerciseId) ??
     getZenExercise(options.initialExerciseId, options.initialExerciseVersion)
-  const initialRoot = initialExercise?.defaultRootMidi ?? 60
+  /** The exercise's authored root, moved into the singer's range. */
+  const rootFor = (exercise: ZenExerciseDefinition | null): number => {
+    const authored = exercise?.defaultRootMidi ?? 60
+    if (exercise === null || options.octaveShiftFor === undefined) {
+      return authored
+    }
+    const midis = pitchTargetMidis(resolveZenTargets(exercise, authored))
+    if (midis.length === 0) return authored
+    return (
+      authored + options.octaveShiftFor(Math.min(...midis), Math.max(...midis))
+    )
+  }
+  const initialRoot = rootFor(initialExercise)
   const initialTargets =
     initialExercise === null
       ? []
@@ -392,7 +417,7 @@ export function useZenPitchSession(
     finish()
 
     const nextExercise = resolveExercise(nextId)
-    const nextRoot = nextExercise?.defaultRootMidi ?? 60
+    const nextRoot = rootFor(nextExercise)
     const nextTargets =
       nextExercise === null ? [] : resolveZenTargets(nextExercise, nextRoot)
     const nextViewport =
