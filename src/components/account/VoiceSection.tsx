@@ -21,7 +21,7 @@ import { authVersion } from '@/db/services/user-service'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptableVoiceprints, listVoiceprints, } from '@/db/services/voiceprint-service'
 import { legendArt, LegendCaricature, legendThumbSrc, } from '@/features/mirror/LegendCaricature'
-import { renderVoiceprintCard, shareVoiceprintRecord, } from '@/features/mirror/voiceprint-share'
+import { copyVoiceprintRecordLink, renderVoiceprintCard, shareVoiceprintRecord, } from '@/features/mirror/voiceprint-share'
 import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
@@ -114,9 +114,28 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
       const outcome = await shareVoiceprintRecord(record, variant)
       if (outcome === 'unavailable')
         showNotification('This voiceprint has no twin card to share.', 'info')
+      // No share sheet here (a desktop): the picture was saved and the link
+      // went to the clipboard. Say so, or the link is there and unknown.
+      if (outcome === 'downloaded-link-copied')
+        showNotification(
+          'Card saved, and the link is copied. Paste it beside the picture.',
+          'success',
+        )
     } finally {
       setSharing(false)
     }
+  }
+
+  const copyLatestLink = async () => {
+    const record = latest()
+    if (record == null) return
+    const outcome = await copyVoiceprintRecordLink(record)
+    showNotification(
+      outcome === 'copied'
+        ? 'Link copied. Paste it anywhere and it shows your card.'
+        : 'The link could not be copied here.',
+      outcome === 'copied' ? 'success' : 'error',
+    )
   }
 
   /** The raster portrait for the current twin, if one has been drawn. */
@@ -327,6 +346,18 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
                     Share
                   </button>
                 </Show>
+                {/* The link on its own: a desktop has no share sheet, and a
+                    link is what a friend can open. No twin needed — it opens
+                    on the numbers either way. */}
+                <button
+                  type="button"
+                  class={styles.shareBtn}
+                  data-testid="voiceprint-copy-link"
+                  onClick={() => void copyLatestLink()}
+                  title="Copy a link that opens this voiceprint"
+                >
+                  Copy link
+                </button>
                 <button
                   type="button"
                   class={styles.exploreBtn}

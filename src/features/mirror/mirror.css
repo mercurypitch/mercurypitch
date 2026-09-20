@@ -1313,6 +1313,14 @@ body {
   color: var(--mirror-accent);
 }
 
+/* The halfway reveal's "copy a link": an icon beside the words, and a gap
+   rather than a space — a flex row drops the whitespace between them. */
+.mirror-peek-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .mirror-sharestatus {
   margin-top: 12px;
 }

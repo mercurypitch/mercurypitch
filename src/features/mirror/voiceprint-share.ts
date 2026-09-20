@@ -10,8 +10,10 @@
 // through the same renderer and the same Web Share / download fallback.
 
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
+import type { ShareableVoiceprint } from '@/lib/mirror/shared-voiceprint'
 import { linkNamesCard, newOgCardId, uploadOgCard, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
-import { cardToPngBlob, cardToUnfurlBlob, datedFilename, shareCard, twinShareText, } from './card-renderer'
+import type { ShareOutcome } from './card-renderer'
+import { cardToPngBlob, cardToUnfurlBlob, copyText, datedFilename, shareCard, twinShareText, } from './card-renderer'
 import { renderSummaryCard } from './shared-voiceprint-card'
 
 /**
@@ -36,7 +38,7 @@ export function renderVoiceprintCard(
 export async function shareVoiceprintRecord(
   record: VoiceprintRecord,
   variant: 'face' | 'stats',
-): Promise<'shared' | 'downloaded' | 'dismissed' | 'unavailable'> {
+): Promise<ShareOutcome | 'unavailable'> {
   const canvas = await renderVoiceprintCard(record, variant)
   if (canvas === null) return 'unavailable'
 
@@ -49,14 +51,59 @@ export async function shareVoiceprintRecord(
   return shareCard(blob, datedFilename('voiceprint'), {
     title: 'My voiceprint',
     text: twinShareText(record.twin ?? 'My twin', link),
-    // Only when a sheet is opening: a browser without one saves the picture
-    // and drops the link, and a card stored for a link nobody was given is
-    // a card sent off the device for nothing. (The twin card is square, so
-    // it is already the picture an unfurl wants.)
-    onSheetOpening: () => {
+    link,
+    // Only when the link is really on its way out: a card stored for a link
+    // nobody was given is a card sent off the device for nothing. (The twin
+    // card is square, so it is already the picture an unfurl wants.)
+    onLinkLeaving: () => {
       if (unfurl !== null && linkNamesCard(link, ogCardId)) {
         uploadOgCard(ogCardId, unfurl)
       }
     },
   })
+}
+
+/**
+ * Put a voiceprint's link on the clipboard: the share for wherever a link
+ * is what is wanted — a desktop with no share sheet, a chat that drops the
+ * text beside a picture, or someone who simply prefers to paste.
+ *
+ * The write begins before anything is awaited, because Safari only honours
+ * a clipboard write that starts inside the tap; the id is picked here for
+ * the same reason the share path picks it. The card is drawn and stored
+ * only once the link is safely copied, so a refused clipboard uploads
+ * nothing. `drawCard` may give null: the link still opens on the right
+ * take, it just unfurls with the stock picture.
+ */
+export async function copyVoiceprintLink(
+  summary: ShareableVoiceprint | null | undefined,
+  twin: string | null | undefined,
+  drawCard: () => HTMLCanvasElement | null | Promise<HTMLCanvasElement | null>,
+): Promise<'copied' | 'failed'> {
+  const ogCardId = newOgCardId()
+  const link = voiceprintShareUrl(summary, twin, null, ogCardId)
+  if (!(await copyText(link))) return 'failed'
+
+  if (linkNamesCard(link, ogCardId)) {
+    // Beside the copy, never in its way: the link is already theirs.
+    void Promise.resolve()
+      .then(drawCard)
+      .then((canvas) => (canvas === null ? null : cardToUnfurlBlob(canvas)))
+      .then((unfurl) => {
+        if (unfurl !== null) uploadOgCard(ogCardId, unfurl)
+      })
+      .catch(() => {
+        // A card that would not draw costs only a stock unfurl.
+      })
+  }
+  return 'copied'
+}
+
+/** Copy the link of a stored voiceprint, unfurling as its numbers card. */
+export function copyVoiceprintRecordLink(
+  record: VoiceprintRecord,
+): Promise<'copied' | 'failed'> {
+  return copyVoiceprintLink(record.summary, record.twin, () =>
+    renderVoiceprintCard(record, 'stats'),
+  )
 }

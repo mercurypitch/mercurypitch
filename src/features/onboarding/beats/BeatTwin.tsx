@@ -13,15 +13,18 @@
 // inventing a celebrity.
 
 import type { Component } from 'solid-js'
-import { createMemo, Show } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import styles from '../onboarding.module.css'
 
 export interface BeatTwinProps {
-  /** Share the freshly made voiceprint card (twin + numbers). */
-  onShare?: () => void
+  /** Share the freshly made voiceprint card (twin + numbers). May resolve to
+   *  a line worth saying afterwards — on a desktop there is no share sheet,
+   *  so the card is saved and its link copied, and nothing on screen would
+   *  otherwise say the link is sitting on the clipboard. */
+  onShare?: () => Promise<string | null>
   result: MirrorResult
   onContinue: () => void
 }
@@ -31,6 +34,11 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
   const range = () => props.result.range
   const accuracy = () => props.result.accuracy
   const steadiness = () => props.result.steadiness
+  const [shareNote, setShareNote] = createSignal<string | null>(null)
+
+  const share = async (): Promise<void> => {
+    setShareNote((await props.onShare?.()) ?? null)
+  }
 
   return (
     <div class={styles.beat} data-beat="twin">
@@ -114,12 +122,15 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
           <button
             type="button"
             class={styles.secondary}
-            onClick={() => props.onShare?.()}
+            onClick={() => void share()}
           >
             Share now
           </button>
         </Show>
       </div>
+      <p class={styles.keepFootnote} role="status" aria-live="polite">
+        {shareNote()}
+      </p>
     </div>
   )
 }

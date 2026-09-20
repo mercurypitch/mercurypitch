@@ -8,7 +8,7 @@
 // the outcome contract the call sites now gate on.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cardToUnfurlBlob, shareCard } from './card-renderer'
+import { cardToUnfurlBlob, shareCard, shareOutcomeMessage, } from './card-renderer'
 
 const blob = new Blob(['x'], { type: 'image/png' })
 
@@ -63,7 +63,7 @@ describe('shareCard', () => {
 // A shared voiceprint stores its card so the link can unfurl as itself. That
 // is the one thing in the Mirror that leaves the device, so it must happen
 // only when a link is really on its way out.
-describe('shareCard — onSheetOpening', () => {
+describe('shareCard — onLinkLeaving', () => {
   it('runs before the sheet opens, inside the same tap', async () => {
     const order: string[] = []
     mockShare(() => {
@@ -71,30 +71,112 @@ describe('shareCard — onSheetOpening', () => {
       return Promise.resolve()
     })
     await shareCard(blob, 'card.png', {
-      onSheetOpening: () => order.push('opening'),
+      onLinkLeaving: () => order.push('leaving'),
     })
-    expect(order).toEqual(['opening', 'share'])
+    expect(order).toEqual(['leaving', 'share'])
   })
 
-  it('never runs where the card is only saved', async () => {
-    // No share sheet: the picture downloads and the text, link included, is
-    // thrown away. Storing a card for a link nobody was given would send it
-    // off the device for nothing.
+  it('never runs for a picture saved on its own', async () => {
+    // No share sheet and no link to copy: the picture downloads and that is
+    // all. Storing a card for a link nobody was given would send it off the
+    // device for nothing.
     mockShare(undefined)
     vi.spyOn(HTMLAnchorElement.prototype, 'click')
-    const onSheetOpening = vi.fn()
-    expect(await shareCard(blob, 'card.png', { onSheetOpening })).toBe(
+    const onLinkLeaving = vi.fn()
+    expect(await shareCard(blob, 'card.png', { onLinkLeaving })).toBe(
       'downloaded',
     )
-    expect(onSheetOpening).not.toHaveBeenCalled()
+    expect(onLinkLeaving).not.toHaveBeenCalled()
   })
 
   it('runs once even when the sheet then refuses the data', async () => {
     mockShare(() => Promise.reject(new DOMException('nope', 'NotAllowedError')))
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const onLinkLeaving = vi.fn()
+    const outcome = await shareCard(blob, 'card.png', {
+      link: 'https://mercurypitch.com/mirror?v=abc',
+      onLinkLeaving,
+    })
+    // The sheet was already offered the link; it is not handed out twice.
+    expect(outcome).toBe('downloaded')
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(onLinkLeaving).toHaveBeenCalledTimes(1)
+  })
+})
+
+// A desktop has no share sheet. "Share" used to save the picture and drop
+// the text, link and all — so the one thing that brings a friend back never
+// left the page, from any of the three places a voiceprint is shared.
+describe('shareCard — where there is no share sheet', () => {
+  const LINK = 'https://mercurypitch.com/mirror?v=abc&og=aB3xY9zQ01'
+
+  function mockClipboard(writeText: ((text: string) => Promise<void>) | null) {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: writeText === null ? undefined : { writeText },
+      configurable: true,
+    })
+  }
+
+  afterEach(() => mockClipboard(null))
+
+  it('saves the picture and puts the link on the clipboard', async () => {
+    mockShare(undefined)
+    const writeText = vi.fn(() => Promise.resolve())
+    mockClipboard(writeText)
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const onLinkLeaving = vi.fn()
+
+    const outcome = await shareCard(blob, 'card.png', {
+      text: `My voice, mapped — ${LINK}`,
+      link: LINK,
+      onLinkLeaving,
+    })
+
+    expect(outcome).toBe('downloaded-link-copied')
+    expect(click).toHaveBeenCalledTimes(1)
+    // The bare link, not the sentence: pasted alone it unfurls as the card.
+    expect(writeText).toHaveBeenCalledWith(LINK)
+    expect(onLinkLeaving).toHaveBeenCalledTimes(1)
+  })
+
+  it('stores nothing when the clipboard refuses', async () => {
+    mockShare(undefined)
+    mockClipboard(() => Promise.reject(new Error('denied')))
     vi.spyOn(HTMLAnchorElement.prototype, 'click')
-    const onSheetOpening = vi.fn()
-    await shareCard(blob, 'card.png', { onSheetOpening })
-    expect(onSheetOpening).toHaveBeenCalledTimes(1)
+    const onLinkLeaving = vi.fn()
+    expect(
+      await shareCard(blob, 'card.png', { link: LINK, onLinkLeaving }),
+    ).toBe('downloaded')
+    expect(onLinkLeaving).not.toHaveBeenCalled()
+  })
+
+  it('stores nothing where there is no clipboard at all', async () => {
+    // An insecure context has no navigator.clipboard, whatever the types say.
+    mockShare(undefined)
+    mockClipboard(null)
+    vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const onLinkLeaving = vi.fn()
+    expect(
+      await shareCard(blob, 'card.png', { link: LINK, onLinkLeaving }),
+    ).toBe('downloaded')
+    expect(onLinkLeaving).not.toHaveBeenCalled()
+  })
+
+  it('leaves a card with no link exactly as it was', async () => {
+    // Glass, Cosmic and the progress cards pass no link.
+    mockShare(undefined)
+    const writeText = vi.fn(() => Promise.resolve())
+    mockClipboard(writeText)
+    vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    expect(await shareCard(blob, 'card.png')).toBe('downloaded')
+    expect(writeText).not.toHaveBeenCalled()
+  })
+
+  it('says the link was copied, because nothing else would', () => {
+    expect(shareOutcomeMessage('downloaded-link-copied')).toMatch(/link/i)
+    expect(shareOutcomeMessage('downloaded')).toBe('Saved — post it anywhere.')
+    expect(shareOutcomeMessage('shared')).toBe('Shared!')
+    expect(shareOutcomeMessage('dismissed')).toBeNull()
   })
 })
 

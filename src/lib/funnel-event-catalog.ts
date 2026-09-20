@@ -47,6 +47,10 @@ export const MIRROR_FUNNEL_EVENTS = [
   'shared_view',
   /** ...and went on to take their own. */
   'shared_start',
+  /** The take's link was copied on its own, rather than shared as a card.
+   *  Kept apart from `card_shared`, which feeds a live Ads conversion and
+   *  must go on meaning what it meant. */
+  'link_copied',
 ] as const
 
 /** The app itself (src/lib/analytics.ts). */
