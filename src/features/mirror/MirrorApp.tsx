@@ -33,20 +33,22 @@ import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { VoiceprintShareData } from '@/lib/share-codec'
 import type { CardFormat } from './card-renderer'
-import { cardToPngBlob, cardToUnfurlBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, defaultShareText, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, twinShareText, } from './card-renderer'
+import { cardToPngBlob, cardToUnfurlBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, defaultShareText, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, shareOutcomeMessage, supportsImageClipboard, twinShareText, } from './card-renderer'
 import { CardOptionsSheet } from './CardOptionsSheet'
 import { CosmicMode } from './CosmicMode'
 import type { MirrorEntryIntent } from './entry-intent'
 import { trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
-import { IconCopy, IconMore, IconRocket, IconShare, IconSpark } from './icons'
+import { IconCopy, IconLink, IconMore, IconRocket, IconShare, IconSpark, } from './icons'
 import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
+import { renderSummaryCard } from './shared-voiceprint-card'
 import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 import { TaskDemo } from './TaskDemo'
 import { playReferenceTone } from './tone-player'
+import { copyVoiceprintLink } from './voiceprint-share'
 
 // 8s was long enough that people ran out of glide and stood there filling
 // time. 6 still covers a full siren both ways, and the "I'm done" control
@@ -1113,14 +1115,16 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
         withTwin && twin !== null
           ? twinShareText(twin, link)
           : defaultShareText(link),
-      // Stored only once a share sheet is really about to open. Where there
-      // is no sheet this button saves the picture and the link goes nowhere,
-      // so an upload would send someone's card off the device for nothing —
-      // and "it all happens on your device" is a promise we print. The cost
+      link,
+      // Stored only once the link is really on its way out: as the share
+      // sheet opens, or once the link is on the clipboard where there is no
+      // sheet. A card stored for a link nobody was given would be someone's
+      // card sent off the device for nothing — and "it all happens on your
+      // device" is a promise we print. The cost
       // that remains: closing the sheet without sending still leaves the
       // card in the store. It expires in 30 days, and nobody can reach it
       // without the id, which never left here.
-      onSheetOpening: () => {
+      onLinkLeaving: () => {
         if (unfurl !== null && linkNamesCard(link, ogCardId)) {
           uploadOgCard(ogCardId, unfurl)
         }
@@ -1131,8 +1135,56 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     // claim anything in the status line.
     if (outcome === 'dismissed') return
     trackFunnel('card_shared')
+    setShareStatus(shareOutcomeMessage(outcome))
+  }
+
+  /** The link at the halfway reveal. The twin is the part people want to
+   *  show someone, and it arrives a minute before the scores do — a take
+   *  that stops here is still a voiceprint (range and twin), and the link
+   *  says exactly that much. Unfurls as the twin's card with the range. */
+  async function onCopyPeekLink(): Promise<void> {
+    const range = session().range
+    const legend = peekLegend()
+    if (range === null || legend === null) return
+    const summary = {
+      lowMidi: range.lowMidi,
+      highMidi: range.highMidi,
+      semitones: range.semitones,
+    }
+    const outcome = await copyVoiceprintLink(summary, legend, () =>
+      renderSummaryCard(summary, legend, 'stats'),
+    )
+    if (outcome === 'copied') trackFunnel('link_copied')
     setShareStatus(
-      outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
+      outcome === 'copied'
+        ? 'Link copied. Paste it anywhere and it shows your twin.'
+        : 'The link could not be copied here.',
+    )
+  }
+
+  /** The link on its own. A desktop has no share sheet, some chats drop the
+   *  text beside a picture, and some people would simply rather paste. It
+   *  unfurls as the twin card once the twin has been met, and as the square
+   *  data card before that. */
+  async function onCopyLink(): Promise<void> {
+    const result = session().result
+    if (!result) return
+    // Which card the link shows is settled at the tap, like everything else
+    // about it.
+    const asTwin = twinReady()
+    const outcome = await copyVoiceprintLink(
+      summarize(result),
+      sharedTwin(),
+      // Drawn once, a moment after the tap and only if the copy went through:
+      // a snapshot is what is wanted, so there is nothing here to track.
+      // eslint-disable-next-line solid/reactivity
+      () => (asTwin ? buildTwinCard() : buildStoryCard('square')),
+    )
+    if (outcome === 'copied') trackFunnel('link_copied')
+    setShareStatus(
+      outcome === 'copied'
+        ? 'Link copied. Paste it anywhere and it shows your card.'
+        : 'The link could not be copied here.',
     )
   }
 
@@ -1483,6 +1535,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             <button
               class="mirror-cta mirror-cta-ready"
               onClick={() => {
+                // The note about a copied link belongs to this screen.
+                setShareStatus(null)
                 // After a reload there is no gate to release — the mic has to
                 // be re-acquired, and it must happen inside this tap.
                 if (pendingResume()) void start('guided')
@@ -1490,6 +1544,18 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
               }}
             >
               Add my accuracy score
+            </button>
+            {/* Quiet on purpose: the button above is the way on, and this
+                must not compete with it. But the twin is what people want to
+                show someone, and this is where they meet it. */}
+            <button
+              type="button"
+              class="mirror-textbtn mirror-peek-link"
+              data-testid="mirror-peek-copy-link"
+              onClick={() => void onCopyPeekLink()}
+            >
+              <IconLink size={16} />
+              Copy a link to this
             </button>
             {/* A resumed run sits at phase 'match', where the mic panel does
                 not render and the reducer ignores 'mic-denied' — so without
@@ -1507,6 +1573,11 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           <p class="mirror-dim">
             Five short notes to sing back — about a minute.
           </p>
+          <Show when={shareStatus()}>
+            <p class="mirror-dim mirror-sharestatus" role="status">
+              {shareStatus()}
+            </p>
+          </Show>
         </section>
       </Show>
 
@@ -1661,6 +1732,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           onShare={() => void onShare()}
           onShareTwin={() => void onShare(true)}
           onCopy={() => void onCopy()}
+          onCopyLink={() => void onCopyLink()}
           onCosmic={() => setCosmic(true)}
           onStartOver={() => resetAll()}
           appUrl={appUrl()}
@@ -1945,6 +2017,8 @@ const Results: Component<{
   onShare: () => void
   onShareTwin: () => void
   onCopy: () => void
+  /** Put this take's link on the clipboard. */
+  onCopyLink: () => void
   onCosmic: () => void
   onStartOver: () => void
   appUrl: string
@@ -2088,6 +2162,19 @@ const Results: Component<{
           </Show>
         </div>
         <div class="mirror-actions-sub">
+          {/* On screen rather than in the sheet: on a desktop there is no
+              share sheet, so this is the only way the link leaves at all —
+              and the link is what brings a friend back. */}
+          <button
+            type="button"
+            class="mirror-cta mirror-cta-secondary mirror-cta-sm"
+            data-testid="mirror-copy-link"
+            onClick={() => props.onCopyLink()}
+            title="Copy a link that opens this voiceprint"
+          >
+            <IconLink />
+            Copy link
+          </button>
           <a
             class="mirror-cta mirror-cta-secondary mirror-cta-sm"
             href={props.appUrl}

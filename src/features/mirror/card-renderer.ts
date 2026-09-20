@@ -851,28 +851,60 @@ export function datedFilename(base: string): string {
   return `${base}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.png`
 }
 
+/** How a card left: through the share sheet, as a saved file, as a saved file
+ *  with its link put on the clipboard beside it, or not at all. */
+export type ShareOutcome =
+  | 'shared'
+  | 'downloaded'
+  | 'downloaded-link-copied'
+  | 'dismissed'
+
 /**
  * Share the card via the Web Share API (Level 2, files) when available,
  * otherwise trigger a plain download. Returns how it was delivered —
  * `'dismissed'` when the user closed the share sheet without sending, which
  * callers must NOT count as a share (it used to both force a download the
  * user never asked for and inflate the live `card_shared` Ads conversion).
+ *
+ * A browser with no share sheet — Chrome and Firefox on a desktop — saves
+ * the picture and has nowhere to put the text. A card that carries a link
+ * used to lose it there, so on a desktop "Share" produced a file and the
+ * one thing that brings a friend back never left the page. Given a `link`,
+ * that path now puts it on the clipboard beside the saved file and says so
+ * with `'downloaded-link-copied'`.
  */
+export interface ShareCardMeta {
+  title?: string
+  text?: string
+  /** The bare link inside `text`, for the path that has no share sheet. */
+  link?: string
+  /** Called once, synchronously, at the moment a LINK is on its way out:
+   *  just before the share sheet opens, or once the link is on the
+   *  clipboard where there is no sheet. It is where work done on that
+   *  link's behalf belongs — never run for a picture saved on its own,
+   *  which would be work done for nobody. Must not await: Safari drops a
+   *  share that does not begin inside the tap. */
+  onLinkLeaving?: () => void
+}
+
+/** Only a card that carries a link can come back with it copied, so the
+ *  cards that pass none (Glass, Cosmic, progress) keep the three outcomes
+ *  they have always handled. */
+export function shareCard(
+  blob: Blob,
+  filename?: string,
+  meta?: ShareCardMeta & { link?: undefined },
+): Promise<Exclude<ShareOutcome, 'downloaded-link-copied'>>
+export function shareCard(
+  blob: Blob,
+  filename: string | undefined,
+  meta: ShareCardMeta & { link: string },
+): Promise<ShareOutcome>
 export async function shareCard(
   blob: Blob,
   filename = 'voiceprint.png',
-  meta?: {
-    title?: string
-    text?: string
-    /** Called once, synchronously, just before the share sheet opens — and
-     *  never on the download path. It is where anything that only makes
-     *  sense if a LINK is about to leave the device belongs: a browser with
-     *  no share sheet saves the picture and throws the text away, so work
-     *  done on that link's behalf would be done for nobody. Must not await:
-     *  Safari drops a share that does not begin inside the tap. */
-    onSheetOpening?: () => void
-  },
-): Promise<'shared' | 'downloaded' | 'dismissed'> {
+  meta?: ShareCardMeta,
+): Promise<ShareOutcome> {
   const file = new File([blob], filename, { type: 'image/png' })
   const shareData: ShareData = {
     files: [file],
@@ -885,7 +917,7 @@ export async function shareCard(
     typeof navigator.share === 'function'
   ) {
     try {
-      meta?.onSheetOpening?.()
+      meta?.onLinkLeaving?.()
       await navigator.share(shareData)
       return 'shared'
     } catch (err) {
@@ -895,15 +927,51 @@ export async function shareCard(
       if (err instanceof DOMException && err.name === 'AbortError') {
         return 'dismissed'
       }
+      // The sheet was offered the link already; do not hand it out twice.
+      downloadBlob(blob, filename)
+      return 'downloaded'
     }
   }
+  downloadBlob(blob, filename)
+  if (meta?.link !== undefined && (await copyText(meta.link))) {
+    meta.onLinkLeaving?.()
+    return 'downloaded-link-copied'
+  }
+  return 'downloaded'
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = filename
   link.click()
   URL.revokeObjectURL(url)
-  return 'downloaded'
+}
+
+/** Put text on the clipboard. False wherever that is refused or missing —
+ *  the clipboard is absent in an insecure context whatever the types say. */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** What to tell someone after `shareCard`, in the words the Mirror uses. */
+export function shareOutcomeMessage(outcome: ShareOutcome): string | null {
+  switch (outcome) {
+    case 'shared':
+      return 'Shared!'
+    case 'downloaded-link-copied':
+      return 'Saved, and the link is copied. Paste it beside the picture.'
+    case 'downloaded':
+      return 'Saved — post it anywhere.'
+    case 'dismissed':
+      return null
+  }
 }
 
 export type CopyOutcome = 'copied' | 'unsupported' | 'failed'

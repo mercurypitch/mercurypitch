@@ -50,6 +50,19 @@ export const IconCopy: Component<IconProps> = (p) => (
   </svg>
 )
 
+/** Two chain links with a sparkle — copy the voiceprint's link. */
+export const IconLink: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M10.2 13.8a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.1 1.1" />
+    <path d="M13.8 10.2a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.1-1.1" />
+    <path
+      d="m19.6 15.4.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5Z"
+      fill="currentColor"
+      stroke="none"
+    />
+  </svg>
+)
+
 /** Ringed planet + stars — Sing the Universe. */
 export const IconGalaxy: Component<IconProps> = (p) => (
   <svg {...svgProps(p)}>

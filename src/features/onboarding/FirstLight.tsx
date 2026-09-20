@@ -15,6 +15,7 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, onMount, Show, Switch, } from 'solid-js'
 import { accountHeld, hasUpgradedAccount } from '@/db/services/auth-service'
 import { listVoiceprints, saveVoiceprint, } from '@/db/services/voiceprint-service'
+import { shareOutcomeMessage } from '@/features/mirror/card-renderer'
 import { shareVoiceprintRecord } from '@/features/mirror/voiceprint-share'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
@@ -121,6 +122,28 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
    * so the overlay closes first, exactly as `handleEnterRoom` does for
    * its page targets, or Back lands inside a dead onboarding.
    */
+  /** Share the voiceprint that was just made. Resolves to a line worth
+   *  saying afterwards, and only for the one outcome nothing else announces:
+   *  the share sheet speaks for itself and a saved file shows in the browser,
+   *  but a link on the clipboard is silent. */
+  const handleShareVoiceprint = async (): Promise<string | null> => {
+    const result = voiceprint()
+    if (result == null) return null
+    const outcome = await shareVoiceprintRecord(
+      {
+        id: 'fresh',
+        summary: summarize(result),
+        twin: twin(),
+        source: 'onboarding',
+        takenAt: new Date().toISOString(),
+      },
+      'face',
+    )
+    return outcome === 'downloaded-link-copied'
+      ? shareOutcomeMessage(outcome)
+      : null
+  }
+
   const handleAnotherVoiceprint = () => {
     trackOnboarding('onboarding_another_voiceprint')
     leave()
@@ -352,20 +375,7 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
             <BeatTwin
               result={voiceprint() as MirrorResult}
               onContinue={() => advanceBeat()}
-              onShare={() => {
-                const result = voiceprint()
-                if (result == null) return
-                void shareVoiceprintRecord(
-                  {
-                    id: 'fresh',
-                    summary: summarize(result as MirrorResult),
-                    twin: twin(),
-                    source: 'onboarding',
-                    takenAt: new Date().toISOString(),
-                  },
-                  'face',
-                )
-              }}
+              onShare={handleShareVoiceprint}
             />
           </Match>
           <Match when={currentBeat() === 'map'}>

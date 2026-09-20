@@ -8,6 +8,7 @@ import { setAuthToken } from '@/db/services/user-service'
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 
 const mocks = vi.hoisted(() => ({
+  copyVoiceprintRecordLink: vi.fn(),
   listVoiceprints: vi.fn(),
   renderVoiceprintCard: vi.fn(),
 }))
@@ -30,6 +31,7 @@ vi.mock('@/features/mirror/LegendCaricature', () => ({
 }))
 
 vi.mock('@/features/mirror/voiceprint-share', () => ({
+  copyVoiceprintRecordLink: mocks.copyVoiceprintRecordLink,
   renderVoiceprintCard: mocks.renderVoiceprintCard,
   shareVoiceprintRecord: vi.fn(async () => 'shared'),
 }))
@@ -42,6 +44,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
+import { showNotification } from '@/stores/notifications-store'
 import { VoiceSection } from '../account/VoiceSection'
 
 interface Deferred<T> {
@@ -89,6 +92,39 @@ beforeEach(() => {
   localStorage.clear()
   currentPrints = [bowie]
   mocks.listVoiceprints.mockImplementation(async () => currentPrints)
+})
+
+// A desktop has no share sheet, so Share there only ever saved a picture and
+// the link that opens the voiceprint had no way out of this page.
+describe('VoiceSection — copy link', () => {
+  it('copies the latest voiceprint’s link and says so', async () => {
+    mocks.copyVoiceprintRecordLink.mockResolvedValue('copied')
+    render(() => <VoiceSection signedIn />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy link' }))
+
+    await waitFor(() => {
+      expect(mocks.copyVoiceprintRecordLink).toHaveBeenCalledWith(bowie)
+    })
+    expect(showNotification).toHaveBeenCalledWith(
+      expect.stringMatching(/link copied/i),
+      'success',
+    )
+  })
+
+  it('says when the link could not be copied, rather than nothing', async () => {
+    mocks.copyVoiceprintRecordLink.mockResolvedValue('failed')
+    render(() => <VoiceSection signedIn />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy link' }))
+
+    await waitFor(() => {
+      expect(showNotification).toHaveBeenCalledWith(
+        expect.stringMatching(/could not be copied/i),
+        'error',
+      )
+    })
+  })
 })
 
 describe('VoiceSection portrait flip', () => {
