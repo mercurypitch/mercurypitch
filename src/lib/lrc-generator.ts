@@ -33,6 +33,40 @@ export function formatTimeLrc(secs: number): string {
 }
 
 /**
+ * One line of word-stamped LRC, guaranteed to open with a timestamp.
+ *
+ * Every builder that writes per-word stamps has to come through here. A line
+ * body that starts with a bare word matches nothing in `LRC_LINE_RE`
+ * (lyrics-service.ts), so `parseLrcFile` skips it outright — the line is not
+ * mistimed, its text is lost — and that is what a line whose FIRST word has
+ * no start of its own used to produce.
+ *
+ * The head stamp is the first word's start when it has one, because
+ * `parseLrcFile` eats the head stamp as the line time and
+ * `parseLrcWordTimings` then reads the first word as starting with the line.
+ * Spelling that word's time again would put a second SQUARE stamp at the head
+ * of the body, which is standard LRC for "sung again at" and which the parser
+ * deliberately refuses to read as a word time — so the word would silently
+ * fall back to the line time instead. Only when the first word has no start
+ * does the line's own time go in the head, which is exactly the answer the
+ * parser gives that word anyway.
+ */
+export function stampedLrcLine(
+  words: readonly string[],
+  starts: readonly (number | undefined)[] | undefined,
+  lineTime: number,
+): string {
+  const body = words
+    // Word 0 never carries its own stamp: it is already the head stamp.
+    .map((word, i) => {
+      const start = i === 0 ? undefined : starts?.[i]
+      return start === undefined ? word : `[${formatTimeLrc(start)}] ${word}`
+    })
+    .join(' ')
+  return `[${formatTimeLrc(starts?.[0] ?? lineTime)}] ${body}`
+}
+
+/**
  * Estimate timestamps for lines that weren't mapped during LRC gen.
  * Unmapped lines get proportional timing between the last mapped line and song end.
  */
@@ -115,12 +149,11 @@ export function buildWordLevelLrc(
       if (lineWt === undefined || lineWt.length === 0 || words.length === 0) {
         return `[00:00.00] ${line}`
       }
-      return words
-        .map((w, wi) => {
-          const t = lineWt[wi]
-          return t !== undefined ? `[${formatTimeLrc(t)}] ${w}` : w
-        })
-        .join(' ')
+      // No line time reaches this builder, so the head falls back to the
+      // first start there is — better than the `00:00.00` placeholder, and
+      // the only alternative to losing the line.
+      const lineTime = lineWt.find((t) => t !== undefined) ?? 0
+      return stampedLrcLine(words, lineWt, lineTime)
     })
     .filter((l) => l !== '')
     .join('\n')
@@ -151,12 +184,7 @@ export function buildLrcTextFromCanonical(
 
       // Word-level output when per-word timestamps are available
       if (lineWt != null && lineWt.length > 0 && entry.words.length > 0) {
-        return entry.words
-          .map((w, wi) => {
-            const t = lineWt[wi]
-            return t !== undefined ? `[${formatTimeLrc(t)}] ${w}` : w
-          })
-          .join(' ')
+        return stampedLrcLine(entry.words, lineWt, time)
       }
 
       // Line-level output

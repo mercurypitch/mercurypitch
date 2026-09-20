@@ -22,7 +22,7 @@
 // exists to put it back rather than assuming one space between words.
 
 import type { WordSweepPoint, WordSweepTimingsMap, WordTimingsMap, } from '@/features/stem-mixer/types'
-import { formatTimeLrc } from './lrc-generator'
+import { formatTimeLrc, stampedLrcLine } from './lrc-generator'
 import { withLrcTimingMetadata } from './lrc-timing-metadata'
 import type { LrcLine } from './lyrics-service'
 
@@ -385,12 +385,7 @@ export function lyricsfileToLrc(parsed: ParsedLyricsfile): string {
     if (starts === undefined || words.length === 0) {
       return `[${formatTimeLrc(line.time)}] ${line.text}`
     }
-    return words
-      .map((word, wordIdx) => {
-        const start = starts[wordIdx]
-        return start === undefined ? word : `[${formatTimeLrc(start)}] ${word}`
-      })
-      .join(' ')
+    return stampedLrcLine(words, starts, line.time)
   })
 
   return [...head, ...body].join('\n')
