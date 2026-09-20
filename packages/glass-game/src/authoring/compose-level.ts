@@ -117,7 +117,38 @@ function validateChallenge(
 ): void {
   const validTargets = new Set(['comfortable', 'low', 'high'])
   const steps =
-    challenge.kind === 'hold' ? [challenge.step] : [...challenge.steps]
+    challenge.kind === 'ordered-pair' ? [...challenge.steps] : [challenge.step]
+  if (challenge.kind === 'settle-wave') {
+    const wave = challenge.wave
+    if (
+      ![
+        wave.requiredCycles,
+        wave.minimumExcursionCents,
+        wave.maximumExcursionCents,
+        wave.minimumCycleSeconds,
+        wave.maximumCycleSeconds,
+        wave.minimumWaveSeconds,
+        wave.maximumCentsPerSecond,
+        wave.smoothingSeconds,
+      ].every((value) => Number.isFinite(value) && value > 0) ||
+      !Number.isInteger(wave.requiredCycles) ||
+      wave.requiredCycles > 8 ||
+      wave.minimumExcursionCents >= wave.maximumExcursionCents ||
+      wave.minimumCycleSeconds >= wave.maximumCycleSeconds ||
+      wave.maximumCycleSeconds > 5 ||
+      wave.smoothingSeconds > 0.2 ||
+      wave.minimumCycleSeconds <
+        challenge.step.hold.maximumSampleGapSeconds * 2 ||
+      wave.maximumCentsPerSecond * wave.maximumCycleSeconds <
+        wave.minimumExcursionCents * 4
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-challenge',
+        `${path}.wave`,
+        'Wave timing, speed and excursion bounds must be finite, positive, ordered and mutually reachable with the capture timing.',
+      )
+  }
   if (challenge.kind === 'ordered-pair') {
     if (challenge.steps.length !== 2)
       diagnostic(
@@ -143,7 +174,9 @@ function validateChallenge(
   }
   steps.forEach((step, index) => {
     const stepPath =
-      challenge.kind === 'hold' ? `${path}.step` : `${path}.steps.${index}`
+      challenge.kind === 'ordered-pair'
+        ? `${path}.steps.${index}`
+        : `${path}.step`
     if (!validTargets.has(step.target))
       diagnostic(
         diagnostics,

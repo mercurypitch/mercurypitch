@@ -97,9 +97,15 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
   const voiceSteps = createMemo(() => {
     const challenge = active()?.challenge
     if (!challenge) return []
-    return challenge.kind === 'hold'
-      ? [challenge.step.target]
-      : challenge.steps.map((step) => step.target)
+    switch (challenge.kind) {
+      case 'hold':
+      case 'settle-wave':
+        return [challenge.step.target]
+      case 'ordered-pair':
+        return challenge.steps.map((step) => step.target)
+      default:
+        return []
+    }
   })
   const count = createMemo(
     () =>
@@ -408,6 +414,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               pitch={adventure.pitch()}
               charge={adventure.snapshot().activeEncounter?.charge ?? 0}
               pair={adventure.voicePair()}
+              wave={active()?.challenge.kind === 'settle-wave'}
               steps={voiceSteps()}
               stepIndex={adventure.snapshot().activeEncounter?.stepIndex ?? 0}
               onCancel={adventure.cancel}

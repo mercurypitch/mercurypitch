@@ -1,4 +1,4 @@
-// Voice challenge presentation — the same quiet singing panel for holds and ordered notes.
+// Voice challenge presentation — shared guidance for held notes, pairs and gentle waves.
 import { For, Show } from 'solid-js'
 import type { PitchTargetId } from '../contracts'
 import styles from './GlassAdventure.module.css'
@@ -22,6 +22,7 @@ export function VoiceChallengePanel(props: {
   pitch: number | null
   charge: number
   pair: boolean
+  wave?: boolean
   steps: readonly PitchTargetId[]
   stepIndex: number
   onCancel(): void
@@ -29,6 +30,16 @@ export function VoiceChallengePanel(props: {
   onRefind(): void
 }) {
   const percent = () => Math.round(props.charge * 100)
+  const stepLabels = () =>
+    props.wave
+      ? ['Settle your note', 'Let it sway twice']
+      : props.steps.map((step) =>
+          step === 'low'
+            ? 'Lower note'
+            : step === 'high'
+              ? 'Higher note'
+              : 'Your note',
+        )
   return (
     <section
       class={styles.encounter}
@@ -43,9 +54,12 @@ export function VoiceChallengePanel(props: {
         </button>
       </div>
       <h2 aria-live="polite">{props.message}</h2>
-      <Show when={props.steps.length > 1}>
-        <ol class={lessonStyles.sequence} aria-label="Note order">
-          <For each={props.steps}>
+      <Show when={stepLabels().length > 1}>
+        <ol
+          class={lessonStyles.sequence}
+          aria-label={props.wave ? 'Lesson steps' : 'Note order'}
+        >
+          <For each={stepLabels()}>
             {(step, index) => (
               <li
                 classList={{
@@ -61,11 +75,7 @@ export function VoiceChallengePanel(props: {
                 }
               >
                 <span>{index() + 1}</span>
-                {step === 'low'
-                  ? 'Lower note'
-                  : step === 'high'
-                    ? 'Higher note'
-                    : 'Your note'}
+                {step}
               </li>
             )}
           </For>
@@ -105,9 +115,11 @@ export function VoiceChallengePanel(props: {
             type="button"
             onClick={() => props.onReplay()}
           >
-            {props.steps.length > 1
-              ? 'Hear both notes again'
-              : 'Hear the note again'}
+            {props.wave
+              ? 'Hear the gentle wave again'
+              : props.steps.length > 1
+                ? 'Hear both notes again'
+                : 'Hear the note again'}
           </button>
         </Show>
         <button

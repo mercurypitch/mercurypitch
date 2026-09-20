@@ -8,6 +8,7 @@ class AudioParamFake {
   setValueAtTime = vi.fn()
   exponentialRampToValueAtTime = vi.fn()
   setTargetAtTime = vi.fn()
+  setValueCurveAtTime = vi.fn()
   cancelScheduledValues = vi.fn()
 }
 class NodeFake {
@@ -70,6 +71,31 @@ afterEach(() => {
 })
 
 describe('museum audio release', () => {
+  it('plays a settled note and two continuous waves, then waits for the full quiet gap', async () => {
+    const sound = createBrowserGlassSound()
+    let done = false
+    const played = sound.reference(57, 'gentle-wave').then(() => {
+      done = true
+    })
+    await flush()
+    const [curve, at, duration] =
+      context.sources[0].frequency.setValueCurveAtTime.mock.calls[0]
+    expect(at).toBe(0)
+    expect(duration).toBe(3)
+    expect(curve[0]).toBeCloseTo(220)
+    expect(curve[60]).toBeCloseTo(220)
+    expect(Math.max(...curve)).toBeCloseTo(220 * 2 ** (70 / 1200))
+    expect(Math.min(...curve)).toBeCloseTo(220 * 2 ** (-70 / 1200))
+    context.currentTime = 3.3
+    await vi.advanceTimersByTimeAsync(25)
+    expect(done).toBe(false)
+    context.currentTime = 3.55
+    await vi.advanceTimersByTimeAsync(25)
+    await played
+    expect(done).toBe(true)
+    sound.dispose()
+    await vi.advanceTimersByTimeAsync(240)
+  })
   it('rejects unavailable or refused output instead of silently completing a reference', async () => {
     resetSharedAudioContext({ createContext: () => undefined })
     const unavailable = createBrowserGlassSound()

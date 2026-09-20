@@ -105,7 +105,9 @@ function readPair(raw: string | null): PairCalibration | null {
 }
 
 function steps(definition: ChallengeDefinition) {
-  return definition.kind === 'hold' ? [definition.step] : definition.steps
+  return definition.kind === 'ordered-pair'
+    ? definition.steps
+    : [definition.step]
 }
 
 function pairTolerances(level: LevelDefinition): {
@@ -182,6 +184,11 @@ function referenceCopy(definition: ChallengeDefinition): {
   message: string
   hint: string
 } {
+  if (definition.kind === 'settle-wave')
+    return {
+      message: 'Listen: steady, then a gentle wave.',
+      hint: 'The note sways above and below its starting point. Your turn begins after it is quiet.',
+    }
   return definition.kind === 'ordered-pair'
     ? {
         message: 'Listen to both notes in order.',
@@ -197,6 +204,11 @@ function singingCopy(definition: ChallengeDefinition): {
   message: string
   hint: string
 } {
+  if (definition.kind === 'settle-wave')
+    return {
+      message: 'First, let your note settle.',
+      hint: 'Begin with a comfortable steady hum. Then we will let it sway gently.',
+    }
   if (definition.kind === 'ordered-pair') {
     const [first, second] = definition.steps
     return {
@@ -365,7 +377,9 @@ export function createVoiceChallenge(
         if (midi === undefined)
           throw new Error('The calibrated note is unavailable.')
         emit({ target: midi })
-        await sound.reference(midi)
+        if (definition.kind === 'settle-wave')
+          await sound.reference(midi, 'gentle-wave')
+        else await sound.reference(midi)
         if (disposed || run !== generation) return
       }
       if (disposed || run !== generation) return
@@ -548,8 +562,14 @@ export function createVoiceChallenge(
       options.game.snapshot().activeEncounter !== null
     ) {
       emit({
-        message: `Now sing ${options.game.snapshot().activeEncounter!.target}.`,
-        hint: 'Settle the second note gently.',
+        message:
+          current.challenge.kind === 'settle-wave'
+            ? 'Now let it sway gently above and below.'
+            : `Now sing ${options.game.snapshot().activeEncounter!.target}.`,
+        hint:
+          current.challenge.kind === 'settle-wave'
+            ? 'Follow a small, smooth wave twice. Take a breath and try again whenever you need.'
+            : 'Settle the second note gently.',
       })
     }
   }
@@ -575,7 +595,7 @@ export function createVoiceChallenge(
       hint: 'The museum will stay still while permission opens.',
       pair: isPairChallenge(encounter.challenge),
       stepIndex: 0,
-      stepCount: encounter.challenge.kind === 'ordered-pair' ? 2 : 1,
+      stepCount: encounter.challenge.kind === 'hold' ? 1 : 2,
       stepCharge: 0,
       target: comfortable,
     })
@@ -628,7 +648,7 @@ export function createVoiceChallenge(
   }
 
   const refind = (): void => {
-    if (current?.challenge.kind === 'hold') {
+    if (current !== null && current.challenge.kind !== 'ordered-pair') {
       const role = current.challenge.step.target
       if (role === 'comfortable') {
         comfortable = null

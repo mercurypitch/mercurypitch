@@ -1,31 +1,16 @@
 // Pitch challenge judging — dispatch held notes and ordered pairs over one capture-clock contract.
 
 import type { ChallengeDefinition, PitchObservation, PitchStepDefinition, PitchTargetId, PitchTargets, } from '../contracts'
+import type { ChallengeJudge, ChallengeJudgeEvent } from './challenge-contracts'
 import type { HoldJudge } from './hold'
 import { createHoldJudge } from './hold'
+import { createSettleWaveChallenge } from './settle-wave'
 
-export interface ChallengeProgress {
-  kind: ChallengeDefinition['kind']
-  stepIndex: number
-  stepCount: number
-  stepCharge: number
-  charge: number
-  target: PitchTargetId
-  targetMidi: number
-}
-
-export type ChallengeJudgeEvent =
-  | { type: 'step-complete'; completedSteps: number }
-  | { type: 'reset'; reason: 'wrong-order' }
-  | { type: 'complete' }
-
-export interface ChallengeJudge {
-  feed(frame: PitchObservation, nowMs: number): readonly ChallengeJudgeEvent[]
-  tick(seconds: number): void
-  /** Absolute foreground clock shared by capture callbacks and render ticks. */
-  advanceTo(nowMs: number): void
-  snapshot(): ChallengeProgress
-}
+export type {
+  ChallengeProgress,
+  ChallengeJudgeEvent,
+  ChallengeJudge,
+} from './challenge-contracts'
 
 export type ChallengeTargetError =
   | { reason: 'missing-target'; target: PitchTargetId }
@@ -231,6 +216,12 @@ export function createChallengeJudge(
     return isTargetError(step)
       ? { ok: false, ...step }
       : { ok: true, judge: createHoldChallenge(definition, step) }
+  }
+  if (definition.kind === 'settle-wave') {
+    const step = resolveStep(definition.step, targets)
+    return isTargetError(step)
+      ? { ok: false, ...step }
+      : { ok: true, judge: createSettleWaveChallenge(definition, step.midi) }
   }
 
   const first = resolveStep(definition.steps[0], targets)

@@ -64,6 +64,10 @@ export const ROOM_DECORATION_CATALOG: Readonly<
   'low-note-painting-v6': framedPainting('painting-low-note-v6'),
   'high-note-painting-v6': framedPainting('painting-high-note-v6'),
   'interval-painting-v6': framedPainting('painting-interval-v6'),
+  'listening-garden-painting-v7': framedPainting(
+    'painting-listening-garden-v7',
+  ),
+  'wave-keeper-painting-v7': framedPainting('painting-wave-keeper-v7'),
   'twin-tone-harp-v6': {
     bundle: 'twin-tone-harp-v6',
     node: 'decor_l2_twin_tone_resonance_harp',

@@ -1,5 +1,7 @@
 // Glass adventure contracts — content, simulation and host-neutral observations.
 
+import type { PitchWaveDefinition } from './pitch-wave'
+
 export interface Vec3 {
   x: number
   y: number
@@ -97,6 +99,11 @@ export interface PitchStepDefinition {
 
 export type ChallengeDefinition =
   | { kind: 'hold'; step: PitchStepDefinition }
+  | {
+      kind: 'settle-wave'
+      step: PitchStepDefinition
+      wave: PitchWaveDefinition
+    }
   | {
       kind: 'ordered-pair'
       steps: readonly [PitchStepDefinition, PitchStepDefinition]

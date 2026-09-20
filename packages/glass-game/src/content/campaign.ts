@@ -2,6 +2,7 @@
 import type { LevelDefinition } from '../contracts'
 import { GLASS_ENCLOSED_CHAMBER } from './enclosed-chamber'
 import { GLASSWORKS_JOURNEY } from './glassworks-journey'
+import { RESONANCE_CONSERVATORY } from './resonance-conservatory'
 import { TWIN_GALLERIES } from './twin-galleries'
 
 export interface GalleryChapter {
@@ -40,5 +41,14 @@ export const MUSEUM_CAMPAIGN: readonly GalleryChapter[] = [
       'Two colours of light, two comfortable notes, and a little conversation between them.',
     imageAsset: 'painting-interval-v6',
     level: TWIN_GALLERIES,
+  },
+  {
+    id: 'resonance-conservatory',
+    chapter: 'Gallery 03',
+    lesson: 'Stillness into gentle waves',
+    description:
+      'Find your familiar note, then let it sway through the fern house, listening court and orchid gallery.',
+    imageAsset: 'painting-listening-garden-v7',
+    level: RESONANCE_CONSERVATORY,
   },
 ]

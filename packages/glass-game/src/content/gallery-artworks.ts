@@ -9,6 +9,25 @@ export interface GalleryArtwork {
 }
 
 const ARTWORKS: Readonly<Record<string, GalleryArtwork>> = {
+  'listening-garden-painting-v7': {
+    title: 'The garden that listened',
+    imageAsset: 'painting-listening-garden-v7',
+    description:
+      'A celadon orchid unfurls over a still pool, surrounded by crystal leaves and golden ripples.',
+    story:
+      'For a long time, the garden was perfectly still. Then one leaf swayed, and another answered. Nothing had to hurry for everything to move.',
+    invitation: 'Begin in stillness. A little movement can carry a long way.',
+  },
+  'wave-keeper-painting-v7': {
+    title: 'The keeper of gentle waves',
+    imageAsset: 'painting-wave-keeper-v7',
+    description:
+      'An imaginary singing muse with moonstone hair and crystal orchids, framed by soft golden waves.',
+    story:
+      'She never asked the note to stay perfectly still. She gave it a place to come home to, and a little room to wander.',
+    invitation:
+      'Let your note sway above and below. Your own pace is welcome here.',
+  },
   'low-note-painting-v6': {
     title: 'The Low Note Keeper',
     imageAsset: 'painting-low-note-v6',

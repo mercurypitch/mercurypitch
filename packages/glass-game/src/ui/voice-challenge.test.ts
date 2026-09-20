@@ -88,12 +88,14 @@ class FakeVoice implements GlassVoiceSession {
 
 class FakeSound implements GlassSound {
   readonly references: number[] = []
+  readonly patterns: Array<'gentle-wave' | undefined> = []
   readonly gates: Deferred[] = []
   shatterCount = 0
   disposeCount = 0
 
-  async reference(midi: number): Promise<void> {
+  async reference(midi: number, pattern?: 'gentle-wave'): Promise<void> {
     this.references.push(midi)
+    this.patterns.push(pattern)
     const gate = this.gates.shift()
     if (gate !== undefined) await gate.promise
   }
@@ -247,6 +249,21 @@ const HIGH_HOLD: ChallengeDefinition = {
   step: { target: 'high', hold: HOLD },
 }
 
+const WAVE: ChallengeDefinition = {
+  kind: 'settle-wave',
+  step: { target: 'comfortable', hold: HOLD },
+  wave: {
+    requiredCycles: 2,
+    minimumExcursionCents: 35,
+    maximumExcursionCents: 180,
+    minimumCycleSeconds: 0.3,
+    maximumCycleSeconds: 2.5,
+    minimumWaveSeconds: 1.2,
+    maximumCentsPerSecond: 2400,
+    smoothingSeconds: 0.045,
+  },
+}
+
 const PAIR: ChallengeDefinition = {
   kind: 'ordered-pair',
   steps: [
@@ -257,6 +274,69 @@ const PAIR: ChallengeDefinition = {
 }
 
 describe('voice challenge controller', () => {
+  it('keeps the wave demonstration out of evidence and breaks only after fresh settling and waves', async () => {
+    const voice = new FakeVoice()
+    const sound = new FakeSound()
+    const gate = deferred()
+    sound.gates.push(gate)
+    const test = harness(WAVE, { 'comfortable-note': '57' }, [voice], [sound])
+    const pending = test.controller.start('vessel')
+    await flush()
+    expect(sound.patterns).toEqual(['gentle-wave'])
+    for (let i = 0; i < 140; i++)
+      test.emit(
+        voice,
+        observation(
+          i,
+          57 + 0.7 * Math.sin(i * 0.025 * 2 * Math.PI),
+          1025 + i * 25,
+        ),
+      )
+    expect(test.events).toEqual([])
+    gate.resolve()
+    await pending
+    for (let i = 140; i <= 144; i++)
+      test.emit(voice, observation(i, 57, 1025 + i * 25))
+    expect(test.controller.snapshot()).toMatchObject({
+      stepIndex: 1,
+      message: 'Now let it sway gently above and below.',
+    })
+    expect(test.events.some((event) => event.type === 'break')).toBe(false)
+    for (let i = 145; i < 270; i++)
+      test.emit(
+        voice,
+        observation(
+          i,
+          57 + 0.7 * Math.sin((i - 145) * 0.025 * 2 * Math.PI),
+          1025 + i * 25,
+        ),
+      )
+    expect(test.events.filter((event) => event.type === 'break')).toEqual([
+      { type: 'break', id: 'vessel' },
+    ])
+  })
+
+  it('cancels a settled wave and ignores its retained microphone callback', async () => {
+    const test = harness(WAVE, { 'comfortable-note': '57' })
+    await test.controller.start('vessel')
+    for (let i = 0; i <= 4; i++)
+      test.emit(test.voices[0], observation(i, 57, 1025 + i * 25))
+    expect(test.controller.snapshot().stepIndex).toBe(1)
+    test.controller.cancel()
+    for (let i = 5; i < 160; i++)
+      test.voices[0].emitRetained(
+        0,
+        observation(
+          i,
+          57 + 0.7 * Math.sin(i * 0.025 * 2 * Math.PI),
+          1025 + i * 25,
+        ),
+      )
+    expect(test.game.snapshot().activeEncounter).toBeNull()
+    expect(test.game.saveProgress().completedBreakableIds).toEqual([])
+    expect(test.events.some((event) => event.type === 'break')).toBe(false)
+  })
+
   it('preserves the stored comfortable-note hold flow and break contract', async () => {
     const test = harness(COMFORTABLE, { 'comfortable-note': '57' })
     await test.controller.start('vessel')

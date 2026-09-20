@@ -109,6 +109,42 @@ describe('authoring validation', () => {
     )
   })
 
+  it('rejects wave bounds whose speed cannot reach the opposite excursion in time', () => {
+    const [first, ...rest] = FOUNDATION_STRAIGHT_SOURCE.exhibits
+    if (first.challenge.kind !== 'hold')
+      throw new Error('Expected a held-note authoring fixture.')
+    const diagnostics = diagnosticsFrom({
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      exhibits: [
+        {
+          ...first,
+          challenge: {
+            kind: 'settle-wave',
+            step: first.challenge.step,
+            wave: {
+              requiredCycles: 2,
+              minimumExcursionCents: 100,
+              maximumExcursionCents: 180,
+              minimumCycleSeconds: 0.3,
+              maximumCycleSeconds: 1,
+              minimumWaveSeconds: 1.2,
+              maximumCentsPerSecond: 100,
+              smoothingSeconds: 0.045,
+            },
+          },
+        },
+        ...rest,
+      ],
+    })
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid-challenge',
+        path: 'exhibits.arrival-goblet.challenge.wave',
+      }),
+    )
+  })
+
   it('rejects unknown floor art recipes and palettes', () => {
     const [arrival, ...rooms] = FOUNDATION_STRAIGHT_SOURCE.rooms
     const diagnostics = diagnosticsFrom({

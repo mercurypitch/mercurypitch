@@ -14,7 +14,7 @@ export interface GlassVoiceSession {
 }
 
 export interface GlassSound {
-  reference(midi: number): Promise<void>
+  reference(midi: number, pattern?: 'gentle-wave'): Promise<void>
   shatter(): void
   dispose(): void
 }

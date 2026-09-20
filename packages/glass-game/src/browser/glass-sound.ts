@@ -167,7 +167,7 @@ export function createBrowserGlassSound(): GlassSound {
     })
   }
   return {
-    async reference(midi) {
+    async reference(midi, pattern) {
       if (
         !context ||
         disposed ||
@@ -180,6 +180,28 @@ export function createBrowserGlassSound(): GlassSound {
       if (!available || disposed || context.state !== 'running')
         throw new Error('Audio could not start. Tap Start to try again.')
       const at = context.currentTime
+      if (pattern === 'gentle-wave') {
+        const oscillator = context.createOscillator()
+        const envelope = context.createGain()
+        const duration = 3
+        const frequency = 440 * 2 ** ((midi - 69) / 12)
+        const curve = Float32Array.from({ length: 301 }, (_, index) => {
+          const waveTime = Math.min(2, Math.max(0, index / 100 - 0.8))
+          return (
+            frequency * 2 ** ((70 * Math.sin(2 * Math.PI * waveTime)) / 1200)
+          )
+        })
+        oscillator.frequency.setValueCurveAtTime(curve, at, duration)
+        envelope.gain.setValueAtTime(FLOOR, at)
+        envelope.gain.exponentialRampToValueAtTime(0.13, at + 0.018)
+        envelope.gain.setTargetAtTime(0, at + duration, 0.036)
+        oscillator.connect(envelope).connect(bus!)
+        own(oscillator, [envelope])
+        oscillator.start(at)
+        oscillator.stop(at + duration + 0.24)
+        await waitForReference(at + duration + 0.55)
+        return
+      }
       tone(440 * 2 ** ((midi - 69) / 12), at, 0.65, 0.13)
       // The quiet gap follows audio time; a frozen reference cannot later score itself.
       await waitForReference(at + 1.15)

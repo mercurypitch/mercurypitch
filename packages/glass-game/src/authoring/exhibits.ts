@@ -6,6 +6,12 @@ import type { CompiledRoom } from './internal'
 import { diagnostic, mapEncounterRefs, runtimeRoomId } from './internal'
 
 function cloneChallenge(challenge: ChallengeDefinition): ChallengeDefinition {
+  if (challenge.kind === 'settle-wave')
+    return {
+      kind: challenge.kind,
+      step: { target: challenge.step.target, hold: { ...challenge.step.hold } },
+      wave: { ...challenge.wave },
+    }
   if (challenge.kind === 'hold')
     return {
       kind: challenge.kind,
