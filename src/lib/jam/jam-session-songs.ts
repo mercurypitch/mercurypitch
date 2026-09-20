@@ -19,9 +19,8 @@ import { isExampleSession } from '@/features/karaoke-night/examples-library'
 import type { EditableNote } from '@/features/stem-mixer/pitch-edit-model'
 import { applyEditLayer, emptyEditLayer, isEditLayerEmpty, } from '@/features/stem-mixer/pitch-edit-model'
 import type { JamNotesSource, JamSong } from '@/lib/jam/jam-song'
-import { demoSongToJamSong, exampleSongId, lrcToSongLines, sessionToJamSong, } from '@/lib/jam/jam-song-sources'
+import { demoSongToJamSong, exampleSongId, lrcTextToSongLines, sessionToJamSong, } from '@/lib/jam/jam-song-sources'
 import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
-import { parseLrcFile } from '@/lib/lyrics-service'
 import type { LyricsVersionKind } from '@/lib/lyrics-versions'
 import { sortVersions, VERSION_LABELS } from '@/lib/lyrics-versions'
 
@@ -70,7 +69,9 @@ export async function sessionLyricChoices(
     const versions = lyrics.versions ?? []
     const choices: JamLyricChoice[] = []
     for (const v of sortVersions(versions)) {
-      const lines = lrcToSongLines(parseLrcFile(v.text))
+      // The version's own word ends first: a text saved inside the app
+      // carries no tag, and the map beside it is where the marks live.
+      const lines = lrcTextToSongLines(v.text, v.wordEndTimings)
       if (lines.length === 0) continue
       choices.push({
         kind: v.kind,
@@ -83,7 +84,7 @@ export async function sessionLyricChoices(
     // No version history: an older session, or one whose lyrics were saved
     // before versions existed. The single stored text is still a choice.
     if (lyrics.format !== 'lrc') return []
-    const lines = lrcToSongLines(parseLrcFile(lyrics.text))
+    const lines = lrcTextToSongLines(lyrics.text)
     return lines.length === 0
       ? []
       : [
@@ -304,7 +305,7 @@ export async function exampleSong(
     theirs !== undefined
       ? theirs.lines
       : lyrics !== null && lyrics.format === 'lrc'
-        ? lrcToSongLines(parseLrcFile(lyrics.text))
+        ? lrcTextToSongLines(lyrics.text)
         : []
   return withGuide(demoSongToJamSong(manifest, lines, guide.notes), guide)
 }

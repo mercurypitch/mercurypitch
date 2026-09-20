@@ -9,7 +9,9 @@
 import type { DemoSongManifest } from '@/features/karaoke-night/demo-song'
 import type { JamSong } from '@/lib/jam/jam-song'
 import type { JamSongNote, LyricsLineTiming } from '@/lib/jam/types'
+import { parseLrcTimingMetadata } from '@/lib/lrc-timing-metadata'
 import type { LrcLine } from '@/lib/lyrics-service'
+import { parseLrcFile, parseLrcWordTimings } from '@/lib/lyrics-service'
 
 /**
  * Song id of the ORIGINAL example song, which is also its session id: an
@@ -48,23 +50,85 @@ export function isExampleSongId(songId: string): boolean {
 export const SESSION_SONG_PREFIX = 'session:'
 
 /**
+ * When each word of a line stops, keyed the way the mixer keys it: by the
+ * line's index in the LRC FILE, blank and dropped lines included.
+ */
+export type JamWordEnds = Readonly<
+  Record<number, readonly (number | null | undefined)[]>
+>
+
+/**
+ * The enhanced spec's `<mm:ss.xx>` word stamps, respelled as the `[mm:ss.xx]`
+ * the app's own parser reads. Both are in the wild; the app writes the
+ * second, and only ever read that one -- so a sheet from anywhere else lost
+ * its word times on the way in.
+ */
+function squareWordStamps(text: string): string {
+  return text.replace(/<(\d{1,3}:\d{2}(?:[.:]\d{2,3})?)>/g, '[$1]')
+}
+
+/**
  * LRC lines into song lines.
  *
  * LrcLine is already `{ time (seconds), text }`, so this is a rename plus
- * one real decision: an LRC carries starts only, so each line ends where
- * the next begins. Leaving endSec undefined would be equally correct for
+ * two real decisions. An LRC carries starts only, so each line ends where
+ * the next begins: leaving endSec undefined would be equally correct for
  * lineAt, but filling it lets a caller measure a line's duration without
  * having to look at its neighbour.
+ *
+ * And the word times INSIDE a line are kept, not just scrubbed out of the
+ * text. They used to be thrown away here, which is why a room lit a whole
+ * line at once under a sheet somebody had mapped word by word. They are
+ * read by the mixer's own parser, so a word starts in a room exactly when
+ * it starts in Karaoke Night.
+ *
+ * `wordEnds` is the other half of such a mapping. It is keyed by the line's
+ * index in the FILE, so it is looked up before the empty lines are dropped.
  */
-export function lrcToSongLines(lrc: readonly LrcLine[]): LyricsLineTiming[] {
+export function lrcToSongLines(
+  lrc: readonly LrcLine[],
+  wordEnds?: JamWordEnds,
+): LyricsLineTiming[] {
   return lrc
-    .map((l) => ({ ...l, text: stripWordTimings(l.text) }))
+    .map((l, lrcIndex) => {
+      const timed = parseLrcWordTimings(squareWordStamps(l.text), l.time)
+      // The text a singer reads is the words, joined: the same string the
+      // word spans add up to, so a line never reflows as it becomes current.
+      const text =
+        timed !== null ? timed.words.join(' ') : stripWordTimings(l.text)
+      return { time: l.time, text, timed, ends: wordEnds?.[lrcIndex] }
+    })
     .filter((l) => l.text !== '')
     .map((l, i, arr) => ({
       text: l.text,
       startSec: l.time,
       ...(arr[i + 1] === undefined ? {} : { endSec: arr[i + 1]!.time }),
+      ...(l.timed === null
+        ? {}
+        : { words: l.timed.words, wordStartsSec: l.timed.wordTimes }),
+      // Ends mean nothing without the starts they end.
+      ...(l.timed === null || l.ends === undefined || l.ends.length === 0
+        ? {}
+        : { wordEndsSec: Array.from(l.ends, (end) => end ?? null) }),
     }))
+}
+
+/**
+ * A whole LRC text into song lines.
+ *
+ * The one door for text, so that every way words reach a room -- a session's
+ * versions, an example's file, a sheet dropped in by hand -- reads the word
+ * ends the same way: the caller's own map if it has one (a stored version
+ * does), else the `[x-mp-timing:...]` tag the app writes into its exports.
+ */
+export function lrcTextToSongLines(
+  text: string,
+  wordEnds?: JamWordEnds,
+): LyricsLineTiming[] {
+  return lrcToSongLines(
+    parseLrcFile(text),
+    wordEnds ?? parseLrcTimingMetadata(text)?.wordEndTimings,
+  )
 }
 
 /**
