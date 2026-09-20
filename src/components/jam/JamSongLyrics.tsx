@@ -21,6 +21,7 @@ import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
 import { blockOfLine, groupLinesBySinger } from '@/lib/jam/jam-song-blocks'
 import { EVERYONE, singerOfLine } from '@/lib/jam/jam-song-parts'
 import { jamLyricsAlign, jamLyricsScale, setJamLyricsAlign, setJamLyricsScale, } from '@/lib/jam/jam-view-prefs'
+import { createLyricsHandsOff } from '@/lib/jam/lyrics-hands-off'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { assignJamSongLines, jamAssignBrush, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
@@ -328,7 +329,15 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
   const nameOf = (id: string) =>
     everyone().find((p) => p.id === id)?.name ?? 'Someone'
 
-  const currentIndex = () => lineIndexAt(props.lines, props.positionSec())
+  // A memo, and it matters that it is one. The centring effect below reads
+  // this; as a plain function it made that effect depend on the POSITION,
+  // so it ran on every tick of the clock -- four times a second -- and each
+  // run glided the sheet back to the sung line. Nobody could scroll the
+  // words while a song played. A memo only tells its readers when the LINE
+  // changes, which is the only time the song has anywhere new to go.
+  const currentIndex = createMemo(() =>
+    lineIndexAt(props.lines, props.positionSec()),
+  )
   const rests = createMemo(() => restsBetween(props.lines))
   const activeRest = () => restAt(rests(), props.positionSec())
 
@@ -357,7 +366,53 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
   }
 
   /**
-   * Keep the sung line centred in THIS panel.
+   * Whose hands are on the words. While they are the reader's, the song
+   * keeps its own off (see lyrics-hands-off.ts for why this listens to
+   * input rather than to `scroll`).
+   */
+  const handsOff = createLyricsHandsOff()
+
+  /**
+   * Before the first line: the run-in, or a song that has been stopped.
+   * A memo for the same reason `currentIndex` is one -- it is read by the
+   * follower, which must hear about the run-in starting and ending and not
+   * about every tick inside it.
+   */
+  const inRunIn = createMemo(() => {
+    const first = props.lines[0]
+    return first !== undefined && props.positionSec() < first.startSec
+  })
+
+  /** What the follower carries from one run to the next. */
+  interface Followed {
+    layout: string
+    lines: readonly LyricsLineTiming[]
+    /** The line the sheet was last brought to; -1 for the top, or nothing. */
+    centred: number
+  }
+
+  /**
+   * Bring the sung line to the middle of THIS panel -- when a new line
+   * starts, and not in between.
+   *
+   * In between, the words belong to whoever wants to scroll them. This
+   * used to run on every tick of the song's clock, so a scroll lasted a
+   * quarter of a second before the sheet glided back; now it runs when the
+   * LINE changes (or the layout does), which is the behaviour of the
+   * karaoke mixer's sheet and the only time the song has anywhere to go.
+   *
+   * And it never stays away. `handsOff.held()` is tracked, so the moment
+   * the hands have gone this runs again and asks one question: is the song
+   * still on the line the sheet was last brought to? If it has moved on,
+   * the sheet goes to it now -- waiting for the next line instead would
+   * leave it wherever it was put for the whole of a last line, or of a long
+   * break. If it has not, nothing is owed and the reader keeps their place.
+   *
+   * That is a question about NOW, deliberately, and not a flag raised while
+   * the hands were on. A flag cannot be taken back: a position that dips
+   * under a line's start and returns as a pause settles raised one, and a
+   * stopped song then pulled the sheet back to a line it had never left
+   * (caught by jam-lyrics-follow.spec.ts, about one run in three).
    *
    * Not scrollIntoView: it scrolls every scrollable ancestor, so following
    * the song dragged the whole page down and the header, the picker and
@@ -369,20 +424,51 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
    * first and last lines behave -- they simply stop at the ends instead of
    * needing half a panel of padding to centre into.
    *
-   * It also follows the LAYOUT: the size of the words and the height of
-   * the box. Every line above the sung one grows or shrinks with the
-   * scale, so the sung line moves even though the song has not; without
-   * re-running, two presses of the plus button push the line being sung
-   * out of the bottom of the panel. Both are read before the early
-   * returns so that they are tracked whether or not a line is current yet.
+   * It also follows the LAYOUT: the size of the words, the height of the
+   * box, and the words themselves (Original to Edited is the same line
+   * number somewhere else). Every line above the sung one grows or shrinks
+   * with the scale, so the sung line moves even though the song has not;
+   * without re-running, two presses of the plus button push the line being
+   * sung out of the bottom of the panel. All of it is read before the early
+   * returns so that it is tracked whether or not a line is current yet.
    */
-  createEffect<string | undefined>((lastLayout) => {
+  createEffect<Followed | undefined>((last) => {
     const layout = `${jamLyricsScale()}/${boxHeight()}`
+    const lines = props.lines
     const i = currentIndex()
+    const runIn = inRunIn()
+    const held = handsOff.held()
     const box = scrollRef
-    if (i < 0 || box === undefined) return layout
-    const el = box.querySelector<HTMLElement>(`[data-line="${i}"]`)
-    if (el === null) return layout
+    const stay: Followed = { layout, lines, centred: last?.centred ?? -1 }
+    if (box === undefined) return stay
+
+    // Where the song wants the sheet: on a line, at the top for the run-in
+    // (a stop, a scrub back to the start), or nowhere new -- a break between
+    // two lines leaves the words where they are.
+    const wanted = i >= 0 ? i : runIn ? -1 : null
+    if (wanted === null) return stay
+
+    // The words are in somebody's hands, and nothing moves. What `stay`
+    // carries forward is the new layout and the OLD line: so a layout that
+    // changed under the reader's fingers is theirs to keep, and the line is
+    // compared afresh when they let go.
+    if (held) return stay
+
+    // A new layout moves a LINE, so the line has to be found again. It does
+    // not move the top: a sheet that is already there has nowhere to go.
+    const relaid =
+      wanted !== -1 &&
+      last !== undefined &&
+      (layout !== last.layout || lines !== last.lines)
+    if (!relaid && wanted === stay.centred) return stay
+
+    const moved: Followed = { layout, lines, centred: wanted }
+    if (wanted === -1) {
+      box.scrollTo({ top: 0, behavior: 'smooth' })
+      return moved
+    }
+    const el = box.querySelector<HTMLElement>(`[data-line="${wanted}"]`)
+    if (el === null) return stay
     // Where the line sits in the box's own content, from the two rects.
     // Not `el.offsetTop`: that is measured from the offsetParent, which
     // here is the PANEL (its backdrop-filter makes it one) and not this
@@ -403,10 +489,9 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
       // the glide, and the sung line would trail the fingers instead of
       // staying put under them. Pinned, it is the fixed point the words
       // grow around.
-      behavior:
-        lastLayout === undefined || layout === lastLayout ? 'smooth' : 'auto',
+      behavior: relaid ? 'auto' : 'smooth',
     })
-    return layout
+    return moved
   })
 
   /**
@@ -499,6 +584,7 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
             scrollRef = box
             bindScaleGestures(box)
             watchBoxHeight(box)
+            handsOff.bind(box)
           }}
           data-align={jamLyricsAlign()}
           style={{
@@ -514,6 +600,9 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
             {(line, i) => (
               <div
                 data-line={i()}
+                // Which row the song is on, for anything that has to find
+                // it without reading a hashed class name.
+                data-current={i() === currentIndex() ? '' : undefined}
                 // Present only where a click really does jump the song: the
                 // stylesheet hangs the pointer cursor on it.
                 data-seekable={props.onSeek !== undefined ? '' : undefined}
