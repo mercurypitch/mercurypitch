@@ -187,12 +187,16 @@ export function buildEditedLrc(rows: readonly LyricsEditRow[]): string {
     .join('\n')
 }
 
-/** Matches one inline LRC timestamp (word-level `[mm:ss.xx]`) in a line body. */
-const INLINE_STAMP_RE = /\[\d{1,3}:\d{2}(?:[.:]\d{1,3})?\]/g
+/**
+ * Matches one inline LRC timestamp in a line body: the word-level `[mm:ss.xx]`
+ * the app writes, or the `<mm:ss.xx>` the enhanced spec prescribes.
+ */
+const INLINE_STAMP_RE =
+  /\[\d{1,3}:\d{2}(?:[.:]\d{1,3})?\]|<\d{1,3}:\d{2}(?:[.:]\d{1,3})?>/g
 
 /**
- * Remove inline word-level `[mm:ss.xx]` stamps from a raw LRC line body and
- * collapse whitespace — the clean text shown in the editor's inputs.
+ * Remove inline word-level stamps, in either spelling, from a raw LRC line
+ * body and collapse whitespace — the clean text shown in the editor's inputs.
  */
 export function stripInlineWordStamps(text: string): string {
   return text.replace(INLINE_STAMP_RE, ' ').replace(/\s+/g, ' ').trim()
