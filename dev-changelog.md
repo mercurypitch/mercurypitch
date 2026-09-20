@@ -238,6 +238,53 @@ test that fails on the old controller:
    the reader's -- following switched off by itself, mid-song. One timer,
    cleared when a new glide starts, released on `scrollend` where there is one.
 
+### The jam room's words, word by word
+
+Owner: port "our best implementation" of the word highlight into a jam room's
+lyrics, reusing it if possible.
+
+- **The arithmetic was already shared, and stays the only copy.**
+  `computeActiveWord` (`lyrics-service`) is a pure function that Karaoke
+  Night's stage and the mixer's lyric panel both call; the room calls it too,
+  through `jam-line-words`. A word starts in a room at the moment it starts
+  in Karaoke Night, and a fix to one is a fix to all three. The JSX was NOT
+  extracted: the other two carry note glyphs, run-in cues and letters inside
+  each word, so a shared component would be a third shape rather than a
+  common one. `JamLineWords` is fifteen lines.
+- **The data was there and thrown away.** Word starts live INSIDE the LRC text
+  (`[mm:ss.xx]` between words); `lrcToSongLines` ran `stripWordTimings` over
+  each line so a singer would not read the clock, and kept nothing. It reads
+  them first now, with the mixer's own `parseLrcWordTimings`, and keeps
+  `words` + `wordStartsSec` on the line. The `<mm:ss.xx>` spelling is respelled
+  on the way in -- the app's parser only reads the square one, and
+  `stripWordTimings` handling both is the evidence both are in the wild.
+- **Word ENDS** (a held note, a word before a breath) are the other half of a
+  mapping. They are keyed by the line's index in the FILE, so they are looked
+  up before empty lines are dropped. `lrcTextToSongLines` is the one door for
+  text: the caller's map if it has one (a stored version does), else the
+  `[x-mp-timing:...]` tag the app writes into its exports. Sweep curves are
+  not sent -- a nested map per word, and `computeActiveWord` fills linearly
+  without them.
+- **Nothing on the wire changed shape.** `sendSong` passes `lines` wholesale
+  and `songFromWire` copies them wholesale, so optional fields on a line are
+  the whole protocol change: an older guest never looks, an older host never
+  sends, and either way the words still light up -- a line with no mapping is
+  shared out evenly, exactly as the mixer does for a line-timed sheet. What
+  arrives is checked before it is trusted (`jamLineWords`): words that add up
+  to the text, a finite start for every one, or the mapping is ignored.
+- **Cheap on purpose.** Only the CURRENT line is split into spans; every other
+  row stays one text node. One memo computes the progress, with an `equals`
+  that keeps a paused song or a lit word from waking the line every frame.
+  `.word { transition: none }` is load-bearing (Karaoke Night's lesson):
+  animating `color` across the swap to a clipped gradient flashes the glyphs
+  transparent on every word.
+- The version picker can now tell a word-level correction from the original
+  by the lines alone (`sameLines` compares word starts), where it used to need
+  to remember which button was pressed.
+- `jam-word-highlight.spec.ts` samples the fill every frame from INSIDE the
+  page: a word fills in a third of a second and then waits lit, so a poll
+  from outside sampled the wait and never once saw a fill.
+
 ### Three `manualChunks` rules deleted; every document weighed
 
 The owner's question after the jam room broke Piano Night's audit by importing
