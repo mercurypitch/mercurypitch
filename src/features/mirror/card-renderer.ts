@@ -911,30 +911,41 @@ export async function shareCard(
     title: meta?.title ?? 'My voiceprint',
     text: meta?.text ?? DEFAULT_SHARE_TEXT,
   }
+  // Once, whichever way the link gets out: a second call would store the
+  // same card again, to be answered with a 409.
+  let handedOut = false
+  const linkLeaving = (): void => {
+    if (handedOut) return
+    handedOut = true
+    meta?.onLinkLeaving?.()
+  }
+
   if (
     typeof navigator.canShare === 'function' &&
     navigator.canShare(shareData) &&
     typeof navigator.share === 'function'
   ) {
     try {
-      meta?.onLinkLeaving?.()
+      linkLeaving()
       await navigator.share(shareData)
       return 'shared'
     } catch (err) {
       // Cancelling the sheet is a decision, not a failure: no download,
-      // no share. Anything else (data rejected, permission) falls through
-      // to the download path so the card still leaves the device.
+      // no share.
       if (err instanceof DOMException && err.name === 'AbortError') {
         return 'dismissed'
       }
-      // The sheet was offered the link already; do not hand it out twice.
-      downloadBlob(blob, filename)
-      return 'downloaded'
+      // Anything else and the sheet did not take it — and may never have
+      // opened: Chrome rejects with NotAllowedError once the tap's
+      // activation has run out, which drawing two 1080px cards is enough to
+      // do on a slow phone. Fall through to the way out below, so the card
+      // is saved AND the link goes on the clipboard, rather than the link
+      // being left on the floor by the one path that was meant to carry it.
     }
   }
   downloadBlob(blob, filename)
   if (meta?.link !== undefined && (await copyText(meta.link))) {
-    meta.onLinkLeaving?.()
+    linkLeaving()
     return 'downloaded-link-copied'
   }
   return 'downloaded'
@@ -981,8 +992,11 @@ export function statusBad(text: string): ShareStatus {
 }
 
 /** What to show after a share, or null when the sheet was simply closed. */
-export function shareOutcomeStatus(outcome: ShareOutcome): ShareStatus | null {
-  const message = shareOutcomeMessage(outcome)
+export function shareOutcomeStatus(
+  outcome: ShareOutcome,
+  carriedLink = false,
+): ShareStatus | null {
+  const message = shareOutcomeMessage(outcome, carriedLink)
   return message === null ? null : statusOk(message)
 }
 
@@ -992,15 +1006,29 @@ export function copyOutcomeStatus(outcome: CopyOutcome): ShareStatus {
   return outcome === 'copied' ? statusOk(message) : statusBad(message)
 }
 
-/** What to tell someone after `shareCard`, in the words the Mirror uses. */
-export function shareOutcomeMessage(outcome: ShareOutcome): string | null {
+/**
+ * What to tell someone after `shareCard`, in the words the Mirror uses.
+ *
+ * `carriedLink` is for the callers that passed one. "Saved" is the whole
+ * truth for a card with no link in it and half of it for a card whose link
+ * was meant to travel alongside: Firefox and Safari refuse a clipboard
+ * write that did not begin inside the tap, and drawing the card takes
+ * longer than that. Those callers all have a Copy link button, so the line
+ * points at it rather than leaving someone to wonder where the link went.
+ */
+export function shareOutcomeMessage(
+  outcome: ShareOutcome,
+  carriedLink = false,
+): string | null {
   switch (outcome) {
     case 'shared':
       return 'Shared!'
     case 'downloaded-link-copied':
       return 'Saved, and the link is copied. Paste it beside the picture.'
     case 'downloaded':
-      return 'Saved — post it anywhere.'
+      return carriedLink
+        ? 'Saved. The link did not copy here — use Copy link for that.'
+        : 'Saved — post it anywhere.'
     case 'dismissed':
       return null
   }

@@ -90,17 +90,43 @@ describe('shareCard — onLinkLeaving', () => {
   })
 
   it('runs once even when the sheet then refuses the data', async () => {
+    // Chrome rejects with NotAllowedError when the tap's activation has run
+    // out, in which case the sheet never opened and the link went nowhere.
+    // The picture is saved and the link is put on the clipboard instead —
+    // but the card is stored once, not twice.
     mockShare(() => Promise.reject(new DOMException('nope', 'NotAllowedError')))
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
     const onLinkLeaving = vi.fn()
     const outcome = await shareCard(blob, 'card.png', {
       link: 'https://mercurypitch.com/mirror?v=abc',
       onLinkLeaving,
     })
-    // The sheet was already offered the link; it is not handed out twice.
+    expect(outcome).toBe('downloaded-link-copied')
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(writeText).toHaveBeenCalledWith(
+      'https://mercurypitch.com/mirror?v=abc',
+    )
+    expect(onLinkLeaving).toHaveBeenCalledTimes(1)
+  })
+
+  it('still saves the picture when the clipboard refuses too', async () => {
+    mockShare(() => Promise.reject(new DOMException('nope', 'NotAllowedError')))
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: () => Promise.reject(new Error('denied')) },
+      configurable: true,
+    })
+    const outcome = await shareCard(blob, 'card.png', {
+      link: 'https://mercurypitch.com/mirror?v=abc',
+      onLinkLeaving: () => {},
+    })
     expect(outcome).toBe('downloaded')
     expect(click).toHaveBeenCalledTimes(1)
-    expect(onLinkLeaving).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -209,6 +235,18 @@ describe('cardToUnfurlBlob', () => {
     const png = new Blob(['x'], { type: 'image/png' })
     expect(await cardToUnfurlBlob(canvasGiving(png).canvas)).toBeNull()
     expect(await cardToUnfurlBlob(canvasGiving(null).canvas)).toBeNull()
+  })
+})
+
+describe('a card that carried a link says where the link went', () => {
+  it('points at Copy link when the clipboard would not take it', () => {
+    // Only for the callers that passed a link: a free-sing card carries
+    // none, and telling its owner to copy one would be a lie.
+    expect(shareOutcomeMessage('downloaded', true)).toBe(
+      'Saved. The link did not copy here — use Copy link for that.',
+    )
+    expect(shareOutcomeMessage('downloaded')).toBe('Saved — post it anywhere.')
+    expect(shareOutcomeStatus('downloaded', true)?.tone).toBe('ok')
   })
 })
 

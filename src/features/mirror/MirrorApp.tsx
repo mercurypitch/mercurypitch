@@ -163,6 +163,10 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   const [activeMicLabel, setActiveMicLabel] = createSignal('')
   const [retryNotice, setRetryNotice] = createSignal(false)
   const [shareStatus, setShareStatus] = createSignal<ShareStatus | null>(null)
+  // A second tap while the first is in flight would mint another id and
+  // store another card. Ten of those in a minute and the store starts
+  // refusing, so the link someone actually sends unfurls with nothing.
+  const [copyingLink, setCopyingLink] = createSignal(false)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
   // The saved take number of the run on screen (null for unsaved/demo runs);
   // personalises download filenames ("…-take-3-…").
@@ -1134,7 +1138,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     // claim anything in the status line.
     if (outcome === 'dismissed') return
     trackFunnel('card_shared')
-    setShareStatus(shareOutcomeStatus(outcome))
+    // This card carried a link: where the clipboard refused it, the line
+    // points at Copy link rather than saying only that a file was saved.
+    setShareStatus(shareOutcomeStatus(outcome, true))
   }
 
   /** The link at the halfway reveal. The twin is the part people want to
@@ -1145,20 +1151,26 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     const range = session().range
     const legend = peekLegend()
     if (range === null || legend === null) return
-    const summary = {
-      lowMidi: range.lowMidi,
-      highMidi: range.highMidi,
-      semitones: range.semitones,
+    if (copyingLink()) return
+    setCopyingLink(true)
+    try {
+      const summary = {
+        lowMidi: range.lowMidi,
+        highMidi: range.highMidi,
+        semitones: range.semitones,
+      }
+      const outcome = await copyVoiceprintLink(summary, legend, () =>
+        renderSummaryCard(summary, legend, 'stats'),
+      )
+      if (outcome === 'copied') trackFunnel('link_copied')
+      setShareStatus(
+        outcome === 'copied'
+          ? statusOk('Link copied. Paste it anywhere and it shows your twin.')
+          : statusBad('The link could not be copied here.'),
+      )
+    } finally {
+      setCopyingLink(false)
     }
-    const outcome = await copyVoiceprintLink(summary, legend, () =>
-      renderSummaryCard(summary, legend, 'stats'),
-    )
-    if (outcome === 'copied') trackFunnel('link_copied')
-    setShareStatus(
-      outcome === 'copied'
-        ? statusOk('Link copied. Paste it anywhere and it shows your twin.')
-        : statusBad('The link could not be copied here.'),
-    )
   }
 
   /** The link on its own. A desktop has no share sheet, some chats drop the
@@ -1168,23 +1180,29 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   async function onCopyLink(): Promise<void> {
     const result = session().result
     if (!result) return
-    // Which card the link shows is settled at the tap, like everything else
-    // about it.
-    const asTwin = twinReady()
-    const outcome = await copyVoiceprintLink(
-      summarize(result),
-      sharedTwin(),
-      // Drawn once, a moment after the tap and only if the copy went through:
-      // a snapshot is what is wanted, so there is nothing here to track.
-      // eslint-disable-next-line solid/reactivity
-      () => (asTwin ? buildTwinCard() : buildStoryCard('square')),
-    )
-    if (outcome === 'copied') trackFunnel('link_copied')
-    setShareStatus(
-      outcome === 'copied'
-        ? statusOk('Link copied. Paste it anywhere and it shows your card.')
-        : statusBad('The link could not be copied here.'),
-    )
+    if (copyingLink()) return
+    setCopyingLink(true)
+    try {
+      // Which card the link shows is settled at the tap, like everything else
+      // about it.
+      const asTwin = twinReady()
+      const outcome = await copyVoiceprintLink(
+        summarize(result),
+        sharedTwin(),
+        // Drawn once, a moment after the tap and only if the copy went through:
+        // a snapshot is what is wanted, so there is nothing here to track.
+        // eslint-disable-next-line solid/reactivity
+        () => (asTwin ? buildTwinCard() : buildStoryCard('square')),
+      )
+      if (outcome === 'copied') trackFunnel('link_copied')
+      setShareStatus(
+        outcome === 'copied'
+          ? statusOk('Link copied. Paste it anywhere and it shows your card.')
+          : statusBad('The link could not be copied here.'),
+      )
+    } finally {
+      setCopyingLink(false)
+    }
   }
 
   async function onCopy(): Promise<void> {
@@ -1875,22 +1893,30 @@ export function MirrorLanding(props: MirrorLandingProps) {
  * to miss entirely. Announced as well as shown -- the clipboard is silent.
  */
 const ShareStatusNote: Component<{ status: ShareStatus | null }> = (props) => (
-  <Show when={props.status}>
-    <p
-      class="mirror-sharestatus"
-      data-tone={props.status?.tone}
-      role="status"
-      aria-live="polite"
-    >
-      <Show
-        when={props.status?.tone === 'ok'}
-        fallback={<IconAlert size={17} />}
+  <>
+    {/* Mounted whether or not there is anything to say. A live region that
+        arrives already carrying its text is usually not announced at all --
+        a screen reader has to be watching the node before it changes -- and
+        a link reaching the clipboard makes no sound of its own. */}
+    <span class="mirror-spoken" role="status" aria-live="polite">
+      {props.status?.text ?? ''}
+    </span>
+    <Show when={props.status}>
+      <p
+        class="mirror-sharestatus"
+        data-tone={props.status?.tone}
+        aria-hidden="true"
       >
-        <IconCheck size={17} />
-      </Show>
-      <span>{props.status?.text}</span>
-    </p>
-  </Show>
+        <Show
+          when={props.status?.tone === 'ok'}
+          fallback={<IconAlert size={17} />}
+        >
+          <IconCheck size={17} />
+        </Show>
+        <span>{props.status?.text}</span>
+      </p>
+    </Show>
+  </>
 )
 
 const FreeResults: Component<{

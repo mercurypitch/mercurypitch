@@ -10,7 +10,7 @@
      surfaces keep up there. */
   top: calc(env(safe-area-inset-top) + 52px);
   right: 10px;
-  z-index: var(--z-toast, 11000);
+  z-index: var(--z-toast, 20000);
   display: flex;
   flex-direction: column;
   gap: 6px;

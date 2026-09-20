@@ -129,8 +129,13 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
           </button>
         </Show>
       </div>
+      {/* In the tree before there is anything to say, or the line is never
+          announced -- and a link reaching the clipboard is silent. */}
+      <span class={styles.spoken} role="status" aria-live="polite">
+        {shareNote() ?? ''}
+      </span>
       <Show when={shareNote()}>
-        <p class={styles.shareNote} role="status" aria-live="polite">
+        <p class={styles.shareNote} aria-hidden="true">
           <IconCheck size={17} />
           <span>{shareNote()}</span>
         </p>

@@ -97,7 +97,7 @@ share — which, at a 1.3% share-to-return rate today, is nearly everyone.
 - **`/mirror` is listed in `assets.run_worker_first`.** It has a file, so the asset layer
   answered it and the rewrite below never ran. The single most important line in this
   feature is in `wrangler.jsonc`.
-- **The upload is `shareCard`'s `onSheetOpening`**, not a call made before `shareCard`. A
+- **The upload is `shareCard`'s `onLinkLeaving`**, not a call made before `shareCard`. A
   browser with no share sheet saves the picture and drops the link, so the earlier order
   uploaded a card on a plain save.
 - **The stored card is a JPEG, not the PNG the share sheet gets.** Measured over all 31

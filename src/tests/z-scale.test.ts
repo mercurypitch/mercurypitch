@@ -8,9 +8,15 @@
 // toast sat at 1100 and the overlay at 4000 — one of a whole band of
 // hand-numbered modals written before the scale existed.
 //
-// So this is the rule, checked against the stylesheets themselves: nothing
+// So this is the rule, checked against the .css files under src/: nothing
 // may sit between the toast and the always-on-top band. Raise a modal above
-// the toast and this fails here rather than on someone's screen.
+// the toast in a stylesheet and this fails here rather than on someone's
+// screen.
+//
+// What it cannot see, so that nobody reads more into a pass than is there:
+// a z-index in an inline style or a template-literal stylesheet inside a
+// .tsx, one written as `var(--x, N)`, one carrying `!important`, and a new
+// token on the scale itself. Those still need eyes.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
