@@ -137,6 +137,47 @@ The pins stay for now. Each is only needed if a budget says so, and they can
 go one at a time; `pitch-core` and `local-song-library` break real cycles and
 stay until proven unnecessary.
 
+### The voice-type presets were octaves, and baritone was bass
+
+Owner report: "the baritone selected in settings makes the ascent go from C2
+to C3 ... I can't even go to C2". `VOCAL_RANGES` was three octave numbers a
+voice. Baritone and bass were the SAME row (octaves 2-4, default 2), which
+gave both a comfortable range of C2-B4, a start note of A2, the library scale
+`scale-major-c2` (C2-C3) and jam drills transposed two octaves down. An alto's
+row started her on C3, under the bottom of her range. Three other tables in
+the app (`VOICE_MIDI_RANGES`, `VOICE_TYPE_BANDS`, the selector's tooltips)
+already agreed on the textbook ranges; this one disagreed, and it was the one
+every exercise read.
+
+- The table is in NOTES now: `lowMidi` / `highMidi` (bass E2-E4, baritone
+  G2-G4, tenor C3-C5, alto F3-F5, mezzo A3-A5, soprano C4-C6) and an
+  `anchorMidi` where exercises start: A2, C3, E3, A3, C4, E4. Natural notes, a
+  fourth or so above the bottom, so a one-octave run up stays clear of both
+  ends -- low in the middle rather than dead centre, because a beginner
+  strains at the top first. `getComfortableMidiRange` and `getDefaultNote`
+  read them; every exercise, the siren's clamp and the challenge "outside your
+  range" notice follow.
+- `defaultOctave` is now "the octave of C major that sits inside the range":
+  3 for bass, baritone and tenor, 4 for alto, mezzo and soprano. C-rooted
+  material (the library scales, the jam room's drills, a new melody) can only
+  move by octaves, so that ladder has two rungs, not six. Nobody is sent to
+  `scale-major-c2` any more -- but it stays in the set the auto-select calls
+  its own, or the baritones and basses it was put in front of would keep it
+  for good.
+- Singing Zen had the opposite fault: every catalogue exercise is authored
+  around C4 and that is where everybody sang it (a baritone's major scale ran
+  C4-C5). `useZenPitchSession` takes `octaveShiftFor(low, high)`; the app
+  answers with `octaveShiftIntoRange`, which is `fitPhraseToRange`'s search
+  lifted out to work on MIDI numbers. Left out, the authored root stands --
+  a weekly challenge is sung at its written pitch on purpose, and a warm-up
+  sets its own root.
+- `vocal-range-presets.test.ts` pins the ladder: the table equals
+  `VOICE_TYPE_BANDS`, anchors and both ends strictly rise from bass to
+  soprano, every one-octave run is inside its range, no preset can reach C2,
+  and the C-rooted octave fits inside each voice.
+- New default sessions label the three C scales by who they fit. Existing
+  ones keep their labels.
+
 ## [0.9.10] - 2026-09-19
 
 The 0.9.8 audit follow-ups (#822), the support address coming out of the
