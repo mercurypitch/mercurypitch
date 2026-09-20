@@ -345,28 +345,29 @@ test.describe('phone', () => {
   })
 })
 
-test('a completed gallery restores, then replay starts a fresh visit', async ({
+test('replay starts fresh without erasing completion until gameplay saves', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 640, height: 480 })
   await omitRasterOutput(page)
-  await page.addInitScript(() => {
+  const completedProgress = {
+    version: 1,
+    levelId: 'glassworks',
+    checkpointId: 'hero',
+    finished: true,
+    completedBreakableIds: [
+      'glassworks.first-goblet',
+      'glassworks.rounded-vase',
+      'glassworks.hero-display',
+    ],
+  }
+  await page.addInitScript((progress) => {
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
     localStorage.setItem(
       'beside-cue:glass-adventure:progress:glassworks',
-      JSON.stringify({
-        version: 1,
-        levelId: 'glassworks',
-        checkpointId: 'hero',
-        finished: true,
-        completedBreakableIds: [
-          'glassworks.first-goblet',
-          'glassworks.rounded-vase',
-          'glassworks.hero-display',
-        ],
-      }),
+      JSON.stringify(progress),
     )
-  })
+  }, completedProgress)
   await page.goto('/glass-game/')
   await expect(
     page.getByRole('dialog', { name: 'You made the museum sing.' }),
@@ -386,17 +387,39 @@ test('a completed gallery restores, then replay starts a fresh visit', async ({
   )
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-completed',
+    '0',
   )
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-checkpoint',
     'arrival',
   )
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  const saved = await page.evaluate(() =>
+  const savedAfterLoad = await page.evaluate(() =>
     JSON.parse(
       localStorage.getItem('beside-cue:glass-adventure:progress:glassworks')!,
     ),
   )
-  expect(saved.completedBreakableIds).toEqual([])
-  expect(saved.finished).toBe(false)
+  expect(savedAfterLoad).toEqual(completedProgress)
+
+  const adventure = page.getByTestId('glass-adventure')
+  await page.keyboard.down('KeyW')
+  try {
+    await expect(adventure).toHaveAttribute('data-checkpoint', 'jump-arrival', {
+      timeout: 5000,
+    })
+  } finally {
+    await page.keyboard.up('KeyW')
+  }
+  const savedAfterMovement = await page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem('beside-cue:glass-adventure:progress:glassworks')!,
+    ),
+  )
+  expect(savedAfterMovement).toEqual({
+    version: 1,
+    levelId: 'glassworks',
+    checkpointId: 'jump-arrival',
+    completedBreakableIds: [],
+    finished: false,
+  })
 })
