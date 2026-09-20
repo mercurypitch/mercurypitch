@@ -26,6 +26,22 @@ const svgProps = (p: IconProps): JSX.SvgSVGAttributes<SVGSVGElement> => ({
   class: 'mirror-icon',
 })
 
+/** A tick, for a line that says something went through. */
+export const IconCheck: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <path d="M4.5 12.5l5 5 10-11" />
+  </svg>
+)
+
+/** A quiet warning, for a line that says nothing happened. */
+export const IconAlert: Component<IconProps> = (p) => (
+  <svg {...svgProps(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7.5v5.5" />
+    <path d="M12 16.3v.2" />
+  </svg>
+)
+
 /** Four-point star — the ✦ of the theme, as a crisp vector. */
 export const IconSpark: Component<IconProps> = (p) => (
   <svg {...svgProps(p)}>

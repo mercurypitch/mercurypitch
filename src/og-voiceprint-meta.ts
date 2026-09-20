@@ -81,14 +81,13 @@ export function voiceprintDescription(data: VoiceprintShareData): string {
 
 /** The headline an unfurl shows above the card. */
 export function voiceprintTitle(data: VoiceprintShareData): string {
-  const twin = safeText(data.tw)
-  const name = safeText(data.n)
-  if (twin != null && twin !== '') {
-    return name != null && name !== ''
-      ? `${twin} is ${name}'s voice twin`
-      : `${twin} is my voice twin`
-  }
-  return sharedVoiceprintTitle({ ...data, n: name })
+  // Sanitised first: this one is written into an HTML attribute, and the
+  // page's copy of the same sentence is written by the framework.
+  return sharedVoiceprintTitle({
+    ...data,
+    n: safeText(data.n),
+    tw: safeText(data.tw),
+  })
 }
 
 /** Everything the social card should say for this request. */

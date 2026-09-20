@@ -1321,8 +1321,56 @@ body {
   gap: 6px;
 }
 
+/* What just happened to the card or its link. A pill, because the grey line
+   this replaced was the only sign that a link had reached the clipboard and
+   it was small enough to read past. Inline-flex so it hugs its own words in
+   the centred column rather than spanning it. */
 .mirror-sharestatus {
-  margin-top: 12px;
+  /* A flex box that hugs its own words and centres itself, rather than an
+     inline one relying on whichever panel it lands in being centred. */
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  margin: 14px auto 0;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 233, 184, 0.45);
+  background: rgba(139, 233, 184, 0.12);
+  color: var(--mirror-green);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  max-width: min(34ch, 100%);
+  animation: mirror-sharestatus-in 0.22s ease-out;
+}
+
+.mirror-sharestatus[data-tone='bad'] {
+  border-color: rgba(255, 156, 156, 0.45);
+  background: rgba(255, 156, 156, 0.12);
+  color: #ff9c9c;
+}
+
+.mirror-sharestatus .mirror-icon {
+  flex: none;
+}
+
+@keyframes mirror-sharestatus-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-sharestatus {
+    animation: none;
+  }
 }
 
 .mirror-foot {
@@ -1531,10 +1579,6 @@ body {
   margin: 0;
   font-size: 0.95rem;
   color: rgba(207, 214, 255, 0.85);
-}
-
-.shared-vp-twin {
-  margin-top: 4px;
 }
 
 .shared-vp-stats {

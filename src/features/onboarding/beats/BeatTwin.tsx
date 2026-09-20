@@ -14,6 +14,7 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, createSignal, Show } from 'solid-js'
+import { IconCheck } from '@/features/mirror/icons'
 import { LegendCaricature } from '@/features/mirror/LegendCaricature'
 import type { MirrorResult } from '@/lib/mirror/metrics'
 import { singerForRange } from '@/lib/mirror/singer-match'
@@ -128,9 +129,12 @@ export const BeatTwin: Component<BeatTwinProps> = (props) => {
           </button>
         </Show>
       </div>
-      <p class={styles.keepFootnote} role="status" aria-live="polite">
-        {shareNote()}
-      </p>
+      <Show when={shareNote()}>
+        <p class={styles.shareNote} role="status" aria-live="polite">
+          <IconCheck size={17} />
+          <span>{shareNote()}</span>
+        </p>
+      </Show>
     </div>
   )
 }

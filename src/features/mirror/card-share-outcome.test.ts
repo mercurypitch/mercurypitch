@@ -8,7 +8,7 @@
 // the outcome contract the call sites now gate on.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cardToUnfurlBlob, shareCard, shareOutcomeMessage, } from './card-renderer'
+import { cardToUnfurlBlob, copyOutcomeStatus, shareCard, shareOutcomeMessage, shareOutcomeStatus, } from './card-renderer'
 
 const blob = new Blob(['x'], { type: 'image/png' })
 
@@ -209,5 +209,24 @@ describe('cardToUnfurlBlob', () => {
     const png = new Blob(['x'], { type: 'image/png' })
     expect(await cardToUnfurlBlob(canvasGiving(png).canvas)).toBeNull()
     expect(await cardToUnfurlBlob(canvasGiving(null).canvas)).toBeNull()
+  })
+})
+
+describe('a status line knows how it should look', () => {
+  it('colours a copy by whether it happened', () => {
+    expect(copyOutcomeStatus('copied')).toEqual({
+      text: 'Copied to clipboard!',
+      tone: 'ok',
+    })
+    expect(copyOutcomeStatus('unsupported').tone).toBe('bad')
+    expect(copyOutcomeStatus('failed').tone).toBe('bad')
+  })
+
+  it('says nothing at all when the sheet was only closed', () => {
+    expect(shareOutcomeStatus('dismissed')).toBeNull()
+    expect(shareOutcomeStatus('downloaded-link-copied')).toEqual({
+      text: 'Saved, and the link is copied. Paste it beside the picture.',
+      tone: 'ok',
+    })
   })
 })

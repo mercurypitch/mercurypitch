@@ -23,7 +23,8 @@ words scroll under your finger while the song plays.
   stored only when the link leaves your device, and for 30 days.
 - **Copy link, wherever a voiceprint is shared.** On the Mirror's results,
   beside your twin halfway through a take, and on your account page. On a
-  computer, Share now saves the card and copies the link with it.
+  computer, Share now saves the card and copies the link with it, and says
+  so where you can see it.
 
 ### Changed
 
@@ -84,6 +85,11 @@ words scroll under your finger while the song plays.
   slider could end up tappable but stuck until you reopened the room. The
   next press now starts over.
 - **"Link copied" shows over the playback buttons**, not behind them.
+- **A notice shows over the window that raised it.** Sharing from a voiceprint
+  opened full size put the reply behind it, blurred. Notices now sit on top of
+  whatever is open.
+- **A voiceprint someone sent you is named for their twin**, rather than
+  headed "A voiceprint".
 - **Handing out lines on a touch screen says what it does.** While a singer
   is picked the words wear a frame in their colour, and a tablet is told the
   words scroll again after Done.

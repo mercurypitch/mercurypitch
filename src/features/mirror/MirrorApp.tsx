@@ -33,13 +33,14 @@ import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
 import type { VoiceprintShareData } from '@/lib/share-codec'
 import type { CardFormat } from './card-renderer'
-import { cardToPngBlob, cardToUnfurlBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, defaultShareText, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, shareOutcomeMessage, supportsImageClipboard, twinShareText, } from './card-renderer'
+import type { ShareStatus } from './card-renderer'
+import { cardToPngBlob, cardToUnfurlBlob, copyCardToClipboard, copyOutcomeStatus, datedFilename, defaultShareText, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, shareOutcomeStatus, statusBad, statusOk, supportsImageClipboard, twinShareText, } from './card-renderer'
 import { CardOptionsSheet } from './CardOptionsSheet'
 import { CosmicMode } from './CosmicMode'
 import type { MirrorEntryIntent } from './entry-intent'
 import { trackFunnel } from './funnel'
 import { HowItWorks } from './HowItWorks'
-import { IconCopy, IconLink, IconMore, IconRocket, IconShare, IconSpark, } from './icons'
+import { IconAlert, IconCheck, IconCopy, IconLink, IconMore, IconRocket, IconShare, IconSpark, } from './icons'
 import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
@@ -161,7 +162,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   const [activeMicId, setActiveMicId] = createSignal('')
   const [activeMicLabel, setActiveMicLabel] = createSignal('')
   const [retryNotice, setRetryNotice] = createSignal(false)
-  const [shareStatus, setShareStatus] = createSignal<string | null>(null)
+  const [shareStatus, setShareStatus] = createSignal<ShareStatus | null>(null)
   const [deltaLine, setDeltaLine] = createSignal<string | null>(null)
   // The saved take number of the run on screen (null for unsaved/demo runs);
   // personalises download filenames ("…-take-3-…").
@@ -696,9 +697,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     // claim anything in the status line.
     if (outcome === 'dismissed') return
     trackFunnel('card_shared')
-    setShareStatus(
-      outcome === 'shared' ? 'Shared!' : 'Saved — post it anywhere.',
-    )
+    setShareStatus(shareOutcomeStatus(outcome))
   }
 
   async function onCopyFree(): Promise<void> {
@@ -706,7 +705,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (!card) return
     const outcome = await copyCardToClipboard(cardToPngBlob(card))
     if (outcome === 'copied') trackFunnel('card_shared')
-    setShareStatus(copyOutcomeMessage(outcome))
+    setShareStatus(copyOutcomeStatus(outcome))
   }
 
   async function runFlow(): Promise<void> {
@@ -1135,7 +1134,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     // claim anything in the status line.
     if (outcome === 'dismissed') return
     trackFunnel('card_shared')
-    setShareStatus(shareOutcomeMessage(outcome))
+    setShareStatus(shareOutcomeStatus(outcome))
   }
 
   /** The link at the halfway reveal. The twin is the part people want to
@@ -1157,8 +1156,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (outcome === 'copied') trackFunnel('link_copied')
     setShareStatus(
       outcome === 'copied'
-        ? 'Link copied. Paste it anywhere and it shows your twin.'
-        : 'The link could not be copied here.',
+        ? statusOk('Link copied. Paste it anywhere and it shows your twin.')
+        : statusBad('The link could not be copied here.'),
     )
   }
 
@@ -1183,8 +1182,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (outcome === 'copied') trackFunnel('link_copied')
     setShareStatus(
       outcome === 'copied'
-        ? 'Link copied. Paste it anywhere and it shows your card.'
-        : 'The link could not be copied here.',
+        ? statusOk('Link copied. Paste it anywhere and it shows your card.')
+        : statusBad('The link could not be copied here.'),
     )
   }
 
@@ -1196,7 +1195,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     if (!card) return
     const outcome = await copyCardToClipboard(cardToPngBlob(card))
     if (outcome === 'copied') trackFunnel('card_shared')
-    setShareStatus(copyOutcomeMessage(outcome))
+    setShareStatus(copyOutcomeStatus(outcome))
   }
 
   const appUrl = (): string =>
@@ -1573,11 +1572,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
           <p class="mirror-dim">
             Five short notes to sing back — about a minute.
           </p>
-          <Show when={shareStatus()}>
-            <p class="mirror-dim mirror-sharestatus" role="status">
-              {shareStatus()}
-            </p>
-          </Show>
+          <ShareStatusNote status={shareStatus()} />
         </section>
       </Show>
 
@@ -1872,9 +1867,35 @@ export function MirrorLanding(props: MirrorLandingProps) {
   )
 }
 
+/**
+ * What just happened to the card or its link, said where the buttons are.
+ *
+ * A pill rather than a grey line: this is the only thing on screen that says
+ * a link is now on the clipboard, and the line it replaced was small enough
+ * to miss entirely. Announced as well as shown -- the clipboard is silent.
+ */
+const ShareStatusNote: Component<{ status: ShareStatus | null }> = (props) => (
+  <Show when={props.status}>
+    <p
+      class="mirror-sharestatus"
+      data-tone={props.status?.tone}
+      role="status"
+      aria-live="polite"
+    >
+      <Show
+        when={props.status?.tone === 'ok'}
+        fallback={<IconAlert size={17} />}
+      >
+        <IconCheck size={17} />
+      </Show>
+      <span>{props.status?.text}</span>
+    </p>
+  </Show>
+)
+
 const FreeResults: Component<{
   result: FreeSingResult | null
-  shareStatus: string | null
+  shareStatus: ShareStatus | null
   onShare: () => void
   onCopy: () => void
   onAgain: () => void
@@ -1976,9 +1997,7 @@ const FreeResults: Component<{
             Start over
           </button>
         </div>
-        <Show when={props.shareStatus}>
-          <p class="mirror-dim">{props.shareStatus}</p>
-        </Show>
+        <ShareStatusNote status={props.shareStatus} />
       </Show>
     </section>
   )
@@ -1996,7 +2015,7 @@ const Results: Component<{
   entryIntent: MirrorEntryIntent
   result: MirrorResult
   deltaLine: string | null
-  shareStatus: string | null
+  shareStatus: ShareStatus | null
   revealed: boolean
   revealMode: RevealMode
   /** Twin share/copy variant available (revealed + portrait decoded). */
@@ -2217,9 +2236,7 @@ const Results: Component<{
         onCopy={() => props.onCopy()}
         onCosmic={() => props.onCosmic()}
       />
-      <Show when={props.shareStatus}>
-        <p class="mirror-dim mirror-sharestatus">{props.shareStatus}</p>
-      </Show>
+      <ShareStatusNote status={props.shareStatus} />
       <p class="mirror-foot">
         Saved on this device only — come back any time to see your delta.
       </p>
