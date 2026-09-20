@@ -110,6 +110,56 @@ describe('dragGesture', () => {
     expect(capture.captured.size).toBe(0)
   })
 
+  it('ignores a second finger while the first is still dragging (REQ-DRAG-002)', () => {
+    const onStart = vi.fn()
+    const onEnd = vi.fn()
+    const options: DragGestureOptions = { onStart, onEnd }
+    const { getByTestId } = render(() => (
+      <div
+        data-testid="surface"
+        ref={(element) => dragGesture(element, () => options)}
+      />
+    ))
+    const surface = getByTestId('surface')
+    installPointerCapture(surface)
+
+    dispatchPointer(surface, 'pointerdown', 3)
+    dispatchPointer(surface, 'pointerdown', 4)
+
+    expect(onStart).toHaveBeenCalledOnce()
+    expect(onEnd).not.toHaveBeenCalled()
+  })
+
+  it('drags again after a drag whose ending never arrived (REQ-DRAG-002)', () => {
+    const onStart = vi.fn()
+    const onMove = vi.fn()
+    const onEnd = vi.fn()
+    const options: DragGestureOptions = { onStart, onMove, onEnd }
+    const { getByTestId } = render(() => (
+      <div
+        data-testid="surface"
+        ref={(element) => dragGesture(element, () => options)}
+      />
+    ))
+    const surface = getByTestId('surface')
+    const capture = installPointerCapture(surface)
+
+    dispatchPointer(surface, 'pointerdown', 3)
+    // The browser took the touch away and sent neither a pointerup, a
+    // pointercancel nor a lostpointercapture. Nothing tells the binding.
+    capture.captured.delete(3)
+
+    dispatchPointer(surface, 'pointerdown', 4)
+    dispatchPointer(surface, 'pointermove', 4, 60)
+
+    // The abandoned drag is closed for its owner before the new one opens.
+    expect(onEnd).toHaveBeenCalledOnce()
+    expect(onEnd.mock.calls[0]?.[1]).toBe('lostpointercapture')
+    expect(onStart).toHaveBeenCalledTimes(2)
+    expect(onMove).toHaveBeenCalledOnce()
+    expect(capture.captured.has(4)).toBe(true)
+  })
+
   it('releases capture after a completed drag (REQ-DRAG-002)', () => {
     const options: DragGestureOptions = {}
     const { getByTestId } = render(() => (
