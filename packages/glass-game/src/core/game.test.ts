@@ -19,18 +19,7 @@ function steps(game: GlassGame, count: number, input = idle): GameEvent[] {
 }
 
 function walkToGoblet(game: GlassGame): void {
-  for (let n = 0; n < 200 && game.snapshot().player.position.z < 2.2; n++)
-    game.step({ ...idle, moveZ: 1 }, MOVEMENT.fixedStep)
-  game.step({ ...idle, moveZ: 1, jumpDown: true }, MOVEMENT.fixedStep)
-  for (let n = 0; n < 120; n++) {
-    game.step({ ...idle, moveZ: 1 }, MOVEMENT.fixedStep)
-    if (
-      game.snapshot().player.grounded &&
-      game.snapshot().player.position.z > 2.7
-    )
-      break
-  }
-  steps(game, 24)
+  walkAxis(game, 'z', 3)
   expect(game.snapshot().nearbyBreakableId).toBe(goblet)
 }
 
@@ -108,7 +97,7 @@ describe('Glassworks simulation', () => {
     expect(game.saveProgress().completedBreakableIds).toEqual([])
   })
 
-  it('walks and jumps to the first voice-only encounter, parks movement, and saves before shatter', () => {
+  it('walks to the first voice-only encounter, parks movement, and saves before shatter', () => {
     const game = createGlassGame(GLASSWORKS)
     walkToGoblet(game)
     const parked = game.snapshot().player.position
@@ -186,17 +175,22 @@ describe('Glassworks simulation', () => {
     expect(game.snapshot().enabledPlatformIds).toContain('arch-bridge')
   })
 
-  it('missed first jump lands on its catch and returns to the approach', () => {
-    const game = createGlassGame(GLASSWORKS)
+  it('a missed raised-terrace jump lands on its catch and returns to the approach', () => {
+    const game = createGlassGame(GLASSWORKS, {
+      version: 1,
+      levelId: GLASSWORKS.id,
+      checkpointId: 'jump-overlook',
+      completedBreakableIds: [goblet],
+    })
     let respawn: GameEvent | undefined
     for (let n = 0; n < 500; n++) {
       respawn = game
-        .step({ ...idle, moveZ: 1 }, MOVEMENT.fixedStep)
+        .step({ ...idle, moveZ: -1 }, MOVEMENT.fixedStep)
         .find((event) => event.type === 'respawn')
       if (respawn !== undefined) break
     }
-    expect(respawn).toEqual({ type: 'respawn', checkpointId: 'jump-arrival' })
-    expect(game.snapshot().player.position).toEqual({ x: 1.2, y: 0, z: 1.8 })
+    expect(respawn).toEqual({ type: 'respawn', checkpointId: 'jump-overlook' })
+    expect(game.snapshot().player.position).toEqual({ x: 9.8, y: 0, z: 7.6 })
   })
 
   it('does not oscillate checkpoint events where trigger radii overlap', () => {
@@ -293,8 +287,7 @@ describe('Glassworks simulation', () => {
     walkAxis(game, 'z', 7.22, false)
     jumpSouth(game)
     expect(game.snapshot().checkpointId).toBe('jump-terrace')
-    walkAxis(game, 'z', 5.72, false)
-    jumpSouth(game)
+    walkAxis(game, 'z', 5)
     walkAxis(game, 'z', 2.7)
     breakNearby(vase)
     walkAxis(game, 'x', 5.5)

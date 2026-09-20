@@ -64,8 +64,8 @@ export function createAdventureCamera(
   let renderedPitch = pitch
   let distance = 4
   let facing = level.spawn.facingYaw
-  // Movement uses a stable heading while a contact is held. Feeding the
-  // following view back into camera-relative input would turn a strafe into a
+  // Movement keeps a stable heading between deliberate input choices. Feeding
+  // every following view frame back into input would turn a strafe into a
   // self-reinforcing circle.
   let movementReferenceYaw = yaw
   let orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
@@ -154,6 +154,10 @@ export function createAdventureCamera(
     setMovementActive(active: boolean) {
       movementActive = active
       if (!active) movementReferenceYaw = yaw
+    },
+    rebaseMovement() {
+      movementReferenceYaw = yaw
+      committedHeading = null
     },
     cancelHeadingFollow() {
       committedHeading = null

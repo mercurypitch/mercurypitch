@@ -37,6 +37,7 @@ export interface GlassRenderer {
   /** Stable camera-relative movement basis for the current held input. */
   getMovementYaw(): number
   setMovementActive(active: boolean): void
+  rebaseMovement(): void
   cancelHeadingFollow(): void
   getMetrics(): {
     drawCalls: number
@@ -206,6 +207,7 @@ export function createGlassRenderer(
     getCameraYaw: camera.yaw,
     getMovementYaw: camera.movementYaw,
     setMovementActive: camera.setMovementActive,
+    rebaseMovement: camera.rebaseMovement,
     cancelHeadingFollow: camera.cancelHeadingFollow,
     getMetrics: () => ({
       drawCalls: renderer.info.render.calls,

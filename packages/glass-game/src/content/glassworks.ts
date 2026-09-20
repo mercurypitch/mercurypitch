@@ -78,7 +78,7 @@ const COURSE: LevelDefinition = {
   spawn: { position: { x: 1.2, y: 0, z: 1.2 }, facingYaw: Math.PI },
   fallBelow: -1.4,
   platforms: [
-    platform('arrival', [0, 2.4, 0, 2.4], 0),
+    platform('arrival', [0, 2.4, 0, 2.7], 0),
     platform('goblet-deck', [0, 2.4, 2.7, 5.1], 0),
     platform('arch-bridge', [0.6, 1.8, 5.1, 7], 0, {
       kind: 'bridge',
@@ -87,7 +87,7 @@ const COURSE: LevelDefinition = {
     }),
     platform('overlook', [0.6, 11, 7, 8.2], 0),
     platform('terrace-one', [8.6, 11, 5.55, 6.75]),
-    platform('terrace-two', [8.6, 11, 4, 5.2]),
+    platform('terrace-two', [8.6, 11, 4, 5.55]),
     platform('vase-deck', [8.6, 11, 1.4, 4]),
     platform('hero-bridge', [7, 8.6, 1.8, 3], 0.15, {
       kind: 'bridge',

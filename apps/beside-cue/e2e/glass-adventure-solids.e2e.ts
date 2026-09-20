@@ -36,6 +36,37 @@ async function suspendRasterOutput(page: Page): Promise<void> {
     })
 }
 
+test('Merc walks across the small arrival join without jumping @smoke', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+    localStorage.setItem(
+      'beside-cue:glass-adventure:museum-audio:v1',
+      JSON.stringify({ muted: true }),
+    )
+  })
+  await page.clock.install()
+  await page.goto('/glass-game/')
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 30_000 },
+  )
+  await suspendRasterOutput(page)
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
+  await page.getByLabel('Glass museum; drag to look around').focus()
+  await page.keyboard.down('KeyW')
+  await page.clock.runFor(2000)
+  await page.keyboard.up('KeyW')
+  expect(await coordinate(page, 'z')).toBeGreaterThan(3.1)
+  expect(await coordinate(page, 'y')).toBeCloseTo(0, 4)
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-checkpoint',
+    'goblet',
+  )
+})
+
 test('Merc lands on the actual exhibit support instead of passing through @smoke', async ({
   page,
 }) => {

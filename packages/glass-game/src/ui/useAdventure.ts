@@ -338,7 +338,11 @@ export function useAdventure(
       const elapsed = lastTime === 0 ? 0 : (now - lastTime) / 1000
       lastTime = now
       if (ready() && !paused() && !tutorial()) {
-        renderer?.setMovementActive(input.hasMovementIntent())
+        const movementActive = input.hasMovementIntent()
+        const movementReferenceChanged = input.consumeMovementReferenceChange()
+        renderer?.setMovementActive(movementActive)
+        if (movementActive && movementReferenceChanged)
+          renderer?.rebaseMovement()
         events(
           game.step(input.read(renderer?.getMovementYaw() ?? 0), elapsed, now),
         )

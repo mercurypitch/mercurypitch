@@ -101,34 +101,29 @@ describe('manual adventure movement', () => {
     }
   })
 
-  it.each([
-    ['arrival', 'goblet-deck', 1.2, 0, 2.24, 1],
-    ['overlook', 'terrace-one', 9.8, 0, 7.16, -1],
-    ['terrace-one', 'terrace-two', 9.8, 0.15, 5.71, -1],
-  ] as const)(
-    'lands the authored %s → %s jump from rest',
-    (from, to, x, y, z, direction) => {
-      const state = createMovement({ x, y, z }, direction > 0 ? Math.PI : 0)
-      const course = GLASSWORKS.platforms.filter(
-        (p) => p.id === from || p.id === to,
+  it('lands the authored raised overlook → terrace-one jump from rest', () => {
+    const state = createMovement({ x: 9.8, y: 0, z: 7.16 }, 0)
+    const course = GLASSWORKS.platforms.filter(
+      (platform) => platform.id === 'overlook' || platform.id === 'terrace-one',
+    )
+    let landedOn: string | undefined
+    for (let frame = 0; frame < 120; frame++) {
+      const result = stepMovement(
+        state,
+        { moveX: 0, moveZ: -1, jumpDown: frame === 0 },
+        MOVEMENT.fixedStep,
+        course,
       )
-      let landedOn: string | undefined
-      for (let i = 0; i < 120; i++) {
-        const result = stepMovement(
-          state,
-          { moveX: 0, moveZ: direction, jumpDown: i === 0 },
-          MOVEMENT.fixedStep,
-          course,
-        )
-        if (result.landed) {
-          landedOn = result.support?.id
-          break
-        }
+      if (result.landed) {
+        landedOn = result.support?.id
+        break
       }
-      expect(landedOn).toBe(to)
-      expect(state.position.y).toBe(course.find((p) => p.id === to)!.top)
-    },
-  )
+    }
+    expect(landedOn).toBe('terrace-one')
+    expect(state.position.y).toBe(
+      course.find((platform) => platform.id === 'terrace-one')!.top,
+    )
+  })
 
   it('does not walk through a riser or bank velocity against a wall', () => {
     const wall = {

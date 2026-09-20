@@ -277,6 +277,45 @@ describe('camera-relative traversal', () => {
     expect(Math.abs(angleError(rig.yaw(), Math.PI / 2))).toBeLessThan(0.01)
     expect(rig.movementYaw()).toBe(OPEN_ROOM.spawn.facingYaw)
   })
+  it.each([30, 60, 120])(
+    'reanchors a deliberate chord to the sampled view at %sfps without feedback',
+    (fps) => {
+      const frame = 1 / fps
+      const game = createGlassGame(OPEN_ROOM)
+      const rig = createAdventureCamera(OPEN_ROOM)
+      rig.setMovementActive(true)
+
+      for (let index = 0; index < fps * 1.5; index++) {
+        const left = cameraRelativeMovement(-1, 0, rig.movementYaw())
+        game.step({ ...left, jumpDown: false }, frame)
+        rig.update(game.snapshot(), frame)
+      }
+
+      const sampledView = rig.yaw()
+      const staleReference = rig.movementYaw()
+      const staleChord = cameraRelativeMovement(-1, 1, staleReference)
+      const intendedChord = cameraRelativeMovement(-1, 1, sampledView)
+      expect(
+        Math.abs(
+          angleError(
+            Math.atan2(staleChord.moveX, staleChord.moveZ),
+            Math.atan2(intendedChord.moveX, intendedChord.moveZ),
+          ),
+        ),
+      ).toBeGreaterThan(1)
+
+      rig.rebaseMovement()
+      expect(rig.movementYaw()).toBeCloseTo(sampledView)
+      for (let index = 0; index < fps; index++) {
+        const diagonal = cameraRelativeMovement(-1, 1, rig.movementYaw())
+        expect(diagonal.moveX).toBeCloseTo(intendedChord.moveX)
+        expect(diagonal.moveZ).toBeCloseTo(intendedChord.moveZ)
+        game.step({ ...diagonal, jumpDown: false }, frame)
+        rig.update(game.snapshot(), frame)
+        expect(rig.movementYaw()).toBeCloseTo(sampledView)
+      }
+    },
+  )
   it('keeps the movement basis through a blocked stop until input releases', () => {
     const rig = createAdventureCamera(GLASSWORKS)
     const state = createGlassGame(GLASSWORKS).snapshot()

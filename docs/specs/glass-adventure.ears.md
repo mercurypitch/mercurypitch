@@ -6,10 +6,11 @@ Scope: first playable floating museum, shared between BesideCue and a standalone
 
 - GA-01: While the museum is active, the game shall move Merc using keyboard or touch controls and shall use voice only within an explicitly started exhibit encounter.
 - GA-02: While Merc moves, the camera shall smoothly follow his heading. Deliberate camera input shall temporarily override automatic heading alignment. When the player releases or cancels a camera contact, the camera shall stop responding to that contact; automatic alignment shall resume gradually after a quiet interval and movement. Automatic camera motion shall not continuously steer a held movement direction in a circle.
+- GA-02a: When the normalized keyboard movement direction changes, including a changed chord without full release, movement shall use the current view as its new reference. Repeated keydown and equivalent direction aliases shall not reset that reference. A continuously held stick shall retain its reference until neutral or manual camera input.
 - GA-03: While movement, camera and jump contacts are simultaneous, each control shall retain its own pointer identity.
 - GA-04: When the player falls or lands on a catch shelf, the game shall restore a safe checkpoint and retain earned exhibit completion.
 - GA-05: While an exhibit gate is closed, its bridge shall provide neither visible passage nor floor collision.
-- GA-06: The first gallery shall have three required exhibits, three teaching jumps and three optional panorama exhibits. Optional exhibits shall not be required to reach the exit.
+- GA-06: The first gallery shall have three required exhibits, continuous same-height floor joins, one raised teaching jump and three optional panorama exhibits. Optional exhibits shall not be required to reach the exit.
 - GA-07: A new level shall be describable with stable content IDs, platform bounds, checkpoint positions, exhibit definitions and exit requirements. Visual variants shall resolve through render recipes, independently of collision and scoring.
 
 ## Voice, ownership and persistence

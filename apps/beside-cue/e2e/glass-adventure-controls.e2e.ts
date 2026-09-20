@@ -254,6 +254,44 @@ test('wheel zoom and a short side step complete the same heading turn @smoke', a
   ).toBeLessThan(0.04)
 })
 
+test('changing a held key chord steers from the current view @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 480 })
+  await openMuseum(page)
+  await page.mouse.move(320, 210)
+  await page.mouse.down()
+  await page.mouse.move(360, 210, { steps: 3 })
+  await page.mouse.up()
+  await runIdleWithoutRaster(page, 250)
+  await page.keyboard.down('KeyA')
+  await page.clock.runFor(200)
+
+  async function expectTravel(heading: number): Promise<void> {
+    // Allow the bounded physical acceleration to finish before measuring travel.
+    await page.clock.runFor(180)
+    const x = await value(page, 'player-x')
+    const z = await value(page, 'player-z')
+    await page.clock.runFor(160)
+    const dx = (await value(page, 'player-x')) - x
+    const dz = (await value(page, 'player-z')) - z
+    expect(Math.hypot(dx, dz)).toBeGreaterThan(0.14)
+    const difference = Math.atan2(-dx, -dz) - heading
+    expect(
+      Math.abs(Math.atan2(Math.sin(difference), Math.cos(difference))),
+    ).toBeLessThan(0.12)
+    expect(await value(page, 'player-y')).toBeCloseTo(0, 3)
+  }
+
+  const diagonalHeading = (await value(page, 'camera-yaw')) + Math.PI / 4
+  await page.keyboard.down('KeyW')
+  await expectTravel(diagonalHeading)
+  const forwardHeading = await value(page, 'camera-yaw')
+  await page.keyboard.up('KeyA')
+  await expectTravel(forwardHeading)
+  await page.keyboard.up('KeyW')
+})
+
 test.describe('phone', () => {
   test.use({
     viewport: { width: 390, height: 844 },

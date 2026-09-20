@@ -661,6 +661,13 @@ import handler, issue #813.
 **Rule:** separate zoom from orbit ownership, finish a heading committed by real movement after stopping, and cancel it on manual look/lifecycle changes. Test brief input plus release at several zoom distances; preserve a stable movement basis so follow cannot create circles.
 **See:** `packages/glass-game/src/render/camera.test.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
 
+### Re-anchor changed keyboard intent without feeding camera motion into held input
+
+**Symptom:** adding Forward while Left stays held sends Merc relative to an old view, even though individual presses behave correctly.
+**Cause:** the movement basis was locked until every direction key released, treating a changed chord as unchanged intent.
+**Rule:** sample the current view when the normalized keyboard direction changes; ignore repeats and equivalent aliases. Keep unchanged input stable. Do not apply wholesale rebases to small analog angle changes: a large camera/basis difference would become an unintended turn.
+**See:** `packages/glass-game/src/ui/input.test.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`

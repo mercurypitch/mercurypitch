@@ -1,6 +1,6 @@
 # Glass adventure
 
-A shared, content-driven 3D platformer for MercuryPitch and BesideCue. The player moves and jumps manually; voice is used only after explicitly starting a nearby glass encounter. The implemented first level is the floating Glassworks museum with three required held-note exhibits, two unlocked bridges, three teaching jumps, checkpoints, catch shelves and three optional panorama exhibits.
+A shared, content-driven 3D platformer for MercuryPitch and BesideCue. The player moves and jumps manually; voice is used only after explicitly starting a nearby glass encounter. The implemented first level is the floating Glassworks museum with three required held-note exhibits, two unlocked bridges, one raised teaching jump, checkpoints, catch shelves and three optional panorama exhibits.
 
 ## Boundaries
 
@@ -27,7 +27,7 @@ The default move speed is 1.15 m/s, jump apex 0.5 m and gravity 6.2 m/s². Movem
 
 The collision adapter supports flat rectangular floors and authored `solids`: box props and tapered round props, with side, top and underside contact independent of Merc's animated silhouette. `content/solid-props.ts` shares the exhibit plinth dimensions with the renderer and defines reachable planter bases, arch supports and columns. Give an optional-floor prop a `platformId` so its collision follows that floor's activation. Decorative bundles can replace visible fallback proxies without changing collision.
 
-Supporting the whole outer footprint would incorrectly bridge the 0.30 m teaching gap; floor support uses the foot centre. Props also recover side overlap when Merc steps off a rim. `CourseCollider` remains the replacement boundary for a future validated slope or moving-platform controller. **Slopes, moving platforms, capsule dynamics and rigid-body shard simulation are not implemented.** Intact glass, foliage and distant decorative architecture currently remain nonblocking.
+Floor support uses the foot centre so Merc falls from exposed edges and across visible voids. Same-height route joins share an exact boundary or use an authored platform; collision does not add invisible floor between them. Props also recover side overlap when Merc steps off a rim. `CourseCollider` remains the replacement boundary for a future validated slope or moving-platform controller. **Slopes, moving platforms, capsule dynamics and rigid-body shard simulation are not implemented.** Intact glass, foliage and distant decorative architecture currently remain nonblocking.
 
 ## Compose rooms from a shared kit
 
@@ -71,7 +71,7 @@ A visible-window blur only clears held keys, stick/jump contacts and camera capt
 
 Movement commits a camera heading that can finish settling after a short step ends. Manual orbit cancels that commitment and owns the view while held; an idle manual view stays put. Movement after released orbit resumes follow with a 0.2 s grace. Zoom only changes distance, so scrolling cannot suppress a turn. Pause, encounters and teleports cancel pending alignment. Recenter retains zoom/pitch, and reduced-motion mode keeps automatic heading rotation off. Merc's visible turn is smoothed independently of physical running speed and jump reach.
 
-Held movement keeps a stable basis so automatic camera rotation cannot steer it into a circle. That reference currently resets on neutral input or manual orbit; continuous changes of stick direction still use the held reference. When a nearby wall compresses the view, bounded steeper camera rays can find room above it; easing and clearance hysteresis retain the player's chosen pitch for open space. This obstruction fallback is not final room-aware framing: the enclosed-level milestone still needs full-character and landing visibility at doorways, corners and ceilings.
+Held movement keeps a stable basis so automatic camera rotation cannot steer it into a circle. A changed keyboard direction (including adding or releasing one key in a chord) samples the current view before movement is read; repeated keys and equivalent WASD/arrow aliases do not re-anchor. Neutral input or manual orbit also refreshes the reference. Continuous changes of stick direction still use the held reference; return the stick to neutral to choose against the current view. When a nearby wall compresses the view, bounded steeper camera rays can find room above it; easing and clearance hysteresis retain the player's chosen pitch for open space. This obstruction fallback is not final room-aware framing: the enclosed-level milestone still needs full-character and landing visibility at doorways, corners and ceilings.
 
 ## Museum soundtrack
 
@@ -81,6 +81,6 @@ Held movement keeps a stable basis so automatic camera rotation cannot steer it 
 
 ## Focused verification
 
-From this package, run `pnpm exec vitest run src/core src/browser`. From `packages/pitch-engine`, run `pnpm exec vitest run src/pitch-f0-stream.test.ts` for the shared observation seam. Core tests walk the real route, test all three authored jumps and closed gates, prove optional completion is independent, and exercise stale/silent/duplicate voice evidence. Browser adapter tests control microphone and Web Audio boundaries; they do not claim native-device performance or microphone usability.
+From this package, run `pnpm exec vitest run src/core src/browser`. From `packages/pitch-engine`, run `pnpm exec vitest run src/pitch-f0-stream.test.ts` for the shared observation seam. Core tests walk the real route, exercise its continuous floor joins, raised jump and closed gates, prove optional completion is independent, and exercise stale/silent/duplicate voice evidence. Browser adapter tests control microphone and Web Audio boundaries; they do not claim native-device performance or microphone usability.
 
 For room composition, run `pnpm exec vitest run src/authoring src/render/camera.test.ts src/render/museum.test.ts`. BesideCue's `glass-adventure-authoring.e2e.ts` covers the development routes and real embedded GLB texture loading under the main app's CSP. Texture images embedded in GLBs need `blob:` in both `connect-src` (ImageBitmap fetch) and `img-src` (image fallback); scripts retain their existing restrictions. Seeded browser saves verify restoration, not earned singing; pure route tests exercise fresh holds through the actual game coordinator. Actual mobile camera/microphone and sustained rendering acceptance remain device checks.
