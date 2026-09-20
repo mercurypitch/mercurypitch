@@ -306,6 +306,76 @@ describe('a song that is standing still', () => {
   })
 })
 
+describe('a place the reader chose', () => {
+  // The lyric box changes height for reasons that have nothing to do with
+  // the words: somebody joins and the header re-flows, a notice takes a row
+  // above the stage. Here a new `lines` array stands in for that -- to the
+  // follower both are "a new layout".
+  const relayout = (setShown: (lines: typeof LINES) => void): void => {
+    setShown(LINES.map((line) => ({ ...line })))
+  }
+
+  it('outlives a new layout on a paused song', () => {
+    const { scroll, setPosition, setPlaying, setShown } = renderSheet()
+    setPosition(4.1)
+    setPlaying(false)
+    scroll.dispatchEvent(new Event('wheel', { bubbles: true }))
+    vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+
+    // A friend walks in. The reader was reading ahead, and still is.
+    relayout(setShown)
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+  })
+
+  it('outlives one on a playing song too, until the next line', () => {
+    const { scroll, setPosition, setShown } = renderSheet()
+    setPosition(4.1)
+    scroll.dispatchEvent(new Event('wheel', { bubbles: true }))
+    vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
+
+    relayout(setShown)
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+
+    setPosition(6.1)
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+  })
+
+  it('is given up the moment the song moves the sheet itself', () => {
+    const { scroll, setPosition, setShown } = renderSheet()
+    setPosition(4.1)
+    scroll.dispatchEvent(new Event('wheel', { bubbles: true }))
+    vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
+    setPosition(6.1)
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+
+    // Back on the song: a new layout finds the sung line again, at once.
+    relayout(setShown)
+    expect(scrollTo).toHaveBeenCalledTimes(3)
+    expect(scrollTo.mock.lastCall?.[0]).toMatchObject({ behavior: 'auto' })
+  })
+
+  it('is not claimed by a sheet nobody touched', () => {
+    const { setPosition, setPlaying, setShown } = renderSheet()
+    setPosition(4.1)
+    setPlaying(false)
+
+    relayout(setShown)
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+  })
+
+  it('still yields to a seek on a paused song', () => {
+    const { scroll, setPosition, setPlaying } = renderSheet()
+    setPosition(4.1)
+    setPlaying(false)
+    scroll.dispatchEvent(new Event('wheel', { bubbles: true }))
+    vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
+
+    setPosition(8.1)
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('the run-in', () => {
   it('takes a stopped song back to the top of its words', () => {
     // First line at two seconds, so zero is before it.
