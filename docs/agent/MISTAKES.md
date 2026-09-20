@@ -791,6 +791,29 @@ shell on GET.
 to the Worker, before the Worker sees it.
 **Rule:** adding an endpoint means editing `wrangler.jsonc` too.
 
+**Bitten again, 0.9.11 -- a path that HAS a file.** `/mirror` was left off the
+list on purpose: `html_handling` serves `mirror.html`, so nothing needed the
+Worker. Then the Worker was given something to _add_ to that document (the
+social tags of a shared voiceprint link, rewritten per request) and the list
+was not revisited. The page loaded, every test passed, and the rewrite never
+ran once. **A route needs listing when the Worker has anything to say about
+it, not only when nothing else can serve it.** Pinned, with the reason, in
+`worker-entry-routing.test.ts`.
+
+### A number that travels under a short key loses its unit
+
+**Symptom:** a shared voiceprint scoring 87 for accuracy unfurled as "accuracy
+±87¢" -- nearly a semitone out, the opposite of what the card said.
+**Cause:** the share payload carries `ac` and `sd`. They are the card's two
+0-100 scores, but the codec's comment called them "median cents" and "cents on
+holds", and the two readers written next (the recipient's view, the worker's
+description) believed the comment. Every test used `ac: 12`, which is a
+plausible number of cents and a plausible terrible score, so nothing looked
+wrong.
+**Rule:** when a value crosses a boundary under a short name, find what
+WRITES it (`summarize()` here) before writing what reads it, and pick test
+values that are only plausible in the right unit.
+
 ### Never edit an applied migration
 
 **Symptom:** a schema change that worked locally did nothing on dev.

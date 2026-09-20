@@ -995,8 +995,10 @@ armed, a touch screen is told the words scroll again after Done, and a sweep
 cancels the browser's pan itself as well as by class. None of these was shown
 to be the cause.
 
-**If it comes back,** three things on the screen tell the causes apart, with
-no console: is a name lit in Parts, or Done showing (an armed brush); does the
+**If it comes back,** switch on the developer console first (Settings; it
+works on a deployed build, so a tablet has logs -- `src/lib/developer-console.ts`).
+Three things on the screen also tell the causes apart without it: is a name lit
+in Parts, or Done showing (an armed brush); does the
 100% over the words change while dragging (the sheet thinks two fingers are
 down); does tapping a line still jump the song (the sheet is getting touches
 at all). Not tried, because it cannot be checked from here: dropping the

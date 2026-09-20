@@ -497,11 +497,96 @@ It would take a stale class out of the picture in both directions, but painting
 under a finger works on the owner's tablet today and that swap cannot be tried
 on one from here.
 
-If it happens again, three things on the screen tell the causes apart, and none
-needs a console (a tablet has none): is a name lit in Parts, or Done showing;
+If it happens again, the tablet does have logs: Settings has a developer
+console switch that works on a deployed build (`src/lib/developer-console.ts`;
+an earlier version of this note said a tablet has none, which was wrong). Three
+things on the screen tell the causes apart even without it: is a name lit in
+Parts, or Done showing;
 does the 100% in the words' header change while dragging (the sheet thinks two
 fingers are down); does tapping a line still jump the song (the sheet is
 getting touches at all).
+
+### A shared voiceprint link, and what it unfurls as (#837, #838)
+
+The Mirror's share card is made about 310 times a month and brought back four
+sessions of three seconds each: the share text pointed at the generic
+`/mirror`, so someone sent a friend's card arrived at an empty instrument
+asking _them_ to sing.
+
+**#837, the link.** It now carries the take: `/mirror?v=<payload>`, the numbers
+already printed on the card and nothing else (no audio, no frames, no id, no
+timestamp; a name only if one was typed, and no caller passes one today).
+Self-contained rather than a short id, because `SHARE_STORE` ids expire in 60
+days and a voiceprint is a keepsake. `lib/mirror/shared-voiceprint` is the one
+definition of the destination; `SharedVoiceprintWelcome` redraws the sender's
+card from the numbers, with a written fallback when there is no twin portrait;
+`shared_view` and `shared_start` join the funnel catalog.
+
+**#838, the unfurl.** Crawlers run no JavaScript, so the picture has to exist
+as a URL. The app picks a card id itself (a server-assigned one would put a
+round trip between the tap and the sheet, which Safari refuses), uploads the
+PNG it already drew to `PUT /api/og/card/:id`, and the worker rewrites the
+Mirror document's social tags per request. Stored in the existing
+`SHARE_STORE` under an `og:` prefix, 30-day TTL, 2 MB cap, rate limited per
+address, never overwritten. **No new Cloudflare resource**: dev, preview and
+prod all already bind that namespace.
+
+**What review found before it merged.** #838's base was #837's branch, and
+`pr-gate.yml` only fires on PRs based on `main`, so its green tick was one
+deploy job and nothing else. Read properly:
+
+- **The rewrite could never run.** Share links are `/mirror?...`, and `/mirror`
+  was not in `assets.run_worker_first`: it has a file, so the asset layer
+  answered it and the worker never saw the request. The page loads either way,
+  so nothing reports it; every link would have unfurled as the stock card.
+  Listed now, and pinned in `worker-entry-routing.test.ts` with the reason.
+- **Two scores were published as cents.** `ac` and `sd` are the card's 0-100
+  scores (higher is better). The recipient's view and the unfurl both printed
+  them as `±N¢`, so a take scoring 87 read "accuracy ±87¢": nearly a semitone
+  out, the opposite of what it says. Now `87 / 100` and `accuracy 87/100`, and
+  the decoder stops at 100.
+- **A tall card behind square tags.** The data card can be shared as a
+  1080x1920 story; the tags declare 1080 square and X crops a `summary` from
+  the middle. A story share now draws a second, square card for the unfurl
+  only, and the store refuses any PNG whose IHDR is not 1080x1080 (one
+  constant, `OG_CARD_SIZE`, for the app, the store and the tags).
+- **The card left the device on a plain save.** The upload ran before
+  `shareCard`, whose fallback on a browser with no share sheet downloads the
+  picture and drops the text. So "Save" uploaded a card for a link nobody was
+  given. It is now `shareCard`'s `onSheetOpening`, called synchronously just
+  before `navigator.share` and never on the download path.
+- **An expired card unfurled as a broken picture,** not the stock one the PR
+  described: the tags named the image from the id's shape alone. The rewrite
+  now asks the store first (`ogCardExists`, a stream opened and cancelled,
+  since KV has no "exists"), treats an unreachable store as "no", and only
+  touches a whole 200 HTML response. It also drops the file's `ETag` from a
+  page it rewrote: that page changes when the card lands or expires and the
+  file does not, so the validator would let a returning crawler be told 304.
+- **Anyone can write a link.** `1e999` is valid JSON and parses to Infinity,
+  and a note named from it reads `undefinedNaN` under our name. Numbers must be
+  finite and in range (MIDI 0-127, scores 0-100, high not below low), names at
+  most 80 characters, and a note is named from a rounded number.
+- **Staging links went to production.** The base was hard-coded, so a card
+  uploaded to dev's store was named by a link to the public site, which has
+  neither the card nor (until a release) the code. `voiceprintShareBase()`
+  keeps links at home on `dev.mercurypitch.com` and `*.workers.dev`; everywhere
+  else is unchanged. Without it this could only be tried on prod.
+- The stored PNG is served `nosniff` with a `default-src 'none'; sandbox` CSP:
+  a stranger's bytes under our domain are an image and nothing else.
+
+**Accepted, not fixed.** The store is an unauthenticated upload of a
+card-sized PNG, and `tw`/`n` are free text: a crafted link can unfurl with
+someone else's picture and a short title under our name. Bounded by the rate
+limit, the size check, the 64-character clip and the 30 days; removing it
+means drawing the card server-side. KV is not read-your-writes across
+locations, so a crawler far from the sender that arrives within seconds can
+still miss the card and show the stock one. The free-sing share still sends
+the generic link: its card has a range and could carry one, but the recipient
+would land on the guided Mirror under the word "voiceprint", which is a
+product call.
+
+Not tested by anything here: `HTMLRewriter` itself (no Workers test pool; a
+stand-in records what would be written), and an unfurl in a real chat app.
 
 ### Three `manualChunks` rules deleted; every document weighed
 

@@ -92,6 +92,23 @@ gesture, which is all Safari will accept. The upload runs beside it, unawaited.
 on `results_view`. "It all happens on your device" stays true for everyone who never taps
 share — which, at a 1.3% share-to-return rate today, is nearly everyone.
 
+### What review changed before it shipped
+
+- **`/mirror` is listed in `assets.run_worker_first`.** It has a file, so the asset layer
+  answered it and the rewrite below never ran. The single most important line in this
+  feature is in `wrangler.jsonc`.
+- **The upload is `shareCard`'s `onSheetOpening`**, not a call made before `shareCard`. A
+  browser with no share sheet saves the picture and drops the link, so the earlier order
+  uploaded a card on a plain save.
+- **The stored card is always 1080 square.** A data card shared as a 1080x1920 story draws
+  a second, square card for the unfurl; the store checks the PNG's IHDR and refuses any
+  other size. One constant, `OG_CARD_SIZE`.
+- **The rewrite asks the store before promising the picture.** A card that expired, or has
+  not landed yet, keeps the stock image instead of an `og:image` that answers 404.
+- **Accuracy and steadiness are 0-100 scores, not cents**, and are written `87/100`.
+- **Staging links stay on staging** (`voiceprintShareBase`), so this can be tried on dev or
+  a PR preview rather than only on production.
+
 ## What was rejected along the way
 
 **B now. A later** — the original recommendation.
@@ -124,7 +141,7 @@ GET /mirror?v=<payload>
   → on a valid voiceprint payload, HTMLRewriter the response:
       og:image        → /og/legend/<slug>.jpg
       og:title        → "<Twin> is my voice twin" | "A voiceprint"
-      og:description  → "C3 – D5 · 2 octaves + 2 semitones · accuracy ±12¢"
+      og:description  → "C3 – D5 · 2 octaves + 2 semitones · accuracy 87/100"
       og:url          → the full shared link
       twitter:image   → matching, per the existing cache-busting test's rule
   → an absent, malformed or non-voiceprint payload changes nothing
