@@ -23,6 +23,12 @@ words scroll under your finger while the song plays.
   timeline sits beside the playback buttons.
 - **Original and Edited words are chosen above the words**, next to who sings
   which line.
+- **A jam room's playback buttons share one box, with a More button.** The
+  live pitch switch joined play and stop. Tempo and Unison, Harmony Stack or
+  Relay open from More, and stay open once you open them.
+- **Unison, Harmony Stack and Relay are gone from a song.** They split a
+  drill into parts and never did anything to a song. The timeline takes the
+  room they left.
 - **The standalone pages start on about a tenth of the code.** The Voice
   Mirror, Karaoke Night, Glass and the vocal range test each fetched most of
   the studio before they could open. Now they fetch their own part.
