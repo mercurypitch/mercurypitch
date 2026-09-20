@@ -14,6 +14,7 @@ const MAXIMUM_PLANAR_DEPTH = 0.02
 
 export interface PlanarMirrorSurface {
   surface: Mesh
+  captureRoot: Object3D
   material: Material
   renderTarget: WebGLRenderTarget
   capture(
@@ -98,6 +99,7 @@ export function createPlanarMirrorSurface(
 
   return {
     surface,
+    captureRoot: surface.parent ?? surface,
     material: reflectionMaterial,
     renderTarget: reflector.getRenderTarget(),
     capture(renderer, scene, camera, width, height) {
@@ -240,10 +242,15 @@ export function createPlanarReflectionController(
         return false
 
       const visibility = candidates.map(({ surface }) => surface.visible)
+      const captureRootVisible = selected.captureRoot.visible
       try {
         candidates.forEach(({ surface }) => {
           surface.visible = false
         })
+        // The authored frame includes a thin backing behind its inset. Hiding
+        // the selected mirror instance keeps that parallel backing out of the
+        // reflected camera's oblique near plane while retaining other decor.
+        selected.captureRoot.visible = false
         withVisibleScene(() =>
           selected.capture(
             renderer,
@@ -264,6 +271,7 @@ export function createPlanarReflectionController(
         onError(error)
         return false
       } finally {
+        selected.captureRoot.visible = captureRootVisible
         candidates.forEach(({ surface }, index) => {
           surface.visible = visibility[index]!
         })

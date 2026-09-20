@@ -46,6 +46,83 @@ async function openGarden(page: Page): Promise<void> {
   )
 }
 
+interface Bounds {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+async function bounds(page: Page, selector: string): Promise<Bounds> {
+  return page.locator(selector).evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    }
+  })
+}
+
+function gapBetween(a: Bounds, b: Bounds): number {
+  const horizontal = Math.max(b.left - a.right, a.left - b.right, 0)
+  const vertical = Math.max(b.top - a.bottom, a.top - b.bottom, 0)
+  return Math.hypot(horizontal, vertical)
+}
+
+test('artwork offer stays centered below guidance and leaves help reachable @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 })
+  await openGarden(page)
+  const offer = page.getByRole('button', { name: 'View nearby artwork' })
+  const guidance = page.getByRole('status').filter({
+    hasText: 'Follow the gold inlay to the laurel goblet.',
+  })
+  const help = page.getByRole('button', { name: 'How to play' })
+
+  for (const viewport of [
+    { width: 320, height: 640, touch: true },
+    { width: 1024, height: 768, touch: true },
+    { width: 1440, height: 900, touch: false },
+  ]) {
+    await page.setViewportSize(viewport)
+    const offerBounds = await bounds(
+      page,
+      'button[aria-label="View nearby artwork"]',
+    )
+    const guidanceBounds = await guidance.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+      }
+    })
+    const helpBounds = await bounds(page, 'button[aria-label="How to play"]')
+
+    expect((offerBounds.left + offerBounds.right) / 2).toBeCloseTo(
+      viewport.width / 2,
+      0,
+    )
+    expect(offerBounds.top).toBeGreaterThanOrEqual(guidanceBounds.bottom + 12)
+    expect(gapBetween(offerBounds, helpBounds)).toBeGreaterThanOrEqual(12)
+
+    if (viewport.touch) await help.tap()
+    else await help.click()
+    const tutorial = page.getByRole('dialog').filter({
+      has: page.getByRole('button', { name: 'Skip tutorial' }),
+    })
+    await expect(tutorial).toBeVisible()
+    if (viewport.touch)
+      await tutorial.getByRole('button', { name: 'Skip tutorial' }).tap()
+    else await tutorial.getByRole('button', { name: 'Skip tutorial' }).click()
+    await expect(tutorial).toHaveCount(0)
+  }
+})
+
 test('a visible painting opens from its canvas surface with mouse and touch @smoke', async ({
   page,
 }) => {

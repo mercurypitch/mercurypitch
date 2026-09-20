@@ -24,6 +24,7 @@ function fakeMirror(x: number, z: number) {
   const capture = vi.fn()
   const mirror: PlanarMirrorSurface = {
     surface,
+    captureRoot: surface,
     material: surface.material as Material,
     renderTarget: {} as WebGLRenderTarget,
     capture,
@@ -107,6 +108,38 @@ it('captures only the nearest visible front-facing mirror on a bounded cadence',
   })
 })
 
+it('omits the selected authored backing only while capturing', () => {
+  const scene = new Scene()
+  const selected = fakeMirror(0, 0)
+  const owner = new Group()
+  const backing = new Mesh(new PlaneGeometry(1.2, 1.2), new MeshBasicMaterial())
+  owner.add(backing, selected.mirror.surface)
+  selected.mirror.captureRoot = owner
+  scene.add(owner)
+  const controller = createPlanarReflectionController(() => [selected.mirror])
+
+  expect(
+    controller.update(
+      {} as WebGLRenderer,
+      scene,
+      camera(),
+      800,
+      600,
+      (capture) => {
+        expect(owner.visible).toBe(false)
+        expect(backing.visible).toBe(true)
+        capture()
+      },
+    ),
+  ).toBe(true)
+  expect(selected.capture).toHaveBeenCalledTimes(1)
+  expect(owner.visible).toBe(true)
+  expect(selected.mirror.surface.visible).toBe(true)
+
+  backing.geometry.dispose()
+  backing.material.dispose()
+})
+
 it('ignores a hidden parent, back face and off-screen surface', () => {
   const scene = new Scene()
   const hidden = fakeMirror(0, 0.5)
@@ -151,10 +184,13 @@ it('ignores a hidden parent, back face and off-screen surface', () => {
 it('restores mirror visibility and disables optional captures after an error', () => {
   const scene = new Scene()
   const failing = fakeMirror(0, 0)
+  const owner = new Group()
+  owner.add(failing.mirror.surface)
+  failing.mirror.captureRoot = owner
   failing.mirror.capture = vi.fn(() => {
     throw new Error('reflection failed')
   })
-  scene.add(failing.mirror.surface)
+  scene.add(owner)
   const onError = vi.fn()
   const controller = createPlanarReflectionController(
     () => [failing.mirror],
@@ -171,6 +207,7 @@ it('restores mirror visibility and disables optional captures after an error', (
       (capture) => capture(),
     ),
   ).toBe(false)
+  expect(owner.visible).toBe(true)
   expect(failing.mirror.surface.visible).toBe(true)
   expect(failing.mirror.useFallback).toHaveBeenCalledTimes(1)
   expect(onError).toHaveBeenCalledWith(expect.any(Error))

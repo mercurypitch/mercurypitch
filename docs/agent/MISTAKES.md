@@ -1378,6 +1378,19 @@ evidence on its frame timeline. Cancel visual work when preview is off/stopped.
 says when to commit. This overrides any "commit after every task" instruction
 elsewhere in the repo docs.
 
+### Exclude the selected mirror backing from its reflection capture
+
+**Symptom:** a fixed jagged black diagonal crossed the live mirror while the
+surrounding frame and main scene rendered correctly.
+**Cause:** the Meshy frame's backing sits behind its reflective inset and
+intersects the reflected camera's oblique near plane. Retriangulating the inset
+and hiding floor art did not remove the stripe in matching-camera comparisons.
+**Rule:** hide the selected frame instance only during its reflection capture,
+then restore visibility in `finally`. Keep other frames available in reflection.
+Prove the fix at the same pose before changing geometry or renderer quality.
+**See:** `packages/glass-game/src/render/planar-reflections.ts`,
+`art/glass-adventure/v5/proofs/mirror-backing-sept20/`.
+
 ### Never add Claude attribution
 
 **Rule:** no `Co-Authored-By`, no "Generated with", in commits, PR bodies, or
