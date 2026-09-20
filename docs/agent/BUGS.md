@@ -656,6 +656,8 @@ This is exactly the permission-denial path the lens targets: a blocked clipboard
 
 **Suggested fix.** Await the write and only set the copied flag on success; on rejection fall back to the textarea/execCommand path (as `src/lib/share-codec.ts:382-400` does) or show the code with a 'select and copy manually' hint.
 
+**Follow-up, 0.9.11.** Only the invite modal had been fixed when this was marked FIXED: the room header's button and the sidebar's kept the pattern. Both are `JamRoomCode` now, which marks the copy only once the clipboard has taken it (`src/tests/jam-room-code.test.tsx`).
+
 ### [medium] WaveformPane maps absolute window time through the window duration — the waveform collapses once the view scrolls off zero
 
 `src/components/panes/WaveformPane.tsx:63` — confidence: likely — status: reported
