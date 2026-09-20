@@ -4,12 +4,20 @@
 
 import { expect, test } from '@playwright/test'
 import { dismissOverlays, openNavTab } from './helpers/ui'
-import { fakeMicArgs, TONE_HZ, writeToneWav } from './helpers/tone-wav'
+import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
+
+// The check centres its three landings on the note the singer's voice type
+// starts from, and a fresh visitor is a tenor: E3 (`VOCAL_RANGES.tenor
+// .anchorMidi`). The fake voice has to sing THAT, or it lands nowhere and the
+// review has one marker instead of two. It used to be the shared A3 tone,
+// which only worked because A3 was also where a tenor started -- and that
+// was a fifth too high for one, which is why it moved.
+const TENOR_START_HZ = 164.81
 
 // The guided route includes a rehearsal before its three measured landings.
 // Keep the source longer than the complete capture instead of relying on the
 // browser-specific fake-device loop behaviour.
-const TONE_WAV = writeToneWav(TONE_HZ, 20)
+const TONE_WAV = writeToneWav(TENOR_START_HZ, 20)
 
 test.use({
   launchOptions: { args: fakeMicArgs(TONE_WAV) },
