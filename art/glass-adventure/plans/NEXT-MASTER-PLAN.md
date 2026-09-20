@@ -1,12 +1,19 @@
 # Glass adventure — current master plan
 
-Updated 2026-09-20. This is the current plan, not a chronological chat log.
+Updated 2026-09-21. This is the current plan, not a chronological chat log.
 Detailed research and chapter plans remain in
 `<user-dotfiles>/personal/besidecue/glass-adventure/`.
 Code and production sources are preserved in draft PR #807 on
 `feat/glass-museum-level-one`. No merge or release is authorized for this pass.
 
 ## Where we are
+
+The owner approved the next four stages: finish Twin production, implement a
+rewards/portrait pilot, build the Resonance Conservatory, and verify shared
+web/native delivery. The active checklist is
+[APPROVED-FOUR-STAGES.md](./APPROVED-FOUR-STAGES.md). The later journey map has a
+[three-direction visual audition](./JOURNEY-MAP-AUDITION.md); implementation
+waits for that separate design step.
 
 The owner accepted the longer Journey and tablet controls, music, enclosure,
 decoration, Merc clearance and artwork inspection. The owner also completed Twin
@@ -71,7 +78,8 @@ and software render proofs are not measured device FPS/thermal evidence.
 - [x] Owner accepted hand clearance, mounted art and artwork inspection.
 - [x] Owner accepted the mirror artifact fix and Twin Galleries low/high lesson.
 - [x] Prepare sharper bounded reflection, above-floor exit rim and top-row artwork.
-- [ ] Owner recheck of this latest polish; sustained device cost remains unmeasured.
+- [x] Owner accepted sharper mirrors, top-row artwork and exit-floor clearance.
+- [ ] Sustained physical-device cost and timed route pacing remain unmeasured.
 
 ### N3 — lesson and campaign foundation (implemented; owner accepted Twin learning)
 
@@ -132,15 +140,16 @@ The route keeps approved existing breakable recipes until replacements pass. An 
 not a finished breakable. Do not inflate the current level's download with
 unused candidates.
 
-### N5 — optional scoring/collection pilot (needs policy discussion)
+### N5 — optional scoring/collection pilot (implementation authorized)
 
 Separate exploration from singing evidence. Proposed: every successful break
 opens the route and grants its collectible; exploration coins count discovered
 exhibits; singing quality can earn stars or A/B/C, based on time-weighted valid
 capture rather than callback counts. Insufficient evidence stays ungraded.
 Retries retain personal bests. Avoid rewarding loudness, long forced holds or
-penalizing microphone limitations. Pick one vessel as the pilot after agreeing
-what each grade means. No scoring implementation is included in current polish.
+penalizing microphone limitations. The approved pilot uses Glassworks Journey,
+1–3 singing stars, finite discovery coins and a completion portrait; implementation
+and validation are tracked in the four-stage checklist.
 
 ### N6 — Level 3: Resonance Conservatory
 
@@ -187,6 +196,6 @@ also have a repository copy in
 [OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md](./OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md).
 
 No new design choice blocks finishing the Level 2 production candidates. The
-owner accepted the comfortable low/high learning sequence. The next useful
-design discussion is reward policy before its pilot; physical-device mirror
-cost and journey duration still need measured feedback.
+owner accepted the comfortable low/high learning sequence and authorized the
+rewards defaults and next stages; physical-device mirror cost and journey
+duration still need measured feedback.
