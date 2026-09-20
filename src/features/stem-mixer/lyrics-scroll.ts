@@ -51,15 +51,32 @@ export function scrollTargetFor(
 }
 
 /**
+ * How long the reader can leave the words alone before following resumes
+ * by itself. The phone stage's number (KaraokeMobileStage), so a song
+ * behaves the same on both.
+ *
+ * Without it, a scroll turned following off and only scrolling BACK onto the
+ * sung line turned it on again: a reader who scrolled up to check a verse
+ * and let go was left there for the rest of the song.
+ */
+export const FOLLOW_RESUME_MS = 3500
+
+/**
  * Whether a user scroll has settled back onto the active line, so following
- * it can resume. Deliberately more generous than `scrollTargetFor`'s band:
- * re-arming the moment the line is merely visible would fight someone who
- * scrolled ahead to read, and they would have to keep scrolling back.
+ * it can resume early. Deliberately more generous than `scrollTargetFor`'s
+ * band: re-arming the moment the line is merely visible would fight someone
+ * who scrolled ahead to read, and they would have to keep scrolling back.
+ *
+ * Measured from BOTH sides. It used to ask only whether the line was above
+ * the settle mark, and a line two screens above the top of the list is --
+ * so scrolling down past the sung line counted as coming back to it, and
+ * the list snapped back within a second, while scrolling up never did.
  */
 export function isBackOnActiveLine(
   container: Bounds,
   line: Bounds,
   settleRatio = 0.6,
 ): boolean {
+  if (line.bottom <= container.top) return false
   return line.top - container.top < container.height * settleRatio
 }

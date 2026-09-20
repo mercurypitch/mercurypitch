@@ -4,7 +4,9 @@
 //
 // Keeps whichever list is on screen scrolled to the line being sung, and
 // stops doing that the moment the user scrolls for themselves — then quietly
-// resumes once they land back on the active line.
+// resumes once they land back on the active line, or have left the words
+// alone for a few seconds. It never stays off: a list left where a hand put
+// it, with the song going on underneath, reads as broken.
 //
 // Split out of useStemMixerLyricsController (Phase 0 of
 // docs/plans/lrc-mapper-studio-plan.md). The arithmetic moved further out
@@ -14,7 +16,7 @@
 import type { Setter } from 'solid-js'
 import { createEffect, createSignal, onCleanup } from 'solid-js'
 import { findLyricsRow } from '@/lib/lyrics-row'
-import { ANCHOR_RATIO, isBackOnActiveLine, scrollTargetFor, } from './lyrics-scroll'
+import { ANCHOR_RATIO, FOLLOW_RESUME_MS, isBackOnActiveLine, scrollTargetFor, } from './lyrics-scroll'
 import type { LyricsSource } from './types'
 
 /** Where the playback list lives. Excludes the mapper and editor lists. */
@@ -24,6 +26,13 @@ const GEN_CONTAINER_SELECTOR = '.sm-lyrics-gen-lines'
 
 /** How long a user scroll suppresses following before we re-check. */
 const SETTLE_MS = 800
+
+/**
+ * The longest one of our own glides is believed to be running. `scrollend`
+ * ends it sooner where the browser has one; this is for the ones that do
+ * not, and for a glide that never lands.
+ */
+const GLIDE_CAP_MS = 1000
 
 /** The playback list tolerates less drift than the mapper's taller rows. */
 const PLAYBACK_BOTTOM_RATIO = 0.57
@@ -57,9 +66,11 @@ export function useLyricsScrollController(
 
   let container: HTMLElement | null = null
   let settleTimer: ReturnType<typeof setTimeout> | null = null
+  let resumeTimer: ReturnType<typeof setTimeout> | null = null
   // Distinguishes our own smooth scroll from the user's, so following does
   // not mistake itself for someone taking over.
   let isAutoScrolling = false
+  let glideTimer: ReturnType<typeof setTimeout> | null = null
 
   const query = (selector: string) =>
     document.querySelector(selector) as HTMLElement | null
@@ -71,9 +82,24 @@ export function useLyricsScrollController(
     }
   }
 
+  const clearResume = () => {
+    if (resumeTimer !== null) {
+      clearTimeout(resumeTimer)
+      resumeTimer = null
+    }
+  }
+
   const onLyricsScroll = () => {
     if (isAutoScrolling) return
     setUserScrolled(true)
+    // Counted from the LAST scroll, so reading on keeps the words. When it
+    // does fire, the follow effect below is watching `userScrolled` and
+    // brings the sung line back if it has drifted out of the band.
+    clearResume()
+    resumeTimer = setTimeout(() => {
+      resumeTimer = null
+      setUserScrolled(false)
+    }, FOLLOW_RESUME_MS)
     clearSettle()
     settleTimer = setTimeout(() => {
       settleTimer = null
@@ -119,16 +145,21 @@ export function useLyricsScrollController(
   const scrollTo = (el: HTMLElement, target: number, markAuto: boolean) => {
     if (markAuto) {
       isAutoScrolling = true
+      // ONE release at a time. The timer used to be fire-and-forget, so the
+      // timer of one glide went off in the middle of the next and unmarked
+      // it -- and the rest of that glide was taken for the reader scrolling,
+      // which turned following off.
+      if (glideTimer !== null) clearTimeout(glideTimer)
       const release = () => {
+        el.removeEventListener('scrollend', release)
+        if (glideTimer !== null) clearTimeout(glideTimer)
+        glideTimer = null
         isAutoScrolling = false
       }
       el.addEventListener('scrollend', release, { once: true })
       // scrollend is not universal, and a smooth scroll that never lands
       // would otherwise leave following disabled for the rest of the session.
-      setTimeout(() => {
-        el.removeEventListener('scrollend', release)
-        isAutoScrolling = false
-      }, 500)
+      glideTimer = setTimeout(release, GLIDE_CAP_MS)
     }
     el.scrollTo({ top: target, behavior: 'smooth' })
   }
@@ -195,6 +226,8 @@ export function useLyricsScrollController(
       container = null
     }
     clearSettle()
+    clearResume()
+    if (glideTimer !== null) clearTimeout(glideTimer)
     isAutoScrolling = false
   })
 
