@@ -146,10 +146,16 @@ describe('standalone entry routing', () => {
   // shell instead of its entry. The failure is invisible in code review
   // because the worker's routing looks correct; only the config is missing.
   //
-  // A path needs listing when nothing else resolves it: /mirror and /glass are
-  // mapped by html_handling to their real .html files, and /karaoke-night and
-  // /jam-rooms get byte-copied alias files from standaloneAliasFilesPlugin.
-  // Everything else the worker claims has to be here.
+  // A path needs listing when nothing else resolves it: /glass is mapped by
+  // html_handling to its real .html file, and /karaoke-night and /jam-rooms
+  // get byte-copied alias files from standaloneAliasFilesPlugin. Everything
+  // else the worker claims has to be here.
+  //
+  // /mirror has a file too, and is listed all the same: a shared voiceprint
+  // link is /mirror?v=..., and the worker rewrites that document's social
+  // card per request. Served by the asset layer it still loads, so the only
+  // symptom of dropping it is that every shared link unfurls as the stock
+  // card — which nothing reports.
   it('lists every worker-owned alias in wrangler run_worker_first', () => {
     const config = readFileSync(
       resolve(__dirname, '../../wrangler.jsonc'),
@@ -162,6 +168,7 @@ describe('standalone entry routing', () => {
     ].map((m) => m[1])
 
     for (const path of [
+      '/mirror',
       '/free-sing',
       '/break-glass-with-your-voice',
       '/high-note-test',
@@ -195,6 +202,96 @@ describe('standalone entry routing', () => {
 // single-page-application`. Now that unmatched paths get a real 404, the worker
 // serves them, and a slug the landing links must not be able to fall through
 // the pattern.
+// A shared voiceprint link is /mirror?v=<numbers>&og=<card id>. The pieces
+// are tested on their own; this is that they are joined up — the worker hands
+// the Mirror document to the rewriter, and the rewriter asks THIS worker's
+// store whether the card is there.
+describe('a shared voiceprint link', () => {
+  const PAYLOAD =
+    'eyJ2IjoxLCJ0Ijoidm9pY2VwcmludCIsImQiOnsibG8iOjQ4LCJoaSI6NzQsInN0IjoyNiwiYWMiOjEyLCJzZCI6OSwidHciOiJGcmVkZGllIE1lcmN1cnkifX0'
+  const CARD = 'aB3xY9zQ01'
+
+  function sharedEnv(stored: string[]) {
+    const asked: string[] = []
+    const written = new Map<string, string>()
+    class Rewriter {
+      on(
+        selector: string,
+        handlers: {
+          element: (el: {
+            setAttribute: (name: string, value: string) => void
+            setInnerContent: (content: string) => void
+          }) => void
+        },
+      ): this {
+        handlers.element({
+          setAttribute: (_name, value) => written.set(selector, value),
+          setInnerContent: (content) => written.set(selector, content),
+        })
+        return this
+      }
+      transform(response: Response): Response {
+        return response
+      }
+    }
+    vi.stubGlobal('HTMLRewriter', Rewriter)
+    const env = {
+      ASSETS: {
+        fetch: async () =>
+          new Response('<html></html>', {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' },
+          }),
+      },
+      SHARE_STORE: {
+        get: async (key: string) => {
+          asked.push(key)
+          return stored.includes(key) ? { cancel: async () => {} } : null
+        },
+      },
+    } as unknown as Env
+    return { env, asked, written }
+  }
+
+  it('unfurls as the stored card, looked up under the og: prefix', async () => {
+    const { env, asked, written } = sharedEnv([`og:${CARD}`])
+    const response = await worker.fetch(
+      new Request(`https://mercurypitch.test/mirror?v=${PAYLOAD}&og=${CARD}`),
+      env,
+    )
+    vi.unstubAllGlobals()
+
+    expect(response.status).toBe(200)
+    expect(asked).toEqual([`og:${CARD}`])
+    expect(written.get('meta[property="og:image"]')).toBe(
+      `https://mercurypitch.test/api/og/card/${CARD}.png`,
+    )
+    expect(written.get('meta[property="og:title"]')).toBe(
+      'Freddie Mercury is my voice twin',
+    )
+  })
+
+  it('keeps the stock picture when the store has no such card', async () => {
+    const { env, written } = sharedEnv([])
+    await worker.fetch(
+      new Request(`https://mercurypitch.test/mirror?v=${PAYLOAD}&og=${CARD}`),
+      env,
+    )
+    vi.unstubAllGlobals()
+
+    expect(written.has('meta[property="og:image"]')).toBe(false)
+    expect(written.has('meta[property="og:title"]')).toBe(true)
+  })
+
+  it('does not touch the store for an ordinary visit', async () => {
+    const { env, asked, written } = sharedEnv([`og:${CARD}`])
+    await worker.fetch(new Request('https://mercurypitch.test/mirror'), env)
+    vi.unstubAllGlobals()
+
+    expect(asked).toEqual([])
+    expect(written.size).toBe(0)
+  })
+})
+
 describe('exercise deep links', () => {
   it('serves the studio shell with the URL intact', async () => {
     const { env, fetch } = entryEnv()

@@ -54,6 +54,8 @@
     //   glass aliases — served as glass.html content with the URL preserved
     //             (no byte-copied HTML files, unlike mirror/karaoke aliases;
     //             /glass itself maps via html_handling).
+    //   /mirror — has a file, but a shared voiceprint link needs its meta
+    //             tags rewritten per request, which only the Worker can do.
     //   /exercises/* — served as the studio shell with the URL preserved, so
     //             the client can read the slug.
     //   /admin*  — the friendly admin entries, likewise: no file behind them,
@@ -67,6 +69,13 @@
       // Serves mirror.html at /free-sing with the URL intact. Without this
       // line the asset layer answers first and hands back the SPA shell.
       "/free-sing",
+      // /mirror HAS a file behind it, and html_handling would serve it. It is
+      // listed for a different reason: a shared voiceprint link is
+      // /mirror?v=..., and what it unfurls as is decided by meta tags the
+      // Worker rewrites per request (src/og-voiceprint-meta.ts). Answered by
+      // the asset layer, every shared link unfurls as the stock Mirror card
+      // and nothing anywhere reports an error.
+      "/mirror",
       // Marketing deep links. With not_found_handling now "404-page", these
       // have no file to fall back to — without this line every /exercises/*
       // link on the landing page returns 404.
