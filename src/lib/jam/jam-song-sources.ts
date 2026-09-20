@@ -58,16 +58,6 @@ export type JamWordEnds = Readonly<
 >
 
 /**
- * The enhanced spec's `<mm:ss.xx>` word stamps, respelled as the `[mm:ss.xx]`
- * the app's own parser reads. Both are in the wild; the app writes the
- * second, and only ever read that one -- so a sheet from anywhere else lost
- * its word times on the way in.
- */
-function squareWordStamps(text: string): string {
-  return text.replace(/<(\d{1,3}:\d{2}(?:[.:]\d{2,3})?)>/g, '[$1]')
-}
-
-/**
  * LRC lines into song lines.
  *
  * LrcLine is already `{ time (seconds), text }`, so this is a rename plus
@@ -80,7 +70,8 @@ function squareWordStamps(text: string): string {
  * text. They used to be thrown away here, which is why a room lit a whole
  * line at once under a sheet somebody had mapped word by word. They are
  * read by the mixer's own parser, so a word starts in a room exactly when
- * it starts in Karaoke Night.
+ * it starts in Karaoke Night -- in either spelling of a stamp, `[mm:ss.xx]`
+ * or the enhanced spec's `<mm:ss.xx>`, which that parser reads itself.
  *
  * `wordEnds` is the other half of such a mapping. It is keyed by the line's
  * index in the FILE, so it is looked up before the empty lines are dropped.
@@ -91,7 +82,7 @@ export function lrcToSongLines(
 ): LyricsLineTiming[] {
   return lrc
     .map((l, lrcIndex) => {
-      const timed = parseLrcWordTimings(squareWordStamps(l.text), l.time)
+      const timed = parseLrcWordTimings(l.text, l.time)
       // The text a singer reads is the words, joined: the same string the
       // word spans add up to, so a line never reflows as it becomes current.
       const text =

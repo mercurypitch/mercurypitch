@@ -258,6 +258,17 @@ describe('the words inside a line', () => {
     expect(line?.wordStartsSec).toEqual([24, 24.21, 24.41])
   })
 
+  it('reads a sheet laid out the way the enhanced spec lays it out', () => {
+    // A stamp before the first word and one after the last. Read slot by
+    // slot, every word lit a word early, under the stamp of the one before.
+    const [line] = lrcTextToSongLines(
+      '[00:06.47] <00:07.67> And <00:07.95> all <00:08.36> the <00:08.63> joy <00:10.28>',
+    )
+    expect(line?.text).toBe('And all the joy')
+    expect(line?.startSec).toBe(6.47)
+    expect(line?.wordStartsSec).toEqual([7.67, 7.95, 8.36, 8.63])
+  })
+
   it('adds nothing to a line that was only ever timed as a line', () => {
     const [line] = lrcToSongLines([{ time: 3, text: 'just some words' }])
     expect(line).toEqual({ text: 'just some words', startSec: 3 })
