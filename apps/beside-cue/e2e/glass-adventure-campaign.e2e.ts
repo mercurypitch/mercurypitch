@@ -48,7 +48,7 @@ test('phone, tablet and desktop catalogue fit and defer 3D loading until entry @
   await expect(lobby).toBeVisible()
   await expect(
     lobby.getByRole('button', { name: /^(Enter|Continue|Replay) / }),
-  ).toHaveCount(3)
+  ).toHaveCount(4)
   expect(models).toEqual([])
   for (const viewport of [
     { width: 320, height: 640 },

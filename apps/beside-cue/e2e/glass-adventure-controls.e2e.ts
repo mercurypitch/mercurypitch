@@ -345,7 +345,7 @@ test.describe('phone', () => {
   })
 })
 
-test('replay starts fresh without erasing completion until gameplay saves', async ({
+test('replay starts fresh while gameplay saves preserve durable completion', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 640, height: 480 })
@@ -416,10 +416,21 @@ test('replay starts fresh without erasing completion until gameplay saves', asyn
     ),
   )
   expect(savedAfterMovement).toEqual({
-    version: 1,
+    version: 2,
     levelId: 'glassworks',
     checkpointId: 'jump-arrival',
-    completedBreakableIds: [],
-    finished: false,
+    completedBreakableIds: [
+      'glassworks.first-goblet',
+      'glassworks.rounded-vase',
+      'glassworks.hero-display',
+    ],
+    finished: true,
+    rewards: {
+      version: 1,
+      discoveredEncounterIds: [],
+      collectedCoinIds: [],
+      qualityResults: [],
+      collectedPortraitIds: [],
+    },
   })
 })
