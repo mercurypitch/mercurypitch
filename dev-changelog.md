@@ -285,6 +285,117 @@ lyrics, reusing it if possible.
   page: a word fills in a third of a second and then waits lit, so a poll
   from outside sampled the wait and never once saw a fill.
 
+### The room's header and corner, after an evening on a tablet
+
+Owner, the day the two rows and the word fill reached dev: four things, "a
+polish", then the release.
+
+- **The room code is the button.** The header had a pill with the code and a
+  "Copy link" button beside it; the sidebar's room card had the same pair.
+  `JamRoomCode` (new) is both: the code is the label, a copy mark at its end
+  says what a press does, and a press copies the link. It says "Link copied"
+  only when the clipboard took it -- the header's old button flashed "Copied!"
+  whatever happened, which the invite dialog had already learned not to do
+  (`docs/agent/BUGS.md` had the three of them down as fixed; two were not).
+  The confirmation hangs UNDER the pill on its own layer, so the code stays
+  readable while it shows and the header does not move (the browser test
+  compares the header's box before and after). On a phone the strip clips it
+  (`overflow-y: hidden`, it scrolls sideways); the tick and the colour carry it
+  there.
+- **One link, three hand-outs.** `jamRoomLink()` (new, `jam-room-link.ts`).
+  The header had been moved to `/jam#/jam:CODE` so an invite unfurls with the
+  Jam card; the sidebar's button and the invite dialog (and so its QR code)
+  still built `/#/jam:CODE`. The same room was invited by two addresses and
+  only one showed the right picture. The old test read `JamPanel.tsx` for a
+  template string; it now asks the function, and scans every hand-out point
+  for the old shape.
+- **"Only you can hear this" was the room's default.** `JamSongShare` showed
+  it whenever a local song was loaded with nobody else there -- true of every
+  song loaded alone, so it told nobody anything, and its sentence was what
+  wrapped the header at the owner's width. Alone there is now a mark with no
+  words; `InfoPopover` (which grew an `icon` slot for it) explains it on a
+  hover or a tap: you are the only one here, invite someone and you can send
+  it. With somebody in the room nothing changed in substance -- "Send the
+  song" the first time, who cannot hear it after that -- but the sentence is
+  shorter and the name ellipsises.
+- **The chip gives up its words before the strip wraps.** CSS cannot say this:
+  a wrapping flex row breaks lines on what each item ASKS for and only then
+  shrinks anything, so an item willing to give way is never asked. `row-fit`
+  lays the long form out and looks: `fit()` removes `data-compact`, reads the
+  row, and puts it back in the same task if the row is no longer one line
+  tall (or, on the phone's scrolling strip, has something off its end).
+  Nothing paints in between and the answer cannot flap, because it depends on
+  the layout and not on the state before it. It watches the strip AND the
+  header: the strip is only as wide as what is in it, so a window that grows
+  never resizes it. The row is measured against the chip's own height rather
+  than by comparing the items' tops, which also catches a child that wrapped
+  inside itself (the list of people).
+- **The camera tray was hidden on every touch screen.** `showCameras` started
+  at `!isMobile()`, and `isMobile()` is `(max-width: 768px), (pointer:
+coarse)` -- true of a 1180px tablet. The switch that brings the tray back is
+  `.phoneOnlyAction`, drawn under 640px. Hidden by one rule with the way back
+  hidden by the other; on a tablet, a camera turned on and nowhere to see
+  yourself. The default now reads the stylesheet's own width
+  (`CAMERA_SWITCH_QUERY`), and a test holds the two files to the same number.
+  This is the second time `isMobile()` has meant "phone" to its caller and
+  "touch" to the tablet -- the sidebar list in this same release was the first.
+- **And it docked against a chat that was not there.** Its position was worked
+  out once from the window's size and then pushed clear of a chat window
+  assumed open and 340 by 440. With the chat shut it landed 440px in from the
+  corner, over the lanes. "Docked" is a rule now, not a coordinate: left of
+  `[data-jam-chat]`'s real box, bottoms level, re-settled when the tray, the
+  chat or the window changes size -- so it sits beside the bubble, steps aside
+  when the chat opens and comes back when it shuts. A drag turns the rule off;
+  where it is let go is where it stays.
+- **The touch report: "I could tap it but I couldn't move it".** Once, not
+  reproducible: the divider between the words and the lanes could be tapped
+  but not dragged, and painting lines onto a singer did nothing either.
+  Read, not reproduced:
+  - `dragGesture` (the divider, the scrubber, the tray, a dozen surfaces
+    outside the room) had one state that matches the divider exactly. It
+    refuses a press while `activePointerId` is set, and clears that only on
+    `pointerup`, `pointercancel` or `lostpointercapture`. A browser that drops
+    a touch without sending any of them -- a system gesture, a dialog opening
+    under the finger -- left the id set for good: clicks still work, no drag
+    ever starts again until the element is rebuilt. A press that finds the
+    element no longer holding the old pointer's capture now ends that drag
+    (`onEnd`, `'lostpointercapture'`) and carries on as the new one; a second
+    finger during a live drag is still ignored. Test written first, and seen
+    to fail.
+  - The line painter has no such state. Its two silent refusals are
+    deliberate: not the host, and a second finger landing in the sheet (a
+    pinch, which abandons the sweep).
+  - Nothing is shared between the two, no listener above them takes the
+    pointer, and every write they make to storage is guarded. So the one
+    cause that explains BOTH at once is outside the code: a second touch
+    resting on the glass. The browser cancels every one-finger drag the
+    moment it sees a two-finger gesture it may own (taps survive), and the
+    sheet abandons a sweep for the same reason. Not provable from here. If it
+    comes back: does turning the live pitch off and on (which rebuilds the
+    divider) fix the divider alone, or does only a reload fix both?
+- **The lyric follower's flaky spec, a third and last time.** `leaves a paused
+song where the reader put it` failed once in each of two full jam runs on
+  this branch, which touches nothing under the words. A probe that logged
+  every `scrollTo`, every resize of the box and every node added to the room
+  caught it 13 runs in 24 under four workers: about 4.3 s after the page
+  opens the preview room's people arrive, the header re-flows for one layout
+  pass (38px, 56px, 38px), the stage under it gives up 18px and takes them
+  back, and the follower answered both resizes as "a new layout, find the
+  sung line again" -- `behavior: 'auto'`, straight back to the line, on a
+  paused song the reader had scrolled away from. On a quiet machine the
+  test's two-second wait ends before the people arrive; on a busy one it
+  does not. Not a test problem: a friend joining, or a notice taking a row,
+  does the same to a real reader. `Followed` gained `parked` -- raised when a
+  hand comes off with nothing owed, lowered whenever the song moves the sheet
+  itself -- and a layout that shifts under a parked sheet is left alone. The
+  next line, a seek and Play's first line move it as before. The jump: 0 runs in 24 after
+  (one of the 24 timed out earlier, waiting for the audio to load under four
+  workers, before the test proper).
+  The two earlier fixes (compare at release, never pay back a paused hold)
+  were real paths too; this was the one still open.
+- The chat bubble and its close button were drawings with no name; both are
+  labelled now.
+
 ### Three `manualChunks` rules deleted; every document weighed
 
 The owner's question after the jam room broke Piano Night's audit by importing

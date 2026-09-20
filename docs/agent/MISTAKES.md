@@ -963,6 +963,42 @@ looking switched on -- a visual review of the jam room's More button read the
 folded state as open for exactly this reason. Put hover rules behind
 `@media (hover: hover)`, and never let hover and ON share a look.
 
+### `isMobile()` means "touch", and a tablet is touch
+
+`isMobile()` is `(max-width: 768px), (pointer: coarse)`: true of a phone, and
+of a 1180px tablet. Twice in 0.9.11 a caller meant "phone" by it. The jam
+sidebar's song list was left unmounted for good on a tablet, and the camera
+tray started hidden there while the switch that shows it is drawn only under
+640px -- hidden by a script rule, with the way back hidden by a stylesheet
+rule. When a script decides something a stylesheet also decides, read the
+stylesheet's OWN width (`isNarrow()`, or the literal media query, with a test
+that holds the two to the same number). Keep `isMobile()` for what it says:
+interaction defaults on a touch screen.
+
+### A wrapping row cannot be asked to shrink first
+
+**Symptom:** a chip in the jam room's header sent the strip to a second line
+although it was willing to drop its words. **Cause:** a `flex-wrap: wrap`
+container breaks its lines on what each item ASKS for (its flex-basis), and
+only then shrinks the items of each line -- so an item that would give way is
+never asked. No mix of `flex-shrink`, `min-width: 0` and `overflow` changes
+that. **Fix:** lay the long form out and look (`src/lib/jam/row-fit.ts`): take
+the compact flag off, read the row, put it back in the same task if the row
+is no longer one line. Nothing paints in between, and it cannot flap, because
+the answer depends on the layout and not on the state before it. Watch an
+ancestor too: a content-sized row does not resize when the window grows.
+
+### A drag binding must not trust its own "a pointer is down"
+
+**Symptom:** a surface that can be tapped but never dragged again, until it is
+rebuilt. **Cause:** the binding refuses a press while it holds an active
+pointer id, and clears that id only on `pointerup`, `pointercancel` or
+`lostpointercapture`. Browsers do not always send the cancel they owe (a
+system gesture taking the touch, a dialog opening under the finger), and the
+id stayed set for good. **Fix:** "a drag is live" means the element still
+holds that pointer's capture. A press that finds it gone ends the old drag on
+its behalf and carries on (`src/components/shared/drag-gesture.ts`).
+
 ### An explicit `min-height` removes a flex item's min-content floor
 
 **Symptom:** in the mapper's marker mode with the font zoomed up, a lyric line

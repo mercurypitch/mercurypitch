@@ -32,6 +32,9 @@ words scroll under your finger while the song plays.
 - **Unison, Harmony Stack and Relay are gone from a song.** They split a
   drill into parts and never did anything to a song. The timeline takes the
   room they left.
+- **The room code is the button that copies the link.** It had a "Copy link"
+  button beside it. Now you tap the code. The invite window still offers
+  the two apart.
 - **The standalone pages start on about a tenth of the code.** The Voice
   Mirror, Karaoke Night, Glass and the vocal range test each fetched most of
   the studio before they could open. Now they fetch their own part.
@@ -53,6 +56,18 @@ words scroll under your finger while the song plays.
   up when you let go.
 - **Karaoke lyrics follow again after you scroll up.** Following used to stay
   off until the next song. It resumes a few seconds after you stop scrolling.
+- **A tablet shows your camera in a jam room.** The tray started hidden on
+  every touch screen, and only a phone had the switch for it. It now sits
+  beside the chat bubble.
+- **A room of one no longer says "Only you can hear this".** The note pushed
+  the header onto a second row. It waits for somebody to join, and shrinks
+  to its icon when space is tight.
+- **A drag that lost your finger can be started again.** A divider or a
+  slider could end up tappable but stuck until you reopened the room. The
+  next press now starts over.
+- **Smaller things.** Words you scrolled on a paused song stay put when
+  somebody joins. Every invite link shows the Jam picture in a chat. The
+  chat button is named for screen readers.
 
 ## [0.9.10] - 2026-09-19
 
