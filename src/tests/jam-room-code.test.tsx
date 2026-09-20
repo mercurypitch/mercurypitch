@@ -10,7 +10,7 @@
 // What these pin is that it is honest: it copies the address that unfurls
 // with the Jam card, and it says "copied" only when the clipboard took it.
 
-import { cleanup, fireEvent, render } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -126,6 +126,47 @@ describe('JamRoomCode', () => {
     )
   })
 
+  it('draws the note from the page, where no row can cover it', async () => {
+    // Owner report, 2026-09-20: the note hung under the pill from inside
+    // the header, and the playback row below is a later layer -- it was
+    // painted over. A z-index could not help: it only orders the header's
+    // own children.
+    // `screen`, not the render's own queries: those look inside the
+    // component's container, and the point is that the note is not in it.
+    const { getByTestId } = render(() => <JamRoomCode roomId="LUNAR7" />)
+    const button = getByTestId('jam-room-code')
+    expect(screen.queryByTestId('jam-room-code-note')).toBeNull()
+
+    fireEvent.click(button)
+    await settle()
+
+    const note = screen.getByTestId('jam-room-code-note')
+    expect(note.textContent).toBe('Link copied')
+    expect(button.contains(note)).toBe(false)
+    expect(document.body.contains(note)).toBe(true)
+    // Said once: the one people see is not the one that is read out.
+    expect(note).toHaveAttribute('aria-hidden', 'true')
+    expect(note.style.left).toMatch(/px$/)
+    expect(note.style.top).toMatch(/px$/)
+
+    vi.advanceTimersByTime(2000)
+    expect(screen.queryByTestId('jam-room-code-note')).toBeNull()
+  })
+
+  it('takes the note away with the pill', async () => {
+    // Leaving the room inside the two seconds must not strand it on the
+    // next screen.
+    const { getByTestId, unmount } = render(() => (
+      <JamRoomCode roomId="LUNAR7" />
+    ))
+    fireEvent.click(getByTestId('jam-room-code'))
+    await settle()
+    expect(screen.queryByTestId('jam-room-code-note')).not.toBeNull()
+
+    unmount()
+    expect(screen.queryByTestId('jam-room-code-note')).toBeNull()
+  })
+
   it('survives a browser with no clipboard at all', () => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -150,6 +191,18 @@ describe('the room header', () => {
     const rail = read('src/features/sidebar/panels/JamRoomPanel.tsx')
     expect(rail).toContain('<JamRoomCode')
     expect(rail).not.toContain('Copy link')
+  })
+
+  it('puts the note on the layer of the app’s other floating notes', () => {
+    const css = read('src/components/jam/JamRoomCode.module.css').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    )
+    const toast = /\.toast \{([^}]*)\}/.exec(css)?.[1] ?? ''
+    expect(toast).toContain('position: fixed')
+    expect(toast).toContain('z-index: 9000')
+    // It must never take a press meant for what is under it.
+    expect(toast).toContain('pointer-events: none')
   })
 
   it('keeps the hover look for a mouse', () => {

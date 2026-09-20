@@ -81,6 +81,56 @@ test.describe('the room code', () => {
     expect(after.height).toBe(before.height)
     expect(after.width).toBe(before.width)
   })
+
+  test('shows the note over everything under it', async ({ page }) => {
+    // Owner report, 2026-09-20: "the popup that goes when I click is behind
+    // that playback control area". It hung under the pill from inside the
+    // header, and the row below the header is a later layer.
+    await openRoom(page)
+    await code(page).click()
+    const note = page.getByTestId('jam-room-code-note')
+    await expect(note).toBeVisible()
+
+    const pill = await boxOf(code(page))
+    const box = await boxOf(note)
+    // Under the pill and centred on it, all of it inside the window.
+    expect(box.y).toBeGreaterThanOrEqual(pill.y + pill.height)
+    expect(
+      Math.abs(box.x + box.width / 2 - (pill.x + pill.width / 2)),
+    ).toBeLessThanOrEqual(1.5)
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(1180)
+    // It really does hang over the row below the header, which is the case
+    // that was broken; a note with nothing under it would prove nothing.
+    const head = await boxOf(header(page))
+    expect(box.y + box.height).toBeGreaterThan(head.y + head.height)
+
+    // Nothing is painted over it. The note lets a press through, and a hit
+    // test skips whatever does, so it takes presses for the length of the
+    // question; stacking order does not change with it.
+    const covered = await note.evaluate((element) => {
+      const el = element as HTMLElement
+      el.style.pointerEvents = 'auto'
+      const r = el.getBoundingClientRect()
+      const points = [
+        [r.left + r.width / 2, r.top + r.height / 2],
+        [r.left + 2, r.top + 2],
+        [r.right - 2, r.top + 2],
+        [r.left + 2, r.bottom - 2],
+        [r.right - 2, r.bottom - 2],
+      ]
+      const hidden = points.filter(([x, y]) => {
+        const top = document.elementFromPoint(x, y)
+        return top === null || !el.contains(top)
+      })
+      el.style.pointerEvents = ''
+      return hidden.length
+    })
+    expect(covered).toBe(0)
+
+    // And it goes away by itself.
+    await expect(note).toHaveCount(0, { timeout: 4000 })
+  })
 })
 
 test.describe('the camera tray on a tablet', () => {
