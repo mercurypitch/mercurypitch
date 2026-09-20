@@ -860,6 +860,7 @@ test('lists Drum Night with the Home rooms and opens its doors @smoke', async ({
     )
   expect(destinationOrder).toEqual([
     'practice',
+    'glassworks',
     'karaoke',
     'pianoNight',
     'guitarNight',
