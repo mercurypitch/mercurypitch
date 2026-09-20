@@ -594,6 +594,32 @@ the generic link: its card has a range and could carry one, but the recipient
 would land on the guided Mirror under the word "voiceprint", which is a
 product call.
 
+**The link had no way out on a desktop (found by the owner on dev, an hour
+after the merge).** The payload link lived only in the share sheet's `text`.
+Chrome and Firefox on a desktop have no share sheet, so `shareCard` fell back
+to saving the PNG and the text went nowhere: from all three doors, "Share"
+produced a file and the one thing that brings a friend back never left the
+page. Nothing had tested the share path in a browser at all.
+
+- `shareCard` takes the bare `link`. With no share sheet it saves the picture,
+  puts the link on the clipboard and returns `'downloaded-link-copied'`;
+  `shareOutcomeMessage()` words it, because a link on a clipboard is silent.
+  `onSheetOpening` became `onLinkLeaving`: before the sheet opens, or once the
+  link is copied, and never for a picture saved on its own. A sheet that
+  refuses the data still downloads, but does not hand the link out twice.
+- `copyVoiceprintLink()` is the link on its own: the clipboard write starts
+  before anything is awaited (Safari), and the card is drawn and stored only
+  after the copy succeeded. **Copy link** is on the Mirror's results row, on
+  the account page's voiceprint (no twin needed), and, quietly, on the halfway
+  twin reveal, where a take is already a voiceprint of range plus twin.
+  Onboarding's Twin beat keeps its two buttons and says when the link was
+  copied. `link_copied` is its own funnel event: `card_shared` feeds a live Ads
+  conversion and goes on meaning what it meant.
+- `voiceprint-copy-link.spec.ts` runs the real path in a browser with no share
+  sheet: the clipboard holds a link that decodes to the take, the PUT carries a
+  JPEG under the id the link names, the link opens on "Someone sent you this",
+  and a refused clipboard uploads nothing.
+
 Not tested by anything here: `HTMLRewriter` itself (no Workers test pool; a
 stand-in records what would be written), and an unfurl in a real chat app.
 

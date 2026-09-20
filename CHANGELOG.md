@@ -20,7 +20,10 @@ words scroll under your finger while the song plays.
   their own. It used to open an empty Mirror asking them to sing.
 - **That link shows your card in the chat.** Pasted into a chat, it previews
   as your own card with your twin and range, not a stock picture. The card is
-  stored only when you open the share sheet, and for 30 days.
+  stored only when the link leaves your device, and for 30 days.
+- **Copy link, wherever a voiceprint is shared.** On the Mirror's results,
+  beside your twin halfway through a take, and on your account page. On a
+  computer, Share now saves the card and copies the link with it.
 
 ### Changed
 
