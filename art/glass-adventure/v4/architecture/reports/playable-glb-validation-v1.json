@@ -1,0 +1,106 @@
+[
+  {
+    "file": "museum-screen-bay.glb",
+    "bytes": 4686268,
+    "triangles": 19479,
+    "images": [
+      {
+        "mime": "image/png",
+        "size": [
+          1024,
+          1024
+        ],
+        "bytes": 1726511
+      },
+      {
+        "mime": "image/jpeg",
+        "size": [
+          1024,
+          1024
+        ],
+        "bytes": 434497
+      },
+      {
+        "mime": "image/png",
+        "size": [
+          1024,
+          1024
+        ],
+        "bytes": 1235350
+      }
+    ],
+    "nodes": [
+      "museum_screen_bay_mesh",
+      "meshy_museum_screen_bay"
+    ],
+    "materials": [
+      {
+        "doubleSided": true,
+        "name": "meshy_museum_screen_bay_atlas",
+        "normalTexture": {
+          "index": 0
+        },
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 1
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "file": "museum-window-bay.glb",
+    "bytes": 5047156,
+    "triangles": 22204,
+    "images": [
+      {
+        "mime": "image/png",
+        "size": [
+          1024,
+          1024
+        ],
+        "bytes": 1882660
+      },
+      {
+        "mime": "image/jpeg",
+        "size": [
+          1024,
+          1024
+        ],
+        "bytes": 435787
+      },
+      {
+        "mime": "image/png",
+        "size": [
+          1024,
+          1024
+        ],
+        "bytes": 1193544
+      }
+    ],
+    "nodes": [
+      "museum_window_bay_mesh",
+      "meshy_museum_window_bay"
+    ],
+    "materials": [
+      {
+        "doubleSided": true,
+        "name": "meshy_museum_window_bay_atlas",
+        "normalTexture": {
+          "index": 0
+        },
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 1
+          },
+          "metallicRoughnessTexture": {
+            "index": 2
+          }
+        }
+      }
+    ]
+  }
+]

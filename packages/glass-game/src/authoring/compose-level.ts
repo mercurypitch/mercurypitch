@@ -2,6 +2,7 @@
 
 import type { LevelDefinition } from '../contracts'
 import { applyActivationOverrides } from './activation-overrides'
+import { compileGuidance, validateVisualCoverage, } from './authored-presentation-validation'
 import { compileRoom } from './compile-room'
 import { compileConnections } from './connections'
 import type { AuthoredLevelSource, LevelAuthoringCatalog, LevelAuthoringDiagnostic, RoomExitDefinition, } from './contracts'
@@ -371,6 +372,7 @@ export function composeLevel(
       'exit.requiresCompleted',
       diagnostics,
     ) ?? []
+  const guidance = compileGuidance(source, runtimeEncounterIds, diagnostics)
   for (const ref of source.exit.requiresCompleted)
     if (optionalEncounterIds.has(ref))
       diagnostic(
@@ -398,6 +400,7 @@ export function composeLevel(
       layoutId: source.layoutId,
       contentRevision: source.contentRevision,
     },
+    ...(guidance === undefined ? {} : { guidance }),
     spawn: {
       position: { ...(spawn?.value.position ?? { x: 0, y: 0, z: 0 }) },
       facingYaw: spawn?.value.facingYaw ?? 0,
@@ -428,6 +431,7 @@ export function composeLevel(
   }
 
   validateRuntimeIds(level, diagnostics)
+  validateVisualCoverage(level, diagnostics)
   if (spawn && exit) validateRuntimeAnchors(level, diagnostics)
   if (diagnostics.length > 0) throw new LevelAuthoringError(diagnostics)
   return level

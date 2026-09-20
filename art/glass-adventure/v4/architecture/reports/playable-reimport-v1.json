@@ -1,0 +1,52 @@
+[
+  {
+    "asset": "window",
+    "blenderWorldMin": [
+      -1.4531011581420898,
+      -0.18078075349330902,
+      0.0
+    ],
+    "blenderWorldMax": [
+      1.4531011581420898,
+      0.18078075349330902,
+      3.5999999046325684
+    ],
+    "dimensionsXYZ": [
+      2.9062023162841797,
+      0.36156150698661804,
+      3.5999999046325684
+    ],
+    "triangles": 22204,
+    "uvLayers": [
+      1
+    ],
+    "materials": [
+      "meshy_museum_window_bay_atlas"
+    ]
+  },
+  {
+    "asset": "screen",
+    "blenderWorldMin": [
+      -1.6009081602096558,
+      -0.10334718227386475,
+      0.0
+    ],
+    "blenderWorldMax": [
+      1.6009082794189453,
+      0.10334718227386475,
+      3.5999999046325684
+    ],
+    "dimensionsXYZ": [
+      3.201816439628601,
+      0.2066943645477295,
+      3.5999999046325684
+    ],
+    "triangles": 19479,
+    "uvLayers": [
+      1
+    ],
+    "materials": [
+      "meshy_museum_screen_bay_atlas"
+    ]
+  }
+]

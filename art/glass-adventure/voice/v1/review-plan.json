@@ -1,0 +1,92 @@
+{
+  "revision": "merc-voice-auditions-v1-2026-09-20",
+  "sample_rate_hz": 44100,
+  "sample_format": "s16le",
+  "channels": 1,
+  "asr": {
+    "engine": "whisper.cpp",
+    "model": "base.en",
+    "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+    "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+    "language": "en",
+    "expected_text_supplied": false
+  },
+  "selections": [
+    {
+      "direction": "a",
+      "take": "a1",
+      "slug": "warm-nimble",
+      "summary": "Warm, agile and companionable",
+      "audition_note": "A light-mid guide voice with quick comic lift and a steady, friendly center.",
+      "integrated_lufs": -23.6,
+      "loudness_range_lu": 4.3,
+      "true_peak_dbfs": -4.3,
+      "asr_mean_token_probability": 0.941307,
+      "asr_transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+      "clips": [
+        { "start": 0, "end": 2.425 },
+        { "start": 3.146, "end": 5.17 },
+        { "start": 5.425, "end": 8.671 },
+        { "start": 9.367, "end": 13.021 },
+        { "start": 13.114, "end": 19.2 }
+      ]
+    },
+    {
+      "direction": "b",
+      "take": "b2",
+      "slug": "bright-playful",
+      "summary": "Bright, lively and mischievous",
+      "audition_note": "A clear, energetic guide voice with playful pitch movement and controlled sparkle.",
+      "integrated_lufs": -24.3,
+      "loudness_range_lu": 2.8,
+      "true_peak_dbfs": -8.9,
+      "asr_mean_token_probability": 0.943839,
+      "asr_transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+      "clips": [
+        { "start": 0, "end": 2.82 },
+        { "start": 3.879, "end": 5.991 },
+        { "start": 7.103, "end": 10.546 },
+        { "start": 11.678, "end": 14.912 },
+        { "start": 15.218, "end": 22 }
+      ]
+    },
+    {
+      "direction": "c",
+      "take": "c3",
+      "slug": "grounded-wry",
+      "summary": "Grounded, calm and dryly funny",
+      "audition_note": "A warm low-mid guide voice with compact resonance and understated comic timing.",
+      "integrated_lufs": -24.4,
+      "loudness_range_lu": 3.9,
+      "true_peak_dbfs": -5.3,
+      "asr_mean_token_probability": 0.953973,
+      "asr_transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+      "clips": [
+        { "start": 0, "end": 3.032 },
+        { "start": 3.638, "end": 5.972 },
+        { "start": 6.717, "end": 9.96 },
+        { "start": 10.771, "end": 14.157 },
+        { "start": 14.322, "end": 20.24 }
+      ]
+    },
+    {
+      "direction": "d",
+      "take": "d2",
+      "slug": "gentle-whimsical",
+      "summary": "Gentle, intimate and quietly magical",
+      "audition_note": "A soft, clear guide voice with unhurried rhythm, warmth and a natural sense of wonder.",
+      "integrated_lufs": -23.3,
+      "loudness_range_lu": 3.5,
+      "true_peak_dbfs": -3.1,
+      "asr_mean_token_probability": 0.940833,
+      "asr_transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+      "clips": [
+        { "start": 0, "end": 2.413 },
+        { "start": 3.344, "end": 5.005 },
+        { "start": 5.958, "end": 8.894 },
+        { "start": 9.882, "end": 13.092 },
+        { "start": 13.644, "end": 19.68 }
+      ]
+    }
+  ]
+}

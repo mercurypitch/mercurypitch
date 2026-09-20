@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "exporter": "5.2.2 LTS",
+  "assets": [
+    {
+      "assetId": "museum-window-v4",
+      "node": "meshy_museum_window_bay",
+      "source": "art/glass-adventure/v4/architecture/sources/museum-window-bay-01-final-v1.blend",
+      "sourceSha256": "f4c0add1d78e64e43eb1f22c439ab626a8aac5074dbbee67e6fc05084d3b6010",
+      "output": "apps/beside-cue/public/games/adventure-v4/museum-window-bay.glb",
+      "sha256": "cb3da19d36c5869fb22341b465eb26e2c1b5119ede7e9348c55aa41a126bdd69",
+      "bytes": 5047156,
+      "textures": [
+        {
+          "name": "Image_0",
+          "colorSpace": "sRGB",
+          "format": "JPEG",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "fc7affb4f3ab63f1d371ef7bac783193a808127153793b0e420de519b2b882e1"
+        },
+        {
+          "name": "Image_1",
+          "colorSpace": "Non-Color",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "867b29e5069545e7b043bc67ed02e2b84b71c94ea3ece9d1f560f41ce82bb0ea"
+        },
+        {
+          "name": "normal",
+          "colorSpace": "Non-Color",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "d732d553d47483e85bae3808457dee0e85c553396cb075d3293b891aaed38426"
+        }
+      ],
+      "geometry": "Original donor geometry and UVs preserved; no decimation",
+      "coordinates": "GLB +Y up, +Z front, foot-center origin, metres"
+    },
+    {
+      "assetId": "museum-screen-v4",
+      "node": "meshy_museum_screen_bay",
+      "source": "art/glass-adventure/v4/architecture/sources/museum-screen-bay-01-final-v1.blend",
+      "sourceSha256": "e1c6042593ba9d9c4f622097d63ee0a8e78542eae2305cf1060eecd68d536e13",
+      "output": "apps/beside-cue/public/games/adventure-v4/museum-screen-bay.glb",
+      "sha256": "486c5debde3f9d8d36ca97b6e6a82fd72836cfe28d72e04d291d263cf33d122f",
+      "bytes": 4686268,
+      "textures": [
+        {
+          "name": "Image_0",
+          "colorSpace": "sRGB",
+          "format": "JPEG",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "35a3c2eee0017b7efe57be98f1dabf2a6e9fa92f75bd9a71d3388dfa019e6d1f"
+        },
+        {
+          "name": "Image_1",
+          "colorSpace": "Non-Color",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "4797c4ecef9cb1112279c1dd2a596ab835f05adb39c996268f95c73ebb01b9bd"
+        },
+        {
+          "name": "normal",
+          "colorSpace": "Non-Color",
+          "format": "PNG",
+          "size": [
+            1024,
+            1024
+          ],
+          "sha256": "e52a9a50f98697fed3c38acf8af2330898607a334ac7042cf1f84468305ed953"
+        }
+      ],
+      "geometry": "Original donor geometry and UVs preserved; no decimation",
+      "coordinates": "GLB +Y up, +Z front, foot-center origin, metres"
+    }
+  ]
+}

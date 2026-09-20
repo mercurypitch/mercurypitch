@@ -333,4 +333,138 @@ describe('authoring validation', () => {
       'glass-foundation/straight/arrival/encounter/arrival-goblet',
     ])
   })
+
+  it('rejects unknown, repeated and multiply owned visual collision proxies', () => {
+    const room = foundationRoom()
+    const catalog = replaceFoundationRoom({
+      solids: room.solids.map((solid) =>
+        solid.id === 'east-north-wall'
+          ? { ...solid, presentation: undefined }
+          : solid,
+      ),
+      visuals: [
+        {
+          id: 'first-wall-art',
+          recipeId: 'deck',
+          position: { x: 0, y: 0, z: 0 },
+          yaw: 0,
+          coversSolidIds: ['north-west-wall', 'north-west-wall', 'missing'],
+        },
+        {
+          id: 'second-wall-art',
+          recipeId: 'deck',
+          position: { x: 0, y: 0, z: 0 },
+          yaw: 0,
+          coversSolidIds: ['north-west-wall'],
+        },
+        {
+          id: 'missing-fallback-art',
+          recipeId: 'deck',
+          position: { x: 0, y: 0, z: 0 },
+          yaw: 0,
+          coversSolidIds: ['east-north-wall'],
+        },
+      ],
+    })
+
+    const diagnostics = diagnosticsFrom(FOUNDATION_STRAIGHT_SOURCE, catalog)
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing-reference',
+          path: expect.stringContaining('coversSolidIds'),
+        }),
+        expect.objectContaining({
+          code: 'duplicate-reference',
+          path: expect.stringContaining('coversSolidIds'),
+        }),
+        expect.objectContaining({
+          code: 'invalid-presentation',
+          message: expect.stringContaining('visible fallback proxy'),
+        }),
+      ]),
+    )
+  })
+
+  it('rejects a visual proxy removed by a compiled room connection', () => {
+    const catalog = replaceFoundationRoom({
+      visuals: [
+        {
+          id: 'north-seal-art',
+          recipeId: 'deck',
+          position: { x: 0, y: 0, z: 3 },
+          yaw: 0,
+          coversSolidIds: ['north-seal'],
+        },
+      ],
+    })
+
+    const diagnostics = diagnosticsFrom(FOUNDATION_STRAIGHT_SOURCE, catalog)
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'missing-reference',
+        path: expect.stringContaining('presentation.visuals'),
+        message: expect.stringContaining('absent from the compiled level'),
+      }),
+    )
+  })
+
+  it('rejects one visual spanning solids with different activation rules', () => {
+    const catalog = replaceFoundationRoom({
+      visuals: [
+        {
+          id: 'mixed-wall-art',
+          recipeId: 'deck',
+          position: { x: 0, y: 0, z: 3 },
+          yaw: 0,
+          coversSolidIds: ['north-west-wall', 'north-east-wall'],
+        },
+      ],
+    })
+    const source: AuthoredLevelSource = {
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      solidActivations: [
+        {
+          solid: 'arrival.north-west-wall',
+          activation: { noneCompleted: ['arrival-goblet'] },
+        },
+      ],
+    }
+
+    const diagnostics = diagnosticsFrom(source, catalog)
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'mismatched-visual-activation',
+        path: expect.stringContaining('coveredSolidIds'),
+      }),
+    )
+  })
+
+  it('maps guidance only from unique known authored encounters', () => {
+    const source: AuthoredLevelSource = {
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      guidance: {
+        encounterSuccessNotices: [
+          { encounterId: 'arrival-goblet', notice: 'Open.' },
+          { encounterId: 'arrival-goblet', notice: 'Again.' },
+          { encounterId: 'missing', notice: 'Never.' },
+        ],
+      },
+    }
+
+    const diagnostics = diagnosticsFrom(source)
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'duplicate-reference' }),
+        expect.objectContaining({
+          code: 'missing-reference',
+          path: expect.stringContaining('guidance.encounterSuccessNotices'),
+        }),
+      ]),
+    )
+  })
 })

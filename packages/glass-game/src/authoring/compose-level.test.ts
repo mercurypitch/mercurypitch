@@ -131,6 +131,7 @@ function transformedFixture(): {
         recipeId: 'marker',
         position: { x: 1, y: 0, z: -0.5 },
         yaw: 0,
+        coversSolidIds: ['wall'],
       },
     ],
     audioRegions: [
@@ -153,6 +154,15 @@ function transformedFixture(): {
     layoutId: 'turned',
     contentRevision: 3,
     title: 'Transform proof',
+    guidance: {
+      subtitle: 'A turned room',
+      openingNotice: 'Approach the proof goblet.',
+      encounterSuccessNotices: [
+        { encounterId: 'vessel', notice: 'The proof is open.' },
+      ],
+      completionTitle: 'The room answered.',
+      completionNext: 'The next turn is waiting.',
+    },
     rooms: [
       {
         id: 'room-z',
@@ -294,6 +304,16 @@ describe('composeLevel', () => {
     expect(level.presentation?.visuals[0]).toMatchObject({
       position: { x: 9.5, y: 2, z: -5 },
       yaw: Math.PI / 2,
+      coveredSolidIds: ['transform-proof/turned/room-z/solid/wall'],
+    })
+    expect(level.guidance).toMatchObject({
+      subtitle: 'A turned room',
+      encounterSuccessNotices: [
+        {
+          encounterId: 'transform-proof/turned/room-z/encounter/vessel',
+          notice: 'The proof is open.',
+        },
+      ],
     })
   })
 

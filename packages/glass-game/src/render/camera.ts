@@ -5,6 +5,7 @@
 import type { Object3D } from 'three'
 import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
+import { createEnclosureFraming } from './enclosure-framing'
 
 const ORBIT_FOLLOW_GRACE_SECONDS = 0.2
 const FOLLOW_RESPONSE = 5
@@ -22,6 +23,10 @@ const OBSTRUCTION_LIFT_PITCHES = [
 const OBSTRUCTION_LIFT_RESPONSE = 9
 const OBSTRUCTION_RELEASE_DISTANCE = 1.35
 const OBSTRUCTION_TRIGGER_DISTANCE = 0.9
+const ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE = 1.6
+const ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE = 1.15
+const ENCLOSURE_READABLE_BOOM_DISTANCE = 1.55
+const ENCLOSURE_DISTANCE_RECOVERY_RESPONSE = 7
 
 export interface AdventureCameraOptions {
   /** Avoid unsolicited view rotation for vestibular-sensitive players. */
@@ -53,8 +58,11 @@ export function createAdventureCamera(
   const target = new Vector3()
     .copy(level.spawn.position)
     .add(new Vector3(0, 0.42, 0))
+  const bodyTarget = new Vector3()
   const desired = new Vector3()
   const direction = new Vector3()
+  const retainedDirection = new Vector3()
+  const retainedPosition = new Vector3()
   const hit = new Vector3()
   const ray = new Ray()
   const raycaster = new Raycaster()
@@ -73,7 +81,12 @@ export function createAdventureCamera(
   let movementActive = false
   let orbitActive = false
   let obstructionLifted = false
+  let enclosureDistance: number | null = null
+  let recoveringEnclosureDistance = false
+  let zoomChanged = false
+  let hasRetainedPosition = false
   let firstFrame = true
+  const enclosure = createEnclosureFraming(level)
   const obstacles = level.platforms.map((platform) => ({
     id: platform.id,
     box: new Box3(
@@ -102,6 +115,8 @@ export function createAdventureCamera(
     atPitch: number,
     reach: number,
     enabledPlatformIds: readonly string[],
+    activeSolidIds: readonly string[],
+    constrainToEnclosure: boolean,
   ): number {
     pointBoom(atPitch)
     ray.set(target, direction)
@@ -114,17 +129,37 @@ export function createAdventureCamera(
           Math.max(0.35, target.distanceTo(hit) - 0.1),
         )
     }
+    if (enclosure !== null) {
+      safeDistance = Math.min(
+        safeDistance,
+        enclosure.solidDistance(target, direction, reach, activeSolidIds),
+      )
+      if (constrainToEnclosure) {
+        const volumeDistance = enclosure.volumeDistance(
+          target,
+          direction,
+          reach,
+        )
+        if (volumeDistance !== null)
+          safeDistance = Math.min(safeDistance, volumeDistance)
+      }
+    }
     raycaster.set(target, direction)
     raycaster.far = safeDistance
     const obstruction = raycaster.intersectObjects(occluders, false)[0]
-    if (obstruction !== undefined)
-      safeDistance = Math.max(0.35, obstruction.distance - 0.1)
+    if (obstruction !== undefined) {
+      const meshDistance = Math.max(0.35, obstruction.distance - 0.1)
+      safeDistance =
+        enclosure === null ? meshDistance : Math.min(safeDistance, meshDistance)
+    }
     return safeDistance
   }
 
   function chooseLiftedPitch(
     reach: number,
     enabledPlatformIds: readonly string[],
+    activeSolidIds: readonly string[],
+    constrainToEnclosure: boolean,
     normalDistance: number,
   ): number {
     let bestPitch = pitch
@@ -135,11 +170,21 @@ export function createAdventureCamera(
         candidate,
         reach,
         enabledPlatformIds,
+        activeSolidIds,
+        constrainToEnclosure,
       )
       if (candidateDistance > bestDistance) {
         bestPitch = candidate
         bestDistance = candidateDistance
       }
+      // A bounded room needs enough boom for Merc and the landing, but taking
+      // the absolute longest ray makes ordinary corridors read as top-down.
+      // Keep the first modest lift that restores useful third-person framing.
+      if (
+        constrainToEnclosure &&
+        candidateDistance >= ENCLOSURE_READABLE_BOOM_DISTANCE
+      )
+        return candidate
     }
     return bestPitch
   }
@@ -190,8 +235,10 @@ export function createAdventureCamera(
       }
     },
     zoom(delta: number) {
-      if (Number.isFinite(delta) && delta !== 0)
+      if (Number.isFinite(delta) && delta !== 0) {
         distance = MathUtils.clamp(distance + delta, 1.8, 6.5)
+        zoomChanged = true
+      }
     },
     recenter() {
       yaw += shortestAngleDelta(yaw, facing)
@@ -203,11 +250,25 @@ export function createAdventureCamera(
       const safeDt = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, 0.05) : 0
       if (Number.isFinite(snapshot.player.facingYaw))
         facing = snapshot.player.facingYaw
-      desired.copy(snapshot.player.position)
-      desired.y += 0.42
+      const activeSolidIds =
+        snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
+      bodyTarget.copy(snapshot.player.position)
+      bodyTarget.y += 0.42
+      let framedTarget =
+        enclosure?.frameTarget(bodyTarget, facing, activeSolidIds, desired) ??
+        false
+      if (!framedTarget) desired.copy(bodyTarget)
       const teleport = desired.distanceToSquared(target) > 9
       const snapPitch = firstFrame || teleport
+      if (teleport) hasRetainedPosition = false
       target.lerp(desired, snapPitch ? 1 : 1 - Math.exp(-12 * safeDt))
+      if (framedTarget)
+        framedTarget = enclosure!.constrainTarget(
+          bodyTarget,
+          target,
+          activeSolidIds,
+          target,
+        )
       firstFrame = false
       if (!snapshot.paused && !orbitActive)
         orbitQuietSeconds = Math.min(
@@ -253,16 +314,28 @@ export function createAdventureCamera(
         pitch,
         reach,
         snapshot.enabledPlatformIds,
+        activeSolidIds,
+        framedTarget,
       )
-      if (!obstructionLifted && normalDistance < OBSTRUCTION_TRIGGER_DISTANCE)
+      const obstructionTrigger = framedTarget
+        ? ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE
+        : OBSTRUCTION_TRIGGER_DISTANCE
+      const obstructionRelease = framedTarget
+        ? ENCLOSURE_OBSTRUCTION_RELEASE_DISTANCE
+        : OBSTRUCTION_RELEASE_DISTANCE
+      if (!framedTarget && enclosure !== null) obstructionLifted = false
+      if (!obstructionLifted && normalDistance < obstructionTrigger)
         obstructionLifted = true
-      else if (
-        obstructionLifted &&
-        normalDistance > OBSTRUCTION_RELEASE_DISTANCE
-      )
+      else if (obstructionLifted && normalDistance > obstructionRelease)
         obstructionLifted = false
       const targetPitch = obstructionLifted
-        ? chooseLiftedPitch(reach, snapshot.enabledPlatformIds, normalDistance)
+        ? chooseLiftedPitch(
+            reach,
+            snapshot.enabledPlatformIds,
+            activeSolidIds,
+            framedTarget,
+            normalDistance,
+          )
         : pitch
       renderedPitch = snapPitch
         ? targetPitch
@@ -275,8 +348,66 @@ export function createAdventureCamera(
         renderedPitch,
         reach,
         snapshot.enabledPlatformIds,
+        activeSolidIds,
+        framedTarget,
       )
-      camera.position.copy(target).addScaledVector(direction, safeDistance)
+      let renderedDistance = safeDistance
+      if (framedTarget) {
+        const constrained = safeDistance < reach - 0.01
+        if (snapPitch || enclosureDistance === null || zoomChanged) {
+          enclosureDistance = safeDistance
+          recoveringEnclosureDistance = constrained
+        } else if (safeDistance < enclosureDistance) {
+          enclosureDistance = safeDistance
+          recoveringEnclosureDistance = true
+        } else if (constrained || recoveringEnclosureDistance) {
+          enclosureDistance = MathUtils.lerp(
+            enclosureDistance,
+            safeDistance,
+            1 - Math.exp(-ENCLOSURE_DISTANCE_RECOVERY_RESPONSE * safeDt),
+          )
+          recoveringEnclosureDistance =
+            constrained || Math.abs(enclosureDistance - safeDistance) > 0.01
+        } else {
+          enclosureDistance = safeDistance
+        }
+        renderedDistance = Math.min(safeDistance, enclosureDistance)
+      } else {
+        enclosureDistance = null
+        recoveringEnclosureDistance = false
+        hasRetainedPosition = false
+      }
+      zoomChanged = false
+      let retained = false
+      if (
+        framedTarget &&
+        renderedDistance <= 0.05 &&
+        hasRetainedPosition &&
+        enclosure!.cameraPositionSafe(target, retainedPosition, activeSolidIds)
+      ) {
+        retainedDirection.copy(retainedPosition).sub(target)
+        const retainedDistance = retainedDirection.length()
+        retainedDirection.multiplyScalar(1 / retainedDistance)
+        raycaster.set(target, retainedDirection)
+        raycaster.far = retainedDistance
+        if (raycaster.intersectObjects(occluders, false).length === 0) {
+          camera.position.copy(retainedPosition)
+          retained = true
+        }
+      }
+      if (!retained) {
+        camera.position
+          .copy(target)
+          .addScaledVector(direction, renderedDistance)
+        if (
+          framedTarget &&
+          renderedDistance > 0.05 &&
+          enclosure!.cameraPositionSafe(target, camera.position, activeSolidIds)
+        ) {
+          retainedPosition.copy(camera.position)
+          hasRetainedPosition = true
+        }
+      }
       camera.lookAt(target)
     },
   }

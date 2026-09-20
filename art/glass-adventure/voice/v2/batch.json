@@ -1,0 +1,75 @@
+{
+  "revision": "merc-voice-auditions-v2-2026-09-20",
+  "provider": "ElevenLabs",
+  "endpoint": "/v1/text-to-voice/design",
+  "model_id": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "loudness": 0,
+  "guidance_scale": 4.5,
+  "should_enhance": false,
+  "auto_generate_text": false,
+  "benchmark": {
+    "id": "d",
+    "label": "Gentle Whimsical",
+    "take": "d2",
+    "favorite_baseline": true,
+    "description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate register, gentle warmth, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative.",
+    "reel": "../v1/candidates/merc-d-gentle-whimsical.mp3",
+    "manifest": "../v1/review-manifest.json"
+  },
+  "lines": [
+    {
+      "id": "ui-tutorial-promise",
+      "status": "current-ui-exact",
+      "source": "packages/glass-game/src/ui/Tutorial.tsx:103",
+      "text": "A little note can break glass."
+    },
+    {
+      "id": "ui-comfortable-note",
+      "status": "current-ui-exact",
+      "source": "packages/glass-game/src/ui/GlassAdventure.tsx:281",
+      "text": "Hum a comfortable note."
+    },
+    {
+      "id": "ui-path-open",
+      "status": "current-ui-exact",
+      "source": "packages/glass-game/src/ui/useAdventure.ts:122",
+      "text": "Beautiful. A new path is open."
+    },
+    {
+      "id": "proposed-shatter-gorgeous",
+      "status": "proposed-merc-line-short-break-quip",
+      "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:A4",
+      "text": "Gorgeous. Absolutely gorgeous."
+    },
+    {
+      "id": "proposed-wall-punchline",
+      "status": "proposed-merc-line-range-sample-not-a-short-trigger",
+      "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:J11",
+      "text": "You broke that with your voice. I need to sit down. I don't have legs."
+    }
+  ],
+  "directions": [
+    {
+      "id": "e",
+      "label": "Warmer Grounded",
+      "difference_from_d": "A touch more low-mid warmth and grounded resonance while preserving D's softness, wonder and pace.",
+      "seed": 20092027,
+      "description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate low-mid register, gentle warmth, a little more grounded resonance, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never heavy, gravelly, wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative."
+    },
+    {
+      "id": "f",
+      "label": "Brighter Clear",
+      "difference_from_d": "A slightly brighter, clearer presence while preserving D's intimacy, gentleness and unhurried rhythm.",
+      "seed": 20092028,
+      "description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate light-mid register, gentle warmth, a slightly brighter presence, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Extra-clear crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never sharp, breathless, wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative."
+    },
+    {
+      "id": "g",
+      "label": "Quiet Playful",
+      "difference_from_d": "A small current of playful mischief in the comic beats while preserving D's quiet warmth and natural delivery.",
+      "seed": 20092029,
+      "description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate register, gentle warmth, quiet wonder, an easy unhurried rhythm and subtle playful mischief tucked into comic beats. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never mugging, wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative."
+    }
+  ]
+}

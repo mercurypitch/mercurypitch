@@ -1,0 +1,48 @@
+{
+  "revision": "merc-voice-auditions-v1-2026-09-20",
+  "direction": "a",
+  "label": "Warm Nimble",
+  "status": "complete",
+  "started_at": "2026-09-20T10:51:58.854Z",
+  "model": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "seed": 17092026,
+  "voice_library_saved": false,
+  "previews": [
+    {
+      "take": "a1",
+      "file": "merc-a1.pcm",
+      "generated_voice_id": "IteD712ShKRray6dfS2B",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 19.2,
+      "bytes": 1693440,
+      "sha256": "4d4c59b9689217727cdee2dc5fc87dde710d0e31951d3c724187564a734e9668"
+    },
+    {
+      "take": "a2",
+      "file": "merc-a2.pcm",
+      "generated_voice_id": "HeDKFn0TtKQDTtsXoXNO",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 18.56,
+      "bytes": 1636992,
+      "sha256": "b0964378ea6ae46109094d8161d8594879d9d37c0a77482e48056a4d0a47fdab"
+    },
+    {
+      "take": "a3",
+      "file": "merc-a3.pcm",
+      "generated_voice_id": "s8H7kl0Qwrfw4U3DAIO5",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 20.88,
+      "bytes": 1841616,
+      "sha256": "5167022c7784b06482ece1e3287cdc7fd7568618309c66b90585463a04117f7e"
+    }
+  ],
+  "http_status": 200,
+  "provider_request_id": null,
+  "provider_character_cost": null,
+  "returned_text_matches": true,
+  "completed_at": "2026-09-20T10:52:09.724Z"
+}

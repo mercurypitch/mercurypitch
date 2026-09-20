@@ -1,11 +1,12 @@
 // Authored museum presentation — visible proxies share activation with collision and camera occlusion.
 
 import type { Mesh } from 'three'
-import { MeshPhysicalMaterial } from 'three'
-import { expect, it } from 'vitest'
+import { BoxGeometry, Group, Mesh as ThreeMesh, MeshPhysicalMaterial, } from 'three'
+import { expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
+import { disposeObject } from './dispose'
 import type { MuseumMaterials } from './materials'
 import { createMuseum } from './museum'
 import { createVessel } from './vessels'
@@ -146,6 +147,30 @@ const level: LevelDefinition = {
   },
 }
 
+const coveredVisualLevel: LevelDefinition = {
+  ...level,
+  presentation: {
+    ...level.presentation!,
+    visuals: [
+      {
+        id: 'gate-screen',
+        recipeId: 'museum-screen-v4',
+        position: { x: 24, y: 0, z: -10 },
+        yaw: 0,
+        coveredSolidIds: ['room-gate'],
+      },
+      {
+        id: 'wall-screen',
+        recipeId: 'museum-screen-v4',
+        position: { x: 20, y: 0, z: -14 },
+        yaw: Math.PI / 2,
+        coveredSolidIds: ['long-wall'],
+      },
+    ],
+    assetRecipeIds: [...level.presentation!.assetRecipeIds, 'museum-screen-v4'],
+  },
+}
+
 function createMaterials(): MuseumMaterials {
   return Object.fromEntries(
     ['marble', 'teal', 'limestone', 'gold', 'rock', 'glass'].map((id) => [
@@ -214,6 +239,74 @@ it('places an authored vessel on its declared mount height and facing', () => {
   expect(vessel.root.position.y).toBeCloseTo(0.65)
   expect(vessel.root.rotation.y).toBeCloseTo(Math.PI / 2)
   vessel.dispose()
+})
+
+it('replaces only declared proxies after exact art installs and shares an owned template', () => {
+  const materials = createMaterials()
+  const museum = createMuseum(coveredVisualLevel, materials)
+  const gateProxy = museum.root.getObjectByName('solid-room-gate') as Mesh
+  const wallProxy = museum.root.getObjectByName('solid-long-wall') as Mesh
+  const closed = createGlassGame(coveredVisualLevel).snapshot()
+  museum.update(closed)
+  expect(gateProxy.visible).toBe(true)
+  expect(wallProxy.visible).toBe(true)
+  expect(() => museum.setKit(new Group(), 'museum-screen-v4')).toThrow(
+    'could not find node',
+  )
+  expect(gateProxy.visible).toBe(true)
+  expect(wallProxy.visible).toBe(true)
+
+  const sourceScene = new Group()
+  const source = new Group()
+  source.name = 'meshy_museum_screen_bay'
+  const sourceGeometry = new BoxGeometry(3.2, 3.6, 0.2)
+  const atlas = new MeshPhysicalMaterial()
+  atlas.name = 'meshy_museum_screen_bay_atlas'
+  source.add(new ThreeMesh(sourceGeometry, atlas))
+  sourceScene.add(source)
+
+  museum.setKit(sourceScene, 'museum-screen-v4')
+
+  const gateArt = museum.root.getObjectByName('visual-gate-screen')!
+  const wallArt = museum.root.getObjectByName('visual-wall-screen')!
+  const gateMesh = gateArt.getObjectByProperty('isMesh', true) as Mesh
+  const wallMesh = wallArt.getObjectByProperty('isMesh', true) as Mesh
+  expect(gateProxy.visible).toBe(false)
+  expect(wallProxy.visible).toBe(false)
+  expect(gateArt.visible).toBe(true)
+  expect(wallArt.visible).toBe(true)
+  expect(gateMesh.geometry).toBe(wallMesh.geometry)
+  expect(gateMesh.geometry).not.toBe(sourceGeometry)
+  expect((gateMesh.material as MeshPhysicalMaterial).name).toBe(
+    'meshy_museum_screen_bay_atlas',
+  )
+  expect(gateMesh.material).not.toBe(materials.marble)
+  expect(closed.activeSolidIds).toEqual(
+    expect.arrayContaining(['room-gate', 'long-wall']),
+  )
+
+  const sharedGeometryDispose = vi.spyOn(gateMesh.geometry, 'dispose')
+  disposeObject(sourceScene)
+  expect(sharedGeometryDispose).not.toHaveBeenCalled()
+
+  const restored = createGlassGame(coveredVisualLevel, {
+    version: 1,
+    levelId: coveredVisualLevel.id,
+    checkpointId: 'arrival',
+    completedBreakableIds: ['decanter'],
+  }).snapshot()
+  museum.update(restored)
+  expect(gateArt.visible).toBe(false)
+  expect(wallArt.visible).toBe(true)
+  expect(gateProxy.visible).toBe(false)
+  expect(wallProxy.visible).toBe(false)
+  expect(museum.cameraOccluders()).not.toContain(gateMesh)
+  expect(museum.cameraOccluders()).toContain(wallMesh)
+
+  disposeObject(museum.root, museum.materialLibrary.materials)
+  expect(sharedGeometryDispose).toHaveBeenCalledTimes(1)
+  museum.materialLibrary.dispose()
+  Object.values(materials).forEach((material) => material.dispose())
 })
 
 it('preserves legacy floor recipe materials when no presentation override exists', () => {

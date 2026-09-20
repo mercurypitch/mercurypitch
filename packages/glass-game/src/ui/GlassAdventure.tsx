@@ -166,7 +166,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         </button>
         <div class={styles.identity}>
           <h1>{level.title}</h1>
-          <p>The floating museum</p>
+          <p>{level.guidance?.subtitle ?? 'The floating museum'}</p>
         </div>
         <div
           class={styles.collection}
@@ -463,7 +463,9 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                 <path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />
               </svg>
             </div>
-            <h2 id="glass-complete-title">You made the museum sing.</h2>
+            <h2 id="glass-complete-title">
+              {level.guidance?.completionTitle ?? 'You made the museum sing.'}
+            </h2>
             <p>
               {total} exhibits, opened with your voice.
               {optionalCount() > 0
@@ -471,7 +473,8 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                 : ''}
             </p>
             <p class={styles.tutorialAside}>
-              The next gallery will teach notes that rise and fall.
+              {level.guidance?.completionNext ??
+                'The next gallery will teach notes that rise and fall.'}
             </p>
             <button
               class={styles.primary}

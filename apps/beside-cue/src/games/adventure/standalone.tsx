@@ -15,9 +15,18 @@ configurePitchEngineAssets({
 async function selectedDevelopmentLevel() {
   if (!import.meta.env.DEV) return undefined
   const layout = new URLSearchParams(window.location.search).get('layout')
-  if (layout !== 'straight' && layout !== 'quarter-turn') return undefined
-  const { GLASS_FOUNDATION_QUARTER_TURN, GLASS_FOUNDATION_STRAIGHT } =
-    await import('@irchiinnuss/glass-game/development-levels')
+  if (
+    layout !== 'straight' &&
+    layout !== 'quarter-turn' &&
+    layout !== 'chamber'
+  )
+    return undefined
+  const {
+    GLASS_ENCLOSED_CHAMBER,
+    GLASS_FOUNDATION_QUARTER_TURN,
+    GLASS_FOUNDATION_STRAIGHT,
+  } = await import('@irchiinnuss/glass-game/development-levels')
+  if (layout === 'chamber') return GLASS_ENCLOSED_CHAMBER
   return layout === 'straight'
     ? GLASS_FOUNDATION_STRAIGHT
     : GLASS_FOUNDATION_QUARTER_TURN

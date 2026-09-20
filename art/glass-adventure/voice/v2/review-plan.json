@@ -1,0 +1,56 @@
+{
+  "revision": "merc-voice-auditions-v2-2026-09-20",
+  "sample_rate_hz": 44100,
+  "sample_format": "s16le",
+  "channels": 1,
+  "benchmark": {
+    "direction": "d",
+    "take": "d2",
+    "favorite_baseline": true,
+    "source_manifest": "../v1/review-manifest.json"
+  },
+  "selections": [
+    {
+      "direction": "e",
+      "take": "e1",
+      "slug": "warmer-grounded",
+      "summary": "Warmer, steadier and softly grounded",
+      "audition_note": "A close neighbor to D with a little more low-mid warmth and grounded resonance.",
+      "clips": [
+        { "start": 0, "end": 3.24 },
+        { "start": 3.24, "end": 5.64 },
+        { "start": 5.64, "end": 10.28 },
+        { "start": 10.28, "end": 14 },
+        { "start": 14, "end": 20.4 }
+      ]
+    },
+    {
+      "direction": "f",
+      "take": "f1",
+      "slug": "brighter-clear",
+      "summary": "Slightly brighter with extra clarity",
+      "audition_note": "A close neighbor to D with a lighter presence and especially clear short-line articulation.",
+      "clips": [
+        { "start": 0, "end": 2.9 },
+        { "start": 2.9, "end": 5.9 },
+        { "start": 5.9, "end": 9.9 },
+        { "start": 9.9, "end": 13.6 },
+        { "start": 13.6, "end": 20.48 }
+      ]
+    },
+    {
+      "direction": "g",
+      "take": "g1",
+      "slug": "quiet-playful",
+      "summary": "Quiet warmth with playful mischief",
+      "audition_note": "A close neighbor to D with a small mischievous current in the comic beats.",
+      "clips": [
+        { "start": 0, "end": 3.16 },
+        { "start": 3.16, "end": 5.88 },
+        { "start": 5.88, "end": 9.92 },
+        { "start": 9.92, "end": 13.56 },
+        { "start": 13.56, "end": 19.6 }
+      ]
+    }
+  ]
+}

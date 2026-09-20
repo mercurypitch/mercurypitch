@@ -28,6 +28,8 @@ const files: Record<string, string> = {
   'museum-column-v3': 'adventure-v3/gilded-column.glb',
   'museum-arcade-v3': 'adventure-v3/garden-arcade.glb',
   'museum-canopy-v3': 'adventure-v3/observatory-canopy.glb',
+  'museum-window-v4': 'adventure-v4/museum-window-bay.glb',
+  'museum-screen-v4': 'adventure-v4/museum-screen-bay.glb',
   'audio-m01-loop': 'adventure-audio-v1/m01-loop.mp3',
   'audio-m03-loop': 'adventure-audio-v1/m03-loop.mp3',
   'audio-a01-loop': 'adventure-audio-v1/a01-loop.mp3',

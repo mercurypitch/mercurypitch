@@ -1,0 +1,20 @@
+{
+  "revision": "merc-voice-auditions-v2-2026-09-20",
+  "direction": "e",
+  "label": "Warmer Grounded",
+  "difference_from_d": "A touch more low-mid warmth and grounded resonance while preserving D's softness, wonder and pace.",
+  "endpoint": "/v1/text-to-voice/design",
+  "query": {
+    "output_format": "pcm_44100"
+  },
+  "parameters": {
+    "voice_description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate low-mid register, gentle warmth, a little more grounded resonance, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never heavy, gravelly, wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative.",
+    "text": "A little note can break glass.\n\nHum a comfortable note.\n\nBeautiful. A new path is open.\n\nGorgeous. Absolutely gorgeous.\n\nYou broke that with your voice. I need to sit down. I don't have legs.",
+    "model_id": "eleven_ttv_v3",
+    "loudness": 0,
+    "guidance_scale": 4.5,
+    "should_enhance": false,
+    "auto_generate_text": false,
+    "seed": 20092027
+  }
+}

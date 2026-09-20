@@ -149,6 +149,21 @@ export interface VisualInstanceDefinition {
   recipeId: string
   position: Vec3
   yaw: number
+  /** Collision proxies hidden only after this exact visual installs. */
+  coveredSolidIds?: readonly string[]
+}
+
+export interface EncounterSuccessNotice {
+  encounterId: string
+  notice: string
+}
+
+export interface LevelGuidanceDefinition {
+  subtitle?: string
+  openingNotice?: string
+  encounterSuccessNotices?: readonly EncounterSuccessNotice[]
+  completionTitle?: string
+  completionNext?: string
 }
 
 export interface LevelPresentationDefinition {
@@ -164,6 +179,7 @@ export interface LevelDefinition {
   id: string
   title: string
   authored?: AuthoredLevelIdentity
+  guidance?: LevelGuidanceDefinition
   presentation?: LevelPresentationDefinition
   spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]

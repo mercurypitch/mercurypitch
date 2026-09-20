@@ -1,6 +1,7 @@
 // Camera movement regression — heading follow stays smooth without steering the player.
 import { BoxGeometry, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
+import { GLASS_ENCLOSED_CHAMBER } from '../content/enclosed-chamber'
 import { GLASS_FOUNDATION_STRAIGHT } from '../content/foundation-routes'
 import { GLASSWORKS } from '../content/glassworks'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
@@ -47,6 +48,230 @@ const OPEN_ROOM: LevelDefinition = {
     requiresCompleted: [],
   },
   fallBelow: -2,
+}
+
+const ENCLOSED_CORNER_ROOM: LevelDefinition = {
+  ...OPEN_ROOM,
+  id: 'camera-enclosed-corner',
+  title: 'Camera enclosed corner',
+  spawn: {
+    position: { x: 3.5, y: 0, z: 3.5 },
+    facingYaw: Math.PI / 4,
+  },
+  platforms: [
+    {
+      id: 'enclosed-floor',
+      minX: -4.266,
+      maxX: 4.266,
+      minZ: -4.266,
+      maxZ: 4.266,
+      top: 0,
+      thickness: 0.25,
+      kind: 'deck',
+      material: 'stone',
+    },
+  ],
+  solids: [
+    {
+      id: 'east-wall',
+      kind: 'prop',
+      shape: 'box',
+      minX: 4.266,
+      maxX: 4.566,
+      minZ: -4.566,
+      maxZ: 4.566,
+      top: 3.6,
+      thickness: 3.6,
+      presentation: { role: 'wall', material: 'stone' },
+    },
+    {
+      id: 'north-wall',
+      kind: 'prop',
+      shape: 'box',
+      minX: -4.566,
+      maxX: 4.566,
+      minZ: 4.266,
+      maxZ: 4.566,
+      top: 3.6,
+      thickness: 3.6,
+      presentation: { role: 'wall', material: 'stone' },
+    },
+  ],
+  checkpoints: [
+    {
+      id: 'corner-spawn',
+      position: { x: 3.5, y: 0, z: 3.5 },
+      radius: 1,
+      facingYaw: Math.PI / 4,
+    },
+  ],
+  presentation: {
+    worldBounds: {
+      minX: -5,
+      maxX: 5,
+      minY: -1,
+      maxY: 4,
+      minZ: -5,
+      maxZ: 5,
+    },
+    lightBounds: {
+      minX: -5,
+      maxX: 5,
+      minY: -1,
+      maxY: 4,
+      minZ: -5,
+      maxZ: 5,
+    },
+    rooms: [
+      {
+        id: 'corner',
+        bounds: {
+          minX: -4.566,
+          maxX: 4.566,
+          minY: -0.25,
+          maxY: 3.6,
+          minZ: -4.566,
+          maxZ: 4.566,
+        },
+        cameraBounds: {
+          minX: -4.266,
+          maxX: 4.266,
+          minY: 0,
+          maxY: 3.44,
+          minZ: -4.266,
+          maxZ: 4.266,
+        },
+      },
+    ],
+    audioRegions: [],
+    visuals: [],
+    assetRecipeIds: [],
+  },
+}
+
+const NARROW_CORNER_HALF_WIDTH = 1.420_108
+const NARROW_CORNER_ROOM: LevelDefinition = {
+  ...ENCLOSED_CORNER_ROOM,
+  id: 'camera-narrow-corner',
+  title: 'Camera narrow corner',
+  spawn: {
+    position: { x: 1.05, y: 0, z: 1.05 },
+    facingYaw: Math.PI / 4,
+  },
+  platforms: [
+    {
+      ...ENCLOSED_CORNER_ROOM.platforms[0],
+      minX: -NARROW_CORNER_HALF_WIDTH,
+      maxX: NARROW_CORNER_HALF_WIDTH,
+      minZ: -NARROW_CORNER_HALF_WIDTH,
+      maxZ: NARROW_CORNER_HALF_WIDTH,
+    },
+  ],
+  solids: [
+    {
+      id: 'narrow-east-wall',
+      kind: 'prop',
+      shape: 'box',
+      minX: NARROW_CORNER_HALF_WIDTH,
+      maxX: NARROW_CORNER_HALF_WIDTH + 0.3,
+      minZ: -NARROW_CORNER_HALF_WIDTH - 0.3,
+      maxZ: NARROW_CORNER_HALF_WIDTH + 0.3,
+      top: 3.6,
+      thickness: 3.6,
+      presentation: { role: 'wall', material: 'stone' },
+    },
+    {
+      id: 'narrow-north-wall',
+      kind: 'prop',
+      shape: 'box',
+      minX: -NARROW_CORNER_HALF_WIDTH - 0.3,
+      maxX: NARROW_CORNER_HALF_WIDTH + 0.3,
+      minZ: NARROW_CORNER_HALF_WIDTH,
+      maxZ: NARROW_CORNER_HALF_WIDTH + 0.3,
+      top: 3.6,
+      thickness: 3.6,
+      presentation: { role: 'wall', material: 'stone' },
+    },
+  ],
+  checkpoints: [
+    {
+      id: 'narrow-corner-spawn',
+      position: { x: 1.05, y: 0, z: 1.05 },
+      radius: 1,
+      facingYaw: Math.PI / 4,
+    },
+  ],
+  presentation: {
+    ...ENCLOSED_CORNER_ROOM.presentation!,
+    rooms: [
+      {
+        id: 'narrow-corner',
+        bounds: {
+          minX: -NARROW_CORNER_HALF_WIDTH - 0.3,
+          maxX: NARROW_CORNER_HALF_WIDTH + 0.3,
+          minY: -0.25,
+          maxY: 3.6,
+          minZ: -NARROW_CORNER_HALF_WIDTH - 0.3,
+          maxZ: NARROW_CORNER_HALF_WIDTH + 0.3,
+        },
+        cameraBounds: {
+          minX: -NARROW_CORNER_HALF_WIDTH,
+          maxX: NARROW_CORNER_HALF_WIDTH,
+          minY: 0,
+          maxY: 3.44,
+          minZ: -NARROW_CORNER_HALF_WIDTH,
+          maxZ: NARROW_CORNER_HALF_WIDTH,
+        },
+      },
+    ],
+  },
+}
+
+const PRESSED_EAST_WALL_ROOM: LevelDefinition = {
+  ...ENCLOSED_CORNER_ROOM,
+  id: 'camera-pressed-east-wall',
+  title: 'Camera pressed east wall',
+  spawn: {
+    position: { x: 4.08, y: 0, z: 0 },
+    facingYaw: -Math.PI / 2,
+  },
+  checkpoints: [
+    {
+      id: 'wall-spawn',
+      position: { x: 4.08, y: 0, z: 0 },
+      radius: 1,
+      facingYaw: -Math.PI / 2,
+    },
+  ],
+}
+
+const ENCLOSED_GATE_ROOM: LevelDefinition = {
+  ...ENCLOSED_CORNER_ROOM,
+  id: 'camera-enclosed-gate',
+  title: 'Camera enclosed gate',
+  spawn: { position: { x: 0, y: 0, z: 0 }, facingYaw: 0 },
+  solids: [
+    {
+      id: 'camera-gate',
+      kind: 'prop',
+      shape: 'box',
+      minX: -0.7,
+      maxX: 0.7,
+      minZ: 1,
+      maxZ: 1.12,
+      top: 1.55,
+      thickness: 1.55,
+      presentation: { role: 'gate', material: 'brass' },
+    },
+  ],
+  checkpoints: [
+    {
+      id: 'gate-spawn',
+      position: { x: 0, y: 0, z: 0 },
+      radius: 1,
+      facingYaw: 0,
+    },
+  ],
 }
 
 function withMotion(
@@ -476,12 +701,156 @@ describe('camera-relative traversal', () => {
     rig.orbit(-Math.PI, 0)
     rig.setOccluders(museum.cameraOccluders())
     rig.update(exitPose, FRAME)
-    const target = new Vector3(0, 0.42, 8.3)
+    rig.camera.updateMatrixWorld()
+    const visiblePoints = [
+      new Vector3(0, 0.02, 8.3),
+      new Vector3(0, 0.58, 8.3),
+      new Vector3(0, 0.02, 7.45),
+    ].map((point) => point.project(rig.camera))
 
-    expect(rig.camera.position.distanceTo(target)).toBeGreaterThan(3.5)
-    expect(rig.camera.position.y - target.y).toBeGreaterThan(3)
+    expect(rig.camera.position.y).toBeLessThanOrEqual(2.96)
+    expect(rig.camera.position.z).toBeLessThanOrEqual(9.06)
+    for (const point of visiblePoints) {
+      expect(Math.abs(point.x)).toBeLessThan(1)
+      expect(Math.abs(point.y)).toBeLessThan(1)
+      expect(Math.abs(point.z)).toBeLessThan(1)
+    }
 
     museum.materialLibrary.dispose()
     Object.values(materials).forEach((material) => material.dispose())
   })
+  it.each([
+    ['arrival', { x: 0, y: 0, z: -2.8 }, Math.PI],
+    ['turn', { x: 12.096_037_511_825_562, y: 0, z: 0 }, Math.PI],
+  ])(
+    'uses readable third-person framing at the enclosed chamber %s',
+    (_, position, facingYaw) => {
+      const rig = createAdventureCamera(GLASS_ENCLOSED_CHAMBER)
+      const snapshot = createGlassGame(GLASS_ENCLOSED_CHAMBER).snapshot()
+      const pose: GameSnapshot = {
+        ...snapshot,
+        player: {
+          ...snapshot.player,
+          position,
+          facingYaw,
+          velocity: { x: 0, y: 0, z: 0 },
+        },
+      }
+
+      rig.update(pose, FRAME)
+      rig.camera.updateMatrixWorld()
+      const horizontalDistance = Math.hypot(
+        rig.camera.position.x - position.x,
+        rig.camera.position.z - position.z,
+      )
+      const viewElevation = Math.atan2(
+        rig.camera.position.y - 0.42,
+        horizontalDistance,
+      )
+      const forward = new Vector3(-Math.sin(facingYaw), 0, -Math.cos(facingYaw))
+
+      expect(horizontalDistance).toBeGreaterThan(0.9)
+      expect(viewElevation).toBeLessThan(0.8)
+      for (const point of [
+        new Vector3(position.x, 0.02, position.z),
+        new Vector3(position.x, 0.58, position.z),
+        new Vector3(position.x, 0.02, position.z).addScaledVector(
+          forward,
+          0.85,
+        ),
+      ]) {
+        const projected = point.project(rig.camera)
+        expect(Math.abs(projected.x)).toBeLessThan(0.95)
+        expect(Math.abs(projected.y)).toBeLessThan(0.95)
+        expect(Math.abs(projected.z)).toBeLessThan(1)
+      }
+    },
+  )
+  it.each([
+    ['landscape', 16 / 9],
+    ['portrait', 9 / 16],
+  ])(
+    'keeps Merc and the landing in frame at a narrow %s corner',
+    (_, aspect) => {
+      const rig = createAdventureCamera(NARROW_CORNER_ROOM)
+      rig.camera.aspect = aspect
+      rig.camera.updateProjectionMatrix()
+      const snapshot = createGlassGame(NARROW_CORNER_ROOM).snapshot()
+
+      rig.update(snapshot, FRAME)
+      rig.camera.updateMatrixWorld()
+      const forward = new Vector3(
+        -Math.sin(snapshot.player.facingYaw),
+        0,
+        -Math.cos(snapshot.player.facingYaw),
+      )
+      const feet = new Vector3(1.05, 0.02, 1.05).project(rig.camera)
+      const head = new Vector3(1.05, 0.58, 1.05).project(rig.camera)
+      const landing = new Vector3(1.05, 0.02, 1.05)
+        .addScaledVector(forward, 0.85)
+        .project(rig.camera)
+
+      expect(rig.camera.position.x).toBeLessThanOrEqual(1.180_108)
+      expect(rig.camera.position.y).toBeLessThanOrEqual(3.2)
+      expect(rig.camera.position.z).toBeLessThanOrEqual(1.180_108)
+      for (const point of [feet, head, landing]) {
+        expect(Math.abs(point.x)).toBeLessThan(0.95)
+        expect(Math.abs(point.y)).toBeLessThan(0.95)
+        expect(Math.abs(point.z)).toBeLessThan(1)
+      }
+      expect(head.y).toBeGreaterThan(feet.y)
+      expect(landing.y).toBeGreaterThan(head.y)
+    },
+  )
+  it('keeps a wall-pressed manual orbit at the last camera-safe centre', () => {
+    const rig = createAdventureCamera(PRESSED_EAST_WALL_ROOM)
+    const snapshot = createGlassGame(PRESSED_EAST_WALL_ROOM).snapshot()
+    const body = new Vector3(4.08, 0.42, 0)
+
+    rig.update(snapshot, FRAME)
+    const interiorPosition = rig.camera.position.clone()
+    expect(interiorPosition.x).toBeLessThanOrEqual(4.026)
+    expect(interiorPosition.distanceTo(body)).toBeGreaterThan(2)
+
+    rig.orbit(Math.PI, 0)
+    rig.update(snapshot, FRAME)
+    rig.camera.updateMatrixWorld()
+    expect(rig.camera.position.distanceTo(interiorPosition)).toBeLessThan(0.001)
+    expect(rig.camera.position.x).toBeLessThanOrEqual(4.026)
+    for (const point of [
+      new Vector3(4.08, 0.02, 0),
+      new Vector3(4.08, 0.58, 0),
+    ]) {
+      const projected = point.project(rig.camera)
+      expect(Math.abs(projected.x)).toBeLessThan(1)
+      expect(Math.abs(projected.y)).toBeLessThan(1)
+      expect(Math.abs(projected.z)).toBeLessThan(1)
+    }
+  })
+  it.each([30, 60, 120])(
+    'eases outward monotonically after an active gate opens at %sfps',
+    (fps) => {
+      const frame = 1 / fps
+      const rig = createAdventureCamera(ENCLOSED_GATE_ROOM)
+      const closed = createGlassGame(ENCLOSED_GATE_ROOM).snapshot()
+      const open: GameSnapshot = {
+        ...closed,
+        activeSolidIds: closed.activeSolidIds?.filter(
+          (id) => id !== 'camera-gate',
+        ),
+      }
+      const target = new Vector3(0, 0.42, -0.45)
+
+      rig.update(closed, frame)
+      let previousDistance = rig.camera.position.distanceTo(target)
+      expect(previousDistance).toBeLessThan(3.1)
+      for (let index = 0; index < fps * 1.5; index++) {
+        rig.update(open, frame)
+        const nextDistance = rig.camera.position.distanceTo(target)
+        expect(nextDistance).toBeGreaterThanOrEqual(previousDistance - 0.001)
+        previousDistance = nextDistance
+      }
+      expect(previousDistance).toBeCloseTo(4, 2)
+    },
+  )
 })

@@ -104,6 +104,41 @@ describe('data-driven exhibit recipes', () => {
       'Unknown museum visual',
     )
   })
+  it('resolves the enclosed museum visuals to the delivered V4 roots', () => {
+    const manifest = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../../../apps/beside-cue/public/games/adventure-v4/manifest.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    ) as {
+      assets: { id: string; file: string; node: string; sha256: string }[]
+    }
+
+    for (const asset of manifest.assets) {
+      const recipe = getMuseumVisualRecipe(asset.id)
+      const bytes = readFileSync(
+        new URL(
+          `../../../../apps/beside-cue/public/games/adventure-v4/${asset.file}`,
+          import.meta.url,
+        ),
+      )
+      const gltf = JSON.parse(
+        bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString(),
+      ) as { nodes: { name?: string }[] }
+      expect(recipe).toMatchObject({
+        bundle: asset.id,
+        node: asset.node,
+        scale: 1,
+      })
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(
+        asset.sha256,
+      )
+      expect(gltf.nodes.some((node) => node.name === asset.node)).toBe(true)
+    }
+  })
   it('does not attach Glassworks landmarks to a newly authored level', () => {
     const scene = getMuseumSceneRecipe({
       ...GLASSWORKS,

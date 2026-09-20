@@ -1,0 +1,188 @@
+{
+  "revision": "merc-voice-auditions-v2-2026-09-20",
+  "status": "complete",
+  "started_at": "2026-09-20T11:30:26.736Z",
+  "provider": "ElevenLabs",
+  "endpoint": "/v1/text-to-voice/design",
+  "model": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "request_settings": {
+    "loudness": 0,
+    "guidance_scale": 4.5,
+    "should_enhance": false,
+    "auto_generate_text": false
+  },
+  "preview_text": "A little note can break glass.\n\nHum a comfortable note.\n\nBeautiful. A new path is open.\n\nGorgeous. Absolutely gorgeous.\n\nYou broke that with your voice. I need to sit down. I don't have legs.",
+  "preview_text_characters_per_request": 191,
+  "calls_planned": 3,
+  "previews_expected": 9,
+  "benchmark": {
+    "id": "d",
+    "take": "d2",
+    "generated_in_this_revision": false,
+    "source_manifest": "../v1/review-manifest.json"
+  },
+  "voice_library_saved": false,
+  "cloning_used": false,
+  "subscription_check_skipped": "Known key lacks user_read; generation scope was already proven by v1.",
+  "official_documentation": {
+    "design": "https://elevenlabs.io/docs/api-reference/text-to-voice/design",
+    "save_selected": "https://elevenlabs.io/docs/api-reference/text-to-voice/create"
+  },
+  "generated_id_retention": {
+    "documented_expiry": null,
+    "note": "Official Voice Design and create-voice docs reviewed 2026-09-20 explain how to save a generated_voice_id but state no validity or retention period. Preserve audio and IDs, then save the selected voice promptly."
+  },
+  "directions": [
+    {
+      "revision": "merc-voice-auditions-v2-2026-09-20",
+      "direction": "e",
+      "label": "Warmer Grounded",
+      "status": "complete",
+      "started_at": "2026-09-20T11:30:26.736Z",
+      "model": "eleven_ttv_v3",
+      "output_format": "pcm_44100",
+      "seed": 20092027,
+      "voice_library_saved": false,
+      "previews": [
+        {
+          "take": "e1",
+          "file": "merc-e1.pcm",
+          "generated_voice_id": "b2SKcEVwu3P6LOYWD7BP",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 20.4,
+          "bytes": 1799280,
+          "sha256": "4d110b92385f5d852d8b93941870c5c87380f03964b11a9727dc8e82a4831dce"
+        },
+        {
+          "take": "e2",
+          "file": "merc-e2.pcm",
+          "generated_voice_id": "s3G6Uoh8mMebuvQcHdkR",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 21.44,
+          "bytes": 1891008,
+          "sha256": "4a8a2b1a6a626307939009c85e752db08f9ed63c4778855d40bfd0c4edddfed3"
+        },
+        {
+          "take": "e3",
+          "file": "merc-e3.pcm",
+          "generated_voice_id": "8DJ82K5MbHWgl7bKajjc",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 22.56,
+          "bytes": 1989792,
+          "sha256": "4bef7507617b8139c8b966452968acd17ea60a44ad06d96f5a69e230dae35641"
+        }
+      ],
+      "http_status": 200,
+      "provider_request_id": null,
+      "provider_character_cost": null,
+      "returned_text_matches": true,
+      "previews_returned": 3,
+      "completed_at": "2026-09-20T11:30:39.191Z"
+    },
+    {
+      "revision": "merc-voice-auditions-v2-2026-09-20",
+      "direction": "f",
+      "label": "Brighter Clear",
+      "status": "complete",
+      "started_at": "2026-09-20T11:30:39.192Z",
+      "model": "eleven_ttv_v3",
+      "output_format": "pcm_44100",
+      "seed": 20092028,
+      "voice_library_saved": false,
+      "previews": [
+        {
+          "take": "f1",
+          "file": "merc-f1.pcm",
+          "generated_voice_id": "6m5v9TmkzjJiZADUm7nl",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 20.48,
+          "bytes": 1806336,
+          "sha256": "af57f40e7d102c24b7d8334e483ee469a313e7612d5e875bb1df715823fcd7e2"
+        },
+        {
+          "take": "f2",
+          "file": "merc-f2.pcm",
+          "generated_voice_id": "fe3rCUvJyASDA8G5RGLd",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 19.52,
+          "bytes": 1721664,
+          "sha256": "77c6a1c442cae43b59dfb4a7cacd516399aa948e575b59e2922d11046db3823a"
+        },
+        {
+          "take": "f3",
+          "file": "merc-f3.pcm",
+          "generated_voice_id": "bbgi8887any8MTyYR2t3",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 20.24,
+          "bytes": 1785168,
+          "sha256": "023be2f4ae59914c11fc00368e5fa7745e38f2cf0f6c3651c845abe9b889039a"
+        }
+      ],
+      "http_status": 200,
+      "provider_request_id": null,
+      "provider_character_cost": null,
+      "returned_text_matches": true,
+      "previews_returned": 3,
+      "completed_at": "2026-09-20T11:30:50.404Z"
+    },
+    {
+      "revision": "merc-voice-auditions-v2-2026-09-20",
+      "direction": "g",
+      "label": "Quiet Playful",
+      "status": "complete",
+      "started_at": "2026-09-20T11:30:50.405Z",
+      "model": "eleven_ttv_v3",
+      "output_format": "pcm_44100",
+      "seed": 20092029,
+      "voice_library_saved": false,
+      "previews": [
+        {
+          "take": "g1",
+          "file": "merc-g1.pcm",
+          "generated_voice_id": "geIXjHNV0PseCcVw7vI1",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 19.6,
+          "bytes": 1728720,
+          "sha256": "8d2405d6081dde7270d10760830952185cc39fbed0488482102ab921e5997e6d"
+        },
+        {
+          "take": "g2",
+          "file": "merc-g2.pcm",
+          "generated_voice_id": "tp3uMnt05oa0kJUFt8NN",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 19.6,
+          "bytes": 1728720,
+          "sha256": "856d99be109a4eb027a478a519ba826abe81ef4133bc9d393258e5ca3abd016c"
+        },
+        {
+          "take": "g3",
+          "file": "merc-g3.pcm",
+          "generated_voice_id": "Q8DjBfikwt3ddvDpuimW",
+          "media_type": "audio/pcm",
+          "language": "en",
+          "provider_duration_seconds": 21.04,
+          "bytes": 1855728,
+          "sha256": "9e6fbedcaa35250d714468b116db183d9dc156b6047ffc0a9874b87be7f82731"
+        }
+      ],
+      "http_status": 200,
+      "provider_request_id": null,
+      "provider_character_cost": null,
+      "returned_text_matches": true,
+      "previews_returned": 3,
+      "completed_at": "2026-09-20T11:31:00.719Z"
+    }
+  ],
+  "completed_at": "2026-09-20T11:31:00.720Z",
+  "calls_completed": 3,
+  "previews_generated": 9
+}

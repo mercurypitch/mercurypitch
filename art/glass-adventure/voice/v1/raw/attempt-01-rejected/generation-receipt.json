@@ -1,0 +1,44 @@
+{
+  "revision": "merc-voice-auditions-v1-2026-09-20",
+  "status": "stopped-after-rejection",
+  "started_at": "2026-09-20T10:48:30.794Z",
+  "provider": "ElevenLabs",
+  "endpoint": "/v1/text-to-voice/design",
+  "model": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "preview_text": "A little note can break glass.\n\nHum a comfortable note.\n\nBeautiful. A new path is open.\n\nGorgeous. Absolutely gorgeous.\n\nYou broke that with your voice. I need to sit down. I don't have legs.",
+  "preview_text_characters_per_request": 191,
+  "calls_planned": 4,
+  "voice_library_saved": false,
+  "cloning_used": false,
+  "official_documentation": {
+    "design": "https://elevenlabs.io/docs/api-reference/text-to-voice/design",
+    "save_selected": "https://elevenlabs.io/docs/api-reference/text-to-voice/create"
+  },
+  "generated_id_retention": {
+    "documented_expiry": null,
+    "note": "Official Voice Design and create-voice docs reviewed 2026-09-20 explain how to save a generated_voice_id but state no validity or retention period. Preserve audio and IDs, then save the selected voice promptly."
+  },
+  "subscription_before": {
+    "available": false,
+    "http_status": 401
+  },
+  "directions": [
+    {
+      "revision": "merc-voice-auditions-v1-2026-09-20",
+      "direction": "a",
+      "label": "Warm Nimble",
+      "status": "rejected-no-automatic-retry",
+      "started_at": "2026-09-20T10:48:31.327Z",
+      "model": "eleven_ttv_v3",
+      "output_format": "pcm_44100",
+      "seed": 17092026,
+      "voice_library_saved": false,
+      "previews": [],
+      "http_status": 400,
+      "provider_request_id": null,
+      "provider_character_cost": null,
+      "completed_at": "2026-09-20T10:48:32.077Z"
+    }
+  ]
+}

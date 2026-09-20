@@ -157,6 +157,16 @@ export const MUSEUM_VISUAL_CATALOG: Readonly<
     node: 'museum_arch',
     scale: 1,
   },
+  'museum-window-v4': {
+    bundle: 'museum-window-v4',
+    node: 'meshy_museum_window_bay',
+    scale: 1,
+  },
+  'museum-screen-v4': {
+    bundle: 'museum-screen-v4',
+    node: 'meshy_museum_screen_bay',
+    scale: 1,
+  },
 }
 
 function centre(bounds: Bounds3): Vec3 {

@@ -38,6 +38,10 @@ export function compilePresentation(
         recipeId: visual.recipeId,
         position: transformPoint(visual.position, room.placement),
         yaw: transformYaw(visual.yaw, room.placement.yawQuarterTurns),
+        coveredSolidIds: visual.coversSolidIds?.flatMap((id) => {
+          const runtimeId = room.solidIds.get(id)
+          return runtimeId === undefined ? [] : [runtimeId]
+        }),
       })),
     ),
     assetRecipeIds: [...usedRecipes].sort(),

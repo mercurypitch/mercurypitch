@@ -41,6 +41,8 @@ export interface RoomVisualDefinition {
   recipeId: string
   position: Vec3
   yaw: number
+  /** Local collision solids represented by this optional detailed visual. */
+  coversSolidIds?: readonly string[]
 }
 
 export interface RoomAudioRegionDefinition {
@@ -103,11 +105,25 @@ export interface SolidActivationOverride {
   requiredForRoute?: boolean
 }
 
+export interface AuthoredEncounterSuccessNotice {
+  encounterId: string
+  notice: string
+}
+
+export interface AuthoredLevelGuidance {
+  subtitle?: string
+  openingNotice?: string
+  encounterSuccessNotices?: readonly AuthoredEncounterSuccessNotice[]
+  completionTitle?: string
+  completionNext?: string
+}
+
 export interface AuthoredLevelSource {
   levelId: string
   layoutId: string
   contentRevision: number
   title: string
+  guidance?: AuthoredLevelGuidance
   rooms: readonly RoomPlacement[]
   exhibits: readonly ExhibitPlacement[]
   connections: readonly PortConnection[]

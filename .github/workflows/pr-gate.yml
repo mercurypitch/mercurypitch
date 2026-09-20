@@ -449,7 +449,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        spec: [authoring, controls, music, solids, voice]
+        spec: [authoring, chamber, controls, music, solids, voice]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup

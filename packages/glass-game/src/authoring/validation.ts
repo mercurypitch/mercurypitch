@@ -282,6 +282,7 @@ export function validatePrefab(
         `${path}.exits.${exit.id}`,
         'Exit bounds and top must be finite, with ordered horizontal bounds.',
       )
+  const coveredSolidOwners = new Map<string, string>()
   for (const visual of prefab.visuals) {
     const raw = visual as typeof visual & Record<string, unknown>
     if (raw.scale !== undefined)
@@ -305,6 +306,43 @@ export function validatePrefab(
       used,
       diagnostics,
     )
+    const covered = new Set<string>()
+    for (const solidId of visual.coversSolidIds ?? []) {
+      if (covered.has(solidId))
+        diagnostic(
+          diagnostics,
+          'duplicate-reference',
+          `${path}.visuals.${visual.id}.coversSolidIds`,
+          `Solid "${solidId}" is covered more than once by this visual.`,
+        )
+      covered.add(solidId)
+      const owner = coveredSolidOwners.get(solidId)
+      if (owner !== undefined && owner !== visual.id)
+        diagnostic(
+          diagnostics,
+          'duplicate-reference',
+          `${path}.visuals.${visual.id}.coversSolidIds`,
+          `Solid "${solidId}" is already covered by visual "${owner}".`,
+        )
+      coveredSolidOwners.set(solidId, visual.id)
+      if (!solidIds.has(solidId))
+        diagnostic(
+          diagnostics,
+          'missing-reference',
+          `${path}.visuals.${visual.id}.coversSolidIds`,
+          `Unknown local solid "${solidId}".`,
+        )
+      else {
+        const solid = prefab.solids.find((item) => item.id === solidId)!
+        if (solid.presentation === undefined && solid.fallback === undefined)
+          diagnostic(
+            diagnostics,
+            'invalid-presentation',
+            `${path}.visuals.${visual.id}.coversSolidIds`,
+            `Covered solid "${solidId}" needs a visible fallback proxy.`,
+          )
+      }
+    }
   }
   for (const region of prefab.audioRegions)
     if (!validBounds3(region.bounds))

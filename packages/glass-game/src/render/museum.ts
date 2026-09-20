@@ -170,6 +170,11 @@ export function createMuseum(
   const sceneRecipe = getMuseumSceneRecipe(level)
   const planters = new Map<string, Group>()
   const coveredSolids = new Set<string>()
+  const installedVisuals: {
+    art: Group
+    coveredSolidIds: readonly string[]
+  }[] = []
+  const visualTemplates = new Map<string, Group>()
   const solidProxies = (level.solids ?? []).flatMap((solid) => {
     if (!solid.fallback && !solid.presentation) return []
     const material = proxyMaterial(
@@ -215,6 +220,7 @@ export function createMuseum(
   root.add(dressing.root)
   let cameraMeshCache: Mesh[] | undefined
   let lastActive: string | undefined
+  let activeSolids = new Set(getActiveSolidIds(level, new Set<string>()))
   const floors = new Map(
     level.platforms.map((platform) => {
       const floor = createFloor(platform, materials)
@@ -419,17 +425,32 @@ export function createMuseum(
       for (const visual of level.presentation?.visuals ?? []) {
         const recipe = getMuseumVisualRecipe(visual.recipeId)
         if (recipe.bundle !== bundle) continue
-        const source = scene.getObjectByName(recipe.node)
-        if (source === undefined)
-          throw new Error(
-            `Museum visual recipe "${visual.recipeId}" could not find node "${recipe.node}" in bundle "${bundle}".`,
-          )
-        const art = createKitInstance(source, materials, {}, materialLibrary)
+        let template = visualTemplates.get(visual.recipeId)
+        if (template === undefined) {
+          const source = scene.getObjectByName(recipe.node)
+          if (source === undefined)
+            throw new Error(
+              `Museum visual recipe "${visual.recipeId}" could not find node "${recipe.node}" in bundle "${bundle}".`,
+            )
+          template = createKitInstance(source, materials, {}, materialLibrary)
+          template.scale.setScalar(recipe.scale)
+          visualTemplates.set(visual.recipeId, template)
+        }
+        const art = template.clone(true)
         art.name = `visual-${visual.id}`
         art.position.copy(visual.position)
         art.rotation.y = visual.yaw
-        art.scale.setScalar(recipe.scale)
+        const coveredSolidIds = visual.coveredSolidIds ?? []
+        art.visible =
+          coveredSolidIds.length === 0 ||
+          coveredSolidIds.some((id) => activeSolids.has(id))
         root.add(art)
+        installedVisuals.push({ art, coveredSolidIds })
+        for (const id of coveredSolidIds) {
+          coveredSolids.add(id)
+          const proxy = solidProxies.find(({ solid }) => solid.id === id)
+          if (proxy !== undefined) proxy.mesh.visible = false
+        }
       }
     },
     update(snapshot: GameSnapshot) {
@@ -437,11 +458,16 @@ export function createMuseum(
         snapshot.activeSolidIds ??
         getActiveSolidIds(level, new Set(snapshot.completedBreakableIds))
       const active = new Set(activeSolidIds)
+      activeSolids = active
       dressing.update(snapshot.enabledPlatformIds)
       for (const { solid, mesh } of solidProxies) {
         const solidActive = active.has(solid.id)
         mesh.visible = !coveredSolids.has(solid.id) && solidActive
       }
+      for (const { art, coveredSolidIds } of installedVisuals)
+        art.visible =
+          coveredSolidIds.length === 0 ||
+          coveredSolidIds.some((id) => active.has(id))
       const enabled = activeSolidIds.join('|')
       if (enabled !== lastActive) {
         cameraMeshCache = undefined

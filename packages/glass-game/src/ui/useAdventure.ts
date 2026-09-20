@@ -24,7 +24,8 @@ export function useAdventure(
   const [voiceMode, setVoiceMode] = createSignal<VoiceMode>('off')
   const [pitch, setPitch] = createSignal<number | null>(null)
   const [notice, setNotice] = createSignal(
-    'Explore the museum and approach a glass exhibit.',
+    level.guidance?.openingNotice ??
+      'Explore the museum and approach a glass exhibit.',
   )
   const [paused, setPaused] = createSignal(false)
   const [tutorial, setTutorial] = createSignal(
@@ -116,10 +117,14 @@ export function useAdventure(
         const item = level.breakables.find(
           (candidate) => candidate.id === event.id,
         )
+        const authoredNotice = level.guidance?.encounterSuccessNotices?.find(
+          (notice) => notice.encounterId === event.id,
+        )?.notice
         announce(
-          item?.optional === true
-            ? 'One more beautiful mess.'
-            : 'Beautiful. A new path is open.',
+          authoredNotice ??
+            (item?.optional === true
+              ? 'One more beautiful mess.'
+              : 'Beautiful. A new path is open.'),
         )
       } else if (event.type === 'checkpoint' || event.type === 'complete') {
         host.saveProgress(game.saveProgress())
