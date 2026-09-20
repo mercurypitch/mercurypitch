@@ -553,7 +553,7 @@ export const JamSongStage: Component = () => {
   return (
     <Show when={jamSong()}>
       {(song) => (
-        <div class={styles.stage}>
+        <div class={styles.stage} data-tour="jam.stage">
           <JamTransferDialog />
           {/* The ONLY media element on the stage, deliberately: the guide
               vocal goes through Web Audio (jam-guide-player.ts) because a

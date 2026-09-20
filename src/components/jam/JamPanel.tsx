@@ -612,6 +612,7 @@ export const JamPanel: Component = () => {
               <div
                 class={jamStyles.roomActions}
                 classList={{ [panelStyles.actionsOpen]: roomMenuOpen() }}
+                data-tour="jam.room-actions"
                 ref={roomActionsRef}
               >
                 {/* Phone: everything but mic and leave folds in here. Mic
@@ -1068,7 +1069,9 @@ export const JamPanel: Component = () => {
             </Show>
 
             <Show when={!jamIsSongRoom()}>
-              <div class={panelStyles.canvasArea}>
+              {/* The same tour hook as the song stage: the room's tour points
+                  at "the stage", whichever of the two is up. */}
+              <div class={panelStyles.canvasArea} data-tour="jam.stage">
                 {/* Exercise — takes most space */}
                 <div
                   class={`${exerciseCanvasStyles.container} ${panelStyles.exerciseCanvas}`}

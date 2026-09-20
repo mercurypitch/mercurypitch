@@ -17,11 +17,11 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { WalkthroughStep } from '@/stores/app-store'
-import { PAGE_TOURS, PRACTICE_MODES_TOUR_STEPS, STEM_MIXER_TOUR_STEPS, VOICE_TOUR_STEPS, WALKTHROUGH_STEPS, } from '@/stores/app-store'
+import { JAM_ROOM_TOUR_STEPS, PAGE_TOURS, PRACTICE_MODES_TOUR_STEPS, STEM_MIXER_TOUR_STEPS, VOICE_TOUR_STEPS, WALKTHROUGH_STEPS, } from '@/stores/app-store'
 
 /** Everything a step can name, as one flat list of selectors. */
 function selectorsOf(step: WalkthroughStep): string[] {
-  return [step.targetSelector, ...(step.navigate ?? [])].filter(
+  return [step.targetSelector, step.reveal, ...(step.navigate ?? [])].filter(
     (selector): selector is string =>
       typeof selector === 'string' && selector.length > 0,
   )
@@ -98,6 +98,8 @@ const ALL_TOURS: Record<string, readonly WalkthroughStep[]> = {
   'stem-mixer': STEM_MIXER_TOUR_STEPS,
   'practice-modes': PRACTICE_MODES_TOUR_STEPS,
   voice: VOICE_TOUR_STEPS,
+  // The Jam tab's second tour: not in PAGE_TOURS, which holds one per tab.
+  'jam-room': JAM_ROOM_TOUR_STEPS,
   ...Object.fromEntries(
     Object.entries(PAGE_TOURS).map(([tab, steps]) => [`page:${tab}`, steps]),
   ),

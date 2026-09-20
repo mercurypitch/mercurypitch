@@ -13,12 +13,17 @@ does exactly that and exits non-zero if any step's spotlight misses.
 ## Steps
 
 1. **Build and serve** a local-mode bundle (any static server works):
+
    ```sh
    pnpm run build:tours
    pnpm dlx serve dist -l 3005 &
    ```
+
    `build:tours` builds with an **empty `VITE_API_BASE_URL`** so the app
-   runs on the local Dexie adapter with seeded definitions. Never walk a
+   runs on the local Dexie adapter with seeded definitions, and with
+   **`VITE_JAM_MOCK_SIGNALING=1`** so the walk can open a jam room (the
+   preview room: real UI, invented peers, nothing on the wire) for the
+   room's own tour. Never walk a
    plain `pnpm run build` — that bakes in the real `api.mercurypitch.com`,
    creating a junk anonymous user in prod D1 per walk and going flaky
    whenever the API hiccups; the walker detects this and aborts.
@@ -27,17 +32,19 @@ does exactly that and exits non-zero if any step's spotlight misses.
    targets are allowed through the walker's request blocker).
 
 2. **Walk all tours** on both viewports:
+
    ```sh
    pnpm run test:tours              # desktop 1280x800
    MOBILE=1 pnpm run test:tours     # iPhone 390x844 (touch)
    ```
+
    Env: `BASE_URL` (default `http://localhost:3005`), `CHROMIUM`
    (custom chromium path; sandboxes often need
    `CHROMIUM=/opt/pw-browsers/chromium`).
 
 3. **Read the output.** Every step prints `ok` or `MISS` with its title and
    spotlight size. A `MISS` means the step's `targetSelector` didn't resolve
-   to a *visible* element within the tour's ~1s prep budget. Fix by checking,
+   to a _visible_ element within the tour's ~1s prep budget. Fix by checking,
    in order: does the selector still exist in the source? is the element
    hidden behind a collapse/hide toggle (needs `reveal` / the control-bar
    auto-show)? does it need `inSidebar`, `navigate`, or a different
@@ -47,16 +54,23 @@ does exactly that and exits non-zero if any step's spotlight misses.
    song loaded). If you changed `STEM_MIXER_TOUR_STEPS` or the mixer UI,
    verify those selectors statically against the components.
 
+5. The **Jam tab has two tours**: the lobby's (`JAM_TOUR_STEPS`) and the
+   room's (`JAM_ROOM_TOUR_STEPS`), picked by `pageTourSteps` from whether a
+   room is open. The walker does both: "Jam" from the lobby, then
+   `Jam (inside a room)` after opening the preview room. To walk only those:
+   `ONLY="Jam,Jam (inside a room)" pnpm run test:tours`.
+
 ## Tour architecture (where things live)
 
 - **Steps & tours**: `src/stores/app-store.ts` — `WALKTHROUGH_STEPS`
   (sectioned main walkthrough: practice / toolbar / editor / effects /
-  settings-*), `PAGE_TOURS` + `PAGE_TOUR_CATALOG` (per-tab tours),
+  settings-\*), `PAGE_TOURS` + `PAGE_TOUR_CATALOG` (per-tab tours),
+  `JAM_ROOM_TOUR_STEPS` (the Jam tab's second tour, inside a room),
   `STEM_MIXER_TOUR_STEPS`, `PRACTICE_MODES_TOUR_STEPS`.
 - **Engine**: `src/components/Walkthrough.tsx`. Per step it can: switch tabs
   (`requiredTab`), open the mobile sidebar drawer / expand the desktop
   collapsed rail (`inSidebar`), click through sub-navigation (`navigate:
-  string[]`), expand an `aria-expanded` collapse toggle (`reveal`), and
+string[]`), expand an `aria-expanded` collapse toggle (`reveal`), and
   auto-un-hide a dismissed floating control bar (via the persisted
   `mp-<prefix>-control-hidden` flag). Everything it opens is restored when
   the tour ends. Targets only count when genuinely visible

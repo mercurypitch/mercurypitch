@@ -17,6 +17,7 @@ import { sessionIdOfSong } from '@/lib/jam/jam-lyrics-attach'
 import type { JamRoomMode } from '@/lib/jam/jam-modes'
 import { roleCountFor, roleIndexOf, roleNameFor, targetForRole, } from '@/lib/jam/jam-modes'
 import { JamPitchDetector } from '@/lib/jam/jam-pitch-detector'
+import { provideJamRoomState } from '@/lib/jam/jam-room-presence'
 import { ownerTokenFor } from '@/lib/jam/jam-rooms'
 import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
@@ -138,6 +139,11 @@ export const [jamError, setJamError] = createSignal<string | null>(null)
 export const [jamState, setJamState] = createSignal<
   'idle' | 'connecting' | 'active'
 >('idle')
+// What the rest of the app may know about the room without importing it:
+// the guided tours pick the lobby's tour or the room's by this. The signal is
+// handed over to be read LATER, from the asker's own tracking scope.
+// eslint-disable-next-line solid/reactivity
+provideJamRoomState(jamState)
 export const [jamRoomToJoin, setJamRoomToJoin] = createSignal<string | null>(
   null,
 )
