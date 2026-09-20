@@ -1,6 +1,6 @@
 // Level authoring contracts — reusable local room data compiled into runtime definitions.
 
-import type { Bounds3, BoundsXZ, CheckpointDefinition, HoldDefinition, LevelMovementDefinition, LevelTutorialDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
+import type { Bounds3, BoundsXZ, CheckpointDefinition, FloorArtPaletteId, FloorArtRecipeId, HoldDefinition, LevelMovementDefinition, LevelTutorialDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
 
 export type QuarterTurn = 0 | 1 | 2 | 3
 
@@ -13,6 +13,11 @@ export interface RoomPlacement {
   checkpointRequiresCompleted?: Readonly<Record<string, readonly string[]>>
   /** Re-skin every authored region in this reusable room with one host scene. */
   audioSceneId?: MuseumAudioSceneId
+  /** Apply one coherent surface language to this room's physical platforms. */
+  floorArt?: {
+    recipeId: FloorArtRecipeId
+    palette?: FloorArtPaletteId
+  }
 }
 
 export interface RoomPortDefinition {
@@ -47,6 +52,17 @@ export interface RoomVisualDefinition {
   coversSolidIds?: readonly string[]
 }
 
+export interface RoomDecorationDefinition {
+  id: string
+  recipeId: string
+  position: Vec3
+  yaw: number
+  /** Uniform instance scale on top of the normalized catalog recipe. */
+  scale?: number
+  /** Local collision solids represented by this optional detailed prop. */
+  coversSolidIds?: readonly string[]
+}
+
 export interface RoomAudioRegionDefinition {
   id: string
   bounds: Bounds3
@@ -64,6 +80,7 @@ export interface RoomPrefab {
   exhibitMounts: readonly RoomExhibitMountDefinition[]
   exits: readonly RoomExitDefinition[]
   visuals: readonly RoomVisualDefinition[]
+  decorations?: readonly RoomDecorationDefinition[]
   audioRegions: readonly RoomAudioRegionDefinition[]
 }
 

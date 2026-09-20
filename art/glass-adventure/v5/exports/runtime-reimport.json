@@ -1,0 +1,174 @@
+{
+  "roots": [
+    "decor_crystal_planter",
+    "decor_gallery_frame"
+  ],
+  "objects": [
+    {
+      "name": "decor_crystal_planter",
+      "parent": null,
+      "triangles": 9236,
+      "vertices": 15899,
+      "min": [
+        -0.4869749844074249,
+        -0.4561788737773895,
+        0.0
+      ],
+      "max": [
+        0.4869749844074249,
+        0.4561788737773895,
+        1.3999998569488525
+      ],
+      "materials": [
+        "meshy_crystal_planter_atlas"
+      ]
+    },
+    {
+      "name": "gallery_frame_mesh",
+      "parent": "decor_gallery_frame",
+      "triangles": 6910,
+      "vertices": 9888,
+      "min": [
+        -0.5582624673843384,
+        -0.03839010372757912,
+        -0.8999999761581421
+      ],
+      "max": [
+        0.5582624673843384,
+        0.03839010372757912,
+        0.8999999761581421
+      ],
+      "materials": [
+        "meshy_gallery_frame_atlas"
+      ]
+    },
+    {
+      "name": "gallery_frame_surface",
+      "parent": "decor_gallery_frame",
+      "triangles": 55,
+      "vertices": 48,
+      "min": [
+        -0.3949415385723114,
+        0.017141126096248627,
+        -0.7627828121185303
+      ],
+      "max": [
+        0.3946371376514435,
+        0.017141126096248627,
+        0.7362371683120728
+      ],
+      "materials": [
+        "decor_surface"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "atlas-0",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "atlas-1",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "atlas-2",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "atlas-3",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "atlas-4",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "atlas-5",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "atlas-6",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    },
+    {
+      "name": "atlas-7",
+      "size": [
+        1024,
+        1024
+      ],
+      "packed": true
+    }
+  ],
+  "validation": {
+    "totalTriangles": 16201,
+    "meshPrimitives": 3,
+    "frame": {
+      "root": "decor_gallery_frame",
+      "children": [
+        "gallery_frame_mesh",
+        "gallery_frame_surface"
+      ],
+      "triangles": 6965,
+      "min": [
+        -0.5582624673843384,
+        -0.03839010372757912,
+        -0.8999999761581421
+      ],
+      "max": [
+        0.5582624673843384,
+        0.03839010372757912,
+        0.8999999761581421
+      ],
+      "dimensions": [
+        1.1165249347686768,
+        0.07678020745515823,
+        1.7999999523162842
+      ]
+    },
+    "surface": {
+      "material": "decor_surface",
+      "triangles": 55,
+      "vertices": 48,
+      "planeY": 0.017141126096248627,
+      "planarDeviation": 0.0,
+      "normalMaxError": 0.0,
+      "normalMinDot": 1.0,
+      "occludingCap": {
+        "runtimeFace": 4547,
+        "nearestY": 0.017641127109527588,
+        "farthestY": 0.019809458404779434,
+        "clearance": 0.0005000010132789612
+      }
+    },
+    "errors": []
+  }
+}

@@ -1335,6 +1335,13 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 **Rule:** reject invalid mesh data and remove only verified collapsed components before fracture; then independently reimport the delivered GLB and check every named piece, materials and reconstructed volume.
 **See:** `art/glass-adventure/v3/solid_fracture.py`, `art/glass-adventure/v3/validate_final_shell.py`.
 
+### Check inset depth against all donor faces before blaming mirror normals
+
+**Symptom:** a diagonal survived flat mirror normals and also crossed the replacement painting.
+**Cause:** an overlapping generated-model cap remained in the ornament material, ahead of the flattened inset; inspecting only shared seam edges missed it.
+**Rule:** verify projected face overlap and front-to-back depth in the exported GLB, then confirm the actual in-game painting and mirror. Isolate the inset and give it measured clearance without deforming the rim.
+**See:** `art/glass-adventure/v5/finalize_frame.py` and `v5/exports/runtime-reimport.json`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

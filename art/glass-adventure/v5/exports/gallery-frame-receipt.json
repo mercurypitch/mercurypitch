@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "node": "decor_gallery_frame",
+  "meshNodes": [
+    "gallery_frame_mesh",
+    "gallery_frame_surface"
+  ],
+  "triangles": 6965,
+  "ornamentTriangles": 6910,
+  "surfaceFaces": 55,
+  "surfaceVertices": 48,
+  "surfaceLoopsWithFlatNormal": 165,
+  "surfaceNormalBlender": [
+    0,
+    -1,
+    0
+  ],
+  "surfacePlaneYBlender": 0.017141126096248627,
+  "surfaceDepthClearance": 0.0005,
+  "occludingInsetCap": {
+    "sourceFace": 4600,
+    "faces": 1,
+    "nearestYBlender": 0.01764112673145024,
+    "farthestYBlender": 0.019809458847345873,
+    "allVerticesInInsetTopology": true
+  },
+  "surfacePlanarDeviation": 0.0,
+  "surfaceNormalMaxError": 4.214875207312523e-07,
+  "dimensionsBlender": [
+    1.1165249347686768,
+    0.07678020745515823,
+    1.7999999523162842
+  ],
+  "insetDimensions": [
+    0.7895786903706554,
+    1.4990200021555664
+  ],
+  "ornamentGeometryUvSha256": "f12dbd07772124e9391b6ce28f552b12ad4104b761aa5c6d02bba6c1175bc29a",
+  "ornamentPreservation": {
+    "sourceFaces": 6910,
+    "finalFaces": 6910,
+    "facesExact": true,
+    "coordinatesExact": true,
+    "uvExact": true,
+    "splitNormalMaxError": 0.0004785542306181811
+  },
+  "source": "sources/frame-imported.blend",
+  "sourceSha256": "70b2291125fd0da9a9d7285117fec86cce86136412c1cd0c42a0baeaa7cd50a4",
+  "blend": "sources/gallery-frame-final-v1.blend",
+  "blendSha256": "3ca79df0ecc0b90d57e504ec14b5589bb8b1277ba7d489e231cee7bd7e3763fd",
+  "export": "exports/gallery-frame.glb",
+  "exportSha256": "8fc53cd3401f6ecb0d2450a40452f35f44eb734204cf4b25f103f0b6661de973",
+  "exportBytes": 4044552,
+  "textures": [
+    {
+      "name": "Image_0",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "sRGB",
+      "sha256": "9e205a0d0a2bd092b7d2d2b1f631b088fce047fc596954f842362de4e5e6b8a4"
+    },
+    {
+      "name": "Image_1",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "Non-Color",
+      "sha256": "0afc0d7281ddb237ae5757dc1bacc0ba35dc475e61629ed1c665af81774da717"
+    },
+    {
+      "name": "Image_3",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "sRGB",
+      "sha256": "755f2036a8b7a71f85d6954e6cae309bd4298763e690424b639e51127836109c"
+    },
+    {
+      "name": "normal",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "Non-Color",
+      "sha256": "d6ce8115eef12c21cd88bb954c68bafbd1cac27ca8d31942c52d95cb51af8661"
+    }
+  ],
+  "edits": [
+    "Uniform scale and centre origin",
+    "Preserved donor triangles and ornament PBR atlas",
+    "Assigned inspected 55-face inset to decor_surface with centred 2:3 artwork crop UV",
+    "Isolated the existing inset triangles before editing so ornament vertices, faces and UVs remain unchanged",
+    "Planed and welded only the inset child; retained its 55 donor triangles and per-loop UVs",
+    "Placed the inset 0.5mm ahead of the measured overlapping donor cap while retaining that ornament triangle unchanged",
+    "Restored donor ornament split normals and regenerated flat Blender -Y normals on the planar inset"
+  ]
+}

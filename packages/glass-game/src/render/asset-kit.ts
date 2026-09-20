@@ -12,6 +12,7 @@ import { prepareExhibitAsset } from './exhibit-asset'
 import { createKitInstance } from './kit-instance'
 import type { MuseumMaterials } from './materials'
 import type { createMuseum } from './museum'
+import { getRoomDecorationRecipe, roomDecorationTextureAssets, } from './room-decoration-catalog'
 import { getMuseumSceneRecipe, getMuseumVisualRecipe } from './scene-catalog'
 import type { SurfaceTextureSlot, TextureRecipe } from './texture-recipe'
 import { configureTexture } from './texture-recipe'
@@ -156,7 +157,15 @@ export async function loadMuseumAssets(
     ...(level.presentation?.visuals ?? []).map(
       (visual) => getMuseumVisualRecipe(visual.recipeId).bundle,
     ),
+    ...(level.presentation?.decorations ?? []).map(
+      (decoration) => getRoomDecorationRecipe(decoration.recipeId).bundle,
+    ),
   ])
+  const decorationTextures = new Set(
+    (level.presentation?.decorations ?? []).flatMap((decoration) =>
+      roomDecorationTextureAssets(getRoomDecorationRecipe(decoration.recipeId)),
+    ),
+  )
   const portraitTextures = new Set<string>()
   for (const target of level.breakables) {
     const recipe = getBreakableRenderRecipe(target.variant)
@@ -180,8 +189,19 @@ export async function loadMuseumAssets(
       ),
     ),
   )
+  const decorationTexturesReady = Promise.all(
+    [...decorationTextures].map((id) =>
+      loadTexture({ asset: id, interpretation: 'color' }, (texture) =>
+        museum.setDecorationTexture(id, texture),
+      ),
+    ),
+  )
+  const decorationSurfacesReady = Promise.all([
+    materialsReady,
+    decorationTexturesReady,
+  ])
   const bundleLoads = [...bundles].map((bundle) =>
-    loadBundle(bundle, materialsReady, (scene, resolvedBundle) => {
+    loadBundle(bundle, decorationSurfacesReady, (scene, resolvedBundle) => {
       museum.setKit(scene, bundle)
       installTargets(scene, bundle, resolvedBundle)
     }),
@@ -210,5 +230,11 @@ export async function loadMuseumAssets(
       bundlesReady,
     ),
   )
-  await Promise.all([materialsReady, bundlesReady, skyReady, ...portraitLoads])
+  await Promise.all([
+    materialsReady,
+    decorationTexturesReady,
+    bundlesReady,
+    skyReady,
+    ...portraitLoads,
+  ])
 }

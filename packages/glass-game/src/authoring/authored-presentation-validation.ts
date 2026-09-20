@@ -109,14 +109,24 @@ export function validateVisualCoverage(
       noneCompleted: [...(solid.activation?.noneCompleted ?? [])].sort(),
     })
   }
-  for (const visual of level.presentation?.visuals ?? []) {
-    const coveredSolidIds = visual.coveredSolidIds ?? []
+  const coveredItems = [
+    ...(level.presentation?.visuals ?? []).map((item) => ({
+      kind: 'visual' as const,
+      item,
+    })),
+    ...(level.presentation?.decorations ?? []).map((item) => ({
+      kind: 'decoration' as const,
+      item,
+    })),
+  ]
+  for (const { kind, item } of coveredItems) {
+    const coveredSolidIds = item.coveredSolidIds ?? []
     for (const solidId of coveredSolidIds)
       if (!solids.has(solidId))
         diagnostic(
           diagnostics,
           'missing-reference',
-          `presentation.visuals.${visual.id}.coveredSolidIds`,
+          `presentation.${kind}s.${item.id}.coveredSolidIds`,
           `Covered solid "${solidId}" is absent from the compiled level.`,
         )
     const activationKeys = new Set(
@@ -128,9 +138,11 @@ export function validateVisualCoverage(
     if (activationKeys.size > 1)
       diagnostic(
         diagnostics,
-        'mismatched-visual-activation',
-        `presentation.visuals.${visual.id}.coveredSolidIds`,
-        'One visual cannot cover solids with different activation rules.',
+        kind === 'visual'
+          ? 'mismatched-visual-activation'
+          : 'mismatched-decoration-activation',
+        `presentation.${kind}s.${item.id}.coveredSolidIds`,
+        `One ${kind} cannot cover solids with different activation rules.`,
       )
   }
 }

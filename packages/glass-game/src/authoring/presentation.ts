@@ -11,6 +11,37 @@ export function compilePresentation(
   rooms: ReadonlyMap<string, CompiledRoom>,
   usedRecipes: ReadonlySet<string>,
 ): LevelPresentationDefinition {
+  const floorArt = [...rooms.values()].flatMap((room) => {
+    const selection = room.placement.floorArt
+    if (selection === undefined) return []
+    return room.platforms.map((platform) => ({
+      platformId: platform.id,
+      recipeId: selection.recipeId,
+      ...(selection.palette === undefined
+        ? {}
+        : { palette: selection.palette }),
+    }))
+  })
+  const decorations = [...rooms.values()].flatMap((room) => {
+    const roomId = runtimeRoomId(
+      source,
+      room.placement.id,
+      'room',
+      room.prefab.id,
+    )
+    return sortedById(room.prefab.decorations ?? []).map((decoration) => ({
+      id: runtimeRoomId(source, room.placement.id, 'decoration', decoration.id),
+      roomId,
+      recipeId: decoration.recipeId,
+      position: transformPoint(decoration.position, room.placement),
+      yaw: transformYaw(decoration.yaw, room.placement.yawQuarterTurns),
+      scale: decoration.scale ?? 1,
+      coveredSolidIds: decoration.coversSolidIds?.flatMap((id) => {
+        const runtimeId = room.solidIds.get(id)
+        return runtimeId === undefined ? [] : [runtimeId]
+      }),
+    }))
+  })
   return {
     worldBounds: { ...source.worldBounds },
     lightBounds: { ...source.lightBounds },
@@ -44,6 +75,8 @@ export function compilePresentation(
         }),
       })),
     ),
+    ...(decorations.length === 0 ? {} : { decorations }),
+    ...(floorArt.length === 0 ? {} : { floorArt }),
     assetRecipeIds: [...usedRecipes].sort(),
   }
 }

@@ -48,6 +48,36 @@ function codes(
 }
 
 describe('authoring validation', () => {
+  it('rejects unknown floor art recipes and palettes', () => {
+    const [arrival, ...rooms] = FOUNDATION_STRAIGHT_SOURCE.rooms
+    const diagnostics = diagnosticsFrom({
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      rooms: [
+        {
+          ...arrival,
+          floorArt: {
+            recipeId: 'random-floor' as 'quiet-marble',
+            palette: 'neon' as 'neutral',
+          },
+        },
+        ...rooms,
+      ],
+    })
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'invalid-presentation',
+          path: 'rooms.arrival.floorArt.recipeId',
+        }),
+        expect.objectContaining({
+          code: 'invalid-presentation',
+          path: 'rooms.arrival.floorArt.palette',
+        }),
+      ]),
+    )
+  })
+
   it('accepts bounded level movement tuning and rejects unsafe budgets', () => {
     const movement = {
       walkSpeed: 1.55,
@@ -511,6 +541,61 @@ describe('authoring validation', () => {
         code: 'mismatched-visual-activation',
         path: expect.stringContaining('coveredSolidIds'),
       }),
+    )
+  })
+
+  it('rejects malformed decorations and collision owned by another room visual', () => {
+    const room = foundationRoom()
+    const catalog = replaceFoundationRoom({
+      visuals: [
+        {
+          id: 'wall-art',
+          recipeId: 'deck',
+          position: { x: 0, y: 0, z: 0 },
+          yaw: 0,
+          coversSolidIds: ['north-west-wall'],
+        },
+      ],
+      decorations: [
+        {
+          id: 'bad-planter',
+          recipeId: 'missing-decoration',
+          position: { x: Number.NaN, y: 0, z: 0 },
+          yaw: 0,
+          scale: 0,
+          coversSolidIds: ['north-west-wall'],
+        },
+        {
+          id: 'sealed-art',
+          recipeId: 'deck',
+          position: { x: 0, y: 1, z: 0 },
+          yaw: 0,
+          coversSolidIds: [room.ports[0].sealSolidId],
+        },
+      ],
+    })
+
+    const diagnostics = diagnosticsFrom(FOUNDATION_STRAIGHT_SOURCE, catalog)
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'invalid-transform',
+          path: expect.stringContaining('decorations.bad-planter'),
+        }),
+        expect.objectContaining({
+          code: 'missing-asset-recipe',
+          path: expect.stringContaining('decorations.bad-planter.recipeId'),
+        }),
+        expect.objectContaining({
+          code: 'duplicate-reference',
+          message: expect.stringContaining('already covered by visual'),
+        }),
+        expect.objectContaining({
+          code: 'invalid-presentation',
+          message: expect.stringContaining('Connection seal'),
+        }),
+      ]),
     )
   })
 

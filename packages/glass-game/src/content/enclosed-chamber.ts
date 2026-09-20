@@ -7,7 +7,7 @@ import { ENCLOSED_CHAMBER_HALF, ENCLOSED_MUSEUM_AUTHORING_CATALOG, } from './enc
 export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
   levelId: 'glassworks-chamber',
   layoutId: 'chamber',
-  contentRevision: 3,
+  contentRevision: 4,
   title: 'First Light Gallery',
   movement: {
     walkSpeed: 1.55,
@@ -61,6 +61,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-chamber',
       translate: { x: 0, y: 0, z: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'hero-petal', palette: 'neutral' },
       audioSceneId: 'museum',
     },
     {
@@ -68,6 +69,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { x: 7.471119914054871, y: 0, z: 0 },
       yawQuarterTurns: 1,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -75,6 +77,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-corner',
       translate: { x: 12.096037511825562, y: 0, z: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -82,6 +85,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-reveal',
       translate: { x: 12.096037511825562, y: 0, z: 4.624917597770692 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -89,6 +93,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-terrace',
       translate: { x: 12.096037511825562, y: 0, z: 9.249835195541383 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'garden' },
       audioSceneId: 'garden',
     },
     {

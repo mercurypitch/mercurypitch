@@ -134,6 +134,16 @@ function transformedFixture(): {
         coversSolidIds: ['wall'],
       },
     ],
+    decorations: [
+      {
+        id: 'planter',
+        recipeId: 'decor',
+        position: { x: 0.5, y: 0, z: 1 },
+        yaw: Math.PI / 2,
+        scale: 1.2,
+        coversSolidIds: ['column'],
+      },
+    ],
     audioRegions: [
       {
         id: 'room-tone',
@@ -170,6 +180,7 @@ function transformedFixture(): {
         translate: { x: 10, y: 2, z: -4 },
         yawQuarterTurns: 1,
         audioSceneId: 'museum',
+        floorArt: { recipeId: 'orbital-rings', palette: 'portrait' },
       },
     ],
     exhibits: [
@@ -228,7 +239,7 @@ function transformedFixture(): {
           },
         },
       },
-      availableAssetRecipeIds: ['deck', 'goblet', 'marker'],
+      availableAssetRecipeIds: ['deck', 'goblet', 'marker', 'decor'],
     },
   }
 }
@@ -306,6 +317,22 @@ describe('composeLevel', () => {
       yaw: Math.PI / 2,
       coveredSolidIds: ['transform-proof/turned/room-z/solid/wall'],
     })
+    expect(level.presentation?.decorations?.[0]).toEqual({
+      id: 'transform-proof/turned/room-z/decoration/planter',
+      roomId: 'transform-proof/turned/room-z/room/asymmetric-room',
+      recipeId: 'decor',
+      position: { x: 11, y: 2, z: -4.5 },
+      yaw: Math.PI,
+      scale: 1.2,
+      coveredSolidIds: ['transform-proof/turned/room-z/solid/column'],
+    })
+    expect(level.presentation?.floorArt).toEqual([
+      {
+        platformId: 'transform-proof/turned/room-z/platform/floor',
+        recipeId: 'orbital-rings',
+        palette: 'portrait',
+      },
+    ])
     expect(level.guidance).toMatchObject({
       subtitle: 'A turned room',
       encounterSuccessNotices: [

@@ -173,7 +173,7 @@ describe('Glassworks Journey blockout', () => {
     expect(GLASSWORKS_JOURNEY.authored).toEqual({
       levelId: 'glassworks-journey',
       layoutId: 'journey',
-      contentRevision: 1,
+      contentRevision: 2,
     })
     expect(GLASSWORKS_JOURNEY).toMatchObject({
       title: 'Glassworks Journey',
@@ -264,6 +264,48 @@ describe('Glassworks Journey blockout', () => {
           (visual) => visual.coveredSolidIds?.includes(gateId) === true,
         )?.coveredSolidIds,
       ).toEqual([gateId])
+  })
+
+  it('authors distinct gallery dressings without blocking the continuous route', () => {
+    const decorations = GLASSWORKS_JOURNEY.presentation?.decorations ?? []
+    expect(decorations).toHaveLength(13)
+    expect(
+      decorations.filter((item) => item.recipeId === 'crystal-planter-v5'),
+    ).toHaveLength(6)
+    expect(
+      decorations.filter((item) => item.recipeId === 'gallery-mirror-v5'),
+    ).toHaveLength(2)
+    expect(GLASSWORKS_JOURNEY.presentation?.floorArt).toHaveLength(16)
+
+    const solids = new Map(
+      (GLASSWORKS_JOURNEY.solids ?? []).map((solid) => [solid.id, solid]),
+    )
+    const covered = decorations.flatMap(
+      (decoration) => decoration.coveredSolidIds ?? [],
+    )
+    expect(covered).toHaveLength(6)
+    expect(new Set(covered).size).toBe(covered.length)
+    for (const id of covered)
+      expect(solids.get(id)).toMatchObject({
+        shape: 'cylinder',
+        radiusTop: 0.29,
+        radiusBottom: 0.17,
+        thickness: 0.48,
+      })
+
+    const gardenPlanters = decorations.filter(
+      (item) =>
+        item.recipeId === 'crystal-planter-v5' && item.id.includes('/garden/'),
+    )
+    expect(gardenPlanters).toHaveLength(4)
+    for (const planter of gardenPlanters) {
+      expect(
+        Math.abs(planter.position.x - GLASSWORKS_JOURNEY_ROUTE.garden.x),
+      ).toBeGreaterThan(3)
+      expect(
+        Math.abs(planter.position.x - GLASSWORKS_JOURNEY_ROUTE.garden.x),
+      ).toBeLessThan(4)
+    }
   })
 
   it('blocks each fresh gate, opens the four required route beats and exits without optional exhibits', () => {

@@ -115,6 +115,7 @@ export function validatePrefab(
   uniqueIds(prefab.exhibitMounts, `${path}.exhibitMounts`, diagnostics)
   uniqueIds(prefab.exits, `${path}.exits`, diagnostics)
   uniqueIds(prefab.visuals, `${path}.visuals`, diagnostics)
+  uniqueIds(prefab.decorations ?? [], `${path}.decorations`, diagnostics)
   uniqueIds(prefab.audioRegions, `${path}.audioRegions`, diagnostics)
 
   const platformIds = new Set(prefab.platforms.map((item) => item.id))
@@ -283,6 +284,59 @@ export function validatePrefab(
         'Exit bounds and top must be finite, with ordered horizontal bounds.',
       )
   const coveredSolidOwners = new Map<string, string>()
+  const portSealIds = new Set(prefab.ports.map((port) => port.sealSolidId))
+  const validateCoveredSolids = (
+    itemKind: 'visual' | 'decoration',
+    itemId: string,
+    coveredSolidIds: readonly string[],
+  ) => {
+    const itemOwner = `${itemKind} "${itemId}"`
+    const covered = new Set<string>()
+    for (const solidId of coveredSolidIds) {
+      const referencePath = `${path}.${itemKind}s.${itemId}.coversSolidIds`
+      if (covered.has(solidId))
+        diagnostic(
+          diagnostics,
+          'duplicate-reference',
+          referencePath,
+          `Solid "${solidId}" is covered more than once by this ${itemKind}.`,
+        )
+      covered.add(solidId)
+      const owner = coveredSolidOwners.get(solidId)
+      if (owner !== undefined && owner !== itemOwner)
+        diagnostic(
+          diagnostics,
+          'duplicate-reference',
+          referencePath,
+          `Solid "${solidId}" is already covered by ${owner}.`,
+        )
+      coveredSolidOwners.set(solidId, itemOwner)
+      if (portSealIds.has(solidId))
+        diagnostic(
+          diagnostics,
+          'invalid-presentation',
+          referencePath,
+          `Connection seal "${solidId}" cannot be covered by room art.`,
+        )
+      if (!solidIds.has(solidId))
+        diagnostic(
+          diagnostics,
+          'missing-reference',
+          referencePath,
+          `Unknown local solid "${solidId}".`,
+        )
+      else {
+        const solid = prefab.solids.find((item) => item.id === solidId)!
+        if (solid.presentation === undefined && solid.fallback === undefined)
+          diagnostic(
+            diagnostics,
+            'invalid-presentation',
+            referencePath,
+            `Covered solid "${solidId}" needs a visible fallback proxy.`,
+          )
+      }
+    }
+  }
   for (const visual of prefab.visuals) {
     const raw = visual as typeof visual & Record<string, unknown>
     if (raw.scale !== undefined)
@@ -306,43 +360,33 @@ export function validatePrefab(
       used,
       diagnostics,
     )
-    const covered = new Set<string>()
-    for (const solidId of visual.coversSolidIds ?? []) {
-      if (covered.has(solidId))
-        diagnostic(
-          diagnostics,
-          'duplicate-reference',
-          `${path}.visuals.${visual.id}.coversSolidIds`,
-          `Solid "${solidId}" is covered more than once by this visual.`,
-        )
-      covered.add(solidId)
-      const owner = coveredSolidOwners.get(solidId)
-      if (owner !== undefined && owner !== visual.id)
-        diagnostic(
-          diagnostics,
-          'duplicate-reference',
-          `${path}.visuals.${visual.id}.coversSolidIds`,
-          `Solid "${solidId}" is already covered by visual "${owner}".`,
-        )
-      coveredSolidOwners.set(solidId, visual.id)
-      if (!solidIds.has(solidId))
-        diagnostic(
-          diagnostics,
-          'missing-reference',
-          `${path}.visuals.${visual.id}.coversSolidIds`,
-          `Unknown local solid "${solidId}".`,
-        )
-      else {
-        const solid = prefab.solids.find((item) => item.id === solidId)!
-        if (solid.presentation === undefined && solid.fallback === undefined)
-          diagnostic(
-            diagnostics,
-            'invalid-presentation',
-            `${path}.visuals.${visual.id}.coversSolidIds`,
-            `Covered solid "${solidId}" needs a visible fallback proxy.`,
-          )
-      }
-    }
+    validateCoveredSolids('visual', visual.id, visual.coversSolidIds ?? [])
+  }
+  for (const decoration of prefab.decorations ?? []) {
+    if (
+      !finitePoint(decoration.position) ||
+      !Number.isFinite(decoration.yaw) ||
+      (decoration.scale !== undefined &&
+        (!Number.isFinite(decoration.scale) || decoration.scale <= 0))
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-transform',
+        `${path}.decorations.${decoration.id}`,
+        'Decoration position, yaw and positive scale must be finite.',
+      )
+    recordRecipe(
+      decoration.recipeId,
+      `${path}.decorations.${decoration.id}.recipeId`,
+      available,
+      used,
+      diagnostics,
+    )
+    validateCoveredSolids(
+      'decoration',
+      decoration.id,
+      decoration.coversSolidIds ?? [],
+    )
   }
   for (const region of prefab.audioRegions)
     if (!validBounds3(region.bounds))

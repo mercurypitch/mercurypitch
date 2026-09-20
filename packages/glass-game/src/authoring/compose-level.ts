@@ -1,7 +1,7 @@
 // Level composer — coordinate focused authoring stages into one validated runtime definition.
 
 import type { LevelDefinition } from '../contracts'
-import { LEVEL_MOVEMENT_LIMITS } from '../contracts'
+import { FLOOR_ART_PALETTE_IDS, FLOOR_ART_RECIPE_IDS, LEVEL_MOVEMENT_LIMITS, } from '../contracts'
 import { applyActivationOverrides } from './activation-overrides'
 import { compileGuidance, validateVisualCoverage, } from './authored-presentation-validation'
 import { compileRoom } from './compile-room'
@@ -280,9 +280,31 @@ export function composeLevel(
   validateSourceHeader(source, diagnostics)
 
   const roomPlacements = sortedById(source.rooms)
+  const floorArtRecipeIds = new Set<string>(FLOOR_ART_RECIPE_IDS)
+  const floorArtPaletteIds = new Set<string>(FLOOR_ART_PALETTE_IDS)
   const invalidRoomIds = new Set<string>()
   const validatedPrefabs = new Set<string>()
   for (const placement of roomPlacements) {
+    if (
+      placement.floorArt !== undefined &&
+      !floorArtRecipeIds.has(placement.floorArt.recipeId)
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-presentation',
+        `rooms.${placement.id}.floorArt.recipeId`,
+        `Unknown floor art recipe "${placement.floorArt.recipeId}".`,
+      )
+    if (
+      placement.floorArt?.palette !== undefined &&
+      !floorArtPaletteIds.has(placement.floorArt.palette)
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-presentation',
+        `rooms.${placement.id}.floorArt.palette`,
+        `Unknown floor art palette "${placement.floorArt.palette}".`,
+      )
     try {
       assertSupportedRoomTransform(placement, `rooms.${placement.id}`)
     } catch (error) {

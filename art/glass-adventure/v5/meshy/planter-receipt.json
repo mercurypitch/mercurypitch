@@ -1,0 +1,9 @@
+{
+  "outcome": "SUCCEEDED",
+  "task_id": "01a0bfa4-acf2-744d-934a-9297eca5d7b1",
+  "status": "SUCCEEDED",
+  "progress": 100,
+  "wait_time_seconds": 16,
+  "poll_count": 2,
+  "consumed_credits": 30
+}

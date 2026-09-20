@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "assetId": "crystal-planter-v5",
+  "blender": "5.2.2 LTS",
+  "source": {
+    "blend": "sources/planter-imported.blend",
+    "blendBytes": 15452419,
+    "blendSha256": "34b54a9c4137c6edab7722e6a81a8a2920fa4c2247e85fa6a81bde54e6aa1657",
+    "donorGlb": "meshy/planter-donor.glb",
+    "donorGlbBytes": 15411556,
+    "donorGlbSha256": "14a2577a3506878d50ef8801bf2164eb7b16aa429a114b359b63d80cbdbfb0c4",
+    "vertices": 15898,
+    "triangles": 9236
+  },
+  "authoring": {
+    "rootNode": "decor_crystal_planter",
+    "mesh": "decor_crystal_planter_mesh",
+    "material": "meshy_crystal_planter_atlas",
+    "vertices": 15898,
+    "polygons": 9236,
+    "triangles": 9236,
+    "uvLayers": 1,
+    "sourceBoundsBlenderZUp": {
+      "min": [
+        -0.6618120074272156,
+        -0.6155300140380859,
+        -0.9494360089302063
+      ],
+      "max": [
+        0.6557329893112183,
+        0.6186939477920532,
+        0.9444630146026611
+      ],
+      "dimensions": [
+        1.3175449967384338,
+        1.2342239618301392,
+        1.8938990235328674
+      ]
+    },
+    "finalBoundsBlenderZUp": {
+      "min": [
+        -0.4869749844074249,
+        -0.4561788737773895,
+        0.0
+      ],
+      "max": [
+        0.4869749844074249,
+        0.4561788737773895,
+        1.3999998569488525
+      ],
+      "dimensions": [
+        0.9739499688148499,
+        0.912357747554779,
+        1.3999998569488525
+      ]
+    },
+    "uniformScale": 0.7392157568086437,
+    "uniformTransformMaxErrorMetres": 0.0,
+    "topologySha256Before": "750818c7b6fd164f84c4f85f47987a681c0496c5999f3848d9e704b88b5148d8",
+    "topologySha256After": "750818c7b6fd164f84c4f85f47987a681c0496c5999f3848d9e704b88b5148d8",
+    "uvSha256Before": "eeb1e9797f8488f629dc3092e2531873ba06b3d725c13cabd02fc89121c61c7f",
+    "uvSha256After": "eeb1e9797f8488f629dc3092e2531873ba06b3d725c13cabd02fc89121c61c7f",
+    "blend": "sources/crystal-planter-final-v1.blend",
+    "blendBytes": 15451523,
+    "blendSha256": "9d60d06d6bf11832e76b105a19943dabb3bc3cc57f592ccfa918159ee7c14098",
+    "packedTextureDimensions": [
+      2048,
+      2048
+    ]
+  },
+  "playable": {
+    "glb": "exports/crystal-planter.glb",
+    "glbBytes": 5196452,
+    "glbSha256": "0e0054fb80ea69b3773f814c0aac8203eb14ab1906fc8af33c7599330a95352b",
+    "coordinates": "GLB +Y up, +Z front, bottom-centre origin, metres",
+    "boundsReimportedBlenderZUp": {
+      "min": [
+        -0.4869749844074249,
+        -0.4561788737773895,
+        0.0
+      ],
+      "max": [
+        0.4869749844074249,
+        0.4561788737773895,
+        1.3999998569488525
+      ],
+      "dimensions": [
+        0.9739499688148499,
+        0.912357747554779,
+        1.3999998569488525
+      ]
+    },
+    "verticesReimported": 15899,
+    "trianglesReimported": 9236,
+    "textures": [
+      {
+        "sourceName": "Image_0",
+        "role": "basecolor",
+        "format": "JPEG",
+        "quality": 95,
+        "colorSpace": "sRGB",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 623252,
+        "sha256": "f30319781d1786b486943590420921ba459e87beb6c1befc336ec73fdb854f16"
+      },
+      {
+        "sourceName": "Image_1",
+        "role": "orm",
+        "format": "PNG",
+        "quality": null,
+        "colorSpace": "Non-Color",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 1333312,
+        "sha256": "33408ae5fed3c4e1a4b2f3a9719d85ab4c14d4cfca80fd25d6645355f0e3a392"
+      },
+      {
+        "sourceName": "Image_3",
+        "role": "emission",
+        "format": "JPEG",
+        "quality": 95,
+        "colorSpace": "sRGB",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 257984,
+        "sha256": "a1741095f6b262fc218c0a6b1329092047b8ddb6f01f41080ec0140d35812744"
+      },
+      {
+        "sourceName": "normal",
+        "role": "normal",
+        "format": "PNG",
+        "quality": null,
+        "colorSpace": "Non-Color",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 2161195,
+        "sha256": "a885a6f6456aa974755c980ce2f6c685256e04c140864298906833ab0f2afec0"
+      }
+    ]
+  },
+  "proof": {
+    "image": "proofs/crystal-planter-front-three-quarter.png",
+    "bytes": 727418,
+    "sha256": "3c276b62935a350585d2d0ea9208969433d624f7679ed10f9bdcfcdb228da0ce",
+    "view": "Front three-quarter studio render from packed 2K authoring textures"
+  },
+  "collisionProxyRecommendation": {
+    "shape": "cylinder",
+    "radiusTopMetres": 0.29,
+    "radiusBottomMetres": 0.17,
+    "topMetres": 0.48,
+    "thicknessMetres": 0.48,
+    "scope": "Marble-and-brass bowl only; foliage and crystal fronds remain nonblocking"
+  },
+  "edits": [
+    "Uniformly scaled the donor to 1.4 metres high",
+    "Moved the origin to the horizontal centre and lowest geometry point",
+    "Renamed the root, mesh and original atlas material for stable reuse",
+    "Preserved donor topology, UVs and packed 2K PBR atlas",
+    "Exported fresh 1K JPEG colour and lossless PNG data texture datablocks"
+  ]
+}

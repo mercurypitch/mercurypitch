@@ -6,18 +6,27 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
 
-const state = vi.hoisted(() => ({
-  render: vi.fn(),
-  listeners: new Map<string, EventListener>(),
-  loseContext: false,
-  assetFailure: null as Error | null,
-  museumFailure: null as Error | null,
-  environmentLoadFailure: null as Error | null,
-  rendererDispose: vi.fn(),
-  forceContextLoss: vi.fn(),
-  canvasRemove: vi.fn(),
-  mercDispose: vi.fn(),
-}))
+const state = vi.hoisted(() => {
+  const visibleRoomIds = new Set<string>()
+  return {
+    render: vi.fn(),
+    listeners: new Map<string, EventListener>(),
+    loseContext: false,
+    assetFailure: null as Error | null,
+    museumFailure: null as Error | null,
+    environmentLoadFailure: null as Error | null,
+    rendererDispose: vi.fn(),
+    forceContextLoss: vi.fn(),
+    canvasRemove: vi.fn(),
+    mercDispose: vi.fn(),
+    runtimeRoomId: undefined as string | undefined,
+    visibleRoomIds,
+    updateRoomVisibility: vi.fn(() => ({
+      visibleRoomIds,
+      fallbackAllVisible: false,
+    })),
+  }
+})
 vi.mock('three', async (original) => ({
   ...(await original<typeof ThreeTypes>()),
   WebGLRenderer: class {
@@ -78,6 +87,9 @@ vi.mock('./museum', () => ({
       root: new Group(),
       update: vi.fn(),
       cameraOccluders: () => [],
+      roomIdForRuntimeId: () => state.runtimeRoomId,
+      updateRoomVisibility: state.updateRoomVisibility,
+      dispose: vi.fn(),
       materialLibrary: { materials: new Set(), dispose: vi.fn() },
     }
   },
@@ -115,6 +127,9 @@ afterEach(() => {
   state.forceContextLoss.mockClear()
   state.canvasRemove.mockClear()
   state.mercDispose.mockClear()
+  state.updateRoomVisibility.mockClear()
+  state.runtimeRoomId = undefined
+  state.visibleRoomIds.clear()
 })
 
 it.each([false, true])(
@@ -132,6 +147,9 @@ it.each([false, true])(
     renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016)
     expect(onContextLost).toHaveBeenCalledTimes(contextLoss ? 1 : 0)
     expect(state.render).toHaveBeenCalledTimes(contextLoss ? 0 : 1)
+    expect(state.updateRoomVisibility).toHaveBeenCalledTimes(
+      contextLoss ? 0 : 1,
+    )
     if (contextLoss) expect(onAssetError).not.toHaveBeenCalled()
     else
       expect(onAssetError).toHaveBeenCalledWith(
@@ -219,7 +237,75 @@ it('aims both authored lights and the camera range from translated bounds', asyn
   expect(lights).toHaveLength(2)
   for (const light of lights)
     expect(light.target.position.toArray()).toEqual([106, 2, -43])
+  expect(lights.find((light) => light.castShadow)?.shadow.normalBias).toBe(
+    0.018,
+  )
   expect(camera.far).toBeGreaterThan(50)
   expect(camera.far).toBeLessThan(70)
+  renderer.dispose()
+})
+
+it('scales the shadow receiver offset to a long authored light frame', async () => {
+  const level = {
+    ...GLASSWORKS,
+    id: 'long-shadow-frame',
+    presentation: {
+      worldBounds: {
+        minX: -5,
+        maxX: 30,
+        minY: -2,
+        maxY: 10,
+        minZ: -5,
+        maxZ: 72,
+      },
+      lightBounds: {
+        minX: -4.7,
+        maxX: 27,
+        minY: 0,
+        maxY: 8,
+        minZ: -4.7,
+        maxZ: 70,
+      },
+      rooms: [],
+      audioRegions: [],
+      visuals: [],
+      assetRecipeIds: [],
+    },
+  }
+  const renderer = createGlassRenderer(browserFixture(), level, (id) => id)
+  await renderer.ready
+  renderer.render(createGlassGame(level).snapshot(), 0.016)
+
+  const scene = state.render.mock.calls[0]![0] as Scene
+  const key = scene.children.find(
+    (child): child is DirectionalLight =>
+      child instanceof DirectionalLight && child.castShadow,
+  )
+  if (key === undefined) throw new Error('Missing directional shadow light.')
+  const extent = key.shadow.camera.right
+  expect(extent).toBeGreaterThan(40)
+  expect(key.shadow.normalBias).toBeCloseTo((extent * 2 * 0.75) / 1024)
+  expect(key.shadow.normalBias).toBeGreaterThan(0.06)
+  renderer.dispose()
+})
+
+it('applies the selected room visibility to independently rendered vessels', async () => {
+  state.runtimeRoomId = 'hidden-room'
+  const level = GLASSWORKS
+  const renderer = createGlassRenderer(browserFixture(), level, (id) => id)
+  await renderer.ready
+  const snapshot = createGlassGame(level).snapshot()
+
+  renderer.render(snapshot, 0.016)
+  const scene = state.render.mock.calls[0]![0] as Scene
+  const vessels = scene.children.filter((child) =>
+    child.name.startsWith('vessel-'),
+  )
+  expect(vessels.length).toBeGreaterThan(0)
+  expect(vessels.every((vessel) => !vessel.visible)).toBe(true)
+
+  state.visibleRoomIds.add('hidden-room')
+  renderer.render(snapshot, 0.016)
+  expect(vessels.every((vessel) => vessel.visible)).toBe(true)
   renderer.dispose()
 })

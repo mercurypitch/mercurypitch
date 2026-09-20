@@ -58,7 +58,7 @@ export const GLASSWORKS_JOURNEY_ROUTE = {
 export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
   levelId: 'glassworks-journey',
   layoutId: 'journey',
-  contentRevision: 1,
+  contentRevision: 2,
   title: 'Glassworks Journey',
   movement: {
     walkSpeed: 1.55,
@@ -96,6 +96,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-chamber',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.vestibule, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'hero-petal', palette: 'neutral' },
       audioSceneId: 'museum',
     },
     {
@@ -103,6 +104,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.windowEast, y: 0 },
       yawQuarterTurns: 1,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -110,6 +112,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-corner',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.windowTurn, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -117,14 +120,16 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.windowNorth, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
       id: 'garden',
-      prefabId: 'glassworks-journey-gallery',
+      prefabId: 'glassworks-journey-garden',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.garden, y: 0 },
       yawQuarterTurns: 0,
       checkpointRequiresCompleted: { entry: ['vestibule-goblet'] },
+      floorArt: { recipeId: 'sound-wave', palette: 'garden' },
       audioSceneId: 'garden',
     },
     {
@@ -132,6 +137,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.gardenPassage, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'garden',
     },
     {
@@ -139,6 +145,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-corner',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.eastTurn, y: 0 },
       yawQuarterTurns: 2,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -146,6 +153,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.eastPassage, y: 0 },
       yawQuarterTurns: 1,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -153,6 +161,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-corner',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.northTurn, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
@@ -160,14 +169,16 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.archiveApproach, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'gallery',
     },
     {
       id: 'archive',
-      prefabId: 'glassworks-journey-gallery',
+      prefabId: 'glassworks-journey-archive',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.archive, y: 0 },
       yawQuarterTurns: 0,
       checkpointRequiresCompleted: { entry: ['garden-decanter'] },
+      floorArt: { recipeId: 'angular-parquet', palette: 'archive' },
       audioSceneId: 'gallery',
     },
     {
@@ -175,14 +186,16 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.portraitPassage, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'museum',
     },
     {
       id: 'portrait',
-      prefabId: 'glassworks-journey-gallery',
+      prefabId: 'glassworks-journey-portrait',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.portrait, y: 0 },
       yawQuarterTurns: 0,
       checkpointRequiresCompleted: { entry: ['archive-carafe'] },
+      floorArt: { recipeId: 'orbital-rings', palette: 'portrait' },
       audioSceneId: 'museum',
     },
     {
@@ -190,6 +203,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-entry',
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.panoramaPassage, y: 0 },
       yawQuarterTurns: 0,
+      floorArt: { recipeId: 'quiet-marble', palette: 'neutral' },
       audioSceneId: 'garden',
     },
     {
@@ -198,6 +212,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       translate: { ...GLASSWORKS_JOURNEY_ROUTE.panorama, y: 0 },
       yawQuarterTurns: 0,
       checkpointRequiresCompleted: { panorama: ['portrait-finale'] },
+      floorArt: { recipeId: 'quiet-marble', palette: 'garden' },
       audioSceneId: 'garden',
     },
     {

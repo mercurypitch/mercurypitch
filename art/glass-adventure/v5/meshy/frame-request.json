@@ -1,0 +1,16 @@
+{
+  "ai_model": "meshy-6",
+  "file_path": "/home/maff/.codex/worktrees/00ad/mercurypitch-agent/art/glass-adventure/v5/concepts/gallery-frame.png",
+  "should_texture": true,
+  "enable_pbr": true,
+  "should_remesh": true,
+  "target_polycount": 7000,
+  "topology": "triangle",
+  "target_formats": [
+    "glb"
+  ],
+  "texture_prompt": "Elegant champagne brass art nouveau frame with sculpted fern and sound-wave relief, six jade glass cabochons. Interior is a flat unadorned dark petrol inset panel, separate from the frame. Clean neutral studio PBR materials, no floor, no scene, preserve shape and ornaments.",
+  "remove_lighting": true,
+  "save_pre_remeshed_model": true,
+  "response_format": "json"
+}

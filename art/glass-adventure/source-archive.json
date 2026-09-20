@@ -2676,8 +2676,278 @@
       "path": "v4/architecture/proofs/journey-blockout/800-portrait.png",
       "bytes": 607775,
       "sha256": "743a18a8913d4d1e803906880330808bfe73f8076ac9934b10e02a28a00e1503"
+    },
+    {
+      "path": "v5/concepts/crystal-fern-planter.png",
+      "bytes": 1967640,
+      "sha256": "2424ab57beaa9821b6941b779430a8f849072a41846b8e22f42984030a1a1b24"
+    },
+    {
+      "path": "v5/concepts/gallery-frame.png",
+      "bytes": 1950947,
+      "sha256": "da3e36f2e7c00ab6eca35a471d9cd2248f14dd1ef8e0463ce2d499a3d4133323"
+    },
+    {
+      "path": "v5/exports/crystal-planter.glb",
+      "bytes": 5196452,
+      "sha256": "0e0054fb80ea69b3773f814c0aac8203eb14ab1906fc8af33c7599330a95352b"
+    },
+    {
+      "path": "v5/exports/gallery-frame.glb",
+      "bytes": 4044552,
+      "sha256": "8fc53cd3401f6ecb0d2450a40452f35f44eb734204cf4b25f103f0b6661de973"
+    },
+    {
+      "path": "v5/meshy/frame-donor.glb",
+      "bytes": 11015980,
+      "sha256": "2cee6438154cff0cfaafc4b142f0a6f3337a538f00bd774b7f6800b1d14437a6"
+    },
+    {
+      "path": "v5/meshy/planter-donor.glb",
+      "bytes": 15411556,
+      "sha256": "14a2577a3506878d50ef8801bf2164eb7b16aa429a114b359b63d80cbdbfb0c4"
+    },
+    {
+      "path": "v5/paintings/archive-master.png",
+      "bytes": 3119587,
+      "sha256": "4d570e4620639f1a654ce62966383aaafafc91a68bfa2eb3c8cf2b3b62b2da77"
+    },
+    {
+      "path": "v5/paintings/garden-master.png",
+      "bytes": 3289542,
+      "sha256": "641c37231fd9ec00acc739076135bf4c9f2f8aa067a9b7966c579eb86bf33dfe"
+    },
+    {
+      "path": "v5/paintings/portrait-master.png",
+      "bytes": 3391592,
+      "sha256": "b63b5891c626866d226c63b13e1e94ae3e519b4b72a96ea3101ec5710a013f74"
+    },
+    {
+      "path": "v5/proofs/390-arrival.png",
+      "bytes": 356893,
+      "sha256": "8622317c8c3aa61b4853ad76f23d8cd3f23a4460091e06aec4233f509ba33941"
+    },
+    {
+      "path": "v5/proofs/390-garden.png",
+      "bytes": 322076,
+      "sha256": "41ef76551b8a72613b2b6e79104c0368bc494a1541cbcfe6f8ebaefb69947e5b"
+    },
+    {
+      "path": "v5/proofs/390-panorama.png",
+      "bytes": 327949,
+      "sha256": "091268cb71ff52c754efc51dbe1a04f8f6cc4897e7bbcead57f44d6fe0600db4"
+    },
+    {
+      "path": "v5/proofs/390-portrait.png",
+      "bytes": 328625,
+      "sha256": "7d73389d968e1bb941f82fc81c1970dafa783e81e0208abbe746d55099037c38"
+    },
+    {
+      "path": "v5/proofs/800-arrival.png",
+      "bytes": 547064,
+      "sha256": "752e61fd47c6b1e47130d06beec9aa7f790fba1bcbdee38917600ccd8bcaef48"
+    },
+    {
+      "path": "v5/proofs/800-garden.png",
+      "bytes": 557901,
+      "sha256": "129704defa4682ab38eadf4d7d22b4940fd068de80849df8fbc9412b3bdc235b"
+    },
+    {
+      "path": "v5/proofs/800-panorama.png",
+      "bytes": 547026,
+      "sha256": "beab23c524b01cbc8d1d9646bc6931eb9373e6e9adc7e459febfdf032e13da0a"
+    },
+    {
+      "path": "v5/proofs/800-portrait.png",
+      "bytes": 556375,
+      "sha256": "793521eb369d2e140c051346435b84532dbcbe589a77a23bdb4b99dbb2b05e06"
+    },
+    {
+      "path": "v5/proofs/all-rooms/390-arrival.png",
+      "bytes": 356893,
+      "sha256": "8622317c8c3aa61b4853ad76f23d8cd3f23a4460091e06aec4233f509ba33941"
+    },
+    {
+      "path": "v5/proofs/all-rooms/390-garden.png",
+      "bytes": 322076,
+      "sha256": "41ef76551b8a72613b2b6e79104c0368bc494a1541cbcfe6f8ebaefb69947e5b"
+    },
+    {
+      "path": "v5/proofs/all-rooms/390-panorama.png",
+      "bytes": 327949,
+      "sha256": "091268cb71ff52c754efc51dbe1a04f8f6cc4897e7bbcead57f44d6fe0600db4"
+    },
+    {
+      "path": "v5/proofs/all-rooms/390-portrait.png",
+      "bytes": 328625,
+      "sha256": "7d73389d968e1bb941f82fc81c1970dafa783e81e0208abbe746d55099037c38"
+    },
+    {
+      "path": "v5/proofs/all-rooms/800-arrival.png",
+      "bytes": 547066,
+      "sha256": "252f6dab6fdebb15063d38d1dcb922cc916bd454352cdc7499aced9ba409ddb2"
+    },
+    {
+      "path": "v5/proofs/all-rooms/800-garden.png",
+      "bytes": 557901,
+      "sha256": "16e2f91bf8202e4ceccf7b7a696c1c60aa1cf8e7b72cd233c4b22c634f984536"
+    },
+    {
+      "path": "v5/proofs/all-rooms/800-panorama.png",
+      "bytes": 547026,
+      "sha256": "beab23c524b01cbc8d1d9646bc6931eb9373e6e9adc7e459febfdf032e13da0a"
+    },
+    {
+      "path": "v5/proofs/all-rooms/800-portrait.png",
+      "bytes": 556374,
+      "sha256": "50d3500d7785fdc497a8dc42c7d6d096519c70fddbbe6525a740a814594568b1"
+    },
+    {
+      "path": "v5/proofs/crystal-planter-front-three-quarter.png",
+      "bytes": 727418,
+      "sha256": "3c276b62935a350585d2d0ea9208969433d624f7679ed10f9bdcfcdb228da0ce"
+    },
+    {
+      "path": "v5/proofs/frame-donor-front.png",
+      "bytes": 523992,
+      "sha256": "850762c120593298828f89032dc66a51c207e0198fdfb36919b80d008b4a2da8"
+    },
+    {
+      "path": "v5/proofs/frame-garden-proof.png",
+      "bytes": 706901,
+      "sha256": "b7b64059a7445c38541041f6beb85157b947b3cfe6befcad034101c5718b783f"
+    },
+    {
+      "path": "v5/proofs/inset-final/390-garden-art.png",
+      "bytes": 352447,
+      "sha256": "c4db03b92d1f426d52e96913957398e180a96592c599f83436e5db4fe0406e8b"
+    },
+    {
+      "path": "v5/proofs/inset-final/390-salon-mirror.png",
+      "bytes": 342501,
+      "sha256": "c3d57e8d8a3b2130cee31dcc2f067605db27ed15304e0adffe19bc23f6bb2b88"
+    },
+    {
+      "path": "v5/proofs/inset-final/800-garden-art.png",
+      "bytes": 577740,
+      "sha256": "7e0e3aa99d5eacc46ebdace17f53e6922914c24d53e5ac188d23987642fd8e48"
+    },
+    {
+      "path": "v5/proofs/inset-final/800-salon-mirror.png",
+      "bytes": 548848,
+      "sha256": "7482356f3c22e8886bc0bf4df22b6e8d089432c22384d4a9f268abc1951a64a5"
+    },
+    {
+      "path": "v5/proofs/rooms/390-archive-art.png",
+      "bytes": 345863,
+      "sha256": "bce5dd9a9fb0eecd55d5669dd8ee31ba56a2f27f848593c9151a61b338c85137"
+    },
+    {
+      "path": "v5/proofs/rooms/390-garden-art.png",
+      "bytes": 352461,
+      "sha256": "731e67c5260fe588e175bbf16b5f10cbbbd6ce63afdaea88366c4c38d073c731"
+    },
+    {
+      "path": "v5/proofs/rooms/390-garden-doorway.png",
+      "bytes": 324139,
+      "sha256": "6bbca4f7b062b6b16f03ba329f332681d7554433117ba7a9968fdfb0ac8f5085"
+    },
+    {
+      "path": "v5/proofs/rooms/390-portrait-art.png",
+      "bytes": 358311,
+      "sha256": "87fe72a17e21ab9e748a0ddda0c6b761f33348005d42e8c9898c8a4bbc87fe5a"
+    },
+    {
+      "path": "v5/proofs/rooms/390-salon-mirror.png",
+      "bytes": 342893,
+      "sha256": "5704972c9d671b4e0b8b5b6e12054574de3bc6e2d4c9c42fda6ec10832550483"
+    },
+    {
+      "path": "v5/proofs/rooms/390-window-passage.png",
+      "bytes": 305846,
+      "sha256": "26eab461d11fc666c54d4bc56dbd2acb9d64753aa520082c94a085b13d798e4c"
+    },
+    {
+      "path": "v5/proofs/rooms/800-archive-art.png",
+      "bytes": 540048,
+      "sha256": "2409eb004715d240db3673b7f82383275334638da786bd58e6f1d95ebaa30e44"
+    },
+    {
+      "path": "v5/proofs/rooms/800-garden-art.png",
+      "bytes": 577866,
+      "sha256": "0ad7fe393b56a24ca286b33ee028d5d735922ee0f0dd8c3d712c4863086d7a72"
+    },
+    {
+      "path": "v5/proofs/rooms/800-garden-doorway.png",
+      "bytes": 562195,
+      "sha256": "48dd86ed2f97f09f37947d2fa6b8e42c044441c71f2e2a42934e6384d6353c38"
+    },
+    {
+      "path": "v5/proofs/rooms/800-portrait-art.png",
+      "bytes": 560196,
+      "sha256": "3307e96ccfbe4cc5e172ea695eea10bd14878e1ecb7536134e5563259a526451"
+    },
+    {
+      "path": "v5/proofs/rooms/800-salon-mirror.png",
+      "bytes": 548820,
+      "sha256": "cdae81a742ba0745c55f09c6a394dc8d8223e6cc7931d21ff536c1386c63b44a"
+    },
+    {
+      "path": "v5/proofs/rooms/800-window-passage.png",
+      "bytes": 486102,
+      "sha256": "260ba78b2611a76dc46e18ffe7860acb9cd606edac0674d5b682d9c107cd1085"
+    },
+    {
+      "path": "v5/proofs/shadows/garden-after.png",
+      "bytes": 559200,
+      "sha256": "70dec1d712405c7121d4b1ba7272f334c58508844c34f6f13a7f4d7cfc649252"
+    },
+    {
+      "path": "v5/proofs/shadows/garden-before.png",
+      "bytes": 626829,
+      "sha256": "45667776f79f5e00c237e46b402fd9c31de027901871a6ba1599c092426883fd"
+    },
+    {
+      "path": "v5/proofs/shadows/portrait-after.png",
+      "bytes": 555995,
+      "sha256": "7cfec5f93f5211b57599b748ce2a3f83138ed50580aea3298667e28cc3a5f52d"
+    },
+    {
+      "path": "v5/proofs/shadows/portrait-before.png",
+      "bytes": 624557,
+      "sha256": "b551b3bb84effd5bfc3856ef9b19fca7af74fdc42429884b01940c82384b93ef"
+    },
+    {
+      "path": "v5/sources/bootstrap.blend",
+      "bytes": 85696,
+      "sha256": "c9e0c5360b0ed91d802c5d8ed6404e7ebf28d758c8d1220cdf6f84bdf01aa751"
+    },
+    {
+      "path": "v5/sources/crystal-planter-final-v1.blend",
+      "bytes": 15451523,
+      "sha256": "9d60d06d6bf11832e76b105a19943dabb3bc3cc57f592ccfa918159ee7c14098"
+    },
+    {
+      "path": "v5/sources/frame-imported.blend",
+      "bytes": 11058232,
+      "sha256": "70b2291125fd0da9a9d7285117fec86cce86136412c1cd0c42a0baeaa7cd50a4"
+    },
+    {
+      "path": "v5/sources/gallery-frame-final-v1.blend",
+      "bytes": 11051985,
+      "sha256": "3ca79df0ecc0b90d57e504ec14b5589bb8b1277ba7d489e231cee7bd7e3763fd"
+    },
+    {
+      "path": "v5/sources/museum-decor-v5.blend",
+      "bytes": 26401805,
+      "sha256": "78ab98614f0462694a0278541cd30b1268b8097ebf2c3a4090899acc8cd208f5"
+    },
+    {
+      "path": "v5/sources/planter-imported.blend",
+      "bytes": 15452419,
+      "sha256": "34b54a9c4137c6edab7722e6a81a8a2920fa4c2247e85fa6a81bde54e6aa1657"
     }
   ],
-  "fileCount": 535,
-  "totalBytes": 2350425210
+  "fileCount": 589,
+  "totalBytes": 2497853705
 }

@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "assetId": "museum-decor-v5",
+  "nodes": [
+    "decor_crystal_planter",
+    "decor_gallery_frame"
+  ],
+  "source": "art/glass-adventure/v5/sources/museum-decor-v5.blend",
+  "sourceSha256": "78ab98614f0462694a0278541cd30b1268b8097ebf2c3a4090899acc8cd208f5",
+  "output": "apps/beside-cue/public/games/adventure-v5/museum-decor.glb",
+  "sha256": "998d3026a7393cab3bae36c7e1d8ef9b13ea586230713e0089ba81f29068540a",
+  "bytes": 9240644,
+  "triangles": 16201,
+  "textures": [
+    {
+      "name": "Image_0",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "sRGB",
+      "sha256": "f30319781d1786b486943590420921ba459e87beb6c1befc336ec73fdb854f16"
+    },
+    {
+      "name": "Image_0.001",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "sRGB",
+      "sha256": "9e205a0d0a2bd092b7d2d2b1f631b088fce047fc596954f842362de4e5e6b8a4"
+    },
+    {
+      "name": "Image_1",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "Non-Color",
+      "sha256": "33408ae5fed3c4e1a4b2f3a9719d85ab4c14d4cfca80fd25d6645355f0e3a392"
+    },
+    {
+      "name": "Image_1.001",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "Non-Color",
+      "sha256": "0afc0d7281ddb237ae5757dc1bacc0ba35dc475e61629ed1c665af81774da717"
+    },
+    {
+      "name": "Image_3",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "sRGB",
+      "sha256": "a1741095f6b262fc218c0a6b1329092047b8ddb6f01f41080ec0140d35812744"
+    },
+    {
+      "name": "Image_3.001",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "sRGB",
+      "sha256": "755f2036a8b7a71f85d6954e6cae309bd4298763e690424b639e51127836109c"
+    },
+    {
+      "name": "normal",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "Non-Color",
+      "sha256": "a885a6f6456aa974755c980ce2f6c685256e04c140864298906833ab0f2afec0"
+    },
+    {
+      "name": "normal.001",
+      "size": [
+        1024,
+        1024
+      ],
+      "colorSpace": "Non-Color",
+      "sha256": "d6ce8115eef12c21cd88bb954c68bafbd1cac27ca8d31942c52d95cb51af8661"
+    }
+  ]
+}

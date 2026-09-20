@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import { BREAKABLE_RENDER_CATALOG, getBreakableRenderRecipe, getPlatformRenderRecipe, } from './catalog'
+import { getRoomDecorationRecipe } from './room-decoration-catalog'
 import { getMuseumSceneFrame, getMuseumSceneRecipe, getMuseumVisualRecipe, } from './scene-catalog'
 
 describe('data-driven exhibit recipes', () => {
@@ -102,6 +103,9 @@ describe('data-driven exhibit recipes', () => {
     )
     expect(() => getMuseumVisualRecipe('missing-landmark')).toThrow(
       'Unknown museum visual',
+    )
+    expect(() => getRoomDecorationRecipe('missing-decoration')).toThrow(
+      'Unknown room decoration',
     )
   })
   it('resolves the enclosed museum visuals to the delivered V4 roots', () => {

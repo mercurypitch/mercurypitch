@@ -189,6 +189,11 @@ export const MUSEUM_MATERIAL_CATALOG: Readonly<
     thickness: 0.055,
     iridescence: 0.35,
   },
+  mirror: {
+    color: 0xcbe4e3,
+    roughness: 0.07,
+    metalness: 1,
+  },
 }
 
 export const GLTF_MATERIAL_ALIASES: Readonly<Record<string, string>> = {

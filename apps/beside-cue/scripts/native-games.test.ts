@@ -2,13 +2,15 @@
 // Native games profile tests — preserve store inputs and reject mismatched web output
 // ============================================================
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { gamesInfoPlist, parseOptions, requiredGameAssets, stageGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
+const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url))
 
 function fixture(): string {
   const directory = mkdtempSync(resolve(tmpdir(), 'beside-cue-native-'))
@@ -28,6 +30,23 @@ afterEach(() => {
 })
 
 describe('explicit native games profile', () => {
+  it('keeps every declared game asset in the checked-in public sources', () => {
+    const gameAssets = requiredGameAssets.filter((asset) =>
+      asset.startsWith('games/'),
+    )
+    expect(gameAssets.length).toBeGreaterThan(0)
+    for (const asset of gameAssets) {
+      const source = resolve(publicDirectory, asset)
+      expect(
+        existsSync(source),
+        `${asset} is missing from public sources`,
+      ).toBe(true)
+      const stats = statSync(source)
+      expect(stats.isFile(), `${asset} must be a file`).toBe(true)
+      expect(stats.size, `${asset} must not be empty`).toBeGreaterThan(0)
+    }
+  })
+
   it('requires the platform and refuses contradictory or unsupported actions', () => {
     expect(() => parseOptions([])).toThrow('Choose --platform')
     expect(() => parseOptions(['--platform', 'web'])).toThrow(

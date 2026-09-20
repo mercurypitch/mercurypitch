@@ -1,0 +1,16 @@
+{
+  "ai_model": "meshy-6",
+  "file_path": "/home/maff/.codex/worktrees/00ad/mercurypitch-agent/art/glass-adventure/v5/concepts/crystal-fern-planter.png",
+  "should_texture": true,
+  "enable_pbr": true,
+  "should_remesh": true,
+  "target_polycount": 9000,
+  "topology": "triangle",
+  "target_formats": [
+    "glb"
+  ],
+  "texture_prompt": "Elegant marble bowl with restrained brass rim, lush jade and mint broad leaves, pale aquamarine frosted crystal fern fronds, three small amethyst flowers. Preserve source design with clean studio neutral PBR materials. No ground plane.",
+  "remove_lighting": true,
+  "save_pre_remeshed_model": true,
+  "response_format": "json"
+}

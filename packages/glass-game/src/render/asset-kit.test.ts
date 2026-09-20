@@ -49,6 +49,29 @@ function levelWithRequiredVisual(): LevelDefinition {
   }
 }
 
+function levelWithRequiredDecoration(): LevelDefinition {
+  const fixture = levelWithRequiredVisual()
+  return {
+    ...fixture,
+    id: 'required-decoration-fixture',
+    presentation: {
+      ...fixture.presentation!,
+      visuals: [],
+      decorations: [
+        {
+          id: 'required-painting',
+          roomId: 'required-room',
+          recipeId: 'garden-painting-v5',
+          position: { x: 0, y: 1.8, z: 0 },
+          yaw: 0,
+          scale: 1,
+        },
+      ],
+      assetRecipeIds: ['garden-painting-v5'],
+    },
+  }
+}
+
 function materials(): MuseumMaterials {
   return Object.fromEntries(
     Object.keys(MUSEUM_MATERIAL_CATALOG).map((id) => [
@@ -68,8 +91,10 @@ function texture(): LoadedTexture {
   return new Texture() as LoadedTexture
 }
 
-function museum(setKit = vi.fn()) {
-  return { setKit } as unknown as ReturnType<typeof createMuseum>
+function museum(setKit = vi.fn(), setDecorationTexture = vi.fn()) {
+  return { setKit, setDecorationTexture } as unknown as ReturnType<
+    typeof createMuseum
+  >
 }
 
 afterEach(() => {
@@ -155,6 +180,66 @@ it('rejects a required bundle and an installation failure instead of resolving w
     name: 'RequiredMuseumAssetError',
     assetId: 'museum-window-v4',
   })
+})
+
+it('loads a required painting before installing its decoration bundle', async () => {
+  const order: string[] = []
+  vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(async () =>
+    texture(),
+  )
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  const setKit = vi.fn((_: Group, bundle: string) => {
+    if (bundle === 'museum-decor-v5') order.push('bundle')
+  })
+  const setDecorationTexture = vi.fn((id: string) => {
+    if (id === 'painting-garden-v5') order.push('texture')
+  })
+
+  await loadMuseumAssets(
+    levelWithRequiredDecoration(),
+    (id) => id,
+    new Map(),
+    museum(setKit, setDecorationTexture),
+    materials(),
+    vi.fn(),
+    () => false,
+  )
+
+  expect(setDecorationTexture).toHaveBeenCalledWith(
+    'painting-garden-v5',
+    expect.any(Texture),
+  )
+  expect(setKit).toHaveBeenCalledWith(expect.any(Group), 'museum-decor-v5')
+  expect(order).toEqual(['texture', 'bundle'])
+})
+
+it('rejects a missing required painting without installing its bundle', async () => {
+  vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(
+    async (url) => {
+      if (url === 'painting-garden-v5') throw new Error('painting unavailable')
+      return texture()
+    },
+  )
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf())
+  const setKit = vi.fn()
+  const setDecorationTexture = vi.fn()
+
+  await expect(
+    loadMuseumAssets(
+      levelWithRequiredDecoration(),
+      (id) => id,
+      new Map(),
+      museum(setKit, setDecorationTexture),
+      materials(),
+      vi.fn(),
+      () => false,
+    ),
+  ).rejects.toMatchObject({
+    name: 'RequiredMuseumAssetError',
+    assetId: 'painting-garden-v5',
+  })
+  expect(setDecorationTexture).not.toHaveBeenCalled()
+  expect(setKit).not.toHaveBeenCalledWith(expect.any(Group), 'museum-decor-v5')
 })
 
 it('rejects a GLB that resolves after its loading manager reports a missing dependency', async () => {

@@ -2,17 +2,20 @@
 // Floating museum — readable marble floors and ornament below the collision line.
 // ============================================================
 
-import type { Material, Object3D } from 'three'
-import { BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, Vector3, } from 'three'
+import type { Material, Object3D, PerspectiveCamera, Texture } from 'three'
+import { Box3, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, Vector3, } from 'three'
 import { EXHIBIT_PLINTH } from '../content/solid-props'
-import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, } from '../contracts'
+import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, Vec3, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
 import { getPlatformRenderRecipe } from './catalog'
+import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
 import { createPlatformPlanters } from './platform-details'
 import { createPlatformDressing } from './platform-dressing'
+import { createRoomDecorations } from './room-decorations'
+import { createRoomVisibilityController } from './room-visibility'
 import { getMuseumSceneRecipe, getMuseumVisualRecipe } from './scene-catalog'
 import { stretchSurfaceUv } from './surface-uv'
 
@@ -168,6 +171,33 @@ export function createMuseum(
   const root = new Group()
   const materialLibrary = createMaterialLibrary()
   const sceneRecipe = getMuseumSceneRecipe(level)
+  const roomVisibility = createRoomVisibilityController(
+    level.presentation?.rooms ?? [],
+  )
+  const roomGroups = new Map(
+    [...roomVisibility.roomIds].map((id) => {
+      const group = new Group()
+      group.name = `room-${id}`
+      // Room children are compiled in world coordinates; keep this owner at identity.
+      root.add(group)
+      return [id, group]
+    }),
+  )
+  const roomGroupSet = new Set(roomGroups.values())
+  const renderParent = (runtimeId: string) => {
+    const roomId = roomVisibility.roomIdForRuntimeId(runtimeId)
+    return (roomId === undefined ? undefined : roomGroups.get(roomId)) ?? root
+  }
+  let roomRenderBoundsDirty = true
+  const decorations = createRoomDecorations(level, materials, materialLibrary)
+  for (const instance of decorations.instances) {
+    const room = roomGroups.get(instance.roomId)
+    if (room === undefined)
+      throw new Error(
+        `Room decoration could not find authored room "${instance.roomId}".`,
+      )
+    room.add(instance.root)
+  }
   const planters = new Map<string, Group>()
   const coveredSolids = new Set<string>()
   const installedVisuals: {
@@ -185,7 +215,7 @@ export function createMuseum(
     const mesh =
       solid.shape === 'box'
         ? box(
-            root,
+            renderParent(solid.id),
             material,
             solid.maxX - solid.minX,
             solid.thickness,
@@ -207,7 +237,7 @@ export function createMuseum(
     if (solid.shape === 'cylinder') {
       mesh.position.set(solid.x, solid.top - solid.thickness / 2, solid.z)
       mesh.castShadow = mesh.receiveShadow = true
-      root.add(mesh)
+      renderParent(solid.id).add(mesh)
     }
     return [{ solid, mesh }]
   })
@@ -221,9 +251,12 @@ export function createMuseum(
   let cameraMeshCache: Mesh[] | undefined
   let lastActive: string | undefined
   let activeSolids = new Set(getActiveSolidIds(level, new Set<string>()))
+  const floorArt = createPlatformFloorArt(level, materials)
   const floors = new Map(
     level.platforms.map((platform) => {
       const floor = createFloor(platform, materials)
+      const inlay = floorArt.get(platform.id)
+      if (inlay !== undefined) floor.add(inlay)
       if (
         sceneRecipe.planterPlatforms.includes(platform.id) &&
         !solidProxies.some(
@@ -236,12 +269,13 @@ export function createMuseum(
         planters.set(platform.id, details)
         floor.add(details)
       }
-      root.add(floor)
+      renderParent(platform.id).add(floor)
       return [platform.id, floor]
     }),
   )
   const pads = new Map<string, Mesh>()
   for (const target of level.breakables) {
+    const parent = renderParent(target.id)
     if (target.mount === undefined) {
       const pedestal = new Mesh(
         new CylinderGeometry(
@@ -256,9 +290,9 @@ export function createMuseum(
       pedestal.position.copy(target.position)
       pedestal.position.y += EXHIBIT_PLINTH.height / 2
       pedestal.castShadow = pedestal.receiveShadow = true
-      root.add(pedestal)
+      parent.add(pedestal)
       ring(
-        root,
+        parent,
         materials.gold,
         EXHIBIT_PLINTH.radiusTop,
         0.014,
@@ -279,10 +313,10 @@ export function createMuseum(
     pad.rotation.x = -Math.PI / 2
     pad.position.copy(target.anchor)
     pad.position.y += 0.02
-    root.add(pad)
+    parent.add(pad)
     pads.set(target.id, pad)
     ring(
-      root,
+      parent,
       materials.gold,
       0.24,
       0.012,
@@ -295,9 +329,10 @@ export function createMuseum(
   for (const platform of level.platforms.filter((item) =>
     sceneRecipe.archPlatforms.includes(item.id),
   )) {
+    const parent = renderParent(platform.id)
     const z = platform.minZ + 0.12
     for (const x of [platform.minX + 0.12, platform.maxX - 0.12])
-      column(root, materials, x, platform.top, z)
+      column(parent, materials, x, platform.top, z)
     const arch = new Mesh(
       new TorusGeometry(
         (platform.maxX - platform.minX - 0.24) / 2,
@@ -313,7 +348,12 @@ export function createMuseum(
       platform.top + 1.8,
       z,
     )
-    root.add(arch)
+    parent.add(arch)
+  }
+  const setVisibleRooms = (visibleRoomIds: ReadonlySet<string>) => {
+    roomGroups.forEach((group, id) => {
+      group.visible = visibleRoomIds.has(id)
+    })
   }
   return {
     root,
@@ -322,16 +362,24 @@ export function createMuseum(
       if (cameraMeshCache) return cameraMeshCache
       const meshes: Mesh[] = []
       root.updateWorldMatrix(true, true)
-      for (const child of root.children) {
-        if (!child.visible) continue
-        child.traverseVisible((object) => {
-          const mesh = object as Mesh
+      const collectVisibleMeshes = (object: Object3D) => {
+        if (!object.visible) return
+        object.traverseVisible((candidate) => {
+          const mesh = candidate as Mesh
           if (!mesh.isMesh || !mesh.visible) return
           const material = Array.isArray(mesh.material)
             ? mesh.material[0]
             : mesh.material
           if (material.depthWrite && !material.transparent) meshes.push(mesh)
         })
+      }
+      for (const child of root.children) {
+        // Render culling must never remove a wall from camera collision before
+        // the next selection. Ignore only the room owner's visibility flag;
+        // activated gates and covered proxies still use child visibility.
+        if (roomGroupSet.has(child as Group))
+          child.children.forEach(collectVisibleMeshes)
+        else collectVisibleMeshes(child)
       }
       cameraMeshCache = meshes
       return meshes
@@ -346,6 +394,11 @@ export function createMuseum(
           coveredSolids.add(solid.id)
           mesh.visible = false
         }
+      for (const id of decorations.installBundle(scene, bundle)) {
+        coveredSolids.add(id)
+        const proxy = solidProxies.find(({ solid }) => solid.id === id)
+        if (proxy !== undefined) proxy.mesh.visible = false
+      }
       dressing.install(scene, bundle, (id) => {
         const previous = planters.get(id)
         if (previous) {
@@ -370,12 +423,14 @@ export function createMuseum(
             `Museum platform "${platform.id}" has no render floor for bundle "${bundle}".`,
           )
         const dimensions = kitFloorDimensions(source)
+        const inlay = floorArt.get(platform.id)
         const art = createKitInstance(
           source,
           materials,
           recipe.materialOverrides,
           materialLibrary,
         )
+        if (inlay !== undefined) removeEmbeddedFloorInlay(art, dimensions)
         art.scale.set(
           (platform.maxX - platform.minX) / dimensions.x,
           1,
@@ -390,8 +445,10 @@ export function createMuseum(
         })
         const details = planters.get(platform.id)
         details?.removeFromParent()
+        inlay?.removeFromParent()
         removeKitGeometry(floor)
         floor.add(art)
+        if (inlay !== undefined) floor.add(inlay)
         if (details !== undefined) floor.add(details)
       }
       for (const decoration of sceneRecipe.kitDecorations) {
@@ -439,7 +496,7 @@ export function createMuseum(
         art.visible =
           coveredSolidIds.length === 0 ||
           coveredSolidIds.some((id) => activeSolids.has(id))
-        root.add(art)
+        renderParent(visual.id).add(art)
         installedVisuals.push({ art, coveredSolidIds })
         for (const id of coveredSolidIds) {
           coveredSolids.add(id)
@@ -447,6 +504,7 @@ export function createMuseum(
           if (proxy !== undefined) proxy.mesh.visible = false
         }
       }
+      roomRenderBoundsDirty = true
     },
     update(snapshot: GameSnapshot) {
       const activeSolidIds =
@@ -454,6 +512,7 @@ export function createMuseum(
         getActiveSolidIds(level, new Set(snapshot.completedBreakableIds))
       const active = new Set(activeSolidIds)
       activeSolids = active
+      decorations.update(active)
       dressing.update(snapshot.enabledPlatformIds)
       for (const { solid, mesh } of solidProxies) {
         const solidActive = active.has(solid.id)
@@ -476,6 +535,26 @@ export function createMuseum(
         ;(pad.material as MeshBasicMaterial).opacity =
           snapshot.nearbyBreakableId === id ? 0.55 : 0.18
       })
+    },
+    roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
+    setDecorationTexture(assetId: string, texture: Texture) {
+      decorations.installTexture(assetId, texture)
+    },
+    updateRoomVisibility(player: Vec3, camera: PerspectiveCamera) {
+      if (roomRenderBoundsDirty) {
+        roomGroups.forEach((group, id) => {
+          const bounds = new Box3().setFromObject(group)
+          roomVisibility.includeRenderBounds(id, bounds)
+        })
+        roomRenderBoundsDirty = false
+      }
+      const selection = roomVisibility.select(player, camera)
+      setVisibleRooms(selection.visibleRoomIds)
+      return selection
+    },
+    setVisibleRooms,
+    dispose() {
+      decorations.dispose()
     },
   }
 }

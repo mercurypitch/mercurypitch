@@ -144,12 +144,50 @@ export interface AudioRegionDefinition {
   sceneId: MuseumAudioSceneId
 }
 
+export const FLOOR_ART_RECIPE_IDS = [
+  'quiet-marble',
+  'orbital-rings',
+  'angular-parquet',
+  'sound-wave',
+  'hero-petal',
+] as const
+
+export type FloorArtRecipeId = (typeof FLOOR_ART_RECIPE_IDS)[number]
+
+export const FLOOR_ART_PALETTE_IDS = [
+  'neutral',
+  'garden',
+  'archive',
+  'portrait',
+] as const
+
+export type FloorArtPaletteId = (typeof FLOOR_ART_PALETTE_IDS)[number]
+
+/** Decorative surface art tied to one physical platform, never its collision. */
+export interface PlatformFloorArtDefinition {
+  platformId: string
+  recipeId: FloorArtRecipeId
+  palette?: FloorArtPaletteId
+}
+
 export interface VisualInstanceDefinition {
   id: string
   recipeId: string
   position: Vec3
   yaw: number
   /** Collision proxies hidden only after this exact visual installs. */
+  coveredSolidIds?: readonly string[]
+}
+
+/** One room-owned prop assembled from a required catalogued asset. */
+export interface RoomDecorationInstanceDefinition {
+  id: string
+  roomId: string
+  recipeId: string
+  position: Vec3
+  yaw: number
+  scale: number
+  /** Collision proxies hidden only after this exact decoration installs. */
   coveredSolidIds?: readonly string[]
 }
 
@@ -184,6 +222,8 @@ export interface LevelPresentationDefinition {
   rooms: readonly RoomPresentationDefinition[]
   audioRegions: readonly AudioRegionDefinition[]
   visuals: readonly VisualInstanceDefinition[]
+  decorations?: readonly RoomDecorationInstanceDefinition[]
+  floorArt?: readonly PlatformFloorArtDefinition[]
   assetRecipeIds: readonly string[]
 }
 

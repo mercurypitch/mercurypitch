@@ -120,7 +120,7 @@ describe('enclosed chamber content', () => {
     expect(level.authored).toEqual({
       levelId: 'glassworks-chamber',
       layoutId: 'chamber',
-      contentRevision: 3,
+      contentRevision: 4,
     })
     expect(level.spawn).toMatchObject({
       position: { x: 0, y: 0, z: -2.8 },
@@ -160,6 +160,13 @@ describe('enclosed chamber content', () => {
       visuals.find((visual) => visual.id.includes('/north-gate'))
         ?.coveredSolidIds,
     ).toEqual([ids.secondGate])
+    expect(level.presentation?.decorations).toHaveLength(2)
+    expect(level.presentation?.floorArt).toHaveLength(6)
+    expect(
+      level.presentation?.floorArt?.find((item) =>
+        item.platformId.includes('/chamber/platform/floor'),
+      ),
+    ).toMatchObject({ recipeId: 'hero-petal', palette: 'neutral' })
   })
 
   it('keeps every window as four real collision pieces with an open central aperture', () => {

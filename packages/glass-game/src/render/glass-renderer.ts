@@ -136,12 +136,17 @@ function createGlassRendererInstance(
   key.position.copy(sceneFrame.keyPosition)
   key.target.position.copy(sceneFrame.lightTarget)
   key.castShadow = true
-  key.shadow.mapSize.set(1024, 1024)
+  const shadowMapSize = 1024
+  key.shadow.mapSize.set(shadowMapSize, shadowMapSize)
   key.shadow.camera.left = key.shadow.camera.bottom = -sceneFrame.shadowExtent
   key.shadow.camera.right = key.shadow.camera.top = sceneFrame.shadowExtent
   key.shadow.camera.near = 0.5
   key.shadow.camera.far = sceneFrame.shadowFar
-  key.shadow.normalBias = 0.018
+  // Keep the receiver offset proportional to an authored level's shadow
+  // texel. A fixed 18mm offset is too small once a long museum expands the
+  // orthographic map, producing regular self-shadow bands across flat floors.
+  const shadowTexelSize = (sceneFrame.shadowExtent * 2) / shadowMapSize
+  key.shadow.normalBias = Math.max(0.018, shadowTexelSize * 0.75)
   key.shadow.bias = -0.00015
   registerPartialCleanup(() => key.shadow.dispose())
   scene.add(key, key.target)
@@ -157,6 +162,7 @@ function createGlassRendererInstance(
     museum.materialLibrary.materials.forEach((material) =>
       partialBorrowedMaterials.add(material),
     )
+    museum.dispose()
     museum.materialLibrary.dispose()
   })
   scene.add(museum.root)
@@ -174,6 +180,12 @@ function createGlassRendererInstance(
       scene.add(vessel.root)
       return [target.id, vessel]
     }),
+  )
+  const vesselRoomIds = new Map(
+    level.breakables.map((target) => [
+      target.id,
+      museum.roomIdForRuntimeId(target.id),
+    ]),
   )
   registerPartialCleanup(() => vessels.forEach((vessel) => vessel.dispose()))
   let merc: Awaited<ReturnType<typeof loadAdventureMerc>> | undefined
@@ -295,6 +307,14 @@ function createGlassRendererInstance(
       if (portal.update(snapshot, dt)) options.onExitCelebrationComplete?.()
       camera.setOccluders(museum.cameraOccluders())
       camera.update(snapshot, dt)
+      const visibleRooms = museum.updateRoomVisibility(
+        snapshot.player.position,
+        camera.camera,
+      ).visibleRoomIds
+      vessels.forEach((vessel, id) => {
+        const roomId = vesselRoomIds.get(id)
+        vessel.root.visible = roomId === undefined || visibleRooms.has(roomId)
+      })
       contact.update(snapshot)
       merc?.update(snapshot, dt, options.reducedMotion ?? false)
       for (const state of snapshot.breakables)
@@ -316,6 +336,7 @@ function createGlassRendererInstance(
           ...Object.values(materials),
         ]),
       )
+      museum.dispose()
       museum.materialLibrary.dispose()
       disposeMaterials(Object.values(materials))
       environment.dispose()

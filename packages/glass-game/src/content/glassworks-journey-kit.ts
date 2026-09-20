@@ -1,10 +1,11 @@
 // Glassworks Journey kit — reusable two-port galleries and an exhibit-ready panorama terrace.
 
-import type { ExhibitPrefab, LevelAuthoringCatalog, RoomAudioRegionDefinition, RoomPrefab, RoomVisualDefinition, } from '../authoring/contracts'
+import type { ExhibitPrefab, LevelAuthoringCatalog, RoomAudioRegionDefinition, RoomDecorationDefinition, RoomPrefab, RoomVisualDefinition, } from '../authoring/contracts'
 import type { CheckpointDefinition, HoldDefinition, PlatformDefinition, SolidPresentation, SolidPropDefinition, } from '../contracts'
 import { ENCLOSED_CHAMBER_BAY_CENTER, ENCLOSED_CHAMBER_HALF, ENCLOSED_MUSEUM_AUTHORING_CATALOG, ENCLOSED_TERRACE_ROOM, } from './enclosed-museum-kit'
 import type { MuseumWallBay } from './enclosed-wall-kit'
 import { MUSEUM_SCREEN_WIDTH, MUSEUM_WALL_TOP, MUSEUM_WINDOW_DEPTH, museumPortSeal, museumScreenBay, museumWindowBay, } from './enclosed-wall-kit'
+import { crystalPlanter, framedRoomArt } from './museum-room-dressings'
 import { EXHIBIT_PLINTH } from './solid-props'
 
 const FLOOR_THICKNESS = 0.25
@@ -184,98 +185,174 @@ const galleryAudio: RoomAudioRegionDefinition = {
   sceneId: 'gallery',
 }
 
-export const GLASSWORKS_JOURNEY_GALLERY_ROOM: RoomPrefab = {
-  id: 'glassworks-journey-gallery',
-  bounds: {
-    minX: -ENCLOSED_CHAMBER_HALF - MUSEUM_WINDOW_DEPTH / 2,
-    maxX: ENCLOSED_CHAMBER_HALF + MUSEUM_WINDOW_DEPTH / 2,
-    minY: -FLOOR_THICKNESS,
-    maxY: MUSEUM_WALL_TOP,
-    minZ: -ENCLOSED_CHAMBER_HALF - MUSEUM_WINDOW_DEPTH / 2,
-    maxZ: ENCLOSED_CHAMBER_HALF + MUSEUM_WINDOW_DEPTH / 2,
-  },
-  cameraBounds: {
-    minX: -ENCLOSED_CHAMBER_HALF + CAMERA_INSET,
-    maxX: ENCLOSED_CHAMBER_HALF - CAMERA_INSET,
-    minY: 0,
-    maxY: CAMERA_TOP,
-    minZ: -ENCLOSED_CHAMBER_HALF + CAMERA_INSET,
-    maxZ: ENCLOSED_CHAMBER_HALF - CAMERA_INSET,
-  },
-  platforms: [
-    deck(
-      'floor',
-      -ENCLOSED_CHAMBER_HALF,
-      ENCLOSED_CHAMBER_HALF,
-      -ENCLOSED_CHAMBER_HALF,
-      ENCLOSED_CHAMBER_HALF,
+const gardenPlanters = [
+  crystalPlanter('south-west-planter', -3.35, -2.85, 'floor'),
+  crystalPlanter('south-east-planter', 3.35, -2.85, 'floor'),
+  crystalPlanter('north-west-planter', -3.45, 3.15, 'floor'),
+  crystalPlanter('north-east-planter', 3.45, 3.15, 'floor'),
+]
+
+function journeyGalleryRoom(
+  id: string,
+  extraSolids: readonly SolidPropDefinition[],
+  decorations: readonly RoomDecorationDefinition[],
+): RoomPrefab {
+  return {
+    id,
+    bounds: {
+      minX: -ENCLOSED_CHAMBER_HALF - MUSEUM_WINDOW_DEPTH / 2,
+      maxX: ENCLOSED_CHAMBER_HALF + MUSEUM_WINDOW_DEPTH / 2,
+      minY: -FLOOR_THICKNESS,
+      maxY: MUSEUM_WALL_TOP,
+      minZ: -ENCLOSED_CHAMBER_HALF - MUSEUM_WINDOW_DEPTH / 2,
+      maxZ: ENCLOSED_CHAMBER_HALF + MUSEUM_WINDOW_DEPTH / 2,
+    },
+    cameraBounds: {
+      minX: -ENCLOSED_CHAMBER_HALF + CAMERA_INSET,
+      maxX: ENCLOSED_CHAMBER_HALF - CAMERA_INSET,
+      minY: 0,
+      maxY: CAMERA_TOP,
+      minZ: -ENCLOSED_CHAMBER_HALF + CAMERA_INSET,
+      maxZ: ENCLOSED_CHAMBER_HALF - CAMERA_INSET,
+    },
+    platforms: [
+      deck(
+        'floor',
+        -ENCLOSED_CHAMBER_HALF,
+        ENCLOSED_CHAMBER_HALF,
+        -ENCLOSED_CHAMBER_HALF,
+        ENCLOSED_CHAMBER_HALF,
+      ),
+    ],
+    solids: [
+      ...galleryBays.solids,
+      ...extraSolids,
+      museumPortSeal('south-seal', {
+        axis: 'x',
+        x: 0,
+        z: -ENCLOSED_CHAMBER_HALF,
+        platformId: 'floor',
+      }),
+      museumPortSeal('north-seal', {
+        axis: 'x',
+        x: 0,
+        z: ENCLOSED_CHAMBER_HALF,
+        platformId: 'floor',
+      }),
+    ],
+    checkpoints: [galleryEntryCheckpoint],
+    ports: [
+      {
+        id: 'south',
+        position: { x: 0, y: 0, z: -ENCLOSED_CHAMBER_HALF },
+        facingYaw: 0,
+        width: MUSEUM_SCREEN_WIDTH,
+        height: MUSEUM_WALL_TOP,
+        sealSolidId: 'south-seal',
+      },
+      {
+        id: 'north',
+        position: { x: 0, y: 0, z: ENCLOSED_CHAMBER_HALF },
+        facingYaw: Math.PI,
+        width: MUSEUM_SCREEN_WIDTH,
+        height: MUSEUM_WALL_TOP,
+        sealSolidId: 'north-seal',
+      },
+    ],
+    exhibitMounts: [
+      {
+        id: 'required-display',
+        position: { x: 0, y: 0, z: 0.8 },
+        anchor: { x: 0, y: 0, z: -0.05 },
+        facingYaw: Math.PI,
+        platformId: 'floor',
+      },
+      {
+        id: 'west-display',
+        position: { x: -2.65, y: 0, z: 1.8 },
+        anchor: { x: -1.8, y: 0, z: 1.15 },
+        facingYaw: Math.PI,
+        platformId: 'floor',
+      },
+      {
+        id: 'east-display',
+        position: { x: 2.65, y: 0, z: 1.8 },
+        anchor: { x: 1.8, y: 0, z: 1.15 },
+        facingYaw: Math.PI,
+        platformId: 'floor',
+      },
+    ],
+    exits: [],
+    visuals: galleryBays.visuals,
+    decorations,
+    audioRegions: [galleryAudio],
+  }
+}
+
+export const GLASSWORKS_JOURNEY_GARDEN_ROOM = journeyGalleryRoom(
+  'glassworks-journey-garden',
+  gardenPlanters.map((item) => item.solid),
+  [
+    ...gardenPlanters.map((item) => item.decoration),
+    framedRoomArt(
+      'garden-study',
+      'garden-painting-v5',
+      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      Math.PI / 2,
     ),
   ],
-  solids: [
-    ...galleryBays.solids,
-    museumPortSeal('south-seal', {
-      axis: 'x',
-      x: 0,
-      z: -ENCLOSED_CHAMBER_HALF,
-      platformId: 'floor',
-    }),
-    museumPortSeal('north-seal', {
-      axis: 'x',
-      x: 0,
-      z: ENCLOSED_CHAMBER_HALF,
-      platformId: 'floor',
-    }),
+)
+
+export const GLASSWORKS_JOURNEY_ARCHIVE_ROOM = journeyGalleryRoom(
+  'glassworks-journey-archive',
+  [],
+  [
+    framedRoomArt(
+      'west-archive-study',
+      'archive-painting-v5',
+      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      Math.PI / 2,
+    ),
+    framedRoomArt(
+      'east-archive-study',
+      'archive-painting-v5',
+      { x: ENCLOSED_CHAMBER_HALF - 0.16, y: 1.9, z: 0 },
+      -Math.PI / 2,
+    ),
   ],
-  checkpoints: [galleryEntryCheckpoint],
-  ports: [
-    {
-      id: 'south',
-      position: { x: 0, y: 0, z: -ENCLOSED_CHAMBER_HALF },
-      facingYaw: 0,
-      width: MUSEUM_SCREEN_WIDTH,
-      height: MUSEUM_WALL_TOP,
-      sealSolidId: 'south-seal',
-    },
-    {
-      id: 'north',
-      position: { x: 0, y: 0, z: ENCLOSED_CHAMBER_HALF },
-      facingYaw: Math.PI,
-      width: MUSEUM_SCREEN_WIDTH,
-      height: MUSEUM_WALL_TOP,
-      sealSolidId: 'north-seal',
-    },
+)
+
+export const GLASSWORKS_JOURNEY_PORTRAIT_ROOM = journeyGalleryRoom(
+  'glassworks-journey-portrait',
+  [],
+  [
+    framedRoomArt(
+      'glass-portrait',
+      'portrait-painting-v5',
+      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      Math.PI / 2,
+    ),
+    framedRoomArt(
+      'salon-mirror',
+      'gallery-mirror-v5',
+      { x: ENCLOSED_CHAMBER_HALF - 0.16, y: 1.9, z: 0 },
+      -Math.PI / 2,
+    ),
   ],
-  exhibitMounts: [
-    {
-      id: 'required-display',
-      position: { x: 0, y: 0, z: 0.8 },
-      anchor: { x: 0, y: 0, z: -0.05 },
-      facingYaw: Math.PI,
-      platformId: 'floor',
-    },
-    {
-      id: 'west-display',
-      position: { x: -2.65, y: 0, z: 1.8 },
-      anchor: { x: -1.8, y: 0, z: 1.15 },
-      facingYaw: Math.PI,
-      platformId: 'floor',
-    },
-    {
-      id: 'east-display',
-      position: { x: 2.65, y: 0, z: 1.8 },
-      anchor: { x: 1.8, y: 0, z: 1.15 },
-      facingYaw: Math.PI,
-      platformId: 'floor',
-    },
-  ],
-  exits: [],
-  visuals: galleryBays.visuals,
-  audioRegions: [galleryAudio],
-}
+)
+
+const panoramaPlanters = [
+  crystalPlanter('west-sky-planter', -3.45, 5.15, 'balcony-floor'),
+  crystalPlanter('east-sky-planter', 3.45, 5.15, 'balcony-floor'),
+]
 
 export const GLASSWORKS_JOURNEY_TERRACE_ROOM: RoomPrefab = {
   ...ENCLOSED_TERRACE_ROOM,
   id: 'glassworks-journey-terrace',
+  solids: [
+    ...ENCLOSED_TERRACE_ROOM.solids,
+    ...panoramaPlanters.map((item) => item.solid),
+  ],
   checkpoints: [
     {
       id: 'panorama',
@@ -300,6 +377,7 @@ export const GLASSWORKS_JOURNEY_TERRACE_ROOM: RoomPrefab = {
       platformId: 'balcony-floor',
     },
   ],
+  decorations: panoramaPlanters.map((item) => item.decoration),
 }
 
 export const GLASSWORKS_JOURNEY_FLUTED = exhibit(
@@ -318,7 +396,9 @@ export const GLASSWORKS_JOURNEY_AMPHORA = exhibit(
 export const GLASSWORKS_JOURNEY_AUTHORING_CATALOG: LevelAuthoringCatalog = {
   rooms: {
     ...ENCLOSED_MUSEUM_AUTHORING_CATALOG.rooms,
-    [GLASSWORKS_JOURNEY_GALLERY_ROOM.id]: GLASSWORKS_JOURNEY_GALLERY_ROOM,
+    [GLASSWORKS_JOURNEY_GARDEN_ROOM.id]: GLASSWORKS_JOURNEY_GARDEN_ROOM,
+    [GLASSWORKS_JOURNEY_ARCHIVE_ROOM.id]: GLASSWORKS_JOURNEY_ARCHIVE_ROOM,
+    [GLASSWORKS_JOURNEY_PORTRAIT_ROOM.id]: GLASSWORKS_JOURNEY_PORTRAIT_ROOM,
     [GLASSWORKS_JOURNEY_TERRACE_ROOM.id]: GLASSWORKS_JOURNEY_TERRACE_ROOM,
   },
   exhibits: {

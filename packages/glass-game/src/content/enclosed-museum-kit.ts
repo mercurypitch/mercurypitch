@@ -4,6 +4,7 @@ import type { ExhibitPrefab, LevelAuthoringCatalog, RoomAudioRegionDefinition, R
 import type { CheckpointDefinition, HoldDefinition, MuseumAudioSceneId, PlatformDefinition, SolidPresentation, SolidPropDefinition, } from '../contracts'
 import type { MuseumWallBay } from './enclosed-wall-kit'
 import { MUSEUM_SCREEN_DEPTH, MUSEUM_SCREEN_WIDTH, MUSEUM_SEAM_OVERLAP, MUSEUM_WALL_TOP, MUSEUM_WINDOW_DEPTH, MUSEUM_WINDOW_WIDTH, museumPortSeal, museumScreenBay, museumStoneWall, museumWindowBay, } from './enclosed-wall-kit'
+import { framedRoomArt, MUSEUM_ROOM_DECORATION_RECIPE_IDS, } from './museum-room-dressings'
 import { EXHIBIT_PLINTH } from './solid-props'
 
 export const ENCLOSED_CHAMBER_HALF = 4.447110536098481
@@ -276,6 +277,20 @@ export const ENCLOSED_CHAMBER_ROOM: RoomPrefab = {
   ],
   exits: [],
   visuals: chamberBays.visuals,
+  decorations: [
+    framedRoomArt(
+      'welcome-painting',
+      'garden-painting-v5',
+      { x: 0, y: 1.9, z: ENCLOSED_CHAMBER_HALF - 0.16 },
+      Math.PI,
+    ),
+    framedRoomArt(
+      'welcome-mirror',
+      'gallery-mirror-v5',
+      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      Math.PI / 2,
+    ),
+  ],
   audioRegions: [
     audioRegion(
       'chamber',
@@ -803,5 +818,6 @@ export const ENCLOSED_MUSEUM_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     'decanter',
     'museum-window-v4',
     'museum-screen-v4',
+    ...MUSEUM_ROOM_DECORATION_RECIPE_IDS,
   ],
 }

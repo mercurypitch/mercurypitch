@@ -1,7 +1,7 @@
 // Authored museum presentation — visible proxies share activation with collision and camera occlusion.
 
 import type { Mesh } from 'three'
-import { BoxGeometry, Group, Mesh as ThreeMesh, MeshPhysicalMaterial, } from 'three'
+import { BoxGeometry, Group, Mesh as ThreeMesh, MeshPhysicalMaterial, PerspectiveCamera, } from 'three'
 import { expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
@@ -171,6 +171,40 @@ const coveredVisualLevel: LevelDefinition = {
   },
 }
 
+const roomPrefix = 'render-roomed/route/alpha'
+const roomedLevel: LevelDefinition = {
+  ...level,
+  id: 'render-roomed',
+  platforms: [
+    {
+      ...level.platforms[0]!,
+      id: `${roomPrefix}/platform/room-floor`,
+    },
+  ],
+  solids: [
+    {
+      ...level.solids![1]!,
+      id: `${roomPrefix}/solid/long-wall`,
+    },
+    {
+      ...level.solids![0]!,
+      id: 'render-roomed/route/connection/gate/threshold',
+      activation: undefined,
+    },
+  ],
+  presentation: {
+    ...level.presentation!,
+    rooms: [
+      {
+        id: `${roomPrefix}/room/gallery`,
+        bounds: { ...level.presentation!.worldBounds },
+        cameraBounds: { ...level.presentation!.worldBounds },
+        ports: [],
+      },
+    ],
+  },
+}
+
 function createMaterials(): MuseumMaterials {
   return Object.fromEntries(
     ['marble', 'teal', 'limestone', 'gold', 'rock', 'glass'].map((id) => [
@@ -239,6 +273,102 @@ it('places an authored vessel on its declared mount height and facing', () => {
   expect(vessel.root.position.y).toBeCloseTo(0.65)
   expect(vessel.root.rotation.y).toBeCloseTo(Math.PI / 2)
   vessel.dispose()
+})
+
+it('culls room rendering without removing camera solids and restores a newly entered room', () => {
+  const materials = createMaterials()
+  const museum = createMuseum(roomedLevel, materials)
+  const roomId = `${roomPrefix}/room/gallery`
+  const roomGroup = museum.root.getObjectByName(`room-${roomId}`)!
+  const wall = museum.root.getObjectByName(
+    `solid-${roomPrefix}/solid/long-wall`,
+  ) as Mesh
+  const connectionGate = museum.root.getObjectByName(
+    'solid-render-roomed/route/connection/gate/threshold',
+  ) as Mesh
+
+  museum.update(createGlassGame(roomedLevel).snapshot())
+  museum.setVisibleRooms(new Set())
+  expect(roomGroup.visible).toBe(false)
+  expect(wall.visible).toBe(true)
+  expect(connectionGate.visible).toBe(true)
+  expect(museum.cameraOccluders()).toContain(wall)
+  expect(museum.cameraOccluders()).toContain(connectionGate)
+
+  const camera = new PerspectiveCamera(50, 1, 0.05, 100)
+  camera.position.set(20, 1.5, -10)
+  camera.lookAt(24, 1.5, -10)
+  const selection = museum.updateRoomVisibility({ x: 20, y: 0, z: -10 }, camera)
+  expect(selection.visibleRoomIds.has(roomId)).toBe(true)
+  expect(roomGroup.visible).toBe(true)
+
+  disposeObject(museum.root, museum.materialLibrary.materials)
+  museum.materialLibrary.dispose()
+  Object.values(materials).forEach((material) => material.dispose())
+})
+
+it('keeps room art visible when its installed geometry extends beyond authored bounds', () => {
+  const decoratedPrefix = 'render-roomed/route/beta'
+  const decoratedRoomId = `${decoratedPrefix}/room/gallery`
+  const decoratedLevel: LevelDefinition = {
+    ...roomedLevel,
+    presentation: {
+      ...roomedLevel.presentation!,
+      rooms: [
+        ...roomedLevel.presentation!.rooms,
+        {
+          id: decoratedRoomId,
+          bounds: {
+            minX: 46,
+            maxX: 50,
+            minY: 0,
+            maxY: 4,
+            minZ: -12,
+            maxZ: -8,
+          },
+          ports: [],
+        },
+      ],
+      visuals: [
+        {
+          id: `${decoratedPrefix}/visual/overhanging-art`,
+          recipeId: 'museum-screen-v4',
+          position: { x: 20, y: 1.8, z: -20 },
+          yaw: 0,
+        },
+      ],
+      assetRecipeIds: [
+        ...roomedLevel.presentation!.assetRecipeIds,
+        'museum-screen-v4',
+      ],
+    },
+  }
+  const materials = createMaterials()
+  const museum = createMuseum(decoratedLevel, materials)
+  const sourceScene = new Group()
+  const source = new Group()
+  source.name = 'meshy_museum_screen_bay'
+  source.add(
+    new ThreeMesh(new BoxGeometry(3.2, 3.6, 0.2), new MeshPhysicalMaterial()),
+  )
+  sourceScene.add(source)
+  museum.setKit(sourceScene, 'museum-screen-v4')
+
+  const camera = new PerspectiveCamera(50, 1, 0.05, 100)
+  camera.position.set(20, 1.5, -10)
+  camera.lookAt(20, 1.5, -24)
+  const selection = museum.updateRoomVisibility({ x: 20, y: 0, z: -10 }, camera)
+
+  expect(selection.visibleRoomIds.has(decoratedRoomId)).toBe(true)
+  expect(museum.root.getObjectByName(`room-${decoratedRoomId}`)?.visible).toBe(
+    true,
+  )
+
+  disposeObject(sourceScene)
+  disposeObject(museum.root, museum.materialLibrary.materials)
+  museum.dispose()
+  museum.materialLibrary.dispose()
+  Object.values(materials).forEach((material) => material.dispose())
 })
 
 it('rejects bundles missing declared platform or decoration nodes', () => {
