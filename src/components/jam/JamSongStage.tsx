@@ -11,22 +11,19 @@
 // what keeps a room together across the join.
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { activateAudioPlayback, installAudioUnlock } from '@/lib/audio-unlock'
 import { createJamGuidePlayer } from '@/lib/jam/jam-guide-player'
 import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
-import { lyricLineProgress } from '@/lib/jam/jam-song'
 import { createJamSongTransport } from '@/lib/jam/jam-song-transport'
 import { jamSplitBounds, jamSplitShare, resetJamSplitShare, setJamSplitShare, } from '@/lib/jam/jam-view-prefs'
 import { followMediaClock } from '@/lib/jam/media-clock'
 import { initAudioEngine } from '@/stores/app-store'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongRunScore, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamGuideVolume, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamGuideVolume, setJamSongMediaDurationSec, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
 import { JamGuideVocal } from './JamGuideVocal'
-import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
-import { JamSongScrubber } from './JamSongScrubber'
 import styles from './JamSongStage.module.css'
 import { JamSplitHandle } from './JamSplitHandle'
 import { JamTransferDialog } from './JamTransferDialog'
@@ -145,6 +142,23 @@ export const JamSongStage: Component = () => {
   })
   onCleanup(() => transport.dispose())
 
+  // The timeline outside this stage reads the element's length from the
+  // store. It belongs to ONE song: a new source has not reported yet, and
+  // the last song's length under this one's timeline would put the
+  // playhead in the wrong place until it does.
+  //
+  // Keyed on a MEMO of the source. The song object is replaced whenever the
+  // pitch guide lands or the words are edited, with the same file under
+  // it; forgetting the length then would be for good, because an element
+  // whose source has not changed never reports it again.
+  const instrumentalSrc = createMemo(() => jamSong()?.stems.instrumental)
+  createEffect(
+    on(instrumentalSrc, () => setJamSongMediaDurationSec(null), {
+      defer: true,
+    }),
+  )
+  onCleanup(() => setJamSongMediaDurationSec(null))
+
   /**
    * Have a context ready before anyone presses Play.
    *
@@ -229,25 +243,6 @@ export const JamSongStage: Component = () => {
       )
     })
   })
-
-  const lyricProgress = () =>
-    lyricLineProgress(jamSong()?.lines ?? [], jamSongPositionSec())
-
-  const lyricProgressText = (): string => {
-    const progress = lyricProgress()
-    switch (progress.phase) {
-      case 'empty':
-        return ''
-      case 'intro':
-        return `Intro · ${progress.totalLines} lines`
-      case 'line':
-        return `Line ${progress.lineNumber} / ${progress.totalLines}`
-      case 'break':
-        return `Break · next ${progress.nextLineNumber} / ${progress.totalLines}`
-      case 'outro':
-        return `Outro · ${progress.totalLines} lines`
-    }
-  }
 
   /**
    * Why the audio stopped, when it stops by itself.
@@ -568,76 +563,24 @@ export const JamSongStage: Component = () => {
             src={song().stems.instrumental}
             preload="auto"
             crossorigin="anonymous"
+            // The timeline lives outside this stage and cannot ask the
+            // element, so the element tells the room. `durationchange`
+            // covers the metadata arriving AND a stream whose length grows.
+            onDurationChange={(event) => {
+              const seconds = event.currentTarget.duration
+              setJamSongMediaDurationSec(
+                Number.isFinite(seconds) && seconds > 0 ? seconds : null,
+              )
+            }}
           />
 
-          <div class={styles.transport}>
-            <span class={styles.title}>
-              {song().title}
-              <Show when={song().artist}>
-                <span class={styles.artist}> · {song().artist}</span>
-              </Show>
-            </span>
-            <Show when={lyricProgress().phase !== 'empty'}>
-              <span class={styles.lineProgress} aria-label="Lyric position">
-                {lyricProgressText()}
-              </span>
-            </Show>
-            {/* Your take so far. Only yours: everyone scores themselves
-                from their own microphone, so this is not a scoreboard and
-                is deliberately not presented as one. */}
-            <Show when={jamSongRunScore()}>
-              {(run) => (
-                <span
-                  class={styles.runScore}
-                  aria-label={`Your take score: ${run().score} out of 100; ${run().completedLines} of ${run().totalLines} assigned scoreable lines completed; singing detected in ${run().sungLines}`}
-                >
-                  <span class={styles.runLabel}>Take</span>
-                  <strong>{run().score}</strong>
-                  <span class={styles.runLines}>
-                    {run().sungLines}/{run().totalLines} sung
-                  </span>
-                </span>
-              )}
-            </Show>
-            {/* Everyone sees the position; only the host can move it.
-                Knowing where you are in the song is not a privilege, but a
-                room with two people dragging the playhead is a room nobody
-                can sing in. */}
-            {/* Wrapped so the phone layout can give it a whole row: it is
-                the one control in this bar that must not be squeezed. */}
-            <div class={styles.scrub}>
-              <JamSongScrubber
-                positionSec={jamSongPositionSec}
-                durationSec={() =>
-                  audioRef?.duration !== undefined &&
-                  Number.isFinite(audioRef.duration)
-                    ? audioRef.duration
-                    : song().durationSec
-                }
-                canSeek={jamIsHost()}
-                onSeek={(to) => seekTo(to)}
-              />
-            </div>
-
-            <JamLyricVersionPicker />
-
-            {/* The offer to send this song out lives in the room header
-                (JamSongShare), beside the transfer chip -- under the
-                timeline it read as part of the player and went unnoticed. */}
-
-            {/* The guide-vocal control is not here. After the timeline it
-                read as part of the scrubber, and its slider expanded
-                straight over the one thing in this row that must not be
-                covered. It floats in a corner of the words now (below),
-                and on a phone it is docked above the tab bar (JamPanel). */}
-
-            {/* Play, pause and stop live in the room's one transport bar
-                (JamTransport) rather than here. Two sets of buttons for
-                two engines is how a room ended up asking which Play was
-                the real one. The store asks this stage to move its clock
-                (jamSongSeekRequest), so the controls no longer need to be
-                inside the component that owns the element. */}
-          </div>
+          {/* There is no bar here any more. The song's name is in the room
+              header (JamNowSinging) and its timeline is on the row of
+              playback controls (JamSongTimeline) -- a row of its own
+              between the controls and the words was a third row of chrome,
+              and the words are what the room is for. Nothing in either
+              needs this element: a seek is a request this stage answers
+              (jamSongSeekRequest), and the duration is reported below. */}
 
           {/* The share is a CSS custom property rather than a full
               template, so the stylesheet keeps owning which axis is

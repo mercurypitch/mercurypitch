@@ -292,6 +292,71 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+/* The room's name gives up nothing to the strip beside it. The strip can
+   ask for more than the header has -- the song's name is in it, and grows
+   into whatever is spare -- and a flex row settles that by squeezing every
+   item in proportion. The name's share of the squeeze broke "Jam
+   LunarHarbour" over two lines and made the header 10px taller. The strip
+   is the one built to give: its chip ellipsises, and it wraps. */
+@media (min-width: 901px) {
+  .roomInfo > .title {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .roomInfo > :not(.title) {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+}
+
+/* A tablet held upright, or a narrow window: the room's buttons are a fixed
+   366px, and what is left beside them is not a row. The strip used to be
+   squeezed into it anyway, one pill per line down the side of the title --
+   92px of header for a room of one, measured at 820px, and a line more for
+   every thing added to it. So it gets the phone's answer instead: name and
+   buttons on the first line, the strip on a line of its own underneath,
+   with the whole width to lay its pills out in.
+
+   A media query is enough even though the sidebar can be open or shut: one
+   line needs about 840px of room, and under 900px of window there is no
+   sidebar state that has it.
+
+   The selectors match the phone block's on purpose, one class deeper, so
+   they beat the single-class rules both stylesheets hang on the strip. */
+@media (min-width: 641px) and (max-width: 900px) {
+  .roomHeader {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .roomInfo {
+    display: contents;
+  }
+
+  .roomInfo > .title {
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  .roomActions {
+    order: 2;
+    flex: 0 0 auto;
+  }
+
+  .roomInfo > :not(.title) {
+    order: 3;
+    flex: 0 0 100%;
+    min-width: 0;
+  }
 }
 
 .roomIdBadge {

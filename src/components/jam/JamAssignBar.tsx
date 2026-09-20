@@ -12,10 +12,12 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { colorTokenVars } from '@/lib/css-color-token'
+import { jamPhoneLayout } from '@/lib/jam/jam-phone-layout'
 import { EVERYONE } from '@/lib/jam/jam-song-parts'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import { jamAssignBrush, jamIsHost, jamPeerId, jamPeers, jamSong, setJamAssignBrush, toggleJamAssignBrush, } from '@/stores/jam-store'
 import styles from './JamAssignBar.module.css'
+import { JamLyricVersionPicker } from './JamLyricVersionPicker'
 
 export const JamAssignBar: Component = () => {
   const roster = createMemo(() => {
@@ -83,6 +85,17 @@ export const JamAssignBar: Component = () => {
           >
             Done
           </button>
+        </Show>
+
+        {/* Which words are on the sheet. It was in the song's own bar,
+            which is on the playback row now and has to be short to fit
+            there; and it is the same kind of thing as the rest of this
+            bar -- the host's edit to the words under it. A phone keeps it
+            on the timeline (JamSongTimeline), where it costs no height. */}
+        <Show when={!jamPhoneLayout()}>
+          <div class={styles.words}>
+            <JamLyricVersionPicker />
+          </div>
         </Show>
       </div>
     </Show>

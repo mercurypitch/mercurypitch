@@ -28,12 +28,14 @@ import { JamExerciseCanvas } from './JamExerciseCanvas'
 import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamInviteModal } from './JamInviteModal'
+import { JamNowSinging } from './JamNowSinging'
 import panelStyles from './JamPanel.module.css'
 import { JamPickerList } from './JamPickerList'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
 import { JamSongShare } from './JamSongShare'
 import { JamSongStage } from './JamSongStage'
+import { JamSongTimeline } from './JamSongTimeline'
 import { JamTransferChip } from './JamTransferDialog'
 import { JamTransport } from './JamTransport'
 
@@ -530,7 +532,7 @@ export const JamPanel: Component = () => {
           {/* ── Main content ───────────────────────────────────── */}
           <div class={panelStyles.mainArea}>
             {/* Top bar: room info + controls */}
-            <div class={jamStyles.roomHeader}>
+            <div class={jamStyles.roomHeader} data-testid="jam-room-header">
               <div class={jamStyles.roomInfo}>
                 <h2 class={jamStyles.title}>Jam {fancyRoomName()}</h2>
                 {/* One strip for everything that describes the room rather
@@ -540,6 +542,10 @@ export const JamPanel: Component = () => {
                     three separate scrollers would be three things to
                     discover. */}
                 <div class={panelStyles.roomStrip}>
+                  {/* What the room is singing leads the strip: room, song,
+                      then who. It was the first thing in a row of its own
+                      under the playback controls, and that row is gone. */}
+                  <JamNowSinging />
                   {/* The room code stays visible -- people read it aloud.
                       Copying the link is the one action worth a button
                       here; the invite modal has the rest, which is why the
@@ -926,13 +932,19 @@ export const JamPanel: Component = () => {
             {/* ── Exercise controls + live pitch toggle ─────────── */}
             {/* Positioned wrapper so the picker below can overlay the
                 canvas rather than push it down the flex column. */}
-            <div class={panelStyles.transportRow}>
+            <div
+              class={panelStyles.transportRow}
+              data-testid="jam-transport-row"
+            >
               {/* The drill's transport hides itself in a song room, because
                   it only renders when a melody is loaded and a song room
                   has none. What stays is the picker button -- the way back
                   out of a song. Two play buttons writing one playing signal
                   is a room that stops for reasons nobody can see. */}
-              <div class={panelStyles.exerciseBar}>
+              <div
+                class={panelStyles.exerciseBar}
+                data-testid="jam-transport-bar"
+              >
                 {/* The guide vocal used to lead this row on every screen. It
                     is about what YOU hear, and it sat in front of the buttons
                     that are about what the ROOM does -- so it floats in a
@@ -1117,6 +1129,17 @@ export const JamPanel: Component = () => {
                   )}
                 </Show>
               </div>
+
+              {/* Where the song is, on the same row as the buttons that
+                  move it -- wherever there is the width. A sibling of the
+                  bar rather than an item in it, because on a phone the bar
+                  scrolls sideways, and a timeline must never scroll out
+                  from under a thumb that is dragging it. */}
+              <Show when={jamIsSongRoom()}>
+                <div class={panelStyles.songTimeline}>
+                  <JamSongTimeline />
+                </div>
+              </Show>
 
               {/* Exercise picker.
                   On a desk it is an overlay, so opening it does not shove

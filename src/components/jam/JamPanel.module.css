@@ -298,14 +298,37 @@
   position: relative;
   flex-shrink: 0;
   z-index: 3;
+  /* Two things share this row in a song room: the buttons, and where the
+     song is. Side by side wherever there is the width; where there is
+     not, the timeline drops to a line of its own rather than squeezing
+     the buttons. */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
 }
 
 .exerciseBar {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
   flex-wrap: wrap;
+}
+
+/* Takes whatever the buttons leave. The basis is the narrowest a timeline
+   is still worth dragging at; under it, the row wraps.
+
+   A LENGTH, not `auto`: what is inside changes while a song plays -- the
+   line count becomes "Break · next 12 / 26", a take score appears -- and a
+   row that decided where to break from its content would jump under the
+   singer mid-song. 380px is the worst of those with a timeline still
+   ~145px long; a host's full set of buttons leaves 410 on an 1180px tablet
+   with the sidebar open, which is the case this number was chosen for. */
+.songTimeline {
+  flex: 1 1 380px;
+  min-width: 0;
 }
 
 /* ── BPM control ─────────────────────────────────────────────────── */
@@ -738,21 +761,27 @@
     z-index: 15;
   }
 
-  .transportRow {
+  .exerciseBar {
     /* The transport can still outgrow a phone once BPM and the mode
        picker are in it, so let it scroll sideways rather than wrap into
-       three rows and eat the canvas. */
+       three rows and eat the canvas.
+
+       The BAR scrolls, not the row it sits in: the song's timeline is in
+       that row too, and a timeline that slid sideways under the thumb
+       dragging it would be unusable. */
+    flex: 0 0 100%;
+    flex-wrap: nowrap;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: hidden;
     scrollbar-width: none;
   }
 
-  .transportRow::-webkit-scrollbar {
+  .exerciseBar::-webkit-scrollbar {
     display: none;
   }
 
-  .exerciseBar {
-    flex-wrap: nowrap;
+  .songTimeline {
+    flex: 0 0 100%;
   }
 
   .exercisePicker {

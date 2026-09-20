@@ -96,7 +96,7 @@ test.describe('Responsive Jam song picker', () => {
     await page.getByRole('button', { name: 'Choose a drill or a song' }).click()
 
     const desktopChoice = page
-      .locator('#jam-panel button')
+      .locator('#jam-panel [data-variant="popup"] button')
       .filter({ hasText: 'Goodbye to Spring' })
     await expect(desktopChoice).toBeVisible()
     await expect(
