@@ -1563,3 +1563,33 @@ body {
   line-height: 1.5;
   color: rgba(207, 214, 255, 0.7);
 }
+
+.shared-vp-figure {
+  width: min(360px, 82vw);
+  margin: 0 0 18px;
+  line-height: 0;
+}
+
+.shared-vp-figure canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 18px 48px rgba(6, 10, 30, 0.55);
+}
+
+/* Beside the drawn card the written numbers are a caption, not the headline:
+   the card already says them louder than this block can. */
+.shared-vp-card-aside {
+  border-color: rgba(143, 163, 255, 0.16);
+  background: transparent;
+  padding: 0;
+}
+
+.shared-vp-card-aside .shared-vp-range {
+  font-size: 1.15rem;
+  color: rgba(207, 214, 255, 0.9);
+}
+
+.shared-vp-card-aside .shared-vp-stats {
+  margin-top: 6px;
+}

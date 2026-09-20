@@ -8,9 +8,10 @@
 // three seconds. This screen shows them the voiceprint first, and only
 // then offers them their own.
 
-import { Show } from 'solid-js'
+import { createResource, Show } from 'solid-js'
 import { formatSpan, sharedRangeNotes, sharedVoiceprintTitle, } from '@/lib/mirror/shared-voiceprint'
 import type { VoiceprintShareData } from '@/lib/share-codec'
+import { renderSharedVoiceprintCard } from './shared-voiceprint-card'
 
 export interface SharedVoiceprintWelcomeProps {
   data: VoiceprintShareData
@@ -24,6 +25,15 @@ export function SharedVoiceprintWelcome(
   const range = (): string | null => sharedRangeNotes(props.data)
   const span = (): string | null => formatSpan(props.data.st)
 
+  // The real card, rebuilt from the numbers in the link — the same drawing
+  // the sender exported, not a second rendering of the same data. Null
+  // whenever there is no twin, no portrait, or the portrait will not load;
+  // the written layout below is the fallback, never a broken frame.
+  const [card] = createResource(
+    () => props.data,
+    (data) => renderSharedVoiceprintCard(data),
+  )
+
   return (
     <section class="shared-vp" aria-labelledby="shared-vp-title">
       <p class="shared-vp-eyebrow">Someone sent you this</p>
@@ -31,7 +41,14 @@ export function SharedVoiceprintWelcome(
         {sharedVoiceprintTitle(props.data)}
       </h1>
 
-      <div class="shared-vp-card">
+      <Show when={card()}>
+        <figure class="shared-vp-figure">{card()}</figure>
+      </Show>
+
+      <div
+        class="shared-vp-card"
+        classList={{ 'shared-vp-card-aside': card() != null }}
+      >
         <Show when={range()}>
           <p class="shared-vp-range">{range()}</p>
         </Show>
