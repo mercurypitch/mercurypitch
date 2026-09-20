@@ -595,6 +595,95 @@ describe('parseLrcWordTimings', () => {
     // 1*60 + 30 + 0.5 = 90.5
     expect(result!.wordTimes[1]).toBeCloseTo(90.5, 1)
   })
+
+  // The enhanced (A2) spec spells a word time `<mm:ss.xx>`. The app writes
+  // `[mm:ss.xx]`, and for a long time that was the only spelling it read: a
+  // sheet from anywhere else lost its word times and showed its stamps as words.
+  describe('the angle-bracket spelling', () => {
+    it('reads it exactly as it reads the square one', () => {
+      const angle = parseLrcWordTimings(
+        'Yeah, <00:24.21> I <00:24.41> will',
+        24,
+      )
+      expect(angle).toEqual({
+        words: ['Yeah,', 'I', 'will'],
+        wordTimes: [24, 24.21, 24.41],
+      })
+      expect(angle).toEqual(
+        parseLrcWordTimings('Yeah, [00:24.21] I [00:24.41] will', 24),
+      )
+    })
+
+    it('reads milliseconds and the colon separator in it too', () => {
+      const result = parseLrcWordTimings(
+        'Start <00:05.123>word <01:30:50>end',
+        0,
+      )
+      expect(result!.words).toEqual(['Start', 'word', 'end'])
+      expect(result!.wordTimes[1]).toBeCloseTo(5.123, 3)
+      expect(result!.wordTimes[2]).toBeCloseTo(90.5, 3)
+    })
+
+    it('reads a line that mixes the two spellings', () => {
+      expect(
+        parseLrcWordTimings(
+          'One <00:01.00>two [00:02.00]three <00:03.00>four',
+          0,
+        ),
+      ).toEqual({
+        words: ['One', 'two', 'three', 'four'],
+        wordTimes: [0, 1, 2, 3],
+      })
+    })
+
+    it("reads the spec's own layout: a stamp before the first word and one after the last", () => {
+      // The first word starts at ITS stamp, which is not the line's: here the
+      // line is called 1.2 s before anyone sings. The closing stamp is where
+      // the last word ends, and starts nothing.
+      const result = parseLrcWordTimings(
+        '<00:07.67> And <00:07.95> all <00:08.36> the <00:08.63> joy <00:10.28>',
+        6.47,
+      )
+      expect(result).toEqual({
+        words: ['And', 'all', 'the', 'joy'],
+        wordTimes: [7.67, 7.95, 8.36, 8.63],
+      })
+    })
+
+    it('shares a run of words out up to the next stamp, whichever spelling it has', () => {
+      const result = parseLrcWordTimings(
+        'One <00:10.00>two three <00:12.00>',
+        9,
+      )
+      expect(result!.words).toEqual(['One', 'two', 'three'])
+      expect(result!.wordTimes).toEqual([9, 10, 11])
+    })
+
+    it('returns null for stamps with no words between them', () => {
+      expect(parseLrcWordTimings('<00:05.00><00:10.00>', 0)).toBeNull()
+      expect(parseLrcWordTimings('<00:05.00> [00:10.00]', 0)).toBeNull()
+    })
+
+    it('leaves angle brackets that are not times alone', () => {
+      expect(parseLrcWordTimings('I <3 you <unclear>', 0)).toBeNull()
+    })
+
+    it('wants the two brackets of a stamp to match', () => {
+      expect(parseLrcWordTimings('Yeah, <00:24.21] I', 24)).toBeNull()
+      expect(parseLrcWordTimings('Yeah, [00:24.21> I', 24)).toBeNull()
+    })
+  })
+
+  // A second SQUARE stamp at the head of a line is standard LRC for "this
+  // line is sung again at": `[00:12.00][00:45.00]Chorus`. It is not the first
+  // word's start, so the square spelling keeps timing its first words off the
+  // line -- which is also what every file the app wrote itself relies on.
+  it('keeps the first words of a square-bracket line on the line start', () => {
+    expect(parseLrcWordTimings('[00:45.00]Chorus line', 12)).toEqual({
+      words: ['Chorus', 'line'],
+      wordTimes: [12, 12],
+    })
+  })
 })
 
 // ── computeActiveWord — Per-Word Timing Interpolation ───────────
@@ -1027,6 +1116,35 @@ describe('parseLrcFile preserves embedded timestamps for word-level parsing', ()
     expect(result).toHaveLength(2)
     expect(result[0].time).toBe(237.26) // 03:57.26
     expect(result[1].time).toBe(252.83) // 04:12.83
+  })
+
+  it('takes the line time off an enhanced line and leaves its angle stamps in the text', () => {
+    // The line's own stamp is square in either spelling; only the word
+    // stamps differ, and they are parseLrcWordTimings's to read.
+    expect(
+      parseLrcFile('[00:24.00]Yeah, <00:24.21> I <00:24.41> will'),
+    ).toEqual([{ time: 24, text: 'Yeah, <00:24.21> I <00:24.41> will' }])
+  })
+
+  it("reads a whole sheet in the spec's layout, line by line", () => {
+    const content = `[00:00.00] <00:00.04> When <00:00.16> the <00:00.82> truth <00:01.29>
+[00:06.47] <00:07.67> And <00:07.95> all <00:08.36> the <00:08.63> joy <00:10.28>`
+    const timed = parseLrcFile(content).map((line) => ({
+      time: line.time,
+      ...parseLrcWordTimings(line.text, line.time),
+    }))
+    expect(timed).toEqual([
+      {
+        time: 0,
+        words: ['When', 'the', 'truth'],
+        wordTimes: [0.04, 0.16, 0.82],
+      },
+      {
+        time: 6.47,
+        words: ['And', 'all', 'the', 'joy'],
+        wordTimes: [7.67, 7.95, 8.36, 8.63],
+      },
+    ])
   })
 })
 
