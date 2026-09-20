@@ -1,7 +1,7 @@
 // Resonance portal tests — readiness, rotation and finish motion follow the shared aperture.
 
 import type { InstancedMesh, Mesh, MeshPhysicalMaterial } from 'three'
-import { MeshPhysicalMaterial as PhysicalMaterial } from 'three'
+import { Box3, MeshPhysicalMaterial as PhysicalMaterial } from 'three'
 import { describe, expect, it } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
@@ -25,6 +25,35 @@ function snapshot(
 }
 
 describe('resonance portal', () => {
+  it('keeps its complete rim above the floor while idle, pulsing and celebrating', () => {
+    const exit = { ...GLASSWORKS.exit, top: 0.24 }
+    const portal = createResonancePortal(exit, materials(), false)
+    const halo = portal.root.getObjectByName('resonance-veil-outer-halo')!
+    const sparkles = portal.root.getObjectByName('resonance-veil-sparkles')!
+    const checkClearance = () => {
+      portal.root.updateMatrixWorld(true)
+      expect(new Box3().setFromObject(halo).min.y).toBeGreaterThanOrEqual(
+        exit.top + 0.05,
+      )
+      if (sparkles.visible)
+        expect(new Box3().setFromObject(sparkles).min.y).toBeGreaterThanOrEqual(
+          exit.top + 0.05,
+        )
+    }
+    checkClearance()
+    for (let i = 0; i < 30; i++) {
+      portal.update(
+        { ...snapshot(exit.requiresCompleted), elapsedSeconds: i * 0.21 },
+        0.016,
+      )
+      checkClearance()
+    }
+    portal.update(snapshot(exit.requiresCompleted, true), 0)
+    for (let i = 0; i < 20; i++) {
+      portal.update(snapshot(exit.requiresCompleted, true), 0.06)
+      checkClearance()
+    }
+  })
   it('fits and rotates its visible aperture from the same authored bounds', () => {
     const exit: LevelDefinition['exit'] = {
       minX: 4.9,

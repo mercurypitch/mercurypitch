@@ -1,0 +1,43 @@
+[
+  {
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "pose": {
+      "name": "twin-exit-flourish-0900ms",
+      "x": 0,
+      "z": 46.537947731018065,
+      "yaw": 3.141592653589793,
+      "pitch": 0.27,
+      "distance": 3.1,
+      "completed": [
+        "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+        "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+        "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+        "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+      ],
+      "celebrate": true,
+      "celebrateFrames": 50
+    },
+    "file": "1024-twin-exit-flourish-0900ms.png",
+    "allRoomsVisible": false,
+    "metrics": {
+      "drawCalls": 61,
+      "triangles": 249064,
+      "textures": 43,
+      "geometries": 170,
+      "reflectionCaptures": 0,
+      "reflectionTargetPixels": 0
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "pageErrors": []
+  }
+]

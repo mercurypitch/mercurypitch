@@ -548,6 +548,11 @@
     display: none;
   }
 }
+@media (max-width: 900px) {
+  .topbarArtwork .identity {
+    display: none;
+  }
+}
 @media (max-width: 600px) {
   .topbar {
     left: max(14px, env(safe-area-inset-left));

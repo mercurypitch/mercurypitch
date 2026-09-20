@@ -5,8 +5,11 @@ import { Frustum, Matrix4, Vector3, Vector4 } from 'three'
 import { Reflector } from 'three/addons/objects/Reflector.js'
 import { disposeMaterials } from './dispose'
 
-const DESKTOP_TARGET_MAX = 384
-const COMPACT_TARGET_MAX = 256
+// The reflected camera covers the whole viewport: a tiny full-view texture
+// leaves only a few dozen pixels inside a close-up mirror. Match CSS pixels
+// up to a bounded cap; do not multiply this extra scene render by device DPR.
+const DESKTOP_TARGET_MAX = 1024
+const COMPACT_TARGET_MAX = 512
 const DESKTOP_FRAME_INTERVAL = 2
 const COMPACT_FRAME_INTERVAL = 4
 const COMPACT_SHORT_EDGE = 600
@@ -37,16 +40,29 @@ export interface PlanarReflectionMetrics {
 function reflectionTargetSize(
   width: number,
   height: number,
+  detailed: boolean,
 ): { width: number; height: number; frameInterval: number } {
   const safeWidth = Math.max(1, width)
   const safeHeight = Math.max(1, height)
   const compact = Math.min(safeWidth, safeHeight) < COMPACT_SHORT_EDGE
-  const maximum = compact ? COMPACT_TARGET_MAX : DESKTOP_TARGET_MAX
+  const maximum = detailed
+    ? compact
+      ? COMPACT_TARGET_MAX
+      : DESKTOP_TARGET_MAX
+    : compact
+      ? 256
+      : 384
   const scale = Math.min(1, maximum / Math.max(safeWidth, safeHeight))
   return {
     width: Math.max(1, Math.round(safeWidth * scale)),
     height: Math.max(1, Math.round(safeHeight * scale)),
-    frameInterval: compact ? COMPACT_FRAME_INTERVAL : DESKTOP_FRAME_INTERVAL,
+    frameInterval: detailed
+      ? compact
+        ? 6
+        : 3
+      : compact
+        ? COMPACT_FRAME_INTERVAL
+        : DESKTOP_FRAME_INTERVAL,
   }
 }
 
@@ -183,6 +199,7 @@ export function createPlanarReflectionController(
   let lastCaptureFrame = -Infinity
   let lastSelected: PlanarMirrorSurface | undefined
   let disabled = false
+  let detailed = false
   const metrics: PlanarReflectionMetrics = {
     captures: 0,
     targetWidth: 0,
@@ -235,8 +252,23 @@ export function createPlanarReflectionController(
         return false
       }
 
-      const target = reflectionTargetSize(width, height)
       const changed = selected !== lastSelected
+      if (selected.surface.geometry.boundingSphere === null)
+        selected.surface.geometry.computeBoundingSphere()
+      const radius =
+        (selected.surface.geometry.boundingSphere?.radius ?? 0) *
+        selected.surface.matrixWorld.getMaxScaleOnAxis()
+      const projectedSpan =
+        radius /
+        Math.max(
+          0.01,
+          Math.sqrt(selectedDistance) * Math.tan((camera.fov * Math.PI) / 360),
+        )
+      // Spend the sharper target only on a mirror large enough to inspect.
+      // Hysteresis avoids reallocating targets as the camera settles at a tier
+      // boundary; detail captures run less often than the distant fallback.
+      detailed = projectedSpan >= (!changed && detailed ? 0.18 : 0.25)
+      const target = reflectionTargetSize(width, height, detailed)
       lastSelected = selected
       if (!changed && frame - lastCaptureFrame < target.frameInterval)
         return false

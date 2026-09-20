@@ -90,10 +90,13 @@ it('captures only the nearest visible front-facing mirror on a bounded cadence',
   expect(
     controller.update(renderer, scene, view, 800, 600, withVisibleScene),
   ).toBe(true)
-  expect(near.capture).toHaveBeenCalledWith(renderer, scene, view, 384, 288)
+  expect(near.capture).toHaveBeenCalledWith(renderer, scene, view, 800, 600)
   expect(far.capture).not.toHaveBeenCalled()
   expect(mirrors.every(({ surface }) => surface.visible)).toBe(true)
 
+  expect(
+    controller.update(renderer, scene, view, 800, 600, withVisibleScene),
+  ).toBe(false)
   expect(
     controller.update(renderer, scene, view, 800, 600, withVisibleScene),
   ).toBe(false)
@@ -103,9 +106,104 @@ it('captures only the nearest visible front-facing mirror on a bounded cadence',
   expect(near.capture).toHaveBeenCalledTimes(2)
   expect(controller.metrics).toEqual({
     captures: 2,
-    targetWidth: 384,
-    targetHeight: 288,
+    targetWidth: 800,
+    targetHeight: 600,
   })
+})
+
+it.each([
+  { width: 3840, height: 2160, targetWidth: 1024, targetHeight: 576 },
+  { width: 1170, height: 500, targetWidth: 512, targetHeight: 219 },
+])(
+  'caps extra reflection pixels at $width x $height',
+  ({ width, height, targetWidth, targetHeight }) => {
+    const scene = new Scene()
+    const selected = fakeMirror(0, 0)
+    scene.add(selected.mirror.surface)
+    const controller = createPlanarReflectionController(() => [selected.mirror])
+    controller.update(
+      {} as WebGLRenderer,
+      scene,
+      camera(),
+      width,
+      height,
+      (capture) => capture(),
+    )
+    expect(controller.metrics.targetWidth).toBe(targetWidth)
+    expect(controller.metrics.targetHeight).toBe(targetHeight)
+  },
+)
+
+it('keeps distant mirrors at the original small target and faster cadence', () => {
+  const scene = new Scene()
+  const far = fakeMirror(0, -30)
+  scene.add(far.mirror.surface)
+  const controller = createPlanarReflectionController(() => [far.mirror])
+  const update = () =>
+    controller.update(
+      {} as WebGLRenderer,
+      scene,
+      camera(),
+      1024,
+      768,
+      (capture) => capture(),
+    )
+  expect(update()).toBe(true)
+  expect(controller.metrics.targetWidth).toBe(384)
+  expect(update()).toBe(false)
+  expect(update()).toBe(true)
+})
+
+it('retains detail through the hysteresis band and resets it for a different mirror', () => {
+  const scene = new Scene()
+  const view = camera()
+  const radius = Math.SQRT1_2
+  const zForProjectedSpan = (span: number) =>
+    view.position.z - radius / (span * Math.tan((view.fov * Math.PI) / 360))
+  const selected = fakeMirror(0, zForProjectedSpan(0.27))
+  scene.add(selected.mirror.surface)
+  const mirrors = [selected.mirror]
+  const controller = createPlanarReflectionController(() => mirrors)
+  const update = () =>
+    controller.update({} as WebGLRenderer, scene, view, 1024, 768, (capture) =>
+      capture(),
+    )
+  const captureNext = () => {
+    for (let frame = 0; frame < 6; frame++) if (update()) return
+    throw new Error('Expected a reflection capture within the bounded cadence.')
+  }
+
+  captureNext()
+  expect(controller.metrics.targetWidth).toBe(1024)
+
+  selected.mirror.surface.position.z = zForProjectedSpan(0.21)
+  captureNext()
+  expect(controller.metrics.targetWidth).toBe(1024)
+
+  selected.mirror.surface.position.z = zForProjectedSpan(0.16)
+  captureNext()
+  expect(controller.metrics.targetWidth).toBe(384)
+
+  selected.mirror.surface.position.z = zForProjectedSpan(0.21)
+  captureNext()
+  expect(controller.metrics.targetWidth).toBe(384)
+
+  selected.mirror.surface.position.z = zForProjectedSpan(0.27)
+  captureNext()
+  expect(controller.metrics.targetWidth).toBe(1024)
+
+  const replacement = fakeMirror(0, zForProjectedSpan(0.21))
+  selected.mirror.surface.visible = false
+  mirrors.push(replacement.mirror)
+  scene.add(replacement.mirror.surface)
+  captureNext()
+  expect(replacement.capture).toHaveBeenLastCalledWith(
+    expect.anything(),
+    scene,
+    view,
+    384,
+    288,
+  )
 })
 
 it('omits the selected authored backing only while capturing', () => {
@@ -173,8 +271,8 @@ it('ignores a hidden parent, back face and off-screen surface', () => {
     expect.anything(),
     scene,
     expect.any(PerspectiveCamera),
-    135,
-    256,
+    270,
+    512,
   )
   expect(hidden.capture).not.toHaveBeenCalled()
   expect(backFace.capture).not.toHaveBeenCalled()

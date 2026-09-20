@@ -71,7 +71,7 @@ function gapBetween(a: Bounds, b: Bounds): number {
   return Math.hypot(horizontal, vertical)
 }
 
-test('artwork offer stays centered below guidance and leaves help reachable @smoke', async ({
+test('artwork offer shares the top header row above guidance and leaves controls reachable @smoke', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 640 })
@@ -81,9 +81,15 @@ test('artwork offer stays centered below guidance and leaves help reachable @smo
     hasText: 'Follow the gold inlay to the laurel goblet.',
   })
   const help = page.getByRole('button', { name: 'How to play' })
+  const title = page.getByRole('heading', {
+    level: 1,
+    name: 'Glassworks Journey',
+  })
 
   for (const viewport of [
     { width: 320, height: 640, touch: true },
+    { width: 768, height: 1024, touch: true },
+    { width: 901, height: 600, touch: true },
     { width: 1024, height: 768, touch: true },
     { width: 1440, height: 900, touch: false },
   ]) {
@@ -107,8 +113,34 @@ test('artwork offer stays centered below guidance and leaves help reachable @smo
       viewport.width / 2,
       0,
     )
-    expect(offerBounds.top).toBeGreaterThanOrEqual(guidanceBounds.bottom + 12)
+    const pauseBounds = await bounds(page, 'button[aria-label="Pause game"]')
+    const leaveBounds = await bounds(page, 'button[aria-label="Leave museum"]')
+    const collectionBounds = await bounds(
+      page,
+      '[aria-label$="main exhibits opened"]',
+    )
+    expect((offerBounds.top + offerBounds.bottom) / 2).toBeCloseTo(
+      (pauseBounds.top + pauseBounds.bottom) / 2,
+      0,
+    )
+    expect(guidanceBounds.top).toBeGreaterThanOrEqual(offerBounds.bottom + 12)
+    expect(gapBetween(offerBounds, pauseBounds)).toBeGreaterThanOrEqual(8)
+    expect(gapBetween(offerBounds, leaveBounds)).toBeGreaterThanOrEqual(8)
+    expect(gapBetween(offerBounds, collectionBounds)).toBeGreaterThanOrEqual(4)
     expect(gapBetween(offerBounds, helpBounds)).toBeGreaterThanOrEqual(12)
+    if (viewport.width > 900) {
+      await expect(title).toBeVisible()
+      const identityBounds = await title.evaluate((element) => {
+        const rect = element.parentElement!.getBoundingClientRect()
+        return {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+        }
+      })
+      expect(gapBetween(offerBounds, identityBounds)).toBeGreaterThanOrEqual(8)
+    } else await expect(title).toBeHidden()
 
     if (viewport.touch) await help.tap()
     else await help.click()

@@ -83,6 +83,16 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           adventure.voiceEncounterId()),
     ),
   )
+  const showArtworkOffer = createMemo(
+    () =>
+      adventure.ready() &&
+      !adventure.paused() &&
+      !adventure.tutorial() &&
+      !adventure.snapshot().complete &&
+      adventure.nearbyArtwork() !== null &&
+      adventure.voiceMode() === 'off' &&
+      adventure.snapshot().phase !== 'shattering',
+  )
   const voiceSteps = createMemo(() => {
     const challenge = active()?.challenge
     if (!challenge) return []
@@ -256,7 +266,11 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           />
         }
       >
-        <div class={styles.topbar} inert={adventure.inspection() !== null}>
+        <div
+          class={styles.topbar}
+          classList={{ [styles.topbarArtwork]: showArtworkOffer() }}
+          inert={adventure.inspection() !== null}
+        >
           <button
             class={styles.roundButton}
             type="button"
@@ -271,6 +285,9 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             <h1>{level.title}</h1>
             <p>{level.guidance?.subtitle ?? 'The floating museum'}</p>
           </div>
+          <Show when={showArtworkOffer()}>
+            <ArtworkOffer onOpen={adventure.inspectNearbyArtwork} />
+          </Show>
           <div
             class={styles.collection}
             aria-label={`${count()} of ${total} main exhibits opened`}
@@ -360,15 +377,6 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               adventure.snapshot().phase === 'shattering'
             }
           />
-          <Show
-            when={
-              adventure.nearbyArtwork() !== null &&
-              adventure.voiceMode() === 'off' &&
-              adventure.snapshot().phase !== 'shattering'
-            }
-          >
-            <ArtworkOffer onOpen={adventure.inspectNearbyArtwork} />
-          </Show>
           <Show when={adventure.voiceMode() === 'off' && nearby()}>
             <div class={styles.encounterOffer}>
               <span>

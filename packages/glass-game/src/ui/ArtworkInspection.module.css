@@ -1,9 +1,9 @@
 /* A museum label and full artwork, sized for both portrait phones and landscape tablets. */
-.offer {
+.offer.offer {
   position: absolute;
-  top: calc(max(18px, env(safe-area-inset-top)) + 148px);
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -114,6 +114,14 @@
   outline-offset: 4px;
 }
 @media (width < 600px) {
+  .offer.offer {
+    gap: 0;
+    padding: 10px;
+    font-size: 12px;
+  }
+  .offer svg {
+    display: none;
+  }
   .panel {
     grid-template-columns: minmax(0, 1fr);
   }

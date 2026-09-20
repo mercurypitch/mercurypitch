@@ -6,6 +6,8 @@ import { deriveExitPortalGeometry } from '../core/exit-portal'
 import type { MuseumMaterials } from './materials'
 
 const SPARKLE_COUNT = 20
+const RIM_FLOOR_CLEARANCE = 0.08
+const OUTER_RIM_RADIUS = 0.526
 export const EXIT_CELEBRATION_SECONDS = 1.2
 export const EXIT_REDUCED_CELEBRATION_SECONDS = 0.24
 
@@ -35,6 +37,18 @@ export function createResonancePortal(
   outerHalo.name = 'resonance-veil-outer-halo'
   outerHalo.scale.set(geometry.width + 0.14, geometry.height + 0.14, 1)
   face.add(outerHalo)
+  // The authored exit is a walk-through aperture. Its decorative rim is wider
+  // and breathes during the flourish, so keep that entire rim above the floor
+  // without moving the gameplay crossing plane or requiring a jump.
+  const keepRimAboveFloor = () => {
+    const verticalRadius =
+      OUTER_RIM_RADIUS *
+      face.scale.y *
+      (Math.abs(Math.sin(face.rotation.z)) * outerHalo.scale.x +
+        Math.abs(Math.cos(face.rotation.z)) * outerHalo.scale.y)
+    face.position.y = RIM_FLOOR_CLEARANCE + verticalRadius - geometry.height / 2
+  }
+  keepRimAboveFloor()
 
   const innerMaterial = new MeshBasicMaterial({
     color: 0xffe3a6,
@@ -94,6 +108,7 @@ export function createResonancePortal(
   sparkles.frustumCulled = false
   const matrix = new Matrix4()
   const position = new Vector3()
+  let lowestSparkle = 0
   for (let index = 0; index < SPARKLE_COUNT; index++) {
     const angle = (index / SPARKLE_COUNT) * Math.PI * 2 + (index % 3) * 0.17
     const radius = 0.3 + (index % 5) * 0.035
@@ -102,6 +117,7 @@ export function createResonancePortal(
       Math.sin(angle) * geometry.height * radius,
       0.02 + (index % 4) * 0.006,
     )
+    lowestSparkle = Math.min(lowestSparkle, position.y - 0.018)
     matrix.makeTranslation(position.x, position.y, position.z)
     sparkles.setMatrixAt(index, matrix)
   }
@@ -150,6 +166,7 @@ export function createResonancePortal(
         ready && !reducedMotion
           ? Math.sin(snapshot.elapsedSeconds * 0.42) * 0.012
           : 0
+      keepRimAboveFloor()
       veilMaterial.opacity = celebrating
         ? baseOpacity + (1 - progress) * (reducedMotion ? 0.3 : 0.24)
         : baseOpacity
@@ -161,6 +178,13 @@ export function createResonancePortal(
         : 0
       sparkles.scale.setScalar(
         reducedMotion ? 1 : 0.65 + smoothstep(progress) * 0.9,
+      )
+
+      sparkles.position.y = Math.max(
+        face.position.y,
+        RIM_FLOOR_CLEARANCE -
+          geometry.height / 2 -
+          lowestSparkle * sparkles.scale.y,
       )
 
       if (
