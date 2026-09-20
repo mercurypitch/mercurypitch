@@ -31,9 +31,10 @@ test.describe('a voiceprint that arrived by link', () => {
     )
 
     await expect(page.getByText('Someone sent you this')).toBeVisible()
-    await expect(page.getByText('C3 – D5')).toBeVisible()
-    await expect(page.getByText('2 octaves + 2 semitones')).toBeVisible()
-    await expect(page.getByText(/Freddie Mercury/)).toBeVisible()
+    await expect(page.locator('.shared-vp-figure canvas')).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Meet your voice' }),
+    ).toBeVisible()
 
     // The ordinary landing must stand down while someone else's card is up.
     await expect(page.getByRole('button', { name: LANDING_CTA })).toHaveCount(0)
@@ -44,6 +45,18 @@ test.describe('a voiceprint that arrived by link', () => {
   }) => {
     await page.goto(`/mirror?v=${PAYLOAD}`)
     await expect(page.locator('.shared-vp-figure canvas')).toBeVisible()
+
+    // The card draws the range, the span, the twin and both metrics. Saying
+    // them again underneath is the same information twice on one screen.
+    //
+    // Scoped to this section: "Accuracy" and the note names also occur in the
+    // Mirror's own copy elsewhere in the document, so a page-wide locator
+    // fails on text that has nothing to do with the shared card.
+    const shared = page.locator('.shared-vp')
+    await expect(shared.locator('.shared-vp-card')).toHaveCount(0)
+    await expect(shared.getByText('C3 – D5')).toHaveCount(0)
+    await expect(shared.getByText('2 octaves + 2 semitones')).toHaveCount(0)
+    await expect(shared.getByText('Accuracy')).toHaveCount(0)
   })
 
   test('falls back to the written numbers when no twin was named', async ({
@@ -51,10 +64,11 @@ test.describe('a voiceprint that arrived by link', () => {
   }) => {
     await page.goto(`/mirror?v=${PAYLOAD_NO_TWIN}`)
 
+    const shared = page.locator('.shared-vp')
     await expect(page.getByText('Someone sent you this')).toBeVisible()
-    await expect(page.getByText('C3 – D5')).toBeVisible()
+    await expect(shared.getByText('C3 – D5')).toBeVisible()
     // No drawable card, and no broken frame where one would go.
-    await expect(page.locator('.shared-vp-figure')).toHaveCount(0)
+    await expect(shared.locator('.shared-vp-figure')).toHaveCount(0)
   })
 
   test('hands off to the recipient and drops the payload from the address bar', async ({

@@ -45,38 +45,43 @@ export function SharedVoiceprintWelcome(
         <figure class="shared-vp-figure">{card()}</figure>
       </Show>
 
-      <div
-        class="shared-vp-card"
-        classList={{ 'shared-vp-card-aside': card() != null }}
-      >
-        <Show when={range()}>
-          <p class="shared-vp-range">{range()}</p>
-        </Show>
-        <Show when={span()}>
-          <p class="shared-vp-span">{span()}</p>
-        </Show>
+      {/* The card already draws the range, the twin, the accuracy and the
+          steadiness. This block is the same information in words, so it
+          appears only when no card could be drawn — a caption where a
+          drawing is impossible, never a repetition beside one. */}
+      <Show when={card() == null}>
+        <div class="shared-vp-card">
+          <Show when={range()}>
+            <p class="shared-vp-range">{range()}</p>
+          </Show>
+          <Show when={span()}>
+            <p class="shared-vp-span">{span()}</p>
+          </Show>
 
-        <Show when={props.data.tw}>
-          <p class="mirror-chip shared-vp-twin">Voice twin: {props.data.tw}</p>
-        </Show>
+          <Show when={props.data.tw}>
+            <p class="mirror-chip shared-vp-twin">
+              Voice twin: {props.data.tw}
+            </p>
+          </Show>
 
-        <Show when={props.data.ac != null || props.data.sd != null}>
-          <dl class="shared-vp-stats">
-            <Show when={props.data.ac != null}>
-              <div class="shared-vp-stat">
-                <dt>Accuracy</dt>
-                <dd>±{props.data.ac}¢</dd>
-              </div>
-            </Show>
-            <Show when={props.data.sd != null}>
-              <div class="shared-vp-stat">
-                <dt>Steadiness</dt>
-                <dd>±{props.data.sd}¢ on holds</dd>
-              </div>
-            </Show>
-          </dl>
-        </Show>
-      </div>
+          <Show when={props.data.ac != null || props.data.sd != null}>
+            <dl class="shared-vp-stats">
+              <Show when={props.data.ac != null}>
+                <div class="shared-vp-stat">
+                  <dt>Accuracy</dt>
+                  <dd>±{props.data.ac}¢</dd>
+                </div>
+              </Show>
+              <Show when={props.data.sd != null}>
+                <div class="shared-vp-stat">
+                  <dt>Steadiness</dt>
+                  <dd>±{props.data.sd}¢ on holds</dd>
+                </div>
+              </Show>
+            </dl>
+          </Show>
+        </div>
+      </Show>
 
       <button class="mirror-cta" onClick={() => props.onStart()} type="button">
         Meet your voice
