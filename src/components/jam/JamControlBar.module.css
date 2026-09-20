@@ -1,0 +1,245 @@
+/* ── JamControlBar ─────────────────────────────────────────────────── */
+
+/* The transport's own glass, moved out here so the live-pitch toggle and
+   the More button can sit inside it (JamTransport draws bare in here). */
+.capsule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
+  width: fit-content;
+  /* Its buttons do not wrap or squeeze; the row around it gives instead. */
+  flex-shrink: 0;
+}
+
+.divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+
+/* An icon-only button the height of the transport's: the same 6px of
+   padding around the same 15px icon, so the capsule stays one line tall
+   whether or not a host's buttons are in it. */
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.iconBtn svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* Only where there is a pointer to hover with. A tablet keeps `:hover` on
+   the last thing tapped, so More went on looking pressed after it was
+   folded again -- and the hover look must not be the ON look either, or a
+   mouse resting on the button says the same wrong thing. */
+@media (hover: hover) {
+  .iconBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+  }
+
+  .iconBtnOn:hover {
+    background: var(--accent-dim, rgba(88, 166, 255, 0.16));
+    color: var(--accent);
+  }
+}
+
+.iconBtn:active {
+  transform: scale(0.95);
+}
+
+.iconBtnOn {
+  background: var(--accent-dim, rgba(88, 166, 255, 0.1));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Behind More ──────────────────────────────────────────────────────
+   No box of its own: the tempo and the mode are items of the ROW, so when
+   the row is short of width they drop to the next line one at a time
+   instead of as a block. */
+.extras {
+  display: contents;
+}
+
+.extras > * {
+  animation: extrasIn 0.18s ease both;
+}
+
+/* Grows in place. A slide in from the left looked better on a desk and
+   wrong on a tablet, where an opened control wraps to the start of the
+   next line and a slide starts it outside the row. */
+@keyframes extrasIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* ── BPM control ─────────────────────────────────────────────────── */
+
+.bpmControl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
+  flex-shrink: 0;
+}
+
+.bpmStep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) {
+  .bpmStep:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+}
+
+.bpmInput {
+  width: 46px;
+  padding: 2px 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: center;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  /* Hide browser number spinners */
+  -moz-appearance: textfield;
+}
+
+.bpmInput::-webkit-outer-spin-button,
+.bpmInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bpmLabel {
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+/* ── Room mode ────────────────────────────────────────────────────── */
+
+.modePicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
+  flex-shrink: 0;
+}
+
+.modeBtn {
+  padding: 3px 9px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+/* Behind the same gate as the capsule's: on a tablet the mode just left
+   would go on looking half-chosen beside the one just picked. */
+@media (hover: hover) {
+  .modeBtn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+.modeBtnActive {
+  color: var(--accent);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.12));
+}
+
+/* ── Phone ────────────────────────────────────────────────────────────
+   Declared LAST, and that is load-bearing: a media query adds no
+   specificity, so a base rule written below this block would win on
+   source order alone. That is how the live-pitch toggle once showed up
+   twice on a phone -- in the room menu where it belongs, and here. */
+@media (max-width: 640px) {
+  .deskOnly {
+    display: none;
+  }
+
+  /* A guest has no transport, and on a phone the toggle is in the room
+     menu: nothing is left, so no empty box either. */
+  .capsuleGuest {
+    display: none;
+  }
+
+  /* The labels are long; shrink rather than push the transport away. */
+  .modeBtn {
+    padding: 3px 7px;
+    font-size: 0.68rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .extras > * {
+    animation: none;
+  }
+
+  .iconBtn {
+    transition: none;
+  }
+}

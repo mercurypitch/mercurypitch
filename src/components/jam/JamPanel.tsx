@@ -8,7 +8,7 @@ import { Sheet } from '@/components/mobile/Sheet'
 import { PremiumBackgroundPicker } from '@/features/backgrounds/PremiumBackgroundPicker'
 import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
-import { JAM_MODES, jamModeInfo } from '@/lib/jam/jam-modes'
+import { jamModeInfo } from '@/lib/jam/jam-modes'
 import type { HostedRoom } from '@/lib/jam/jam-rooms'
 import { forgetHostedRoom, hostedRooms } from '@/lib/jam/jam-rooms'
 import { buildPeerColorMap } from '@/lib/jam/peer-colors'
@@ -16,7 +16,7 @@ import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import { isCompleteRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH, } from '@/lib/room-code'
 import { isMobile, isNarrow } from '@/lib/use-viewport'
 import { clearJamPickerError, jamPickerAcceptedPicks, } from '@/stores/jam-picker-store'
-import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseBpm, jamExerciseLoop, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomMode, jamRoomToJoin, jamSelectedBackgroundId, jamShowPitch, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, selectJamRoomMode, setJamExerciseBpm, setJamExerciseLoop, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, setJamShowPitch, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
+import { createJamRoom, getJamSessionInfo, jamBackgroundChanging, jamBackgroundError, jamConnectedPeers, jamError, jamExerciseMelody, jamExercisePlaying, jamGetInputLevel, jamGuideVolume, jamIsHost, jamIsMuted, jamIsSongRoom, jamLocalPitch, jamMyRole, jamOwnRunScore, jamPeerId, jamPeers, jamRoomAlpha, jamRoomId, jamRoomToJoin, jamSelectedBackgroundId, jamShowPitch, jamSong, jamState, jamVideoEnabled, joinJamRoom, leaveJamRoom, selectJamExercise, selectJamRoomBackground, setJamGuideVolume, setJamRoomAlpha, setJamRoomToJoin, setJamShowPitch, startJamPitchDetection, toggleJamMute, toggleJamVideo, } from '@/stores/jam-store'
 import { getMelodyLibrarySignal } from '@/stores/melody-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { setSidebarCollapsed as setAppSidebarCollapsed, setSidebarOpen as setAppSidebarOpen, sidebarCollapsed as appSidebarCollapsed, sidebarOpen as appSidebarOpen, } from '@/stores/ui-store'
@@ -24,6 +24,7 @@ import jamStyles from './Jam.module.css'
 import { JamActivityHeatmap } from './JamActivityHeatmap'
 import { JamCameraWidget } from './JamCameraWidget'
 import { JamChatWidget } from './JamChatWidget'
+import { JamControlBar } from './JamControlBar'
 import { JamExerciseCanvas } from './JamExerciseCanvas'
 import exerciseCanvasStyles from './JamExerciseCanvas.module.css'
 import { JamGuideVocal } from './JamGuideVocal'
@@ -37,7 +38,6 @@ import { JamSongShare } from './JamSongShare'
 import { JamSongStage } from './JamSongStage'
 import { JamSongTimeline } from './JamSongTimeline'
 import { JamTransferChip } from './JamTransferDialog'
-import { JamTransport } from './JamTransport'
 
 export const JamPanel: Component = () => {
   const roomBackgroundPicker = useBackgroundSurfaceController('jam')
@@ -968,125 +968,13 @@ export const JamPanel: Component = () => {
                     />
                   </div>
                 </Show>
-                <JamTransport
+                {/* The playback controls: one capsule for the transport and
+                    the live-pitch toggle, and a More button for the tempo
+                    and the room's mode -- which only a drill has. */}
+                <JamControlBar
                   onSelectExercise={togglePicker}
                   pickerOpen={showExercisePicker()}
-                  loopEnabled={jamExerciseLoop()}
-                  onToggleLoop={() => setJamExerciseLoop((v) => !v)}
                 />
-                {/* BPM control — host only, shown when melody loaded */}
-                <Show when={jamIsHost() && jamExerciseMelody()}>
-                  <div class={panelStyles.bpmControl}>
-                    <button
-                      class={panelStyles.bpmStep}
-                      onClick={() =>
-                        setJamExerciseBpm((v) => Math.max(40, v - 5))
-                      }
-                      title="Decrease BPM by 5"
-                    >
-                      <svg
-                        viewBox="0 0 12 12"
-                        width="10"
-                        height="10"
-                        fill="currentColor"
-                      >
-                        <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
-                      </svg>
-                    </button>
-                    <input
-                      class={panelStyles.bpmInput}
-                      type="number"
-                      min="20"
-                      max="300"
-                      value={jamExerciseBpm()}
-                      onInput={(e) => {
-                        const v = parseInt(e.currentTarget.value, 10)
-                        if (!isNaN(v) && v >= 20 && v <= 300)
-                          setJamExerciseBpm(v)
-                      }}
-                      title="Playback BPM"
-                    />
-                    <button
-                      class={panelStyles.bpmStep}
-                      onClick={() =>
-                        setJamExerciseBpm((v) => Math.min(300, v + 5))
-                      }
-                      title="Increase BPM by 5"
-                    >
-                      <svg
-                        viewBox="0 0 12 12"
-                        width="10"
-                        height="10"
-                        fill="currentColor"
-                      >
-                        <rect x="2" y="5.5" width="8" height="1.5" rx="0.75" />
-                        <rect x="5.25" y="2" width="1.5" height="8" rx="0.75" />
-                      </svg>
-                    </button>
-                    <span class={panelStyles.bpmLabel}>bpm</span>
-                  </div>
-                </Show>
-
-                {/* View toggles. Grouped beside the BPM control rather than
-                    stranded at the far left: these shape what the room LOOKS
-                    like, which is the same kind of decision as the tempo, and
-                    a lone button across the bar reads as unrelated.
-
-                    Hidden on a phone, where the same control lives in the
-                    room menu -- the bar wraps there and one button was
-                    taking a whole row. */}
-                <div class={panelStyles.viewToggles}>
-                  <button
-                    class={panelStyles.pitchToggleBtn}
-                    classList={{
-                      [panelStyles.pitchToggleBtnActive]: jamShowPitch(),
-                    }}
-                    onClick={() => setJamShowPitch((v) => !v)}
-                    aria-pressed={jamShowPitch()}
-                    title={
-                      jamShowPitch()
-                        ? 'Hide the live pitch'
-                        : 'Show the live pitch'
-                    }
-                  >
-                    <svg
-                      viewBox="0 0 16 16"
-                      width="13"
-                      height="13"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                    >
-                      <path
-                        d="M2 8h2l2-4 2 8 2-5 2 3h2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Room mode — host picks, everyone follows. Roles are derived
-                  from the sorted peer list, so nothing is sent but this. */}
-                <Show when={jamIsHost()}>
-                  <div class={panelStyles.modePicker}>
-                    <For each={JAM_MODES}>
-                      {(m) => (
-                        <button
-                          class={panelStyles.modeBtn}
-                          classList={{
-                            [panelStyles.modeBtnActive]: jamRoomMode() === m.id,
-                          }}
-                          title={m.blurb}
-                          aria-pressed={jamRoomMode() === m.id}
-                          onClick={() => selectJamRoomMode(m.id)}
-                        >
-                          {m.label}
-                        </button>
-                      )}
-                    </For>
-                  </div>
-                </Show>
 
                 {/* Say it plainly. Everything on screen is real UI, but the
                   peers are invented -- letting someone believe a stranger
@@ -1097,8 +985,12 @@ export const JamPanel: Component = () => {
                   </div>
                 </Show>
 
-                {/* Which part is mine, once the room is actually split. */}
-                <Show when={!jamMyRole().isUnison}>
+                {/* Which part is mine, once the room is actually split. A
+                    DRILL's part: the mode deals out the shared melody, and
+                    a song has none -- its parts are dealt line by line
+                    above the words, so on a song this badge named a part
+                    nobody was singing. */}
+                <Show when={!jamIsSongRoom() && !jamMyRole().isUnison}>
                   <div
                     class={panelStyles.roleBadge}
                     style={{ 'border-color': myColor(), color: myColor() }}

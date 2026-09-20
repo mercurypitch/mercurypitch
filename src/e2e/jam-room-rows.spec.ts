@@ -21,9 +21,10 @@
 // ── The preview room is wider than a real one ───────────────────────
 // A spec's room is the preview room, and its playback bar carries a 243px
 // "these peers are not real" note that no real room has. On a tablet that
-// note alone is the difference between the timeline fitting beside the
-// buttons and wrapping under them, so the tablet test takes it out --
-// leaving exactly the bar a host really has -- and says so where it does.
+// note puts the row within a few pixels of wrapping the timeline under the
+// buttons, which a font's width on another machine would decide -- so the
+// tablet test takes it out, leaving exactly the bar a host really has, and
+// says so where it does.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -211,12 +212,12 @@ test.describe('a song room on a tablet', () => {
       expect(head.height).toBeLessThan(44)
       expect((await boxOf(chip(page))).width).toBeGreaterThan(90)
 
-      // Row 2 is one line: a host's whole set of buttons, then the timeline
-      // in the 410px they leave, still long enough to drag.
+      // Row 2 is one line: a host's buttons in their capsule, then the
+      // timeline in the 630px they leave -- long enough to drag by a thumb.
       await expectTimelineBesideTheButtons(page)
       expect((await boxOf(row(page))).height).toBeLessThan(56)
       const scrubber = await boxOf(timeline(page).getByRole('slider'))
-      expect(scrubber.width).toBeGreaterThan(160)
+      expect(scrubber.width).toBeGreaterThan(380)
 
       // And the words start where the third row used to.
       await expectNoThirdRow(page)
@@ -230,9 +231,12 @@ test.describe('a song room on a tablet', () => {
     test('wraps the timeline under the buttons when they leave it no room', async ({
       page,
     }) => {
-      // The preview note left IN: a bar as crowded as a real one gets, with
-      // a part badge and a take in it. The timeline takes the next line
-      // whole rather than squeezing in as a stub.
+      // A narrower window, and the preview note left IN: as crowded as the
+      // row gets. The timeline takes the next line whole rather than
+      // squeezing in as a stub. (At 1180 it no longer wraps even with the
+      // note -- the room's mode left the bar on a song, and took 230px
+      // with it.)
+      await page.setViewportSize({ width: 1000, height: 820 })
       await openSongRoom(page)
       const buttons = await boxOf(bar(page))
       const where = await boxOf(timeline(page))
