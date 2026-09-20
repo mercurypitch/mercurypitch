@@ -26,7 +26,7 @@
 // them, so the lanes have something to draw; the singer's own trail is
 // real, from Chromium's fake microphone.
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -1063,5 +1063,49 @@ test.describe('the lyric header on a 360px phone', () => {
           document.documentElement.clientWidth,
       ),
     ).toBeLessThanOrEqual(0)
+  })
+})
+
+// ── A tablet ─────────────────────────────────────────────────────────
+
+test.describe('the lyric header on a tablet', () => {
+  test.use({
+    viewport: { width: 1180, height: 820 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('is the lane zoom’s height, not a phone’s', async ({ page }) => {
+    // Owner report, 2026-09-20: the alignment toggles and the - 100% + were
+    // "too bulky in height" next to the "sleek" - 1x + over the lanes. Every
+    // touch screen got a phone's 40px; a tablet now takes the lane zoom's.
+    await openSongRoom(page)
+    await page.screenshot({ path: shot('tablet-lyric-header.png') })
+
+    const heightOf = async (target: Locator) =>
+      (await target.boundingBox())?.height ?? 0
+    const lane = await heightOf(
+      page.getByLabel('Look closer at the pitch lanes'),
+    )
+    expect(lane).toBeGreaterThanOrEqual(24)
+
+    const larger = page.getByRole('button', { name: 'Larger lyrics' })
+    expect(Math.abs((await heightOf(larger)) - lane)).toBeLessThanOrEqual(1)
+    for (const value of ['left', 'center', 'right'] as const) {
+      const box = await alignRadio(page, value).boundingBox()
+      expect(Math.abs((box?.height ?? 0) - lane)).toBeLessThanOrEqual(1)
+      // Square, and still over the floor a finger needs.
+      expect(Math.abs((box?.width ?? 0) - (box?.height ?? 0))).toBeLessThanOrEqual(1) // prettier-ignore
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(24)
+    }
+
+    // The row the two pills sit in: 51px before, under 42 now.
+    const header = await page.getByTestId('jam-lyrics-header').boundingBox()
+    expect(header?.height ?? 0).toBeLessThanOrEqual(42)
+
+    // They still work at this size.
+    await larger.click()
+    await expect(lyricSize(page)).toHaveAttribute('data-zoom', '1.100')
+    await setAlign(page, 'left')
   })
 })
