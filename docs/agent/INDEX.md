@@ -133,7 +133,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
-| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 7.8k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
+| `jam` | [jam-catalog.ts](../../src/lib/jam/jam-catalog.ts) | 7.9k | ── Jam catalogue Turns the app's practice content into something a jam room can run. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
@@ -401,6 +401,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/stores/sync-store.ts](../../src/stores/sync-store.ts) | 1.4k |
 | [workers/db-worker/src/email.ts](../../workers/db-worker/src/email.ts) | 1.4k |
 | [src/components/CommunityShare.tsx](../../src/components/CommunityShare.tsx) | 1.3k |
+| [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.3k |
 | [src/components/StemMixerLyricsPanelBody.tsx](../../src/components/StemMixerLyricsPanelBody.tsx) | 1.3k |
 | [src/db/services/session-export-service.ts](../../src/db/services/session-export-service.ts) | 1.3k |
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |
@@ -408,7 +409,6 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/progress/model.ts](../../src/features/progress/model.ts) | 1.3k |
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
 | [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.3k |
-| [src/components/jam/JamPanel.tsx](../../src/components/jam/JamPanel.tsx) | 1.2k |
 | [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
 <!-- END:GENERATED heavy-files -->
