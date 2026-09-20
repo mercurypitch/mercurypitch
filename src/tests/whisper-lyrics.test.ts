@@ -265,6 +265,16 @@ describe('stripInlineWordStamps', () => {
     )
   })
 
+  it('removes the angle-bracket spelling of a stamp as well', () => {
+    expect(
+      stripInlineWordStamps('<00:24.00> Yeah, <00:24.21> I [00:24.41] will'),
+    ).toBe('Yeah, I will')
+  })
+
+  it('leaves angle brackets that are not stamps in the words', () => {
+    expect(stripInlineWordStamps('I <3 you')).toBe('I <3 you')
+  })
+
   it('leaves stamp-free text alone apart from whitespace cleanup', () => {
     expect(stripInlineWordStamps('  just   words ')).toBe('just words')
   })
