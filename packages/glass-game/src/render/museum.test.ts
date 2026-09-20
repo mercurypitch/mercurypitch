@@ -1,7 +1,7 @@
 // Authored museum presentation — visible proxies share activation with collision and camera occlusion.
 
 import type { Mesh } from 'three'
-import { BoxGeometry, Group, Mesh as ThreeMesh, MeshPhysicalMaterial, PerspectiveCamera, } from 'three'
+import { BoxGeometry, Group, Mesh as ThreeMesh, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, } from 'three'
 import { expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
@@ -207,10 +207,9 @@ const roomedLevel: LevelDefinition = {
 
 function createMaterials(): MuseumMaterials {
   return Object.fromEntries(
-    ['marble', 'teal', 'limestone', 'gold', 'rock', 'glass'].map((id) => [
-      id,
-      new MeshPhysicalMaterial(),
-    ]),
+    ['marble', 'teal', 'limestone', 'gold', 'rock', 'glass', 'mirror'].map(
+      (id) => [id, new MeshPhysicalMaterial()],
+    ),
   ) as MuseumMaterials
 }
 
@@ -303,6 +302,70 @@ it('culls room rendering without removing camera solids and restores a newly ent
   expect(roomGroup.visible).toBe(true)
 
   disposeObject(museum.root, museum.materialLibrary.materials)
+  museum.materialLibrary.dispose()
+  Object.values(materials).forEach((material) => material.dispose())
+})
+
+it('keeps an installed planar inset and its wall frame in the camera blockers', () => {
+  const roomId = `${roomPrefix}/room/gallery`
+  const mirrorLevel: LevelDefinition = {
+    ...roomedLevel,
+    presentation: {
+      ...roomedLevel.presentation!,
+      decorations: [
+        {
+          id: `${roomPrefix}/decoration/mirror`,
+          roomId,
+          recipeId: 'gallery-mirror-v5',
+          position: { x: 29.8, y: 1.8, z: -10 },
+          yaw: -Math.PI / 2,
+          scale: 1,
+        },
+      ],
+      assetRecipeIds: [
+        ...roomedLevel.presentation!.assetRecipeIds,
+        'gallery-mirror-v5',
+      ],
+    },
+  }
+  const materials = createMaterials()
+  const museum = createMuseum(mirrorLevel, materials)
+  const bundle = new Group()
+  const authored = new Group()
+  authored.name = 'decor_gallery_frame'
+  const frameMaterial = new MeshStandardMaterial()
+  frameMaterial.name = 'museum_brass'
+  const surfaceMaterial = new MeshStandardMaterial()
+  surfaceMaterial.name = 'decor_surface'
+  const frame = new ThreeMesh(new BoxGeometry(1.2, 1.8, 0.1), frameMaterial)
+  frame.name = 'gallery-frame'
+  const surface = new ThreeMesh(new PlaneGeometry(0.9, 1.48), surfaceMaterial)
+  surface.name = 'gallery-surface'
+  authored.add(frame, surface)
+  bundle.add(authored)
+
+  museum.setKit(bundle, 'museum-decor-v5')
+  museum.setVisibleRooms(new Set())
+  const installedFrame = museum.root.getObjectByName('gallery-frame') as Mesh
+  const installedSurface = museum.root.getObjectByName(
+    'gallery-surface',
+  ) as Mesh
+  const wall = museum.root.getObjectByName(
+    `solid-${roomPrefix}/solid/long-wall`,
+  ) as Mesh
+  const occluders = museum.cameraOccluders()
+
+  expect(installedSurface.material).toMatchObject({
+    isShaderMaterial: true,
+    depthWrite: true,
+    transparent: false,
+  })
+  expect(occluders).toEqual(
+    expect.arrayContaining([installedFrame, installedSurface, wall]),
+  )
+
+  disposeObject(museum.root, museum.materialLibrary.materials)
+  museum.dispose()
   museum.materialLibrary.dispose()
   Object.values(materials).forEach((material) => material.dispose())
 })

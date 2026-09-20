@@ -4,7 +4,7 @@
 
 import type { Material } from 'three'
 import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
-import type { GameSnapshot, LevelDefinition } from '../contracts'
+import type { GameSnapshot, LevelDefinition, Vec3 } from '../contracts'
 import { loadMuseumAssets } from './asset-kit'
 import { createAtmosphere } from './atmosphere'
 import { createAdventureCamera } from './camera'
@@ -12,6 +12,7 @@ import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
 import { createContactShadow } from './contact-shadow'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
+import { createGalleryInspection } from './gallery-inspection'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
@@ -42,11 +43,15 @@ export interface GlassRenderer {
   setMovementActive(active: boolean): void
   rebaseMovement(): void
   cancelHeadingFollow(): void
+  pickArtwork(clientX: number, clientY: number): string | null
+  nearbyArtwork(position: Vec3): string | null
   getMetrics(): {
     drawCalls: number
     triangles: number
     textures: number
     geometries: number
+    reflectionCaptures: number
+    reflectionTargetPixels: number
   }
   dispose(): void
 }
@@ -157,7 +162,16 @@ function createGlassRendererInstance(
     rim.target.position.copy(sceneFrame.lightTarget)
     scene.add(rim, rim.target)
   }
-  const museum = createMuseum(level, materials)
+  const museum = createMuseum(level, materials, (error) =>
+    options.onAssetError?.('museum-planar-reflection', error),
+  )
+  const gallery = createGalleryInspection(
+    museum.root,
+    camera.camera,
+    renderer.domElement,
+    level,
+    museum.cameraOccluders,
+  )
   registerPartialCleanup(() => {
     museum.materialLibrary.materials.forEach((material) =>
       partialBorrowedMaterials.add(material),
@@ -293,11 +307,17 @@ function createGlassRendererInstance(
     setMovementActive: camera.setMovementActive,
     rebaseMovement: camera.rebaseMovement,
     cancelHeadingFollow: camera.cancelHeadingFollow,
+    pickArtwork: gallery.pick,
+    nearbyArtwork: gallery.nearby,
     getMetrics: () => ({
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
       textures: renderer.info.memory.textures,
       geometries: renderer.info.memory.geometries,
+      reflectionCaptures: museum.planarReflectionMetrics.captures,
+      reflectionTargetPixels:
+        museum.planarReflectionMetrics.targetWidth *
+        museum.planarReflectionMetrics.targetHeight,
     }),
     render(snapshot, delta) {
       if (disposed || contextLost) return
@@ -319,6 +339,28 @@ function createGlassRendererInstance(
       merc?.update(snapshot, dt, options.reducedMotion ?? false)
       for (const state of snapshot.breakables)
         vessels.get(state.id)?.update(state, snapshot.elapsedSeconds)
+      museum.updatePlanarReflection(
+        renderer,
+        scene,
+        camera.camera,
+        container.clientWidth,
+        container.clientHeight,
+        (capture) => {
+          const vesselVisibility = new Map(
+            [...vessels].map(([id, vessel]) => [id, vessel.root.visible]),
+          )
+          try {
+            vessels.forEach((vessel) => {
+              vessel.root.visible = true
+            })
+            capture()
+          } finally {
+            vessels.forEach((vessel, id) => {
+              vessel.root.visible = vesselVisibility.get(id) ?? true
+            })
+          }
+        },
+      )
       renderer.render(scene, camera.camera)
     },
     dispose() {

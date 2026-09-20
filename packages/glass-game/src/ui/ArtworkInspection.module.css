@@ -1,0 +1,139 @@
+/* A museum label and full artwork, sized for both portrait phones and landscape tablets. */
+.offer {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 166px);
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #c4b681;
+  border-radius: 24px;
+  background: #f4efdf;
+  color: #254644;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 3px 14px #152e3533;
+  cursor: pointer;
+}
+.offer svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.offer:focus-visible {
+  outline: 3px solid #af8638;
+  outline-offset: 3px;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  padding: max(12px, env(safe-area-inset-top))
+    max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  background: rgb(13 32 35 / 88%);
+}
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(220px, 0.9fr);
+  width: min(860px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  border: 1px solid #bcad78;
+  border-radius: 18px;
+  background: #f4efdf;
+  color: #254644;
+  box-shadow: 0 18px 70px #07191b80;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.imageWell {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 18px;
+  background: #192f34;
+}
+.imageWell img {
+  display: block;
+  width: 100%;
+  height: min(68dvh, 590px);
+  object-fit: contain;
+}
+.label {
+  padding: clamp(20px, 4vw, 38px);
+  align-self: center;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b6e53;
+}
+.label h2 {
+  margin: 16px 0;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 500;
+  line-height: 1.12;
+}
+.label p {
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.label .invitation {
+  border-left: 2px solid #b39452;
+  padding-left: 14px;
+  font-style: italic;
+}
+.label .returnButton {
+  min-height: 44px;
+  padding: 12px 18px;
+  border: 1px solid #365f56;
+  border-radius: 100px;
+  background: #254e47;
+  color: #fff9e8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.label .returnButton:hover {
+  background: #35665b;
+}
+.label .returnButton:focus-visible {
+  outline: 3px solid #af8638;
+  outline-offset: 4px;
+}
+@media (width < 600px) {
+  .panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .imageWell {
+    padding: 10px;
+  }
+  .imageWell img {
+    height: min(42dvh, 360px);
+  }
+  .label {
+    padding: 16px 20px;
+  }
+  .label h2 {
+    margin: 8px 0 12px;
+    font-size: 24px;
+  }
+  .label p {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .label .returnButton {
+    width: 100%;
+  }
+}

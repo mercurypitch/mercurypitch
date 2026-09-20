@@ -5,10 +5,11 @@ import { composeLevel } from '../authoring/compose-level'
 import type { Bounds3, GameEvent, GlassGame, MovementInput } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
-import { ENCLOSED_CHAMBER_HALF } from './enclosed-museum-kit'
+import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CHAMBER_ROOM, } from './enclosed-museum-kit'
 import { GLASSWORKS } from './glassworks'
 import { GLASSWORKS_JOURNEY, GLASSWORKS_JOURNEY_ROUTE, GLASSWORKS_JOURNEY_SOURCE, } from './glassworks-journey'
-import { GLASSWORKS_JOURNEY_AUTHORING_CATALOG } from './glassworks-journey-kit'
+import { GLASSWORKS_JOURNEY_ARCHIVE_ROOM, GLASSWORKS_JOURNEY_AUTHORING_CATALOG, GLASSWORKS_JOURNEY_GARDEN_ROOM, GLASSWORKS_JOURNEY_PORTRAIT_ROOM, } from './glassworks-journey-kit'
+import { MUSEUM_FRAMED_ART_INWARD_OFFSET } from './museum-room-dressings'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
 const prefix = 'glassworks-journey/journey'
@@ -305,6 +306,38 @@ describe('Glassworks Journey blockout', () => {
       expect(
         Math.abs(planter.position.x - GLASSWORKS_JOURNEY_ROUTE.garden.x),
       ).toBeLessThan(4)
+    }
+  })
+
+  it('seats every framed decoration into the measured screen-bay surface', () => {
+    const decorations = [
+      ENCLOSED_CHAMBER_ROOM,
+      GLASSWORKS_JOURNEY_GARDEN_ROOM,
+      GLASSWORKS_JOURNEY_ARCHIVE_ROOM,
+      GLASSWORKS_JOURNEY_PORTRAIT_ROOM,
+    ].flatMap((room) =>
+      (room.decorations ?? []).filter(
+        (decoration) => decoration.recipeId !== 'crystal-planter-v5',
+      ),
+    )
+
+    expect(decorations).toHaveLength(7)
+    for (const decoration of decorations) {
+      const inwardOffset =
+        decoration.yaw === Math.PI
+          ? ENCLOSED_CHAMBER_HALF - decoration.position.z
+          : decoration.yaw === Math.PI / 2
+            ? decoration.position.x + ENCLOSED_CHAMBER_HALF
+            : ENCLOSED_CHAMBER_HALF - decoration.position.x
+      expect(inwardOffset, decoration.id).toBeCloseTo(
+        MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        12,
+      )
+      const frameRear = inwardOffset - 0.03839010372757912
+      expect(-0.0783090591430664 - frameRear, decoration.id).toBeCloseTo(
+        0.002,
+        12,
+      )
     }
   })
 

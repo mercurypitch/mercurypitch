@@ -25,6 +25,7 @@ const state = vi.hoisted(() => {
       visibleRoomIds,
       fallbackAllVisible: false,
     })),
+    updatePlanarReflection: vi.fn(() => false),
   }
 })
 vi.mock('three', async (original) => ({
@@ -89,6 +90,12 @@ vi.mock('./museum', () => ({
       cameraOccluders: () => [],
       roomIdForRuntimeId: () => state.runtimeRoomId,
       updateRoomVisibility: state.updateRoomVisibility,
+      updatePlanarReflection: state.updatePlanarReflection,
+      planarReflectionMetrics: {
+        captures: 3,
+        targetWidth: 160,
+        targetHeight: 256,
+      },
       dispose: vi.fn(),
       materialLibrary: { materials: new Set(), dispose: vi.fn() },
     }
@@ -128,6 +135,7 @@ afterEach(() => {
   state.canvasRemove.mockClear()
   state.mercDispose.mockClear()
   state.updateRoomVisibility.mockClear()
+  state.updatePlanarReflection.mockClear()
   state.runtimeRoomId = undefined
   state.visibleRoomIds.clear()
 })
@@ -150,6 +158,10 @@ it.each([false, true])(
     expect(state.updateRoomVisibility).toHaveBeenCalledTimes(
       contextLoss ? 0 : 1,
     )
+    expect(renderer.getMetrics()).toMatchObject({
+      reflectionCaptures: 3,
+      reflectionTargetPixels: 40_960,
+    })
     if (contextLoss) expect(onAssetError).not.toHaveBeenCalled()
     else
       expect(onAssetError).toHaveBeenCalledWith(

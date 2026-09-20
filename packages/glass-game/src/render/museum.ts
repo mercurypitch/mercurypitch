@@ -2,7 +2,7 @@
 // Floating museum — readable marble floors and ornament below the collision line.
 // ============================================================
 
-import type { Material, Object3D, PerspectiveCamera, Texture } from 'three'
+import type { Material, Object3D, PerspectiveCamera, Scene, Texture, WebGLRenderer, } from 'three'
 import { Box3, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, Vector3, } from 'three'
 import { EXHIBIT_PLINTH } from '../content/solid-props'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, Vec3, } from '../contracts'
@@ -12,6 +12,7 @@ import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import { createMaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
+import { createPlanarReflectionController } from './planar-reflections'
 import { createPlatformPlanters } from './platform-details'
 import { createPlatformDressing } from './platform-dressing'
 import { createRoomDecorations } from './room-decorations'
@@ -167,6 +168,7 @@ function column(
 export function createMuseum(
   level: LevelDefinition,
   materials: MuseumMaterials,
+  onReflectionError: (error: unknown) => void = () => undefined,
 ) {
   const root = new Group()
   const materialLibrary = createMaterialLibrary()
@@ -190,6 +192,10 @@ export function createMuseum(
   }
   let roomRenderBoundsDirty = true
   const decorations = createRoomDecorations(level, materials, materialLibrary)
+  const planarReflections = createPlanarReflectionController(
+    () => decorations.planarMirrors,
+    onReflectionError,
+  )
   for (const instance of decorations.instances) {
     const room = roomGroups.get(instance.roomId)
     if (room === undefined)
@@ -551,6 +557,38 @@ export function createMuseum(
       const selection = roomVisibility.select(player, camera)
       setVisibleRooms(selection.visibleRoomIds)
       return selection
+    },
+    planarReflectionMetrics: planarReflections.metrics,
+    updatePlanarReflection(
+      renderer: WebGLRenderer,
+      scene: Scene,
+      camera: PerspectiveCamera,
+      width: number,
+      height: number,
+      withAdditionalVisible: (capture: () => void) => void,
+    ) {
+      return planarReflections.update(
+        renderer,
+        scene,
+        camera,
+        width,
+        height,
+        (capture) => {
+          const roomVisibility = new Map(
+            [...roomGroups].map(([id, group]) => [id, group.visible]),
+          )
+          try {
+            roomGroups.forEach((group) => {
+              group.visible = true
+            })
+            withAdditionalVisible(capture)
+          } finally {
+            roomGroups.forEach((group, id) => {
+              group.visible = roomVisibility.get(id) ?? true
+            })
+          }
+        },
+      )
     },
     setVisibleRooms,
     dispose() {

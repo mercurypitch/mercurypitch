@@ -183,19 +183,24 @@ it('installs framed art and a planter into stable room roots with exact proxy co
     const mesh = object as Mesh
     if (mesh.isMesh) mirrorMeshes.push(mesh)
   })
+  expect(manager.planarMirrors).toHaveLength(1)
+  const planarMirror = manager.planarMirrors[0]!
+  expect(mirrorMeshes).toContain(planarMirror.surface)
+  expect(planarMirror.surface.material).toBe(planarMirror.material)
+  expect(planarMirror.material).toMatchObject({
+    isShaderMaterial: true,
+    depthWrite: true,
+    transparent: false,
+  })
   expect(
-    mirrorMeshes.some(
-      (mesh) =>
-        (mesh.material as MeshStandardMaterial).name === 'decor_surface' &&
-        (mesh.material as MeshStandardMaterial).metalness === 1,
-    ),
+    mirrorMeshes
+      .filter((mesh) => mesh !== planarMirror.surface)
+      .every(
+        (frame) =>
+          (frame.material as unknown as { isShaderMaterial?: boolean })
+            .isShaderMaterial !== true && frame.castShadow,
+      ),
   ).toBe(true)
-  const mirrorMaterial = mirrorMeshes
-    .map((mesh) => mesh.material as MeshStandardMaterial)
-    .find((material) => material.name === 'decor_surface')
-  if (mirrorMaterial === undefined)
-    throw new Error('Mirror surface was not installed.')
-  expect(mirrorMaterial.normalMap).not.toBe(mirrorSource)
 
   manager.update(new Set())
   expect(manager.instances[0].root.visible).toBe(false)
@@ -204,6 +209,17 @@ it('installs framed art and a planter into stable room roots with exact proxy co
 
   const paintingMapDisposed = vi.fn()
   const paintingNormalDisposed = vi.fn()
+  const mirrorTargetDisposed = vi.spyOn(planarMirror.renderTarget, 'dispose')
+  const reflectionMaterialDisposed = vi.spyOn(planarMirror.material, 'dispose')
+  planarMirror.useFallback()
+  const mirrorFallback = planarMirror.surface.material as MeshStandardMaterial
+  expect(mirrorFallback).toMatchObject({
+    isMeshStandardMaterial: true,
+    metalness: 1,
+    roughness: 0.07,
+    envMapIntensity: 1.15,
+  })
+  expect(mirrorFallback.normalMap).not.toBe(mirrorSource)
   const mirrorNormalDisposed = vi.fn()
   const librarySurface = [...library.materials].find(
     (material) => material.name === 'decor_surface',
@@ -214,7 +230,7 @@ it('installs framed art and a planter into stable room roots with exact proxy co
     'dispose',
     paintingNormalDisposed,
   )
-  mirrorMaterial.normalMap?.addEventListener('dispose', mirrorNormalDisposed)
+  mirrorFallback.normalMap?.addEventListener('dispose', mirrorNormalDisposed)
   librarySurface.normalMap?.addEventListener('dispose', libraryNormalDisposed)
   disposeObject(
     roots,
@@ -225,6 +241,8 @@ it('installs framed art and a planter into stable room roots with exact proxy co
   disposeMaterials(Object.values(palette))
   expect(paintingMapDisposed).toHaveBeenCalledTimes(1)
   expect(paintingNormalDisposed).toHaveBeenCalledTimes(1)
+  expect(mirrorTargetDisposed).toHaveBeenCalledTimes(1)
+  expect(reflectionMaterialDisposed).toHaveBeenCalledTimes(1)
   expect(mirrorNormalDisposed).toHaveBeenCalledTimes(1)
   expect(mirrorSourceDisposed).toHaveBeenCalledTimes(1)
   expect(libraryNormalDisposed).toHaveBeenCalledTimes(1)

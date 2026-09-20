@@ -4,10 +4,12 @@ import type { Material, Mesh, MeshStandardMaterial, Object3D, Texture, } from 't
 import { Group } from 'three'
 import type { LevelDefinition, RoomDecorationInstanceDefinition, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
-import { disposeObject } from './dispose'
+import { disposeMaterials, disposeObject } from './dispose'
 import { createKitInstance } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
+import type { PlanarMirrorSurface } from './planar-reflections'
+import { createPlanarMirrorSurface } from './planar-reflections'
 import type { RoomDecorationSurfaceRecipe } from './room-decoration-catalog'
 import { getRoomDecorationRecipe } from './room-decoration-catalog'
 
@@ -50,22 +52,45 @@ function replaceSurface(
   surface: RoomDecorationSurfaceRecipe,
   textures: ReadonlyMap<string, Texture>,
   materials: MuseumMaterials,
-): void {
+): readonly PlanarMirrorSurface[] {
   let matches = 0
+  const planarMirrors: PlanarMirrorSurface[] = []
   art.traverse((object) => {
     const mesh = object as Mesh
     if (!mesh.isMesh) return
+    if (surface.kind === 'mirror') {
+      let planarMirror: PlanarMirrorSurface | undefined
+      const replace = (material: Material): Material => {
+        if (material.name !== surface.materialName) return material
+        matches++
+        if (planarMirror === undefined) {
+          const fallback = cloneOwnedMaterial(
+            materials[surface.materialId],
+          ) as MeshStandardMaterial
+          fallback.name = surface.materialName
+          fallback.envMapIntensity = 1.15
+          try {
+            planarMirror = createPlanarMirrorSurface(
+              mesh,
+              materials[surface.materialId].color,
+              fallback,
+            )
+          } catch (error) {
+            disposeMaterials([fallback])
+            throw error
+          }
+        }
+        return planarMirror.material
+      }
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map(replace)
+        : replace(mesh.material)
+      if (planarMirror !== undefined) planarMirrors.push(planarMirror)
+      return
+    }
     const replace = (material: Material): Material => {
       if (material.name !== surface.materialName) return material
       matches++
-      if (surface.kind === 'mirror') {
-        const mirror = cloneOwnedMaterial(
-          materials[surface.materialId],
-        ) as MeshStandardMaterial
-        mirror.name = surface.materialName
-        mirror.envMapIntensity = 1.15
-        return mirror
-      }
       const sourceTexture = textures.get(surface.textureAsset)
       if (sourceTexture === undefined)
         throw new Error(
@@ -94,6 +119,7 @@ function replaceSurface(
     throw new Error(
       `Room decoration could not find material "${surface.materialName}" in its authored node.`,
     )
+  return planarMirrors
 }
 
 /**
@@ -106,6 +132,7 @@ export function createRoomDecorations(
   materialLibrary: MaterialLibrary,
 ) {
   const textures = new Map<string, Texture>()
+  const planarMirrors: PlanarMirrorSurface[] = []
   const initialActiveSolidIds = new Set(
     getActiveSolidIds(level, new Set<string>()),
   )
@@ -126,6 +153,7 @@ export function createRoomDecorations(
   })
 
   return {
+    planarMirrors,
     instances: records.map(
       ({ definition, root }): RoomDecorationRenderInstance => ({
         roomId: definition.roomId,
@@ -150,14 +178,22 @@ export function createRoomDecorations(
             `Room decoration recipe "${record.definition.recipeId}" could not find node "${recipe.node}" in bundle "${bundle}".`,
           )
         const art = createKitInstance(source, materials, {}, materialLibrary)
+        let installedMirrors: readonly PlanarMirrorSurface[] = []
         try {
           if (recipe.surface !== undefined)
-            replaceSurface(art, recipe.surface, textures, materials)
+            installedMirrors = replaceSurface(
+              art,
+              recipe.surface,
+              textures,
+              materials,
+            )
           art.name = `art-${record.definition.id}`
           record.root.add(art)
           record.installed = true
+          planarMirrors.push(...installedMirrors)
           coveredSolidIds.push(...(record.definition.coveredSolidIds ?? []))
         } catch (error) {
+          installedMirrors.forEach((mirror) => mirror.disposeTarget())
           disposeObject(art, materialLibrary.materials)
           throw error
         }
@@ -173,6 +209,8 @@ export function createRoomDecorations(
       }
     },
     dispose(): void {
+      planarMirrors.forEach((mirror) => mirror.disposeTarget())
+      planarMirrors.length = 0
       textures.forEach((texture) => texture.dispose())
       textures.clear()
     },

@@ -4,7 +4,7 @@ import type { ExhibitPrefab, LevelAuthoringCatalog, RoomAudioRegionDefinition, R
 import type { CheckpointDefinition, HoldDefinition, MuseumAudioSceneId, PlatformDefinition, SolidPresentation, SolidPropDefinition, } from '../contracts'
 import type { MuseumWallBay } from './enclosed-wall-kit'
 import { MUSEUM_SCREEN_DEPTH, MUSEUM_SCREEN_WIDTH, MUSEUM_SEAM_OVERLAP, MUSEUM_WALL_TOP, MUSEUM_WINDOW_DEPTH, MUSEUM_WINDOW_WIDTH, museumPortSeal, museumScreenBay, museumStoneWall, museumWindowBay, } from './enclosed-wall-kit'
-import { framedRoomArt, MUSEUM_ROOM_DECORATION_RECIPE_IDS, } from './museum-room-dressings'
+import { framedRoomArt, MUSEUM_FRAMED_ART_INWARD_OFFSET, MUSEUM_ROOM_DECORATION_RECIPE_IDS, } from './museum-room-dressings'
 import { EXHIBIT_PLINTH } from './solid-props'
 
 export const ENCLOSED_CHAMBER_HALF = 4.447110536098481
@@ -281,13 +281,21 @@ export const ENCLOSED_CHAMBER_ROOM: RoomPrefab = {
     framedRoomArt(
       'welcome-painting',
       'garden-painting-v5',
-      { x: 0, y: 1.9, z: ENCLOSED_CHAMBER_HALF - 0.16 },
+      {
+        x: 0,
+        y: 1.9,
+        z: ENCLOSED_CHAMBER_HALF - MUSEUM_FRAMED_ART_INWARD_OFFSET,
+      },
       Math.PI,
     ),
     framedRoomArt(
       'welcome-mirror',
       'gallery-mirror-v5',
-      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      {
+        x: -ENCLOSED_CHAMBER_HALF + MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        y: 1.9,
+        z: 0,
+      },
       Math.PI / 2,
     ),
   ],

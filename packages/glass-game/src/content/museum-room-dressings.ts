@@ -15,6 +15,17 @@ const PLANTER_RADIUS_TOP = 0.29
 const PLANTER_RADIUS_BOTTOM = 0.17
 const PLANTER_BOWL_HEIGHT = 0.48
 
+const MUSEUM_SCREEN_PANEL_INWARD_POSITION = -0.0783090591430664
+const GALLERY_FRAME_REAR_INWARD_POSITION = -0.03839010372757912
+const FRAME_WALL_EMBED = 0.002
+
+// Seat the frame rear 2mm into the deepest part of the screen bay's measured,
+// slightly uneven central marble surface.
+export const MUSEUM_FRAMED_ART_INWARD_OFFSET =
+  MUSEUM_SCREEN_PANEL_INWARD_POSITION -
+  FRAME_WALL_EMBED -
+  GALLERY_FRAME_REAR_INWARD_POSITION
+
 export interface MuseumPlanterDressing {
   solid: SolidPropDefinition
   decoration: RoomDecorationDefinition

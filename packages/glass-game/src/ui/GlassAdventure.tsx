@@ -4,6 +4,7 @@ import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
 import type { GlassGameHost } from '../host'
+import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
@@ -86,9 +87,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
   )
   let pointer: number | null = null
   let previous = { x: 0, y: 0 }
+  let pointerStart = { x: 0, y: 0 }
+  let isTap = false
   const releaseOrbit = (): void => {
     const heldPointer = pointer
     pointer = null
+    isTap = false
     if (heldPointer !== null) {
       adventure.setOrbitActive(false)
       if (canvas?.hasPointerCapture(heldPointer))
@@ -96,9 +100,23 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
     }
   }
   const release = (event: PointerEvent): void => {
+    // Touch implicitly captures the child canvas before we capture its host.
+    // That child's bubbling loss is a transfer, not the end of this gesture.
+    if (event.type === 'lostpointercapture' && event.target !== canvas) return
     if (event.pointerId !== pointer) return
+    const inspect =
+      event.type === 'pointerup' &&
+      isTap &&
+      Math.hypot(
+        event.clientX - pointerStart.x,
+        event.clientY - pointerStart.y,
+      ) <= 8
     pointer = null
+    isTap = false
     adventure.setOrbitActive(false)
+    if (canvas.hasPointerCapture(event.pointerId))
+      canvas.releasePointerCapture(event.pointerId)
+    if (inspect) adventure.inspectAt(event.clientX, event.clientY)
   }
   onMount(() => {
     window.addEventListener('blur', releaseOrbit)
@@ -150,10 +168,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         classList={{ [styles.viewportBlocked]: !adventure.ready() }}
         aria-label="Glass museum; drag to look around"
         aria-hidden={!adventure.ready()}
-        inert={!adventure.ready()}
+        inert={!adventure.ready() || adventure.inspection() !== null}
         tabIndex={adventure.ready() ? 0 : -1}
         onPointerDown={(event) => {
+          if (pointer !== null) isTap = false
           if (
+            event.button !== 0 ||
             !adventure.ready() ||
             pointer !== null ||
             adventure.paused() ||
@@ -164,6 +184,8 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           pointer = event.pointerId
           event.currentTarget.focus({ preventScroll: true })
           previous = { x: event.clientX, y: event.clientY }
+          pointerStart = previous
+          isTap = true
           event.currentTarget.setPointerCapture(event.pointerId)
           adventure.setOrbitActive(true)
         }}
@@ -175,6 +197,13 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             adventure.tutorial()
           )
             return
+          if (
+            Math.hypot(
+              event.clientX - pointerStart.x,
+              event.clientY - pointerStart.y,
+            ) > 8
+          )
+            isTap = false
           adventure.orbit(
             (event.clientX - previous.x) * -0.005,
             (event.clientY - previous.y) * 0.004,
@@ -204,7 +233,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           />
         }
       >
-        <div class={styles.topbar}>
+        <div class={styles.topbar} inert={adventure.inspection() !== null}>
           <button
             class={styles.roundButton}
             type="button"
@@ -239,7 +268,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             </svg>
           </button>
         </div>
-        <div class={styles.utility}>
+        <div class={styles.utility} inert={adventure.inspection() !== null}>
           <button
             type="button"
             onClick={adventure.recenter}
@@ -308,6 +337,15 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               adventure.snapshot().phase === 'shattering'
             }
           />
+          <Show
+            when={
+              adventure.nearbyArtwork() !== null &&
+              adventure.voiceMode() === 'off' &&
+              adventure.snapshot().phase !== 'shattering'
+            }
+          >
+            <ArtworkOffer onOpen={adventure.inspectNearbyArtwork} />
+          </Show>
           <Show when={adventure.voiceMode() === 'off' && nearby()}>
             <div class={styles.encounterOffer}>
               <span>
@@ -416,7 +454,22 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             }
           />
         </Show>
-        <Show when={adventure.paused() && !adventure.tutorial()}>
+        <Show when={adventure.inspection()}>
+          {(artwork) => (
+            <ArtworkInspection
+              artwork={artwork()}
+              imageUrl={props.host.assetUrl(artwork().imageAsset)}
+              onClose={adventure.closeInspection}
+            />
+          )}
+        </Show>
+        <Show
+          when={
+            adventure.paused() &&
+            !adventure.tutorial() &&
+            !adventure.inspection()
+          }
+        >
           <div class={styles.scrim}>
             <section
               class={styles.pausePanel}

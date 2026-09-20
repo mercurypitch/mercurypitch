@@ -5,7 +5,7 @@ import type { CheckpointDefinition, HoldDefinition, PlatformDefinition, SolidPre
 import { ENCLOSED_CHAMBER_BAY_CENTER, ENCLOSED_CHAMBER_HALF, ENCLOSED_MUSEUM_AUTHORING_CATALOG, ENCLOSED_TERRACE_ROOM, } from './enclosed-museum-kit'
 import type { MuseumWallBay } from './enclosed-wall-kit'
 import { MUSEUM_SCREEN_WIDTH, MUSEUM_WALL_TOP, MUSEUM_WINDOW_DEPTH, museumPortSeal, museumScreenBay, museumWindowBay, } from './enclosed-wall-kit'
-import { crystalPlanter, framedRoomArt } from './museum-room-dressings'
+import { crystalPlanter, framedRoomArt, MUSEUM_FRAMED_ART_INWARD_OFFSET, } from './museum-room-dressings'
 import { EXHIBIT_PLINTH } from './solid-props'
 
 const FLOOR_THICKNESS = 0.25
@@ -297,7 +297,11 @@ export const GLASSWORKS_JOURNEY_GARDEN_ROOM = journeyGalleryRoom(
     framedRoomArt(
       'garden-study',
       'garden-painting-v5',
-      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      {
+        x: -ENCLOSED_CHAMBER_HALF + MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        y: 1.9,
+        z: 0,
+      },
       Math.PI / 2,
     ),
   ],
@@ -310,13 +314,21 @@ export const GLASSWORKS_JOURNEY_ARCHIVE_ROOM = journeyGalleryRoom(
     framedRoomArt(
       'west-archive-study',
       'archive-painting-v5',
-      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      {
+        x: -ENCLOSED_CHAMBER_HALF + MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        y: 1.9,
+        z: 0,
+      },
       Math.PI / 2,
     ),
     framedRoomArt(
       'east-archive-study',
       'archive-painting-v5',
-      { x: ENCLOSED_CHAMBER_HALF - 0.16, y: 1.9, z: 0 },
+      {
+        x: ENCLOSED_CHAMBER_HALF - MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        y: 1.9,
+        z: 0,
+      },
       -Math.PI / 2,
     ),
   ],
@@ -329,13 +341,21 @@ export const GLASSWORKS_JOURNEY_PORTRAIT_ROOM = journeyGalleryRoom(
     framedRoomArt(
       'glass-portrait',
       'portrait-painting-v5',
-      { x: -ENCLOSED_CHAMBER_HALF + 0.16, y: 1.9, z: 0 },
+      {
+        x: -ENCLOSED_CHAMBER_HALF + MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        y: 1.9,
+        z: 0,
+      },
       Math.PI / 2,
     ),
     framedRoomArt(
       'salon-mirror',
       'gallery-mirror-v5',
-      { x: ENCLOSED_CHAMBER_HALF - 0.16, y: 1.9, z: 0 },
+      {
+        x: ENCLOSED_CHAMBER_HALF - MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        y: 1.9,
+        z: 0,
+      },
       -Math.PI / 2,
     ),
   ],

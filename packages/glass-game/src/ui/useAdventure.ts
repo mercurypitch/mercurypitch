@@ -1,5 +1,7 @@
 // Adventure session — orchestrates host services without putting UI or audio in the game core.
 import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import type { GalleryArtwork } from '../content/gallery-artworks'
+import { galleryArtwork } from '../content/gallery-artworks'
 import { museumSoundscape } from '../content/soundscapes'
 import type { GameEvent, LevelDefinition, PitchObservation } from '../contracts'
 import { createGlassGame } from '../core/game'
@@ -47,6 +49,8 @@ export function useAdventure(
   )
   const [narrationCaption, setNarrationCaption] = createSignal('')
   const [paused, setPaused] = createSignal(false)
+  const [inspection, setInspection] = createSignal<GalleryArtwork | null>(null)
+  const [nearbyArtwork, setNearbyArtwork] = createSignal<string | null>(null)
   const [tutorial, setTutorial] = createSignal(
     host.readPreference('tutorial') !== 'seen',
   )
@@ -89,6 +93,7 @@ export function useAdventure(
   let narrationCaptionTimer: ReturnType<typeof setTimeout> | undefined
   let completionTimer: ReturnType<typeof setTimeout> | undefined
   let reducedMotion = false
+  let lastArtworkCheck = 0
   const loading = createAdventureLoadingLifecycle({
     minimumVisibleMs: LOADING_PRESENTATION_MS,
     onChange: (state) => {
@@ -335,6 +340,7 @@ export function useAdventure(
   }
 
   function pause(): void {
+    setInspection(null)
     soundscape.pause()
     cancel()
     setPaused(true)
@@ -343,12 +349,42 @@ export function useAdventure(
   }
 
   function resume(): void {
+    setInspection(null)
     input.clear()
     setPaused(false)
     game.setPaused(tutorial())
     lastTime = 0
     refresh()
     soundscape.activate()
+  }
+
+  function inspectArtwork(recipeId: string | null): void {
+    const artwork = galleryArtwork(recipeId)
+    if (
+      !artwork ||
+      !ready() ||
+      paused() ||
+      tutorial() ||
+      voiceMode() !== 'off' ||
+      game.snapshot().phase === 'shattering' ||
+      game.snapshot().complete
+    )
+      return
+    pause()
+    renderer?.setMovementActive(false)
+    renderer?.setOrbitActive(false)
+    setInspection(artwork)
+  }
+
+  function closeInspection(): void {
+    if (inspection() === null) return
+    resume()
+    queueMicrotask(() =>
+      untrack(() => {
+        if (alive && ready() && !paused() && !tutorial())
+          mount().focus({ preventScroll: true })
+      }),
+    )
   }
 
   function closeTutorial(): void {
@@ -361,6 +397,7 @@ export function useAdventure(
   }
 
   function showTutorial(): void {
+    setInspection(null)
     soundscape.pause()
     cancel()
     setTutorial(true)
@@ -397,6 +434,8 @@ export function useAdventure(
   }
 
   function prepareForLoading(): void {
+    setInspection(null)
+    setNearbyArtwork(null)
     soundscape.pause()
     cancel()
     input.clear()
@@ -412,6 +451,8 @@ export function useAdventure(
     attempt: GlassRenderer | null,
   ): void {
     if (!loading.fail(generation, message)) return
+    setInspection(null)
+    setNearbyArtwork(null)
     soundscape.pause()
     cancel()
     game.setPaused(true)
@@ -500,6 +541,12 @@ export function useAdventure(
       if (activeRenderer !== null && (phase === 'ready' || needsStableFrame))
         try {
           activeRenderer.render(game.snapshot(), Math.min(0.05, elapsed))
+          if (phase === 'ready' && !paused() && now - lastArtworkCheck >= 250) {
+            lastArtworkCheck = now
+            setNearbyArtwork(
+              activeRenderer.nearbyArtwork(game.snapshot().player.position),
+            )
+          }
           if (activeRenderer === renderer && needsStableFrame) {
             loading.frameRendered(rendererGeneration)
           }
@@ -518,7 +565,8 @@ export function useAdventure(
       if (game.snapshot().complete) return
       if (event.code === 'Escape') {
         event.preventDefault()
-        if (tutorial()) closeTutorial()
+        if (inspection()) closeInspection()
+        else if (tutorial()) closeTutorial()
         else if (voiceMode() !== 'off') cancel()
         else if (paused()) resume()
         else pause()
@@ -607,6 +655,12 @@ export function useAdventure(
     notice,
     narrationCaption,
     paused,
+    inspection,
+    nearbyArtwork,
+    closeInspection,
+    inspectNearbyArtwork: () => inspectArtwork(nearbyArtwork()),
+    inspectAt: (x: number, y: number) =>
+      inspectArtwork(renderer?.pickArtwork(x, y) ?? null),
     tutorial,
     input,
     start,

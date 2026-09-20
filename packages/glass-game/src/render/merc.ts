@@ -42,8 +42,9 @@ export async function loadAdventureMerc(url: string) {
   const bounds = new Box3().setFromObject(body)
   const height = bounds.getSize(new Vector3()).y
   const scale = 0.55 / Math.max(height, 0.001)
-  const torso = body.getObjectByName('merc_body') ?? body
-  const feetY = new Box3().setFromObject(torso).min.y
+  // Merc's relaxed hands hang below the droplet body. Anchor the complete
+  // visible rig so no grounded clip sends those hands through the floor.
+  const visualGroundY = bounds.min.y
   const metal = new MeshPhysicalMaterial({
     color: 0xf4f7f8,
     metalness: 1,
@@ -136,7 +137,7 @@ export async function loadAdventureMerc(url: string) {
         scale * stretch,
         scale / Math.sqrt(stretch),
       )
-      body.position.y = -feetY * scale * stretch + 0.015
+      body.position.y = -visualGroundY * scale * stretch + 0.015
       root.position.copy(player.position)
       const desiredYaw = player.facingYaw + Math.PI
       const angle = Math.atan2(

@@ -1,6 +1,7 @@
 // Adventure jump pose — the shipped mascot remains upright throughout airborne travel.
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { Box3, SkinnedMesh } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
@@ -34,6 +35,47 @@ async function parseActualMerc() {
     '',
   )
 }
+
+function animatedMinimumY(
+  root: Awaited<ReturnType<typeof loadAdventureMerc>>['root'],
+): number {
+  root.updateMatrixWorld(true)
+  root.traverse((object) => {
+    if (object instanceof SkinnedMesh) object.computeBoundingBox()
+  })
+  return new Box3().setFromObject(root).min.y
+}
+
+it('keeps the actual Merc hands above the gameplay floor through grounded clips', async () => {
+  const gltf = await parseActualMerc()
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf)
+  const actor = await loadAdventureMerc('local-test-merc.glb')
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  const minimumY: number[] = []
+  const sample = (frames: number) => {
+    for (let frame = 0; frame < frames; frame++) {
+      snapshot.elapsedSeconds += 1 / 60
+      actor.update(snapshot, 1 / 60, false)
+      minimumY.push(animatedMinimumY(actor.root))
+    }
+  }
+
+  try {
+    sample(90)
+    snapshot.player.velocity.x = 1
+    sample(100)
+    snapshot.player.velocity.x = 0
+    snapshot.breakables[0]!.phase = 'charging'
+    sample(90)
+    snapshot.breakables[0]!.phase = 'complete'
+    sample(90)
+
+    expect(Math.min(...minimumY)).toBeGreaterThan(0.005)
+    expect(actor.root.position.y).toBe(snapshot.player.position.y)
+  } finally {
+    actor.dispose()
+  }
+})
 
 it.each([false, true])(
   'keeps the actual Merc rig upright on repeated jumps with reduced motion=%s',
