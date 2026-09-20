@@ -1556,12 +1556,43 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.shared-vp-foot {
-  max-width: 34ch;
-  margin: 12px 0 0;
-  font-size: 0.88rem;
+.shared-vp-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(420px, 100%);
+  margin: 20px 0 4px;
+  padding: 0;
+  list-style: none;
+  counter-reset: shared-vp-step;
+  text-align: left;
+}
+
+.shared-vp-steps li {
+  position: relative;
+  counter-increment: shared-vp-step;
+  padding-left: 38px;
+  font-size: 0.95rem;
   line-height: 1.5;
-  color: rgba(207, 214, 255, 0.7);
+  color: rgba(207, 214, 255, 0.88);
+}
+
+.shared-vp-steps li::before {
+  content: counter(shared-vp-step);
+  position: absolute;
+  top: -1px;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(143, 163, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(143, 163, 255, 0.12);
+  color: var(--mirror-gold);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .shared-vp-figure {

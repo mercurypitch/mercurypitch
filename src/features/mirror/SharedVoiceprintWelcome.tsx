@@ -83,13 +83,22 @@ export function SharedVoiceprintWelcome(
         </div>
       </Show>
 
+      {/* Numbered because the order is real: the range comes out of a few
+          notes, the metrics need a longer take. */}
+      <ol class="shared-vp-steps">
+        <li>
+          Sing a few notes and we map your range, then name the voice yours
+          lines up with — like the one above.
+        </li>
+        <li>
+          Keep going for about a minute and we measure your accuracy and
+          steadiness, so your next take has something to beat.
+        </li>
+      </ol>
+
       <button class="mirror-cta" onClick={() => props.onStart()} type="button">
         Meet your voice
       </button>
-      <p class="shared-vp-foot">
-        Sing one note and we will tell you which note it was. About a minute, no
-        account, and it all happens on your device.
-      </p>
     </section>
   )
 }

@@ -64,3 +64,30 @@ describe('when the card cannot be drawn', () => {
     expect(document.querySelector('.shared-vp-figure')).toBeNull()
   })
 })
+
+describe('the invitation under the card', () => {
+  it('says what each take actually gives you, in order', () => {
+    render(() => <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />)
+
+    const steps = document.querySelectorAll('.shared-vp-steps li')
+    expect(steps).toHaveLength(2)
+    expect(steps[0].textContent).toMatch(/range/)
+    expect(steps[1].textContent).toMatch(/accuracy and steadiness/)
+  })
+
+  it('carries no account, privacy or on-device boilerplate', () => {
+    // Policy copy belongs in the policy. This screen sells the next take.
+    render(() => <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />)
+
+    const text = document.querySelector('.shared-vp')?.textContent ?? ''
+    for (const fluff of [
+      /no account/i,
+      /on your device/i,
+      /privacy/i,
+      /free/i,
+      /sign up/i,
+    ]) {
+      expect(text).not.toMatch(fluff)
+    }
+  })
+})
