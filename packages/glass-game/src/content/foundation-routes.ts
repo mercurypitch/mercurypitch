@@ -4,6 +4,22 @@ import { composeLevel } from '../authoring/compose-level'
 import type { AuthoredLevelSource } from '../authoring/contracts'
 import { FOUNDATION_AUTHORING_CATALOG } from './foundation-room-kit'
 
+const COMFORTABLE_HOLD = {
+  kind: 'hold',
+  step: {
+    target: 'comfortable',
+    hold: {
+      requiredSeconds: 1.2,
+      toleranceCents: 150,
+      confidenceFloor: 0.5,
+      dropoutGraceSeconds: 0.15,
+      decayPerSecond: 0.25,
+      maximumSampleGapSeconds: 0.1,
+      maximumSampleAgeMs: 150,
+    },
+  },
+} as const
+
 const COMMON = {
   levelId: 'glass-foundation',
   contentRevision: 1,
@@ -20,6 +36,7 @@ const COMMON = {
       prefabId: 'foundation-goblet',
       label: 'Threshold goblet',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
     },
     {
       id: 'gallery-decanter',
@@ -27,6 +44,7 @@ const COMMON = {
       prefabId: 'foundation-decanter',
       label: 'Gallery decanter',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['arrival-goblet'],
     },
     {
@@ -35,6 +53,7 @@ const COMMON = {
       prefabId: 'foundation-goblet',
       label: 'Side gallery goblet',
       optional: true,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['arrival-goblet'],
     },
   ],

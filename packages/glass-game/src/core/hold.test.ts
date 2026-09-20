@@ -5,7 +5,9 @@ import { GLASSWORKS } from '../content/glassworks'
 import type { PitchObservation } from '../contracts'
 import { createHoldJudge } from './hold'
 
-const config = GLASSWORKS.breakables[0].hold
+const challenge = GLASSWORKS.breakables[0].challenge
+if (challenge.kind !== 'hold') throw new Error('Expected a held-note fixture.')
+const config = challenge.step.hold
 
 function frame(
   n: number,

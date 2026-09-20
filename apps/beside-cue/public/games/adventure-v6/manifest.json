@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "description": "Original fictional Twin Galleries paintings, shared across wall frames, inspection and campaign art.",
+  "sourceReceipt": "art/glass-adventure/v6-level2/imagegen-receipt.json",
+  "encoding": "Full-resolution RGB WebP, quality 88, method 6. Source masters unchanged.",
+  "assets": [
+    {
+      "file": "low-note-keeper.webp",
+      "source": "art/glass-adventure/v6-level2/paintings/low-note-keeper-master.png",
+      "sourceSha256": "9e8b7a7f79a73053ee7d6a5e2cda8c25fe5f5a7cded7d892f952050cf21b5ddc",
+      "sha256": "309f3ea72a9afca7846816ec94886ad184ff3d544e9e064fd2f7f5f363e7ab6c",
+      "dimensions": [1024, 1536],
+      "bytes": 352834
+    },
+    {
+      "file": "high-note-muse.webp",
+      "source": "art/glass-adventure/v6-level2/paintings/high-note-muse-master.png",
+      "sourceSha256": "92621506c8ed2e25b08eb531757d5cc4b21403a0558fe768124929ace8d61469",
+      "sha256": "2782be241a9bfd38138f69831f24c92dda093a0503bbeca050c33e93a54242f6",
+      "dimensions": [1024, 1536],
+      "bytes": 406372
+    },
+    {
+      "file": "interval-between.webp",
+      "source": "art/glass-adventure/v6-level2/paintings/interval-between-master.png",
+      "sourceSha256": "fac4a003be291df5f1dc01f434db098c73c52c16733586e59c17e6eff5a6f893",
+      "sha256": "7810c0cfbf8456785bc44f06fa03d3c2de668e4d9aec3e903f2160c3f112802a",
+      "dimensions": [1024, 1536],
+      "bytes": 479278
+    }
+  ]
+}

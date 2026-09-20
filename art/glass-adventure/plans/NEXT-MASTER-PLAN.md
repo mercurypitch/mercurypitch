@@ -8,26 +8,31 @@ Code and production sources are preserved in draft PR #807 on
 
 ## Where we are
 
-The owner completed the longer journey and tested on a tablet, accepting the
-room scale, controls, physics, music, voice, enclosure and new decoration.
-The latest polish fixes wall mounting and Merc's hand clearance, adds an artwork
-close-up, and replaces the static salon mirror with a bounded live reflection.
-Verification and remaining device checks are in the
-[implementation checkpoint](./GALLERY-INSPECTION-AND-LEVEL2-ASSETS.md).
-This feedback is useful playtest acceptance, not a measured FPS/thermal audit.
+The owner accepted the longer Journey and tablet controls, music, enclosure,
+decoration, Merc clearance and artwork inspection. This batch corrects the
+mirror's reflected backing artifact and centers the artwork offer. It also adds
+the shared three-gallery campaign and the first playable Twin Galleries route:
+comfortable low/high calibration, then an ordered two-note response.
 
-| Area                 | Implemented                                                                                                                 | Still missing                                                                        |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Integration          | Mini-game slice PRs #774–#782 and follow-ups #802/#803, #785, #804, #806 merged                                             | Standard store builds intentionally keep games disabled                              |
-| Controls             | Manual keyboard/touch movement and jump; follow/orbit/zoom camera; automatic run ramp; floor/prop/gate collision            | Physical-device tuning as new routes grow                                            |
-| Content architecture | Pure prefab composer, validation, transformed visuals/colliders/anchors, saved gates, room ownership                        | General lesson dispatch and campaign transitions                                     |
-| First Light          | Short enclosed tutorial and panorama; two required and one optional held-note exhibit                                       | Campaign entry rather than development layout selection                              |
-| Glassworks Journey   | Sixteen room/presentation instances; four required and four optional held-note encounters; garden, archive, salon, panorama | Timed pacing study; ongoing room polish                                              |
-| Art                  | Meshy/Blender vessels and wall kit; original paintings, planters, varied floors; required-asset loading cover               | Level 2 derivatives are production candidates until game budgets and fractures pass  |
-| Sound                | Approved M01/M03 music/ambience; selected Gentle Whimsical D2 Merc voice and shuffled break reactions; silence for capture  | Level-specific two-note prompts and demonstration audio                              |
-| Rendering            | Conservative room visibility, camera obstruction, shadow tuning                                                             | Sustained real-device profiling, LOD/compression strategy if measurements require it |
-| Delivery             | Shared glass-game package and host adapters; standalone preview and BesideCue integration                                   | Final MercuryPitch entry/CTA, campaign UI, games-on native builds, publication       |
-| Rewards              | Design documents only                                                                                                       | Coins, grades/stars, collection badges, portrait cards, recordings/replay/sharing    |
+The detailed implementation, validation and next device test are in
+[TWIN-GALLERIES-IMPLEMENTATION.md](./TWIN-GALLERIES-IMPLEMENTATION.md).
+The previous revision `b9892888` completed CI (33 successful checks, one skipped).
+Current changes still require their own pushed-revision CI. Playtest acceptance
+and software render proofs are not measured device FPS/thermal evidence.
+
+| Area                 | Implemented                                                                                                                  | Still missing                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Integration          | Mini-game slice PRs #774–#782 and follow-ups #802/#803, #785, #804, #806 merged                                              | Standard store builds intentionally keep games disabled                              |
+| Controls             | Manual keyboard/touch movement and jump; follow/orbit/zoom camera; automatic run ramp; floor/prop/gate collision             | Physical-device tuning as new routes grow                                            |
+| Content architecture | Prefab composer, shared hold/pair lessons, validation, room ownership, independent saves and campaign transitions            | Further judge types and richer authoring tools                                       |
+| First Light          | Short enclosed tutorial and panorama; two required and one optional held-note exhibit                                        | Device regression through the shared campaign                                        |
+| Glassworks Journey   | Sixteen room/presentation instances; four required and four optional held-note encounters; garden, archive, salon, panorama  | Timed pacing study; ongoing room polish                                              |
+| Twin Galleries       | Eighteen connected placements; four required and three optional low/high encounters; warm/cool galleries and listening court | Device singing and pacing feedback; V6 vessel production                             |
+| Art                  | Meshy/Blender vessels and wall kit; original paintings, planters, varied floors; required-asset loading cover                | Three Level 2 paintings integrated; four Meshy models still need production approval |
+| Sound                | Approved M01/M03 music/ambience; selected Gentle Whimsical D2 Merc voice and shuffled break reactions; silence for capture   | Additional level-specific Merc narration; two-note reference tones now work          |
+| Rendering            | Conservative room visibility, camera obstruction, shadow tuning                                                              | Sustained real-device profiling, LOD/compression strategy if measurements require it |
+| Delivery             | Shared glass-game package and host adapters; standalone preview and BesideCue integration                                    | Final MercuryPitch entry/CTA, games-on native builds and publication                 |
+| Rewards              | Design documents only                                                                                                        | Coins, grades/stars, collection badges, portrait cards, recordings/replay/sharing    |
 
 ## Approved direction
 
@@ -57,15 +62,16 @@ This feedback is useful playtest acceptance, not a measured FPS/thermal audit.
       verify state restoration, view culling, disposal and actual scene output.
 - [x] Check phone/tablet layout and desktop rendering; record simulated versus
       physical evidence separately and add direct mouse/touch regression coverage.
-- [ ] Confirm all CI checks for the pushed revision before promotion.
-- [ ] Owner checks this polish on the tablet, especially the mirror cost and
-      reaching/closing artwork. Profile sustained device play separately.
+- [x] Confirm prior polish revision CI; new batch needs its own CI result.
+- [x] Correct diagonal mirror artifact and place View artwork at top center.
+- [x] Owner accepted hand clearance, mounted art and artwork inspection.
+- [ ] Recheck mirror correction and sustained device cost.
 
-### N3 — lesson and campaign foundation (recommended next implementation)
+### N3 — lesson and campaign foundation (implemented; device acceptance next)
 
-Keep the current held-note behavior as the acceptance baseline. Extract a
-challenge-runner interface around its existing calibration/reference/capture/
-judge/result lifecycle; do not copy useAdventure for each new mechanic.
+The shared challenge and voice-session layers now dispatch held notes and
+ordered pairs. First Light, Glassworks Journey and Twin Galleries share the
+campaign, independent progress and revisioned teaching. The design contract is:
 
 1. Define data-owned lesson profiles and typed challenge state/events. The
    content specifies a profile and parameters; runtime dispatch selects a
@@ -84,7 +90,7 @@ judge/result lifecycle; do not copy useAdventure for each new mechanic.
 Exit: the existing two held-note routes still play identically through the same
 host surface, with no level-ID branches in gameplay code and no leaked sessions.
 
-### N4 — Level 2: Twin Galleries
+### N4 — Level 2: Twin Galleries (first playable route implemented)
 
 Learning goal: hear and reproduce two comfortable pitches in the right order,
 without a forced beat or a demand to sing higher than feels comfortable.
@@ -97,19 +103,21 @@ without a forced beat or a demand to sing higher than feels comfortable.
 | Listening bridge        | Hear the pair, then answer low → high; retry without losing the opened path               | Twin-tone harp decoration, paired exhibit pedestal, safe singing pad       |
 | Meeting of the voices   | Familiar two-note response opens the portrait/finale and roof-garden route                | Paired interval painting, resonance veil and panorama pieces               |
 
-Target four main teaching stations plus about three optional exhibits; tune after
-walking the real route. Introduce low and high separately before the pair, and
+The first playable route has four main teaching stations and three optional
+exhibits across eighteen placements. Tune after walking the real route. Introduce low and high separately before the pair, and
 provide replay/recalibration. Do not secretly widen the interval or add a third
 note at the finale. Color supports the audible cue but does not carry it alone.
 
-Implementation gates: comfortable pair calibration; order-aware judge; silence,
+Acceptance gates: comfortable pair calibration; order-aware judge; silence,
 stale frames and jitter cannot pass; demonstrated notes never assess themselves;
 full keyboard/touch traversal, checkpoint reload and real-mic device play.
 
 Current asset batch: amber urn, celadon decanter, twin-tone resonance harp,
 opaline echo amphora and three original paintings. They are staged under
-`art/glass-adventure/v6-level2/`; runtime integration follows dimensional,
-material, mobile-budget and fracture/collision review. An intact download is
+`art/glass-adventure/v6-level2/`. The three paintings are integrated with
+inspection stories. Vessel/harp integration follows dimensional, material,
+mobile-budget and fracture/collision review; the route currently uses approved
+existing breakable recipes. An intact download is
 not a finished breakable. Do not inflate the current level's download with
 unused candidates.
 
@@ -155,8 +163,8 @@ just because a PR is green.
 
 The canonical `MECHANICS-MAP.md` maps historical work to the 3D game. Reuse
 comfortable-note calibration, fresh voiced-frame filtering, hold judging,
-reference playback and existing pitch/wave research. High/low, vibrato and
-call-and-response ideas are future localized encounters. Voice-controlled
+reference playback and existing pitch/wave research. High/low is now the Twin Galleries encounter mechanic. Vibrato and
+call-and-response remain later localized encounters. Voice-controlled
 locomotion and compulsory fixed-camera-room movement were superseded by the
 owner's manual movement/free-3D choice. Existing mini-game prototypes are useful
 research evidence, not proof that their judges and teaching are integrated here.
@@ -167,6 +175,6 @@ Detailed companions: `LEVEL-AUTHORING-PLAN.md`, `LONGER-LEVELS.md`,
 also have a repository copy in
 [OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md](./OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md).
 
-No new design choice blocks finishing the current polish or producing the Level
-2 candidates. The next useful owner discussion is the feel of the comfortable
+No new design choice blocks testing Twin Galleries or finishing its Level 2
+production candidates. The next useful owner discussion is the feel of the comfortable
 low/high pair; the later rewards policy should be decided before its pilot.

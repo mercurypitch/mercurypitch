@@ -4,7 +4,22 @@ import { expect, test, type Page } from '@playwright/test'
 interface VoiceSource {
   context: AudioContext
   gain: GainNode
+  oscillator: OscillatorNode
   track: MediaStreamTrack
+}
+interface PairCalibration {
+  version: 1
+  low: number
+  high?: number
+}
+interface MuseumSetup {
+  path: string
+  levelId: string
+  checkpointId: string
+  completedBreakableIds: string[]
+  tutorialPreference: string
+  pairPreference: PairCalibration | null
+  waitForEncounter: boolean
 }
 interface PendingPermission {
   resolve(stream: MediaStream): void
@@ -15,15 +30,26 @@ declare global {
     glassVoiceFixture: {
       sources: VoiceSource[]
       readonly narrationStarts: number
+      readonly referenceStarts: number
       deferNextPermission(): void
       grantPermission(): Promise<void>
       denyPermission(): void
       pendingPermissionCount(): number
       setAmplitude(value: number): void
+      setMidi(value: number): void
       dispose(): Promise<void>
     }
   }
 }
+
+const twinPrefix = 'glassworks-twin-galleries/twin-galleries'
+const twinIds = {
+  lower: `${twinPrefix}/warm/encounter/lower-urn`,
+  upper: `${twinPrefix}/cool/encounter/upper-decanter`,
+  bridgePair: `${twinPrefix}/court/encounter/bridge-pair`,
+  coolCheckpoint: `${twinPrefix}/cool/checkpoint/entry`,
+  courtCheckpoint: `${twinPrefix}/court/checkpoint/entry`,
+} as const
 
 test.use({
   viewport: { width: 640, height: 480 },
@@ -40,31 +66,57 @@ test.use({
 // can spend more than 20 seconds releasing and rebuilding the WebGL scene.
 test.setTimeout(120_000)
 
-async function openMuseum(page: Page): Promise<void> {
-  await page.addInitScript(() => {
+async function openMuseum(
+  page: Page,
+  options: Partial<MuseumSetup> = {},
+): Promise<void> {
+  const setup: MuseumSetup = {
+    path: '/glass-game/',
+    levelId: 'glassworks',
+    checkpointId: 'goblet',
+    completedBreakableIds: [],
+    tutorialPreference: 'tutorial',
+    pairPreference: null,
+    waitForEncounter: true,
+    ...options,
+  }
+  await page.addInitScript((museum) => {
     const prefix = 'beside-cue:glass-adventure:'
-    localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(`${prefix}${museum.tutorialPreference}`, 'seen')
     // A legitimate reached checkpoint shortens traversal covered by controls tests.
     // This grants no break, bridge or target note; all singing below is real PCM.
-    if (localStorage.getItem(`${prefix}progress:glassworks`) === null) {
+    if (localStorage.getItem(`${prefix}progress:${museum.levelId}`) === null) {
       localStorage.setItem(
-        `${prefix}progress:glassworks`,
+        `${prefix}progress:${museum.levelId}`,
         JSON.stringify({
           version: 1,
-          levelId: 'glassworks',
-          checkpointId: 'goblet',
-          completedBreakableIds: [],
+          levelId: museum.levelId,
+          checkpointId: museum.checkpointId,
+          completedBreakableIds: museum.completedBreakableIds,
         }),
       )
     }
+    if (museum.pairPreference !== null)
+      localStorage.setItem(
+        `${prefix}comfortable-pair`,
+        JSON.stringify(museum.pairPreference),
+      )
     let amplitude = 0
+    let midi = 57
     let narrationStarts = 0
+    let referenceStarts = 0
     const startBuffer = AudioBufferSourceNode.prototype.start
     AudioBufferSourceNode.prototype.start = function (...args) {
       // Reference notes are oscillators; crack noise is shorter than 0.8s.
       // This observes actual spoken buffer playback without replacing it.
       if (!this.loop && (this.buffer?.duration ?? 0) > 0.8) narrationStarts++
       startBuffer.apply(this, args)
+    }
+    const microphoneOscillators = new WeakSet<OscillatorNode>()
+    const startOscillator = OscillatorNode.prototype.start
+    OscillatorNode.prototype.start = function (...args) {
+      if (!microphoneOscillators.has(this)) referenceStarts++
+      startOscillator.apply(this, args)
     }
     let nextPermission: 'grant' | 'defer' = 'grant'
     const sources: VoiceSource[] = []
@@ -76,7 +128,8 @@ async function openMuseum(page: Page): Promise<void> {
       const context = new AudioContext()
       await context.resume()
       const oscillator = context.createOscillator()
-      oscillator.frequency.value = 220
+      oscillator.frequency.value = 440 * 2 ** ((midi - 69) / 12)
+      microphoneOscillators.add(oscillator)
       const gain = context.createGain()
       gain.gain.value = amplitude
       const destination = context.createMediaStreamDestination()
@@ -91,7 +144,7 @@ async function openMuseum(page: Page): Promise<void> {
         gain.disconnect()
         void context.close()
       }
-      sources.push({ context, gain, track })
+      sources.push({ context, gain, oscillator, track })
       return destination.stream
     }
     navigator.mediaDevices.getUserMedia = async (constraints) => {
@@ -108,6 +161,9 @@ async function openMuseum(page: Page): Promise<void> {
       sources,
       get narrationStarts() {
         return narrationStarts
+      },
+      get referenceStarts() {
+        return referenceStarts
       },
       deferNextPermission() {
         nextPermission = 'defer'
@@ -133,6 +189,17 @@ async function openMuseum(page: Page): Promise<void> {
           if (source.track.readyState === 'live')
             source.gain.gain.setValueAtTime(value, source.context.currentTime)
       },
+      setMidi(value) {
+        if (!Number.isFinite(value)) throw new Error('MIDI must be finite.')
+        midi = value
+        const frequency = 440 * 2 ** ((value - 69) / 12)
+        for (const source of sources)
+          if (source.track.readyState === 'live')
+            source.oscillator.frequency.setValueAtTime(
+              frequency,
+              source.context.currentTime,
+            )
+      },
       async dispose() {
         for (const pending of pendingPermissions.splice(0))
           pending.reject(new DOMException('Test ended', 'AbortError'))
@@ -147,16 +214,21 @@ async function openMuseum(page: Page): Promise<void> {
         )
       },
     }
-  })
-  await page.goto('/glass-game/')
+  }, setup)
+  await page.goto(setup.path)
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-ready',
     'true',
     { timeout: 40_000 },
   )
-  await expect(
-    page.getByRole('button', { name: 'Sing to the glass' }),
-  ).toBeVisible()
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-level-id',
+    setup.levelId,
+  )
+  if (setup.waitForEncounter)
+    await expect(
+      page.getByRole('button', { name: 'Sing to the glass' }),
+    ).toBeVisible()
 }
 
 async function expectMicrophoneOff(page: Page): Promise<void> {
@@ -233,9 +305,9 @@ async function expectPlayerMovement(
 }
 
 async function minimizeMuseumRaster(page: Page): Promise<void> {
-  // Only the two focus/input cases use this after genuine scene initialization.
-  // Keep real RAF, controls and CSS hit targets while avoiding costly full-size
-  // SwiftShader output. Visual and microphone cases retain their full buffers.
+  // Selected behavior-only cases use this after genuine scene initialization.
+  // Keep real RAF, controls, audio and CSS hit targets while avoiding costly
+  // full-size SwiftShader output. These cases make no visual-rendering claim.
   const viewport = page.getByLabel('Glass museum; drag to look around')
   const canvas = page.locator('canvas[aria-label="Floating glass museum"]')
   const before = {
@@ -269,6 +341,146 @@ async function minimizeMuseumRaster(page: Page): Promise<void> {
     drawingBufferWidth: 1,
     drawingBufferHeight: 1,
   })
+}
+
+async function omitMuseumRasterOutput(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    // Twin voice cases assert the real scene lifecycle, controls and Web Audio
+    // pipeline, while visual rendering has dedicated browser coverage.
+    for (const method of [
+      'clear',
+      'drawArrays',
+      'drawArraysInstanced',
+      'drawElements',
+      'drawElementsInstanced',
+    ])
+      Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+        configurable: true,
+        value: () => undefined,
+      })
+  })
+}
+
+async function setVoice(
+  page: Page,
+  midi: number,
+  amplitude: number,
+): Promise<void> {
+  await page.evaluate(
+    ({ nextMidi, nextAmplitude }) => {
+      window.glassVoiceFixture.setMidi(nextMidi)
+      window.glassVoiceFixture.setAmplitude(nextAmplitude)
+    },
+    { nextMidi: midi, nextAmplitude: amplitude },
+  )
+}
+
+async function holdForAudioSeconds(page: Page, seconds: number): Promise<void> {
+  const startedAt = await page.evaluate(
+    () => window.glassVoiceFixture.sources.at(-1)?.context.currentTime ?? 0,
+  )
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            window.glassVoiceFixture.sources.at(-1)?.context.currentTime ?? 0,
+        ),
+      { timeout: Math.max(6000, seconds * 4000) },
+    )
+    .toBeGreaterThan(startedAt + seconds)
+}
+
+async function approachRestoredEncounter(
+  page: Page,
+  checkpointId: string,
+  label: string,
+  desiredDirection: { x: number; z: number },
+): Promise<void> {
+  const adventure = page.getByTestId('glass-adventure')
+  await expect(adventure).toHaveAttribute('data-checkpoint', checkpointId)
+  const directionLength = Math.hypot(desiredDirection.x, desiredDirection.z)
+  expect(directionLength).toBeGreaterThan(0)
+  const direction = {
+    x: desiredDirection.x / directionLength,
+    z: desiredDirection.z / directionLength,
+  }
+  // Restored camera yaw is deliberately player-owned. Recenter through the
+  // public control so forward follows the checkpoint pose toward its exhibit.
+  await page.getByRole('button', { name: 'Recenter camera' }).click()
+  await animationFrames(page, 2)
+  const yaw = await cameraYaw(page)
+  expect(
+    -Math.sin(yaw) * direction.x - Math.cos(yaw) * direction.z,
+  ).toBeGreaterThan(0.99)
+  const before = await playerPosition(page)
+  await page.keyboard.down('KeyW')
+  try {
+    await expect
+      .poll(
+        async () => {
+          const current = await playerPosition(page)
+          return (
+            (current.x - before.x) * direction.x +
+            (current.z - before.z) * direction.z
+          )
+        },
+        { timeout: 8000, intervals: [32] },
+      )
+      .toBeGreaterThan(2.1)
+  } finally {
+    await page.keyboard.up('KeyW')
+  }
+  await settledPlayerPosition(page)
+  await expect(page.getByText(label, { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Sing to the glass' }),
+  ).toBeVisible()
+}
+
+async function expectVoicePanelFits(page: Page): Promise<void> {
+  const bounds = await page
+    .getByLabel('Voice challenge')
+    .evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+      }
+    })
+  expect(bounds.left).toBeGreaterThanOrEqual(0)
+  expect(bounds.top).toBeGreaterThanOrEqual(0)
+  expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth)
+  expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight)
+}
+
+async function savedProgress(
+  page: Page,
+  levelId: string,
+): Promise<{
+  version: 1
+  levelId: string
+  checkpointId: string
+  completedBreakableIds: string[]
+  finished?: boolean
+}> {
+  return page.evaluate((id) => {
+    const raw = localStorage.getItem(
+      `beside-cue:glass-adventure:progress:${id}`,
+    )
+    if (raw === null) throw new Error(`Missing saved progress for ${id}.`)
+    return JSON.parse(raw) as {
+      version: 1
+      levelId: string
+      checkpointId: string
+      completedBreakableIds: string[]
+      finished?: boolean
+    }
+  }, levelId)
 }
 
 async function settledPlayerPosition(
@@ -524,6 +736,181 @@ test('permission denial returns to a fresh start instead of leaving the encounte
   await expect(
     page.getByRole('heading', { name: 'Hum a comfortable note.' }),
   ).toBeVisible()
+})
+
+test('Twin high-note calibration rejects an overlapping range and recovers safely', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 })
+  await omitMuseumRasterOutput(page)
+  await openMuseum(page, {
+    path: '/glass-game/?layout=twin-galleries',
+    levelId: twinPrefix,
+    checkpointId: twinIds.coolCheckpoint,
+    completedBreakableIds: [twinIds.lower],
+    tutorialPreference: `tutorial:${twinPrefix}:comfortable-pair:v1`,
+    pairPreference: { version: 1, low: 52 },
+    waitForEncounter: false,
+  })
+  await approachRestoredEncounter(
+    page,
+    twinIds.coolCheckpoint,
+    'Celadon lark decanter',
+    { x: 1, z: 0 },
+  )
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-completed',
+    '1',
+  )
+
+  await setVoice(page, 54, 0.1)
+  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  const panel = page.getByLabel('Voice challenge')
+  await expect(panel).toHaveAttribute('data-voice-mode', 'finding')
+  await expect(
+    page.getByRole('heading', {
+      name: 'Choose a clearly different comfortable high note.',
+    }),
+  ).toBeVisible({ timeout: 10_000 })
+  await expectVoicePanelFits(page)
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem('beside-cue:glass-adventure:comfortable-pair'),
+    ),
+  ).toBe(JSON.stringify({ version: 1, low: 52 }))
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-completed',
+    '1',
+  )
+  expect(
+    await page.evaluate(
+      () => window.glassVoiceFixture.sources.at(-1)?.track.readyState,
+    ),
+  ).toBe('live')
+
+  await setVoice(page, 64, 0.1)
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        localStorage.getItem('beside-cue:glass-adventure:comfortable-pair'),
+      ),
+    )
+    .toBe(JSON.stringify({ version: 1, low: 52, high: 64 }))
+  await setVoice(page, 64, 0)
+  await expect(panel).toHaveAttribute('data-voice-mode', /reference|singing/)
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expectMicrophoneOff(page)
+  expect(await savedProgress(page, twinPrefix)).toEqual({
+    version: 1,
+    levelId: twinPrefix,
+    checkpointId: twinIds.coolCheckpoint,
+    completedBreakableIds: [twinIds.lower],
+  })
+})
+
+test('Twin court requires low then high, Replay resets the partial pair, and only the full pair saves', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 768 })
+  await omitMuseumRasterOutput(page)
+  await openMuseum(page, {
+    path: '/glass-game/?layout=twin-galleries',
+    levelId: twinPrefix,
+    checkpointId: twinIds.courtCheckpoint,
+    completedBreakableIds: [twinIds.lower, twinIds.upper],
+    tutorialPreference: `tutorial:${twinPrefix}:comfortable-pair:v1`,
+    pairPreference: { version: 1, low: 52, high: 64 },
+    waitForEncounter: false,
+  })
+  await approachRestoredEncounter(
+    page,
+    twinIds.courtCheckpoint,
+    'Twin-tone answer',
+    { x: 0, z: 1 },
+  )
+  const adventure = page.getByTestId('glass-adventure')
+  await expect(adventure).toHaveAttribute('data-completed', '2')
+  expect(await savedProgress(page, twinPrefix)).toEqual({
+    version: 1,
+    levelId: twinPrefix,
+    checkpointId: twinIds.courtCheckpoint,
+    completedBreakableIds: [twinIds.lower, twinIds.upper],
+  })
+
+  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  const panel = page.getByLabel('Voice challenge')
+  await expect(
+    page.getByRole('heading', { name: 'Listen to both notes in order.' }),
+  ).toBeVisible({ timeout: 6000 })
+  await expect
+    .poll(() => page.evaluate(() => window.glassVoiceFixture.referenceStarts))
+    .toBe(2)
+  await expect(panel).toHaveAttribute('data-voice-mode', 'singing', {
+    timeout: 8000,
+  })
+  await expectVoicePanelFits(page)
+  await expect(
+    page.getByRole('list', { name: 'Note order' }).getByText('Lower note'),
+  ).toHaveAttribute('aria-current', 'step')
+
+  // A long higher note is real detector input, but cannot satisfy step one.
+  await setVoice(page, 64, 0.1)
+  await expect(page.getByText(/E4 ·/)).toBeVisible({ timeout: 6000 })
+  await holdForAudioSeconds(page, 1.25)
+  await expect(panel).toHaveAttribute('data-step-index', '0')
+  await expect(
+    page.getByRole('progressbar', { name: 'Glass resonance' }),
+  ).toHaveAttribute('aria-valuenow', '0')
+  await expect(adventure).toHaveAttribute('data-completed', '2')
+
+  // Completing only the low step advances the live pair but persists no break.
+  await setVoice(page, 52, 0.1)
+  await expect(panel).toHaveAttribute('data-step-index', '1', {
+    timeout: 10_000,
+  })
+  await setVoice(page, 52, 0)
+  await expect(
+    page.getByRole('list', { name: 'Note order' }).getByText('Higher note'),
+  ).toHaveAttribute('aria-current', 'step')
+  expect(await savedProgress(page, twinPrefix)).toEqual({
+    version: 1,
+    levelId: twinPrefix,
+    checkpointId: twinIds.courtCheckpoint,
+    completedBreakableIds: [twinIds.lower, twinIds.upper],
+  })
+
+  const referencesBeforeReplay = await page.evaluate(
+    () => window.glassVoiceFixture.referenceStarts,
+  )
+  await page.getByRole('button', { name: 'Hear both notes again' }).click()
+  await expect(panel).toHaveAttribute('data-voice-mode', 'reference')
+  await expect(panel).toHaveAttribute('data-step-index', '0')
+  await expect
+    .poll(() => page.evaluate(() => window.glassVoiceFixture.referenceStarts))
+    .toBe(referencesBeforeReplay + 2)
+  await expect(panel).toHaveAttribute('data-voice-mode', 'singing', {
+    timeout: 8000,
+  })
+  await expect(
+    page.getByRole('list', { name: 'Note order' }).getByText('Lower note'),
+  ).toHaveAttribute('aria-current', 'step')
+
+  await setVoice(page, 52, 0.1)
+  await expect(panel).toHaveAttribute('data-step-index', '1', {
+    timeout: 10_000,
+  })
+  await setVoice(page, 64, 0.1)
+  await expect(adventure).toHaveAttribute('data-completed', '3', {
+    timeout: 12_000,
+  })
+  await expectMicrophoneOff(page)
+  expect(await savedProgress(page, twinPrefix)).toEqual({
+    version: 1,
+    levelId: twinPrefix,
+    checkpointId: twinIds.courtCheckpoint,
+    completedBreakableIds: [twinIds.lower, twinIds.upper, twinIds.bridgePair],
+    finished: false,
+  })
 })
 
 test('visible-window blur releases held movement and orbit without opening Pause', async ({

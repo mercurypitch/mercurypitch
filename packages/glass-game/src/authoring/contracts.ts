@@ -1,6 +1,6 @@
 // Level authoring contracts — reusable local room data compiled into runtime definitions.
 
-import type { Bounds3, BoundsXZ, CheckpointDefinition, FloorArtPaletteId, FloorArtRecipeId, HoldDefinition, LevelMovementDefinition, LevelTutorialDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
+import type { Bounds3, BoundsXZ, ChallengeDefinition, CheckpointDefinition, FloorArtPaletteId, FloorArtRecipeId, LevelMovementDefinition, LevelTutorialDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
 
 export type QuarterTurn = 0 | 1 | 2 | 3
 
@@ -87,7 +87,6 @@ export interface RoomPrefab {
 export interface ExhibitPrefab {
   id: string
   variant: string
-  hold: HoldDefinition
   plinth: {
     height: number
     radiusTop: number
@@ -103,6 +102,7 @@ export interface ExhibitPlacement {
   prefabId: string
   label: string
   optional: boolean
+  challenge: ChallengeDefinition
   requiresCompleted?: readonly string[]
 }
 

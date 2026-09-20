@@ -6,6 +6,14 @@ export { composeLevel } from './authoring/compose-level'
 export { LevelAuthoringError } from './authoring/contracts'
 export type * from './authoring/contracts'
 export { createGlassGame } from './core/game'
+export { createChallengeJudge } from './core/challenge'
+export type {
+  ChallengeJudge,
+  ChallengeJudgeEvent,
+  ChallengeJudgeResult,
+  ChallengeProgress,
+  ChallengeTargetError,
+} from './core/challenge'
 export {
   getActiveCourseSolids,
   getActiveSolidIds,

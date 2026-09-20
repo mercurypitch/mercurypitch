@@ -1,6 +1,6 @@
 # Level 2 Twin Galleries art batch
 
-This source-only batch establishes the warm lower gallery and cool upper gallery
+This production-source batch establishes the warm lower gallery and cool upper gallery
 families for Level 2. It contains four isolated Meshy-ready concept masters,
 four untouched remeshed-output Meshy 6 donor GLBs, four normalized packed
 Blender sources and 1K-texture GLB derivatives, plus three original full-bleed
@@ -46,8 +46,11 @@ approved gameplay collision.
 | The Interval Between | Shared court / transition | `paintings/interval-between-master.png` |
 
 All three paintings are original fictional subjects at 1024 × 1536, full bleed,
-without frames, labels or typography. They are source masters for later framed
-surface review; no runtime compression or assignment is included here.
+without frames, labels or typography. The masters remain unchanged. `export_paintings.py` now writes full-resolution
+quality-88 WebP derivatives and a hashed manifest to
+`apps/beside-cue/public/games/adventure-v6`. Twin Galleries uses the paintings in
+the accepted V5 frame/inset, and the shared gallery chooser uses the interval
+painting. This integration does not change the 3D candidates’ status.
 
 ## Provenance and reproduction
 
@@ -67,6 +70,7 @@ then reimports that GLB for inventory validation. `build_contact_sheet.py`
 rebuilds the layout-only concept review. Binary source files in this directory
 use the same Git LFS attributes as V5.
 
-This directory is deliberately disconnected from `apps/beside-cue/public`.
-No Level 2 mechanics, scene placement, material integration, fracture system,
-runtime manifest or global source archive was changed by this batch.
+The painting exporter is the only connection to `apps/beside-cue/public`.
+The 3D exports remain review candidates; Twin Galleries currently uses approved
+breakable recipes until their replacement models pass production validation.
+See `../plans/TWIN-GALLERIES-IMPLEMENTATION.md` for the current runtime scope.

@@ -4,6 +4,22 @@ import { composeLevel } from '../authoring/compose-level'
 import type { AuthoredLevelSource } from '../authoring/contracts'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_MUSEUM_AUTHORING_CATALOG, } from './enclosed-museum-kit'
 
+const COMFORTABLE_HOLD = {
+  kind: 'hold',
+  step: {
+    target: 'comfortable',
+    hold: {
+      requiredSeconds: 1.2,
+      toleranceCents: 150,
+      confidenceFloor: 0.5,
+      dropoutGraceSeconds: 0.15,
+      decayPerSecond: 0.25,
+      maximumSampleGapSeconds: 0.1,
+      maximumSampleAgeMs: 150,
+    },
+  },
+} as const
+
 export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
   levelId: 'glassworks-chamber',
   layoutId: 'chamber',
@@ -111,6 +127,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-threshold-goblet',
       label: 'Threshold goblet',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
     },
     {
       id: 'window-coupe',
@@ -119,6 +136,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-window-coupe',
       label: 'Window coupe',
       optional: true,
+      challenge: COMFORTABLE_HOLD,
     },
     {
       id: 'passage-decanter',
@@ -127,6 +145,7 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-passage-decanter',
       label: 'Passage decanter',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['threshold-goblet'],
     },
   ],

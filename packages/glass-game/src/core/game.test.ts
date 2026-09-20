@@ -8,6 +8,46 @@ import { MOVEMENT } from './movement'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
 const goblet = GLASSWORKS.breakables[0].id
+const PAIR_LEVEL: LevelDefinition = {
+  ...GLASSWORKS,
+  id: 'glassworks-pair-proof',
+  breakables: [
+    {
+      ...GLASSWORKS.breakables[0],
+      challenge: {
+        kind: 'ordered-pair',
+        steps: [
+          {
+            target: 'low',
+            hold: {
+              requiredSeconds: 1.2,
+              toleranceCents: 75,
+              confidenceFloor: 0.5,
+              dropoutGraceSeconds: 0.15,
+              decayPerSecond: 0.25,
+              maximumSampleGapSeconds: 0.1,
+              maximumSampleAgeMs: 150,
+            },
+          },
+          {
+            target: 'high',
+            hold: {
+              requiredSeconds: 1.2,
+              toleranceCents: 75,
+              confidenceFloor: 0.5,
+              dropoutGraceSeconds: 0.15,
+              decayPerSecond: 0.25,
+              maximumSampleGapSeconds: 0.1,
+              maximumSampleAgeMs: 150,
+            },
+          },
+        ],
+        wrongOrder: 'reset',
+      },
+    },
+    ...GLASSWORKS.breakables.slice(1),
+  ],
+}
 const vase = GLASSWORKS.breakables[1].id
 const hero = GLASSWORKS.breakables[2].id
 
@@ -159,6 +199,70 @@ describe('Glassworks simulation', () => {
       brokenAt: null,
     })
     expect(restored.snapshot().enabledPlatformIds).toContain('arch-bridge')
+  })
+
+  it('breaks and saves an ordered pair only after both steps complete', () => {
+    const game = createGlassGame(PAIR_LEVEL)
+    walkToGoblet(game)
+    expect(game.beginEncounter(goblet, { low: 57, high: 60 })).toBe(true)
+
+    const lowEvents: GameEvent[] = []
+    for (let sequence = 0; sequence <= 48; sequence++)
+      lowEvents.push(
+        ...game.feedPitch(
+          {
+            sequence,
+            captureSeconds: sequence / 40,
+            capturedAtMs: sequence * 25,
+            confidence: 0.9,
+            midi: 57,
+          },
+          sequence * 25,
+        ),
+      )
+    expect(lowEvents).toEqual([
+      {
+        type: 'challenge-step',
+        id: goblet,
+        completedSteps: 1,
+        stepCount: 2,
+      },
+    ])
+    expect(game.saveProgress().completedBreakableIds).toEqual([])
+    expect(game.snapshot().activeEncounter).toMatchObject({
+      kind: 'ordered-pair',
+      charge: 0.5,
+      stepCharge: 0,
+      stepIndex: 1,
+      stepCount: 2,
+      target: 'high',
+      targetMidi: 60,
+    })
+
+    const highEvents: GameEvent[] = []
+    for (let sequence = 49; sequence <= 97; sequence++)
+      highEvents.push(
+        ...game.feedPitch(
+          {
+            sequence,
+            captureSeconds: sequence / 40,
+            capturedAtMs: sequence * 25,
+            confidence: 0.9,
+            midi: 60,
+          },
+          sequence * 25,
+        ),
+      )
+    expect(highEvents).toEqual([
+      {
+        type: 'challenge-step',
+        id: goblet,
+        completedSteps: 2,
+        stepCount: 2,
+      },
+      { type: 'break', id: goblet },
+    ])
+    expect(game.saveProgress().completedBreakableIds).toEqual([goblet])
   })
 
   it('cancels charge on pause and does not restart from stale capture after returning', () => {

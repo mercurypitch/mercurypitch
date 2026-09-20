@@ -9,6 +9,34 @@ export interface GalleryArtwork {
 }
 
 const ARTWORKS: Readonly<Record<string, GalleryArtwork>> = {
+  'low-note-painting-v6': {
+    title: 'The Low Note Keeper',
+    imageAsset: 'painting-low-note-v6',
+    description:
+      'An imaginary singer in amber and deep green, surrounded by golden circles and flowing ribbons.',
+    story:
+      'The keeper never tried to fill the sky. He found a note that felt like home, and the gallery gathered quietly around it.',
+    invitation:
+      'Let your lower note feel easy. Warmth matters more than weight.',
+  },
+  'high-note-painting-v6': {
+    title: 'The High Note Muse',
+    imageAsset: 'painting-high-note-v6',
+    description:
+      'An imaginary singer in celadon, moonstone and pearl, framed by pale ribbons and an opalescent halo.',
+    story:
+      'She followed a thread of light just a little higher. No reaching for the ceiling, no grand leap: only the next comfortable note.',
+    invitation: 'A little higher is enough. Keep it gentle and entirely yours.',
+  },
+  'interval-painting-v6': {
+    title: 'The Interval Between',
+    imageAsset: 'painting-interval-v6',
+    description:
+      'Two singers on ivory balconies, one in warm sunset and one beneath a cool blue sky, joined by a golden flower.',
+    story:
+      'Across the courtyard, one voice offered a note and another answered. The space between them became a path.',
+    invitation: 'Listen, leave a little room, then let your next note arrive.',
+  },
   'garden-painting-v5': {
     title: 'The garden between notes',
     imageAsset: 'painting-garden-v5',

@@ -1,0 +1,77 @@
+{
+  "note": "Compiled host and UI with scene raster suppressed; geometry has separate proofs. No physical-device/FPS claim.",
+  "errors": [],
+  "records": [
+    {
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "appearance": {
+        "width": 320,
+        "overflow": false,
+        "color": "rgb(36, 73, 67)",
+        "background": "rgb(255, 251, 239)",
+        "radius": "120px 120px 18px 18px",
+        "font": "\"Gabarito Variable\", sans-serif"
+      },
+      "file": "built-320-campaign.png"
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "appearance": {
+        "width": 1024,
+        "overflow": false,
+        "color": "rgb(36, 73, 67)",
+        "background": "rgb(255, 251, 239)",
+        "radius": "120px 120px 18px 18px",
+        "font": "\"Gabarito Variable\", sans-serif"
+      },
+      "file": "built-1024-campaign.png"
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "appearance": {
+        "width": 1440,
+        "overflow": false,
+        "color": "rgb(36, 73, 67)",
+        "background": "rgb(255, 251, 239)",
+        "radius": "120px 120px 18px 18px",
+        "font": "\"Gabarito Variable\", sans-serif"
+      },
+      "file": "built-1440-campaign.png"
+    },
+    {
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "bounds": {
+        "x": 16,
+        "y": 310.03125,
+        "width": 288,
+        "height": 309.96875
+      },
+      "file": "built-320-calibration.png"
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "bounds": {
+        "x": 292,
+        "y": 460.828125,
+        "width": 440,
+        "height": 279.171875
+      },
+      "file": "built-1024-calibration.png"
+    }
+  ]
+}

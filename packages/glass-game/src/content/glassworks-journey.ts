@@ -5,6 +5,22 @@ import type { AuthoredLevelSource } from '../authoring/contracts'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CORRIDOR_HALF_LENGTH, ENCLOSED_CORRIDOR_HALF_WIDTH, } from './enclosed-museum-kit'
 import { GLASSWORKS_JOURNEY_AUTHORING_CATALOG } from './glassworks-journey-kit'
 
+const COMFORTABLE_HOLD = {
+  kind: 'hold',
+  step: {
+    target: 'comfortable',
+    hold: {
+      requiredSeconds: 1.2,
+      toleranceCents: 150,
+      confidenceFloor: 0.5,
+      dropoutGraceSeconds: 0.15,
+      decayPerSecond: 0.25,
+      maximumSampleGapSeconds: 0.1,
+      maximumSampleAgeMs: 150,
+    },
+  },
+} as const
+
 const WINDOW_EAST_X = ENCLOSED_CHAMBER_HALF + ENCLOSED_CORRIDOR_HALF_LENGTH
 const ROUTE_SPINE_X =
   WINDOW_EAST_X + ENCLOSED_CORRIDOR_HALF_LENGTH + ENCLOSED_CORRIDOR_HALF_WIDTH
@@ -230,6 +246,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-threshold-goblet',
       label: 'Laurel goblet',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
     },
     {
       id: 'garden-decanter',
@@ -238,6 +255,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-passage-decanter',
       label: 'Garden decanter',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['vestibule-goblet'],
     },
     {
@@ -247,6 +265,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'glassworks-journey-amphora',
       label: 'Courtyard amphora',
       optional: true,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['vestibule-goblet'],
     },
     {
@@ -256,6 +275,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-window-coupe',
       label: 'Garden coupe',
       optional: true,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['vestibule-goblet'],
     },
     {
@@ -265,6 +285,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'glassworks-journey-fluted',
       label: 'Archive carafe',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['garden-decanter'],
     },
     {
@@ -274,6 +295,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'glassworks-journey-portrait',
       label: 'Glass portrait',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['archive-carafe'],
     },
     {
@@ -283,6 +305,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'glassworks-journey-amphora',
       label: 'Moon amphora',
       optional: true,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['portrait-finale'],
     },
     {
@@ -292,6 +315,7 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'enclosed-window-coupe',
       label: 'Sky coupe',
       optional: true,
+      challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['portrait-finale'],
     },
   ],

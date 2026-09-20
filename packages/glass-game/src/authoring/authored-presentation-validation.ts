@@ -12,6 +12,27 @@ export function compileGuidance(
   const guidance = source.guidance
   if (guidance === undefined) return undefined
   if (guidance.tutorial !== undefined) {
+    if (
+      guidance.tutorial.id !== undefined &&
+      guidance.tutorial.id.trim().length === 0
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-guidance',
+        'guidance.tutorial.id',
+        'Tutorial ID must contain visible text.',
+      )
+    if (
+      guidance.tutorial.version !== undefined &&
+      (!Number.isInteger(guidance.tutorial.version) ||
+        guidance.tutorial.version < 1)
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-guidance',
+        'guidance.tutorial.version',
+        'Tutorial version must be a positive integer.',
+      )
     if (guidance.tutorial.pages.length !== 2)
       diagnostic(
         diagnostics,
@@ -80,6 +101,8 @@ export function compileGuidance(
     guidance.tutorial === undefined
       ? undefined
       : {
+          id: guidance.tutorial.id,
+          version: guidance.tutorial.version,
           pages: [
             { ...guidance.tutorial.pages[0] },
             { ...guidance.tutorial.pages[1] },

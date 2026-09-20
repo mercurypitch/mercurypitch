@@ -181,7 +181,7 @@ export function GamesScreen(props: GamesScreenProps) {
       fallback={
         <div class="games-stage">
           <Show when={playing() === 'adventure'}>
-            <AdventureScreen onExit={() => setPlaying(null)} />
+            <AdventureScreen campaign onExit={() => setPlaying(null)} />
           </Show>
           <Show when={playing() === 'cabinet3d'}>
             <Stage3D onExit={() => setPlaying(null)} />

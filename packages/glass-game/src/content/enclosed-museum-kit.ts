@@ -1,7 +1,7 @@
 // Enclosed museum kit — five playable room prefabs and one camera-only panorama volume.
 
 import type { ExhibitPrefab, LevelAuthoringCatalog, RoomAudioRegionDefinition, RoomPrefab, RoomVisualDefinition, } from '../authoring/contracts'
-import type { CheckpointDefinition, HoldDefinition, MuseumAudioSceneId, PlatformDefinition, SolidPresentation, SolidPropDefinition, } from '../contracts'
+import type { CheckpointDefinition, MuseumAudioSceneId, PlatformDefinition, SolidPresentation, SolidPropDefinition, } from '../contracts'
 import type { MuseumWallBay } from './enclosed-wall-kit'
 import { MUSEUM_SCREEN_DEPTH, MUSEUM_SCREEN_WIDTH, MUSEUM_SEAM_OVERLAP, MUSEUM_WALL_TOP, MUSEUM_WINDOW_DEPTH, MUSEUM_WINDOW_WIDTH, museumPortSeal, museumScreenBay, museumStoneWall, museumWindowBay, } from './enclosed-wall-kit'
 import { framedRoomArt, MUSEUM_FRAMED_ART_INWARD_OFFSET, MUSEUM_ROOM_DECORATION_RECIPE_IDS, } from './museum-room-dressings'
@@ -27,16 +27,6 @@ const CAMERA_CORRIDOR_HALF_WIDTH = 1.4201082198143005
 const CAMERA_CORRIDOR_HALF_LENGTH = 3.9248093779563904
 const CAMERA_TOP = 3.44
 const FLOOR_THICKNESS = 0.25
-
-const HOLD: HoldDefinition = {
-  requiredSeconds: 1.2,
-  toleranceCents: 150,
-  confidenceFloor: 0.5,
-  dropoutGraceSeconds: 0.15,
-  decayPerSecond: 0.25,
-  maximumSampleGapSeconds: 0.1,
-  maximumSampleAgeMs: 150,
-}
 
 const GATE_PRESENTATION: SolidPresentation = {
   role: 'gate',
@@ -95,7 +85,6 @@ function exhibit(id: string, variant: string): ExhibitPrefab {
   return {
     id,
     variant,
-    hold: { ...HOLD },
     plinth: {
       ...EXHIBIT_PLINTH,
       presentation: { role: 'plinth', material: 'stone' },

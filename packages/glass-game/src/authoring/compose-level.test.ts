@@ -191,6 +191,21 @@ function transformedFixture(): {
         prefabId: 'goblet',
         label: 'Proof goblet',
         optional: false,
+        challenge: {
+          kind: 'hold',
+          step: {
+            target: 'comfortable',
+            hold: {
+              requiredSeconds: 1,
+              toleranceCents: 100,
+              confidenceFloor: 0.5,
+              dropoutGraceSeconds: 0.1,
+              decayPerSecond: 0.2,
+              maximumSampleGapSeconds: 0.1,
+              maximumSampleAgeMs: 150,
+            },
+          },
+        },
       },
     ],
     connections: [],
@@ -222,15 +237,6 @@ function transformedFixture(): {
         goblet: {
           id: 'goblet',
           variant: 'goblet',
-          hold: {
-            requiredSeconds: 1,
-            toleranceCents: 100,
-            confidenceFloor: 0.5,
-            dropoutGraceSeconds: 0.1,
-            decayPerSecond: 0.2,
-            maximumSampleGapSeconds: 0.1,
-            maximumSampleAgeMs: 150,
-          },
           plinth: {
             height: 0.7,
             radiusTop: 0.22,

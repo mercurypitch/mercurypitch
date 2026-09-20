@@ -3,20 +3,21 @@ import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import type { GalleryArtwork } from '../content/gallery-artworks'
 import { galleryArtwork } from '../content/gallery-artworks'
 import { museumSoundscape } from '../content/soundscapes'
-import type { GameEvent, LevelDefinition, PitchObservation } from '../contracts'
+import type { GameEvent, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
-import type { GlassGameHost, GlassSound, GlassVoiceSession, MuseumAudioPreferences, } from '../host'
+import type { GlassGameHost, MuseumAudioPreferences } from '../host'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { createAdventureInput } from './input'
 import type { AdventureLoadingPhase } from './loading-lifecycle'
 import { createAdventureLoadingLifecycle } from './loading-lifecycle'
-import { microphoneError } from './mic-error'
 import { createAdventureNarration } from './narration'
 import { createAdventureSoundscape } from './soundscape'
+import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
+import type { VoiceChallengeSnapshot } from './voice-challenge'
+import { createVoiceChallenge } from './voice-challenge'
 
-type VoiceMode = 'off' | 'permission' | 'finding' | 'reference' | 'singing'
 const LOADING_PRESENTATION_MS = 2000
 const ASSET_LOAD_ERROR =
   'The gallery could not finish loading. Check your connection, then retry.'
@@ -41,8 +42,10 @@ export function useAdventure(
   const [loadError, setLoadError] = createSignal<string | null>(null)
   const ready = () => loadingPhase() === 'ready'
   const [error, setError] = createSignal<string | null>(null)
-  const [voiceMode, setVoiceMode] = createSignal<VoiceMode>('off')
-  const [pitch, setPitch] = createSignal<number | null>(null)
+  const [voiceState, setVoiceState] = createSignal<VoiceChallengeSnapshot>()
+  const voiceMode = () => voiceState()?.mode ?? 'off'
+  const pitch = () => voiceState()?.pitch ?? null
+  const target = () => voiceState()?.target ?? null
   const [notice, setNotice] = createSignal(
     level.guidance?.openingNotice ??
       'Explore the museum and approach a glass exhibit.',
@@ -51,9 +54,7 @@ export function useAdventure(
   const [paused, setPaused] = createSignal(false)
   const [inspection, setInspection] = createSignal<GalleryArtwork | null>(null)
   const [nearbyArtwork, setNearbyArtwork] = createSignal<string | null>(null)
-  const [tutorial, setTutorial] = createSignal(
-    host.readPreference('tutorial') !== 'seen',
-  )
+  const [tutorial, setTutorial] = createSignal(!hasSeenTutorial(host, level))
   const music = host.createMusic?.()
   const [audioPreferences, setAudioPreferences] = createSignal(
     music?.preferences(),
@@ -71,24 +72,11 @@ export function useAdventure(
   const [narrationPreferences, setNarrationPreferences] = createSignal(
     narration.preferences(),
   )
-  const storedNote = Number(host.readPreference('comfortable-note') ?? '')
-  const [target, setTarget] = createSignal<number | null>(
-    Number.isFinite(storedNote) && storedNote >= 36 && storedNote <= 84
-      ? storedNote
-      : null,
-  )
   let renderer: GlassRenderer | null = null
-  let voice: GlassVoiceSession | null = null
-  let stopObserving: (() => void) | null = null
-  let sound: GlassSound | null = null
-  let token = 0
   let alive = true
   let rendererGeneration = 0
   let frameId = 0
   let lastTime = 0
-  let lastSequence = -1
-  let samples: PitchObservation[] = []
-  let soundTimer: ReturnType<typeof setTimeout> | undefined
   let noticeTimer: ReturnType<typeof setTimeout> | undefined
   let narrationCaptionTimer: ReturnType<typeof setTimeout> | undefined
   let completionTimer: ReturnType<typeof setTimeout> | undefined
@@ -112,34 +100,12 @@ export function useAdventure(
     setSnapshot(game.snapshot())
   }
 
-  function stopCapture(): void {
-    token++
-    stopObserving?.()
-    stopObserving = null
-    voice?.stop()
-    voice = null
-    lastSequence = -1
-    samples = []
-    setPitch(null)
-    setVoiceMode('off')
-    narration.releaseVoice()
-  }
-
-  function stopSound(): void {
-    clearTimeout(soundTimer)
-    sound?.dispose()
-    sound = null
-  }
-
   function cancel(): void {
     clearNarrationCaption()
     narration.pause()
-    stopCapture()
-    stopSound()
-    game.cancelEncounter()
+    voiceChallenge.cancel()
     input.clear()
     refresh()
-    soundscape.releaseVoice()
   }
 
   function announce(message: string): void {
@@ -183,14 +149,7 @@ export function useAdventure(
       if (event.type === 'break') {
         // This write precedes the fracture, its sound and bridge presentation.
         host.saveProgress(game.saveProgress())
-        stopCapture()
-        sound?.shatter()
-        soundscape.releaseVoice()
-        const finishedSound = sound
-        soundTimer = setTimeout(() => {
-          finishedSound?.dispose()
-          if (sound === finishedSound) sound = null
-        }, 3000)
+        voiceChallenge.completeBreak()
         const item = level.breakables.find(
           (candidate) => candidate.id === event.id,
         )
@@ -220,28 +179,28 @@ export function useAdventure(
     }
   }
 
-  async function reference(midi: number, sessionToken: number): Promise<void> {
-    const active = game.snapshot().activeEncounter
-    if (!active || !sound) return
-    game.cancelEncounter()
-    game.beginEncounter(active.id, midi)
-    setTarget(midi)
-    setVoiceMode('reference')
-    refresh()
-    try {
-      await sound.reference(midi)
-      if (!alive || sessionToken !== token) return
-      lastSequence = voice?.latest(performance.now())?.sequence ?? -1
-      setVoiceMode('singing')
-    } catch {
-      if (!alive || sessionToken !== token) return
-      soundscape.pause()
-      cancel()
-      setError(
-        'The reference note could not play. Tap Sing to try again when audio is available.',
-      )
-    }
-  }
+  const voiceChallenge = createVoiceChallenge({
+    host,
+    game,
+    level,
+    canPlay: () => alive && ready() && !paused() && !tutorial(),
+    beforeCapture: () =>
+      Promise.all([
+        soundscape.silenceForVoice(),
+        narration.silenceForVoice(),
+      ]).then(() => undefined),
+    onChange: (next) => {
+      if (alive) setVoiceState(next)
+      refresh()
+    },
+    onEvents: events,
+    onError: setError,
+    onPauseAudio: () => soundscape.pause(),
+    onReleaseVoice: () => {
+      narration.releaseVoice()
+      soundscape.releaseVoice()
+    },
+  })
 
   async function start(): Promise<void> {
     clearNarrationCaption()
@@ -254,96 +213,16 @@ export function useAdventure(
       voiceMode() !== 'off'
     )
       return
-    const chosenTarget = target()
     setError(null)
     input.clear()
-    stopSound()
-    if (!game.beginEncounter(id, chosenTarget ?? 57)) return
-    const currentToken = ++token
-    const session = host.createVoice()
-    voice = session
-    sound = host.createSound()
-    setVoiceMode('permission')
-    refresh()
-    try {
-      // Start the microphone and context inside this gesture, but do not feed
-      // our own fading music or narration into calibration or pitch detection.
-      // Both services invalidate pending playback before either promise yields.
-      const quiet = Promise.all([
-        soundscape.silenceForVoice(),
-        narration.silenceForVoice(),
-      ]).then(() => undefined)
-      await session.start(quiet)
-      if (!alive || currentToken !== token) {
-        session.stop()
-        return
-      }
-      stopObserving = session.subscribe(
-        (observation, now) => {
-          if (alive && voice === session) observe(observation, now)
-        },
-        () => {
-          if (!alive || voice !== session) return
-          soundscape.pause()
-          cancel()
-          setError('Audio was interrupted. Tap Sing to try again.')
-        },
-      )
-      if (chosenTarget !== null) await reference(chosenTarget, currentToken)
-      else {
-        samples = []
-        lastSequence = -1
-        setVoiceMode('finding')
-      }
-    } catch (cause) {
-      if (!alive || currentToken !== token) return
-      cancel()
-      setError(microphoneError(cause))
-    }
-  }
-
-  function observe(observation: PitchObservation, now: number): void {
-    if (observation.sequence === lastSequence) return
-    lastSequence = observation.sequence
-    const voiced =
-      observation.midi !== null &&
-      observation.confidence >= 0.5 &&
-      now - observation.capturedAtMs <= 150
-    setPitch(voiced ? observation.midi : null)
-    if (voiceMode() === 'finding') {
-      if (!voiced || observation.midi! < 36 || observation.midi! > 84) {
-        samples = []
-        return
-      }
-      const previous = samples.at(-1)
-      if (
-        previous &&
-        (observation.captureSeconds - previous.captureSeconds > 0.1 ||
-          Math.abs(observation.midi! - previous.midi!) > 0.8)
-      )
-        samples = []
-      samples.push(observation)
-      if (samples.length > 30) samples.shift()
-      if (
-        samples.length >= 12 &&
-        observation.captureSeconds - samples[0].captureSeconds >= 0.45
-      ) {
-        const values = samples
-          .map((sample) => sample.midi!)
-          .sort((a, b) => a - b)
-        const midi = Math.round(values[Math.floor(values.length / 2)])
-        host.writePreference('comfortable-note', String(midi))
-        void reference(midi, token)
-      }
-    } else if (voiceMode() === 'singing')
-      events(game.feedPitch(observation, now))
+    await voiceChallenge.start(id)
   }
 
   function pause(): void {
     setInspection(null)
     soundscape.pause()
-    cancel()
     setPaused(true)
+    cancel()
     game.setPaused(true)
     refresh()
   }
@@ -388,7 +267,7 @@ export function useAdventure(
   }
 
   function closeTutorial(): void {
-    host.writePreference('tutorial', 'seen')
+    markTutorialSeen(host, level)
     setTutorial(false)
     game.setPaused(paused())
     input.clear()
@@ -399,22 +278,19 @@ export function useAdventure(
   function showTutorial(): void {
     setInspection(null)
     soundscape.pause()
-    cancel()
     setTutorial(true)
+    cancel()
     game.setPaused(true)
     refresh()
   }
 
   function changeNote(): void {
-    cancel()
-    setTarget(null)
-    host.writePreference('comfortable-note', '')
+    voiceChallenge.refind()
+    refresh()
   }
 
   function replay(): void {
-    const midi = target()
-    if (midi !== null && voiceMode() === 'singing')
-      void reference(midi, ++token)
+    void voiceChallenge.replay()
   }
 
   function changeAudio(patch: Partial<MuseumAudioPreferences>): void {
@@ -634,8 +510,7 @@ export function useAdventure(
     clearTimeout(noticeTimer)
     clearNarrationCaption()
     clearTimeout(completionTimer)
-    stopCapture()
-    stopSound()
+    voiceChallenge.dispose()
     soundscape.dispose()
     narration.dispose()
     input.clear()
@@ -652,6 +527,14 @@ export function useAdventure(
     voiceMode,
     pitch,
     target,
+    voiceEncounterId: () => voiceState()?.encounterId ?? null,
+    findingTarget: () => voiceState()?.findingTarget ?? null,
+    voiceMessage: () => voiceState()?.message ?? '',
+    voiceHint: () => voiceState()?.hint ?? '',
+    voicePair: () => voiceState()?.pair ?? false,
+    voiceStepIndex: () => voiceState()?.stepIndex ?? 0,
+    voiceStepCount: () => voiceState()?.stepCount ?? 1,
+    voiceStepCharge: () => voiceState()?.stepCharge ?? 0,
     notice,
     narrationCaption,
     paused,

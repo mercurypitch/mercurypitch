@@ -103,14 +103,20 @@ const level: LevelDefinition = {
       },
       variant: 'decanter',
       optional: false,
-      hold: {
-        requiredSeconds: 1,
-        toleranceCents: 30,
-        confidenceFloor: 0.7,
-        dropoutGraceSeconds: 0.2,
-        decayPerSecond: 1,
-        maximumSampleGapSeconds: 0.1,
-        maximumSampleAgeMs: 150,
+      challenge: {
+        kind: 'hold',
+        step: {
+          target: 'comfortable',
+          hold: {
+            requiredSeconds: 1,
+            toleranceCents: 30,
+            confidenceFloor: 0.7,
+            dropoutGraceSeconds: 0.2,
+            decayPerSecond: 1,
+            maximumSampleGapSeconds: 0.1,
+            maximumSampleAgeMs: 150,
+          },
+        },
       },
     },
   ],

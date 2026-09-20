@@ -48,6 +48,67 @@ function codes(
 }
 
 describe('authoring validation', () => {
+  it('rejects malformed holds and duplicate ordered-pair targets on placements', () => {
+    const [first, ...rest] = FOUNDATION_STRAIGHT_SOURCE.exhibits
+    if (first.challenge.kind !== 'hold')
+      throw new Error('Expected a held-note authoring fixture.')
+    const originalHold = first.challenge.step.hold
+    const malformedHold = diagnosticsFrom({
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      exhibits: [
+        {
+          ...first,
+          challenge: {
+            kind: 'hold',
+            step: {
+              target: 'comfortable',
+              hold: {
+                requiredSeconds: 0,
+                toleranceCents: 100,
+                confidenceFloor: 0.5,
+                dropoutGraceSeconds: 0.1,
+                decayPerSecond: 0.2,
+                maximumSampleGapSeconds: 0.1,
+                maximumSampleAgeMs: 150,
+              },
+            },
+          },
+        },
+        ...rest,
+      ],
+    })
+    expect(malformedHold).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid-hold',
+        path: 'exhibits.arrival-goblet.challenge.step.hold',
+      }),
+    )
+
+    const duplicatePair = diagnosticsFrom({
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      exhibits: [
+        {
+          ...first,
+          challenge: {
+            kind: 'ordered-pair',
+            steps: [
+              { target: 'low', hold: originalHold },
+              { target: 'low', hold: originalHold },
+            ],
+            wrongOrder: 'reset',
+          },
+        },
+        ...rest,
+      ],
+    })
+    expect(duplicatePair).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid-challenge',
+        path: 'exhibits.arrival-goblet.challenge.steps',
+      }),
+    )
+  })
+
   it('rejects unknown floor art recipes and palettes', () => {
     const [arrival, ...rooms] = FOUNDATION_STRAIGHT_SOURCE.rooms
     const diagnostics = diagnosticsFrom({
@@ -645,6 +706,38 @@ describe('authoring validation', () => {
         code: 'invalid-guidance',
         path: 'guidance.tutorial.pages.0.body',
       }),
+    )
+  })
+
+  it('rejects blank tutorial IDs and non-positive tutorial versions', () => {
+    const source: AuthoredLevelSource = {
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      guidance: {
+        tutorial: {
+          id: ' ',
+          version: 0,
+          pages: [
+            { title: 'Move', body: 'Walk forward.', aside: 'Take your time.' },
+            {
+              title: 'Sing',
+              body: 'Hold a comfortable note.',
+              aside: 'Rest any time.',
+            },
+          ],
+        },
+      },
+    }
+    expect(diagnosticsFrom(source)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'invalid-guidance',
+          path: 'guidance.tutorial.id',
+        }),
+        expect.objectContaining({
+          code: 'invalid-guidance',
+          path: 'guidance.tutorial.version',
+        }),
+      ]),
     )
   })
 })

@@ -1,0 +1,46 @@
+/* Numbered note steps make the order readable without relying on colour. */
+.sequence {
+  display: flex;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 12px;
+  list-style: none;
+}
+.sequence li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ced7c4;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #50685c;
+}
+.sequence li > span {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e9edde;
+  color: #385848;
+  font-size: 11px;
+}
+.sequence li.current {
+  background: #e7edda;
+  border-color: #56775b;
+  color: #23483f;
+  font-weight: 600;
+}
+.sequence li.done > span {
+  background: #345e4d;
+  color: #fff9e8;
+}
+.hint {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 14px;
+  color: #52665b;
+}

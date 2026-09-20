@@ -1,13 +1,16 @@
 // BesideCue adventure host — the shared museum gets this app's lifecycle and local storage.
 import type { LevelDefinition } from '@irchiinnuss/glass-game'
 import { createBrowserGlassHost } from '@irchiinnuss/glass-game/browser'
+import { GlassCampaign } from '@irchiinnuss/glass-game/campaign'
 import { GlassAdventure } from '@irchiinnuss/glass-game/solid'
+import { Show } from 'solid-js'
 import { subscribeAppForeground } from '@/infrastructure/app-foreground'
 
 interface AdventureScreenProps {
   onExit(): void
   assetBase?: string
   level?: LevelDefinition
+  campaign?: boolean
 }
 const files: Record<string, string> = {
   'merc-loading': 'journey/merc-idle.webp',
@@ -35,6 +38,9 @@ const files: Record<string, string> = {
   'painting-garden-v5': 'adventure-v5/painting-garden.webp',
   'painting-archive-v5': 'adventure-v5/painting-archive.webp',
   'painting-portrait-v5': 'adventure-v5/painting-portrait.webp',
+  'painting-low-note-v6': 'adventure-v6/low-note-keeper.webp',
+  'painting-high-note-v6': 'adventure-v6/high-note-muse.webp',
+  'painting-interval-v6': 'adventure-v6/interval-between.webp',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
@@ -78,5 +84,12 @@ export function AdventureScreen(props: AdventureScreenProps) {
     subscribeForeground: subscribeAppForeground,
     onExit: () => props.onExit(),
   })
-  return <GlassAdventure host={host} level={props.level} />
+  return (
+    <Show
+      when={props.campaign === true && props.level === undefined}
+      fallback={<GlassAdventure host={host} level={props.level} />}
+    >
+      <GlassCampaign host={host} />
+    </Show>
+  )
 }

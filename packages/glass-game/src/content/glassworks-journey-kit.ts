@@ -1,7 +1,7 @@
 // Glassworks Journey kit — reusable two-port galleries and an exhibit-ready panorama terrace.
 
 import type { ExhibitPrefab, LevelAuthoringCatalog, RoomAudioRegionDefinition, RoomDecorationDefinition, RoomPrefab, RoomVisualDefinition, } from '../authoring/contracts'
-import type { CheckpointDefinition, HoldDefinition, PlatformDefinition, SolidPresentation, SolidPropDefinition, } from '../contracts'
+import type { CheckpointDefinition, PlatformDefinition, SolidPresentation, SolidPropDefinition, } from '../contracts'
 import { ENCLOSED_CHAMBER_BAY_CENTER, ENCLOSED_CHAMBER_HALF, ENCLOSED_MUSEUM_AUTHORING_CATALOG, ENCLOSED_TERRACE_ROOM, } from './enclosed-museum-kit'
 import type { MuseumWallBay } from './enclosed-wall-kit'
 import { MUSEUM_SCREEN_WIDTH, MUSEUM_WALL_TOP, MUSEUM_WINDOW_DEPTH, museumPortSeal, museumScreenBay, museumWindowBay, } from './enclosed-wall-kit'
@@ -11,16 +11,6 @@ import { EXHIBIT_PLINTH } from './solid-props'
 const FLOOR_THICKNESS = 0.25
 const CAMERA_INSET = 0.1808
 const CAMERA_TOP = 3.44
-
-const HOLD: HoldDefinition = {
-  requiredSeconds: 1.2,
-  toleranceCents: 150,
-  confidenceFloor: 0.5,
-  dropoutGraceSeconds: 0.15,
-  decayPerSecond: 0.25,
-  maximumSampleGapSeconds: 0.1,
-  maximumSampleAgeMs: 150,
-}
 
 const GATE_PRESENTATION: SolidPresentation = {
   role: 'gate',
@@ -63,7 +53,6 @@ function exhibit(id: string, variant: string): ExhibitPrefab {
   return {
     id,
     variant,
-    hold: { ...HOLD },
     plinth: {
       ...EXHIBIT_PLINTH,
       presentation: { role: 'plinth', material: 'stone' },

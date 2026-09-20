@@ -1,6 +1,6 @@
 // Glassworks — the floating museum's first course, authored entirely as data.
 
-import type { BreakableDefinition, CheckpointDefinition, HoldDefinition, LevelDefinition, PlatformDefinition, } from '../contracts'
+import type { BreakableDefinition, ChallengeDefinition, CheckpointDefinition, HoldDefinition, LevelDefinition, PlatformDefinition, } from '../contracts'
 import { glassworksSolidProps } from './solid-props'
 
 const HOLD: HoldDefinition = {
@@ -11,6 +11,11 @@ const HOLD: HoldDefinition = {
   decayPerSecond: 0.25,
   maximumSampleGapSeconds: 0.1,
   maximumSampleAgeMs: 150,
+}
+
+const COMFORTABLE_HOLD: ChallengeDefinition = {
+  kind: 'hold',
+  step: { target: 'comfortable', hold: HOLD },
 }
 
 const GOBLET = 'glassworks.first-goblet'
@@ -68,7 +73,7 @@ function ornament(
     position: { x, y: 0.15, z: 5.15 },
     anchor: { x, y: 0.15, z: 4.4 },
     requiresCompleted: [VASE],
-    hold: { ...HOLD },
+    challenge: COMFORTABLE_HOLD,
   }
 }
 
@@ -128,7 +133,7 @@ const COURSE: LevelDefinition = {
       anchor: { x: 1.2, y: 0, z: 3.65 },
       variant: 'goblet',
       optional: false,
-      hold: { ...HOLD },
+      challenge: COMFORTABLE_HOLD,
     },
     {
       id: VASE,
@@ -138,7 +143,7 @@ const COURSE: LevelDefinition = {
       variant: 'decanter',
       optional: false,
       requiresCompleted: [GOBLET],
-      hold: { ...HOLD },
+      challenge: COMFORTABLE_HOLD,
     },
     {
       id: HERO,
@@ -148,7 +153,7 @@ const COURSE: LevelDefinition = {
       variant: 'portrait',
       optional: false,
       requiresCompleted: [VASE],
-      hold: { ...HOLD },
+      challenge: COMFORTABLE_HOLD,
     },
     ornament('glassworks.panorama-goblet', 'Aurora coupe', 'coupe', 4.5),
     ornament('glassworks.panorama-vase', 'The moon amphora', 'amphora', 5.5),

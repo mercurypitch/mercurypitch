@@ -7,8 +7,8 @@ const root = fileURLToPath(new URL('../../../../', import.meta.url)).replace(
   '',
 )
 const base = process.env.GLASS_PROOF_BASE || 'https://localhost:5187'
-const moduleName = 'glassworks-journey.ts'
-const exportName = 'GLASSWORKS_JOURNEY'
+const moduleName = process.env.GLASS_PROOF_MODULE || 'glassworks-journey.ts'
+const exportName = process.env.GLASS_PROOF_EXPORT || 'GLASSWORKS_JOURNEY'
 const output =
   process.env.GLASS_PROOF_OUTPUT || fileURLToPath(new URL('.', import.meta.url))
 const posesPath =

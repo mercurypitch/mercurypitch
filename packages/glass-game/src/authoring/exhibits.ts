@@ -1,9 +1,34 @@
-// Exhibit compilation — bind reusable held-note vessels and one shared plinth proxy to room mounts.
+// Exhibit compilation — bind vessel art, pitch challenges and one shared plinth proxy to room mounts.
 
-import type { BreakableDefinition, SolidPropDefinition } from '../contracts'
+import type { BreakableDefinition, ChallengeDefinition, SolidPropDefinition, } from '../contracts'
 import type { AuthoredLevelSource, ExhibitPlacement, LevelAuthoringCatalog, LevelAuthoringDiagnostic, } from './contracts'
 import type { CompiledRoom } from './internal'
 import { diagnostic, mapEncounterRefs, runtimeRoomId } from './internal'
+
+function cloneChallenge(challenge: ChallengeDefinition): ChallengeDefinition {
+  if (challenge.kind === 'hold')
+    return {
+      kind: challenge.kind,
+      step: {
+        target: challenge.step.target,
+        hold: { ...challenge.step.hold },
+      },
+    }
+  return {
+    kind: challenge.kind,
+    steps: [
+      {
+        target: challenge.steps[0].target,
+        hold: { ...challenge.steps[0].hold },
+      },
+      {
+        target: challenge.steps[1].target,
+        hold: { ...challenge.steps[1].hold },
+      },
+    ],
+    wrongOrder: challenge.wrongOrder,
+  }
+}
 
 export function compileExhibits(
   source: AuthoredLevelSource,
@@ -80,7 +105,7 @@ export function compileExhibits(
         `exhibits.${placement.id}.requiresCompleted`,
         diagnostics,
       ),
-      hold: { ...prefab.hold },
+      challenge: cloneChallenge(placement.challenge),
     })
     plinths.push({
       id: plinthId,

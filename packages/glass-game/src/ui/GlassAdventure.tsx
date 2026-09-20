@@ -2,42 +2,54 @@
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
-import { createGlassGame } from '../core/game'
 import type { GlassGameHost } from '../host'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
+import { createFreshVisitHost } from './fresh-visit-host'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
 import { TouchControls } from './TouchControls'
 import { Tutorial } from './Tutorial'
 import { useAdventure } from './useAdventure'
+import { VoiceChallengePanel } from './VoiceChallengePanel'
 
 export interface GlassAdventureProps {
   host: GlassGameHost
   level?: LevelDefinition
-}
-const notes = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
-
-function noteName(midi: number | null): string {
-  if (midi === null) return 'Your note'
-  const rounded = Math.round(midi)
-  return `${notes[((rounded % 12) + 12) % 12]}${Math.floor(rounded / 12) - 1}`
+  onContinue?(): void
+  continueLabel?: string
+  freshStart?: boolean
 }
 export function GlassAdventure(props: GlassAdventureProps) {
-  const [visit, setVisit] = createSignal(1)
+  const [replay, setReplay] = createSignal<{
+    levelId: string
+    visit: number
+  }>()
+  let nextVisit = 1
+  const session = createMemo(() => {
+    const level = props.level ?? GLASSWORKS
+    const replayVisit = replay()
+    const fresh = props.freshStart === true || replayVisit?.levelId === level.id
+    return {
+      visit: replayVisit?.visit ?? 0,
+      level,
+      host: fresh ? createFreshVisitHost(props.host, level) : props.host,
+    }
+  })
   const restart = (): void => {
     const level = props.level ?? GLASSWORKS
-    props.host.saveProgress(createGlassGame(level).saveProgress())
-    setVisit((value) => value + 1)
+    setReplay({ levelId: level.id, visit: nextVisit++ })
   }
   return (
-    <Show when={visit()} keyed>
-      {(_visit) => (
+    <Show when={session()} keyed>
+      {(current) => (
         <AdventureVisit
-          host={props.host}
-          level={props.level}
+          host={current.host}
+          level={current.level}
           onRestart={restart}
+          onContinue={props.onContinue}
+          continueLabel={props.continueLabel}
         />
       )}
     </Show>
@@ -65,9 +77,19 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
   )
   const active = createMemo(() =>
     level.breakables.find(
-      (item) => item.id === adventure.snapshot().activeEncounter?.id,
+      (item) =>
+        item.id ===
+        (adventure.snapshot().activeEncounter?.id ??
+          adventure.voiceEncounterId()),
     ),
   )
+  const voiceSteps = createMemo(() => {
+    const challenge = active()?.challenge
+    if (!challenge) return []
+    return challenge.kind === 'hold'
+      ? [challenge.step.target]
+      : challenge.steps.map((step) => step.target)
+  })
   const count = createMemo(
     () =>
       level.breakables.filter(
@@ -154,6 +176,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       class={styles.adventure}
       data-testid="glass-adventure"
       data-ready={adventure.ready()}
+      data-level-id={level.id}
       data-loading-phase={adventure.loadingPhase()}
       data-checkpoint={adventure.snapshot().checkpointId}
       data-completed={count()}
@@ -367,78 +390,21 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             </div>
           </Show>
           <Show when={adventure.voiceMode() !== 'off'}>
-            <section class={styles.encounter} aria-label="Voice challenge">
-              <div class={styles.encounterHeading}>
-                <span>{active()?.label}</span>
-                <button type="button" onClick={adventure.cancel}>
-                  Cancel
-                </button>
-              </div>
-              <h2>
-                {adventure.voiceMode() === 'permission'
-                  ? 'Opening your microphone…'
-                  : adventure.voiceMode() === 'finding'
-                    ? 'Hum a comfortable note.'
-                    : adventure.voiceMode() === 'reference'
-                      ? 'Listen to your note.'
-                      : 'Hold it gently.'}
-              </h2>
-              <div class={styles.voiceMeter}>
-                <div
-                  class={styles.noteDisc}
-                  style={{
-                    '--charge': `${(adventure.snapshot().activeEncounter?.charge ?? 0) * 100}%`,
-                  }}
-                >
-                  <span>{noteName(adventure.target())}</span>
-                </div>
-                <div class={styles.voiceReadout}>
-                  <span>
-                    {adventure.voiceMode() === 'finding'
-                      ? 'The glass is finding your voice.'
-                      : adventure.voiceMode() === 'reference'
-                        ? 'Your turn in a moment…'
-                        : adventure.pitch() === null
-                          ? 'Sing or hum. No need to be loud.'
-                          : `${noteName(adventure.pitch())} · ${Math.round((adventure.snapshot().activeEncounter?.charge ?? 0) * 100)}%`}
-                  </span>
-                  <div
-                    class={styles.chargeTrack}
-                    role="progressbar"
-                    aria-label="Glass resonance"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={Math.round(
-                      (adventure.snapshot().activeEncounter?.charge ?? 0) * 100,
-                    )}
-                  >
-                    <span
-                      style={{
-                        width: `${(adventure.snapshot().activeEncounter?.charge ?? 0) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div class={styles.encounterActions}>
-                <Show when={adventure.voiceMode() === 'singing'}>
-                  <button
-                    class={styles.textButton}
-                    type="button"
-                    onClick={adventure.replay}
-                  >
-                    Hear the note again
-                  </button>
-                </Show>
-                <button
-                  class={styles.textButton}
-                  type="button"
-                  onClick={adventure.changeNote}
-                >
-                  Find my note again
-                </button>
-              </div>
-            </section>
+            <VoiceChallengePanel
+              label={active()?.label ?? 'Glass exhibit'}
+              mode={adventure.voiceMode()}
+              message={adventure.voiceMessage()}
+              hint={adventure.voiceHint()}
+              target={adventure.target()}
+              pitch={adventure.pitch()}
+              charge={adventure.snapshot().activeEncounter?.charge ?? 0}
+              pair={adventure.voicePair()}
+              steps={voiceSteps()}
+              stepIndex={adventure.snapshot().activeEncounter?.stepIndex ?? 0}
+              onCancel={adventure.cancel}
+              onReplay={adventure.replay}
+              onRefind={adventure.changeNote}
+            />
           </Show>
           <div class={styles.desktopHint}>
             WASD move <span>Space jump</span>
@@ -633,8 +599,17 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                 {level.guidance?.completionNext ??
                   'The next gallery will teach notes that rise and fall.'}
               </p>
+              <Show when={props.onContinue}>
+                <button
+                  class={styles.primary}
+                  type="button"
+                  onClick={() => props.onContinue?.()}
+                >
+                  {props.continueLabel ?? 'Visit the next gallery'}
+                </button>
+              </Show>
               <button
-                class={styles.primary}
+                class={props.onContinue ? styles.textButton : styles.primary}
                 type="button"
                 onClick={() => props.host.onExit()}
               >

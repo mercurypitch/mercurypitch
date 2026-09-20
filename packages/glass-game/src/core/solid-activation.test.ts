@@ -72,14 +72,20 @@ const level: LevelDefinition = {
       anchor: { x: 0, y: 0, z: 0 },
       variant: 'goblet',
       optional: false,
-      hold: {
-        requiredSeconds: 0.05,
-        toleranceCents: 100,
-        confidenceFloor: 0.5,
-        dropoutGraceSeconds: 0.1,
-        decayPerSecond: 0.2,
-        maximumSampleGapSeconds: 0.05,
-        maximumSampleAgeMs: 150,
+      challenge: {
+        kind: 'hold',
+        step: {
+          target: 'comfortable',
+          hold: {
+            requiredSeconds: 0.05,
+            toleranceCents: 100,
+            confidenceFloor: 0.5,
+            dropoutGraceSeconds: 0.1,
+            decayPerSecond: 0.2,
+            maximumSampleGapSeconds: 0.05,
+            maximumSampleAgeMs: 150,
+          },
+        },
       },
     },
   ],

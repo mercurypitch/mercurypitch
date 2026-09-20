@@ -1,11 +1,11 @@
 // Glass adventure coordinator — pure movement, encounter ownership and durable route progress.
 
 import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PlatformDefinition, } from '../contracts'
+import type { ChallengeJudge } from './challenge'
+import { createChallengeJudge } from './challenge'
 import type { CourseCollider } from './collision'
 import { containsBody, FLAT_COURSE_COLLIDER } from './collision'
 import { crossesExitPortal, deriveExitPortalGeometry } from './exit-portal'
-import type { HoldJudge } from './hold'
-import { createHoldJudge } from './hold'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
 import { findCheckpoint, readProgress, requirementsMet } from './progress'
 import { getActiveCourseSolids, getActiveSolidIds } from './solid-activation'
@@ -15,8 +15,7 @@ const SHATTER_SECONDS = 1.4
 
 interface ActiveEncounter {
   target: BreakableDefinition
-  targetMidi: number
-  judge: HoldJudge
+  judge: ChallengeJudge
 }
 
 export function createGlassGame(
@@ -50,7 +49,7 @@ export function createGlassGame(
     if (complete) return 'complete'
     if (shattering !== null) return 'shattering'
     if (active !== null)
-      return active.judge.charge() > 0 ? 'charging' : 'listening'
+      return active.judge.snapshot().charge > 0 ? 'charging' : 'listening'
     return 'idle'
   }
 
@@ -217,7 +216,7 @@ export function createGlassGame(
           id: target.id,
           charge:
             active?.target.id === target.id
-              ? active.judge.charge()
+              ? active.judge.snapshot().charge
               : completed.has(target.id)
                 ? 1
                 : 0,
@@ -239,11 +238,7 @@ export function createGlassGame(
         activeEncounter:
           active === null
             ? null
-            : {
-                id: active.target.id,
-                charge: active.judge.charge(),
-                targetMidi: active.targetMidi,
-              },
+            : { id: active.target.id, ...active.judge.snapshot() },
         phase: phase(),
         paused,
         checkpointId,
@@ -252,37 +247,53 @@ export function createGlassGame(
         complete,
       }
     },
-    beginEncounter(id, targetMidi) {
-      if (
-        paused ||
-        complete ||
-        active !== null ||
-        shattering !== null ||
-        !Number.isFinite(targetMidi) ||
-        targetMidi < 0 ||
-        targetMidi > 127
-      )
+    beginEncounter(id, targets) {
+      if (paused || complete || active !== null || shattering !== null)
         return false
       const target = level.breakables.find((candidate) => candidate.id === id)
       if (target === undefined || !eligible(target)) return false
+      const challenge = createChallengeJudge(target.challenge, targets)
+      if (!challenge.ok) return false
       releaseMovement(player)
       accumulator = 0
       active = {
         target,
-        targetMidi,
-        judge: createHoldJudge(target.hold, targetMidi),
+        judge: challenge.judge,
       }
       return true
     },
     feedPitch(frame, nowMs) {
-      if (paused || active === null || !active.judge.feed(frame, nowMs))
-        return []
-      const id = active.target.id
+      if (paused || active === null) return []
+      const encounter = active
+      const id = encounter.target.id
+      const challengeEvents = encounter.judge.feed(frame, nowMs)
+      const events: GameEvent[] = []
+      for (const event of challengeEvents) {
+        if (
+          event.type === 'step-complete' &&
+          encounter.judge.snapshot().stepCount > 1
+        )
+          events.push({
+            type: 'challenge-step',
+            id,
+            completedSteps: event.completedSteps,
+            stepCount: encounter.judge.snapshot().stepCount,
+          })
+        else if (event.type === 'reset')
+          events.push({
+            type: 'challenge-reset',
+            id,
+            reason: event.reason,
+          })
+      }
+      if (!challengeEvents.some((event) => event.type === 'complete'))
+        return events
       completed.add(id)
       brokenAt.set(id, elapsedSeconds)
       active = null
       shattering = { id, until: elapsedSeconds + SHATTER_SECONDS }
-      return [{ type: 'break', id }]
+      events.push({ type: 'break', id })
+      return events
     },
     cancelEncounter: cancel,
     setPaused(value) {

@@ -453,6 +453,7 @@ jobs:
           [
             artwork,
             authoring,
+            campaign,
             chamber,
             controls,
             loading,

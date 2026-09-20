@@ -1,0 +1,44 @@
+[
+  {
+    "name": "warm-low-gallery",
+    "x": 0,
+    "z": 0,
+    "yaw": 1.5707963267948966,
+    "distance": 3.1,
+    "pitch": 0.14,
+    "completed": [
+      "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+      "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+      "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+      "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+    ]
+  },
+  {
+    "name": "cool-high-gallery",
+    "x": 12.096037511825562,
+    "z": 12.096037511825562,
+    "yaw": 3.141592653589793,
+    "distance": 3.1,
+    "pitch": 0.14,
+    "completed": [
+      "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+      "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+      "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+      "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+    ]
+  },
+  {
+    "name": "listening-court",
+    "x": 24.192075023651124,
+    "z": 24.192075023651124,
+    "yaw": 1.5707963267948966,
+    "distance": 3.1,
+    "pitch": 0.14,
+    "completed": [
+      "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+      "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+      "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+      "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+    ]
+  }
+]

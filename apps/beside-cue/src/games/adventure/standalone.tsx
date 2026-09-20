@@ -20,18 +20,21 @@ async function selectedDevelopmentLevel() {
     layout !== 'quarter-turn' &&
     layout !== 'chamber' &&
     layout !== 'tutorial' &&
-    layout !== 'journey'
+    layout !== 'journey' &&
+    layout !== 'twin-galleries'
   )
     return undefined
   const {
     GLASS_ENCLOSED_CHAMBER,
     GLASSWORKS_JOURNEY,
+    TWIN_GALLERIES,
     GLASS_FOUNDATION_QUARTER_TURN,
     GLASS_FOUNDATION_STRAIGHT,
   } = await import('@irchiinnuss/glass-game/development-levels')
   if (layout === 'chamber' || layout === 'tutorial')
     return GLASS_ENCLOSED_CHAMBER
   if (layout === 'journey') return GLASSWORKS_JOURNEY
+  if (layout === 'twin-galleries') return TWIN_GALLERIES
   return layout === 'straight'
     ? GLASS_FOUNDATION_STRAIGHT
     : GLASS_FOUNDATION_QUARTER_TURN
@@ -44,6 +47,9 @@ async function mount(): Promise<void> {
       <AdventureScreen
         assetBase="../games/"
         level={level}
+        campaign={
+          new URLSearchParams(window.location.search).get('campaign') === '1'
+        }
         onExit={() => {
           window.location.href = '../'
         }}

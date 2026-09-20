@@ -61,6 +61,9 @@ export const ROOM_DECORATION_CATALOG: Readonly<
       textureAsset: 'painting-portrait-v5',
     },
   },
+  'low-note-painting-v6': framedPainting('painting-low-note-v6'),
+  'high-note-painting-v6': framedPainting('painting-high-note-v6'),
+  'interval-painting-v6': framedPainting('painting-interval-v6'),
   'gallery-mirror-v5': {
     bundle: 'museum-decor-v5',
     node: 'decor_gallery_frame',
@@ -71,6 +74,15 @@ export const ROOM_DECORATION_CATALOG: Readonly<
       materialId: 'mirror',
     },
   },
+}
+
+function framedPainting(textureAsset: string): RoomDecorationRecipe {
+  return {
+    bundle: 'museum-decor-v5',
+    node: 'decor_gallery_frame',
+    scale: 1,
+    surface: { kind: 'painting', materialName: 'decor_surface', textureAsset },
+  }
 }
 
 export function getRoomDecorationRecipe(id: string): RoomDecorationRecipe {

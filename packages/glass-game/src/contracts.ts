@@ -85,6 +85,24 @@ export interface HoldDefinition {
   maximumSampleAgeMs: number
 }
 
+export type PitchTargetId = 'comfortable' | 'low' | 'high'
+
+/** Calibrated pitches supplied by the session layer, independent of level data. */
+export type PitchTargets = Readonly<Partial<Record<PitchTargetId, number>>>
+
+export interface PitchStepDefinition {
+  target: PitchTargetId
+  hold: HoldDefinition
+}
+
+export type ChallengeDefinition =
+  | { kind: 'hold'; step: PitchStepDefinition }
+  | {
+      kind: 'ordered-pair'
+      steps: readonly [PitchStepDefinition, PitchStepDefinition]
+      wrongOrder: 'reset'
+    }
+
 export interface BreakableDefinition {
   id: string
   label: string
@@ -94,7 +112,7 @@ export interface BreakableDefinition {
   variant: string
   optional: boolean
   requiresCompleted?: readonly string[]
-  hold: HoldDefinition
+  challenge: ChallengeDefinition
 }
 
 export interface ExhibitMountDefinition {
@@ -204,6 +222,8 @@ export interface LevelTutorialPage {
 
 /** Two skippable teaching pages: manual movement, then a stationary voice task. */
 export interface LevelTutorialDefinition {
+  id?: string
+  version?: number
   pages: readonly [LevelTutorialPage, LevelTutorialPage]
 }
 
@@ -294,7 +314,16 @@ export interface GameSnapshot {
   activeSolidIds?: readonly string[]
   enabledPlatformIds: readonly string[]
   completedBreakableIds: readonly string[]
-  activeEncounter: { id: string; charge: number; targetMidi: number } | null
+  activeEncounter: {
+    id: string
+    kind: ChallengeDefinition['kind']
+    charge: number
+    stepCharge: number
+    stepIndex: number
+    stepCount: number
+    target: PitchTargetId
+    targetMidi: number
+  } | null
   phase: EncounterPhase
   paused: boolean
   checkpointId: string
@@ -325,6 +354,13 @@ export type GameEvent =
   | { type: 'jumped' }
   | { type: 'checkpoint'; id: string }
   | { type: 'respawn'; checkpointId: string }
+  | {
+      type: 'challenge-step'
+      id: string
+      completedSteps: number
+      stepCount: number
+    }
+  | { type: 'challenge-reset'; id: string; reason: 'wrong-order' }
   | { type: 'break'; id: string }
   | { type: 'complete' }
 
@@ -336,7 +372,8 @@ export interface GlassGame {
     nowMs?: number,
   ): GameEvent[]
   snapshot(): GameSnapshot
-  beginEncounter(id: string, targetMidi: number): boolean
+  /** A number is the backwards-compatible shorthand for `{ comfortable: n }`. */
+  beginEncounter(id: string, targets: number | PitchTargets): boolean
   feedPitch(frame: PitchObservation, nowMs: number): GameEvent[]
   cancelEncounter(): void
   setPaused(paused: boolean): void

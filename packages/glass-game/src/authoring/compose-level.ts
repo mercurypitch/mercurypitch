@@ -1,6 +1,6 @@
 // Level composer — coordinate focused authoring stages into one validated runtime definition.
 
-import type { LevelDefinition } from '../contracts'
+import type { ChallengeDefinition, HoldDefinition, LevelDefinition, } from '../contracts'
 import { FLOOR_ART_PALETTE_IDS, FLOOR_ART_RECIPE_IDS, LEVEL_MOVEMENT_LIMITS, } from '../contracts'
 import { applyActivationOverrides } from './activation-overrides'
 import { compileGuidance, validateVisualCoverage, } from './authored-presentation-validation'
@@ -77,6 +77,83 @@ function validateSourceHeader(
   uniqueIds(source.exhibits, 'exhibits', diagnostics)
 }
 
+function validateHold(
+  hold: HoldDefinition,
+  path: string,
+  diagnostics: LevelAuthoringDiagnostic[],
+): void {
+  if (
+    ![
+      hold.requiredSeconds,
+      hold.toleranceCents,
+      hold.confidenceFloor,
+      hold.dropoutGraceSeconds,
+      hold.decayPerSecond,
+      hold.maximumSampleGapSeconds,
+      hold.maximumSampleAgeMs,
+    ].every(Number.isFinite) ||
+    hold.requiredSeconds <= 0 ||
+    hold.toleranceCents <= 0 ||
+    hold.confidenceFloor < 0 ||
+    hold.confidenceFloor > 1 ||
+    hold.dropoutGraceSeconds < 0 ||
+    hold.decayPerSecond < 0 ||
+    hold.maximumSampleGapSeconds <= 0 ||
+    hold.maximumSampleAgeMs <= 0
+  )
+    diagnostic(
+      diagnostics,
+      'invalid-hold',
+      path,
+      'Held-note timing and tolerance must be positive and finite; confidence must be between zero and one.',
+    )
+}
+
+function validateChallenge(
+  challenge: ChallengeDefinition,
+  path: string,
+  diagnostics: LevelAuthoringDiagnostic[],
+): void {
+  const validTargets = new Set(['comfortable', 'low', 'high'])
+  const steps =
+    challenge.kind === 'hold' ? [challenge.step] : [...challenge.steps]
+  if (challenge.kind === 'ordered-pair') {
+    if (challenge.steps.length !== 2)
+      diagnostic(
+        diagnostics,
+        'invalid-challenge',
+        `${path}.steps`,
+        'An ordered pair needs exactly two pitch steps.',
+      )
+    if (challenge.steps[0]?.target === challenge.steps[1]?.target)
+      diagnostic(
+        diagnostics,
+        'invalid-challenge',
+        `${path}.steps`,
+        'An ordered pair needs two distinct pitch targets.',
+      )
+    if (challenge.wrongOrder !== 'reset')
+      diagnostic(
+        diagnostics,
+        'invalid-challenge',
+        `${path}.wrongOrder`,
+        'An ordered pair must reset after a stabilized wrong-order response.',
+      )
+  }
+  steps.forEach((step, index) => {
+    const stepPath =
+      challenge.kind === 'hold' ? `${path}.step` : `${path}.steps.${index}`
+    if (!validTargets.has(step.target))
+      diagnostic(
+        diagnostics,
+        'invalid-challenge',
+        `${stepPath}.target`,
+        'Pitch target must be comfortable, low or high.',
+      )
+    validateHold(step.hold, `${stepPath}.hold`, diagnostics)
+  })
+}
+
 function validateExhibitPrefabs(
   source: AuthoredLevelSource,
   catalog: LevelAuthoringCatalog,
@@ -93,6 +170,11 @@ function validateExhibitPrefabs(
     ]),
   )
   for (const placement of source.exhibits) {
+    validateChallenge(
+      placement.challenge,
+      `exhibits.${placement.id}.challenge`,
+      diagnostics,
+    )
     const prefab = catalog.exhibits[placement.prefabId]
     if (prefab === undefined) {
       diagnostic(
@@ -131,32 +213,6 @@ function validateExhibitPrefabs(
           'invalid-presentation',
           `exhibitPrefabs.${prefab.id}.plinth.presentation.role`,
           'An exhibit mount must use the plinth presentation role.',
-        )
-      const hold = prefab.hold
-      if (
-        ![
-          hold.requiredSeconds,
-          hold.toleranceCents,
-          hold.confidenceFloor,
-          hold.dropoutGraceSeconds,
-          hold.decayPerSecond,
-          hold.maximumSampleGapSeconds,
-          hold.maximumSampleAgeMs,
-        ].every(Number.isFinite) ||
-        hold.requiredSeconds <= 0 ||
-        hold.toleranceCents <= 0 ||
-        hold.confidenceFloor < 0 ||
-        hold.confidenceFloor > 1 ||
-        hold.dropoutGraceSeconds < 0 ||
-        hold.decayPerSecond < 0 ||
-        hold.maximumSampleGapSeconds <= 0 ||
-        hold.maximumSampleAgeMs <= 0
-      )
-        diagnostic(
-          diagnostics,
-          'invalid-hold',
-          `exhibitPrefabs.${prefab.id}.hold`,
-          'Held-note timing and tolerance must be positive and finite; confidence must be between zero and one.',
         )
       recordRecipe(
         prefab.plinth.presentation.assetRecipeId,

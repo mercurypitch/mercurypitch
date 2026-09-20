@@ -1,0 +1,232 @@
+// Twin Galleries kit — register-themed galleries and a windowed listening bridge assembled from the museum kit.
+
+import type { LevelAuthoringCatalog, RoomDecorationDefinition, RoomPrefab, RoomVisualDefinition, } from '../authoring/contracts'
+import type { SolidPropDefinition } from '../contracts'
+import { ENCLOSED_CORRIDOR_HALF_LENGTH, ENCLOSED_CORRIDOR_HALF_WIDTH, ENCLOSED_CORRIDOR_SCREEN_CENTER, ENCLOSED_CORRIDOR_WINDOW_CENTER, ENCLOSED_ENTRY_ROOM, ENCLOSED_TERRACE_PANORAMA_ROOM, } from './enclosed-museum-kit'
+import type { MuseumWallBay } from './enclosed-wall-kit'
+import { MUSEUM_WALL_TOP, MUSEUM_WINDOW_DEPTH, museumPortSeal, museumScreenBay, museumWindowBay, } from './enclosed-wall-kit'
+import { GLASSWORKS_JOURNEY_ARCHIVE_ROOM, GLASSWORKS_JOURNEY_AUTHORING_CATALOG, GLASSWORKS_JOURNEY_GARDEN_ROOM, GLASSWORKS_JOURNEY_PORTRAIT_ROOM, GLASSWORKS_JOURNEY_TERRACE_ROOM, } from './glassworks-journey-kit'
+import { MUSEUM_FRAMED_ART_INWARD_OFFSET } from './museum-room-dressings'
+
+const CAMERA_CORRIDOR_HALF_WIDTH = 1.4201082198143005
+const CAMERA_CORRIDOR_HALF_LENGTH = 3.9248093779563904
+const FLOOR_THICKNESS = 0.25
+
+function flattenBays(bays: readonly MuseumWallBay[]): {
+  solids: SolidPropDefinition[]
+  visuals: RoomVisualDefinition[]
+} {
+  return {
+    solids: bays.flatMap((bay) => [...bay.solids]),
+    visuals: bays.map((bay) => bay.visual),
+  }
+}
+
+function replacePainting(
+  room: RoomPrefab,
+  recipeId: string,
+  id: string,
+  replacementRecipeId: string,
+): readonly RoomDecorationDefinition[] {
+  let renamed = false
+  return (room.decorations ?? []).map((decoration) => {
+    if (renamed || decoration.recipeId !== recipeId) return decoration
+    renamed = true
+    return { ...decoration, id, recipeId: replacementRecipeId }
+  })
+}
+
+export const TWIN_GALLERIES_WARM_ROOM: RoomPrefab = {
+  ...GLASSWORKS_JOURNEY_GARDEN_ROOM,
+  id: 'twin-galleries-warm',
+  decorations: replacePainting(
+    GLASSWORKS_JOURNEY_GARDEN_ROOM,
+    'garden-painting-v5',
+    'low-note-study',
+    'low-note-painting-v6',
+  ),
+}
+
+export const TWIN_GALLERIES_COOL_ROOM: RoomPrefab = {
+  ...GLASSWORKS_JOURNEY_ARCHIVE_ROOM,
+  id: 'twin-galleries-cool',
+  decorations: replacePainting(
+    GLASSWORKS_JOURNEY_ARCHIVE_ROOM,
+    'archive-painting-v5',
+    'high-note-study',
+    'high-note-painting-v6',
+  ),
+}
+
+export const TWIN_GALLERIES_COURT_ROOM: RoomPrefab = {
+  ...GLASSWORKS_JOURNEY_ARCHIVE_ROOM,
+  id: 'twin-galleries-court',
+  decorations: [
+    {
+      id: 'interval-study',
+      recipeId: 'interval-painting-v6',
+      position: {
+        x:
+          GLASSWORKS_JOURNEY_ARCHIVE_ROOM.bounds.minX +
+          MUSEUM_WINDOW_DEPTH / 2 +
+          MUSEUM_FRAMED_ART_INWARD_OFFSET,
+        y: 1.9,
+        z: 0,
+      },
+      yaw: Math.PI / 2,
+    },
+  ],
+}
+
+export const TWIN_GALLERIES_PORTRAIT_ROOM: RoomPrefab = {
+  ...GLASSWORKS_JOURNEY_PORTRAIT_ROOM,
+  id: 'twin-galleries-portrait',
+}
+
+export const TWIN_GALLERIES_PANORAMA_ROOM: RoomPrefab = {
+  ...GLASSWORKS_JOURNEY_TERRACE_ROOM,
+  id: 'twin-galleries-panorama',
+}
+
+export const TWIN_GALLERIES_PANORAMA_CAMERA_ROOM: RoomPrefab = {
+  ...ENCLOSED_TERRACE_PANORAMA_ROOM,
+  id: 'twin-galleries-panorama-camera',
+}
+
+const listeningBridgeBays = flattenBays([
+  museumScreenBay({
+    id: 'west-south-screen',
+    axis: 'z',
+    x: -ENCLOSED_CORRIDOR_HALF_WIDTH,
+    z: ENCLOSED_CORRIDOR_SCREEN_CENTER,
+    yaw: Math.PI / 2,
+    platformId: 'floor',
+  }),
+  museumScreenBay({
+    id: 'east-south-screen',
+    axis: 'z',
+    x: ENCLOSED_CORRIDOR_HALF_WIDTH,
+    z: ENCLOSED_CORRIDOR_SCREEN_CENTER,
+    yaw: -Math.PI / 2,
+    platformId: 'floor',
+  }),
+  museumWindowBay({
+    id: 'west-north-window',
+    axis: 'z',
+    x: -ENCLOSED_CORRIDOR_HALF_WIDTH,
+    z: ENCLOSED_CORRIDOR_WINDOW_CENTER,
+    yaw: Math.PI / 2,
+    platformId: 'floor',
+  }),
+  museumWindowBay({
+    id: 'east-north-window',
+    axis: 'z',
+    x: ENCLOSED_CORRIDOR_HALF_WIDTH,
+    z: ENCLOSED_CORRIDOR_WINDOW_CENTER,
+    yaw: -Math.PI / 2,
+    platformId: 'floor',
+  }),
+])
+
+/** A level bridge in the route sense: windowed, continuous and never a jump. */
+export const TWIN_GALLERIES_LISTENING_BRIDGE_ROOM: RoomPrefab = {
+  id: 'twin-galleries-listening-bridge',
+  bounds: {
+    minX: -ENCLOSED_CORRIDOR_HALF_WIDTH - MUSEUM_WINDOW_DEPTH / 2,
+    maxX: ENCLOSED_CORRIDOR_HALF_WIDTH + MUSEUM_WINDOW_DEPTH / 2,
+    minY: -FLOOR_THICKNESS,
+    maxY: MUSEUM_WALL_TOP,
+    minZ: -ENCLOSED_CORRIDOR_HALF_LENGTH,
+    maxZ: ENCLOSED_CORRIDOR_HALF_LENGTH,
+  },
+  cameraBounds: {
+    minX: -CAMERA_CORRIDOR_HALF_WIDTH,
+    maxX: CAMERA_CORRIDOR_HALF_WIDTH,
+    minY: 0,
+    maxY: 3.44,
+    minZ: -CAMERA_CORRIDOR_HALF_LENGTH,
+    maxZ: CAMERA_CORRIDOR_HALF_LENGTH,
+  },
+  platforms: ENCLOSED_ENTRY_ROOM.platforms.map((platform) => ({
+    ...platform,
+    kind: 'bridge',
+    presentation: { role: 'bridge', material: 'stone' },
+  })),
+  solids: [
+    ...listeningBridgeBays.solids,
+    museumPortSeal('south-seal', {
+      axis: 'x',
+      x: 0,
+      z: -ENCLOSED_CORRIDOR_HALF_LENGTH,
+      platformId: 'floor',
+    }),
+    museumPortSeal('north-seal', {
+      axis: 'x',
+      x: 0,
+      z: ENCLOSED_CORRIDOR_HALF_LENGTH,
+      platformId: 'floor',
+    }),
+  ],
+  checkpoints: [],
+  ports: ENCLOSED_ENTRY_ROOM.ports,
+  exhibitMounts: [],
+  exits: [],
+  visuals: listeningBridgeBays.visuals,
+  audioRegions: ENCLOSED_ENTRY_ROOM.audioRegions,
+}
+
+/**
+ * Exact handoff seams for V6 sources that are not yet runtime-safe. These paths
+ * remain metadata only: the authoring catalog keeps using fractured V4/V5
+ * exhibits until each donor passes fracture, material and collision review.
+ */
+export const TWIN_GALLERIES_V6_HANDOFF = {
+  exhibits: {
+    'lower-urn': {
+      currentPrefabId: 'glassworks-journey-amphora',
+      futureSource:
+        'art/glass-adventure/v6-level2/exports/amber-cadence-urn-game-v1.glb',
+    },
+    'upper-decanter': {
+      currentPrefabId: 'glassworks-journey-fluted',
+      futureSource:
+        'art/glass-adventure/v6-level2/exports/celadon-lark-decanter-game-v1.glb',
+    },
+    'court-echo': {
+      currentPrefabId: 'glassworks-journey-amphora',
+      futureSource:
+        'art/glass-adventure/v6-level2/exports/opaline-echo-amphora-game-v1.glb',
+    },
+  },
+  decorations: {
+    'court-harp-addition': {
+      source:
+        'art/glass-adventure/v6-level2/exports/twin-tone-resonance-harp-game-v1.glb',
+      roomId: TWIN_GALLERIES_COURT_ROOM.id,
+      position: { x: 2.95, y: 0, z: -0.2 },
+      yaw: -Math.PI / 2,
+    },
+  },
+} as const
+
+export const TWIN_GALLERIES_AUTHORING_CATALOG: LevelAuthoringCatalog = {
+  rooms: {
+    ...GLASSWORKS_JOURNEY_AUTHORING_CATALOG.rooms,
+    [TWIN_GALLERIES_WARM_ROOM.id]: TWIN_GALLERIES_WARM_ROOM,
+    [TWIN_GALLERIES_COOL_ROOM.id]: TWIN_GALLERIES_COOL_ROOM,
+    [TWIN_GALLERIES_COURT_ROOM.id]: TWIN_GALLERIES_COURT_ROOM,
+    [TWIN_GALLERIES_PORTRAIT_ROOM.id]: TWIN_GALLERIES_PORTRAIT_ROOM,
+    [TWIN_GALLERIES_LISTENING_BRIDGE_ROOM.id]:
+      TWIN_GALLERIES_LISTENING_BRIDGE_ROOM,
+    [TWIN_GALLERIES_PANORAMA_ROOM.id]: TWIN_GALLERIES_PANORAMA_ROOM,
+    [TWIN_GALLERIES_PANORAMA_CAMERA_ROOM.id]:
+      TWIN_GALLERIES_PANORAMA_CAMERA_ROOM,
+  },
+  exhibits: GLASSWORKS_JOURNEY_AUTHORING_CATALOG.exhibits,
+  availableAssetRecipeIds: [
+    ...GLASSWORKS_JOURNEY_AUTHORING_CATALOG.availableAssetRecipeIds,
+    'low-note-painting-v6',
+    'high-note-painting-v6',
+    'interval-painting-v6',
+  ],
+}

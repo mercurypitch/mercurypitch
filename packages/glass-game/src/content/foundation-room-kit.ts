@@ -1,18 +1,8 @@
 // Foundation room kit — one enclosed gallery, held-note exhibits and shared measured plinths.
 
 import type { ExhibitPrefab, LevelAuthoringCatalog, RoomPrefab, } from '../authoring/contracts'
-import type { HoldDefinition, SolidPropDefinition } from '../contracts'
+import type { SolidPropDefinition } from '../contracts'
 import { EXHIBIT_PLINTH } from './solid-props'
-
-const HOLD: HoldDefinition = {
-  requiredSeconds: 1.2,
-  toleranceCents: 150,
-  confidenceFloor: 0.5,
-  dropoutGraceSeconds: 0.15,
-  decayPerSecond: 0.25,
-  maximumSampleGapSeconds: 0.1,
-  maximumSampleAgeMs: 150,
-}
 
 const WALL_TOP = 1.55
 const PORT_HALF_WIDTH = 0.7
@@ -239,7 +229,6 @@ function exhibit(id: string, variant: string): ExhibitPrefab {
   return {
     id,
     variant,
-    hold: { ...HOLD },
     plinth: {
       ...EXHIBIT_PLINTH,
       height: EXHIBIT_PLINTH.height,
