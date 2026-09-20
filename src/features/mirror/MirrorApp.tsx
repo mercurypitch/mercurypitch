@@ -1090,9 +1090,11 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     const card = withTwin && twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
     const png = await cardToPngBlob(card)
-    // The card leaves the device only because the singer chose to share it,
-    // and the upload starts here rather than inside the sheet: an id picked
-    // locally means no round trip stands between the tap and the share.
+    // The upload starts here rather than inside the sheet: Safari only keeps
+    // the share gesture alive if nothing awaits before it, so the id is picked
+    // locally and the PUT runs alongside. The cost is that closing the sheet
+    // without sending still leaves the card in the store — it expires in 30
+    // days, and nobody can reach it without the id, which never left here.
     const ogCardId = newOgCardId()
     uploadOgCard(ogCardId, png)
     const link = shareLink(ogCardId)
