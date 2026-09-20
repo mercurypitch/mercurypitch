@@ -15,6 +15,12 @@ words scroll under your finger while the song plays.
 - **A jam room has a tour of its own.** Tour in the sidebar replayed the steps
   for creating a room, which point at nothing once you are inside. It now
   walks the code, the song list, the playback buttons, the stage and the chat.
+- **A shared voiceprint link opens your voiceprint.** Whoever taps it sees
+  your range, your voice twin and your two scores first, and can then take
+  their own. It used to open an empty Mirror asking them to sing.
+- **That link shows your card in the chat.** Pasted into a chat, it previews
+  as your own card with your twin and range, not a stock picture. The card is
+  stored only when you open the share sheet, and for 30 days.
 
 ### Changed
 
