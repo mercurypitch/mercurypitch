@@ -14,8 +14,7 @@
 
 import { saveLyricsToDb } from '@/db/services/lyrics-db-service'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { lrcToSongLines } from '@/lib/jam/jam-song-sources'
-import { parseLrcFile } from '@/lib/lyrics-service'
+import { lrcTextToSongLines } from '@/lib/jam/jam-song-sources'
 
 /** The session behind a room song, or null for anything else. */
 export function sessionIdOfSong(song: JamSong | null): string | null {
@@ -47,8 +46,10 @@ export function canAttachLyrics(song: JamSong | null): boolean {
  * be scrolled in time, and a static wall of text pinned above a moving
  * playhead is worse than an honest "sing along by ear".
  */
-export function linesFromLrc(text: string): ReturnType<typeof lrcToSongLines> {
-  return lrcToSongLines(parseLrcFile(text))
+export function linesFromLrc(
+  text: string,
+): ReturnType<typeof lrcTextToSongLines> {
+  return lrcTextToSongLines(text)
 }
 
 /**

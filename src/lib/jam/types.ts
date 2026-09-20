@@ -207,6 +207,25 @@ export interface LyricsLineTiming {
   startSec: number
   /** Absent means "until the next line starts". */
   endSec?: number
+  /**
+   * The line word by word, when the sheet was mapped that finely: `text`
+   * split on spaces, and when each word starts. Both or neither, and the
+   * same length -- a reader that finds them out of step ignores them and
+   * falls back to sharing the line out evenly (lib/jam/jam-line-words).
+   *
+   * Optional on purpose, and that is the whole compatibility story. The
+   * lines travel to guests as JSON with no schema in between, so a guest on
+   * an older build never looks at these and a host on one never sends them;
+   * either way the words still light up, just less exactly.
+   */
+  words?: string[]
+  wordStartsSec?: number[]
+  /**
+   * When each word STOPS, where somebody marked it -- a held note, a word
+   * before a breath. Sparse: most words have no mark, and JSON has no hole,
+   * so an unmarked word is null on the wire and may be undefined before it.
+   */
+  wordEndsSec?: (number | null | undefined)[]
 }
 
 /**
