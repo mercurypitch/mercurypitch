@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { decodeSharePayload, encodeVoiceprintForShare } from '@/lib/share-codec'
-import { formatSpan, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, sharedRangeNotes, sharedVoiceprintTitle, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareUrl, } from './shared-voiceprint'
+import { formatSpan, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, sharedRangeNotes, sharedVoiceprintTitle, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareBase, voiceprintShareUrl, } from './shared-voiceprint'
 
 const FULL = {
   lowMidi: 48,
@@ -218,5 +218,117 @@ describe('uploadOgCard', () => {
       uploadOgCard('aB3xY9zQ01', new Blob([new Uint8Array([1])])),
     ).not.toThrow()
     await new Promise((r) => setTimeout(r, 0))
+  })
+})
+
+// A card is stored beside the page that uploaded it, and until a release
+// ships the public site does not read the payload at all. A staging site
+// whose links pointed at the public one could never be used to try this.
+describe('where a shared link points', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const PUBLIC = 'https://mercurypitch.com/mirror'
+
+  it('is the public Mirror from anywhere people really are', () => {
+    for (const hostname of [
+      'mercurypitch.com',
+      'mirror.mercurypitch.com',
+      'localhost',
+      'example.com',
+    ]) {
+      expect(
+        voiceprintShareBase({ hostname, origin: `https://${hostname}` }),
+      ).toBe(PUBLIC)
+    }
+    // The worker has no location at all.
+    expect(voiceprintShareBase(undefined)).toBe(PUBLIC)
+  })
+
+  it('stays at home on the dev site and on a PR preview', () => {
+    expect(
+      voiceprintShareBase({
+        hostname: 'dev.mercurypitch.com',
+        origin: 'https://dev.mercurypitch.com',
+      }),
+    ).toBe('https://dev.mercurypitch.com/mirror')
+    expect(
+      voiceprintShareBase({
+        hostname: 'abc123-mercurypitch-preview.example.workers.dev',
+        origin: 'https://abc123-mercurypitch-preview.example.workers.dev',
+      }),
+    ).toBe('https://abc123-mercurypitch-preview.example.workers.dev/mirror')
+  })
+
+  it('is not fooled by a host that only contains the dev name', () => {
+    expect(
+      voiceprintShareBase({
+        hostname: 'dev.mercurypitch.com.example.net',
+        origin: 'https://dev.mercurypitch.com.example.net',
+      }),
+    ).toBe(PUBLIC)
+  })
+
+  it('builds the whole link there, payload and card and tag', () => {
+    vi.stubGlobal('location', {
+      hostname: 'dev.mercurypitch.com',
+      origin: 'https://dev.mercurypitch.com',
+    })
+    const url = voiceprintShareUrl(FULL, 'Freddie Mercury', null, 'aB3xY9zQ01')
+    expect(url.startsWith('https://dev.mercurypitch.com/mirror?v=')).toBe(true)
+    expect(url).toContain('&og=aB3xY9zQ01')
+    expect(url).toContain('utm_source=voiceprint&utm_medium=share')
+    expect(parseVoiceprintLink(searchOf(url))?.tw).toBe('Freddie Mercury')
+  })
+})
+
+// Anyone can write a link. What it carries is printed on a page and in an
+// unfurl that both bear our name, so it has to be something a take could
+// have produced.
+describe('a link somebody wrote by hand', () => {
+  const link = (d: Record<string, unknown>): string => {
+    const json = JSON.stringify({ v: 1, t: 'voiceprint', d })
+    const encoded = btoa(json)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+    return `?${VOICEPRINT_PARAM}=${encoded}`
+  }
+
+  it('reads an honest one', () => {
+    expect(parseVoiceprintLink(link({ lo: 48, hi: 74, ac: 87 }))?.ac).toBe(87)
+  })
+
+  it('refuses numbers no take could produce', () => {
+    for (const d of [
+      { lo: -1, hi: 74 },
+      { lo: 48, hi: 128 },
+      { lo: 74, hi: 48 },
+      { lo: 48, hi: 74, st: 500 },
+      { lo: 48, hi: 74, ac: 101 },
+      { lo: 48, hi: 74, sd: -3 },
+      { lo: 48, hi: 74, ac: '87' },
+    ]) {
+      expect(parseVoiceprintLink(link(d)), JSON.stringify(d)).toBeNull()
+    }
+  })
+
+  it('refuses a number JSON can spell but a note cannot be named from', () => {
+    // `1e999` is valid JSON and parses to Infinity.
+    const json = '{"v":1,"t":"voiceprint","d":{"lo":1e999,"hi":74}}'
+    const encoded = btoa(json).replace(/=+$/, '')
+    expect(parseVoiceprintLink(`?${VOICEPRINT_PARAM}=${encoded}`)).toBeNull()
+  })
+
+  it('refuses a paragraph where a name goes', () => {
+    const long = 'x'.repeat(81)
+    expect(parseVoiceprintLink(link({ lo: 48, hi: 74, tw: long }))).toBeNull()
+    expect(parseVoiceprintLink(link({ lo: 48, hi: 74, n: long }))).toBeNull()
+    expect(
+      parseVoiceprintLink(link({ lo: 48, hi: 74, tw: 'x'.repeat(80) })),
+    ).not.toBeNull()
+  })
+
+  it('names a note even from a fraction', () => {
+    expect(sharedRangeNotes({ lo: 47.6, hi: 74.2 })).toBe('C3 – D5')
   })
 })

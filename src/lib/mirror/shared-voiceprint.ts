@@ -20,6 +20,39 @@ import { decodeSharePayload, encodeVoiceprintForShare } from '@/lib/share-codec'
 /** Where a shared voiceprint opens. */
 const SHARE_BASE = 'https://mercurypitch.com/mirror'
 
+/** The card an unfurl shows is square, this many pixels a side. One number
+ *  for the three places that have to agree on it: the app draws it, the
+ *  store refuses anything else, and the tags declare it to the crawler. */
+export const OG_CARD_SIZE = 1080
+
+/** The dev deploy and the PR previews: sites that are not the public one. */
+function isStagingHost(hostname: string): boolean {
+  return (
+    hostname === 'dev.mercurypitch.com' || hostname.endsWith('.workers.dev')
+  )
+}
+
+/**
+ * Where a link carrying a voiceprint should point.
+ *
+ * The public Mirror, from anywhere people actually are. A staging site keeps
+ * its links at home instead, for two reasons that are really one: the card
+ * is stored beside the page that uploaded it, so a link sent off to the
+ * public site would unfurl without it; and until a release ships, the
+ * public site does not read the payload at all. Without this the feature
+ * could only ever be tried on production.
+ */
+export function voiceprintShareBase(
+  here: Pick<Location, 'hostname' | 'origin'> | undefined = (
+    globalThis as { location?: Location }
+  ).location,
+): string {
+  if (here !== undefined && isStagingHost(here.hostname)) {
+    return `${here.origin}/mirror`
+  }
+  return SHARE_BASE
+}
+
 /** Kept fixed so card-driven traffic stays one series in GA4, continuous
  *  with the sessions recorded before the payload existed. Deliberately not
  *  a paid-campaign tag: a card reaching someone through a friend is
@@ -108,7 +141,7 @@ export function voiceprintShareUrl(
   const card =
     ogCardId != null && ogCardId !== '' ? `&${OG_CARD_PARAM}=${ogCardId}` : ''
 
-  return `${SHARE_BASE}?${VOICEPRINT_PARAM}=${encoded}${card}&${SHARE_TAG}`
+  return `${voiceprintShareBase()}?${VOICEPRINT_PARAM}=${encoded}${card}&${SHARE_TAG}`
 }
 
 /**
@@ -149,7 +182,11 @@ export function sharedVoiceprintTitle(data: VoiceprintShareData): string {
  */
 export function sharedRangeNotes(data: VoiceprintShareData): string | null {
   if (data.lo == null || data.hi == null) return null
-  return `${midiToNoteNameOctave(data.lo)} – ${midiToNoteNameOctave(data.hi)}`
+  // Rounded because a link is something anyone can write: a note is named by
+  // indexing twelve names, and 60.5 indexes none of them.
+  const low = midiToNoteNameOctave(Math.round(data.lo))
+  const high = midiToNoteNameOctave(Math.round(data.hi))
+  return `${low} – ${high}`
 }
 
 /**
