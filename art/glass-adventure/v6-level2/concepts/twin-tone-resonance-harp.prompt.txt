@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: one high-quality reference image for a reusable Meshy 3D architectural game decoration
+Primary request: Create a single freestanding twin-tone resonance harp sculpture for the court between two related galleries in a whimsical premium floating glass museum. A compact ivory Carrara-marble plinth supports two thick sweeping champagne-gold arcs, one low and broad and one high and slender, joined into one strong art-nouveau silhouette. The low arc cradles one large warm amber crystal disc; the high arc cradles one smaller cool celadon-opal disc. Between them, three broad jade stone ribbons curve like visible sound waves. This is a symbolic architectural ornament, not a playable string harp: no strings, no thin wires, no moving parts. It should feel museum-worthy, musical, sturdy, and reusable as a nonblocking landmark or wall-adjacent sculpture.
+Scene/backdrop: neutral pale grey seamless studio backdrop
+Style/medium: polished stylized 3D game-prop concept render matching an ornate ivory-marble, jade, champagne-gold, and jewel-glass museum
+Composition/framing: entire single object visible, centered, front three-quarter product view, generous margin, approximately square image
+Lighting/mood: soft even studio illumination balancing warm amber and cool celadon highlights
+Color palette: ivory marble, deep jade, champagne gold, warm amber and cool opal crystal
+Materials/textures: subtly veined marble, lightly hammered metal, polished jade, thick translucent crystal
+Constraints: one connected sculptural object on one base; thick robust geometry; clear low-versus-high asymmetry; readable at mobile distance; no text, lettering, labels, people, room, frame, floor scene, or extra objects
+Avoid: literal musical instrument strings, multiple sculptures, concept sheet, exploded view, thin rods, spikes, chains, excessive filigree, detached floating parts, hazard feel

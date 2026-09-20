@@ -1,0 +1,36 @@
+{
+  "note": "Production pipeline, test-only journey selection; no scene raster/FPS claim.",
+  "errors": [],
+  "records": [
+    {
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "appearance": {
+        "color": "rgb(255, 249, 232)",
+        "background": "rgb(37, 78, 71)",
+        "radius": "100px",
+        "font": "\"Gabarito Variable\", system-ui, sans-serif",
+        "buttonHeight": 49.1875,
+        "overflow": false
+      },
+      "file": "built-320-artwork.png"
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "appearance": {
+        "color": "rgb(255, 249, 232)",
+        "background": "rgb(37, 78, 71)",
+        "radius": "100px",
+        "font": "\"Gabarito Variable\", system-ui, sans-serif",
+        "buttonHeight": 49.1875,
+        "overflow": false
+      },
+      "file": "built-1024-artwork.png"
+    }
+  ]
+}

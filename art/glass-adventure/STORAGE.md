@@ -4,7 +4,7 @@ The playable exports under `apps/beside-cue/public/games/` are ordinary Git
 files. Building, testing and playing the game does not require the authoring
 archive. CI deliberately leaves source-art LFS pointers unexpanded.
 
-The `v2`, `v3`, `v4`, `audio`, `voice` and `loading` authoring directories use Git LFS for large
+The `v2`, `v3`, `v4`, `v5`, `v6-level2`, `audio`, `voice` and `loading` authoring directories use Git LFS for large
 binary sources: image masters, Meshy originals, editable Blender projects,
 fracture and material trials, review images, source WAVs and audio derivatives.
 Scripts, prompts, manifests and receipts remain readable in Git. Historical
@@ -53,6 +53,12 @@ the source of truth.
   derivatives under `adventure-v4`. The original packed Blender projects and
   Meshy donors remain intact; `architecture/export_playable.py` reproduces the
   smaller exports and reports their source hashes.
+- `v5`: garden planters, gallery paintings and mirror sources; room-visibility,
+  wall mounting, artwork inspection and live-mirror verification evidence.
+- `v6-level2`: four Level 2 concept masters and Meshy donors, packed normalized
+  Blender projects, reviewed GLB derivatives, three original painting masters,
+  prompts, sanitized receipts, inventories and review renders. These are
+  production candidates, not runtime-integrated or fracture-approved assets.
 - `voice/v1`: twelve original Merc voice-design previews, four principal
   audition reels, isolated lines, exact scripts/settings, hashes and a browser
   listening page. The owner has since selected and activated original D2.

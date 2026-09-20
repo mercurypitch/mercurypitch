@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: one high-quality reference image for a Meshy 3D game prop
+Primary request: Create a single ornate low-register hero vessel for the warm lower gallery of a whimsical premium floating glass museum. The vessel is a broad, low, round cadence urn with a generous amber-smoked crystal belly, a short flared neck, a thick stable ivory-marble foot, and two restrained champagne-gold laurel bands around the shoulder and base. Three large shallow vertical flutes catch warm light. A small oval jade cabochon sits at the center front. The silhouette must feel grounded, sonorous, welcoming, and visibly lower and heavier than a tall companion vessel. Forms are thick, clean, robust, and suitable for later fracture planning: one continuous vessel body, no lid, no dangling pieces, no tiny filigree, no separate props.
+Scene/backdrop: neutral pale grey seamless studio backdrop
+Style/medium: polished stylized 3D game-prop concept render matching an ornate ivory-marble, jade, champagne-gold, and jewel-glass museum
+Composition/framing: entire single object visible, centered, front three-quarter product view, generous margin, approximately square image
+Lighting/mood: soft even studio illumination with warm amber key light and restrained cool fill; readable material boundaries
+Color palette: honey amber crystal, warm ivory marble, champagne gold, one deep jade accent
+Materials/textures: translucent thick glass, subtly veined marble, lightly hammered metal, smooth cabochon
+Constraints: isolated single object; broad stable base; clear open mouth; strong silhouette readable at mobile distance; no text, lettering, labels, people, floor scene, architecture, frame, pedestal, or extra objects
+Avoid: multiple objects, concept sheet, exploded view, shards, cracks, thin handles, spikes, chains, excessive microdetail, baked dramatic shadows

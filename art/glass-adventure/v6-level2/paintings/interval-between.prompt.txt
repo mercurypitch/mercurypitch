@@ -1,0 +1,9 @@
+Use case: stylized-concept
+Asset type: original museum wall painting texture, portrait aspect ratio 2:3, full bleed, no frame or border
+Primary request: Create an original allegorical painting titled only in production notes "The Interval Between". Two fictional singing muses stand on related marble balconies across one vertical composition: a warm amber figure lower in the scene and a cool celadon-opal figure higher above. Their faces remain distinct and human, eyes gently closed, each singing softly toward the open space between them. Broad gold, jade, amber, and aquamarine arcs meet in the center as a luminous architectural rose, suggesting two notes in sequence without literal notation. Ivory arches and a distant strip of starry blue sky bind the two gallery moods together. The image feels harmonious, curious, and welcoming rather than grandiose.
+Style/medium: refined art-nouveau and symbolist oil-gouache painting with translucent stained-glass planes, hand-brushed marble texture, and restrained gold-leaf geometry
+Composition/framing: vertical 2:3 full-bleed flat artwork, direct front-on reproduction, lower warm mass and upper cool lift clearly legible at gallery distance
+Lighting/mood: warm amber glow below transitioning to cool moonlit celadon above
+Color palette: ivory marble, champagne gold, deep jade, amber, aquamarine, pearl opal, indigo
+Constraints: two fictional adults with no resemblance to real people; full image is only the flat artwork; no frame, border, room perspective outside the painted composition, typography, notes, letters, words, signature, or watermark
+Avoid: celebrity likeness, romance pose, identical twins, violence, cracks across faces, flying shards, photorealistic camera look, musical staff notation

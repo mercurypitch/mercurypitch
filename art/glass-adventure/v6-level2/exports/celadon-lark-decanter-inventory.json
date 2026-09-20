@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "kind": "breakable-vessel",
+  "galleryFamily": "upper-cool-celadon",
+  "intendedUse": "High-note hero vessel; tall silhouette at a raised display height.",
+  "rootNode": "breakable_l2_high_celadon_decanter",
+  "units": "metres",
+  "origin": "bottom-centre",
+  "dimensionsMetres": [
+    0.3807224780321121,
+    0.3825160562992096,
+    1.1499998569488525
+  ],
+  "donor": {
+    "file": "meshy/celadon-lark-decanter-donor.glb",
+    "bytes": 12154068,
+    "sha256": "7b1c1a1f712f13b005458ae306fbbd54e7bc808d36fc5ff9614245efd6b31e4b",
+    "boundsBeforeNormalization": {
+      "min": [
+        -0.3149769902229309,
+        -0.3149310052394867,
+        -0.9505530595779419
+      ],
+      "max": [
+        0.3137679994106293,
+        0.31677600741386414,
+        0.9486169815063477
+      ],
+      "dimensions": [
+        0.6287449896335602,
+        0.6317070126533508,
+        1.8991700410842896
+      ]
+    },
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 12402,
+      "edges": 19778,
+      "triangles": 9186,
+      "boundaryEdges": 11998,
+      "nonManifoldEdges": 11998,
+      "looseEdges": 0
+    }
+  },
+  "packedBlenderSource": {
+    "file": "sources/celadon-lark-decanter-normalized-v1.blend",
+    "bytes": 12258889,
+    "sha256": "641da441b280b54574ffcc5759bf77427e212706cf254faad3878c044f6642b3",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ]
+  },
+  "gameDerivative": {
+    "file": "exports/celadon-lark-decanter-game-v1.glb",
+    "bytes": 2907276,
+    "sha256": "69d22b731b75f746c7f072496f36992d683791957440161755d065641dbf20da",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ],
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 12402,
+      "edges": 19778,
+      "triangles": 9186,
+      "boundaryEdges": 11998,
+      "nonManifoldEdges": 11998,
+      "looseEdges": 0
+    },
+    "targetTriangleRange": [
+      3000,
+      10000
+    ],
+    "reimport": {
+      "rootPresent": true,
+      "colliderPresent": true,
+      "dimensionsMetres": [
+        0.3807224780321121,
+        0.3825160562992096,
+        1.1499998569488525
+      ],
+      "topologyIncludingCollider": {
+        "meshObjects": 2,
+        "vertices": 12511,
+        "edges": 19916,
+        "triangles": 9246,
+        "boundaryEdges": 12094,
+        "nonManifoldEdges": 12094,
+        "looseEdges": 0
+      },
+      "materialNames": [
+        "celadon_lark_decanter_atlas_01"
+      ]
+    }
+  },
+  "proof": {
+    "status": "rendered",
+    "file": "proofs/celadon-lark-decanter-normalized.png",
+    "bytes": 592756,
+    "sha256": "4ef0cf1cb543ac1ca631c4db7b2287c28d6dd01db91165e3d62dfcb2def777e4"
+  },
+  "materials": [
+    "celadon_lark_decanter_atlas_01"
+  ],
+  "collisionProxy": {
+    "name": "COLLIDER_breakable_l2_high_celadon_decanter",
+    "shape": "16-sided-cylinder",
+    "dimensionsMetres": [
+      0.312192440032959,
+      0.312192440032959,
+      0.8279998898506165
+    ],
+    "locationMetres": [
+      0.0,
+      0.0,
+      0.4139999449253082
+    ],
+    "authoredForReview": true
+  },
+  "insetReadiness": {
+    "status": "not-applicable",
+    "surface": null,
+    "reason": "This asset has no replaceable painting or mirror inset."
+  },
+  "fractureReadiness": {
+    "status": "requires-solid-and-shard-validation",
+    "isBreakableCandidate": true,
+    "boundaryEdgesObserved": 11998,
+    "nonManifoldEdgesObserved": 11998,
+    "requirementsBeforeGameplay": [
+      "Inspect and repair the authored cavity and wall thickness.",
+      "Author matched intact and closed named shard geometry.",
+      "Validate reconstruction, intersections, GLB reimport, materials, and volume.",
+      "Review the collision proxy against the final mount and camera distance."
+    ]
+  },
+  "lodReadiness": {
+    "currentDerivative": "Meshy remesh at requested art-review target",
+    "additionalLods": "not-authored",
+    "required": "Validate screen-space quality and add LODs only from measured need."
+  },
+  "gameplayReadiness": "Art-review derivative only; not integrated or gameplay-ready."
+}

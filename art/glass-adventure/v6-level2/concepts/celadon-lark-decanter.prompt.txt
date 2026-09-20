@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: one high-quality reference image for a Meshy 3D game prop
+Primary request: Create a single ornate high-register hero vessel for the cool upper gallery of a whimsical premium floating glass museum. The vessel is a tall, slender celadon-opal crystal decanter with a faceted pear-shaped body, long elegant neck, scalloped open rim, narrow ivory-marble foot, and restrained champagne-gold rings at the foot, throat, and rim. Six broad upward facets create a soaring lark-like rhythm without literal wings. Two small opal cabochons sit symmetrically on the shoulder. The silhouette must feel bright, lifted, graceful, and unmistakably taller and lighter than a broad low companion urn. Forms are thick, clean, robust, and suitable for later fracture planning: one continuous vessel body, no stopper, no dangling parts, no tiny filigree, no separate props.
+Scene/backdrop: neutral pale grey seamless studio backdrop
+Style/medium: polished stylized 3D game-prop concept render matching an ornate ivory-marble, jade, champagne-gold, and jewel-glass museum
+Composition/framing: entire single object visible, centered, front three-quarter product view, generous margin, portrait-friendly but with the full foot and rim visible
+Lighting/mood: soft even studio illumination with cool celadon and pearl highlights plus a faint warm rim light; readable material boundaries
+Color palette: pale celadon, aquamarine opal, pearl ivory, restrained champagne gold
+Materials/textures: translucent frosted crystal, luminous opal, subtly veined marble, lightly hammered metal
+Constraints: isolated single object; stable foot; clear open mouth; strong silhouette readable at mobile distance; no text, lettering, labels, people, floor scene, architecture, frame, pedestal, or extra objects
+Avoid: multiple objects, concept sheet, exploded view, shards, cracks, handles, wings, spikes, chains, excessive microdetail, baked dramatic shadows

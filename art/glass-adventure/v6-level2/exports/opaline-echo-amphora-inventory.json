@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "assetId": "opaline-echo-amphora",
+  "kind": "breakable-vessel",
+  "galleryFamily": "optional-side-exhibit",
+  "intendedUse": "Optional paired-note side-exhibit vessel.",
+  "rootNode": "breakable_l2_opaline_echo_amphora",
+  "units": "metres",
+  "origin": "bottom-centre",
+  "dimensionsMetres": [
+    0.6186075806617737,
+    0.568110316991806,
+    0.9200000166893005
+  ],
+  "donor": {
+    "file": "meshy/opaline-echo-amphora-donor.glb",
+    "bytes": 10618916,
+    "sha256": "dc09fcefb94170c71e54b3bbe48a2f005fa4ea7332589daa05a38ef4634381c8",
+    "boundsBeforeNormalization": {
+      "min": [
+        -0.6394339799880981,
+        -0.5853719711303711,
+        -0.9507680535316467
+      ],
+      "max": [
+        0.6377109885215759,
+        0.5875189900398254,
+        0.9486160278320312
+      ],
+      "dimensions": [
+        1.277144968509674,
+        1.1728909611701965,
+        1.899384081363678
+      ]
+    },
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 7869,
+      "edges": 15448,
+      "triangles": 8168,
+      "boundaryEdges": 6392,
+      "nonManifoldEdges": 6392,
+      "looseEdges": 0
+    }
+  },
+  "packedBlenderSource": {
+    "file": "sources/opaline-echo-amphora-normalized-v1.blend",
+    "bytes": 10773606,
+    "sha256": "b0cf3a97b3f2368f97df82362f0012435f4519a566a0af38e97826a4eb1c54a1",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ]
+  },
+  "gameDerivative": {
+    "file": "exports/opaline-echo-amphora-game-v1.glb",
+    "bytes": 2321568,
+    "sha256": "b133d496578e13cce56a3ead67f4811fdce4d1cf3643e786ec6c560d6835984f",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ],
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 7869,
+      "edges": 15448,
+      "triangles": 8168,
+      "boundaryEdges": 6392,
+      "nonManifoldEdges": 6392,
+      "looseEdges": 0
+    },
+    "targetTriangleRange": [
+      3000,
+      10000
+    ],
+    "reimport": {
+      "rootPresent": true,
+      "colliderPresent": true,
+      "dimensionsMetres": [
+        0.6186075806617737,
+        0.568110316991806,
+        0.9200000166893005
+      ],
+      "topologyIncludingCollider": {
+        "meshObjects": 2,
+        "vertices": 7968,
+        "edges": 15586,
+        "triangles": 8228,
+        "boundaryEdges": 6488,
+        "nonManifoldEdges": 6488,
+        "looseEdges": 0
+      },
+      "materialNames": [
+        "opaline_echo_amphora_atlas_01"
+      ]
+    }
+  },
+  "proof": {
+    "status": "rendered",
+    "file": "proofs/opaline-echo-amphora-normalized.png",
+    "bytes": 647445,
+    "sha256": "55569e3dcd1e2486256bf728adc04a055ad9cc280dc2fa5df1a930647c665342"
+  },
+  "materials": [
+    "opaline_echo_amphora_atlas_01"
+  ],
+  "collisionProxy": {
+    "name": "COLLIDER_breakable_l2_opaline_echo_amphora",
+    "shape": "16-sided-cylinder",
+    "dimensionsMetres": [
+      0.46585047245025635,
+      0.46585047245025635,
+      0.6624000072479248
+    ],
+    "locationMetres": [
+      0.0,
+      0.0,
+      0.3312000036239624
+    ],
+    "authoredForReview": true
+  },
+  "insetReadiness": {
+    "status": "not-applicable",
+    "surface": null,
+    "reason": "This asset has no replaceable painting or mirror inset."
+  },
+  "fractureReadiness": {
+    "status": "requires-solid-and-shard-validation",
+    "isBreakableCandidate": true,
+    "boundaryEdgesObserved": 6392,
+    "nonManifoldEdgesObserved": 6392,
+    "requirementsBeforeGameplay": [
+      "Inspect and repair the authored cavity and wall thickness.",
+      "Author matched intact and closed named shard geometry.",
+      "Validate reconstruction, intersections, GLB reimport, materials, and volume.",
+      "Review the collision proxy against the final mount and camera distance."
+    ]
+  },
+  "lodReadiness": {
+    "currentDerivative": "Meshy remesh at requested art-review target",
+    "additionalLods": "not-authored",
+    "required": "Validate screen-space quality and add LODs only from measured need."
+  },
+  "gameplayReadiness": "Art-review derivative only; not integrated or gameplay-ready."
+}

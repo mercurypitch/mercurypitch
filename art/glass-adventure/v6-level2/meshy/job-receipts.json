@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "submittedAtUtc": null,
+  "submissionTimestampCaptured": false,
+  "archivedAtUtc": "2026-09-20T18:26:40Z",
+  "model": "meshy-6",
+  "balanceBefore": 4340,
+  "balanceAfter": 4220,
+  "consumedCredits": 120,
+  "archivedDonorVariant": "provider remeshed GLB output",
+  "preRemeshedModelsArchived": false,
+  "providerUrlsPersisted": false,
+  "credentialsPersisted": false,
+  "jobs": [
+    {
+      "assetId": "amber-cadence-urn",
+      "taskId": "01a0c007-806a-75e6-b2ed-d4cd3a9ffaba",
+      "status": "SUCCEEDED",
+      "consumedCredits": 30,
+      "request": "amber-cadence-urn-request.json",
+      "donor": "amber-cadence-urn-donor.glb",
+      "bytes": 11374392,
+      "sha256": "b7330a45eadbd08918be00441aa7c1f4aace0438a4b04b40eac0a1bcf3481dc2"
+    },
+    {
+      "assetId": "celadon-lark-decanter",
+      "taskId": "01a0c007-b204-7787-8ec8-0bf557db9114",
+      "status": "SUCCEEDED",
+      "consumedCredits": 30,
+      "request": "celadon-lark-decanter-request.json",
+      "donor": "celadon-lark-decanter-donor.glb",
+      "bytes": 12154068,
+      "sha256": "7b1c1a1f712f13b005458ae306fbbd54e7bc808d36fc5ff9614245efd6b31e4b"
+    },
+    {
+      "assetId": "twin-tone-resonance-harp",
+      "taskId": "01a0c007-9be4-7288-98fb-1078e5e9c6e4",
+      "status": "SUCCEEDED",
+      "consumedCredits": 30,
+      "request": "twin-tone-resonance-harp-request.json",
+      "donor": "twin-tone-resonance-harp-donor.glb",
+      "bytes": 12119988,
+      "sha256": "cbf93040cd04b8b83564ee7582817e99c62369d913a72d9283f2ce1c6ebd1706"
+    },
+    {
+      "assetId": "opaline-echo-amphora",
+      "taskId": "01a0c007-c8b2-7327-b537-134bccd606dd",
+      "status": "SUCCEEDED",
+      "consumedCredits": 30,
+      "request": "opaline-echo-amphora-request.json",
+      "donor": "opaline-echo-amphora-donor.glb",
+      "bytes": 10618916,
+      "sha256": "dc09fcefb94170c71e54b3bbe48a2f005fa4ea7332589daa05a38ef4634381c8"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: one high-quality reference image for a Meshy 3D game prop
+Primary request: Create a single opaline echo amphora for an optional paired-note side exhibit in a whimsical premium floating glass museum. The vessel has a gently ovoid pearl-opal glass body, a modest celadon-to-lilac iridescent gradient, a short trumpet neck, a stable jade-stone foot, and two thick crescent handles integrated firmly from shoulder to neck. Restrained champagne-gold bands define the foot, waist, and rim, while one broad embossed wave motif circles the lower body. It should feel lyrical and collectible, halfway in height between a broad low urn and a tall high decanter, with an elegant clean silhouette and no literal notes. Forms are thick, robust, and suitable for later fracture planning.
+Scene/backdrop: neutral pale grey seamless studio backdrop
+Style/medium: polished stylized 3D game-prop concept render matching an ornate ivory-marble, jade, champagne-gold, and jewel-glass museum
+Composition/framing: entire single object visible, centered, front three-quarter product view, generous margin, approximately square image
+Lighting/mood: soft even studio illumination with opaline cool highlights and a restrained warm rim
+Color palette: pearl opal, celadon, pale lilac, deep jade, champagne gold
+Materials/textures: thick translucent iridescent glass, polished jade stone, lightly hammered metal
+Constraints: isolated single object; handles visibly fused to body; stable base; clear open mouth; readable at mobile distance; no text, lettering, labels, people, room, frame, pedestal, floor scene, or extra objects
+Avoid: multiple objects, concept sheet, exploded view, shards, cracks, thin handles, spikes, chains, excessive microdetail, baked dramatic shadows

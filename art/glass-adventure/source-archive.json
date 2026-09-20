@@ -2946,8 +2946,163 @@
       "path": "v5/sources/planter-imported.blend",
       "bytes": 15452419,
       "sha256": "34b54a9c4137c6edab7722e6a81a8a2920fa4c2247e85fa6a81bde54e6aa1657"
+    },
+    {
+      "path": "v5/proofs/live-mirror-sept20/800-salon-mirror-angled.png",
+      "bytes": 585431,
+      "sha256": "9bb527efddb8c21419933c0e899c03c07ffc82fba2119880c23663f041535e80"
+    },
+    {
+      "path": "v5/proofs/live-mirror-sept20/800-salon-mirror-centered.png",
+      "bytes": 560020,
+      "sha256": "7e41cd0b41833f3c574bff5f8ca3437d497390b5027a8bca8d9de874526ea36b"
+    },
+    {
+      "path": "v5/proofs/polish-sept20/built-1024-artwork.png",
+      "bytes": 457838,
+      "sha256": "80f4b1fba01cecef2f673580c907e04bb54e2a8115f2d8d6f68be87409a28327"
+    },
+    {
+      "path": "v5/proofs/polish-sept20/built-320-artwork.png",
+      "bytes": 132470,
+      "sha256": "6aae3a6b3ac0833b4293e84f0b8b9c4439e3e0ddd3248900224fb99854788df1"
+    },
+    {
+      "path": "v5/proofs/polish-sept20/phone-320x640-world.png",
+      "bytes": 241086,
+      "sha256": "cfbfd06f94e854e8e5f5895ce366d4f727b96f7b3995614f6d4ce8c4af55ce15"
+    },
+    {
+      "path": "v5/proofs/polish-sept20/tablet-1024x768-artwork-facing.png",
+      "bytes": 905862,
+      "sha256": "fb52f4100da37656279c8069817382bd090dceb06e74c392416a0bc2650c8569"
+    },
+    {
+      "path": "v5/proofs/polish-sept20/tablet-1024x768-world.png",
+      "bytes": 907229,
+      "sha256": "7a58c8780dffe35ddf9cc57474e93c620dcec62e9128bf9b0ac4f186541696b2"
+    },
+    {
+      "path": "v6-level2/concepts/amber-cadence-urn.png",
+      "bytes": 2043017,
+      "sha256": "720bf5ebc1818bdc6eea182077296d832fb70be87f7f73475d0d978f24c2fefd"
+    },
+    {
+      "path": "v6-level2/concepts/celadon-lark-decanter.png",
+      "bytes": 1797157,
+      "sha256": "c910a7529bcdf95788c6d2d140aa8120482e414b351c6136cc8a54760bc04050"
+    },
+    {
+      "path": "v6-level2/concepts/opaline-echo-amphora.png",
+      "bytes": 1917293,
+      "sha256": "d141e8e2cf198a102b7f5993586579cc281224007c12d5ea5bf9e254b4d39972"
+    },
+    {
+      "path": "v6-level2/concepts/twin-tone-resonance-harp.png",
+      "bytes": 2031024,
+      "sha256": "6143d7c3b16b21b4add33b4932cd374e0b33762cb704d1baa5245dae629a5e58"
+    },
+    {
+      "path": "v6-level2/exports/amber-cadence-urn-game-v1.glb",
+      "bytes": 2593732,
+      "sha256": "85158f98c8677e82cad4813255cbe88817b6ac20f0a5ce9cdfc3fc82fb8df707"
+    },
+    {
+      "path": "v6-level2/exports/celadon-lark-decanter-game-v1.glb",
+      "bytes": 2907276,
+      "sha256": "69d22b731b75f746c7f072496f36992d683791957440161755d065641dbf20da"
+    },
+    {
+      "path": "v6-level2/exports/opaline-echo-amphora-game-v1.glb",
+      "bytes": 2321568,
+      "sha256": "b133d496578e13cce56a3ead67f4811fdce4d1cf3643e786ec6c560d6835984f"
+    },
+    {
+      "path": "v6-level2/exports/twin-tone-resonance-harp-game-v1.glb",
+      "bytes": 2812836,
+      "sha256": "cf921bad281220fb9ecac9f797fbc696e23a8a0fd57144b27ccca765c8d4dda9"
+    },
+    {
+      "path": "v6-level2/meshy/amber-cadence-urn-donor.glb",
+      "bytes": 11374392,
+      "sha256": "b7330a45eadbd08918be00441aa7c1f4aace0438a4b04b40eac0a1bcf3481dc2"
+    },
+    {
+      "path": "v6-level2/meshy/celadon-lark-decanter-donor.glb",
+      "bytes": 12154068,
+      "sha256": "7b1c1a1f712f13b005458ae306fbbd54e7bc808d36fc5ff9614245efd6b31e4b"
+    },
+    {
+      "path": "v6-level2/meshy/opaline-echo-amphora-donor.glb",
+      "bytes": 10618916,
+      "sha256": "dc09fcefb94170c71e54b3bbe48a2f005fa4ea7332589daa05a38ef4634381c8"
+    },
+    {
+      "path": "v6-level2/meshy/twin-tone-resonance-harp-donor.glb",
+      "bytes": 12119988,
+      "sha256": "cbf93040cd04b8b83564ee7582817e99c62369d913a72d9283f2ce1c6ebd1706"
+    },
+    {
+      "path": "v6-level2/paintings/high-note-muse-master.png",
+      "bytes": 3221808,
+      "sha256": "92621506c8ed2e25b08eb531757d5cc4b21403a0558fe768124929ace8d61469"
+    },
+    {
+      "path": "v6-level2/paintings/interval-between-master.png",
+      "bytes": 3399282,
+      "sha256": "fac4a003be291df5f1dc01f434db098c73c52c16733586e59c17e6eff5a6f893"
+    },
+    {
+      "path": "v6-level2/paintings/low-note-keeper-master.png",
+      "bytes": 2903011,
+      "sha256": "9e8b7a7f79a73053ee7d6a5e2cda8c25fe5f5a7cded7d892f952050cf21b5ddc"
+    },
+    {
+      "path": "v6-level2/proofs/amber-cadence-urn-normalized.png",
+      "bytes": 650711,
+      "sha256": "d81dab4f825b95e54c14fdf4bf157fe18732aa2fd095816a9fd82a1a200f897d"
+    },
+    {
+      "path": "v6-level2/proofs/celadon-lark-decanter-normalized.png",
+      "bytes": 592756,
+      "sha256": "4ef0cf1cb543ac1ca631c4db7b2287c28d6dd01db91165e3d62dfcb2def777e4"
+    },
+    {
+      "path": "v6-level2/proofs/opaline-echo-amphora-normalized.png",
+      "bytes": 647445,
+      "sha256": "55569e3dcd1e2486256bf728adc04a055ad9cc280dc2fa5df1a930647c665342"
+    },
+    {
+      "path": "v6-level2/proofs/review-contact-sheet.png",
+      "bytes": 3328602,
+      "sha256": "10f2224460fa1ac6c2aae8c91d9874af60403b20ae2679ccfd338269627a2e7d"
+    },
+    {
+      "path": "v6-level2/proofs/twin-tone-resonance-harp-normalized.png",
+      "bytes": 709940,
+      "sha256": "4baa328b63537a73152a35df755b1ce7f8b7abada930145e64fb76081e2c08f3"
+    },
+    {
+      "path": "v6-level2/sources/amber-cadence-urn-normalized-v1.blend",
+      "bytes": 11533302,
+      "sha256": "21d1cdc45bbbb493fa7a09c6c7f79d74b85ff3e46fe039bf5d5ab86c378bbdbe"
+    },
+    {
+      "path": "v6-level2/sources/celadon-lark-decanter-normalized-v1.blend",
+      "bytes": 12258889,
+      "sha256": "641da441b280b54574ffcc5759bf77427e212706cf254faad3878c044f6642b3"
+    },
+    {
+      "path": "v6-level2/sources/opaline-echo-amphora-normalized-v1.blend",
+      "bytes": 10773606,
+      "sha256": "b0cf3a97b3f2368f97df82362f0012435f4519a566a0af38e97826a4eb1c54a1"
+    },
+    {
+      "path": "v6-level2/sources/twin-tone-resonance-harp-normalized-v1.blend",
+      "bytes": 12220409,
+      "sha256": "33a05eda61d19526130b47fba62796b173ab6cf8e2cfa54a7e5af827066f492e"
     }
   ],
-  "fileCount": 589,
-  "totalBytes": 2497853705
+  "fileCount": 620,
+  "totalBytes": 2628574669
 }

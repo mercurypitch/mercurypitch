@@ -1,0 +1,17 @@
+{
+  "ai_model": "meshy-6",
+  "file_path": "art/glass-adventure/v6-level2/concepts/celadon-lark-decanter.png",
+  "should_texture": true,
+  "enable_pbr": true,
+  "should_remesh": true,
+  "target_polycount": 9000,
+  "topology": "triangle",
+  "target_formats": ["glb"],
+  "texture_prompt": "Pale celadon and aquamarine opal crystal body, ivory marble foot, restrained champagne-gold rim and rings, two luminous opal cabochons. Preserve the tall faceted silhouette and scalloped open mouth. Neutral clean PBR materials, no ground or scene.",
+  "remove_lighting": true,
+  "save_pre_remeshed_model": true,
+  "image_enhancement": false,
+  "multi_view_thumbnails": true,
+  "origin_at": "bottom",
+  "response_format": "json"
+}
