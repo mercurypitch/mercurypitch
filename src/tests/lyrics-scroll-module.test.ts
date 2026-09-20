@@ -64,6 +64,15 @@ describe('isBackOnActiveLine', () => {
     expect(isBackOnActiveLine(CONTAINER, at(360))).toBe(false)
   })
 
+  it('is false for a line scrolled off the top, the same as one left below', () => {
+    // It used to ask only whether the line was ABOVE the settle mark, and a
+    // line two screens above the list is: scrolling down past the sung line
+    // counted as coming back to it.
+    expect(isBackOnActiveLine(CONTAINER, at(-300))).toBe(false)
+    // Partly in view at the top edge still counts.
+    expect(isBackOnActiveLine(CONTAINER, at(90))).toBe(true)
+  })
+
   it('is more forgiving than the follow band, so reading ahead is not fought', () => {
     // A line at y=330 is outside the 0.57 follow band but still counts as
     // settled — otherwise following would re-arm and yank the list back
