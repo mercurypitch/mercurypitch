@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "celadon-lark-decanter",
+  "taskType": "image-to-3d",
+  "taskId": "01a0c0f0-c362-771c-8463-87ce304b2d9b",
+  "status": "SUCCEEDED",
+  "progress": 100,
+  "consumedCredits": 30,
+  "balanceAfterArchiveCheck": 4185,
+  "archivedAtUtc": "2026-09-20T22:37:40.078625+00:00",
+  "files": [
+    {
+      "role": "glb",
+      "file": "meshy/celadon-lark-decanter-regenerated-v2.glb",
+      "bytes": 11300716,
+      "sha256": "04f6d35af846a10609c72e5fd11437ca7523f99e31fda8ca26e0302728e8b2e2"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+      "bytes": 7283672,
+      "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "providerUrlsPersisted": false,
+  "credentialsPersisted": false,
+  "readiness": "Raw Meshy sources only; topology, cavity, fracture, runtime export, and proofs remain gated."
+}

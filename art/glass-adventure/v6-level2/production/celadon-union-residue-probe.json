@@ -1,0 +1,293 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "source": {
+    "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+    "bytes": 7283672,
+    "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45"
+  },
+  "normalization": {
+    "uniformScale": 0.6057656912504278,
+    "sourceFootCentre": [
+      -0.0009541362524032593,
+      0.0009124279022216797,
+      -0.950843095779419
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.1889037787914276,
+        -0.18885940313339233,
+        0.0
+      ],
+      "max": [
+        0.1889037936925888,
+        0.18885940313339233,
+        1.149999976158142
+      ]
+    },
+    "dimensionsMetres": [
+      0.3778075575828552,
+      0.37771880626678467,
+      1.149999976158142
+    ]
+  },
+  "decimation": {
+    "requested": 25000,
+    "before": 404658,
+    "after": 25000,
+    "applied": true
+  },
+  "preUnionTopology": {
+    "triangles": 25000,
+    "vertices": 12420,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 24,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.0027666489468221056
+  },
+  "exactSelfUnion": {
+    "method": "Blender exact self-union",
+    "before": {
+      "triangles": 25000,
+      "vertices": 12420,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 24,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0027666489468221056
+    },
+    "after": {
+      "triangles": 25102,
+      "vertices": 12455,
+      "nonManifoldEdges": 22,
+      "nonManifoldVertices": 27,
+      "nonContiguousEdges": 25,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.002763375539369273
+    }
+  },
+  "residue": {
+    "clusters": [
+      {
+        "edges": 6,
+        "vertices": 5,
+        "linkedFaceCounts": {
+          "2": 3,
+          "4": 3
+        },
+        "boundsMetres": {
+          "min": [
+            -0.0498080849647522,
+            0.041944719851017,
+            0.7087819576263428
+          ],
+          "max": [
+            -0.042066581547260284,
+            0.04910094290971756,
+            0.7336772680282593
+          ],
+          "dimensions": [
+            0.007741503417491913,
+            0.0071562230587005615,
+            0.024895310401916504
+          ],
+          "centre": [
+            -0.04593733325600624,
+            0.04552283138036728,
+            0.721229612827301
+          ]
+        }
+      },
+      {
+        "edges": 4,
+        "vertices": 4,
+        "linkedFaceCounts": {
+          "4": 4
+        },
+        "boundsMetres": {
+          "min": [
+            -0.02754807658493519,
+            -0.037684593349695206,
+            0.9872901439666748
+          ],
+          "max": [
+            -0.02692265994846821,
+            -0.037177618592977524,
+            0.9886666536331177
+          ],
+          "dimensions": [
+            0.00062541663646698,
+            0.0005069747567176819,
+            0.001376509666442871
+          ],
+          "centre": [
+            -0.0272353682667017,
+            -0.037431105971336365,
+            0.9879783987998962
+          ]
+        }
+      },
+      {
+        "edges": 4,
+        "vertices": 4,
+        "linkedFaceCounts": {
+          "4": 4
+        },
+        "boundsMetres": {
+          "min": [
+            -0.0055024889297783375,
+            0.02762642689049244,
+            0.7781946659088135
+          ],
+          "max": [
+            -0.004032299388200045,
+            0.02788728103041649,
+            0.7787435054779053
+          ],
+          "dimensions": [
+            0.0014701895415782928,
+            0.0002608541399240494,
+            0.0005488395690917969
+          ],
+          "centre": [
+            -0.004767394158989191,
+            0.02775685489177704,
+            0.7784690856933594
+          ]
+        }
+      },
+      {
+        "edges": 4,
+        "vertices": 4,
+        "linkedFaceCounts": {
+          "4": 4
+        },
+        "boundsMetres": {
+          "min": [
+            0.04482332244515419,
+            -0.010902277193963528,
+            0.9874738454818726
+          ],
+          "max": [
+            0.045554812997579575,
+            -0.008522018790245056,
+            0.9891112446784973
+          ],
+          "dimensions": [
+            0.0007314905524253845,
+            0.0023802584037184715,
+            0.0016373991966247559
+          ],
+          "centre": [
+            0.04518906772136688,
+            -0.00971214845776558,
+            0.9882925748825073
+          ]
+        }
+      },
+      {
+        "edges": 4,
+        "vertices": 4,
+        "linkedFaceCounts": {
+          "4": 4
+        },
+        "boundsMetres": {
+          "min": [
+            -0.03897362947463989,
+            -0.025012126192450523,
+            0.9876949787139893
+          ],
+          "max": [
+            -0.03878865763545036,
+            -0.024729790166020393,
+            0.9882509112358093
+          ],
+          "dimensions": [
+            0.00018497183918952942,
+            0.00028233602643013,
+            0.0005559325218200684
+          ],
+          "centre": [
+            -0.03888114541769028,
+            -0.02487095817923546,
+            0.9879729747772217
+          ]
+        }
+      },
+      {
+        "edges": 3,
+        "vertices": 4,
+        "linkedFaceCounts": {
+          "4": 3
+        },
+        "boundsMetres": {
+          "min": [
+            -0.02295476756989956,
+            -0.019755342975258827,
+            0.7784560918807983
+          ],
+          "max": [
+            -0.020768573507666588,
+            -0.01708580181002617,
+            0.7786862850189209
+          ],
+          "dimensions": [
+            0.002186194062232971,
+            0.0026695411652326584,
+            0.0002301931381225586
+          ],
+          "centre": [
+            -0.021861670538783073,
+            -0.018420573323965073,
+            0.7785711884498596
+          ]
+        }
+      }
+    ],
+    "badEdges": 25,
+    "deletedIncidentFaces": 50,
+    "boundaryEdgesAfterDelete": 43,
+    "createdPatchFaces": 9,
+    "maximumClusterExtentMetres": 0.024895310401916504,
+    "limits": {
+      "maximumBadEdges": 32,
+      "maximumClusterExtentMetres": 0.03
+    }
+  },
+  "afterTopology": {
+    "triangles": 25021,
+    "vertices": 12435,
+    "nonManifoldEdges": 5,
+    "nonManifoldVertices": 3,
+    "nonContiguousEdges": 5,
+    "selfIntersectionPairs": 4,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.002745555998726576
+  },
+  "topologyPassed": false,
+  "fidelity": {
+    "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+    "finalToSourceMetres": {
+      "min": 0.0,
+      "p05": 1.0519792976992904e-05,
+      "p50": 0.00010581877722870559,
+      "p95": 0.0002839173248503357,
+      "p99": 0.00038194805558305233,
+      "max": 0.0006248464924283326
+    },
+    "sourceToFinalMetres": {
+      "min": 2.3039648411327107e-08,
+      "p05": 7.733203710813541e-06,
+      "p50": 8.557051478419453e-05,
+      "p95": 0.00028546685352921487,
+      "p99": 0.0004113164730370044,
+      "max": 0.000964938779361546
+    },
+    "sourceSampleCount": 10113
+  },
+  "sourceBoundsMaxDeltaMetres": 0.0002873539924621582
+}

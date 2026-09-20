@@ -1,0 +1,207 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "source": {
+    "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+    "bytes": 7283672,
+    "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45"
+  },
+  "normalization": {
+    "uniformScale": 0.6057656912504278,
+    "sourceFootCentre": [
+      -0.0009541362524032593,
+      0.0009124279022216797,
+      -0.950843095779419
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.1889037787914276,
+        -0.18885940313339233,
+        0.0
+      ],
+      "max": [
+        0.1889037936925888,
+        0.18885940313339233,
+        1.149999976158142
+      ]
+    },
+    "dimensionsMetres": [
+      0.3778075575828552,
+      0.37771880626678467,
+      1.149999976158142
+    ]
+  },
+  "sourceTopology": {
+    "triangles": 404658,
+    "vertices": 202249,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.0027637152015113995
+  },
+  "backend": {
+    "backend": "manifold3d 3.5.3",
+    "method": "Simplify the preserved clean closed source to the smallest measured tolerance producing no more than each triangle target.",
+    "sourceTriangles": 404658,
+    "sourceVertices": 202249,
+    "sourceVolumeCubicMetres": 0.0027637152015113917,
+    "reductions": [
+      {
+        "targetTriangles": 36000,
+        "toleranceMetres": 0.0008383560180664064,
+        "triangles": 35998,
+        "vertices": 17951,
+        "volumeCubicMetres": 0.0027611852040660004,
+        "output": "reduced-36000.npz",
+        "attempts": [
+          {
+            "toleranceMetres": 0.001,
+            "triangles": 32972
+          },
+          {
+            "toleranceMetres": 0.0005,
+            "triangles": 59278
+          },
+          {
+            "toleranceMetres": 0.00075,
+            "triangles": 38580
+          },
+          {
+            "toleranceMetres": 0.000875,
+            "triangles": 34678
+          },
+          {
+            "toleranceMetres": 0.0008125000000000001,
+            "triangles": 36704
+          },
+          {
+            "toleranceMetres": 0.0008437500000000001,
+            "triangles": 35768
+          },
+          {
+            "toleranceMetres": 0.0008281250000000001,
+            "triangles": 36368
+          },
+          {
+            "toleranceMetres": 0.0008359375000000001,
+            "triangles": 36072
+          },
+          {
+            "toleranceMetres": 0.0008398437500000001,
+            "triangles": 35962
+          },
+          {
+            "toleranceMetres": 0.0008378906250000001,
+            "triangles": 36022
+          },
+          {
+            "toleranceMetres": 0.0008388671875000001,
+            "triangles": 35986
+          },
+          {
+            "toleranceMetres": 0.00083837890625,
+            "triangles": 35998
+          },
+          {
+            "toleranceMetres": 0.0008381347656250001,
+            "triangles": 36014
+          },
+          {
+            "toleranceMetres": 0.0008382568359375001,
+            "triangles": 36004
+          },
+          {
+            "toleranceMetres": 0.0008383178710937501,
+            "triangles": 36002
+          },
+          {
+            "toleranceMetres": 0.0008383483886718751,
+            "triangles": 36002
+          },
+          {
+            "toleranceMetres": 0.0008383636474609376,
+            "triangles": 35998
+          },
+          {
+            "toleranceMetres": 0.0008383560180664064,
+            "triangles": 35998
+          },
+          {
+            "toleranceMetres": 0.0008383522033691408,
+            "triangles": 36002
+          }
+        ]
+      }
+    ]
+  },
+  "reductions": [
+    {
+      "targetTriangles": 36000,
+      "actualTriangles": 35998,
+      "toleranceMetres": 0.0008383560180664064,
+      "weld": {
+        "vertices": 17951,
+        "faces": 35998,
+        "weldedVertices": 17941,
+        "weldedFaces": 35998
+      },
+      "topology": {
+        "triangles": 35998,
+        "vertices": 17941,
+        "nonManifoldEdges": 3,
+        "nonManifoldVertices": 10,
+        "nonContiguousEdges": 3,
+        "selfIntersectionPairs": 386,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.002761185416318878
+      },
+      "topologyPassed": false,
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "max": 0.0
+        },
+        "sourceToFinalMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.00022640290262643248,
+          "p95": 0.0007281215745024381,
+          "p99": 0.001003218451514839,
+          "max": 0.003261775942519307
+        },
+        "sourceSampleCount": 10113
+      },
+      "boundsMetres": {
+        "min": [
+          -0.1889037787914276,
+          -0.18885940313339233,
+          7.331371307373047e-06
+        ],
+        "max": [
+          0.18875373899936676,
+          0.18868988752365112,
+          1.1499826908111572
+        ]
+      },
+      "sourceBoundsMaxDeltaMetres": 0.00016951560974121094,
+      "backendVolumeCubicMetres": 0.0027611852040660004,
+      "volumeRelativeDelta": 0.0009153566876710096,
+      "workFile": "sources/celadon-lark-decanter-reduction-work-v2/reduced-36000.npz"
+    }
+  ],
+  "acceptance": {
+    "strictTopology": "zero non-manifold edges/vertices, zero non-contiguous edges, zero self-intersection pairs, positive signed volume",
+    "triangleTargets": [
+      36000
+    ],
+    "selected": null,
+    "visualAndMaterialProjectionPending": true
+  }
+}

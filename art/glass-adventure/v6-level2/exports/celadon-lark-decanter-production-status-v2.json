@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "status": "rejected production candidate; no V2 runtime breakable was exported",
+  "decision": "Every bounded reduction path violated the strict closed, oriented, self-intersection-free surface gate. Preserve all raw sources and receipts; retain the existing vase representation rather than integrating any attempted V2 derivative.",
+  "selectedRuntimeBundle": null,
+  "cavityPrepared": false,
+  "fracturePrepared": false,
+  "visualProofApproved": false,
+  "rawSources": {
+    "regeneratedTextured12k": {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2.glb",
+      "bytes": 11300716,
+      "sha256": "04f6d35af846a10609c72e5fd11437ca7523f99e31fda8ca26e0302728e8b2e2"
+    },
+    "regeneratedCleanPreRemesh": {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+      "bytes": 7283672,
+      "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45"
+    },
+    "providerRemesh35k": {
+      "file": "meshy/celadon-lark-decanter-remesh-35k-v3.glb",
+      "bytes": 20748440,
+      "sha256": "ff2f356074f0383da8321ed1e69210f4b4bf93973dd91f1d19dc44d4df35cb90"
+    }
+  },
+  "strictGateEvidence": {
+    "regeneratedTextured12k": {
+      "report": "production/celadon-regenerated-probe.json",
+      "triangles": 12375,
+      "nonManifoldEdges": 23,
+      "selfIntersectionPairs": 187
+    },
+    "regeneratedCleanPreRemesh": {
+      "report": "production/celadon-regenerated-probe.json",
+      "triangles": 404658,
+      "nonManifoldEdges": 0,
+      "selfIntersectionPairs": 0,
+      "finding": "The only clean surface is too dense for the bounded runtime budget; it remains the preserved source of truth."
+    },
+    "providerRemesh35k": {
+      "report": "production/celadon-regenerated-probe.json",
+      "triangles": 35775,
+      "nonManifoldEdges": 1036,
+      "selfIntersectionPairs": 1618
+    },
+    "textured12kExactSelfUnion": {
+      "report": "production/celadon-regenerated-union-probe.json",
+      "triangles": 13191,
+      "nonManifoldEdges": 244,
+      "selfIntersectionPairs": 0,
+      "residueClusters": 49,
+      "maximumResidueExtentMetres": 0.05609774589538574
+    },
+    "cleanSourceCollapse": [
+      {
+        "targetTriangles": 25000,
+        "report": "production/celadon-clean-decimate-probe.json",
+        "decimatedSelfIntersectionPairs": 24,
+        "postUnionNonManifoldEdges": 22
+      },
+      {
+        "targetTriangles": 16000,
+        "report": "production/celadon-clean-decimate-probe.json",
+        "decimatedSelfIntersectionPairs": 42,
+        "postUnionNonManifoldEdges": 41
+      }
+    ],
+    "manifoldSimplification36k": {
+      "report": "production/celadon-manifold-simplify-probe.json",
+      "triangles": 35998,
+      "nonManifoldEdges": 3,
+      "selfIntersectionPairs": 386
+    },
+    "rawVoxelSurfaces": [
+      {
+        "voxelSizeMetres": 0.004,
+        "report": "production/celadon-voxel-probe.json",
+        "triangles": 466948,
+        "nonManifoldEdges": 0,
+        "selfIntersectionPairs": 7141,
+        "freshGlbReimportPassedAfterBoundedFinalization": false,
+        "frontSilhouetteIntersectionOverUnion": 0.9905895909352794,
+        "sideSilhouetteIntersectionOverUnion": 0.9904700991365526
+      },
+      {
+        "voxelSizeMetres": 0.005,
+        "report": "production/celadon-voxel-probe.json",
+        "triangles": 291248,
+        "nonManifoldEdges": 0,
+        "selfIntersectionPairs": 10935,
+        "freshGlbReimportPassedAfterBoundedFinalization": false,
+        "frontSilhouetteIntersectionOverUnion": 0.9903452685421995,
+        "sideSilhouetteIntersectionOverUnion": 0.9909898396063647
+      }
+    ]
+  },
+  "creditSpend": {
+    "regenerationImageTo3d": 30,
+    "singleProviderNativeRemesh": 5,
+    "total": 35,
+    "balanceAfter": 4180
+  },
+  "providerSafety": {
+    "credentialsPersisted": false,
+    "signedArtifactUrlsPersisted": false,
+    "remeshSource": "provider-owned parent task ID; no local source upload"
+  },
+  "excludedClaims": [
+    "No attempted Celadon derivative is gameplay-ready.",
+    "No open cavity, matched fragments, packed production Blend, runtime GLB, or approved Blender proof exists for V2.",
+    "A closed topological manifold was not accepted when geometric self-intersections remained."
+  ]
+}

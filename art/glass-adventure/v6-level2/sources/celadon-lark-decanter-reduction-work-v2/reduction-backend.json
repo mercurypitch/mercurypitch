@@ -1,0 +1,95 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "method": "Simplify the preserved clean closed source to the smallest measured tolerance producing no more than each triangle target.",
+  "sourceTriangles": 404658,
+  "sourceVertices": 202249,
+  "sourceVolumeCubicMetres": 0.0027637152015113917,
+  "reductions": [
+    {
+      "targetTriangles": 36000,
+      "toleranceMetres": 0.0008383560180664064,
+      "triangles": 35998,
+      "vertices": 17951,
+      "volumeCubicMetres": 0.0027611852040660004,
+      "output": "reduced-36000.npz",
+      "attempts": [
+        {
+          "toleranceMetres": 0.001,
+          "triangles": 32972
+        },
+        {
+          "toleranceMetres": 0.0005,
+          "triangles": 59278
+        },
+        {
+          "toleranceMetres": 0.00075,
+          "triangles": 38580
+        },
+        {
+          "toleranceMetres": 0.000875,
+          "triangles": 34678
+        },
+        {
+          "toleranceMetres": 0.0008125000000000001,
+          "triangles": 36704
+        },
+        {
+          "toleranceMetres": 0.0008437500000000001,
+          "triangles": 35768
+        },
+        {
+          "toleranceMetres": 0.0008281250000000001,
+          "triangles": 36368
+        },
+        {
+          "toleranceMetres": 0.0008359375000000001,
+          "triangles": 36072
+        },
+        {
+          "toleranceMetres": 0.0008398437500000001,
+          "triangles": 35962
+        },
+        {
+          "toleranceMetres": 0.0008378906250000001,
+          "triangles": 36022
+        },
+        {
+          "toleranceMetres": 0.0008388671875000001,
+          "triangles": 35986
+        },
+        {
+          "toleranceMetres": 0.00083837890625,
+          "triangles": 35998
+        },
+        {
+          "toleranceMetres": 0.0008381347656250001,
+          "triangles": 36014
+        },
+        {
+          "toleranceMetres": 0.0008382568359375001,
+          "triangles": 36004
+        },
+        {
+          "toleranceMetres": 0.0008383178710937501,
+          "triangles": 36002
+        },
+        {
+          "toleranceMetres": 0.0008383483886718751,
+          "triangles": 36002
+        },
+        {
+          "toleranceMetres": 0.0008383636474609376,
+          "triangles": 35998
+        },
+        {
+          "toleranceMetres": 0.0008383560180664064,
+          "triangles": 35998
+        },
+        {
+          "toleranceMetres": 0.0008383522033691408,
+          "triangles": 36002
+        }
+      ]
+    }
+  ]
+}

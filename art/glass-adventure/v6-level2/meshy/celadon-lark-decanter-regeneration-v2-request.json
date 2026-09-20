@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "celadon-lark-decanter",
+  "taskType": "image-to-3d",
+  "taskId": "01a0c0f0-c362-771c-8463-87ce304b2d9b",
+  "authorization": "Standing user authorization for Meshy credit spend was already present for this stage.",
+  "request": {
+    "ai_model": "meshy-6",
+    "file_path": "concepts/celadon-lark-decanter.png",
+    "model_type": "standard",
+    "should_texture": true,
+    "enable_pbr": true,
+    "should_remesh": true,
+    "target_polycount": 12000,
+    "topology": "triangle",
+    "target_formats": [
+      "glb"
+    ],
+    "texture_prompt": "Pale celadon and aquamarine opal crystal body, ivory marble foot, restrained champagne-gold rim and rings, two luminous opal cabochons. Preserve the tall faceted silhouette and scalloped open mouth. Keep decorative bands visually fused to the vessel, with clean neutral PBR materials and no ground or scene.",
+    "remove_lighting": true,
+    "save_pre_remeshed_model": true,
+    "image_enhancement": false,
+    "multi_view_thumbnails": true,
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Generation request only; topology, cavity, fracture, runtime export, and proofs remain gated."
+}

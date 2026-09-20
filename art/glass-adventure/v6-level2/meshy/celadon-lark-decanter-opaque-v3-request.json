@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "celadon-lark-decanter",
+  "variant": "opaque-guide-v3",
+  "taskType": "image-to-3d",
+  "authorization": "Standing user authorization covers broad Meshy asset generation and credit spend. Upload of this exact locally generated guide to Meshy awaits the automatic-review-requested explicit confirmation.",
+  "submissionApproval": "pending exact guide upload confirmation",
+  "guide": {
+    "file": "concepts/celadon-lark-opaque-guide-v3.png",
+    "bytes": 1679147,
+    "sha256": "4cb9d0f3508eadf5d1ba9a104597685212d5dc5e3e0059a6514821de1d037080"
+  },
+  "request": {
+    "ai_model": "meshy-6",
+    "model_type": "standard",
+    "should_texture": true,
+    "enable_pbr": true,
+    "should_remesh": true,
+    "target_polycount": 16000,
+    "topology": "triangle",
+    "target_formats": [
+      "glb"
+    ],
+    "texture_prompt": "Opaque pale celadon glazed ceramic body with restrained champagne-gold fused bands and trim, two pale celadon cabochons, and an ivory marble foot. Preserve the tall pear silhouette, scalloped rim, large clean facets, and integrated low relief ornament. No transparency, refraction, floating parts, ground, or scene.",
+    "remove_lighting": true,
+    "save_pre_remeshed_model": true,
+    "image_enhancement": false,
+    "multi_view_thumbnails": true,
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Generation request only; strict topology, cavity, fracture, runtime export, and proofs remain gated."
+}

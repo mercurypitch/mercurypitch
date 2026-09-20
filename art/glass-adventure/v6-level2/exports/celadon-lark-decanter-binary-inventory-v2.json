@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "status": "Sources and rejection evidence frozen; no approved V2 production derivative",
+  "immutableSources": [
+    {
+      "file": "concepts/celadon-lark-decanter.png",
+      "bytes": 1797157,
+      "sha256": "c910a7529bcdf95788c6d2d140aa8120482e414b351c6136cc8a54760bc04050"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-donor.glb",
+      "bytes": 12154068,
+      "sha256": "7b1c1a1f712f13b005458ae306fbbd54e7bc808d36fc5ff9614245efd6b31e4b"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-pre-remesh.glb",
+      "bytes": 8511692,
+      "sha256": "34e4883dd62c2f1bdd09e7b899e6cd624ba51592e5da0358a1f8c72344f96f24"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-remesh-50k.glb",
+      "bytes": 1958064,
+      "sha256": "5b9b101c7660251d64c82dedf8e1c2d361ec1b0980d7f3edcef65026cb6aabaa"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2.glb",
+      "bytes": 11300716,
+      "sha256": "04f6d35af846a10609c72e5fd11437ca7523f99e31fda8ca26e0302728e8b2e2"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+      "bytes": 7283672,
+      "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-remesh-35k-v3.glb",
+      "bytes": 20748440,
+      "sha256": "ff2f356074f0383da8321ed1e69210f4b4bf93973dd91f1d19dc44d4df35cb90"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2_textures/base_color.png",
+      "bytes": 6939863,
+      "sha256": "9cb0da98f62227af0ca2b70fb2f186377e81a5d5dce3180765d3ac9c54b7255c"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2_textures/roughness.png",
+      "bytes": 1074716,
+      "sha256": "8381363a0a8d7e5547cfbd386780be9532292f69ce607daed026dea4537af4cc"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2_textures/emission.png",
+      "bytes": 145518,
+      "sha256": "d7f97c98ce4c8ef5de1b8b5df8b0b8c1f1f75a8fcc3430769877f29e9e11df50"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2_textures/metallic.png",
+      "bytes": 462330,
+      "sha256": "f1387289acd3c0a5d100a38dc3f146770d89ece5e29aeae2c68a329e4db20197"
+    },
+    {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2_textures/normal.png",
+      "bytes": 5227482,
+      "sha256": "ad602a124384b016923210b76761b8e060276cf2eda34c40181ccad2c846a117"
+    }
+  ],
+  "preexistingUnvalidatedDerivative": {
+    "status": "Retained for existing representation only; not promoted by this batch",
+    "files": [
+      {
+        "file": "sources/celadon-lark-decanter-normalized-v1.blend",
+        "bytes": 12258889,
+        "sha256": "641da441b280b54574ffcc5759bf77427e212706cf254faad3878c044f6642b3"
+      },
+      {
+        "file": "exports/celadon-lark-decanter-game-v1.glb",
+        "bytes": 2907276,
+        "sha256": "69d22b731b75f746c7f072496f36992d683791957440161755d065641dbf20da"
+      },
+      {
+        "file": "proofs/celadon-lark-decanter-normalized.png",
+        "bytes": 592756,
+        "sha256": "4ef0cf1cb543ac1ca631c4db7b2287c28d6dd01db91165e3d62dfcb2def777e4"
+      }
+    ]
+  },
+  "rejectedReductionWork": [
+    {
+      "file": "sources/celadon-lark-decanter-reduction-work-v2/reduction-input.npz",
+      "bytes": 4374600,
+      "sha256": "d62fa84df0bfc5d0a07bd06b8db68c673dc3a506bc2ade8f8e603d4b35bd0e65"
+    },
+    {
+      "file": "sources/celadon-lark-decanter-reduction-work-v2/reduced-33000.npz",
+      "bytes": 313129,
+      "sha256": "46723435b91306c1fc97eb171b3b491f0afcb284be3b700a23017f669f2ab0be"
+    },
+    {
+      "file": "sources/celadon-lark-decanter-reduction-work-v2/reduced-36000.npz",
+      "bytes": 342308,
+      "sha256": "34a7a183eaa76f6105b7f3a1e77860b74a63bd6bbdf72d2190a7e39a8f5f6d28"
+    }
+  ],
+  "textSourcesAndReceipts": [
+    "concepts/celadon-lark-decanter.prompt.txt",
+    "meshy/celadon-lark-decanter-request.json",
+    "meshy/celadon-source-recovery.json",
+    "meshy/celadon-remesh-50k-receipt.json",
+    "meshy/celadon-lark-decanter-regeneration-v2-request.json",
+    "meshy/celadon-lark-decanter-regeneration-v2-receipt.json",
+    "meshy/celadon-lark-decanter-remesh-35k-v3-receipt.json",
+    "exports/celadon-lark-decanter-inventory.json",
+    "exports/celadon-lark-decanter-production-status-v2.json",
+    "production/celadon-regenerated-probe.json",
+    "production/celadon-regenerated-union-probe.json",
+    "production/celadon-clean-decimate-probe.json",
+    "production/celadon-union-residue-probe.json",
+    "production/celadon-manifold-simplify-probe.json",
+    "production/celadon-voxel-probe.json",
+    "production/celadon-source-repair-probe.json",
+    "production/celadon-textured-union-probe.json",
+    "production/celadon-remesh-comparison.json",
+    "production/celadon-remesh-defects.json",
+    "production/celadon-remesh-repair-trial.json",
+    "production/archive_celadon_regeneration.py",
+    "production/run_celadon_provider_remesh.py",
+    "production/celadon_regenerated_probe.py",
+    "production/celadon_regenerated_union_probe.py",
+    "production/celadon_clean_decimate_probe.py",
+    "production/celadon_union_residue_probe.py",
+    "production/celadon_simplify_backend.py",
+    "production/celadon_manifold_simplify_probe.py",
+    "production/celadon_voxel_probe.py",
+    "production/finalize_celadon_candidate_receipt.py"
+  ],
+  "excludedScratch": [
+    "__pycache__/**",
+    "*.pyc",
+    "*.blend1",
+    "*.log",
+    "/tmp/**"
+  ],
+  "creditSpend": {
+    "regenerationImageTo3d": 30,
+    "singleProviderNativeRemesh": 5,
+    "total": 35,
+    "balanceAfter": 4180
+  }
+}

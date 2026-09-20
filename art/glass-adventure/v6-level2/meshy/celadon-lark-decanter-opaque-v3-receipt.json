@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "celadon-lark-decanter",
+  "variant": "opaque-guide-v3",
+  "taskType": "image-to-3d",
+  "state": "external-approval-required",
+  "guideSha256": "4cb9d0f3508eadf5d1ba9a104597685212d5dc5e3e0059a6514821de1d037080",
+  "blockedAtUtc": "2026-09-20T23:09:13.301928+00:00",
+  "submissionBlock": "Automatic approval review rejected uploading the local opaque guide to Meshy without exact payload/destination approval. No task was created and no credits were spent.",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false
+}

@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "method": "Fresh Blender GLB import, 1.15 m bottom-centre normalization, 0.1 micrometre coincident weld, triangulation, closedness/orientation/self-intersection checks, and central vertical-ray sampling.",
+  "sources": [
+    {
+      "role": "regenerated_game_donor",
+      "source": {
+        "file": "meshy/celadon-lark-decanter-regenerated-v2.glb",
+        "bytes": 11300716,
+        "sha256": "04f6d35af846a10609c72e5fd11437ca7523f99e31fda8ca26e0302728e8b2e2"
+      },
+      "normalization": {
+        "uniformScale": 0.6058853074198204,
+        "sourceFootCentre": [
+          -0.0011275112628936768,
+          0.001042976975440979,
+          -0.9507960677146912
+        ],
+        "boundsMetres": {
+          "min": [
+            -0.1888359785079956,
+            -0.18881750106811523,
+            0.0
+          ],
+          "max": [
+            0.1888359785079956,
+            0.18881748616695404,
+            1.1500000953674316
+          ]
+        },
+        "dimensionsMetres": [
+          0.3776719570159912,
+          0.37763500213623047,
+          1.1500000953674316
+        ]
+      },
+      "raw": {
+        "vertices": 14004,
+        "polygons": 12375,
+        "triangles": 12375,
+        "materials": [
+          {
+            "name": "Material_0",
+            "images": [
+              {
+                "name": "Image_3",
+                "dimensions": [
+                  2048,
+                  2048
+                ],
+                "colorSpace": "sRGB"
+              },
+              {
+                "name": "Image_0",
+                "dimensions": [
+                  2048,
+                  2048
+                ],
+                "colorSpace": "sRGB"
+              },
+              {
+                "name": "Image_1",
+                "dimensions": [
+                  2048,
+                  2048
+                ],
+                "colorSpace": "Non-Color"
+              },
+              {
+                "name": "normal",
+                "dimensions": [
+                  2048,
+                  2048
+                ],
+                "colorSpace": "Non-Color"
+              }
+            ]
+          }
+        ],
+        "uvLayers": [
+          "UVMap"
+        ],
+        "topology": {
+          "triangles": 12375,
+          "vertices": 14004,
+          "nonManifoldEdges": 12603,
+          "nonManifoldVertices": 23,
+          "nonContiguousEdges": 12603,
+          "selfIntersectionPairs": 923,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.0027683606419449513
+        },
+        "centralVerticalRayZMetres": []
+      },
+      "weld": {
+        "vertices": 14004,
+        "faces": 12375,
+        "weldedVertices": 6144,
+        "weldedFaces": 12375
+      },
+      "postWeldTopology": {
+        "triangles": 12375,
+        "vertices": 6144,
+        "nonManifoldEdges": 23,
+        "nonManifoldVertices": 22,
+        "nonContiguousEdges": 23,
+        "selfIntersectionPairs": 187,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.002769539353423351
+      },
+      "productionSurfaceCandidate": false
+    },
+    {
+      "role": "regenerated_pre_remesh",
+      "source": {
+        "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+        "bytes": 7283672,
+        "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45"
+      },
+      "normalization": {
+        "uniformScale": 0.6057656912504278,
+        "sourceFootCentre": [
+          -0.0009541362524032593,
+          0.0009124279022216797,
+          -0.950843095779419
+        ],
+        "boundsMetres": {
+          "min": [
+            -0.1889037787914276,
+            -0.18885940313339233,
+            0.0
+          ],
+          "max": [
+            0.1889037936925888,
+            0.18885940313339233,
+            1.149999976158142
+          ]
+        },
+        "dimensionsMetres": [
+          0.3778075575828552,
+          0.37771880626678467,
+          1.149999976158142
+        ]
+      },
+      "raw": {
+        "vertices": 202249,
+        "polygons": 404658,
+        "triangles": 404658,
+        "materials": [],
+        "uvLayers": [],
+        "topology": {
+          "triangles": 404658,
+          "vertices": 202249,
+          "nonManifoldEdges": 0,
+          "nonManifoldVertices": 0,
+          "nonContiguousEdges": 0,
+          "selfIntersectionPairs": 0,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.0027637152015113995
+        },
+        "centralVerticalRayZMetres": []
+      },
+      "weld": {
+        "vertices": 202249,
+        "faces": 404658,
+        "weldedVertices": 202249,
+        "weldedFaces": 404658
+      },
+      "postWeldTopology": {
+        "triangles": 404658,
+        "vertices": 202249,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.0027637152015113995
+      },
+      "productionSurfaceCandidate": true
+    },
+    {
+      "role": "provider_remesh_35k_v3",
+      "source": {
+        "file": "meshy/celadon-lark-decanter-remesh-35k-v3.glb",
+        "bytes": 20748440,
+        "sha256": "ff2f356074f0383da8321ed1e69210f4b4bf93973dd91f1d19dc44d4df35cb90"
+      },
+      "normalization": {
+        "uniformScale": 0.6081907576482978,
+        "sourceFootCentre": [
+          -0.001185491681098938,
+          0.0013584792613983154,
+          0.0
+        ],
+        "boundsMetres": {
+          "min": [
+            -0.18934164941310883,
+            -0.18928751349449158,
+            0.0
+          ],
+          "max": [
+            0.18934166431427002,
+            0.18928752839565277,
+            1.149999976158142
+          ]
+        },
+        "dimensionsMetres": [
+          0.37868332862854004,
+          0.37857502698898315,
+          1.149999976158142
+        ]
+      },
+      "raw": {
+        "vertices": 29557,
+        "polygons": 35775,
+        "triangles": 35775,
+        "materials": [
+          {
+            "name": "BakedMaterial",
+            "images": [
+              {
+                "name": "texture_0_emit",
+                "dimensions": [
+                  4096,
+                  4096
+                ],
+                "colorSpace": "sRGB"
+              },
+              {
+                "name": "texture_0",
+                "dimensions": [
+                  2048,
+                  2048
+                ],
+                "colorSpace": "sRGB"
+              },
+              {
+                "name": "texture_0_metallic_roughness",
+                "dimensions": [
+                  4096,
+                  4096
+                ],
+                "colorSpace": "Non-Color"
+              },
+              {
+                "name": "normal",
+                "dimensions": [
+                  2048,
+                  2048
+                ],
+                "colorSpace": "Non-Color"
+              }
+            ]
+          }
+        ],
+        "uvLayers": [
+          "UVMap"
+        ],
+        "topology": {
+          "triangles": 35775,
+          "vertices": 29557,
+          "nonManifoldEdges": 20269,
+          "nonManifoldVertices": 2,
+          "nonContiguousEdges": 20269,
+          "selfIntersectionPairs": 2903,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.0030518055463437813
+        },
+        "centralVerticalRayZMetres": []
+      },
+      "weld": {
+        "vertices": 29557,
+        "faces": 35775,
+        "weldedVertices": 18177,
+        "weldedFaces": 35775
+      },
+      "postWeldTopology": {
+        "triangles": 35775,
+        "vertices": 18177,
+        "nonManifoldEdges": 1036,
+        "nonManifoldVertices": 145,
+        "nonContiguousEdges": 1036,
+        "selfIntersectionPairs": 1618,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.0030898925495348468
+      },
+      "productionSurfaceCandidate": false
+    }
+  ]
+}

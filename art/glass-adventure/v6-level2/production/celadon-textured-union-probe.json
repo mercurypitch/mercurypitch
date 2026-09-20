@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "source": {
+    "file": "meshy/celadon-lark-decanter-donor.glb",
+    "bytes": 12154068,
+    "sha256": "7b1c1a1f712f13b005458ae306fbbd54e7bc808d36fc5ff9614245efd6b31e4b"
+  },
+  "normalization": {
+    "uniformScale": 0.6055276647811023,
+    "sourceFootCentre": [
+      -0.0006044954061508179,
+      0.0009225010871887207,
+      -0.9505530595779419
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.19036124646663666,
+        -0.1912580281496048,
+        0.0
+      ],
+      "max": [
+        0.19036123156547546,
+        0.1912580281496048,
+        1.1499998569488525
+      ]
+    },
+    "dimensionsMetres": [
+      0.3807224631309509,
+      0.3825160562992096,
+      1.1499998569488525
+    ]
+  },
+  "weld": {
+    "vertices": 12402,
+    "faces": 9186,
+    "weldedVertices": 4512,
+    "weldedFaces": 9186
+  },
+  "exactSelfUnion": {
+    "method": "Blender exact self-union",
+    "before": {
+      "triangles": 9186,
+      "vertices": 4512,
+      "nonManifoldEdges": 53,
+      "nonManifoldVertices": 63,
+      "nonContiguousEdges": 53,
+      "selfIntersectionPairs": 2379,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.020943701107445874
+    },
+    "after": {
+      "triangles": 18827,
+      "vertices": 6923,
+      "nonManifoldEdges": 2498,
+      "nonManifoldVertices": 2512,
+      "nonContiguousEdges": 2498,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.020943701092713072
+    }
+  },
+  "collapsedComponents": {
+    "removedComponents": 0,
+    "removedFaces": 0,
+    "components": []
+  },
+  "finalTopology": {
+    "triangles": 18827,
+    "vertices": 6923,
+    "nonManifoldEdges": 2498,
+    "nonManifoldVertices": 2512,
+    "nonContiguousEdges": 2498,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.020943701092713072
+  },
+  "fidelity": {
+    "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+    "finalToSourceMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 8.33000246558413e-09,
+      "p99": 1.862645149230957e-08,
+      "max": 3.122362102203624e-08
+    },
+    "sourceToFinalMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "sourceSampleCount": 12402
+  }
+}
