@@ -32,12 +32,25 @@ import { JamInviteModal } from './JamInviteModal'
 import { JamNowSinging } from './JamNowSinging'
 import panelStyles from './JamPanel.module.css'
 import { JamPickerList } from './JamPickerList'
+import { JamRoomCode } from './JamRoomCode'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
 import { JamSongShare } from './JamSongShare'
 import { JamSongStage } from './JamSongStage'
 import { JamSongTimeline } from './JamSongTimeline'
 import { JamTransferChip } from './JamTransferDialog'
+
+/**
+ * Is this a screen whose room menu carries the "show the cameras" switch?
+ *
+ * Kept word for word with the phone block of JamPanel.module.css, which is
+ * what shows that switch. The two disagreeing is how a tablet lost its
+ * camera tray: hidden by one rule, with the way back hidden by the other.
+ */
+const CAMERA_SWITCH_QUERY = '(max-width: 640px)'
+const cameraSwitchIsShown = (): boolean =>
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia(CAMERA_SWITCH_QUERY).matches
 
 export const JamPanel: Component = () => {
   const roomBackgroundPicker = useBackgroundSurfaceController('jam')
@@ -117,7 +130,6 @@ export const JamPanel: Component = () => {
       document.removeEventListener('keydown', onKeyDown)
     })
   })
-  const [linkCopied, setLinkCopied] = createSignal(false)
   // Whether the roster rail is showing right now — the mobile drawer and
   // the desktop collapse are different mechanisms, so "showing" is
   // whichever one this viewport actually uses.
@@ -126,7 +138,14 @@ export const JamPanel: Component = () => {
   // Read once, not tracked: this is the starting position of a switch the
   // user then owns. Reacting to it would snatch the tray back the moment a
   // window crossed the breakpoint, undoing a choice they had just made.
-  const [showCameras, setShowCameras] = createSignal(!isMobile())
+  //
+  // The SAME width the stylesheet shows that switch at (`.phoneOnlyAction`),
+  // and not `isMobile()`: that one is also true of every touch screen, so a
+  // tablet started with the tray hidden and had no switch to bring it back
+  // -- a camera turned on, and nowhere to see yourself.
+  const [showCameras, setShowCameras] = createSignal(!cameraSwitchIsShown())
+  /** The header, for the share chip: what squeezes the strip it sits in. */
+  const [roomHeader, setRoomHeader] = createSignal<HTMLElement>()
 
   // Mic feedback: "can't hear you" / "too quiet" during a jam exercise.
   const micInsights = useMicInsights({
@@ -135,15 +154,6 @@ export const JamPanel: Component = () => {
     getLevel: jamGetInputLevel,
     isDetecting: () => (jamLocalPitch()?.frequency ?? 0) > 0,
   })
-
-  // `/jam#...`, not `/#/jam:...`. The hash is identical and the router reads
-  // it the same way, but the PATH is what the server sees — and `/jam` is the
-  // one that serves jam.html, with the Jam card in its Open Graph tags. A
-  // link off `/` unfurls with the generic site image instead, which is what
-  // every invite pasted into a chat used to do.
-  const roomLink = createMemo(
-    () => `${window.location.origin}/jam#/jam:${jamRoomId() ?? ''}`,
-  )
 
   createEffect(() => {
     if (jamState() === 'active') {
@@ -532,7 +542,11 @@ export const JamPanel: Component = () => {
           {/* ── Main content ───────────────────────────────────── */}
           <div class={panelStyles.mainArea}>
             {/* Top bar: room info + controls */}
-            <div class={jamStyles.roomHeader} data-testid="jam-room-header">
+            <div
+              class={jamStyles.roomHeader}
+              data-testid="jam-room-header"
+              ref={setRoomHeader}
+            >
               <div class={jamStyles.roomInfo}>
                 <h2 class={jamStyles.title}>Jam {fancyRoomName()}</h2>
                 {/* One strip for everything that describes the room rather
@@ -546,21 +560,12 @@ export const JamPanel: Component = () => {
                       then who. It was the first thing in a row of its own
                       under the playback controls, and that row is gone. */}
                   <JamNowSinging />
-                  {/* The room code stays visible -- people read it aloud.
-                      Copying the link is the one action worth a button
-                      here; the invite modal has the rest, which is why the
-                      button folds away on a phone and the code does not. */}
-                  <span class={jamStyles.roomIdBadge}>{jamRoomId()}</span>
-                  <button
-                    class={`${jamStyles.btn} ${jamStyles.btnSm} ${panelStyles.copyLinkBtn}`}
-                    onClick={() => {
-                      navigator.clipboard.writeText(roomLink()).catch(() => {})
-                      setLinkCopied(true)
-                      setTimeout(() => setLinkCopied(false), 2000)
-                    }}
-                  >
-                    {linkCopied() ? 'Copied!' : 'Copy link'}
-                  </button>
+                  {/* The code and the way in are one control: the code is the
+                      label people read aloud, and pressing it copies the link.
+                      It was a pill and a copy button side by side, which
+                      said one thing twice in the row with the least width
+                      to spare. The invite dialog keeps them apart. */}
+                  <JamRoomCode roomId={jamRoomId() ?? ''} />
                   <div class={panelStyles.peerBadges}>
                     <span
                       class={panelStyles.peerBadge}
@@ -601,7 +606,7 @@ export const JamPanel: Component = () => {
                       reason: "two can't hear this" is about the names it
                       is standing next to. */}
                   <JamTransferChip />
-                  <JamSongShare />
+                  <JamSongShare within={roomHeader} />
                 </div>
               </div>
               <div

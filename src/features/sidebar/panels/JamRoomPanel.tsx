@@ -13,20 +13,18 @@
 // out of the shell chunk.
 
 import type { Component } from 'solid-js'
-import { createSignal, Show } from 'solid-js'
+import { Show } from 'solid-js'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { JamPeerList } from '@/components/jam/JamPeerList'
 import { JamPickerList } from '@/components/jam/JamPickerList'
 import { JamPitchDisplay } from '@/components/jam/JamPitchDisplay'
+import { JamRoomCode } from '@/components/jam/JamRoomCode'
 import { isNarrow } from '@/lib/use-viewport'
 import { jamConnectedPeers, jamExerciseMelody, jamIsHost, jamIsMuted, jamPeers, jamRoomId, jamSong, jamState, } from '@/stores/jam-store'
 import { setSidebarOpen, sidebarOpen } from '@/stores/ui-store'
 import styles from './JamRail.module.css'
 
 const JamRoomPanel: Component = () => {
-  const [linkCopied, setLinkCopied] = createSignal(false)
-  const roomLink = (): string =>
-    `${window.location.origin}/#/jam:${jamRoomId() ?? ''}`
   /** What the room is running, by name -- all a guest needs to know. */
   const nowSinging = (): string =>
     jamSong()?.title ?? jamExerciseMelody()?.name ?? ''
@@ -57,17 +55,7 @@ const JamRoomPanel: Component = () => {
         <CollapsibleSection title="Room" storageKey="sidebar-jam-room-open">
           <div class={styles.roomCard} data-tour="jam.rail-room">
             <div class={styles.codeRow}>
-              <span class={styles.codeBadge}>{jamRoomId()}</span>
-              <button
-                class={styles.copyBtn}
-                onClick={() => {
-                  navigator.clipboard.writeText(roomLink()).catch(() => {})
-                  setLinkCopied(true)
-                  setTimeout(() => setLinkCopied(false), 2000)
-                }}
-              >
-                {linkCopied() ? 'Copied!' : 'Copy link'}
-              </button>
+              <JamRoomCode roomId={jamRoomId() ?? ''} skin="card" />
             </div>
             <div class={styles.statusRow}>
               <span class={styles.statusDot} />

@@ -20,33 +20,6 @@
   gap: 8px;
 }
 
-.codeBadge {
-  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 3px 8px;
-}
-
-.copyBtn {
-  font-size: 0.72rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.copyBtn:hover {
-  border-color: var(--accent);
-  color: var(--text-primary);
-}
-
 .statusRow {
   display: flex;
   align-items: center;

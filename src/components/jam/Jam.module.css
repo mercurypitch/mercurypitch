@@ -359,27 +359,6 @@
   }
 }
 
-.roomIdBadge {
-  padding: 3px 10px;
-  font-size: 0.75rem;
-  font-family:
-    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
-  color: var(--accent);
-  /* Same fix as the icon controls: a 0.1-alpha tint is a state hint, not a
-     surface, and the room code vanished against a bright backdrop. The
-     tint layers over a slider-driven disc rather than being the whole
-     background -- and this one is a code people read aloud, so it has to
-     stay legible at every slider position. */
-  background-color: var(--jam-control, rgba(13, 17, 23, 0.55));
-  background-image: linear-gradient(
-    rgba(88, 166, 255, 0.16),
-    rgba(88, 166, 255, 0.16)
-  );
-  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 6));
-  border: 1px solid rgba(88, 166, 255, 0.35);
-  border-radius: 4px;
-}
-
 .roomActions {
   display: flex;
   gap: 6px;

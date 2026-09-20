@@ -3,6 +3,7 @@
 
 import type { Component } from 'solid-js'
 import { createSignal } from 'solid-js'
+import { jamRoomLink } from '@/lib/jam/jam-room-link'
 import jamStyles from './Jam.module.css'
 import styles from './JamInviteModal.module.css'
 
@@ -14,7 +15,7 @@ interface JamInviteModalProps {
 export const JamInviteModal: Component<JamInviteModalProps> = (props) => {
   const [roomCopied, setRoomCopied] = createSignal(false)
   const [linkCopied, setLinkCopied] = createSignal(false)
-  const roomLink = () => `${window.location.origin}/#/jam:${props.roomId}`
+  const roomLink = () => jamRoomLink(props.roomId)
 
   /**
    * Confirm only what actually happened. Both handlers used to set the copied

@@ -228,31 +228,13 @@ test.describe('a song room on a tablet', () => {
       expect(await pageScrollsSideways(page)).toBe(false)
     })
 
-    test('wraps the timeline under the buttons when they leave it no room', async ({
-      page,
-    }) => {
-      // A narrower window, and the preview note left IN: as crowded as the
-      // row gets. The timeline takes the next line whole rather than
-      // squeezing in as a stub. (At 1180 it no longer wraps even with the
-      // note -- the room's mode left the bar on a song, and took 230px
-      // with it.)
-      await page.setViewportSize({ width: 1000, height: 820 })
-      await openSongRoom(page)
-      const buttons = await boxOf(bar(page))
-      const where = await boxOf(timeline(page))
-      expect(where.y).toBeGreaterThanOrEqual(buttons.y + buttons.height - 1)
-      const scrubber = await boxOf(timeline(page).getByRole('slider'))
-      expect(scrubber.width).toBeGreaterThan(400)
-      await expectNoThirdRow(page)
-    })
-  })
-
-  test.describe('upright', () => {
-    test.use({ viewport: { width: 820, height: 1180 }, hasTouch: true })
-
     test('shows as much of the name as fits, and the rest on a tap @smoke', async ({
       page,
     }) => {
+      // On its side, where the strip shares its line with the room's name
+      // and buttons and the song's name has to give. Upright it no longer
+      // does: the strip has a line of its own there, and since the room code
+      // became the copy button the whole name fits on it.
       await openSongRoom(page)
       const name = chip(page)
       await expect(name).toBeVisible()
@@ -274,6 +256,28 @@ test.describe('a song room on a tablet', () => {
       await expect(name).toHaveAttribute('aria-expanded', 'false')
       expect(await clipped()).toBe(true)
     })
+
+    test('wraps the timeline under the buttons when they leave it no room', async ({
+      page,
+    }) => {
+      // A narrower window, and the preview note left IN: as crowded as the
+      // row gets. The timeline takes the next line whole rather than
+      // squeezing in as a stub. (At 1180 it no longer wraps even with the
+      // note -- the room's mode left the bar on a song, and took 230px
+      // with it.)
+      await page.setViewportSize({ width: 1000, height: 820 })
+      await openSongRoom(page)
+      const buttons = await boxOf(bar(page))
+      const where = await boxOf(timeline(page))
+      expect(where.y).toBeGreaterThanOrEqual(buttons.y + buttons.height - 1)
+      const scrubber = await boxOf(timeline(page).getByRole('slider'))
+      expect(scrubber.width).toBeGreaterThan(400)
+      await expectNoThirdRow(page)
+    })
+  })
+
+  test.describe('upright', () => {
+    test.use({ viewport: { width: 820, height: 1180 }, hasTouch: true })
 
     test('puts the name, the code and the people on a line of their own', async ({
       page,

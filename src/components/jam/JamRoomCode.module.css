@@ -1,0 +1,134 @@
+/* ── JamRoomCode ────────────────────────────────────────────────────
+   The room code as a button: the code is the label, a copy mark at its end
+   says what a press does. */
+
+.code {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 3px 8px 3px 10px;
+  font-size: 0.75rem;
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  line-height: 1.4;
+  color: var(--accent);
+  /* A 0.1-alpha tint is a state hint, not a surface, and the code vanished
+     against a bright backdrop. The tint layers over a slider-driven disc
+     rather than being the whole background -- this is a code people read
+     aloud, so it has to stay legible at every slider position. */
+  background-color: var(--jam-control, rgba(13, 17, 23, 0.55));
+  background-image: linear-gradient(
+    rgba(88, 166, 255, 0.16),
+    rgba(88, 166, 255, 0.16)
+  );
+  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 6));
+  border: 1px solid rgba(88, 166, 255, 0.35);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+/* The sidebar's card is opaque already; glass on glass reads as a smudge. */
+.codeCard {
+  font-family: var(--font-mono, 'SF Mono', 'Fira Code', monospace);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background-color: var(--bg-tertiary);
+  background-image: none;
+  backdrop-filter: none;
+  border-color: var(--border);
+  border-radius: 6px;
+}
+
+.codeText {
+  white-space: nowrap;
+}
+
+/* Quieter than the code: it is a hint about the pill, not part of what is
+   read out. */
+.mark {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.code:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: 2px;
+}
+
+/* A tablet keeps :hover on the last thing a finger tapped, so the hover
+   look is a mouse's alone -- or the pill would stay lit after every copy. */
+@media (hover: hover) {
+  .code:hover {
+    border-color: var(--accent, #58a6ff);
+  }
+
+  .code:hover .mark {
+    opacity: 1;
+  }
+}
+
+.codeCopied,
+.codeCopied.codeCard {
+  color: var(--success, #56d364);
+  border-color: var(--success, #56d364);
+}
+
+.codeCopied .mark {
+  opacity: 1;
+}
+
+/* Under the pill, on its own layer: nothing in the header moves. Empty
+   until there is something to say, and an empty one draws nothing. */
+.toast {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--jam-float, rgba(13, 17, 23, 0.92));
+  border: 1px solid var(--success, #56d364);
+  color: var(--success, #56d364);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: toastIn 0.16s ease both;
+}
+
+.toast:empty {
+  display: none;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .code,
+  .mark {
+    transition: none;
+  }
+}

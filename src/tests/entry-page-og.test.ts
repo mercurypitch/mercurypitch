@@ -18,6 +18,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseHash } from '@/lib/hash-router'
+import { jamRoomLink } from '@/lib/jam/jam-room-link'
 import { ENTRY_PAGES } from '@/seo/entry-pages'
 
 const repo = resolve(__dirname, '../..')
@@ -140,21 +141,43 @@ describe('the card generators', () => {
 // The room worked. The card was there. The two never met.
 
 describe('the jam room invite link', () => {
-  const panel = readFileSync(
-    resolve(repo, 'src/components/jam/JamPanel.tsx'),
-    'utf8',
-  )
+  const link = jamRoomLink('LUNAR7', 'https://mercurypitch.com')
 
   it('is built on a path the server can route', () => {
-    expect(panel).toContain('`${window.location.origin}/jam#/jam:')
-    // The old shape, which resolves to index.html.
-    expect(panel).not.toContain('`${window.location.origin}/#/jam:')
+    expect(new URL(link).pathname).toBe('/jam')
   })
 
   it('keeps the hash the router already reads', () => {
     // Only the path moved. Changing the fragment would break every link
     // already in somebody's chat history.
-    expect(panel).toMatch(/\/jam#\/jam:\$\{jamRoomId\(\) \?\? ''\}/)
+    expect(new URL(link).hash).toBe('#/jam:LUNAR7')
+  })
+
+  it('is the one spelling every hand-out point uses', () => {
+    // The room's code button, the sidebar's and the invite dialog (with its
+    // QR code) all give the link out. Two of them had kept the old shape,
+    // so the same room was invited by two addresses and only one unfurled
+    // with the Jam card.
+    const handOuts = [
+      'src/components/jam/JamRoomCode.tsx',
+      'src/components/jam/JamInviteModal.tsx',
+      'src/features/sidebar/panels/JamRoomPanel.tsx',
+      'src/components/jam/JamPanel.tsx',
+    ]
+    for (const file of handOuts) {
+      const source = readFileSync(resolve(repo, file), 'utf8')
+      // The old shape, which resolves to index.html.
+      expect(source, file).not.toContain('origin}/#/jam:')
+    }
+    expect(
+      readFileSync(resolve(repo, 'src/components/jam/JamRoomCode.tsx'), 'utf8'),
+    ).toContain('jamRoomLink(')
+    expect(
+      readFileSync(
+        resolve(repo, 'src/components/jam/JamInviteModal.tsx'),
+        'utf8',
+      ),
+    ).toContain('jamRoomLink(')
   })
 
   it('targets a path vite maps to jam.html', () => {
