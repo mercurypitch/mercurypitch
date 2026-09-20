@@ -53,3 +53,14 @@ describe('SharedVoiceprintWelcome', () => {
     expect(onStart).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('when the card cannot be drawn', () => {
+  it('falls back to the written numbers rather than an empty frame', async () => {
+    // No portrait loads under jsdom, so this is the fallback path by
+    // construction — the same path a payload naming an unknown twin takes.
+    render(() => <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />)
+
+    expect(screen.getByText('C3 – D5')).toBeTruthy()
+    expect(document.querySelector('.shared-vp-figure')).toBeNull()
+  })
+})

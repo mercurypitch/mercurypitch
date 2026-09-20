@@ -16,6 +16,10 @@ import { expect, test } from '@playwright/test'
 const PAYLOAD =
   'eyJ2IjoxLCJ0Ijoidm9pY2VwcmludCIsImQiOnsibG8iOjQ4LCJoaSI6NzQsInN0IjoyNiwiYWMiOjEyLCJzZCI6OSwidHciOiJGcmVkZGllIE1lcmN1cnkifX0'
 
+/** The same take with no twin named — the card cannot be drawn from it. */
+const PAYLOAD_NO_TWIN =
+  'eyJ2IjoxLCJ0Ijoidm9pY2VwcmludCIsImQiOnsibG8iOjQ4LCJoaSI6NzQsInN0IjoyNiwiYWMiOjEyLCJzZCI6OX19'
+
 const LANDING_CTA = /Find my voice twin/i
 
 test.describe('a voiceprint that arrived by link', () => {
@@ -33,6 +37,24 @@ test.describe('a voiceprint that arrived by link', () => {
 
     // The ordinary landing must stand down while someone else's card is up.
     await expect(page.getByRole('button', { name: LANDING_CTA })).toHaveCount(0)
+  })
+
+  test("draws the sender's actual card, not a written summary of it", async ({
+    page,
+  }) => {
+    await page.goto(`/mirror?v=${PAYLOAD}`)
+    await expect(page.locator('.shared-vp-figure canvas')).toBeVisible()
+  })
+
+  test('falls back to the written numbers when no twin was named', async ({
+    page,
+  }) => {
+    await page.goto(`/mirror?v=${PAYLOAD_NO_TWIN}`)
+
+    await expect(page.getByText('Someone sent you this')).toBeVisible()
+    await expect(page.getByText('C3 – D5')).toBeVisible()
+    // No drawable card, and no broken frame where one would go.
+    await expect(page.locator('.shared-vp-figure')).toHaveCount(0)
   })
 
   test('hands off to the recipient and drops the payload from the address bar', async ({
