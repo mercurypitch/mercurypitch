@@ -2,9 +2,10 @@
 
 /* ── Room header shared helpers ────────────────────────────────────── */
 
-/* Everything that describes the room: its code, the copy-link button, who
-   is here, and the transfer and share chips. One container because on a
-   phone this becomes a single scrollable line -- see the phone block. */
+/* Everything that describes the room: what it is singing, its code (which
+   is also the button that copies the way in), who is here, and the transfer
+   and share chips. One container because on a phone this becomes a single
+   scrollable line -- see the phone block. */
 .roomStrip {
   display: flex;
   align-items: center;
@@ -566,15 +567,6 @@
   /* The mic leads. It is the one control here with a consequence. */
   .micBtn {
     order: -1;
-  }
-
-  /* Copying a link needs somewhere to paste it, which a phone in a room
-     rarely has. The invite button in the menu carries the same link, a
-     QR code and the room code -- so this is a duplicate, and the row is
-     worth more than the duplicate. The CODE itself stays: it is what
-     people read aloud, and it costs a pill in a strip that scrolls. */
-  .copyLinkBtn {
-    display: none;
   }
 
   /* Row 2, whole width, one line that scrolls. Nothing here wraps: a

@@ -24,9 +24,13 @@
   animation: chipPulse 2.4s ease-in-out infinite;
 }
 
-.chip:hover {
-  color: #f5d78a;
-  border-color: #f5d78a;
+/* A mouse's alone: a tablet keeps :hover on the last thing a finger
+   tapped, and a chip left lit after sending reads as still asking. */
+@media (hover: hover) {
+  .chip:hover {
+    color: #f5d78a;
+    border-color: #f5d78a;
+  }
 }
 
 @keyframes chipPulse {
@@ -40,22 +44,64 @@
   }
 }
 
-/* Nothing to act on: state the fact and stay out of the way. */
-.chipQuiet {
-  border-color: var(--border-color, rgb(255 255 255 / 14%));
-  color: var(--text-secondary);
-  font-weight: 500;
-  cursor: default;
-  animation: none;
-}
-
-.chipQuiet:hover {
-  color: var(--text-secondary);
-  border-color: var(--border-color, rgb(255 255 255 / 14%));
-}
-
+/* The name can be any length and the row cannot: the words give way with
+   an ellipsis long before they are dropped. */
 .chipText {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* No room for the words (set from JamSongShare, which measures the row):
+   the speaker carries on alone, as round as the icon buttons beside it.
+   What it said is in its tooltip and its label. */
+.chip[data-compact] {
+  gap: 0;
+  padding: 5px 7px;
+}
+
+.chip[data-compact] .chipText {
+  display: none;
+}
+
+/* ── A room of one ──────────────────────────────────────────────────
+   Nothing to act on and nobody to tell: a mark, no sentence, no pulse.
+   The popover it opens is the sentence, for whoever asks. */
+.solo {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* Over InfoPopover's own trigger: same size as the row's other pills, and
+   the room's glass rather than an opaque disc. Two classes so it outranks
+   the single-class rule it is restyling, whichever stylesheet loads last. */
+.solo .soloTrigger {
+  width: 26px;
+  height: 26px;
+  border-color: var(--border-color, rgb(255 255 255 / 14%));
+  background: var(--jam-control, rgba(13, 17, 23, 0.5));
+  color: var(--text-secondary);
+}
+
+.solo .soloTrigger .icon {
+  width: 13px;
+  height: 13px;
+}
+
+/* Said here as well as in InfoPopover's sheet: the two rules above tie with
+   its hover and open rules, and which of two ties wins is the bundler's
+   load order. Open is the accent on every screen; hover only for a mouse. */
+.solo .soloTrigger[aria-expanded='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (hover: hover) {
+  .solo .soloTrigger:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
 }
 
 /* ── The icon's waves ───────────────────────────────────────────────

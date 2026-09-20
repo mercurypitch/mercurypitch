@@ -48,12 +48,21 @@ export const JamChatWidget: Component = () => {
   }
 
   return (
-    <div class={styles.widgetContainer}>
+    <div
+      class={styles.widgetContainer}
+      // The camera tray docks beside this box and reads its size to do it.
+      data-jam-chat=""
+    >
       <Show when={isOpen()}>
         <div class={styles.chatWindow}>
           <div class={styles.header}>
             <h3 class={styles.title}>Room Chat</h3>
-            <button class={styles.closeBtn} onClick={() => setIsOpen(false)}>
+            <button
+              type="button"
+              class={styles.closeBtn}
+              aria-label="Close the chat"
+              onClick={() => setIsOpen(false)}
+            >
               <svg
                 width="16"
                 height="16"
@@ -161,7 +170,18 @@ export const JamChatWidget: Component = () => {
       </Show>
 
       <Show when={!isOpen()}>
-        <button class={styles.bubbleBtn} onClick={() => setIsOpen(true)}>
+        {/* Named: both of these were a drawing and nothing else, so a
+            screen reader announced two things called "button". */}
+        <button
+          type="button"
+          class={styles.bubbleBtn}
+          aria-label={
+            jamUnreadChatCount() > 0
+              ? `Open the chat, ${jamUnreadChatCount()} unread`
+              : 'Open the chat'
+          }
+          onClick={() => setIsOpen(true)}
+        >
           <svg
             width="24"
             height="24"

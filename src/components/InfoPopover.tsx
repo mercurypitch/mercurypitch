@@ -34,6 +34,14 @@ interface InfoPopoverProps {
   label: string
   /** Optional visible copy that makes the whole labelled trigger clickable. */
   triggerLabel?: string
+  /**
+   * A glyph of the caller's own, in place of the "i".
+   *
+   * For a marker that already says what it is about -- a muted speaker, a
+   * lock -- where an "i" beside it would be a second thing to read. The
+   * panel, the closing and the placement are the same either way.
+   */
+  icon?: JSX.Element
   /** Extra class for the trigger, for per-surface placement. */
   class?: string
   /** Extra class for the portalled panel, for surface-specific treatment. */
@@ -177,7 +185,9 @@ export const InfoPopover: Component<InfoPopoverProps> = (props) => {
           setOpen((v) => !v)
         }}
       >
-        <Info />
+        <Show when={props.icon} fallback={<Info />}>
+          {props.icon}
+        </Show>
         <Show when={props.triggerLabel}>
           {(label) => <span class={styles.triggerLabel}>{label()}</span>}
         </Show>

@@ -1,6 +1,7 @@
 // ── JamCameraWidget ──────────────────────────────────────────────────
 // Floating camera tray — compact thumbnails, draggable anywhere on screen.
-// Default position: top-right (above the pitch strip area).
+// It starts docked in the bottom-right corner, beside the chat bubble, and
+// stays beside it (whatever the chat is doing) until somebody drags it.
 // Click any chip to expand/collapse that person's feed.
 // Border color matches the peer's assigned pitch-trail color.
 
@@ -110,11 +111,27 @@ const CamChip: Component<CamChipProps> = (props) => {
 export const JamCameraWidget: Component = () => {
   const myId = jamPeerId
 
-  // Default position: bottom-right next to the chat widget.
-  const EXPANDED_W = 250
-  const initX = Math.max(0, window.innerWidth - 300)
-  const initY = Math.max(0, window.innerHeight - 100)
-  const [pos, setPos] = createSignal({ x: initX, y: initY })
+  /** Until the tray has been laid out and can be measured. */
+  const FALLBACK_W = 100
+  const FALLBACK_H = 76
+  /** Clear of the screen edge and of the chat, the same 12px the chat uses. */
+  const GAP = 12
+  const EDGE = 20
+
+  /**
+   * Where the singer put the tray, or `null` while it is still docked.
+   *
+   * Docked is a rule, not a coordinate: "left of the chat, bottoms level".
+   * It was a coordinate worked out once from the window's size, and then
+   * pushed clear of a chat window assumed to be open and 340 by 440 -- so
+   * with the chat shut the tray sat 440px in from the corner, over the
+   * lanes, beside nothing. Reading the chat's real box puts it next to the
+   * bubble, moves it aside when the chat opens and brings it back when the
+   * chat shuts.
+   */
+  const [wanted, setWanted] = createSignal<{ x: number; y: number } | null>(
+    null,
+  )
   let dragging = false
   let dragStart = { x: 0, y: 0, px: 0, py: 0 }
   let trayRef: HTMLDivElement | undefined
@@ -126,30 +143,57 @@ export const JamCameraWidget: Component = () => {
 
   const myColor = () => colorMap()[myId() ?? ''] ?? '#58a6ff'
 
-  /** Clamp pos so the tray stays fully in viewport and avoids the chat widget. */
-  const clamp = (px: number, py: number) => {
+  const measured = (size: number | undefined, fallback: number): number =>
+    size !== undefined && size > 0 ? size : fallback
+
+  /** The chat's box as it is right now: a bubble, or the open window. */
+  const chatBox = (): DOMRect | null => {
+    const box = document
+      .querySelector<HTMLElement>('[data-jam-chat]')
+      ?.getBoundingClientRect()
+    // No chat on screen, or one that has not been laid out.
+    if (box === undefined || box.width === 0 || box.height === 0) return null
+    return box
+  }
+
+  /** Where the tray goes, given where it is wanted. Always fully on screen. */
+  const place = (want: { x: number; y: number } | null) => {
     const vw = window.innerWidth
     const vh = window.innerHeight
-    const tw = trayRef?.offsetWidth ?? EXPANDED_W
-    const th = trayRef?.offsetHeight ?? 200
+    const tw = measured(trayRef?.offsetWidth, FALLBACK_W)
+    const th = measured(trayRef?.offsetHeight, FALLBACK_H)
+    const chat = chatBox()
 
-    let cx = Math.max(0, Math.min(vw - tw, px))
-    let cy = Math.max(0, Math.min(vh - th, py))
+    if (want === null) {
+      const right = chat === null ? vw - EDGE : chat.left - GAP
+      const bottom = chat === null ? vh - EDGE : chat.bottom
+      return {
+        x: Math.max(0, Math.min(vw - tw, right - tw)),
+        y: Math.max(0, Math.min(vh - th, bottom - th)),
+      }
+    }
 
-    // Avoid bottom-right chat widget (approx 340px wide, 440px tall including padding)
-    const chatW = 340
-    const chatH = 440
-    if (cx + tw > vw - chatW && cy + th > vh - chatH) {
-      const pushLeftDist = cx + tw - (vw - chatW)
-      const pushUpDist = cy + th - (vh - chatH)
-      if (pushLeftDist < pushUpDist) {
-        cx = Math.max(0, vw - chatW - tw)
-      } else {
-        cy = Math.max(0, vh - chatH - th)
+    let cx = Math.max(0, Math.min(vw - tw, want.x))
+    let cy = Math.max(0, Math.min(vh - th, want.y))
+
+    // Never under the chat: step aside by the shorter way out.
+    if (chat !== null) {
+      const overlapsX = cx + tw > chat.left - GAP && cx < chat.right
+      const overlapsY = cy + th > chat.top - GAP && cy < chat.bottom
+      if (overlapsX && overlapsY) {
+        const pushLeft = cx + tw - (chat.left - GAP)
+        const pushUp = cy + th - (chat.top - GAP)
+        if (pushLeft < pushUp) cx = Math.max(0, chat.left - GAP - tw)
+        else cy = Math.max(0, chat.top - GAP - th)
       }
     }
 
     return { x: cx, y: cy }
+  }
+
+  const [pos, setPos] = createSignal(place(null))
+  const settle = (): void => {
+    setPos(place(wanted()))
   }
 
   const trayDrag: DragGestureOptions = {
@@ -167,28 +211,35 @@ export const JamCameraWidget: Component = () => {
     onMove: (event) => {
       const dx = event.clientX - dragStart.x
       const dy = event.clientY - dragStart.y
-      setPos(clamp(dragStart.px + dx, dragStart.py + dy))
+      setWanted({ x: dragStart.px + dx, y: dragStart.py + dy })
+      settle()
     },
     onEnd: () => {
       dragging = false
-      // Re-clamp after drag ends in case tray grew during the drag.
-      setPos((p) => clamp(p.x, p.y))
+      // Where it ended up is where it is wanted: a tray let go of under the
+      // chat was moved clear, and must not slide back the next time the
+      // chat's size changes. Re-settled in case it grew during the drag.
+      if (wanted() !== null) setWanted(pos())
+      settle()
     },
   }
 
   onMount(() => {
-    // Re-clamp whenever tray size changes (chip expand/collapse) or window resizes
+    // Settle again whenever the tray changes size (a chip expanding), the
+    // chat does (it opens into a window), or the window does.
     const ro = new ResizeObserver(() => {
-      if (!dragging) setPos((p) => clamp(p.x, p.y))
+      if (!dragging) settle()
     })
     if (trayRef) ro.observe(trayRef)
+    const chat = document.querySelector('[data-jam-chat]')
+    if (chat !== null) ro.observe(chat)
 
-    const onResize = () => setPos((p) => clamp(p.x, p.y))
-    window.addEventListener('resize', onResize, { passive: true })
+    window.addEventListener('resize', settle, { passive: true })
+    settle()
 
     onCleanup(() => {
       ro.disconnect()
-      window.removeEventListener('resize', onResize)
+      window.removeEventListener('resize', settle)
     })
   })
 
@@ -199,6 +250,7 @@ export const JamCameraWidget: Component = () => {
         dragGesture(element, () => trayDrag)
       }}
       class={styles.tray}
+      data-testid="jam-camera-tray"
       style={{
         left: `${pos().x}px`,
         top: `${pos().y}px`,
