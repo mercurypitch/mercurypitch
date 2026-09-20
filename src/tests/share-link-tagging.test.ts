@@ -49,6 +49,11 @@ const CARDS = [
       // payload must not change the tagging, and must never smuggle a paid
       // source in through the encoded blob.
       defaultShareText(voiceprintShareUrl(SHARED_TAKE)),
+      // ...and once the link names a stored card for the unfurl. The card
+      // id must not disturb the tagging or smuggle a source in with it.
+      defaultShareText(
+        voiceprintShareUrl(SHARED_TAKE, null, null, 'aB3xY9zQ01'),
+      ),
       twinShareText(
         'Freddie Mercury',
         voiceprintShareUrl(SHARED_TAKE, 'Freddie Mercury'),

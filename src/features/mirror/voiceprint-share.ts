@@ -10,7 +10,7 @@
 // through the same renderer and the same Web Share / download fallback.
 
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
-import { voiceprintShareUrl } from '@/lib/mirror/shared-voiceprint'
+import { newOgCardId, uploadOgCard, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
 import { cardToPngBlob, datedFilename, shareCard, twinShareText, } from './card-renderer'
 import { renderSummaryCard } from './shared-voiceprint-card'
 
@@ -41,11 +41,13 @@ export async function shareVoiceprintRecord(
   if (canvas === null) return 'unavailable'
 
   const blob = await cardToPngBlob(canvas)
+  const ogCardId = newOgCardId()
+  uploadOgCard(ogCardId, blob)
   return shareCard(blob, datedFilename('voiceprint'), {
     title: 'My voiceprint',
     text: twinShareText(
       record.twin ?? 'My twin',
-      voiceprintShareUrl(record.summary, record.twin),
+      voiceprintShareUrl(record.summary, record.twin, null, ogCardId),
     ),
   })
 }
