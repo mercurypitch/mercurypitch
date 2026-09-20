@@ -601,6 +601,17 @@
   touch-action: none;
 }
 
+/* The sheet says it is armed, not only the bar above it. A mouse gets a
+   crosshair; a finger has no cursor, and under a finger an armed sheet
+   does not scroll at all -- a drag paints. Owner report, 2026-09-20, from a
+   tablet: "the touch and drag to move the lyrics up/down doesn't work",
+   mended by a reload, which is also what puts a forgotten brush down. It
+   was not shown to be the cause, but it is the one state in the room that
+   looks exactly like that, and nothing on the words said so. */
+.scroll[data-armed] {
+  box-shadow: inset 0 0 0 2px var(--brush-color, #58a6ff);
+}
+
 /* The brush outranks the jump: an armed row paints on a click and does
    not seek, so it must not wear the hand that promises a seek. */
 .line.painting {

@@ -85,6 +85,22 @@
   color: var(--accent-color, #58a6ff);
 }
 
+/* One of the two armed hints, by what is doing the pointing. The phone
+   block below comes later in the file and hides both, as it always has. */
+.touchOnly {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .touchOnly {
+    display: inline;
+  }
+
+  .mouseOnly {
+    display: none;
+  }
+}
+
 .done {
   margin-left: auto;
   padding: 3px 10px;

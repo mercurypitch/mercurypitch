@@ -142,14 +142,19 @@ async function middleOfSheet(page: Page) {
  * before it can lands on zero, and the song then plays from the top.
  */
 async function playFromTheMiddle(page: Page): Promise<void> {
+  // Longer than the default five seconds: the tone arrives in ranges, and on
+  // a cold server with other workers starting beside it the element was a
+  // third of the way through when the default ran out.
   await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const el = document.querySelector('audio')
-        return el !== null && el.seekable.length > 0
-          ? el.seekable.end(el.seekable.length - 1)
-          : 0
-      }),
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const el = document.querySelector('audio')
+          return el !== null && el.seekable.length > 0
+            ? el.seekable.end(el.seekable.length - 1)
+            : 0
+        }),
+      { timeout: 20000 },
     )
     .toBeGreaterThan(SONG_SEC - 1)
   await page.locator('[data-line="12"]').click()
@@ -296,5 +301,107 @@ test.describe('the jam lyric sheet, with a finger', () => {
     await expect
       .poll(() => offBy(page), { timeout: 8000 })
       .toBeLessThanOrEqual(6)
+  })
+})
+
+test.describe('the jam lyric sheet, with a brush in hand', () => {
+  // Owner report, 2026-09-20, from the same tablet, twice and not reproduced:
+  // once "the parts assignment also didn't work", once "the touch and drag to
+  // move the lyrics up/down doesn't work", each mended by a reload. With a
+  // singer armed a finger paints and the words do not scroll -- by design,
+  // and the one state in the room that looks exactly like the second report.
+  // What is pinned here is both halves of that design under a real finger:
+  // an armed sheet paints and stays put, and the moment the brush is down it
+  // scrolls again.
+  //
+  // `isMobile` as well as `hasTouch`: it is what makes `(pointer: coarse)`
+  // true in this browser, and the hint a touch screen gets hangs on it.
+  test.use({
+    viewport: { width: 1180, height: 820 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('paints under a finger, and scrolls again after Done @smoke', async ({
+    page,
+  }) => {
+    await openSongRoom(page)
+    const box = page.locator('[data-line="0"]').locator('xpath=..')
+    await expect(box).not.toHaveAttribute('data-armed')
+
+    await page.getByRole('button', { name: 'You', exact: true }).first().click()
+    // The words themselves say a drag will paint: a finger has no crosshair.
+    await expect(box).toHaveAttribute('data-armed', '')
+    // And the bar says how to get the scroll back, on the row Done is on: a
+    // hint long enough to push Done onto a row of its own costs the words
+    // 32px for as long as a singer is picked.
+    const hint = page.getByText('Drag down their lines. Done to scroll again.')
+    await expect(hint).toBeVisible()
+    const hintBox = await hint.boundingBox()
+    const doneBox = await page
+      .getByRole('button', { name: 'Done', exact: true })
+      .boundingBox()
+    expect(
+      Math.abs(
+        (hintBox?.y ?? 0) +
+          (hintBox?.height ?? 0) / 2 -
+          ((doneBox?.y ?? 0) + (doneBox?.height ?? 0) / 2),
+      ),
+    ).toBeLessThanOrEqual(10)
+
+    const middleOf = async (line: number) => {
+      const row = await page.locator(`[data-line="${line}"]`).boundingBox()
+      expect(row).not.toBeNull()
+      return {
+        x: (row?.x ?? 0) + Math.min(60, (row?.width ?? 0) / 2),
+        y: (row?.y ?? 0) + (row?.height ?? 0) / 2,
+      }
+    }
+    const cdp = await page.context().newCDPSession(page)
+    type TouchType = 'touchStart' | 'touchMove' | 'touchEnd'
+    const touch = (type: TouchType, at?: { x: number; y: number }) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: at === undefined ? [] : [{ x: at.x, y: at.y, id: 1 }],
+      })
+    /** One finger, from one point to another, coming to rest before it lifts. */
+    const drag = async (
+      from: { x: number; y: number },
+      to: { x: number; y: number },
+    ) => {
+      await touch('touchStart', from)
+      for (let step = 1; step <= 8; step++) {
+        await touch('touchMove', {
+          x: from.x + ((to.x - from.x) * step) / 8,
+          y: from.y + ((to.y - from.y) * step) / 8,
+        })
+      }
+      await page.waitForTimeout(80)
+      await touch('touchMove', to)
+      await touch('touchEnd')
+    }
+
+    // ── Armed: the finger paints, and the words do not move under it ──
+    const parked = await scrollTop(page)
+    const owned = page.locator('[class*="lineOwned"]')
+    const sweep = async () => {
+      await drag(await middleOf(2), await middleOf(5))
+      return await owned.count()
+    }
+    // Retried: the first synthetic touch after a layout settles is
+    // occasionally swallowed (see jam-stage-layout.spec.ts).
+    await expect.poll(sweep, { timeout: 15000 }).toBeGreaterThanOrEqual(4)
+    expect(Math.abs((await scrollTop(page)) - parked)).toBeLessThanOrEqual(2)
+
+    // ── Brush down: the same finger scrolls again, at once ────────────
+    await page.getByRole('button', { name: 'Done', exact: true }).click()
+    await expect(box).not.toHaveAttribute('data-armed')
+    const before = await scrollTop(page)
+    const pan = async () => {
+      const at = await middleOfSheet(page)
+      await drag({ x: at.x, y: at.y + 120 }, { x: at.x, y: at.y - 120 })
+      return await scrollTop(page)
+    }
+    await expect.poll(pan, { timeout: 15000 }).toBeGreaterThan(before + 60)
   })
 })

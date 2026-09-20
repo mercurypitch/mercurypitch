@@ -75,8 +75,16 @@ export const JamAssignBar: Component = () => {
             </span>
           }
         >
-          <span class={styles.hintArmed}>
+          {/* Under a finger an armed sheet paints and does not scroll; a
+              mouse still has its wheel, so only a touch screen is told how
+              to get the scroll back. Said INSTEAD of the mouse's sentence,
+              not after it: two sentences pushed Done onto a third row of a
+              tablet's lyric column, and a row is 32px of words. */}
+          <span class={`${styles.hintArmed} ${styles.mouseOnly}`}>
             Now drag down the lines they sing.
+          </span>
+          <span class={`${styles.hintArmed} ${styles.touchOnly}`}>
+            Drag down their lines. Done to scroll again.
           </span>
           <button
             type="button"
