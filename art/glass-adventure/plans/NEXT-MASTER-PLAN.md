@@ -9,15 +9,19 @@ Code and production sources are preserved in draft PR #807 on
 ## Where we are
 
 The owner accepted the longer Journey and tablet controls, music, enclosure,
-decoration, Merc clearance and artwork inspection. This batch corrects the
-mirror's reflected backing artifact and centers the artwork offer. It also adds
-the shared three-gallery campaign and the first playable Twin Galleries route:
-comfortable low/high calibration, then an ordered two-note response.
+decoration, Merc clearance and artwork inspection. The owner also completed Twin
+Galleries and accepted its lower-note, higher-note and ordered-pair teaching.
+The mirror backing artifact is resolved. The current polish adds sharper
+close-up reflections, places artwork inspection in the first header row, and
+keeps the exit rim and finish sparkles above the floor. The shared campaign has
+three playable galleries with independent progress.
 
 The detailed implementation, validation and next device test are in
 [TWIN-GALLERIES-IMPLEMENTATION.md](./TWIN-GALLERIES-IMPLEMENTATION.md).
 The previous revision `b9892888` completed CI (33 successful checks, one skipped).
-Current changes still require their own pushed-revision CI. Playtest acceptance
+Revision `624f3f12` passes the glass, mobile, typecheck and unit jobs; a root-app
+Jam lyric gesture browser test failed on unchanged root-app code. New changes
+still require their own pushed-revision CI. Playtest acceptance
 and software render proofs are not measured device FPS/thermal evidence.
 
 | Area                 | Implemented                                                                                                                  | Still missing                                                                        |
@@ -27,8 +31,8 @@ and software render proofs are not measured device FPS/thermal evidence.
 | Content architecture | Prefab composer, shared hold/pair lessons, validation, room ownership, independent saves and campaign transitions            | Further judge types and richer authoring tools                                       |
 | First Light          | Short enclosed tutorial and panorama; two required and one optional held-note exhibit                                        | Device regression through the shared campaign                                        |
 | Glassworks Journey   | Sixteen room/presentation instances; four required and four optional held-note encounters; garden, archive, salon, panorama  | Timed pacing study; ongoing room polish                                              |
-| Twin Galleries       | Eighteen connected placements; four required and three optional low/high encounters; warm/cool galleries and listening court | Device singing and pacing feedback; V6 vessel production                             |
-| Art                  | Meshy/Blender vessels and wall kit; original paintings including three Level 2 works, planters, varied floors; loading cover | Four Level 2 Meshy models still need production approval                             |
+| Twin Galleries       | Eighteen connected placements; four required and three optional low/high encounters; owner accepted the learning sequence    | Timed pacing and sustained device performance; remaining V6 vessel production        |
+| Art                  | Meshy/Blender vessels and wall kit; original paintings including three Level 2 works, planters, varied floors; loading cover | Amber and Celadon still require production approval                                  |
 | Sound                | Approved M01/M03 music/ambience; Gentle Whimsical D2 Merc voice and shuffled reactions; two-note references; quiet capture   | Additional level-specific Merc narration                                             |
 | Rendering            | Conservative room visibility, camera obstruction, shadow tuning                                                              | Sustained real-device profiling, LOD/compression strategy if measurements require it |
 | Delivery             | Shared glass-game package and host adapters; standalone preview and BesideCue integration                                    | Final MercuryPitch entry/CTA, games-on native builds and publication                 |
@@ -65,9 +69,11 @@ and software render proofs are not measured device FPS/thermal evidence.
 - [x] Confirm prior polish revision CI; new batch needs its own CI result.
 - [x] Correct diagonal mirror artifact and place View artwork at top center.
 - [x] Owner accepted hand clearance, mounted art and artwork inspection.
-- [ ] Recheck mirror correction and sustained device cost.
+- [x] Owner accepted the mirror artifact fix and Twin Galleries low/high lesson.
+- [x] Prepare sharper bounded reflection, above-floor exit rim and top-row artwork.
+- [ ] Owner recheck of this latest polish; sustained device cost remains unmeasured.
 
-### N3 — lesson and campaign foundation (implemented; device acceptance next)
+### N3 — lesson and campaign foundation (implemented; owner accepted Twin learning)
 
 The shared challenge and voice-session layers now dispatch held notes and
 ordered pairs. First Light, Glassworks Journey and Twin Galleries share the
@@ -115,9 +121,14 @@ full keyboard/touch traversal, checkpoint reload and real-mic device play.
 Current asset batch: amber urn, celadon decanter, twin-tone resonance harp,
 opaline echo amphora and three original paintings. They are staged under
 `art/glass-adventure/v6-level2/`. The three paintings are integrated with
-inspection stories. Vessel/harp integration follows dimensional, material,
-mobile-budget and fracture/collision review; the route currently uses approved
-existing breakable recipes. An intact download is
+inspection stories. The harp is now integrated in the listening court with a
+measured base proxy, 9,837-triangle render derivative and actual scene proof.
+Opaline V2 has a validated hollow cavity and 18-piece fracture; its continuous
+opal/gold/jade materials and optional court integration passed review, with
+actual intact and shattering render proofs. V1 is retained as rejected material evidence. Amber and
+Celadon remain source candidates. The extra
+five-credit Celadon remesh failed topology and was archived as rejected input.
+The route keeps approved existing breakable recipes until replacements pass. An intact download is
 not a finished breakable. Do not inflate the current level's download with
 unused candidates.
 
@@ -175,6 +186,7 @@ Detailed companions: `LEVEL-AUTHORING-PLAN.md`, `LONGER-LEVELS.md`,
 also have a repository copy in
 [OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md](./OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md).
 
-No new design choice blocks testing Twin Galleries or finishing its Level 2
-production candidates. The next useful owner discussion is the feel of the comfortable
-low/high pair; the later rewards policy should be decided before its pilot.
+No new design choice blocks finishing the Level 2 production candidates. The
+owner accepted the comfortable low/high learning sequence. The next useful
+design discussion is reward policy before its pilot; physical-device mirror
+cost and journey duration still need measured feedback.

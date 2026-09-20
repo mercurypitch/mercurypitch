@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Original fictional Twin Galleries paintings, shared across wall frames, inspection and campaign art.",
+  "description": "Original fictional Twin Galleries paintings, the preserved listening-court harp and the Opaline Echo fracture.",
   "sourceReceipt": "art/glass-adventure/v6-level2/imagegen-receipt.json",
   "encoding": "Full-resolution RGB WebP, quality 88, method 6. Source masters unchanged.",
   "assets": [
@@ -27,6 +27,43 @@
       "sha256": "7810c0cfbf8456785bc44f06fa03d3c2de668e4d9aec3e903f2160c3f112802a",
       "dimensions": [1024, 1536],
       "bytes": 479278
+    }
+  ],
+  "models": [
+    {
+      "id": "twin-tone-harp-v6",
+      "file": "twin-tone-resonance-harp.glb",
+      "node": "decor_l2_twin_tone_resonance_harp",
+      "source": "art/glass-adventure/v6-level2/sources/twin-tone-resonance-harp-final-v2.blend",
+      "sourceSha256": "0330aef16c2144479840be8a7d747c047caa52aa406b07a9d6dfa80142c8d8cb",
+      "sha256": "43805c83bd0f54937cb2b709b66d3c03fbf245fbcdb377e92c29a035df96d438",
+      "dimensions": [
+        1.5003591775894165, 0.6857956647872925, 1.6500000953674316
+      ],
+      "triangles": 9837,
+      "textureCount": 4,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "Authored base-only proxy; the render GLB contains no collider mesh."
+    },
+    {
+      "id": "opaline-v6",
+      "file": "opaline-echo-amphora.glb",
+      "node": "breakable_l2_opaline_echo_amphora",
+      "intactNode": "breakable_l2_opaline_echo_amphora_intact",
+      "shardPrefix": "breakable_l2_opaline_echo_amphora_shard_",
+      "shardCount": 18,
+      "source": "art/glass-adventure/v6-level2/sources/opaline-echo-amphora-fracture-v2.blend",
+      "sourceSha256": "169aa9e27e5dab371fec360a4124255f35bdaa480fb97b939452b65f789238c6",
+      "runtimeSource": "art/glass-adventure/v6-level2/exports/opaline-echo-amphora-fracture-v2.glb",
+      "sha256": "676b769793eb0ec39f78557dfbb98a45261ede0384ccd15cdc7be6c013247ee4",
+      "dimensions": [
+        0.6186075806617737, 0.5681103467941284, 0.9200000166893005
+      ],
+      "intactTriangles": 8728,
+      "triangles": 23382,
+      "textureCount": 5,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only the declared intact and shard nodes."
     }
   ]
 }

@@ -10,7 +10,7 @@ import { getMuseumSceneFrame, getMuseumSceneRecipe, getMuseumVisualRecipe, } fro
 
 describe('data-driven exhibit recipes', () => {
   it('resolves every authored intact and matching shard prefix in the asset bundles', () => {
-    const manifest = JSON.parse(
+    const v3Manifest = JSON.parse(
       readFileSync(
         new URL(
           '../../../../apps/beside-cue/public/games/adventure-v3/manifest.json',
@@ -29,14 +29,40 @@ describe('data-driven exhibit recipes', () => {
         node?: string
       }[]
     }
+    const v6Manifest = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../../../apps/beside-cue/public/games/adventure-v6/manifest.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    ) as {
+      models: {
+        id: string
+        file: string
+        sha256: string
+        intactNode?: string
+        shardPrefix?: string
+        shardCount?: number
+        node?: string
+      }[]
+    }
+    const receipts = [...v3Manifest.assets, ...v6Manifest.models]
     const files: Record<string, string> = {
       vessels: 'adventure/vessels.glb',
       'vessels-v2': 'adventure-v2/vessels.glb',
       'legend-slab': 'adventure/legend-slab.glb',
       ...Object.fromEntries(
-        manifest.assets.map((asset) => [
+        v3Manifest.assets.map((asset) => [
           asset.id,
           `adventure-v3/${asset.file}`,
+        ]),
+      ),
+      ...Object.fromEntries(
+        v6Manifest.models.map((asset) => [
+          asset.id,
+          `adventure-v6/${asset.file}`,
         ]),
       ),
     }
@@ -47,7 +73,7 @@ describe('data-driven exhibit recipes', () => {
           import.meta.url,
         ),
       )
-      const receipt = manifest.assets.find((asset) => asset.id === id)
+      const receipt = receipts.find((asset) => asset.id === id)
       if (receipt)
         expect(createHash('sha256').update(bytes).digest('hex')).toBe(
           receipt.sha256,
@@ -80,14 +106,14 @@ describe('data-driven exhibit recipes', () => {
             node.name?.startsWith(recipe.shardPrefix ?? 'never') === true,
         ),
       ).toHaveLength(count)
-      const receipt = manifest.assets.find((asset) => asset.id === resolved)
+      const receipt = receipts.find((asset) => asset.id === resolved)
       if (receipt) {
         expect(receipt.intactNode).toBe(recipe.intactNode)
         expect(receipt.shardPrefix).toBe(recipe.shardPrefix)
         expect(receipt.shardCount).toBe(count)
       }
     }
-    for (const asset of manifest.assets.filter(
+    for (const asset of v3Manifest.assets.filter(
       (asset) => asset.node !== undefined,
     ))
       expect(
@@ -142,6 +168,51 @@ describe('data-driven exhibit recipes', () => {
       )
       expect(gltf.nodes.some((node) => node.name === asset.node)).toBe(true)
     }
+  })
+  it('resolves the Twin Galleries harp to its collider-free runtime root', () => {
+    const manifest = JSON.parse(
+      readFileSync(
+        new URL(
+          '../../../../apps/beside-cue/public/games/adventure-v6/manifest.json',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    ) as {
+      models: {
+        id: string
+        file: string
+        node: string
+        sha256: string
+        triangles: number
+      }[]
+    }
+    const asset = manifest.models.find(
+      (model) => model.id === 'twin-tone-harp-v6',
+    )
+    expect(asset).toBeDefined()
+    expect(getRoomDecorationRecipe('twin-tone-harp-v6')).toMatchObject({
+      bundle: asset?.id,
+      node: asset?.node,
+      scale: 1,
+    })
+    const bytes = readFileSync(
+      new URL(
+        `../../../../apps/beside-cue/public/games/adventure-v6/${asset?.file}`,
+        import.meta.url,
+      ),
+    )
+    const gltf = JSON.parse(
+      bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString(),
+    ) as { nodes: { name?: string }[]; meshes: { primitives: unknown[] }[] }
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(asset?.sha256)
+    expect(gltf.nodes.some((node) => node.name === asset?.node)).toBe(true)
+    expect(
+      gltf.nodes.some((node) => node.name?.startsWith('COLLIDER_') === true),
+    ).toBe(false)
+    expect(gltf.meshes).toHaveLength(1)
+    expect(gltf.meshes[0]?.primitives).toHaveLength(1)
+    expect(asset?.triangles).toBe(9837)
   })
   it('does not attach Glassworks landmarks to a newly authored level', () => {
     const scene = getMuseumSceneRecipe({

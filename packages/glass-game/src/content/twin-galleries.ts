@@ -341,7 +341,7 @@ export const TWIN_GALLERIES_SOURCE: AuthoredLevelSource = {
       id: 'court-echo',
       roomId: 'court',
       mountId: 'west-display',
-      prefabId: 'glassworks-journey-amphora',
+      prefabId: 'twin-galleries-opaline-echo',
       label: 'Opaline echo amphora',
       optional: true,
       requiresCompleted: ['upper-decanter'],

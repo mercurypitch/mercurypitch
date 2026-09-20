@@ -41,6 +41,8 @@ const files: Record<string, string> = {
   'painting-low-note-v6': 'adventure-v6/low-note-keeper.webp',
   'painting-high-note-v6': 'adventure-v6/high-note-muse.webp',
   'painting-interval-v6': 'adventure-v6/interval-between.webp',
+  'twin-tone-harp-v6': 'adventure-v6/twin-tone-resonance-harp.glb',
+  'opaline-v6': 'adventure-v6/opaline-echo-amphora.glb',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',

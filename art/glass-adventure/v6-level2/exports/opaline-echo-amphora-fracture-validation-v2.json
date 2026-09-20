@@ -1,0 +1,334 @@
+{
+  "schema": 1,
+  "status": "passed geometry and GLB reimport gates; proof review remains separate",
+  "assetId": "opaline-echo-amphora",
+  "bundleSha256": "676b769793eb0ec39f78557dfbb98a45261ede0384ccd15cdc7be6c013247ee4",
+  "bundleBytes": 3817112,
+  "nodes": {
+    "root": "breakable_l2_opaline_echo_amphora",
+    "intact": "breakable_l2_opaline_echo_amphora_intact",
+    "shards": [
+      "breakable_l2_opaline_echo_amphora_shard_000",
+      "breakable_l2_opaline_echo_amphora_shard_001",
+      "breakable_l2_opaline_echo_amphora_shard_002",
+      "breakable_l2_opaline_echo_amphora_shard_003",
+      "breakable_l2_opaline_echo_amphora_shard_004",
+      "breakable_l2_opaline_echo_amphora_shard_005",
+      "breakable_l2_opaline_echo_amphora_shard_006",
+      "breakable_l2_opaline_echo_amphora_shard_007",
+      "breakable_l2_opaline_echo_amphora_shard_008",
+      "breakable_l2_opaline_echo_amphora_shard_009",
+      "breakable_l2_opaline_echo_amphora_shard_010",
+      "breakable_l2_opaline_echo_amphora_shard_011",
+      "breakable_l2_opaline_echo_amphora_shard_012",
+      "breakable_l2_opaline_echo_amphora_shard_013",
+      "breakable_l2_opaline_echo_amphora_shard_014",
+      "breakable_l2_opaline_echo_amphora_shard_015",
+      "breakable_l2_opaline_echo_amphora_shard_016",
+      "breakable_l2_opaline_echo_amphora_shard_017"
+    ],
+    "collider": "COLLIDER_breakable_l2_opaline_echo_amphora"
+  },
+  "meshes": [
+    {
+      "triangles": 8728,
+      "vertices": 4362,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.04134598127217435,
+      "name": "breakable_l2_opaline_echo_amphora_intact"
+    },
+    {
+      "triangles": 1238,
+      "vertices": 621,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0022916841401739983,
+      "name": "breakable_l2_opaline_echo_amphora_shard_000"
+    },
+    {
+      "triangles": 812,
+      "vertices": 408,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0030548166130647744,
+      "name": "breakable_l2_opaline_echo_amphora_shard_001"
+    },
+    {
+      "triangles": 1464,
+      "vertices": 732,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0016447847822947026,
+      "name": "breakable_l2_opaline_echo_amphora_shard_002"
+    },
+    {
+      "triangles": 454,
+      "vertices": 229,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0022204737985091283,
+      "name": "breakable_l2_opaline_echo_amphora_shard_003"
+    },
+    {
+      "triangles": 482,
+      "vertices": 243,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.002455797922804868,
+      "name": "breakable_l2_opaline_echo_amphora_shard_004"
+    },
+    {
+      "triangles": 846,
+      "vertices": 425,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0012994905247294191,
+      "name": "breakable_l2_opaline_echo_amphora_shard_005"
+    },
+    {
+      "triangles": 1044,
+      "vertices": 524,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.005727243936322914,
+      "name": "breakable_l2_opaline_echo_amphora_shard_006"
+    },
+    {
+      "triangles": 590,
+      "vertices": 297,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0031525408337747516,
+      "name": "breakable_l2_opaline_echo_amphora_shard_007"
+    },
+    {
+      "triangles": 1062,
+      "vertices": 533,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0014886550941560668,
+      "name": "breakable_l2_opaline_echo_amphora_shard_008"
+    },
+    {
+      "triangles": 766,
+      "vertices": 385,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.003078049711292658,
+      "name": "breakable_l2_opaline_echo_amphora_shard_009"
+    },
+    {
+      "triangles": 748,
+      "vertices": 376,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0015125123575880888,
+      "name": "breakable_l2_opaline_echo_amphora_shard_010"
+    },
+    {
+      "triangles": 684,
+      "vertices": 344,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0017108791779582716,
+      "name": "breakable_l2_opaline_echo_amphora_shard_011"
+    },
+    {
+      "triangles": 790,
+      "vertices": 397,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0019956816826706397,
+      "name": "breakable_l2_opaline_echo_amphora_shard_012"
+    },
+    {
+      "triangles": 666,
+      "vertices": 335,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.002555281784897865,
+      "name": "breakable_l2_opaline_echo_amphora_shard_013"
+    },
+    {
+      "triangles": 388,
+      "vertices": 196,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0017311370360878612,
+      "name": "breakable_l2_opaline_echo_amphora_shard_014"
+    },
+    {
+      "triangles": 768,
+      "vertices": 386,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0020519751860130957,
+      "name": "breakable_l2_opaline_echo_amphora_shard_015"
+    },
+    {
+      "triangles": 480,
+      "vertices": 242,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.001810571909491895,
+      "name": "breakable_l2_opaline_echo_amphora_shard_016"
+    },
+    {
+      "triangles": 1372,
+      "vertices": 688,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0015644050230811742,
+      "name": "breakable_l2_opaline_echo_amphora_shard_017"
+    }
+  ],
+  "intactTriangles": 8728,
+  "triangleTotalIncludingShards": 23382,
+  "volumeRelativeError": 5.87089277914616e-09,
+  "dimensionsMetres": [
+    0.6186075806617737,
+    0.5681103467941284,
+    0.9200000166893005
+  ],
+  "dimensionMaxErrorMetres": 0.0,
+  "centralMouthRayZMetres": [
+    0.21160000562667847,
+    9.396672248840332e-05
+  ],
+  "materialSlots": [
+    "cavity_surface",
+    "glass_cut",
+    "glass_shell"
+  ],
+  "physicalMaterials": {
+    "cavity_surface": {
+      "transmission": 0.47999998927116394,
+      "ior": 1.4800000190734863,
+      "baseColorTexture": false
+    },
+    "glass_cut": {
+      "transmission": 0.31200000643730164,
+      "ior": 1.4800000190734863,
+      "baseColorTexture": false
+    },
+    "glass_shell": {
+      "transmission": 1,
+      "ior": 1.4700000286102295,
+      "baseColorTexture": true
+    }
+  },
+  "transmissionMask": {
+    "material": "glass_shell",
+    "textureIndex": 1,
+    "texCoord": 0,
+    "imageIndex": 1,
+    "imageName": "opaline_transmission_mask_v2",
+    "mimeType": "image/png",
+    "sourceDimensions": [
+      2048,
+      2048
+    ],
+    "embeddedRuntimeDimensions": [
+      1024,
+      1024
+    ],
+    "runtimeDownsampleMaximum": 1024
+  },
+  "uv0NormalsPreserved": true,
+  "renderPrimitiveCount": 53,
+  "tangentsOnEveryRenderedPrimitive": true,
+  "colliderPrimitiveCount": 1,
+  "colliderTangentsRequired": false,
+  "colliderHasTangents": false,
+  "embeddedImages": 5,
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "toolchain": {
+      "blender": "5.2.2 LTS (d13f752e3b9c)",
+      "backendPython": "3.14.7",
+      "manifold3d": "3.5.3",
+      "backendNumpy": "2.5.3",
+      "scratchPythonPath": "/tmp/glass-museum-manifold",
+      "scratchPathCommitted": false,
+      "solidFractureBackend": {
+        "file": "art/glass-adventure/v3/solid_fracture.py",
+        "sha256": "1adef949624b5bc2a25e74cdf316f260956ade6083a2c68a756fa1bdfb189b39"
+      }
+    },
+    "commands": {
+      "installScratchBackend": "rtk proxy /usr/bin/python3 -m pip install --target /tmp/glass-museum-manifold manifold3d==3.5.3 numpy==2.5.3",
+      "topologyAudit": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/inspect_vessels.py",
+      "prepare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase prepare",
+      "fractureExport": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase fracture",
+      "freshGlbValidation": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase validate",
+      "proofs": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase render"
+    },
+    "archivedIntermediateInputs": [
+      "sources/opaline-echo-amphora-fracture-work-v2/cavity-input.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cavity-output.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cavity-output.json",
+      "sources/opaline-echo-amphora-fracture-work-v2/cut-input.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cut-output.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cut-output.json"
+    ]
+  },
+  "scope": "Closedness, orientation, self-intersection, volume reconstruction, open-mouth ray, bounds, node names, materials, and embedded GLB resources."
+}

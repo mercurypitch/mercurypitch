@@ -23,6 +23,7 @@ const ids = {
   warmGate: `${prefix}/warm/solid/north-gate-body`,
   coolGate: `${prefix}/cool/solid/north-gate-body`,
   courtGate: `${prefix}/court/solid/north-gate-body`,
+  harpBase: `${prefix}/court/solid/resonance-harp-base`,
   portraitGate: `${prefix}/portrait/solid/north-gate-body`,
   warmCheckpoint: `${prefix}/warm/checkpoint/entry`,
   coolCheckpoint: `${prefix}/cool/checkpoint/entry`,
@@ -300,12 +301,52 @@ describe('Twin Galleries blockout', () => {
         (item) => item.id === 'high-note-study',
       )?.recipeId,
     ).toBe('high-note-painting-v6')
-    expect(TWIN_GALLERIES_COURT_ROOM.decorations).toEqual([
-      expect.objectContaining({
-        id: 'interval-study',
-        recipeId: 'interval-painting-v6',
-      }),
-    ])
+    expect(TWIN_GALLERIES_COURT_ROOM.decorations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'interval-study',
+          recipeId: 'interval-painting-v6',
+        }),
+        {
+          id: 'resonance-harp',
+          recipeId: 'twin-tone-harp-v6',
+          position: { x: 2.95, y: 0, z: -0.2 },
+          yaw: -Math.PI / 2,
+          coversSolidIds: ['resonance-harp-base'],
+        },
+      ]),
+    )
+    expect(
+      TWIN_GALLERIES_COURT_ROOM.solids.find(
+        (solid) => solid.id === 'resonance-harp-base',
+      ),
+    ).toEqual({
+      id: 'resonance-harp-base',
+      kind: 'prop',
+      shape: 'box',
+      minX: 2.6,
+      maxX: 3.3,
+      minZ: -0.85,
+      maxZ: 0.45,
+      top: 0.24,
+      thickness: 0.24,
+      platformId: 'floor',
+      presentation: { role: 'plinth', material: 'stone' },
+    })
+    expect(
+      TWIN_GALLERIES.presentation?.decorations?.find((decoration) =>
+        decoration.id.endsWith('/decoration/resonance-harp'),
+      ),
+    ).toMatchObject({
+      recipeId: 'twin-tone-harp-v6',
+      position: {
+        x: TWIN_GALLERIES_ROUTE.court.x + 2.95,
+        y: 0,
+        z: TWIN_GALLERIES_ROUTE.court.z - 0.2,
+      },
+      yaw: -Math.PI / 2,
+      coveredSolidIds: [ids.harpBase],
+    })
     expect(TWIN_GALLERIES_V6_HANDOFF.exhibits).toMatchObject({
       'lower-urn': {
         currentPrefabId: 'glassworks-journey-amphora',
@@ -313,16 +354,49 @@ describe('Twin Galleries blockout', () => {
       'upper-decanter': {
         currentPrefabId: 'glassworks-journey-fluted',
       },
+    })
+    expect(TWIN_GALLERIES_V6_HANDOFF.integratedExhibits).toEqual({
       'court-echo': {
-        currentPrefabId: 'glassworks-journey-amphora',
+        currentPrefabId: 'twin-galleries-opaline-echo',
+        assetRecipeId: 'opaline-v6',
+        source:
+          'art/glass-adventure/v6-level2/exports/opaline-echo-amphora-fracture-v2.glb',
       },
+    })
+    expect(
+      TWIN_GALLERIES.breakables.find((item) => item.id === ids.courtOptional),
+    ).toMatchObject({
+      id: ids.courtOptional,
+      variant: 'opaline-v6',
+      optional: true,
     })
     expect(TWIN_GALLERIES_AUTHORING_CATALOG.availableAssetRecipeIds).toEqual(
       expect.arrayContaining([
         'low-note-painting-v6',
         'high-note-painting-v6',
         'interval-painting-v6',
+        'twin-tone-harp-v6',
+        'opaline-v6',
       ]),
+    )
+  })
+
+  it('keeps the harp base physical while leaving the court route clear', () => {
+    const game = createGlassGame(TWIN_GALLERIES, {
+      version: 1,
+      levelId: prefix,
+      checkpointId: ids.courtCheckpoint,
+      completedBreakableIds: [ids.lower, ids.upper],
+      finished: false,
+    })
+    walkAxis(game, 'z', TWIN_GALLERIES_ROUTE.court.z - 0.2)
+    moveFor(game, { ...idle, moveX: 1 }, 900)
+    expect(game.snapshot().activeSolidIds).toContain(ids.harpBase)
+    expect(game.snapshot().player.position.x).toBeGreaterThan(
+      TWIN_GALLERIES_ROUTE.court.x + 2,
+    )
+    expect(game.snapshot().player.position.x).toBeLessThan(
+      TWIN_GALLERIES_ROUTE.court.x + 2.6,
     )
   })
 

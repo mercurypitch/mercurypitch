@@ -1,0 +1,98 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "inputVolume": 0.04134598127217455,
+  "inputTriangles": 8728,
+  "meshes": [
+    {
+      "key": "shard_000",
+      "triangles": 1238,
+      "volume": 0.0022916840706087367
+    },
+    {
+      "key": "shard_001",
+      "triangles": 812,
+      "volume": 0.003054816615807727
+    },
+    {
+      "key": "shard_002",
+      "triangles": 1464,
+      "volume": 0.0016447847630883215
+    },
+    {
+      "key": "shard_003",
+      "triangles": 454,
+      "volume": 0.002220473763311924
+    },
+    {
+      "key": "shard_004",
+      "triangles": 482,
+      "volume": 0.0024557979293124334
+    },
+    {
+      "key": "shard_005",
+      "triangles": 846,
+      "volume": 0.001299490537211319
+    },
+    {
+      "key": "shard_006",
+      "triangles": 1044,
+      "volume": 0.005727243982109226
+    },
+    {
+      "key": "shard_007",
+      "triangles": 590,
+      "volume": 0.003152540815730168
+    },
+    {
+      "key": "shard_008",
+      "triangles": 1062,
+      "volume": 0.0014886551069355437
+    },
+    {
+      "key": "shard_009",
+      "triangles": 766,
+      "volume": 0.0030780496666111697
+    },
+    {
+      "key": "shard_010",
+      "triangles": 748,
+      "volume": 0.001512512262137364
+    },
+    {
+      "key": "shard_011",
+      "triangles": 684,
+      "volume": 0.0017108791351496103
+    },
+    {
+      "key": "shard_012",
+      "triangles": 790,
+      "volume": 0.001995681685711138
+    },
+    {
+      "key": "shard_013",
+      "triangles": 666,
+      "volume": 0.0025552818025925466
+    },
+    {
+      "key": "shard_014",
+      "triangles": 388,
+      "volume": 0.0017311370140764342
+    },
+    {
+      "key": "shard_015",
+      "triangles": 768,
+      "volume": 0.002051975233326606
+    },
+    {
+      "key": "shard_016",
+      "triangles": 480,
+      "volume": 0.0018105718581891118
+    },
+    {
+      "key": "shard_017",
+      "triangles": 1372,
+      "volume": 0.001564405030187579
+    }
+  ],
+  "relativeVolumeError": 1.876620393230537e-12
+}

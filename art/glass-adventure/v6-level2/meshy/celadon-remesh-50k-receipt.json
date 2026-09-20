@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "celadon-lark-decanter",
+  "taskType": "remesh",
+  "taskId": "01a0c090-4b93-76b7-a17d-49e24fcb356e",
+  "status": "SUCCEEDED",
+  "estimatedCredits": 5,
+  "consumedCredits": 5,
+  "source": {
+    "taskId": "01a0c007-b204-7787-8ec8-0bf557db9114",
+    "variant": "pre_remeshed_glb",
+    "localFile": "celadon-lark-decanter-pre-remesh.glb",
+    "sha256": "34e4883dd62c2f1bdd09e7b899e6cd624ba51592e5da0358a1f8c72344f96f24"
+  },
+  "request": {
+    "target_formats": [
+      "glb"
+    ],
+    "target_polycount": 50000,
+    "topology": "triangle",
+    "origin_at": "bottom"
+  },
+  "modelUrlOmittedFromReceipt": true,
+  "credentialsPersisted": false,
+  "submittedAtUtc": "2026-09-20 20:45:13 UTC",
+  "readiness": "Diagnostic candidate; not approved or integrated.",
+  "downloadedAtUtc": "2026-09-20T20:46:16.720249+00:00",
+  "output": {
+    "file": "celadon-lark-decanter-remesh-50k.glb",
+    "bytes": 1958064,
+    "sha256": "5b9b101c7660251d64c82dedf8e1c2d361ec1b0980d7f3edcef65026cb6aabaa"
+  }
+}

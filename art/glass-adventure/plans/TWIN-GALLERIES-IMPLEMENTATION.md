@@ -69,12 +69,15 @@ source/output hashes and a reproducible exporter. They reuse the measured V5
 frame and inset, with original inspection stories; the campaign uses the interval
 painting. Runtime downloads include only assigned paintings.
 
-Amber Cadence Urn, Celadon Lark Decanter, Opaline Echo Amphora and Twin-Tone Harp
-remain preserved Meshy/Blender production candidates. Existing approved glass
-recipes provide working breakables in this first Twin route. The next asset pass
-must validate cavities/thickness, intact-to-shard reconstruction, material slots,
-mount fit and collision proxies before swapping recipes. The decorative harp
-does not require fracture, but its base proxy and rendering budget need review.
+Twin-Tone Harp is integrated against the listening court's east wall, with a
+measured base solid and actual renderer proof. Opaline Echo Amphora V2 has an
+open cavity, 18 closed fracture pieces and reviewed opal/gold/jade materials;
+it is integrated at the optional court exhibit, with actual intact and
+shattering render proofs. Amber Cadence Urn and Celadon
+Lark Decanter remain production candidates, with approved existing recipes
+keeping those encounters playable. A five-credit Celadon remesh failed topology
+and is preserved as rejected input. No candidate replaces a live breakable
+until geometry, materials and the actual runtime rendering pass review.
 
 ## Acceptance checklist
 
@@ -92,13 +95,14 @@ does not require fracture, but its base proxy and rendering budget need review.
 - [x] PR preparation/index/format; four strict lint findings corrected with targeted rechecks.
 - [x] Prepare reviewed commits for the existing PR; no merge or release.
 - [ ] Confirm pushed-revision CI; canonical HANDOFF records the exact revision/status.
-- [ ] Owner desktop/tablet microphone playtest; measure sustained performance separately.
+- [x] Owner completed Twin Galleries and accepted the lower/higher/pair learning sequence.
+- [ ] Recheck latest visual polish; measure sustained performance separately.
 
 ## Next after this batch
 
 1. Tune the player's low/high calibration, teaching clarity and journey pacing
    from device feedback. Do not expand mechanics before this feels comfortable.
-2. Finish V6 vessel fracture/material production and the harp; substitute content
+2. Finish the remaining V6 vessel fracture/material production; substitute content
    recipes without rewriting challenge or route logic.
 3. Design the singing-quality/collection pilot with the owner before implementing
    grades, coins or stars. Keep exploration rewards separate from vocal evidence.
@@ -122,14 +126,24 @@ remain separate choices and retain their progress.
    note alone must not open the exhibit. The portrait repeats the same pair.
 4. Try the three optional exhibits, walk through the final veil, return to the
    chooser, and revisit another gallery. Reload once to check the saved checkpoint.
-5. Check the mirror from the formerly striped angle; **View artwork** should be
-   centered below the heading and remain clear of Help on tablet.
+5. Check the mirror close up and while moving away. **View artwork** should be
+   centered in the first header row, above guidance and clear of Help on tablet.
+   The exit rim and its finish sparkles should remain above the floor.
 
 Record whether the second note feels comfortable, whether directions are clear,
 and the approximate first-visit duration. Sustained tablet heat/frame pacing and
 real microphone behavior remain the most useful owner evidence.
 
 ## Evidence and limits
+
+The subsequent owner-feedback polish has separate actual scene proofs at
+`../proofs/polish-2026-09-20/`: adaptive mirror capture and the ready/flourishing
+exit. Compiled header layout is checked from 320 through 1440 CSS pixels, with
+actual mouse/touch interaction tests. Close mirrors use bounded 1024/512 targets;
+distant mirrors retain cheaper 384/256 targets. Selection hysteresis prevents
+resolution chatter. These are correctness proofs, not physical-device frame-time
+or thermal measurements. The earlier evidence below records the playable
+campaign baseline.
 
 - Shared glass package: 43 files / 347 tests passed, plus its TypeScript check.
 - Root `pnpm beside-cue:typecheck`: passed across the shared/mobile packages.

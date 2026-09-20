@@ -64,6 +64,8 @@ export const requiredGameAssets = [
   'games/adventure-v6/low-note-keeper.webp',
   'games/adventure-v6/high-note-muse.webp',
   'games/adventure-v6/interval-between.webp',
+  'games/adventure-v6/twin-tone-resonance-harp.glb',
+  'games/adventure-v6/opaline-echo-amphora.glb',
   'games/adventure-audio-v1/m01-loop.mp3',
   'games/adventure-audio-v1/m03-loop.mp3',
   'games/adventure-audio-v1/a01-loop.mp3',

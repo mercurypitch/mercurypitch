@@ -91,6 +91,16 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     displayHeight: 0.62,
     fallbackShape: 'rounded',
   },
+  'opaline-v6': {
+    ...CLEAR_GLASS,
+    bundle: 'opaline-v6',
+    intactNode: 'breakable_l2_opaline_echo_amphora_intact',
+    shardPrefix: 'breakable_l2_opaline_echo_amphora_shard_',
+    shardCount: 18,
+    displayHeight: 0.92,
+    fallbackShape: 'rounded',
+    fragmentBudget: 18,
+  },
   portrait: {
     ...CLEAR_GLASS,
     bundle: 'legend-slab',
