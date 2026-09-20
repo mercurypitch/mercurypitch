@@ -239,8 +239,30 @@ describe('which button is lit', () => {
     )
   })
 
+  it('tells a word-level correction apart without being told which was pressed', async () => {
+    // Same lines, same line times -- only the words inside moved. The lines
+    // carry their words now, so the one on screen can be recognised cold.
+    const original = lines('one two', 'three four')
+    const edited = original.map((line, i) => ({
+      ...line,
+      words: line.text.split(' '),
+      wordStartsSec: [line.startSec, line.startSec + 0.4 + i],
+    }))
+    sessionLyricChoices.mockResolvedValue([
+      choice('imported', 'Original', original),
+      choice('edited', 'Edited', edited),
+    ])
+    setSong(roomSong('session:a', edited))
+    const { findByRole } = render(() => <JamLyricVersionPicker />)
+
+    expect(pressed(await findByRole('button', { name: 'Edited' }))).toBe('true')
+    expect(pressed(await findByRole('button', { name: 'Original' }))).toBe(
+      'false',
+    )
+  })
+
   it('follows the press when two versions read the same', async () => {
-    // Word-level corrections do not change the lines a room scrolls by.
+    // Two versions that differ only in where a word ENDS, say.
     const same = lines('one', 'two')
     sessionLyricChoices.mockResolvedValue([
       choice('imported', 'Original', same),
