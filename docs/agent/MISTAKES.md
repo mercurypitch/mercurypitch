@@ -954,6 +954,15 @@ Specs that never play from the middle do not notice.
 `Content-Range`, and wait for `seekable` to reach the end before it seeks.
 **See:** `serveSeekableTone` in `src/e2e/jam-lyrics-follow.spec.ts`.
 
+### `:hover` stays on the last thing a finger tapped
+
+A tablet has no pointer to move away, so a button keeps its `:hover` look
+after a tap until something else is tapped. If the hover look resembles the
+ON look (an accent border, say), a toggle that was just switched OFF goes on
+looking switched on -- a visual review of the jam room's More button read the
+folded state as open for exactly this reason. Put hover rules behind
+`@media (hover: hover)`, and never let hover and ON share a look.
+
 ### An explicit `min-height` removes a flex item's min-content floor
 
 **Symptom:** in the mapper's marker mode with the font zoomed up, a lyric line

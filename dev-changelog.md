@@ -135,10 +135,50 @@ max-width: max-content`), with a floor so it is never squeezed to a note
   name and buttons, then the strip on a line of its own. 73px.
 - Result at 1180x820, sidebar open, a real host's bar: header 38px, one 44px
   row, words from y=172 instead of about 217; timeline 216px long. At
-  1366/1280: 402/316px. A bar crowded past 380px of leftovers (a part badge in
-  Harmony or Relay; the preview room's 243px note) wraps the timeline under
-  the buttons, which is the old height and no worse. The preview note is why
-  the tablet browser test hides it: it is 243px that only a spec's room has.
+  1366/1280: 402/316px. A bar crowded past 380px of leftovers wraps the
+  timeline under the buttons, which is the old height and no worse. (These
+  are the numbers BEFORE the capsule below, which more than doubled them.)
+
+### One capsule, and a More button
+
+Owner, after testing the two rows: the live-pitch toggle "is just sitting in
+the middle" between the transport and Unison / Harmony Stack / Relay, and do
+those make sense on a karaoke song? Asked for: a container like the
+transport's, the basics always there, the rest behind a "..." that can be
+left open -- the practice bars' More.
+
+- **They do not make sense on a song, and that is checkable.** The room mode
+  is read in two places: `jamMyRole`, which deals out `jamExerciseMelody()`
+  through `targetForRole`, and `JamExerciseCanvas`. Nothing under
+  `JamSongStage` reads it; a song's parts are dealt line by line in
+  `JamAssignBar`. So on a song the picker is not folded away, it is not drawn,
+  and neither is More, which would have had nothing behind it. The "You sing:
+  Third" badge is gated the same way -- left at Harmony Stack from a drill, it
+  named a part on a song that nobody was singing.
+- **`JamControlBar`** (new) takes the transport, the tempo, the toggle and the
+  mode picker out of `JamPanel` (-110 lines from an oversized file). The
+  capsule is the transport's old glass; `JamTransport` draws `bare` inside it
+  (`display: contents`, so its buttons are items of the capsule's own row).
+  A guest's capsule is the one button that is theirs. On a phone the toggle
+  lives in the room menu, so a guest's capsule would be an empty box and is
+  hidden.
+- **More** is the practice bars' contract -- same labels, `aria-expanded`, the
+  active look while open -- with two differences. It is remembered
+  (`jamMoreControlsPinned` in `jam-view-prefs`, a validated boolean), because
+  a host who sets the tempo between every take should open it once. And what
+  it opens is REMOVED when folded rather than squeezed to `max-width: 0`: a
+  zero-width control still takes keyboard focus, and still costs a wrapping
+  row one of its gaps. `.extras` is `display: contents`, so the tempo and the
+  mode wrap one at a time on an upright tablet instead of as a block. The
+  entry animation grows in place; the first cut slid in from the left, and a
+  control that wraps to the start of the next line began outside the row (the
+  browser test measured it 6px out).
+- Tempo goes behind More with the mode, as it does in the Compose bar.
+- Measured at 1180x820, sidebar open, a real host on a song: the bar is 205px
+  (was 434), so the timeline is 627px and its scrubber 445px (was 216). The
+  preview room's note no longer wraps the row at that size -- it is within 6px
+  of doing so, which is why the tablet test still hides it, and why the
+  "wraps when there is no room" test moved to a 1000px window.
 
 ### The lyric sheet would not be scrolled
 
@@ -162,6 +202,17 @@ lasted a frame.
   line's start and back raised it, nothing could lower it, and a stopped song
   pulled the sheet back to a line it had never left -- the browser spec caught
   that about one run in three.
+- One thing is never paid back: a line that changed under the hand on a song
+  that is NOT running (`playing`, a new prop). The same spec went on failing
+  about one run in six, only on a busy machine, and the cause was the spec's
+  own timing making a rare thing common: its wait for the glide to finish is
+  1.5 s long, its lines are 1.5 s long, so its pause landed on the END of a
+  line every time. A pause fades the audio out, the fade carried the clock
+  into the next line after the wheel had already opened a hold, and the
+  release paid that line back -- 242px, on a paused song. The line is taken
+  as read instead; the next one to start brings the sheet along, and a seek
+  with no hand on the words still moves it at once. A probe that logged events
+  never reproduced it: its own 50 ms moved the pause off the boundary.
 - The run-in (a stop, a scrub to the top) takes the sheet to the top; a break
   between lines leaves it alone. A new layout still re-pins at once, unless the
   hands are on it.
