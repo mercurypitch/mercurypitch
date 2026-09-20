@@ -417,6 +417,14 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     centred: number
     /** Whether the reader's hand was on the words the last time this ran. */
     held: boolean
+    /**
+     * The sheet is where the READER left it, not where the song put it.
+     *
+     * Raised when a hand comes off and nothing is owed; lowered whenever the
+     * song moves the sheet itself. While it is up, a new layout is not a
+     * reason to move.
+     */
+    parked: boolean
   }
 
   /**
@@ -452,6 +460,17 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
    * is taken as read instead, and the next one to start brings the sheet
    * along as usual, so it is still never left behind.
    *
+   * And a place the reader chose outlives a layout that shifts under it.
+   * The box changes height for reasons that have nothing to do with the
+   * words -- somebody joins and the header re-flows, a notice takes a row
+   * above the stage -- and each of those used to count as "the sung line
+   * has moved, find it again": a reader who had scrolled ahead on a paused
+   * song was taken back to the sung line because a friend walked in. (The
+   * same spec a third time: the preview room's people arrive about four
+   * seconds in, and on a busy machine that landed inside the test's wait.)
+   * `parked` remembers that the hand came off with nothing owed; the next
+   * line to start, a seek, or Play's first line still moves the sheet.
+   *
    * Not scrollIntoView: it scrolls every scrollable ancestor, so following
    * the song dragged the whole page down and the header, the picker and
    * the transport all scrolled out of reach. Setting scrollTop moves only
@@ -483,6 +502,7 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
       lines,
       centred: last?.centred ?? -1,
       held,
+      parked: last?.parked ?? false,
     }
     if (box === undefined) return stay
 
@@ -500,7 +520,10 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
 
     // The hand has just come off a song that is standing still: whatever
     // moved under it is taken as read, not paid back.
-    if (last?.held === true && !running) return { ...stay, centred: wanted }
+    const released = last?.held === true
+    if (released && !running) {
+      return { ...stay, centred: wanted, parked: true }
+    }
 
     // A new layout moves a LINE, so the line has to be found again. It does
     // not move the top: a sheet that is already there has nowhere to go.
@@ -508,9 +531,21 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
       wanted !== -1 &&
       last !== undefined &&
       (layout !== last.layout || lines !== last.lines)
-    if (!relaid && wanted === stay.centred) return stay
+    if (wanted === stay.centred) {
+      // Nothing owed: the sheet is the reader's until the song moves on.
+      if (!relaid) return released ? { ...stay, parked: true } : stay
+      // The song has not moved and the reader has: a layout that shifted
+      // under a parked sheet is not the song's to answer.
+      if (stay.parked) return stay
+    }
 
-    const moved: Followed = { layout, lines, centred: wanted, held }
+    const moved: Followed = {
+      layout,
+      lines,
+      centred: wanted,
+      held,
+      parked: false,
+    }
     if (wanted === -1) {
       box.scrollTo({ top: 0, behavior: 'smooth' })
       return moved
