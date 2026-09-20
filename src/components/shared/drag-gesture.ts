@@ -121,7 +121,20 @@ export function dragGesture(
   }
 
   const onPointerDown = (event: PointerEvent): void => {
-    if (activePointerId !== null) return
+    if (activePointerId !== null) {
+      // A second finger while the first is dragging is ignored -- and the
+      // first is dragging for exactly as long as the element holds its
+      // capture. A drag whose ending never arrived (a system gesture taking
+      // the touch, a dialog opening under the finger: browsers do not
+      // always send the cancel they owe) left this id set for good, and
+      // every later press returned here. Taps still worked, because a click
+      // needs none of this; the surface simply could not be dragged again
+      // until it was rebuilt. So a press that finds the old pointer gone
+      // ends that drag on its behalf, and carries on as the new one.
+      if (element.hasPointerCapture?.(activePointerId) !== false) return
+      activePointerId = null
+      optionsAccessor().onEnd?.(event, 'lostpointercapture')
+    }
     // A stale pending press can linger: before activation there is no pointer
     // capture, so a sub-threshold press released outside the element never
     // delivers pointerup here. A fresh press supersedes it.
