@@ -93,6 +93,10 @@ words scroll under your finger while the song plays.
 - **Handing out lines on a touch screen says what it does.** While a singer
   is picked the words wear a frame in their colour, and a tablet is told the
   words scroll again after Done.
+- **Word-timed lyric files from other apps keep their word timing.** Files
+  that mark each word's time as `<00:24.21>` showed those marks as lyrics, and
+  lit each line evenly. Karaoke Night, the mixer and jam rooms now read them
+  the way they read the app's own files.
 - **Smaller things.** Words you scrolled on a paused song stay put when
   somebody joins. Every invite link shows the Jam picture in a chat. The
   chat button is named for screen readers.

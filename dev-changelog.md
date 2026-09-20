@@ -285,6 +285,35 @@ lyrics, reusing it if possible.
   page: a word fills in a third of a second and then waits lit, so a poll
   from outside sampled the wait and never once saw a fill.
 
+### The shared parser reads `<mm:ss.xx>` itself
+
+The respelling above was a shim in the jam room; Karaoke Night and the mixer
+still saw an enhanced (A2) sheet as one with no word times, and showed its
+stamps as words.
+
+- **One pattern, both spellings.** `LRC_TS_GLOBAL` (`lyrics-service`) is now
+  `\[..\]|<..>` -- two alternatives rather than one class of brackets, so a
+  stamp's brackets have to match. `LRC_TS_SPLIT` is gone: a second regex that
+  had to agree with the first is how this kind of bug is made.
+  `squareWordStamps` is deleted, and the editor's `stripInlineWordStamps` reads
+  both as well.
+- **Widening the regex was not enough.** The spec's layout opens a line with a
+  stamp and closes it with one: `[00:06.47] <00:07.67> And <00:10.28>`. The
+  old parser counted non-empty runs of words against stamps, so a stamp with
+  no words after it put every later word one stamp EARLY -- through the shim
+  too. Runs are now read by position: a run belongs to the stamp it follows.
+- **A leading stamp times the first word only in the angle spelling.**
+  `[00:12.00][00:45.00]Chorus` is standard LRC for "sung again at", so a
+  leading square stamp still leaves the first words on the line start. That
+  makes the offset shift keep each stamp's spelling (`shiftInlineLrcTimestamps`):
+  respelled, a file would read differently for carrying `[offset:]`.
+- **Square-bracket files read as before.** 20,000 generated well-formed lines
+  (words, then stamp + words, optional closing stamp -- what every writer in
+  the app produces) came out identical to the old parser, to the last float.
+  The two differ only where a square stamp has no words after it, and there
+  the old answer was the mis-slotted one. Every writer still writes `[..]`;
+  none of them comes through this pattern.
+
 ### The room's header and corner, after an evening on a tablet
 
 Owner, the day the two rows and the word fill reached dev: four things, "a
