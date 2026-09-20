@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "date": "2026-09-21",
+  "source": "Stage 4 delivery plus dedicated vendor-three chunk; before live map integration",
+  "measurement": "Uncompressed static JavaScript closure, not runtime asset downloads or physical device timing",
+  "regression": {
+    "guitarNightBeforeKb": 2066,
+    "guitarNightAfterKb": 1432,
+    "cause": "Three.js was included in generic vendor and inherited by unrelated entries"
+  },
+  "entries": {
+    "drum-night.html": {
+      "bytes": 517063,
+      "budgetKb": 640,
+      "chunks": 30
+    },
+    "ear-lab.html": {
+      "bytes": 4781735,
+      "budgetKb": 5400,
+      "chunks": 96
+    },
+    "glass-game.html": {
+      "bytes": 1186788,
+      "budgetKb": 1450,
+      "chunks": 10
+    },
+    "glass.html": {
+      "bytes": 338883,
+      "budgetKb": 420,
+      "chunks": 19
+    },
+    "guitar-night.html": {
+      "bytes": 1465561,
+      "budgetKb": 1800,
+      "chunks": 61
+    },
+    "index.html": {
+      "bytes": 4781735,
+      "budgetKb": 5400,
+      "chunks": 96
+    },
+    "jam-rooms.html": {
+      "bytes": 4781735,
+      "budgetKb": 5400,
+      "chunks": 96
+    },
+    "jam.html": {
+      "bytes": 4781735,
+      "budgetKb": 5400,
+      "chunks": 96
+    },
+    "karaoke-night.html": {
+      "bytes": 359969,
+      "budgetKb": 440,
+      "chunks": 36
+    },
+    "karaoke.html": {
+      "bytes": 359969,
+      "budgetKb": 440,
+      "chunks": 36
+    },
+    "mirror.html": {
+      "bytes": 351971,
+      "budgetKb": 430,
+      "chunks": 18
+    },
+    "piano-night.html": {
+      "bytes": 305091,
+      "budgetKb": 375,
+      "chunks": 26
+    },
+    "pitch-training.html": {
+      "bytes": 4781735,
+      "budgetKb": 5400,
+      "chunks": 96
+    },
+    "vocal-range-test.html": {
+      "bytes": 351971,
+      "budgetKb": 430,
+      "chunks": 18
+    },
+    "vocal-remover.html": {
+      "bytes": 359969,
+      "budgetKb": 440,
+      "chunks": 36
+    },
+    "voice-type-test.html": {
+      "bytes": 351971,
+      "budgetKb": 430,
+      "chunks": 18
+    },
+    "which-singer-has-my-vocal-range.html": {
+      "bytes": 351971,
+      "budgetKb": 430,
+      "chunks": 18
+    }
+  }
+}

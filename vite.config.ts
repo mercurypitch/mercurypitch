@@ -654,6 +654,10 @@ export default defineConfig(({ command, mode }) => {
               // stack a first-paint dependency, which is the exact outcome the
               // paragraph above set out to prevent.
               if (id.includes('typegpu')) return 'vendor-gpu'
+              // Three.js belongs to the Glassworks renderer. Filing
+              // it under generic vendor makes unrelated standalone rooms
+              // download the museum renderer before their first paint.
+              if (id.includes('/node_modules/three/')) return 'vendor-three'
               // VexFlow is only needed after a user opens a notation surface.
               // Keep its engraving/font payload out of the initial app vendor
               // chunk so adding sheet music does not tax every first visit.

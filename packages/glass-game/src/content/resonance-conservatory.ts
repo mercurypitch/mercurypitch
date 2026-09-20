@@ -75,7 +75,9 @@ function room(
     yawQuarterTurns,
     floorArt: { recipeId, palette: 'garden' },
     audioSceneId: 'garden',
-    ...(after !== undefined ? { checkpointRequiresCompleted: { entry: [after] } } : {}),
+    ...(after !== undefined
+      ? { checkpointRequiresCompleted: { entry: [after] } }
+      : {}),
   }
 }
 
