@@ -598,6 +598,7 @@ export const JamSongStage: Component = () => {
               onSeek={jamIsHost() ? (to) => seekTo(to) : undefined}
               lines={song().lines}
               positionSec={jamSongPositionSec}
+              playing={() => jamExercisePlaying() && !jamExercisePaused()}
               showNotes={false}
               // Everybody gets it, guests included: the transport is the
               // host's, but how loud the original singer is in your own

@@ -51,8 +51,14 @@ const rectAt = (top: number, height: number) => () =>
 function renderSheet(lines = LINES) {
   const [position, setPosition] = createSignal(-5)
   const [shown, setShown] = createSignal(lines)
+  const [playing, setPlaying] = createSignal(true)
   const utils = render(() => (
-    <JamSongLyrics lines={shown()} positionSec={position} showNotes={false} />
+    <JamSongLyrics
+      lines={shown()}
+      positionSec={position}
+      playing={playing}
+      showNotes={false}
+    />
   ))
   const scroll = utils.container.querySelector('[data-align]') as HTMLElement
   scroll.getBoundingClientRect = () => rectAt(100, 200)()
@@ -65,7 +71,7 @@ function renderSheet(lines = LINES) {
     row.getBoundingClientRect = rectAt(100 + index * 120, 40)
     Object.defineProperty(row, 'offsetHeight', { value: 40 })
   }
-  return { ...utils, scroll, setPosition, setShown }
+  return { ...utils, scroll, setPosition, setShown, setPlaying }
 }
 
 const touch = (type: string, touches: number): Event => {
@@ -245,6 +251,57 @@ describe('never staying away', () => {
     scroll.dispatchEvent(touch('touchcancel', 0))
     vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
     setPosition(4.1)
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('a song that is standing still', () => {
+  it('does not pay back a line that changed under a hand', () => {
+    // A pause fades the audio out, and one that lands on the end of a line
+    // carries the clock into the next. The reader was already scrolling; a
+    // second later the sheet was pulled back to that line, on a paused song.
+    const { scroll, setPosition, setPlaying } = renderSheet()
+    setPosition(3.9)
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+    setPlaying(false)
+    scroll.dispatchEvent(new Event('wheel', { bubbles: true }))
+    setPosition(4.05) // the fade-out, over the line's end
+    vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+  })
+
+  it('is not left behind for it: the next line after Play brings the sheet', () => {
+    const { scroll, setPosition, setPlaying } = renderSheet()
+    setPosition(3.9)
+    setPlaying(false)
+    scroll.dispatchEvent(new Event('wheel', { bubbles: true }))
+    setPosition(4.05)
+    vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
+    setPlaying(true)
+    setPosition(5) // the same line: nothing has started
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+    setPosition(6.1)
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+  })
+
+  it('still goes where it is sent: a seek with no hand on the words', () => {
+    const { setPosition, setPlaying } = renderSheet()
+    setPosition(2.5)
+    setPlaying(false)
+    setPosition(8.2) // the host drags the timeline on a paused song
+    expect(scrollTo).toHaveBeenCalledTimes(2)
+  })
+
+  it('still catches up when the song was running as the hand came off', () => {
+    // Paused and resumed under the same hold: what counts is the moment the
+    // hand goes, and then the song is running.
+    const { scroll, setPosition, setPlaying } = renderSheet()
+    setPosition(2.5)
+    scroll.dispatchEvent(new Event('wheel', { bubbles: true }))
+    setPlaying(false)
+    setPlaying(true)
+    setPosition(4.5)
+    vi.advanceTimersByTime(LYRICS_HANDS_OFF_MS + 1)
     expect(scrollTo).toHaveBeenCalledTimes(2)
   })
 })

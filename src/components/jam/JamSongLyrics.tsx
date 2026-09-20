@@ -32,6 +32,13 @@ import styles from './JamSongLyrics.module.css'
 interface JamSongLyricsProps {
   lines: LyricsLineTiming[]
   positionSec: () => number
+  /**
+   * Whether the song is running. A stopped or paused song still moves the
+   * sheet when it is moved (a click on a line, a drag of the timeline); what
+   * it never does is pay back a line that changed while the reader's hand
+   * was on the words. Left out, the song is taken to be running.
+   */
+  playing?: () => boolean
   /** Shows the note name under each line when the room wants pitch help. */
   showNotes: boolean
   /** Your score per line, filled in as the playhead leaves each one. */
@@ -389,6 +396,8 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     lines: readonly LyricsLineTiming[]
     /** The line the sheet was last brought to; -1 for the top, or nothing. */
     centred: number
+    /** Whether the reader's hand was on the words the last time this ran. */
+    held: boolean
   }
 
   /**
@@ -414,6 +423,16 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
    * stopped song then pulled the sheet back to a line it had never left
    * (caught by jam-lyrics-follow.spec.ts, about one run in three).
    *
+   * One thing is never paid back: a line that changed under the reader's
+   * hand on a song that is NOT running. Pausing is not instant -- the audio
+   * fades out over a few dozen milliseconds, and a pause that lands on the
+   * end of a line carries the clock into the next one. A reader who paused
+   * to look something up and was already scrolling had the sheet pulled
+   * back to that new line a second later, on a song that was standing still
+   * (the same spec again, about one run in six on a busy machine). The line
+   * is taken as read instead, and the next one to start brings the sheet
+   * along as usual, so it is still never left behind.
+   *
    * Not scrollIntoView: it scrolls every scrollable ancestor, so following
    * the song dragged the whole page down and the header, the picker and
    * the transport all scrolled out of reach. Setting scrollTop moves only
@@ -438,8 +457,14 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     const i = currentIndex()
     const runIn = inRunIn()
     const held = handsOff.held()
+    const running = props.playing?.() ?? true
     const box = scrollRef
-    const stay: Followed = { layout, lines, centred: last?.centred ?? -1 }
+    const stay: Followed = {
+      layout,
+      lines,
+      centred: last?.centred ?? -1,
+      held,
+    }
     if (box === undefined) return stay
 
     // Where the song wants the sheet: on a line, at the top for the run-in
@@ -454,6 +479,10 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
     // compared afresh when they let go.
     if (held) return stay
 
+    // The hand has just come off a song that is standing still: whatever
+    // moved under it is taken as read, not paid back.
+    if (last?.held === true && !running) return { ...stay, centred: wanted }
+
     // A new layout moves a LINE, so the line has to be found again. It does
     // not move the top: a sheet that is already there has nowhere to go.
     const relaid =
@@ -462,7 +491,7 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
       (layout !== last.layout || lines !== last.lines)
     if (!relaid && wanted === stay.centred) return stay
 
-    const moved: Followed = { layout, lines, centred: wanted }
+    const moved: Followed = { layout, lines, centred: wanted, held }
     if (wanted === -1) {
       box.scrollTo({ top: 0, behavior: 'smooth' })
       return moved
