@@ -18,6 +18,9 @@ words scroll under your finger while the song plays.
 - **A ready pitch guide no longer takes a row of the lanes.** You still get
   the "Pitch guide ready" notice. The row appears only while a guide is being
   worked out, or when there will not be one.
+- **A jam room's words light up one by one.** The line being sung fills word
+  by word, the way Karaoke Night does. A song you mapped word by word follows
+  your mapping; any other song shares the line out evenly.
 - **A jam room keeps two rows above the words, not three.** The song's name
   moved into the room's header, with the rest of it on a hover or a tap. The
   timeline sits beside the playback buttons.
