@@ -620,6 +620,34 @@ page. Nothing had tested the share path in a browser at all.
   JPEG under the id the link names, the link opens on "Someone sent you this",
   and a refused clipboard uploads nothing.
 
+**Three things the owner found testing that on dev.**
+
+- **A toast at 1100 lost to every hand-numbered modal.** Sharing from the
+  account page's zoomed voiceprint (`.zoomOverlay`, z 4000) put the reply
+  behind it, where the overlay's `backdrop-filter` blurred it as well. The
+  scale in `mobile-kit.css` already meant "toasts above everything" -- it was
+  written before the modals that ignored it (4000 here, 12000 for the session
+  export, 18001 for the night music import). `--z-toast` is 20000: above every
+  one of them, below the always-on-top band (2147483000+: consent, database
+  notice, portable console). `z-scale.test.ts` reads the stylesheets and fails
+  on any new z-index in between, which is how this would have been caught.
+- **"A voiceprint" was a placeholder in a headline's clothes.** The unfurl
+  said "David Bowie is my voice twin" while the page it opened said "A
+  voiceprint" -- the same link, two different things, and the interesting half
+  missing from the one a human reads. `sharedVoiceprintTitle` is now the only
+  title builder and takes a voice: `'mine'` for a chat, where the sender is
+  speaking, `'theirs'` for the page, where the recipient is being told about
+  someone ("David Bowie is their voice twin", "Their voiceprint"). The worker's
+  `voiceprintTitle` delegates to it after `safeText`. The written fallback lost
+  its "Voice twin:" chip, which the heading now says.
+- **The status line was 12px of grey.** It is the only thing on screen that
+  says a link reached the clipboard. It is a pill now -- 0.95rem, a tick or an
+  alert, tinted green or red -- because the outcome carries a tone:
+  `ShareStatus { text, tone }`, built by `shareOutcomeStatus` /
+  `copyOutcomeStatus`, rendered by one `ShareStatusNote` at all three Mirror
+  sites. Onboarding's Twin beat gets the same pill in the onboarding palette
+  rather than the 0.75rem footnote it was borrowing.
+
 Not tested by anything here: `HTMLRewriter` itself (no Workers test pool; a
 stand-in records what would be written), and an unfurl in a real chat app.
 

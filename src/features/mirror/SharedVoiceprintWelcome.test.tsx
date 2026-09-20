@@ -15,7 +15,7 @@ describe('SharedVoiceprintWelcome', () => {
     expect(screen.getByText('Someone sent you this')).toBeTruthy()
     expect(screen.getByText('C3 – D5')).toBeTruthy()
     expect(screen.getByText('2 octaves + 2 semitones')).toBeTruthy()
-    expect(screen.getByText(/Freddie Mercury/)).toBeTruthy()
+    expect(screen.getByText('Freddie Mercury is their voice twin')).toBeTruthy()
     expect(screen.getByText('87 / 100')).toBeTruthy()
     expect(screen.getByText('92 / 100')).toBeTruthy()
   })
@@ -29,8 +29,12 @@ describe('SharedVoiceprintWelcome', () => {
   })
 
   it('stays anonymous unless the sender opted into a name', () => {
+    // The heading names the twin, which is the half worth reading. With a
+    // name it names both; "A voiceprint" -- the old nameless heading -- read
+    // like a placeholder under "Someone sent you this".
     render(() => <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />)
-    expect(screen.getByText('A voiceprint')).toBeTruthy()
+    expect(screen.getByText('Freddie Mercury is their voice twin')).toBeTruthy()
+    expect(screen.queryByText('A voiceprint')).toBeNull()
 
     cleanup()
     render(() => (
@@ -39,7 +43,22 @@ describe('SharedVoiceprintWelcome', () => {
         onStart={() => {}}
       />
     ))
-    expect(screen.getByText("Marko's voiceprint")).toBeTruthy()
+    expect(
+      screen.getByText("Freddie Mercury is Marko's voice twin"),
+    ).toBeTruthy()
+  })
+
+  it('speaks of the sender in the third person, never in the first', () => {
+    // The unfurl says "my voice twin" because a chat shows the sender's own
+    // words. The page is the recipient reading about someone else.
+    render(() => <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />)
+    expect(screen.queryByText(/is my voice twin/)).toBeNull()
+
+    cleanup()
+    render(() => (
+      <SharedVoiceprintWelcome data={{ lo: 48, hi: 74 }} onStart={() => {}} />
+    ))
+    expect(screen.getByText('Their voiceprint')).toBeTruthy()
   })
 
   it('renders a partial take without empty rows', () => {

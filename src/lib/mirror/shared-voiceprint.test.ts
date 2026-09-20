@@ -118,6 +118,28 @@ describe('sharedVoiceprintTitle', () => {
     expect(sharedVoiceprintTitle({ lo: 48 })).toBe('A voiceprint')
     expect(sharedVoiceprintTitle({ lo: 48, n: '' })).toBe('A voiceprint')
   })
+
+  it('leads with the twin, which is the interesting half', () => {
+    expect(sharedVoiceprintTitle({ lo: 48, tw: 'David Bowie' })).toBe(
+      'David Bowie is my voice twin',
+    )
+    expect(
+      sharedVoiceprintTitle({ lo: 48, tw: 'David Bowie', n: 'Marko' }),
+    ).toBe("David Bowie is Marko's voice twin")
+  })
+
+  it("speaks of the sender in the third person on the recipient's page", () => {
+    // The unfurl is the sender talking in a chat; the page is the recipient
+    // being told about someone. "A voiceprint" under "Someone sent you this"
+    // was the one that read like a placeholder.
+    expect(sharedVoiceprintTitle({ lo: 48, tw: 'David Bowie' }, 'theirs')).toBe(
+      'David Bowie is their voice twin',
+    )
+    expect(sharedVoiceprintTitle({ lo: 48 }, 'theirs')).toBe('Their voiceprint')
+    expect(sharedVoiceprintTitle({ lo: 48, n: 'Marko' }, 'theirs')).toBe(
+      "Marko's voiceprint",
+    )
+  })
 })
 
 describe('formatSpan', () => {

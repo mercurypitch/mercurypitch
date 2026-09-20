@@ -960,6 +960,38 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
+/**
+ * A line under the share buttons, and how it should look: a copied link is
+ * worth seeing from across the room, a refused clipboard is worth seeing
+ * too but in the other colour.
+ */
+export interface ShareStatus {
+  text: string
+  tone: 'ok' | 'bad'
+}
+
+/** Said well, in green. */
+export function statusOk(text: string): ShareStatus {
+  return { text, tone: 'ok' }
+}
+
+/** Said plainly, in red: nothing happened, and the reader has to know. */
+export function statusBad(text: string): ShareStatus {
+  return { text, tone: 'bad' }
+}
+
+/** What to show after a share, or null when the sheet was simply closed. */
+export function shareOutcomeStatus(outcome: ShareOutcome): ShareStatus | null {
+  const message = shareOutcomeMessage(outcome)
+  return message === null ? null : statusOk(message)
+}
+
+/** What to show after a copy — only one of the three went well. */
+export function copyOutcomeStatus(outcome: CopyOutcome): ShareStatus {
+  const message = copyOutcomeMessage(outcome)
+  return outcome === 'copied' ? statusOk(message) : statusBad(message)
+}
+
 /** What to tell someone after `shareCard`, in the words the Mirror uses. */
 export function shareOutcomeMessage(outcome: ShareOutcome): string | null {
   switch (outcome) {

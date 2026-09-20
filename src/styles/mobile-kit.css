@@ -44,7 +44,14 @@
   --z-focus: 500;
   --z-sheet: 600;
   --z-modal: 1000;
-  --z-toast: 1100;
+  /* Above every modal, including the hand-numbered ones this scale was
+     written to replace (the account's zoomed portrait at 4000, the session
+     export dialog at 12000, the night music import at 18001). A toast that
+     lands behind the dialog that raised it is a toast nobody reads -- and
+     behind a backdrop-filter it is not even legible. Still below the
+     always-on-top band (2147483000+: consent, database notice, console),
+     which is meant to outrank everything. */
+  --z-toast: 20000;
 
   /* ── Glass — the translucent-chrome recipe (chrome only, never content).
      The color falls back to the app-shell token when present. ── */

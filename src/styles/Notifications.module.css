@@ -22,7 +22,7 @@
   position: fixed;
   top: calc(env(safe-area-inset-top) + 0.6rem);
   right: 0.6rem;
-  z-index: var(--z-toast, 11000);
+  z-index: var(--z-toast, 20000);
   display: flex;
   flex-direction: column;
   gap: 0.4rem;

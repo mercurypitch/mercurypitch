@@ -38,7 +38,7 @@ export function SharedVoiceprintWelcome(
     <section class="shared-vp" aria-labelledby="shared-vp-title">
       <p class="shared-vp-eyebrow">Someone sent you this</p>
       <h1 class="shared-vp-title" id="shared-vp-title">
-        {sharedVoiceprintTitle(props.data)}
+        {sharedVoiceprintTitle(props.data, 'theirs')}
       </h1>
 
       <Show when={card()}>
@@ -48,7 +48,8 @@ export function SharedVoiceprintWelcome(
       {/* The card already draws the range, the twin, the accuracy and the
           steadiness. This block is the same information in words, so it
           appears only when no card could be drawn — a caption where a
-          drawing is impossible, never a repetition beside one. */}
+          drawing is impossible, never a repetition beside one. The twin is
+          not among them: the heading above names it either way. */}
       <Show when={card() == null}>
         <div class="shared-vp-card">
           <Show when={range()}>
@@ -56,12 +57,6 @@ export function SharedVoiceprintWelcome(
           </Show>
           <Show when={span()}>
             <p class="shared-vp-span">{span()}</p>
-          </Show>
-
-          <Show when={props.data.tw}>
-            <p class="mirror-chip shared-vp-twin">
-              Voice twin: {props.data.tw}
-            </p>
           </Show>
 
           <Show when={props.data.ac != null || props.data.sd != null}>

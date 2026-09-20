@@ -31,6 +31,14 @@ test.describe('a voiceprint that arrived by link', () => {
     )
 
     await expect(page.getByText('Someone sent you this')).toBeVisible()
+    // Named for the twin, and in the third person: the recipient is being
+    // told about someone. The unfurl says "my voice twin" because a chat
+    // shows the sender's own words; this page is not the sender talking.
+    await expect(
+      page.getByRole('heading', {
+        name: 'Freddie Mercury is their voice twin',
+      }),
+    ).toBeVisible()
     await expect(page.locator('.shared-vp-figure canvas')).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Meet your voice' }),
@@ -59,7 +67,6 @@ test.describe('a voiceprint that arrived by link', () => {
     await expect(shared.locator('.shared-vp-card')).toHaveCount(0)
     await expect(shared.locator('.shared-vp-range')).toHaveCount(0)
     await expect(shared.locator('.shared-vp-stats')).toHaveCount(0)
-    await expect(shared.locator('.shared-vp-twin')).toHaveCount(0)
   })
 
   test('falls back to the written numbers when no twin was named', async ({

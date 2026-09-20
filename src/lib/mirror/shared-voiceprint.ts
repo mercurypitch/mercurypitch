@@ -177,12 +177,30 @@ export function parseVoiceprintLink(
 }
 
 /**
- * How the recipient's view names the sender. Anonymous unless the singer
- * opted into a name — the payload carries none by default.
+ * The headline a shared voiceprint gets: "David Bowie is Marko's voice twin",
+ * or whatever of that the link carries.
+ *
+ * Two voices, because the same sentence has two readers. In a chat the
+ * sender is speaking ("my voice twin"); on the page the recipient is being
+ * told about someone ("their voice twin"). The nameless fallback moves the
+ * same way: "A voiceprint" is how a link describes itself in a feed, but
+ * under "Someone sent you this" it is theirs.
  */
-export function sharedVoiceprintTitle(data: VoiceprintShareData): string {
+export function sharedVoiceprintTitle(
+  data: VoiceprintShareData,
+  voice: 'mine' | 'theirs' = 'mine',
+): string {
   const name = data.n
-  return name != null && name !== '' ? `${name}'s voiceprint` : 'A voiceprint'
+  const twin = data.tw
+  const named = name != null && name !== ''
+  if (twin != null && twin !== '') {
+    if (named) return `${twin} is ${name}'s voice twin`
+    return voice === 'mine'
+      ? `${twin} is my voice twin`
+      : `${twin} is their voice twin`
+  }
+  if (named) return `${name}'s voiceprint`
+  return voice === 'mine' ? 'A voiceprint' : 'Their voiceprint'
 }
 
 /**
