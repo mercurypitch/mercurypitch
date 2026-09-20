@@ -8,7 +8,7 @@
 // the outcome contract the call sites now gate on.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { shareCard } from './card-renderer'
+import { cardToUnfurlBlob, shareCard } from './card-renderer'
 
 const blob = new Blob(['x'], { type: 'image/png' })
 
@@ -95,5 +95,37 @@ describe('shareCard — onSheetOpening', () => {
     const onSheetOpening = vi.fn()
     await shareCard(blob, 'card.png', { onSheetOpening })
     expect(onSheetOpening).toHaveBeenCalledTimes(1)
+  })
+})
+
+// The share sheet gets a PNG; the link's unfurl gets a JPEG of the same card,
+// because a painted portrait is 2 MB lossless and the store takes only JPEG.
+describe('cardToUnfurlBlob', () => {
+  function canvasGiving(blob: Blob | null): {
+    canvas: HTMLCanvasElement
+    asked: () => unknown[]
+  } {
+    let asked: unknown[] = []
+    const canvas = {
+      toBlob: (done: (b: Blob | null) => void, ...rest: unknown[]) => {
+        asked = rest
+        done(blob)
+      },
+    } as unknown as HTMLCanvasElement
+    return { canvas, asked: () => asked }
+  }
+
+  it('asks for a JPEG', async () => {
+    const jpeg = new Blob(['x'], { type: 'image/jpeg' })
+    const { canvas, asked } = canvasGiving(jpeg)
+    expect(await cardToUnfurlBlob(canvas)).toBe(jpeg)
+    expect(asked()[0]).toBe('image/jpeg')
+  })
+
+  it('gives nothing rather than a picture the store would refuse', async () => {
+    // A browser that ignores the type hands back a PNG.
+    const png = new Blob(['x'], { type: 'image/png' })
+    expect(await cardToUnfurlBlob(canvasGiving(png).canvas)).toBeNull()
+    expect(await cardToUnfurlBlob(canvasGiving(null).canvas)).toBeNull()
   })
 })

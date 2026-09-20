@@ -83,7 +83,7 @@ describe('voiceprintMetaTags', () => {
   it('points at the stored card when the link names one', () => {
     const meta = voiceprintMetaTags(at(`?v=${PAYLOAD}&og=aB3xY9zQ01`))
     expect(meta?.image).toBe(
-      'https://mercurypitch.com/api/og/card/aB3xY9zQ01.png',
+      'https://mercurypitch.com/api/og/card/aB3xY9zQ01.jpg',
     )
   })
 
@@ -102,7 +102,7 @@ describe('voiceprintMetaTags', () => {
       new URL(`https://mirror.mercurypitch.com/?v=${PAYLOAD}&og=aB3xY9zQ01`),
     )
     expect(meta?.image).toBe(
-      'https://mirror.mercurypitch.com/api/og/card/aB3xY9zQ01.png',
+      'https://mirror.mercurypitch.com/api/og/card/aB3xY9zQ01.jpg',
     )
   })
 })
@@ -196,7 +196,7 @@ describe('decorateVoiceprintMeta', () => {
       async () => true,
     )
     expect(written.get('meta[property="og:image"]')).toBe(
-      `https://mercurypitch.com/api/og/card/${CARD}.png`,
+      `https://mercurypitch.com/api/og/card/${CARD}.jpg`,
     )
     expect(written.get('meta[name="twitter:card"]')).toBe('summary')
     expect(written.get('meta[property="og:image:width"]')).toBe('1080')

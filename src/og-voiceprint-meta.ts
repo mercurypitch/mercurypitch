@@ -121,7 +121,7 @@ export function voiceprintMetaTags(url: URL): VoiceprintMeta | null {
     title: voiceprintTitle(data),
     description: voiceprintDescription(data),
     url: url.toString(),
-    image: cardId !== null ? `${url.origin}/api/og/card/${cardId}.png` : null,
+    image: cardId !== null ? `${url.origin}/api/og/card/${cardId}.jpg` : null,
     cardId,
   }
 }

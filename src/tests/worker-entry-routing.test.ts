@@ -263,7 +263,7 @@ describe('a shared voiceprint link', () => {
     expect(response.status).toBe(200)
     expect(asked).toEqual([`og:${CARD}`])
     expect(written.get('meta[property="og:image"]')).toBe(
-      `https://mercurypitch.test/api/og/card/${CARD}.png`,
+      `https://mercurypitch.test/api/og/card/${CARD}.jpg`,
     )
     expect(written.get('meta[property="og:title"]')).toBe(
       'Freddie Mercury is my voice twin',

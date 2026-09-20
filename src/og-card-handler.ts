@@ -5,10 +5,16 @@
 // string are invisible to them and the image has to already exist as a
 // URL by the time WhatsApp or Discord fetches the page.
 //
-// The app draws that PNG anyway. This stores it, keyed by an id the client
+// The app draws that card anyway. This stores it, keyed by an id the client
 // chooses before it opens the share sheet — so no round trip stands between
 // the tap and the sheet, which is what Safari requires, and so nothing is
 // uploaded by anyone who does not share.
+//
+// A JPEG, not the PNG that goes into the share sheet. Measured over all 31
+// twins, the square card is 1.8 to 2.3 MB as a PNG and at most 270 KB as a
+// JPEG: a painted portrait is the worst case for lossless. At PNG sizes the
+// upload is still running when the first crawler arrives, a month of shares
+// is half a gigabyte, and WhatsApp skips a preview image that large.
 //
 // Thirty days: long enough that a link is still pretty while people are
 // actually passing it around, short enough that storage does not grow
@@ -19,7 +25,8 @@ import { OG_CARD_SIZE } from './lib/mirror/shared-voiceprint'
 import type { Env } from './worker'
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+/** Four times the largest card measured. */
+const MAX_IMAGE_BYTES = 1024 * 1024
 const UPLOAD_RATE_MAX = 10
 const UPLOAD_RATE_WINDOW_S = 60
 
@@ -65,14 +72,14 @@ export async function handleOgCardRequest(
 ): Promise<Response | null> {
   const url = new URL(request.url)
 
-  // GET /api/og/card/:id.png — what the crawler fetches.
-  const get = url.pathname.match(/^\/api\/og\/card\/([0-9A-Za-z]{10})\.png$/)
+  // GET /api/og/card/:id.jpg — what the crawler fetches.
+  const get = url.pathname.match(/^\/api\/og\/card\/([0-9A-Za-z]{10})\.jpg$/)
   if (get && request.method === 'GET') {
     const body = await env.SHARE_STORE.get(cardKey(get[1]), 'arrayBuffer')
     if (body === null) return new Response('Not found', { status: 404 })
     return new Response(body, {
       headers: {
-        'Content-Type': 'image/png',
+        'Content-Type': 'image/jpeg',
         // The id names this exact image and is never reused, so a crawler
         // or CDN may hold it for as long as it likes.
         'Cache-Control': 'public, max-age=31536000, immutable',
@@ -108,12 +115,13 @@ export async function handleOgCardRequest(
     if (body.byteLength > MAX_IMAGE_BYTES) {
       return new Response('Too large', { status: 413 })
     }
-    if (!isPng(body)) {
-      // Only ever a PNG: this store is served back with an image content
+    const size = jpegSize(body)
+    if (size === null) {
+      // Only ever a JPEG: this store is served back with an image content
       // type, so anything else would be us hosting arbitrary bytes.
-      return new Response('Not a PNG', { status: 415 })
+      return new Response('Not a JPEG', { status: 415 })
     }
-    if (!isCardSized(body)) {
+    if (size.width !== OG_CARD_SIZE || size.height !== OG_CARD_SIZE) {
       // The tags tell a crawler the picture is a square of this size, so
       // that is the only picture taken. It also keeps this from being a
       // place to park any image at all behind our name.
@@ -136,33 +144,42 @@ export async function handleOgCardRequest(
 }
 
 /**
- * Whether the PNG says it is the card's size. A PNG opens with its IHDR
- * chunk: four bytes of length, the four letters, then width and height as
- * big-endian 32-bit numbers at byte 16 and byte 20.
+ * The width and height a JPEG declares, or null when the bytes are not one.
+ *
+ * A JPEG is a run of segments, each opening 0xFF, a marker byte, and (for
+ * most) a two-byte length. The size sits in the frame header — the first SOF
+ * marker, 0xC0-0xCF bar the three in that range that are not frames — as
+ * height then width, two bytes each, after one byte of precision.
  */
-function isCardSized(body: ArrayBuffer): boolean {
-  if (body.byteLength < 24) return false
+function jpegSize(body: ArrayBuffer): { width: number; height: number } | null {
   const view = new DataView(body)
-  const isHeader = view.getUint32(8) === 13 && view.getUint32(12) === 0x49484452 // "IHDR"
-  return (
-    isHeader &&
-    view.getUint32(16) === OG_CARD_SIZE &&
-    view.getUint32(20) === OG_CARD_SIZE
-  )
-}
+  if (body.byteLength < 4 || view.getUint16(0) !== 0xffd8) return null
 
-/** PNG magic number. */
-function isPng(body: ArrayBuffer): boolean {
-  if (body.byteLength < 8) return false
-  const head = new Uint8Array(body, 0, 8)
-  return (
-    head[0] === 0x89 &&
-    head[1] === 0x50 &&
-    head[2] === 0x4e &&
-    head[3] === 0x47 &&
-    head[4] === 0x0d &&
-    head[5] === 0x0a &&
-    head[6] === 0x1a &&
-    head[7] === 0x0a
-  )
+  let at = 2
+  while (at + 9 <= body.byteLength) {
+    if (view.getUint8(at) !== 0xff) return null
+    const marker = view.getUint8(at + 1)
+    if (marker === 0xff) {
+      at += 1 // a fill byte before the real marker
+      continue
+    }
+    const standsAlone = (marker >= 0xd0 && marker <= 0xd9) || marker === 0x01
+    if (standsAlone) {
+      at += 2
+      continue
+    }
+    const length = view.getUint16(at + 2)
+    if (length < 2) return null
+    const isFrame =
+      marker >= 0xc0 &&
+      marker <= 0xcf &&
+      marker !== 0xc4 &&
+      marker !== 0xc8 &&
+      marker !== 0xcc
+    if (isFrame) {
+      return { height: view.getUint16(at + 5), width: view.getUint16(at + 7) }
+    }
+    at += 2 + length
+  }
+  return null
 }

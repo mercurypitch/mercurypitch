@@ -3,18 +3,27 @@ import { OG_CARD_SIZE } from '@/lib/mirror/shared-voiceprint'
 import { handleOgCardRequest, ogCardExists } from '@/og-card-handler'
 import type { Env } from '@/worker'
 
-const PNG_HEAD = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-
-/** The opening of a real PNG: the signature, then an IHDR chunk saying how
- *  big the picture is. Nothing after that is read by the store. */
-function png(width = OG_CARD_SIZE, height = OG_CARD_SIZE): ArrayBuffer {
+/** The opening of a real JPEG: start of image, the JFIF block every encoder
+ *  writes first, then the frame header that says how big the picture is.
+ *  Nothing after that is read by the store. */
+function jpeg(width = OG_CARD_SIZE, height = OG_CARD_SIZE): ArrayBuffer {
   const bytes = new Uint8Array(64)
-  bytes.set(PNG_HEAD, 0)
   const view = new DataView(bytes.buffer)
-  view.setUint32(8, 13)
-  bytes.set([0x49, 0x48, 0x44, 0x52], 12) // "IHDR"
-  view.setUint32(16, width)
-  view.setUint32(20, height)
+  view.setUint16(0, 0xffd8) // SOI
+  view.setUint16(2, 0xffe0) // APP0 ...
+  view.setUint16(4, 16) // ... sixteen bytes of it, length included
+  view.setUint16(20, 0xffc0) // SOF0
+  view.setUint16(22, 17)
+  view.setUint8(24, 8) // bits a sample
+  view.setUint16(25, height)
+  view.setUint16(27, width)
+  return bytes.buffer
+}
+
+/** A PNG's first bytes — what the share sheet gets, and not what this takes. */
+function png(): ArrayBuffer {
+  const bytes = new Uint8Array(64)
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0)
   return bytes.buffer
 }
 
@@ -53,28 +62,28 @@ function put(id: string, body: ArrayBuffer | string): Request {
 }
 
 describe('the OG card store', () => {
-  it('stores a PNG and serves it back as an image', async () => {
+  it('stores a card and serves it back as an image', async () => {
     const env = fakeEnv()
-    expect((await handleOgCardRequest(put(ID, png()), env))?.status).toBe(204)
+    expect((await handleOgCardRequest(put(ID, jpeg()), env))?.status).toBe(204)
 
     const got = await handleOgCardRequest(
-      new Request(`https://mercurypitch.com/api/og/card/${ID}.png`),
+      new Request(`https://mercurypitch.com/api/og/card/${ID}.jpg`),
       env,
     )
     expect(got?.status).toBe(200)
-    expect(got?.headers.get('Content-Type')).toBe('image/png')
+    expect(got?.headers.get('Content-Type')).toBe('image/jpeg')
     expect(got?.headers.get('Cache-Control')).toContain('immutable')
   })
 
   it('404s for a card that was never stored, or has expired', async () => {
     const got = await handleOgCardRequest(
-      new Request(`https://mercurypitch.com/api/og/card/${ID}.png`),
+      new Request(`https://mercurypitch.com/api/og/card/${ID}.jpg`),
       fakeEnv(),
     )
     expect(got?.status).toBe(404)
   })
 
-  it('refuses anything that is not a PNG', async () => {
+  it('refuses anything that is not a JPEG', async () => {
     // The store is served back with an image content type, so accepting
     // arbitrary bytes would make us a host for them.
     const res = await handleOgCardRequest(
@@ -82,23 +91,42 @@ describe('the OG card store', () => {
       fakeEnv(),
     )
     expect(res?.status).toBe(415)
+    // The PNG the share sheet gets is 2 MB of painted portrait. It is not
+    // what an unfurl wants, and the store does not take it.
+    expect((await handleOgCardRequest(put(ID, png()), fakeEnv()))?.status).toBe(
+      415,
+    )
+  })
+
+  it('reads the size from the frame header, past whatever comes first', async () => {
+    // Truncated before the frame header: no size, so not a card.
+    const cut = jpeg().slice(0, 22)
+    expect((await handleOgCardRequest(put(ID, cut), fakeEnv()))?.status).toBe(
+      415,
+    )
+    // A segment length of zero would never advance.
+    const stuck = new Uint8Array(jpeg())
+    new DataView(stuck.buffer).setUint16(4, 0)
+    expect(
+      (await handleOgCardRequest(put(ID, stuck.buffer), fakeEnv()))?.status,
+    ).toBe(415)
   })
 
   it('refuses to overwrite an id that already exists', async () => {
     const env = fakeEnv()
-    await handleOgCardRequest(put(ID, png()), env)
-    const second = await handleOgCardRequest(put(ID, png()), env)
+    await handleOgCardRequest(put(ID, jpeg()), env)
+    const second = await handleOgCardRequest(put(ID, jpeg()), env)
     expect(second?.status).toBe(409)
   })
 
   it('takes only a picture of the size the tags declare', async () => {
     // A data card shared in the tall story format is 1080x1920. The tags say
     // 1080 square, so the app uploads a square drawing and the store holds
-    // it to that — which also stops this being somewhere to park any PNG.
+    // it to that — which also stops this being somewhere to park any image.
     const env = fakeEnv()
-    const tall = await handleOgCardRequest(put(ID, png(1080, 1920)), env)
+    const tall = await handleOgCardRequest(put(ID, jpeg(1080, 1920)), env)
     expect(tall?.status).toBe(415)
-    const tiny = await handleOgCardRequest(put(ID, png(1, 1)), env)
+    const tiny = await handleOgCardRequest(put(ID, jpeg(1, 1)), env)
     expect(tiny?.status).toBe(415)
     // Refused means not stored.
     expect(await ogCardExists(env, ID)).toBe(false)
@@ -106,9 +134,9 @@ describe('the OG card store', () => {
 
   it('serves a stranger’s bytes as an image and as nothing else', async () => {
     const env = fakeEnv()
-    await handleOgCardRequest(put(ID, png()), env)
+    await handleOgCardRequest(put(ID, jpeg()), env)
     const got = await handleOgCardRequest(
-      new Request(`https://mercurypitch.com/api/og/card/${ID}.png`),
+      new Request(`https://mercurypitch.com/api/og/card/${ID}.jpg`),
       env,
     )
     expect(got?.headers.get('X-Content-Type-Options')).toBe('nosniff')
@@ -134,7 +162,7 @@ describe('the OG card store', () => {
     for (const id of ids) {
       const req = new Request(`https://mercurypitch.com/api/og/card/${id}`, {
         method: 'PUT',
-        body: png(),
+        body: jpeg(),
         headers: { 'CF-Connecting-IP': '203.0.113.7' },
       })
       codes.push((await handleOgCardRequest(req, env))?.status ?? 0)
@@ -147,7 +175,7 @@ describe('the OG card store', () => {
     const env = fakeEnv()
     expect(await ogCardExists(env, ID)).toBe(false)
 
-    await handleOgCardRequest(put(ID, png()), env)
+    await handleOgCardRequest(put(ID, jpeg()), env)
     const before = env.cancelled()
     expect(await ogCardExists(env, ID)).toBe(true)
     // The value is a few hundred kilobytes. Asking whether it exists must
