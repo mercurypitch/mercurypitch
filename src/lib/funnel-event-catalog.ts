@@ -41,6 +41,12 @@ export const MIRROR_FUNNEL_EVENTS = [
   'cosmic_done',
   'twin_revealed',
   'cta_glass_click',
+  /** A shared voiceprint link was opened — the recipient saw what they
+   *  were sent. Paired with `shared_start` below, these two are how the
+   *  share loop's coefficient becomes a number instead of a guess. */
+  'shared_view',
+  /** ...and went on to take their own. */
+  'shared_start',
 ] as const
 
 /** The app itself (src/lib/analytics.ts). */

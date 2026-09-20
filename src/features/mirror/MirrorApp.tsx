@@ -26,12 +26,14 @@ import { summarize } from '@/lib/mirror/metrics'
 import { hasSeenHowItWorks, markHowItWorksSeen } from '@/lib/mirror/onboarding'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
+import { MIRROR_SHARE_URL, parseVoiceprintLink, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
 import { createF0Stream } from '@/lib/pitch-f0-stream'
+import type { VoiceprintShareData } from '@/lib/share-codec'
 import type { CardFormat } from './card-renderer'
-import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, } from './card-renderer'
+import { cardToPngBlob, copyCardToClipboard, copyOutcomeMessage, datedFilename, defaultShareText, formatDeltaLine, renderCard, renderTwinFaceCard, shareCard, supportsImageClipboard, twinShareText, } from './card-renderer'
 import { CardOptionsSheet } from './CardOptionsSheet'
 import { CosmicMode } from './CosmicMode'
 import type { MirrorEntryIntent } from './entry-intent'
@@ -42,6 +44,7 @@ import { legendArt, LegendCaricature, legendTierSrc } from './LegendCaricature'
 import { LiveViz, MicLevelBar } from './LiveViz'
 import type { RevealMode } from './RevealCard'
 import { RevealCard } from './RevealCard'
+import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 import { TaskDemo } from './TaskDemo'
 import { playReferenceTone } from './tone-player'
 
@@ -139,6 +142,13 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   const [stoppable, setStoppable] = createSignal(false)
   const [taskKey, setTaskKey] = createSignal(0)
   const [micError, setMicError] = createSignal<string | null>(null)
+  /** A voiceprint that arrived in the link. Read once at construction: the
+   *  query is fixed for this document, and re-reading it after the
+   *  recipient starts their own take would put the sender's card back. */
+  const [sharedVoiceprint, setSharedVoiceprint] =
+    createSignal<VoiceprintShareData | null>(
+      parseVoiceprintLink(window.location.search),
+    )
   const [micChecking, setMicChecking] = createSignal(false)
   const [micSilent, setMicSilent] = createSignal(false)
   // Input picker on the mic panel (same fix as Glass): the browser's default
@@ -274,6 +284,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
 
   onMount(() => {
     trackFunnel('mirror_view')
+    if (sharedVoiceprint() !== null) trackFunnel('shared_view')
     onHashChange()
     window.addEventListener('hashchange', onHashChange)
     onCleanup(() => window.removeEventListener('hashchange', onHashChange))
@@ -1036,6 +1047,23 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
    *  met it stays available even after flipping back to the data face. */
   const twinReady = (): boolean => metTwin() && legendImage() !== null
 
+  /** The twin this take matched, once the reveal has happened. */
+  function sharedTwin(): string | null {
+    const result = session().result
+    if (!result || !metTwin()) return null
+    return singerForRange(result.range)
+  }
+
+  /** The link a shared card carries. It encodes this take's own numbers, so
+   *  whoever opens it sees the voiceprint they were sent rather than an
+   *  empty Mirror asking them to sing — which is what the generic link did,
+   *  and why shared sessions used to last about three seconds. */
+  function shareLink(): string {
+    const result = session().result
+    if (!result) return MIRROR_SHARE_URL
+    return voiceprintShareUrl(summarize(result), sharedTwin())
+  }
+
   /** Personal, distinct download names — never a model or asset name.
    *  e.g. "voice-twin-elvis-presley-take-3-2026-07-10.png" vs
    *  "voiceprint-take-3-2026-07-10.png", so saving both variants of the
@@ -1061,9 +1089,18 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   async function onShare(withTwin = false): Promise<void> {
     const card = withTwin && twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
+    const link = shareLink()
+    const twin = sharedTwin()
     const outcome = await shareCard(
       await cardToPngBlob(card),
       cardFilename(withTwin),
+      {
+        title: 'My voiceprint',
+        text:
+          withTwin && twin !== null
+            ? twinShareText(twin, link)
+            : defaultShareText(link),
+      },
     )
     // Closing the sheet without sending is neither a share nor a save —
     // don't count it (card_shared feeds a live Ads conversion) and don't
@@ -1109,6 +1146,31 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
     <div class="mirror-shell">
       <Show
         when={
+          sharedVoiceprint() !== null &&
+          session().phase === 'idle' &&
+          freePhase() === null &&
+          !cosmicOpen() &&
+          !howtoOpen()
+        }
+      >
+        <SharedVoiceprintWelcome
+          data={sharedVoiceprint() as VoiceprintShareData}
+          onStart={() => {
+            trackFunnel('shared_start')
+            // Drop the payload from the address bar as well as from state:
+            // a reload, or a back-navigation out of the take, should land
+            // on the ordinary Mirror rather than replay someone else's card.
+            const url = new URL(window.location.href)
+            url.searchParams.delete('v')
+            window.history.replaceState(null, '', url.pathname + url.search)
+            setSharedVoiceprint(null)
+          }}
+        />
+      </Show>
+
+      <Show
+        when={
+          sharedVoiceprint() === null &&
           session().phase === 'idle' &&
           freePhase() === null &&
           !cosmicOpen() &&

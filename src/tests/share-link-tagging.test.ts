@@ -20,7 +20,17 @@
 
 import { describe, expect, it } from 'vitest'
 import { CARD_URL as GLASS_CARD_URL, glassShareText, } from '@/features/glass/card-renderer'
-import { CARD_URL as MIRROR_CARD_URL, DEFAULT_SHARE_TEXT, twinShareText, } from '@/features/mirror/card-renderer'
+import { CARD_URL as MIRROR_CARD_URL, DEFAULT_SHARE_TEXT, defaultShareText, twinShareText, } from '@/features/mirror/card-renderer'
+import { voiceprintShareUrl } from '@/lib/mirror/shared-voiceprint'
+
+/** A take whose numbers ride along in the share link. */
+const SHARED_TAKE = {
+  lowMidi: 48,
+  highMidi: 74,
+  semitones: 26,
+  accuracy: 12,
+  steadiness: 9,
+}
 
 /** Acquisition sources that must never ride on an organic share link. */
 const PAID_SOURCES = ['noise', 'ugc', 'gclid', 'cpc', 'paid']
@@ -32,7 +42,18 @@ const CARDS = [
     printed: MIRROR_CARD_URL,
     destination: 'https://mercurypitch.com/mirror',
     source: 'voiceprint',
-    shareTexts: [DEFAULT_SHARE_TEXT, twinShareText('Freddie Mercury')],
+    shareTexts: [
+      DEFAULT_SHARE_TEXT,
+      twinShareText('Freddie Mercury'),
+      // The same texts once the link carries the voiceprint itself. The
+      // payload must not change the tagging, and must never smuggle a paid
+      // source in through the encoded blob.
+      defaultShareText(voiceprintShareUrl(SHARED_TAKE)),
+      twinShareText(
+        'Freddie Mercury',
+        voiceprintShareUrl(SHARED_TAKE, 'Freddie Mercury'),
+      ),
+    ],
   },
   {
     name: 'glass',
@@ -76,5 +97,25 @@ describe('across cards', () => {
         expect(text).toContain('utm_medium=share')
       }
     }
+  })
+})
+
+describe('a share link carrying a voiceprint', () => {
+  it('keeps the payload off the card face', () => {
+    // The face is read and typed off an image; a base64url blob there would
+    // be unusable. The payload belongs only in the clickable text.
+    expect(MIRROR_CARD_URL).not.toContain('v=')
+  })
+
+  it('still points at the Mirror', () => {
+    expect(voiceprintShareUrl(SHARED_TAKE)).toContain(
+      'https://mercurypitch.com/mirror',
+    )
+  })
+
+  it('drops the payload rather than the tag when there is nothing to carry', () => {
+    const bare = voiceprintShareUrl(null)
+    expect(bare).not.toContain('v=')
+    expect(bare).toContain('utm_source=voiceprint')
   })
 })

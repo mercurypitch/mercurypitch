@@ -11,6 +11,7 @@
 
 import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { voiceTypeHint } from '@/lib/mirror/metrics'
+import { voiceprintShareUrl } from '@/lib/mirror/shared-voiceprint'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { cardToPngBlob, datedFilename, renderTwinFaceCard, shareCard, twinShareText, } from './card-renderer'
 import { legendArt } from './LegendCaricature'
@@ -89,6 +90,9 @@ export async function shareVoiceprintRecord(
   const blob = await cardToPngBlob(canvas)
   return shareCard(blob, datedFilename('voiceprint'), {
     title: 'My voiceprint',
-    text: twinShareText(record.twin ?? 'My twin'),
+    text: twinShareText(
+      record.twin ?? 'My twin',
+      voiceprintShareUrl(record.summary, record.twin),
+    ),
   })
 }

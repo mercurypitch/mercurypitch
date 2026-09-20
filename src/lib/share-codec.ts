@@ -17,13 +17,17 @@ import type { MelodyItem } from '@/types'
 
 // ── Payload types ─────────────────────────────────────────────
 
-export type ShareType = 'melody' | 'exercise' | 'routine'
+export type ShareType = 'melody' | 'exercise' | 'routine' | 'voiceprint'
 
 export interface SharePayload {
   v: 1
   t: ShareType
   n?: string
-  d: MelodyShareData | ExerciseShareData | RoutineShareData
+  d:
+    | MelodyShareData
+    | ExerciseShareData
+    | RoutineShareData
+    | VoiceprintShareData
 }
 
 // ── Melody share data (positional tuples) ─────────────────────
@@ -61,6 +65,25 @@ export interface MelodyShareData {
 }
 
 // ── Exercise share data ───────────────────────────────────────
+
+/**
+ * A voiceprint, as it travels in a share link.
+ *
+ * Deliberately narrow: every field here is a number already printed on the
+ * card face the recipient was sent, so the link discloses nothing the image
+ * did not. No audio, no F0 frames, no user or device id, and no exact
+ * timestamp — a take is identified by its numbers, never by who made it.
+ * `n` is opt-in and absent unless the singer typed a name.
+ */
+export interface VoiceprintShareData {
+  lo?: number // lowMidi
+  hi?: number // highMidi
+  st?: number // semitones of range
+  ac?: number // accuracy, median cents
+  sd?: number // steadiness, cents on holds
+  tw?: string // twin legend name
+  n?: string // display name — opt-in
+}
 
 export interface ExerciseShareData {
   e: string // ExerciseType
@@ -227,6 +250,47 @@ export function encodeRoutineForShare(template: {
   return toBase64url(JSON.stringify(payload))
 }
 
+// ── Encode: Voiceprint ────────────────────────────────────────
+
+/**
+ * Encode a voiceprint summary for a share link. Null-valued metrics are
+ * omitted rather than encoded as null, so a partial take (range only, say)
+ * produces a short payload and the decoder can tell "absent" from "zero".
+ */
+export function encodeVoiceprintForShare(
+  summary: {
+    lowMidi?: number | null
+    highMidi?: number | null
+    semitones?: number | null
+    accuracy?: number | null
+    steadiness?: number | null
+  },
+  twin?: string | null,
+  displayName?: string | null,
+): string {
+  const num = (v: number | null | undefined): number | undefined =>
+    v == null || Number.isNaN(v) ? undefined : r1(v)
+
+  const data: VoiceprintShareData = {
+    lo: num(summary.lowMidi),
+    hi: num(summary.highMidi),
+    st: num(summary.semitones),
+    ac: num(summary.accuracy),
+    sd: num(summary.steadiness),
+    tw: twin != null && twin !== '' ? twin : undefined,
+    n: displayName != null && displayName !== '' ? displayName : undefined,
+  }
+
+  const payload: SharePayload = {
+    v: 1,
+    t: 'voiceprint',
+    n: displayName ?? undefined,
+    d: data,
+  }
+
+  return toBase64url(JSON.stringify(payload))
+}
+
 // ── Decode ────────────────────────────────────────────────────
 
 function validateShareData(t: string, d: unknown): boolean {
@@ -245,6 +309,17 @@ function validateShareData(t: string, d: unknown): boolean {
         typeof o.n === 'string' &&
         Array.isArray(o.seg)
       )
+    case 'voiceprint': {
+      const numeric = ['lo', 'hi', 'st', 'ac', 'sd'] as const
+      const text = ['tw', 'n'] as const
+      if (numeric.some((k) => o[k] !== undefined && typeof o[k] !== 'number'))
+        return false
+      if (text.some((k) => o[k] !== undefined && typeof o[k] !== 'string'))
+        return false
+      // A card with no numbers on it is not a voiceprint; reject rather than
+      // render an empty frame to someone who followed a link to see one.
+      return numeric.some((k) => typeof o[k] === 'number')
+    }
     default:
       return false
   }
