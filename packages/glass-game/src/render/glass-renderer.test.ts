@@ -10,6 +10,13 @@ const state = vi.hoisted(() => ({
   render: vi.fn(),
   listeners: new Map<string, EventListener>(),
   loseContext: false,
+  assetFailure: null as Error | null,
+  museumFailure: null as Error | null,
+  environmentLoadFailure: null as Error | null,
+  rendererDispose: vi.fn(),
+  forceContextLoss: vi.fn(),
+  canvasRemove: vi.fn(),
+  mercDispose: vi.fn(),
 }))
 vi.mock('three', async (original) => ({
   ...(await original<typeof ThreeTypes>()),
@@ -17,7 +24,7 @@ vi.mock('three', async (original) => ({
     domElement = {
       style: {},
       setAttribute: vi.fn(),
-      remove: vi.fn(),
+      remove: state.canvasRemove,
       addEventListener: (name: string, listener: EventListener) =>
         state.listeners.set(name, listener),
       removeEventListener: (name: string) => state.listeners.delete(name),
@@ -27,13 +34,16 @@ vi.mock('three', async (original) => ({
     setSize = vi.fn()
     setPixelRatio = vi.fn()
     render = state.render
-    dispose = vi.fn()
-    forceContextLoss = vi.fn()
+    dispose = state.rendererDispose
+    forceContextLoss = state.forceContextLoss
   },
 }))
 vi.mock('./environment', () => ({
   createMuseumEnvironment: () => ({
-    load: async () => {},
+    load: () => {
+      if (state.environmentLoadFailure) throw state.environmentLoadFailure
+      return Promise.resolve()
+    },
     capture: () => {
       if (state.loseContext)
         state.listeners.get('webglcontextlost')?.(new Event('webglcontextlost'))
@@ -42,13 +52,17 @@ vi.mock('./environment', () => ({
     dispose: vi.fn(),
   }),
 }))
-vi.mock('./asset-kit', () => ({ loadMuseumAssets: async () => {} }))
+vi.mock('./asset-kit', () => ({
+  loadMuseumAssets: async () => {
+    if (state.assetFailure) throw state.assetFailure
+  },
+}))
 vi.mock('./materials', () => ({ createMuseumMaterials: () => ({}) }))
 vi.mock('./merc', () => ({
   loadAdventureMerc: async () => ({
     root: new Group(),
     update: vi.fn(),
-    dispose: vi.fn(),
+    dispose: state.mercDispose,
   }),
 }))
 vi.mock('./atmosphere', () => ({
@@ -58,12 +72,15 @@ vi.mock('./contact-shadow', () => ({
   createContactShadow: () => ({ mesh: new Group(), update: vi.fn() }),
 }))
 vi.mock('./museum', () => ({
-  createMuseum: () => ({
-    root: new Group(),
-    update: vi.fn(),
-    cameraOccluders: () => [],
-    materialLibrary: { materials: new Set(), dispose: vi.fn() },
-  }),
+  createMuseum: () => {
+    if (state.museumFailure) throw state.museumFailure
+    return {
+      root: new Group(),
+      update: vi.fn(),
+      cameraOccluders: () => [],
+      materialLibrary: { materials: new Set(), dispose: vi.fn() },
+    }
+  },
 }))
 vi.mock('./resonance-portal', () => ({
   createResonancePortal: () => ({ root: new Group(), update: vi.fn() }),
@@ -90,7 +107,14 @@ afterEach(() => {
   vi.unstubAllGlobals()
   state.listeners.clear()
   state.loseContext = false
+  state.assetFailure = null
+  state.museumFailure = null
+  state.environmentLoadFailure = null
   state.render.mockClear()
+  state.rendererDispose.mockClear()
+  state.forceContextLoss.mockClear()
+  state.canvasRemove.mockClear()
+  state.mercDispose.mockClear()
 })
 
 it.each([false, true])(
@@ -117,6 +141,38 @@ it.each([false, true])(
     renderer.dispose()
   },
 )
+
+it('rejects readiness when required museum art fails', async () => {
+  state.assetFailure = new Error('required window failed')
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+
+  await expect(renderer.ready).rejects.toThrow('required window failed')
+  renderer.dispose()
+})
+
+it('releases a partial renderer and its canvas when scene construction throws', () => {
+  state.museumFailure = new Error('museum construction failed')
+
+  expect(() =>
+    createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id),
+  ).toThrow('museum construction failed')
+  expect(state.rendererDispose).toHaveBeenCalledTimes(1)
+  expect(state.forceContextLoss).toHaveBeenCalledTimes(1)
+  expect(state.canvasRemove).toHaveBeenCalledTimes(1)
+})
+
+it('marks a partial scene unavailable before a late Merc resolves', async () => {
+  state.environmentLoadFailure = new Error('environment URL failed')
+
+  expect(() =>
+    createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id),
+  ).toThrow('environment URL failed')
+  await Promise.resolve()
+
+  expect(state.mercDispose).toHaveBeenCalledTimes(1)
+  expect(state.rendererDispose).toHaveBeenCalledTimes(1)
+  expect(state.canvasRemove).toHaveBeenCalledTimes(1)
+})
 
 it('aims both authored lights and the camera range from translated bounds', async () => {
   const level = {

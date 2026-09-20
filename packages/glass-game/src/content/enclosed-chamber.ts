@@ -1,4 +1,4 @@
-// Enclosed chamber — a two-hold museum route from sealed gallery to open sky terrace.
+// First Light Gallery — a two-hold tutorial from sealed chamber to open sky terrace.
 
 import { composeLevel } from '../authoring/compose-level'
 import type { AuthoredLevelSource } from '../authoring/contracts'
@@ -7,8 +7,8 @@ import { ENCLOSED_CHAMBER_HALF, ENCLOSED_MUSEUM_AUTHORING_CATALOG, } from './enc
 export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
   levelId: 'glassworks-chamber',
   layoutId: 'chamber',
-  contentRevision: 2,
-  title: 'The Enclosed Gallery',
+  contentRevision: 3,
+  title: 'First Light Gallery',
   movement: {
     walkSpeed: 1.55,
     runSpeed: 2.7,
@@ -16,8 +16,25 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
     runRampSeconds: 0.8,
   },
   guidance: {
-    subtitle: 'The first enclosed gallery',
-    openingNotice: 'Follow the gold inlay to the threshold goblet.',
+    subtitle: 'A little room to learn',
+    tutorial: {
+      pages: [
+        {
+          title: 'Meet Merc. Make yourself at home.',
+          body: 'Move with WASD or the arrows. On a phone, use the thumbstick. Drag to look around; the camera follows as you move. Space or Jump takes a little hop.',
+          aside:
+            'Keep moving to ease into a run. Follow the gold path to the goblet; the window coupe is an optional discovery.',
+        },
+        {
+          title: 'Your first beautiful mess.',
+          body: 'On a glowing circle, choose Sing and allow the microphone. Hum a comfortable note, listen to it, then hold it gently. A successful break opens the next passage.',
+          aside:
+            'No shouting or rushing. Cancel to rest, or use Find my note again. After the two main exhibits, walk or jump through the shimmering veil.',
+        },
+      ],
+    },
+    openingNotice:
+      'Find your feet, then follow the gold path to the goblet. Choose Sing on its glowing circle.',
     encounterSuccessNotices: [
       {
         encounterId: 'threshold-goblet',
@@ -34,8 +51,9 @@ export const ENCLOSED_CHAMBER_SOURCE: AuthoredLevelSource = {
         notice: 'A window treasure, opened just for the joy of it.',
       },
     ],
-    completionTitle: 'The chamber is singing.',
-    completionNext: 'Take a moment. You made this gallery sing.',
+    completionTitle: 'Your first gallery is singing.',
+    completionNext:
+      'You moved, listened, and made a beautiful mess. The museum is yours to explore.',
   },
   rooms: [
     {

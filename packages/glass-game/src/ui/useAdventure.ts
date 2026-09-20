@@ -8,11 +8,21 @@ import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { createAdventureInput } from './input'
+import type { AdventureLoadingPhase } from './loading-lifecycle'
+import { createAdventureLoadingLifecycle } from './loading-lifecycle'
 import { microphoneError } from './mic-error'
 import { createAdventureNarration } from './narration'
 import { createAdventureSoundscape } from './soundscape'
 
 type VoiceMode = 'off' | 'permission' | 'finding' | 'reference' | 'singing'
+const LOADING_PRESENTATION_MS = 2000
+const ASSET_LOAD_ERROR =
+  'The gallery could not finish loading. Check your connection, then retry.'
+const GRAPHICS_LOAD_ERROR =
+  'The graphics connection stopped. Your progress is safe. Retry the gallery.'
+const GRAPHICS_SUPPORT_ERROR =
+  'The museum needs 3D graphics support. Close other demanding apps, then retry.'
+
 export function useAdventure(
   host: GlassGameHost,
   level: LevelDefinition,
@@ -24,7 +34,10 @@ export function useAdventure(
   const [completionPresented, setCompletionPresented] = createSignal(
     game.snapshot().complete,
   )
-  const [ready, setReady] = createSignal(false)
+  const [loadingPhase, setLoadingPhase] =
+    createSignal<AdventureLoadingPhase>('loading-assets')
+  const [loadError, setLoadError] = createSignal<string | null>(null)
+  const ready = () => loadingPhase() === 'ready'
   const [error, setError] = createSignal<string | null>(null)
   const [voiceMode, setVoiceMode] = createSignal<VoiceMode>('off')
   const [pitch, setPitch] = createSignal<number | null>(null)
@@ -45,11 +58,11 @@ export function useAdventure(
     music,
     (previous) =>
       museumSoundscape(level, game.snapshot().player.position, previous),
-    () => alive && ready() && !paused() && !tutorial() && !graphicsFailed,
+    () => alive && ready() && !paused() && !tutorial(),
   )
   const narration = createAdventureNarration(
     host.createNarration?.(),
-    () => alive && ready() && !paused() && !tutorial() && !graphicsFailed,
+    () => alive && ready() && !paused() && !tutorial(),
   )
   const [narrationPreferences, setNarrationPreferences] = createSignal(
     narration.preferences(),
@@ -66,7 +79,7 @@ export function useAdventure(
   let sound: GlassSound | null = null
   let token = 0
   let alive = true
-  let graphicsFailed = false
+  let rendererGeneration = 0
   let frameId = 0
   let lastTime = 0
   let lastSequence = -1
@@ -76,6 +89,18 @@ export function useAdventure(
   let narrationCaptionTimer: ReturnType<typeof setTimeout> | undefined
   let completionTimer: ReturnType<typeof setTimeout> | undefined
   let reducedMotion = false
+  const loading = createAdventureLoadingLifecycle({
+    minimumVisibleMs: LOADING_PRESENTATION_MS,
+    onChange: (state) => {
+      if (!alive) return
+      setLoadingPhase(state.phase)
+      setLoadError(state.error)
+      if (state.phase !== 'ready') return
+      game.setPaused(paused() || tutorial())
+      lastTime = 0
+      refresh()
+    },
+  })
   game.setPaused(untrack(tutorial))
 
   function refresh(): void {
@@ -366,51 +391,93 @@ export function useAdventure(
   }
 
   function gameplayGesture(): void {
+    if (!ready()) return
     soundscape.activate()
     narration.welcomeGesture()
+  }
+
+  function prepareForLoading(): void {
+    soundscape.pause()
+    cancel()
+    input.clear()
+    renderer?.setMovementActive(false)
+    renderer?.setOrbitActive(false)
+    game.setPaused(true)
+    refresh()
+  }
+
+  function failRendererAttempt(
+    generation: number,
+    message: string,
+    attempt: GlassRenderer | null,
+  ): void {
+    if (!loading.fail(generation, message)) return
+    soundscape.pause()
+    cancel()
+    game.setPaused(true)
+    refresh()
+    if (renderer === attempt) {
+      renderer = null
+      rendererGeneration = 0
+    }
+    attempt?.dispose()
+  }
+
+  function beginRendererAttempt(): void {
+    if (!alive) return
+    prepareForLoading()
+    const generation = loading.beginAttempt()
+    const previous = renderer
+    renderer = null
+    rendererGeneration = 0
+    previous?.dispose()
+    let attempt: GlassRenderer | null = null
+    try {
+      attempt = createGlassRenderer(mount(), level, host.assetUrl, {
+        reducedMotion,
+        onExitCelebrationComplete: () => {
+          if (
+            loading.isCurrent(generation) &&
+            loading.state().phase === 'ready'
+          )
+            presentCompletion()
+        },
+        onContextLost: () => {
+          failRendererAttempt(generation, GRAPHICS_LOAD_ERROR, attempt)
+        },
+      })
+    } catch {
+      loading.fail(generation, GRAPHICS_SUPPORT_ERROR)
+      return
+    }
+    if (
+      !loading.isCurrent(generation) ||
+      loading.state().phase !== 'loading-assets'
+    ) {
+      attempt.dispose()
+      return
+    }
+    renderer = attempt
+    rendererGeneration = generation
+    void attempt.ready
+      .then(() => {
+        loading.assetsInstalled(generation)
+      })
+      .catch(() => {
+        failRendererAttempt(generation, ASSET_LOAD_ERROR, attempt)
+      })
+  }
+
+  function retryLoading(): void {
+    if (loadingPhase() !== 'error') return
+    beginRendererAttempt()
   }
 
   onMount(() => {
     reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
-    try {
-      renderer = createGlassRenderer(mount(), level, host.assetUrl, {
-        reducedMotion,
-        onExitCelebrationComplete: presentCompletion,
-        onAssetError: () => {
-          if (alive)
-            announce(
-              'Some museum details could not load. Reopen the gallery when your connection is back.',
-            )
-        },
-        onContextLost: () => {
-          if (!alive) return
-          graphicsFailed = true
-          soundscape.pause()
-          cancel()
-          game.setPaused(true)
-          setReady(false)
-          setError(
-            'The graphics connection stopped. Leave and reopen the museum; your progress is safe.',
-          )
-        },
-      })
-    } catch {
-      setError(
-        'The museum needs 3D graphics support. Reopen the game after closing other demanding apps.',
-      )
-    }
-    void renderer?.ready
-      .then(() => {
-        if (alive && !graphicsFailed) setReady(true)
-      })
-      .catch(() => {
-        if (alive)
-          setError(
-            'The museum could not load. Check your connection and reopen the game.',
-          )
-      })
+    beginRendererAttempt()
     const tick = (now: number): void => {
       if (!alive) return
       const elapsed = lastTime === 0 ? 0 : (now - lastTime) / 1000
@@ -427,11 +494,27 @@ export function useAdventure(
         refresh()
         soundscape.update()
       }
-      renderer?.render(game.snapshot(), Math.min(0.05, elapsed))
+      const activeRenderer = renderer
+      const phase = loadingPhase()
+      const needsStableFrame = phase === 'awaiting-first-frame'
+      if (activeRenderer !== null && (phase === 'ready' || needsStableFrame))
+        try {
+          activeRenderer.render(game.snapshot(), Math.min(0.05, elapsed))
+          if (activeRenderer === renderer && needsStableFrame) {
+            loading.frameRendered(rendererGeneration)
+          }
+        } catch {
+          failRendererAttempt(
+            rendererGeneration,
+            GRAPHICS_LOAD_ERROR,
+            activeRenderer,
+          )
+        }
       frameId = requestAnimationFrame(tick)
     }
     frameId = requestAnimationFrame(tick)
     const keyDown = (event: KeyboardEvent): void => {
+      if (!ready()) return
       if (game.snapshot().complete) return
       if (event.code === 'Escape') {
         event.preventDefault()
@@ -474,6 +557,10 @@ export function useAdventure(
       }
     }
     const keyUp = (event: KeyboardEvent): void => {
+      if (!ready()) {
+        input.clear()
+        return
+      }
       input.key(event, false)
     }
     const releaseInput = (): void => input.clear()
@@ -494,6 +581,7 @@ export function useAdventure(
   })
   onCleanup(() => {
     alive = false
+    loading.dispose()
     cancelAnimationFrame(frameId)
     clearTimeout(noticeTimer)
     clearNarrationCaption()
@@ -508,6 +596,9 @@ export function useAdventure(
   return {
     snapshot,
     completionPresented,
+    loadingPhase,
+    loadError,
+    retryLoading,
     ready,
     error,
     voiceMode,
@@ -535,9 +626,17 @@ export function useAdventure(
       snapshot()
       return renderer?.getCameraYaw() ?? 0
     },
-    orbit: (x: number, y: number) => renderer?.orbit(x, y),
-    setOrbitActive: (active: boolean) => renderer?.setOrbitActive(active),
-    zoom: (delta: number) => renderer?.zoom(delta),
-    recenter: () => renderer?.recenter(),
+    orbit: (x: number, y: number) => {
+      if (ready()) renderer?.orbit(x, y)
+    },
+    setOrbitActive: (active: boolean) => {
+      if (ready() || !active) renderer?.setOrbitActive(active)
+    },
+    zoom: (delta: number) => {
+      if (ready()) renderer?.zoom(delta)
+    },
+    recenter: () => {
+      if (ready()) renderer?.recenter()
+    },
   }
 }

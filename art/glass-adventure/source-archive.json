@@ -2576,8 +2576,108 @@
       "path": "v4/architecture/proofs/resonance-veil/390-reaction-caption.png",
       "bytes": 360190,
       "sha256": "839cf75e3bb096989a0542c499adaae7356cbdc14d084f38b7f0fd872d30a1d6"
+    },
+    {
+      "path": "loading/v1/1280x800-loading.png",
+      "bytes": 198813,
+      "sha256": "9a564a853584a3f43c948c77634e9e37793aa1237116928c2dde9e7830455cc9"
+    },
+    {
+      "path": "loading/v1/1280x800-ready.png",
+      "bytes": 1135692,
+      "sha256": "3dc664a1e839bbcdbab797b7a1464f9151d3a0c1fca67f853890792413dbf8ff"
+    },
+    {
+      "path": "loading/v1/390x740-error.png",
+      "bytes": 97043,
+      "sha256": "6e9db3ff29d7841041510f56f181b1c1fdc74c4e6273ef7d5434f33fb9e6ca92"
+    },
+    {
+      "path": "loading/v1/390x740-loading.png",
+      "bytes": 90147,
+      "sha256": "5797098757f2de6155772f9a69398d39e29eb2806a2d3aceba7a5290dfbe3456"
+    },
+    {
+      "path": "loading/v1/390x740-ready.png",
+      "bytes": 367245,
+      "sha256": "d670ea9b7994e7f5aaefac7ed2a8626238d7ec0753a1be234f91a0f5c67f98ff"
+    },
+    {
+      "path": "loading/v1/740x390-error.png",
+      "bytes": 92177,
+      "sha256": "74c60c7c2784d79e280e5e4a6202b0ef784a7aad3a5f148f78180924c0fa3a87"
+    },
+    {
+      "path": "loading/v1/740x390-loading.png",
+      "bytes": 83234,
+      "sha256": "ae1c61e539fe8833e1e86b456a995eb58d4b94a38d45f2669ec0b315a76081d9"
+    },
+    {
+      "path": "loading/v1/740x390-ready.png",
+      "bytes": 363424,
+      "sha256": "0887b109a102b2ab98328a34bd4c509f2635d1b21e3a24dd118e6144eb93e5ea"
+    },
+    {
+      "path": "loading/v1/production-1280-loading.png",
+      "bytes": 198163,
+      "sha256": "d21decd8033572026dbd93ec90f5af38f3f254a673413a7ec90e74cdaa106478"
+    },
+    {
+      "path": "loading/v1/production-320-error.png",
+      "bytes": 55680,
+      "sha256": "28cde1e05d11e3a8f406b0e4a889a5a2ec272d6b7a635a9eccdf26232e960b17"
+    },
+    {
+      "path": "loading/v1/production-390-error.png",
+      "bytes": 97043,
+      "sha256": "6e9db3ff29d7841041510f56f181b1c1fdc74c4e6273ef7d5434f33fb9e6ca92"
+    },
+    {
+      "path": "loading/v1/production-768-loading.png",
+      "bytes": 113975,
+      "sha256": "d79c52b6c77499e403bfeadcb556e28ed15936d505ffa1923c231ebb39fa3479"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/390-arrival.png",
+      "bytes": 386090,
+      "sha256": "4467a027c527a36677f0b9c74ca40096023b4acd17b08918dd42bda53bade63e"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/390-garden.png",
+      "bytes": 363019,
+      "sha256": "4f0d4d6addd6983393cc37989c27cc01b6c2ccdafa4662f5b8b55fd471df8809"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/390-panorama.png",
+      "bytes": 392590,
+      "sha256": "c9bc0de9581696252c9f0393a65cba5d5a788fc5088b76b2bf915144d881f1d0"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/390-portrait.png",
+      "bytes": 368481,
+      "sha256": "5c04861f17124f3ce7cae55efd25438fe5909c4fc4c6d1281220c2deab02c211"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/800-arrival.png",
+      "bytes": 610273,
+      "sha256": "25262d56604f193160a8bc7d27a6b78ceb3fc22f328ed1dc181617bd395d486a"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/800-garden.png",
+      "bytes": 608306,
+      "sha256": "046e53f25c7f6a8af6ed7c62c63b6a3763f88b77f5feb6dd57e4dbad51d7ca87"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/800-panorama.png",
+      "bytes": 643625,
+      "sha256": "7012f888d0d61857b8dd3a204b1cd4945eb6c6612200067b93a2f743e0c54763"
+    },
+    {
+      "path": "v4/architecture/proofs/journey-blockout/800-portrait.png",
+      "bytes": 607775,
+      "sha256": "743a18a8913d4d1e803906880330808bfe73f8076ac9934b10e02a28a00e1503"
     }
   ],
-  "fileCount": 515,
-  "totalBytes": 2343552415
+  "fileCount": 535,
+  "totalBytes": 2350425210
 }

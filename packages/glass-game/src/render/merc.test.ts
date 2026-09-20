@@ -64,6 +64,20 @@ it.each([false, true])(
   },
 )
 
+it('rejects a resolved Merc GLB when one of its dependencies failed', async () => {
+  const gltf = await parseActualMerc()
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockImplementationOnce(
+    async function (this: GLTFLoader) {
+      this.manager.itemError('merc-texture.webp')
+      return gltf
+    },
+  )
+
+  await expect(loadAdventureMerc('local-test-merc.glb')).rejects.toThrow(
+    'Merc has unavailable dependencies: merc-texture.webp',
+  )
+})
+
 it('turns toward a side step smoothly and independently of frame cadence', async () => {
   const load = vi.spyOn(GLTFLoader.prototype, 'loadAsync')
   const turnFor = async (dt: number, frames: number): Promise<number> => {

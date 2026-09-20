@@ -1,0 +1,94 @@
+[
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 800
+    },
+    "failure": false,
+    "appearance": {
+      "background": "rgb(244, 239, 220)",
+      "width": 1280,
+      "height": 800,
+      "scrollWidth": 1280,
+      "artTop": 114.296875,
+      "artBottom": 724.671875,
+      "button": {
+        "font": "\"Gabarito Variable\", system-ui, sans-serif",
+        "height": 44,
+        "background": "rgba(0, 0, 0, 0)",
+        "borderRadius": "999px"
+      }
+    },
+    "errors": [],
+    "file": "production-1280-loading.png"
+  },
+  {
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "failure": false,
+    "appearance": {
+      "background": "rgb(244, 239, 220)",
+      "width": 768,
+      "height": 1024,
+      "scrollWidth": 768,
+      "artTop": 332.078125,
+      "artBottom": 716.453125,
+      "button": {
+        "font": "\"Gabarito Variable\", system-ui, sans-serif",
+        "height": 44,
+        "background": "rgba(0, 0, 0, 0)",
+        "borderRadius": "999px"
+      }
+    },
+    "errors": [],
+    "file": "production-768-loading.png"
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "failure": true,
+    "appearance": {
+      "background": "rgb(244, 239, 220)",
+      "width": 390,
+      "height": 740,
+      "scrollWidth": 390,
+      "artTop": 70.828125,
+      "artBottom": 413.59375,
+      "button": {
+        "font": "\"Gabarito Variable\", system-ui, sans-serif",
+        "height": 48,
+        "background": "rgb(11, 48, 57)",
+        "borderRadius": "999px"
+      }
+    },
+    "errors": [],
+    "file": "production-390-error.png"
+  },
+  {
+    "viewport": {
+      "width": 320,
+      "height": 568
+    },
+    "failure": true,
+    "appearance": {
+      "background": "rgb(244, 239, 220)",
+      "width": 320,
+      "height": 568,
+      "scrollWidth": 320,
+      "artTop": 88.296875,
+      "artBottom": 275.796875,
+      "button": {
+        "font": "\"Gabarito Variable\", system-ui, sans-serif",
+        "height": 48,
+        "background": "rgb(11, 48, 57)",
+        "borderRadius": "999px"
+      }
+    },
+    "errors": [],
+    "file": "production-320-error.png"
+  }
+]

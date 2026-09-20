@@ -1,9 +1,11 @@
 // Glassworks tutorial — two skippable pages teaching movement before voice.
 import { createSignal, Show } from 'solid-js'
+import type { LevelTutorialDefinition } from '../contracts'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import styles from './GlassAdventure.module.css'
 
 interface TutorialProps {
+  content?: LevelTutorialDefinition
   autoRun?: boolean
   onClose(): void
 }
@@ -99,21 +101,24 @@ export function Tutorial(props: TutorialProps) {
           />
         </svg>
         <h2 id="glass-tutorial-title">
-          {page() === 0
-            ? 'A little room to wander.'
-            : 'A little note can break glass.'}
+          {props.content?.pages[page()].title ??
+            (page() === 0
+              ? 'A little room to wander.'
+              : 'A little note can break glass.')}
         </h2>
         <p>
-          {page() === 0
-            ? 'Move Merc with WASD or the arrows. Press Space to jump. Drag the view to look around. On a phone, use the thumbstick and Jump.'
-            : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.'}
+          {props.content?.pages[page()].body ??
+            (page() === 0
+              ? 'Move Merc with WASD or the arrows. Press Space to jump. Drag the view to look around. On a phone, use the thumbstick and Jump.'
+              : 'Walk onto a glowing circle and choose Sing. Hum a comfortable note; the glass learns it. Listen, hold that note gently, and watch the cracks bloom.')}
         </p>
         <p class={styles.tutorialAside}>
-          {page() === 0
-            ? props.autoRun === true
-              ? 'Keep moving to ease into a run; small thumbstick moves stay gentle. Falls return you to safety.'
-              : 'Miss a jump? You return to a safe spot. Your broken glass stays broken.'
-            : 'No shouting and no rush. Cancel whenever you want to take a breath.'}
+          {props.content?.pages[page()].aside ??
+            (page() === 0
+              ? props.autoRun === true
+                ? 'Keep moving to ease into a run; small thumbstick moves stay gentle. Falls return you to safety.'
+                : 'Miss a jump? You return to a safe spot. Your broken glass stays broken.'
+              : 'No shouting and no rush. Cancel whenever you want to take a breath.')}
         </p>
         <div class={styles.tutorialBottom}>
           <span>{page() + 1} of 2</span>

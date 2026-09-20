@@ -7,6 +7,8 @@ import { describe, expect, it, vi } from 'vitest'
 const state = vi.hoisted(() => ({
   targets: [] as { texture: unknown; dispose: ReturnType<typeof vi.fn> }[],
   fail: false,
+  failInitial: false,
+  generatorDispose: vi.fn(),
   resolve: undefined as ((texture: unknown) => void) | undefined,
 }))
 vi.mock('three', async (original) => {
@@ -19,9 +21,12 @@ vi.mock('three', async (original) => {
   return {
     ...actual,
     PMREMGenerator: class {
-      fromEquirectangular = target
+      fromEquirectangular() {
+        if (state.failInitial) throw new Error('initial reflection failed')
+        return target()
+      }
       fromCubemap = target
-      dispose = vi.fn()
+      dispose = state.generatorDispose
     },
     WebGLCubeRenderTarget: class {
       texture = new actual.Texture()
@@ -47,6 +52,16 @@ vi.mock('three/addons/loaders/HDRLoader.js', () => ({
 import { createMuseumEnvironment } from './environment'
 
 describe('one-time gallery reflection', () => {
+  it('releases the generator when initial reflection preparation throws', () => {
+    state.failInitial = true
+    state.generatorDispose.mockClear()
+    expect(() =>
+      createMuseumEnvironment({} as WebGLRenderer, new Scene()),
+    ).toThrow('initial reflection failed')
+    expect(state.generatorDispose).toHaveBeenCalledTimes(1)
+    state.failInitial = false
+  })
+
   it('restores original actor visibility and retains the old environment after capture failure', () => {
     state.targets.length = 0
     state.fail = true

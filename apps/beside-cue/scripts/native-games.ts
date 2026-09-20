@@ -22,6 +22,7 @@ export const requiredGameAssets = [
   'ort/ort-wasm-simd-threaded.mjs',
   'ort/ort-wasm-simd-threaded.wasm',
   'games/glass3d/merc.glb',
+  'games/journey/merc-idle.webp',
   'games/adventure/manifest.json',
   'games/adventure/platform-kit.glb',
   'games/adventure/vessels.glb',

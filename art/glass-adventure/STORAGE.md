@@ -4,7 +4,7 @@ The playable exports under `apps/beside-cue/public/games/` are ordinary Git
 files. Building, testing and playing the game does not require the authoring
 archive. CI deliberately leaves source-art LFS pointers unexpanded.
 
-The `v2`, `v3`, `v4`, `audio` and `voice` authoring directories use Git LFS for large
+The `v2`, `v3`, `v4`, `audio`, `voice` and `loading` authoring directories use Git LFS for large
 binary sources: image masters, Meshy originals, editable Blender projects,
 fracture and material trials, review images, source WAVs and audio derivatives.
 Scripts, prompts, manifests and receipts remain readable in Git. Historical
@@ -39,6 +39,9 @@ the source of truth.
 
 ## Collections
 
+- `loading/v1`: responsive and production-style loading-screen evidence,
+  capture scripts and inspection records. The lightweight approved Merc idle
+  sprite remains in the game's public assets; these are review screenshots.
 - `v2`: image prompts/masters, CC0 PBR provenance, Meshy provider archives and
   the first textured Blender kits.
 - `v3`: finalized vessels with matching closed fragments, finalized architecture,

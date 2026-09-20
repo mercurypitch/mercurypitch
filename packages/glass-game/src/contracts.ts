@@ -158,7 +158,19 @@ export interface EncounterSuccessNotice {
   notice: string
 }
 
+export interface LevelTutorialPage {
+  title: string
+  body: string
+  aside: string
+}
+
+/** Two skippable teaching pages: manual movement, then a stationary voice task. */
+export interface LevelTutorialDefinition {
+  pages: readonly [LevelTutorialPage, LevelTutorialPage]
+}
+
 export interface LevelGuidanceDefinition {
+  tutorial?: LevelTutorialDefinition
   subtitle?: string
   openingNotice?: string
   encounterSuccessNotices?: readonly EncounterSuccessNotice[]

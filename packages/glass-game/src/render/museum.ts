@@ -361,7 +361,14 @@ export function createMuseum(
         if (recipe.bundle !== bundle || recipe.kitNode === undefined) continue
         const source = scene.getObjectByName(recipe.kitNode)
         const floor = floors.get(platform.id)
-        if (!source || !floor) continue
+        if (source === undefined)
+          throw new Error(
+            `Museum platform "${platform.id}" could not find node "${recipe.kitNode}" in bundle "${bundle}".`,
+          )
+        if (floor === undefined)
+          throw new Error(
+            `Museum platform "${platform.id}" has no render floor for bundle "${bundle}".`,
+          )
         const dimensions = kitFloorDimensions(source)
         const art = createKitInstance(
           source,
@@ -390,7 +397,10 @@ export function createMuseum(
       for (const decoration of sceneRecipe.kitDecorations) {
         if (decoration.bundle !== bundle) continue
         const source = scene.getObjectByName(decoration.node)
-        if (source === undefined) continue
+        if (source === undefined)
+          throw new Error(
+            `Museum decoration could not find node "${decoration.node}" in bundle "${bundle}".`,
+          )
         const art = createKitInstance(source, materials, {}, materialLibrary)
         art.position.copy(decoration.position)
         art.scale.setScalar(decoration.scale)

@@ -1,6 +1,6 @@
 // Level authoring contracts — reusable local room data compiled into runtime definitions.
 
-import type { Bounds3, BoundsXZ, CheckpointDefinition, HoldDefinition, LevelMovementDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
+import type { Bounds3, BoundsXZ, CheckpointDefinition, HoldDefinition, LevelMovementDefinition, LevelTutorialDefinition, MuseumAudioSceneId, PlatformDefinition, SolidActivation, SolidMaterialRole, SolidPresentation, SolidPropDefinition, Vec3, } from '../contracts'
 
 export type QuarterTurn = 0 | 1 | 2 | 3
 
@@ -9,6 +9,8 @@ export interface RoomPlacement {
   prefabId: string
   translate: Vec3
   yawQuarterTurns: QuarterTurn
+  /** Add encounter prerequisites to checkpoints on this room instance. */
+  checkpointRequiresCompleted?: Readonly<Record<string, readonly string[]>>
   /** Re-skin every authored region in this reusable room with one host scene. */
   audioSceneId?: MuseumAudioSceneId
 }
@@ -111,6 +113,7 @@ export interface AuthoredEncounterSuccessNotice {
 }
 
 export interface AuthoredLevelGuidance {
+  tutorial?: LevelTutorialDefinition
   subtitle?: string
   openingNotice?: string
   encounterSuccessNotices?: readonly AuthoredEncounterSuccessNotice[]

@@ -11,6 +11,25 @@ export function compileGuidance(
 ): LevelGuidanceDefinition | undefined {
   const guidance = source.guidance
   if (guidance === undefined) return undefined
+  if (guidance.tutorial !== undefined) {
+    if (guidance.tutorial.pages.length !== 2)
+      diagnostic(
+        diagnostics,
+        'invalid-guidance',
+        'guidance.tutorial.pages',
+        'A tutorial needs a movement page and a voice page.',
+      )
+    guidance.tutorial.pages.forEach((page, index) => {
+      for (const field of ['title', 'body', 'aside'] as const)
+        if (typeof page[field] !== 'string' || page[field].trim().length === 0)
+          diagnostic(
+            diagnostics,
+            'invalid-guidance',
+            `guidance.tutorial.pages.${index}.${field}`,
+            'Tutorial copy must contain visible text.',
+          )
+    })
+  }
   for (const [field, value] of [
     ['subtitle', guidance.subtitle],
     ['openingNotice', guidance.openingNotice],
@@ -57,7 +76,17 @@ export function compileGuidance(
     }
     return [{ encounterId, notice: item.notice }]
   })
+  const tutorial =
+    guidance.tutorial === undefined
+      ? undefined
+      : {
+          pages: [
+            { ...guidance.tutorial.pages[0] },
+            { ...guidance.tutorial.pages[1] },
+          ] as const,
+        }
   return {
+    tutorial,
     subtitle: guidance.subtitle,
     openingNotice: guidance.openingNotice,
     encounterSuccessNotices,

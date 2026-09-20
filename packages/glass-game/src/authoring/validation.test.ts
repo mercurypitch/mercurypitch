@@ -138,6 +138,37 @@ describe('authoring validation', () => {
     )
   })
 
+  it('rejects unknown checkpoint placement overrides and encounter prerequisites', () => {
+    const [arrival, ...rooms] = FOUNDATION_STRAIGHT_SOURCE.rooms
+    const malformed: AuthoredLevelSource = {
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      rooms: [
+        {
+          ...arrival,
+          checkpointRequiresCompleted: {
+            entry: ['missing-encounter'],
+            missing: ['arrival-goblet'],
+          },
+        },
+        ...rooms,
+      ],
+    }
+
+    expect(diagnosticsFrom(malformed)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'missing-reference',
+          path: 'rooms.arrival.checkpointRequiresCompleted.missing',
+        }),
+        expect.objectContaining({
+          code: 'missing-reference',
+          path: 'rooms.arrival.checkpoints.entry.requiresCompleted',
+          message: expect.stringContaining('missing-encounter'),
+        }),
+      ]),
+    )
+  })
+
   it('allows an optional encounter to depend on required work but rejects the reverse transitively', () => {
     expect(() =>
       composeLevel(FOUNDATION_STRAIGHT_SOURCE, FOUNDATION_AUTHORING_CATALOG),
@@ -505,6 +536,30 @@ describe('authoring validation', () => {
           path: expect.stringContaining('guidance.encounterSuccessNotices'),
         }),
       ]),
+    )
+  })
+
+  it('rejects blank authored teaching copy before a tutorial can hide its instructions', () => {
+    const source: AuthoredLevelSource = {
+      ...FOUNDATION_STRAIGHT_SOURCE,
+      guidance: {
+        tutorial: {
+          pages: [
+            { title: 'Move', body: '   ', aside: 'Jump is optional.' },
+            {
+              title: 'Sing',
+              body: 'Hold a comfortable note.',
+              aside: 'Rest any time.',
+            },
+          ],
+        },
+      },
+    }
+    expect(diagnosticsFrom(source)).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid-guidance',
+        path: 'guidance.tutorial.pages.0.body',
+      }),
     )
   })
 })

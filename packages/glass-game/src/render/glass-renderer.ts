@@ -2,6 +2,7 @@
 // Glass adventure renderer — a disposable, host-neutral Three.js museum scene.
 // ============================================================
 
+import type { Material } from 'three'
 import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { loadMuseumAssets } from './asset-kit'
@@ -26,7 +27,7 @@ export interface GlassRendererOptions {
 }
 
 export interface GlassRenderer {
-  /** Required mascot loading rejects visibly; the host always owns the error UI. */
+  /** Required assets are installed; the host still owns the first-frame gate. */
   ready: Promise<void>
   render(snapshot: GameSnapshot, dt: number): void
   resize(): void
@@ -57,6 +58,33 @@ export function createGlassRenderer(
   assetUrl: (id: string) => string,
   options: GlassRendererOptions = {},
 ): GlassRenderer {
+  const partialCleanups: (() => void)[] = []
+  try {
+    return createGlassRendererInstance(
+      container,
+      level,
+      assetUrl,
+      options,
+      (cleanup) => partialCleanups.push(cleanup),
+    )
+  } catch (error) {
+    for (const cleanup of partialCleanups.reverse())
+      try {
+        cleanup()
+      } catch {
+        // Preserve the construction failure that explains why loading stopped.
+      }
+    throw error
+  }
+}
+
+function createGlassRendererInstance(
+  container: HTMLElement,
+  level: LevelDefinition,
+  assetUrl: (id: string) => string,
+  options: GlassRendererOptions,
+  registerPartialCleanup: (cleanup: () => void) => void,
+): GlassRenderer {
   level.breakables.forEach((target) => getBreakableRenderRecipe(target.variant))
   level.platforms.forEach((platform) =>
     getPlatformRenderRecipe(platform.renderId ?? platform.kind),
@@ -82,6 +110,11 @@ export function createGlassRenderer(
     'display:block;width:100%;height:100%;touch-action:none;'
   renderer.domElement.setAttribute('aria-label', 'Floating glass museum')
   container.append(renderer.domElement)
+  registerPartialCleanup(() => {
+    renderer.dispose()
+    renderer.forceContextLoss()
+    renderer.domElement.remove()
+  })
   const scene = new Scene()
   scene.fog = new FogExp2(0x59899e, 0.009)
   const camera = createAdventureCamera(level, {
@@ -90,8 +123,12 @@ export function createGlassRenderer(
   camera.camera.far = sceneFrame.cameraFar
   camera.camera.updateProjectionMatrix()
   const environment = createMuseumEnvironment(renderer, scene)
+  registerPartialCleanup(() => environment.dispose())
   scene.environmentIntensity = 0.65
   const materials = createMuseumMaterials()
+  const partialBorrowedMaterials = new Set<Material>(Object.values(materials))
+  registerPartialCleanup(() => disposeMaterials(Object.values(materials)))
+  registerPartialCleanup(() => disposeObject(scene, partialBorrowedMaterials))
   const atmosphere = createAtmosphere(materials, sceneRecipe)
   scene.add(atmosphere.root)
   scene.add(new HemisphereLight(0xcceaff, 0x243e42, 0.6))
@@ -106,6 +143,7 @@ export function createGlassRenderer(
   key.shadow.camera.far = sceneFrame.shadowFar
   key.shadow.normalBias = 0.018
   key.shadow.bias = -0.00015
+  registerPartialCleanup(() => key.shadow.dispose())
   scene.add(key, key.target)
   const rim = new DirectionalLight(0x73ddd9, 0.75)
   rim.position.copy(sceneFrame.rimPosition)
@@ -115,6 +153,12 @@ export function createGlassRenderer(
     scene.add(rim, rim.target)
   }
   const museum = createMuseum(level, materials)
+  registerPartialCleanup(() => {
+    museum.materialLibrary.materials.forEach((material) =>
+      partialBorrowedMaterials.add(material),
+    )
+    museum.materialLibrary.dispose()
+  })
   scene.add(museum.root)
   const portal = createResonancePortal(
     level.exit,
@@ -131,6 +175,7 @@ export function createGlassRenderer(
       return [target.id, vessel]
     }),
   )
+  registerPartialCleanup(() => vessels.forEach((vessel) => vessel.dispose()))
   let merc: Awaited<ReturnType<typeof loadAdventureMerc>> | undefined
   let disposed = false
   let contextLost = false
@@ -141,6 +186,9 @@ export function createGlassRenderer(
     options.onContextLost?.()
   }
   renderer.domElement.addEventListener('webglcontextlost', onContextLost)
+  registerPartialCleanup(() =>
+    renderer.domElement.removeEventListener('webglcontextlost', onContextLost),
+  )
   let latest: GameSnapshot | undefined
   const resize = () => {
     if (disposed) return
@@ -152,8 +200,17 @@ export function createGlassRenderer(
   }
   resize()
   const observer = new ResizeObserver(resize)
+  registerPartialCleanup(() => observer.disconnect())
   observer.observe(container)
-  const mercReady = loadAdventureMerc(assetUrl('merc')).then((actor) => {
+  const mercUrl = assetUrl('merc')
+  const environmentUrl =
+    sceneRecipe.environment === undefined
+      ? undefined
+      : assetUrl(sceneRecipe.environment)
+  registerPartialCleanup(() => {
+    disposed = true
+  })
+  const mercReady = loadAdventureMerc(mercUrl).then((actor) => {
     if (disposed) {
       actor.dispose()
       return
@@ -161,6 +218,9 @@ export function createGlassRenderer(
     merc = actor
     scene.add(actor.root)
     if (latest) actor.update(latest, 0, options.reducedMotion ?? false)
+  })
+  registerPartialCleanup(() => {
+    void mercReady.catch(() => undefined)
   })
   const assetsReady = loadMuseumAssets(
     level,
@@ -172,18 +232,21 @@ export function createGlassRenderer(
     () => disposed,
     options.onAssetError,
   )
+  registerPartialCleanup(() => {
+    void assetsReady.catch(() => undefined)
+  })
   const environmentReady =
-    sceneRecipe.environment !== undefined
+    environmentUrl !== undefined
       ? environment
-          .load(
-            assetUrl(sceneRecipe.environment),
-            () => disposed || contextLost,
-          )
+          .load(environmentUrl, () => disposed || contextLost)
           .catch((error: unknown) => {
             if (!disposed)
               options.onAssetError?.(sceneRecipe.environment!, error)
           })
       : Promise.resolve()
+  registerPartialCleanup(() => {
+    void environmentReady.catch(() => undefined)
+  })
   const ready = Promise.all([mercReady, assetsReady, environmentReady]).then(
     () => {
       if (disposed || contextLost || !sceneRecipe.reflectionProbe) return

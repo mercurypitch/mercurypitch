@@ -1,0 +1,93 @@
+{
+  "records": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "dimensions": {
+        "width": 1280,
+        "scrollWidth": 1280,
+        "height": 800,
+        "scrollHeight": 800,
+        "reducedMotion": "none"
+      },
+      "errors": [],
+      "screenshots": [
+        "1280x800-loading.png",
+        "1280x800-ready.png"
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 740
+      },
+      "dimensions": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 740,
+        "scrollHeight": 740,
+        "reducedMotion": "none"
+      },
+      "errors": [],
+      "screenshots": [
+        "390x740-loading.png",
+        "390x740-ready.png"
+      ]
+    },
+    {
+      "viewport": {
+        "width": 740,
+        "height": 390
+      },
+      "dimensions": {
+        "width": 740,
+        "scrollWidth": 740,
+        "height": 390,
+        "scrollHeight": 390,
+        "reducedMotion": "none"
+      },
+      "errors": [],
+      "screenshots": [
+        "740x390-loading.png",
+        "740x390-ready.png"
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 740
+      },
+      "dimensions": {
+        "width": 390,
+        "scrollWidth": 390,
+        "height": 740,
+        "scrollHeight": 740
+      },
+      "errors": [],
+      "screenshots": [
+        "390x740-error.png"
+      ],
+      "expectedFailure": "Required Merc request aborted; Retry actionable by touch."
+    },
+    {
+      "viewport": {
+        "width": 740,
+        "height": 390
+      },
+      "dimensions": {
+        "width": 740,
+        "scrollWidth": 740,
+        "height": 390,
+        "scrollHeight": 390
+      },
+      "errors": [],
+      "screenshots": [
+        "740x390-error.png"
+      ],
+      "expectedFailure": "Required Merc request aborted; Retry actionable by touch."
+    }
+  ],
+  "method": "Actual Solid host; downloads held for cover capture; real WebGL frame rendered after all critical assets installed. RAF frozen after reveal for stable screenshots. Not a frame-rate measurement."
+}

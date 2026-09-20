@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { Object3D, Texture } from 'three'
-import { TextureLoader } from 'three'
+import { LoadingManager, TextureLoader } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { LevelDefinition } from '../contracts'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe, MUSEUM_MATERIAL_CATALOG, } from './catalog'
@@ -17,6 +17,18 @@ import type { SurfaceTextureSlot, TextureRecipe } from './texture-recipe'
 import { configureTexture } from './texture-recipe'
 import type { createVessel } from './vessels'
 
+export class RequiredMuseumAssetError extends Error {
+  readonly assetId: string
+
+  constructor(assetId: string, cause: unknown) {
+    super(`Required museum asset "${assetId}" could not be prepared.`, {
+      cause,
+    })
+    this.name = 'RequiredMuseumAssetError'
+    this.assetId = assetId
+  }
+}
+
 export async function loadMuseumAssets(
   level: LevelDefinition,
   assetUrl: (id: string) => string,
@@ -28,8 +40,26 @@ export async function loadMuseumAssets(
   onError?: (id: string, error: unknown) => void,
 ): Promise<void> {
   const sceneRecipe = getMuseumSceneRecipe(level)
+  const failure = (id: string, error: unknown) => {
+    if (error instanceof RequiredMuseumAssetError) return error
+    const required = new RequiredMuseumAssetError(id, error)
+    if (!disposed()) onError?.(id, required)
+    return required
+  }
+  const loadScene = async (id: string) => {
+    const failedDependencies: string[] = []
+    const manager = new LoadingManager()
+    manager.onError = (url) => failedDependencies.push(url)
+    const scene = (await new GLTFLoader(manager).loadAsync(assetUrl(id))).scene
+    if (failedDependencies.length === 0) return scene
+    disposeObject(scene)
+    throw new Error(
+      `GLB "${id}" has unavailable dependencies: ${failedDependencies.join(', ')}`,
+    )
+  }
   const loadBundle = async (
     id: string,
+    beforeInstall: Promise<unknown>,
     use: (scene: Object3D, resolvedBundle: string) => void,
   ) => {
     let scene: Object3D | undefined
@@ -37,34 +67,51 @@ export async function loadMuseumAssets(
     try {
       const preferred = sceneRecipe.preferredBundles?.[id]
       try {
-        scene = (await new GLTFLoader().loadAsync(assetUrl(preferred ?? id)))
-          .scene
+        scene = await loadScene(preferred ?? id)
       } catch (error) {
         if (preferred === undefined) throw error
-        if (!disposed()) onError?.(preferred, error)
+        if (disposed()) return
+        onError?.(preferred, error)
+        // Catalogued legacy bundles are complete authored fallbacks. They may
+        // replace a failed preferred revision; neither path reveals proxies.
         resolvedBundle = id
-        scene = (await new GLTFLoader().loadAsync(assetUrl(id))).scene
+        scene = await loadScene(id)
       }
+    } catch (error) {
+      if (disposed()) return
+      throw failure(id, error)
+    }
+    if (scene === undefined) return
+    try {
+      await beforeInstall
       if (!disposed()) use(scene, resolvedBundle)
     } catch (error) {
-      if (!disposed()) onError?.(id, error)
+      if (disposed()) return
+      throw failure(resolvedBundle, error)
     } finally {
-      if (scene) disposeObject(scene)
+      disposeObject(scene)
     }
   }
   const loadTexture = async (
     recipe: TextureRecipe,
     use: (texture: Awaited<ReturnType<TextureLoader['loadAsync']>>) => void,
+    beforeInstall: Promise<unknown> = Promise.resolve(),
   ) => {
+    let texture: Awaited<ReturnType<TextureLoader['loadAsync']>> | undefined
     try {
-      const texture = await new TextureLoader().loadAsync(
-        assetUrl(recipe.asset),
-      )
+      texture = await new TextureLoader().loadAsync(assetUrl(recipe.asset))
       configureTexture(texture, recipe)
-      if (disposed()) texture.dispose()
-      else use(texture)
+      await beforeInstall
+      if (disposed()) {
+        texture.dispose()
+        return
+      }
+      use(texture)
+      texture = undefined
     } catch (error) {
-      if (!disposed()) onError?.(recipe.asset, error)
+      texture?.dispose()
+      if (disposed()) return
+      throw failure(recipe.asset, error)
     }
   }
   const installTargets = (
@@ -78,18 +125,12 @@ export async function loadMuseumAssets(
       const vessel = vessels.get(target.id)
       if (!vessel) continue
       // No vessel mutation until the full declared intact/fracture set is ready.
-      let prepared: ReturnType<typeof prepareExhibitAsset>
-      try {
-        prepared = prepareExhibitAsset(
-          scene,
-          recipe,
-          resolvedBundle,
-          vessel.materialLibrary,
-        )
-      } catch (error) {
-        if (!disposed()) onError?.(resolvedBundle, error)
-        continue
-      }
+      const prepared = prepareExhibitAsset(
+        scene,
+        recipe,
+        resolvedBundle,
+        vessel.materialLibrary,
+      )
       vessel.setGeometry(prepared.geometry, prepared.pieces, prepared.materials)
       if (recipe.persistentPrefix !== undefined)
         scene.traverse((node) => {
@@ -127,7 +168,7 @@ export async function loadMuseumAssets(
     const recipe = getPlatformRenderRecipe(platform.renderId ?? platform.kind)
     if (recipe.bundle !== undefined) bundles.add(recipe.bundle)
   }
-  await Promise.all(
+  const materialsReady = Promise.all(
     Object.entries(MUSEUM_MATERIAL_CATALOG).flatMap(([id, recipe]) =>
       Object.entries(recipe.textures ?? {}).map(([slot, textureRecipe]) =>
         loadTexture(textureRecipe, (texture) => {
@@ -139,33 +180,35 @@ export async function loadMuseumAssets(
       ),
     ),
   )
-  if (disposed()) return
-  await Promise.all([
-    ...(sceneRecipe.skyTexture !== undefined
-      ? [
-          loadTexture(
-            {
-              asset: sceneRecipe.skyTexture,
-              interpretation: 'color',
-              flipY: true,
-            },
-            setSky,
-          ),
-        ]
-      : []),
-    ...[...bundles].map((bundle) =>
-      loadBundle(bundle, (scene, resolvedBundle) => {
-        museum.setKit(scene, bundle)
-        installTargets(scene, bundle, resolvedBundle)
-      }),
-    ),
-    ...[...portraitTextures].map((id) =>
-      loadTexture({ asset: id, interpretation: 'color' }, (texture) => {
+  const bundleLoads = [...bundles].map((bundle) =>
+    loadBundle(bundle, materialsReady, (scene, resolvedBundle) => {
+      museum.setKit(scene, bundle)
+      installTargets(scene, bundle, resolvedBundle)
+    }),
+  )
+  const bundlesReady = Promise.all(bundleLoads)
+  const skyReady =
+    sceneRecipe.skyTexture === undefined
+      ? Promise.resolve()
+      : loadTexture(
+          {
+            asset: sceneRecipe.skyTexture,
+            interpretation: 'color',
+            flipY: true,
+          },
+          setSky,
+        )
+  const portraitLoads = [...portraitTextures].map((id) =>
+    loadTexture(
+      { asset: id, interpretation: 'color' },
+      (texture) => {
         for (const target of level.breakables)
           if (getBreakableRenderRecipe(target.variant).portraitTexture === id)
             vessels.get(target.id)?.setPortrait(texture.clone())
         texture.dispose()
-      }),
+      },
+      bundlesReady,
     ),
-  ])
+  )
+  await Promise.all([materialsReady, bundlesReady, skyReady, ...portraitLoads])
 }

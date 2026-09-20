@@ -5,7 +5,7 @@
 // its loader and resources; it never imports either application's internals.
 
 import type { AnimationAction, Mesh } from 'three'
-import { AnimationMixer, Box3, Group, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
+import { AnimationMixer, Box3, Group, LoadingManager, LoopOnce, LoopRepeat, MeshPhysicalMaterial, Vector3, } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { GameSnapshot } from '../contracts'
 import { MOVEMENT } from '../core/movement'
@@ -28,7 +28,16 @@ export function mercMoveTimeScale(horizontalSpeed: number): number {
 }
 
 export async function loadAdventureMerc(url: string) {
-  const gltf = await new GLTFLoader().loadAsync(url)
+  const failedDependencies: string[] = []
+  const manager = new LoadingManager()
+  manager.onError = (failedUrl) => failedDependencies.push(failedUrl)
+  const gltf = await new GLTFLoader(manager).loadAsync(url)
+  if (failedDependencies.length > 0) {
+    disposeObject(gltf.scene)
+    throw new Error(
+      `Merc has unavailable dependencies: ${failedDependencies.join(', ')}`,
+    )
+  }
   const body = gltf.scene
   const bounds = new Box3().setFromObject(body)
   const height = bounds.getSize(new Vector3()).y

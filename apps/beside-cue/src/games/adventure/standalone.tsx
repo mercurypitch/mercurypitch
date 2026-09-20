@@ -18,15 +18,20 @@ async function selectedDevelopmentLevel() {
   if (
     layout !== 'straight' &&
     layout !== 'quarter-turn' &&
-    layout !== 'chamber'
+    layout !== 'chamber' &&
+    layout !== 'tutorial' &&
+    layout !== 'journey'
   )
     return undefined
   const {
     GLASS_ENCLOSED_CHAMBER,
+    GLASSWORKS_JOURNEY,
     GLASS_FOUNDATION_QUARTER_TURN,
     GLASS_FOUNDATION_STRAIGHT,
   } = await import('@irchiinnuss/glass-game/development-levels')
-  if (layout === 'chamber') return GLASS_ENCLOSED_CHAMBER
+  if (layout === 'chamber' || layout === 'tutorial')
+    return GLASS_ENCLOSED_CHAMBER
+  if (layout === 'journey') return GLASSWORKS_JOURNEY
   return layout === 'straight'
     ? GLASS_FOUNDATION_STRAIGHT
     : GLASS_FOUNDATION_QUARTER_TURN

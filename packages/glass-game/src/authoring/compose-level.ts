@@ -314,6 +314,19 @@ export function composeLevel(
       )
       validatedPrefabs.add(prefab.id)
     }
+    const localCheckpointIds = new Set(
+      prefab.checkpoints.map((checkpoint) => checkpoint.id),
+    )
+    for (const checkpointId of Object.keys(
+      placement.checkpointRequiresCompleted ?? {},
+    ))
+      if (!localCheckpointIds.has(checkpointId))
+        diagnostic(
+          diagnostics,
+          'missing-reference',
+          `rooms.${placement.id}.checkpointRequiresCompleted.${checkpointId}`,
+          `Room prefab "${prefab.id}" has no checkpoint "${checkpointId}".`,
+        )
   }
 
   const exhibitPlacements = sortedById(source.exhibits)

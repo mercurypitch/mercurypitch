@@ -46,6 +46,10 @@
   inset: 0;
   touch-action: none;
 }
+.viewportBlocked {
+  pointer-events: none;
+  user-select: none;
+}
 .viewport canvas {
   display: block;
   width: 100%;
@@ -174,23 +178,6 @@
   padding: 18px;
   text-align: center;
   z-index: 5;
-}
-.loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #276475d9;
-  color: #f3efdd;
-}
-.loadingGem {
-  width: 36px;
-  height: 36px;
-  transform: rotate(45deg);
-  border: 2px solid #ead8a0;
-  background: #abddd155;
 }
 .primary {
   background: #174c56;

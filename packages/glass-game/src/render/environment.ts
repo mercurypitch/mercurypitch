@@ -10,9 +10,14 @@ import { createReflectionTexture } from './materials'
 export function createMuseumEnvironment(renderer: WebGLRenderer, scene: Scene) {
   const source = createReflectionTexture()
   const generator = new PMREMGenerator(renderer)
-  let target = generator.fromEquirectangular(source)
-  generator.dispose()
-  source.dispose()
+  let target = (() => {
+    try {
+      return generator.fromEquirectangular(source)
+    } finally {
+      generator.dispose()
+      source.dispose()
+    }
+  })()
   scene.environment = target.texture
   let disposed = false
   return {

@@ -219,13 +219,17 @@ async function expectPlayerMovement(
   before: { x: number; z: number },
   minimumDistance: number,
 ): Promise<void> {
-  let distance = 0
-  for (let batch = 0; batch < 10 && distance <= minimumDistance; batch++) {
-    await animationFrames(page, 2)
-    const current = await playerPosition(page)
-    distance = Math.hypot(current.x - before.x, current.z - before.z)
-  }
-  expect(distance).toBeGreaterThan(minimumDistance)
+  // RAF callbacks can bunch after software-rendering stalls; their count is
+  // not elapsed physics time. Keep input held and require real travel instead.
+  await expect
+    .poll(
+      async () => {
+        const current = await playerPosition(page)
+        return Math.hypot(current.x - before.x, current.z - before.z)
+      },
+      { timeout: 3000, intervals: [50] },
+    )
+    .toBeGreaterThan(minimumDistance)
 }
 
 async function minimizeMuseumRaster(page: Page): Promise<void> {

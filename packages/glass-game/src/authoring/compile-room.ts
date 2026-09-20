@@ -105,18 +105,26 @@ export function compileRoom(
       runtimeRoomId(source, placement.id, 'checkpoint', item.id),
     ]),
   )
-  const checkpoints = sortedById(prefab.checkpoints).map((checkpoint) => ({
-    ...checkpoint,
-    id: checkpointIds.get(checkpoint.id)!,
-    position: transformPoint(checkpoint.position, placement),
-    facingYaw: transformYaw(checkpoint.facingYaw, placement.yawQuarterTurns),
-    requiresCompleted: mapEncounterRefs(
-      checkpoint.requiresCompleted,
-      runtimeEncounterIds,
-      `rooms.${placement.id}.checkpoints.${checkpoint.id}.requiresCompleted`,
-      diagnostics,
-    ),
-  }))
+  const checkpoints = sortedById(prefab.checkpoints).map((checkpoint) => {
+    const requiresCompleted = [
+      ...new Set([
+        ...(checkpoint.requiresCompleted ?? []),
+        ...(placement.checkpointRequiresCompleted?.[checkpoint.id] ?? []),
+      ]),
+    ]
+    return {
+      ...checkpoint,
+      id: checkpointIds.get(checkpoint.id)!,
+      position: transformPoint(checkpoint.position, placement),
+      facingYaw: transformYaw(checkpoint.facingYaw, placement.yawQuarterTurns),
+      requiresCompleted: mapEncounterRefs(
+        requiresCompleted.length === 0 ? undefined : requiresCompleted,
+        runtimeEncounterIds,
+        `rooms.${placement.id}.checkpoints.${checkpoint.id}.requiresCompleted`,
+        diagnostics,
+      ),
+    }
+  })
   const checkpointsByLocal = new Map(
     prefab.checkpoints.map((checkpoint) => [
       checkpoint.id,

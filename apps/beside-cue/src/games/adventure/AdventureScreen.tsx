@@ -10,6 +10,7 @@ interface AdventureScreenProps {
   level?: LevelDefinition
 }
 const files: Record<string, string> = {
+  'merc-loading': 'journey/merc-idle.webp',
   merc: 'glass3d/merc.glb',
   'floor-marble': 'adventure/floor-marble.webp',
   'legend-johnny-cash': 'adventure/legend-johnny-cash.webp',

@@ -241,6 +241,41 @@ it('places an authored vessel on its declared mount height and facing', () => {
   vessel.dispose()
 })
 
+it('rejects bundles missing declared platform or decoration nodes', () => {
+  const platformMaterials = createMaterials()
+  const platformMuseum = createMuseum(level, platformMaterials)
+  expect(() => platformMuseum.setKit(new Group(), 'museum-kit')).toThrow(
+    'Museum platform "room-floor" could not find node "platform_terrace"',
+  )
+  disposeObject(platformMuseum.root, platformMuseum.materialLibrary.materials)
+  platformMuseum.materialLibrary.dispose()
+  Object.values(platformMaterials).forEach((material) => material.dispose())
+
+  const decorationLevel: LevelDefinition = {
+    ...level,
+    id: 'glassworks',
+    presentation: undefined,
+    platforms: [
+      {
+        ...level.platforms[0]!,
+        kind: 'catch',
+        renderId: 'catch',
+      },
+    ],
+  }
+  const decorationMaterials = createMaterials()
+  const decorationMuseum = createMuseum(decorationLevel, decorationMaterials)
+  expect(() => decorationMuseum.setKit(new Group(), 'museum-kit')).toThrow(
+    'Museum decoration could not find node "museum_arch"',
+  )
+  disposeObject(
+    decorationMuseum.root,
+    decorationMuseum.materialLibrary.materials,
+  )
+  decorationMuseum.materialLibrary.dispose()
+  Object.values(decorationMaterials).forEach((material) => material.dispose())
+})
+
 it('replaces only declared proxies after exact art installs and shares an owned template', () => {
   const materials = createMaterials()
   const museum = createMuseum(coveredVisualLevel, materials)
