@@ -4,7 +4,9 @@ import { SharedVoiceprintWelcome } from './SharedVoiceprintWelcome'
 
 afterEach(cleanup)
 
-const FULL = { lo: 48, hi: 74, st: 26, ac: 12, sd: 9, tw: 'Freddie Mercury' }
+// `ac` and `sd` are the card's two scores, out of a hundred. They are not
+// cents, and the screen must not dress them as cents.
+const FULL = { lo: 48, hi: 74, st: 26, ac: 87, sd: 92, tw: 'Freddie Mercury' }
 
 describe('SharedVoiceprintWelcome', () => {
   it('leads with the voiceprint that was sent, not with an invitation to sing', () => {
@@ -14,8 +16,16 @@ describe('SharedVoiceprintWelcome', () => {
     expect(screen.getByText('C3 – D5')).toBeTruthy()
     expect(screen.getByText('2 octaves + 2 semitones')).toBeTruthy()
     expect(screen.getByText(/Freddie Mercury/)).toBeTruthy()
-    expect(screen.getByText('±12¢')).toBeTruthy()
-    expect(screen.getByText('±9¢ on holds')).toBeTruthy()
+    expect(screen.getByText('87 / 100')).toBeTruthy()
+    expect(screen.getByText('92 / 100')).toBeTruthy()
+  })
+
+  it('never writes a score as cents', () => {
+    // A take scoring 87 is a good one. "±87¢" says nearly a semitone out —
+    // the opposite — and that is what this screen used to print.
+    render(() => <SharedVoiceprintWelcome data={FULL} onStart={() => {}} />)
+    expect(screen.queryByText(/¢/)).toBeNull()
+    expect(screen.queryByText(/±/)).toBeNull()
   })
 
   it('stays anonymous unless the sender opted into a name', () => {
@@ -36,13 +46,13 @@ describe('SharedVoiceprintWelcome', () => {
     // A take can measure accuracy without completing the glide. The card
     // must not show a blank range or a stray dash where a number goes.
     render(() => (
-      <SharedVoiceprintWelcome data={{ ac: 14 }} onStart={() => {}} />
+      <SharedVoiceprintWelcome data={{ ac: 74 }} onStart={() => {}} />
     ))
 
-    expect(screen.getByText('±14¢')).toBeTruthy()
+    expect(screen.getByText('74 / 100')).toBeTruthy()
     expect(screen.queryByText(/–/)).toBeNull()
     expect(screen.queryByText(/Voice twin/)).toBeNull()
-    expect(screen.queryByText(/on holds/)).toBeNull()
+    expect(screen.queryByText('Steadiness')).toBeNull()
   })
 
   it('hands off to the recipient’s own take', () => {
