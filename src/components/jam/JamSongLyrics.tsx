@@ -15,6 +15,8 @@ import { LyricsAlignButtons } from '@/components/LyricsAlignButtons'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { formatClock } from '@/lib/format-time'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
+import type { JamWordProgress } from '@/lib/jam/jam-line-words'
+import { jamLineWords, jamWordProgress, NOTHING_SUNG, } from '@/lib/jam/jam-line-words'
 import { canAttachLyrics } from '@/lib/jam/jam-lyrics-attach'
 import { formatJamLyricsScale, isJamLyricsScaleDefault, JAM_LYRICS_SCALE_DEFAULT, JAM_LYRICS_SCALE_MAX, JAM_LYRICS_SCALE_MIN, lyricsScaleFromPinch, lyricsScaleFromWheel, steppedJamLyricsScale, } from '@/lib/jam/jam-lyrics-scale'
 import { lineIndexAt, restAt, restsBetween } from '@/lib/jam/jam-song'
@@ -26,6 +28,7 @@ import { buildPeerColorMap } from '@/lib/jam/peer-colors'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 import { assignJamSongLines, jamAssignBrush, jamIsHost, jamLineIsMine, jamPeerId, jamPeers, jamSong, jamSongParts, } from '@/stores/jam-store'
 import { JamAssignBar } from './JamAssignBar'
+import { JamLineWords } from './JamLineWords'
 import { JamLyricsFinder } from './JamLyricsFinder'
 import styles from './JamSongLyrics.module.css'
 
@@ -344,6 +347,22 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
   // changes, which is the only time the song has anywhere new to go.
   const currentIndex = createMemo(() =>
     lineIndexAt(props.lines, props.positionSec()),
+  )
+  /**
+   * How far the line being sung has been sung, word by word.
+   *
+   * One memo for the one line that shows it, read by that line's words
+   * only. The position moves every frame; `equals` is what keeps a paused
+   * song, a held note and the dwell after a line's last word from waking
+   * every word of the line sixty times a second to be told nothing moved.
+   */
+  const wordProgress = createMemo<JamWordProgress>(
+    () => jamWordProgress(props.lines, currentIndex(), props.positionSec()),
+    NOTHING_SUNG,
+    {
+      equals: (a, b) =>
+        a.sungUpTo === b.sungUpTo && Math.abs(a.fraction - b.fraction) < 0.001,
+    },
   )
   const rests = createMemo(() => restsBetween(props.lines))
   const activeRest = () => restAt(rests(), props.positionSec())
@@ -706,7 +725,16 @@ export const JamSongLyrics: Component<JamSongLyricsProps> = (props) => {
                     />
                   )}
                 </Show>
-                <span class={styles.lineText}>{line.text}</span>
+                {/* One text node, until it is the line being sung: only
+                    that line is split into words that light up. */}
+                <span class={styles.lineText}>
+                  <Show when={i() === currentIndex()} fallback={line.text}>
+                    <JamLineWords
+                      words={jamLineWords(line).words}
+                      progress={wordProgress}
+                    />
+                  </Show>
+                </span>
                 {/* Everything that is not the words, in one box. Centred
                     alignment lifts this box out of the flow so the lyric
                     can sit on the PANEL's axis rather than on whatever

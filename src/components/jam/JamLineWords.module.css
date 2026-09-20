@@ -1,0 +1,42 @@
+/* ── JamLineWords ──────────────────────────────────────────────────── */
+
+/* A word still to come: the line's own colour, stepped back.
+
+   No transition, and that is load-bearing. The sung and active looks swap
+   between a plain colour and a gradient clipped to the glyphs; animating
+   `color` across that swap leaves the glyphs transparent for the length of
+   the transition -- a black flash on every word boundary. The sweep IS the
+   animation, so the class flips are instant (Karaoke Night learned this
+   first; see KaraokeMobileStage.module.css). */
+.word {
+  transition: none;
+  color: color-mix(in srgb, var(--text-primary, #e6edf3) 52%, transparent);
+}
+
+.wordSung {
+  color: var(--text-primary, #e6edf3);
+}
+
+/* The word being sung fills from the left, driven by --word-sweep. */
+.wordActive {
+  background: linear-gradient(
+    90deg,
+    var(--text-primary, #e6edf3) var(--word-sweep, 0%),
+    color-mix(in srgb, var(--text-primary, #e6edf3) 52%, transparent)
+      var(--word-sweep, 0%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* No fill for anyone who asked for less movement: the word lights when it
+   starts, whole. */
+@media (prefers-reduced-motion: reduce) {
+  .wordActive {
+    background: none;
+    color: var(--text-primary, #e6edf3);
+    -webkit-text-fill-color: currentColor;
+  }
+}
