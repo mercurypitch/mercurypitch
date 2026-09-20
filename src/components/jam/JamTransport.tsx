@@ -27,6 +27,12 @@ interface JamTransportProps {
   pickerOpen?: boolean
   loopEnabled?: boolean
   onToggleLoop?: () => void
+  /**
+   * Draw the buttons without a box around them. The room's bar puts them
+   * in a capsule it shares with its own buttons (JamControlBar); on its
+   * own this still draws the glass it always did.
+   */
+  bare?: boolean
 }
 
 export const JamTransport: Component<JamTransportProps> = (props) => {
@@ -93,7 +99,7 @@ export const JamTransport: Component<JamTransportProps> = (props) => {
 
   return (
     <Show when={jamIsHost()}>
-      <div class={styles.bar}>
+      <div class={props.bare === true ? styles.barBare : styles.bar}>
         {/* Choose what the room sings -- a drill or one of your songs. The
             marker lets the picker's dismiss-on-outside-click ignore this
             button; without it, one tap would close the picker on

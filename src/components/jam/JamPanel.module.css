@@ -331,110 +331,6 @@
   min-width: 0;
 }
 
-/* ── BPM control ─────────────────────────────────────────────────── */
-
-.bpmControl {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
-}
-
-.bpmStep {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background 0.12s,
-    color 0.12s;
-  flex-shrink: 0;
-}
-
-.bpmStep:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.bpmInput {
-  width: 46px;
-  padding: 2px 4px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  font-family: inherit;
-  text-align: center;
-  color: var(--text-primary);
-  background: transparent;
-  border: none;
-  outline: none;
-  /* Hide browser number spinners */
-  -moz-appearance: textfield;
-}
-
-.bpmInput::-webkit-outer-spin-button,
-.bpmInput::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.bpmLabel {
-  font-size: 0.65rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  user-select: none;
-}
-
-/* ── Room mode ────────────────────────────────────────────────────── */
-
-.modePicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  backdrop-filter: blur(calc(var(--jam-blur, 1px) * 8));
-}
-
-.modeBtn {
-  padding: 3px 9px;
-  font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background 0.12s,
-    color 0.12s;
-}
-
-.modeBtn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.modeBtnActive {
-  color: var(--accent);
-  background: var(--accent-dim, rgba(88, 166, 255, 0.12));
-}
-
 /* Your part, in your own peer colour — the same colour your trail draws
    in on the canvas, so the badge and the line read as one thing. */
 .roleBadge {
@@ -554,29 +450,15 @@
 }
 
 /* ── One control, two homes ──────────────────────────────────────────
-   The live-pitch toggle sits in the transport row on a desktop and in
-   the room menu on a phone, and exactly one of them may be visible.
+   The live-pitch toggle sits in the playback capsule on a desktop
+   (JamControlBar) and in the room menu on a phone, and exactly one of
+   them may be visible: that stylesheet hides its copy at the same 640px
+   this one shows the menu's.
 
-   Both defaults are declared HERE, above the phone media query, and the
-   reason is worth stating: a media query adds no specificity. The
-   .viewToggles base rule used to live further down the file, so on a
-   phone it won on source order alone and the toggle appeared twice --
-   once in the menu where it belongs and once in a row of its own, which
-   is the whole thing the menu copy exists to avoid. Anything the phone
-   block overrides must be declared before it. */
-
-/* Groups the view toggles beside the BPM control, matching its glass so
-   the two read as one bar of room settings rather than loose buttons. */
-.viewToggles {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--jam-glass, rgba(13, 17, 23, 0.6));
-  flex-shrink: 0;
-}
+   The default is declared HERE, above the phone media query, and the
+   reason is worth stating: a media query adds no specificity, so a base
+   rule written below the block that overrides it wins on source order
+   alone. Anything the phone block overrides must be declared before it. */
 
 /* The room menu's copy, hidden everywhere the transport row shows its. */
 .phoneOnlyAction {
@@ -629,10 +511,6 @@
      transport row that wraps. */
   .phoneOnlyAction {
     display: flex;
-  }
-
-  .viewToggles {
-    display: none;
   }
 
   /* The sidebar becomes a drawer over the room rather than a column
@@ -787,13 +665,6 @@
   .exercisePicker {
     width: min(340px, calc(100vw - 24px));
   }
-
-  /* The mode picker is host-only and the labels are long; shrink rather
-     than push the transport off screen. */
-  .modeBtn {
-    padding: 3px 7px;
-    font-size: 0.68rem;
-  }
 }
 
 /* ── Canvas area — takes all remaining height ─────────────────────── */
@@ -860,39 +731,6 @@
   padding-top: 0;
   border-top: none;
   overflow: hidden;
-}
-
-.pitchToggleBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  /* Not `transparent`: on a bright backdrop the button vanished into the
-     photo. The same disc the round room controls use, which the slider
-     drives across the full range but never below a findable floor. */
-  background: var(--jam-control, rgba(13, 17, 23, 0.5));
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-}
-
-.pitchToggleBtn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border-color: var(--accent);
-}
-
-.pitchToggleBtnActive {
-  background: var(--accent-dim, rgba(88, 166, 255, 0.1));
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 /* ── Exercise picker dropdown ─────────────────────────────────────── */

@@ -226,6 +226,22 @@ describe('what a fresh page load restores', () => {
     expect(prefs.jamSplitShare(false)).toBe(JAM_SPLIT_WIDE_DEFAULT)
   })
 
+  it('keeps the extra playback controls open only for a real yes', async () => {
+    // Anything that is not the boolean `true` folds them away: a truthy
+    // string here would open a row of controls nobody asked for.
+    for (const stored of ['"true"', '1', '"yes"', 'null', '{true']) {
+      vi.resetModules()
+      localStorage.setItem('pitchperfect_jam_more_controls', stored)
+      const prefs = await import('@/lib/jam/jam-view-prefs')
+      expect(prefs.jamMoreControlsPinned()).toBe(false)
+    }
+    vi.resetModules()
+    localStorage.setItem('pitchperfect_jam_more_controls', 'true')
+    const prefs = await import('@/lib/jam/jam-view-prefs')
+    expect(prefs.JAM_MORE_CONTROLS_KEY).toBe('pitchperfect_jam_more_controls')
+    expect(prefs.jamMoreControlsPinned()).toBe(true)
+  })
+
   it('centres the words and shows the whole phrase by default', async () => {
     const prefs = await import('@/lib/jam/jam-view-prefs')
     expect(prefs.jamLyricsAlign()).toBe('center')

@@ -12,6 +12,12 @@
   width: fit-content;
 }
 
+/* Inside somebody else's capsule: no box, and no box of any kind -- the
+   buttons become items of that capsule's own row, spaced by its gap. */
+.barBare {
+  display: contents;
+}
+
 /* ── Base button ─────────────────────────────────────────────────── */
 
 .btn {

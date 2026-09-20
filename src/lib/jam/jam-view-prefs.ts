@@ -77,6 +77,28 @@ export function setJamLyricsScale(next: number): number {
   return clamped
 }
 
+// ── Extra playback controls ──────────────────────────────────────────
+
+export const JAM_MORE_CONTROLS_KEY = 'pitchperfect_jam_more_controls'
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === 'boolean'
+}
+
+/**
+ * Whether the playback bar keeps its extra controls open.
+ *
+ * Folded away by default: the tempo and the room's mode are set once and
+ * then left alone, and the width they took is width the song's timeline
+ * wants. Remembered, because a host who does reach for them between every
+ * take should open them once, not once per visit -- the same deal the
+ * practice bars make with their own More button.
+ */
+export const [jamMoreControlsPinned, setJamMoreControlsPinned] =
+  createPersistedSignal<boolean>(JAM_MORE_CONTROLS_KEY, false, {
+    validator: isBoolean,
+  })
+
 // ── Lane zoom ────────────────────────────────────────────────────────
 
 export const JAM_LANE_ZOOM_KEY = 'pitchperfect_jam_lane_zoom'
