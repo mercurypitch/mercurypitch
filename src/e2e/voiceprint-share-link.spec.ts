@@ -52,11 +52,14 @@ test.describe('a voiceprint that arrived by link', () => {
     // Scoped to this section: "Accuracy" and the note names also occur in the
     // Mirror's own copy elsewhere in the document, so a page-wide locator
     // fails on text that has nothing to do with the shared card.
+    // Assert on the written block itself, not on its words: the invitation
+    // underneath legitimately says "accuracy" and "range" in a sentence, and
+    // a text locator cannot tell prose from a duplicated data row.
     const shared = page.locator('.shared-vp')
     await expect(shared.locator('.shared-vp-card')).toHaveCount(0)
-    await expect(shared.getByText('C3 – D5')).toHaveCount(0)
-    await expect(shared.getByText('2 octaves + 2 semitones')).toHaveCount(0)
-    await expect(shared.getByText('Accuracy')).toHaveCount(0)
+    await expect(shared.locator('.shared-vp-range')).toHaveCount(0)
+    await expect(shared.locator('.shared-vp-stats')).toHaveCount(0)
+    await expect(shared.locator('.shared-vp-twin')).toHaveCount(0)
   })
 
   test('falls back to the written numbers when no twin was named', async ({
