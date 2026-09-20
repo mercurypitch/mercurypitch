@@ -15,6 +15,7 @@
 // without bound. After that the link still opens — the voiceprint is in the
 // URL, not in here — it simply unfurls with the stock card.
 
+import { OG_CARD_SIZE } from './lib/mirror/shared-voiceprint'
 import type { Env } from './worker'
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60
@@ -28,6 +29,20 @@ const ID_PATTERN = /^[0-9A-Za-z]{10}$/
 /** KV keys are namespaced so an image can never answer a share lookup. */
 function cardKey(id: string): string {
   return `og:${id}`
+}
+
+/**
+ * Whether a card is in the store right now.
+ *
+ * KV has no "exists", so this opens the value and lets go of it unread: the
+ * card is a few hundred kilobytes and all that is wanted is a yes or a no.
+ */
+export async function ogCardExists(env: Env, id: string): Promise<boolean> {
+  if (!ID_PATTERN.test(id)) return false
+  const value = await env.SHARE_STORE.get(cardKey(id), 'stream')
+  if (value === null) return false
+  await value.cancel()
+  return true
 }
 
 async function withinUploadRate(env: Env, ip: string): Promise<boolean> {
@@ -61,6 +76,11 @@ export async function handleOgCardRequest(
         // The id names this exact image and is never reused, so a crawler
         // or CDN may hold it for as long as it likes.
         'Cache-Control': 'public, max-age=31536000, immutable',
+        // These bytes came from a stranger and go out under our own domain.
+        // They are an image and must only ever be read as one, whatever a
+        // browser opening the address directly thinks it has found in them.
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; sandbox",
       },
     })
   }
@@ -93,10 +113,16 @@ export async function handleOgCardRequest(
       // type, so anything else would be us hosting arbitrary bytes.
       return new Response('Not a PNG', { status: 415 })
     }
+    if (!isCardSized(body)) {
+      // The tags tell a crawler the picture is a square of this size, so
+      // that is the only picture taken. It also keeps this from being a
+      // place to park any image at all behind our name.
+      return new Response('Not a card', { status: 415 })
+    }
 
     // The client picks its own id, so refuse to overwrite one that exists.
     // Collision is vanishingly unlikely; deliberate reuse is not.
-    if ((await env.SHARE_STORE.get(cardKey(id), 'stream')) !== null) {
+    if (await ogCardExists(env, id)) {
       return new Response('Already exists', { status: 409 })
     }
 
@@ -107,6 +133,22 @@ export async function handleOgCardRequest(
   }
 
   return null
+}
+
+/**
+ * Whether the PNG says it is the card's size. A PNG opens with its IHDR
+ * chunk: four bytes of length, the four letters, then width and height as
+ * big-endian 32-bit numbers at byte 16 and byte 20.
+ */
+function isCardSized(body: ArrayBuffer): boolean {
+  if (body.byteLength < 24) return false
+  const view = new DataView(body)
+  const isHeader = view.getUint32(8) === 13 && view.getUint32(12) === 0x49484452 // "IHDR"
+  return (
+    isHeader &&
+    view.getUint32(16) === OG_CARD_SIZE &&
+    view.getUint32(20) === OG_CARD_SIZE
+  )
 }
 
 /** PNG magic number. */

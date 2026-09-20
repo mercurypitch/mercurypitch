@@ -5,7 +5,7 @@ import type { UvrInputBucket } from './lib/runpod-bridge'
 import { handleRunpodRequest, rejectUnconfiguredRunpod, } from './lib/runpod-bridge'
 import { getMeteringConfig } from './lib/uvr-metering'
 import { verifyBearer } from './lib/verify-jwt'
-import { handleOgCardRequest } from './og-card-handler'
+import { handleOgCardRequest, ogCardExists } from './og-card-handler'
 import { decorateVoiceprintMeta } from './og-voiceprint-meta'
 import { handleShareRequest } from './share-handler'
 
@@ -59,8 +59,13 @@ export interface Env {
 
 // Voice Mirror and the vocal-range search entry share the same app code but
 // have distinct HTML metadata and visible intent. Static assets normally
-// answer both paths before the Worker; keep this routing correct for requests
-// that do reach it. /tone-deaf-test redirects via public/_redirects because
+// answer /vocal-range-test before the Worker; keep this routing correct for
+// requests that do reach it. /mirror is different: it is listed in
+// wrangler.jsonc `assets.run_worker_first` even though it has a file of its
+// own, because a shared voiceprint link is /mirror?v=... and its social card
+// is rewritten here per request (og-voiceprint-meta). Drop it from that list
+// and every shared link silently unfurls as the stock card.
+// /tone-deaf-test redirects via public/_redirects because
 // MercuryPitch measures pitch matching but does not diagnose amusia.
 // /free-sing serves mirror.html with the URL preserved, so the client's
 // mirrorEntryIntent() still reads 'free-sing' and shows the open-take copy.
@@ -296,12 +301,13 @@ export default {
       }
     }
 
-    // Share link shortener — /api/share/*  →  KV-backed
+    // Shared voiceprint cards — /api/og/card/*  →  KV-backed
     if (url.pathname.startsWith('/api/og/')) {
       const ogResp = await handleOgCardRequest(request, env)
       if (ogResp !== null) return ogResp
     }
 
+    // Share link shortener — /api/share/*  →  KV-backed
     if (url.pathname.startsWith('/api/share/')) {
       const shareResp = await handleShareRequest(request, env)
       if (shareResp) return shareResp
@@ -355,7 +361,9 @@ export default {
       )
       // A shared voiceprint has to unfurl as itself. Crawlers never run the
       // code that reads `?v=`, so the card has to be true in the HTML.
-      return decorateVoiceprintMeta(mirrorResp, url)
+      return decorateVoiceprintMeta(mirrorResp, url, (id) =>
+        ogCardExists(env, id),
+      )
     }
 
     // Vocal range — same local analysis engine, but a distinct document whose
