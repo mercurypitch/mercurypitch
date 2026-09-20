@@ -11,6 +11,7 @@
 
 import type { F0Frame, MirrorDelta, MirrorResult } from '@/lib/mirror/metrics'
 import { centsToMidi, preprocess } from '@/lib/mirror/metrics'
+import { MIRROR_SHARE_URL } from '@/lib/mirror/shared-voiceprint'
 
 // The destination appears on two surfaces that must NOT carry the same
 // string, however duplicated they look side by side.
@@ -31,17 +32,26 @@ import { centsToMidi, preprocess } from '@/lib/mirror/metrics'
 export const CARD_URL = 'mercurypitch.com/mirror'
 
 /** The same destination in share text, where it IS clickable. Tagged so
- *  card-driven traffic is separable in GA4. When the short link ships,
- *  this constant is the only line that changes. */
-const SHARE_URL =
-  'https://mercurypitch.com/mirror?utm_source=voiceprint&utm_medium=share'
+ *  card-driven traffic is separable in GA4.
+ *
+ *  Defined once in `lib/mirror/shared-voiceprint`, which also builds the
+ *  variant carrying an encoded voiceprint. Callers that hold a summary
+ *  should pass `voiceprintShareUrl(...)` as `link` below, so the recipient
+ *  opens the card they were sent instead of an empty Mirror. */
+const SHARE_URL = MIRROR_SHARE_URL
 
-/** Share text for a card whose caller has nothing more specific to say. */
+/** Share text for a card whose caller has nothing more specific to say.
+ *  Prefer `defaultShareText(link)` where a voiceprint is in hand. */
 export const DEFAULT_SHARE_TEXT = `My voice, mapped — ${SHARE_URL}`
 
+/** Share text for a card, optionally carrying its own voiceprint. */
+export function defaultShareText(link: string = SHARE_URL): string {
+  return `My voice, mapped — ${link}`
+}
+
 /** Share text naming the singer someone matched. */
-export function twinShareText(twin: string): string {
-  return `${twin} is my voice twin — ${SHARE_URL}`
+export function twinShareText(twin: string, link: string = SHARE_URL): string {
+  return `${twin} is my voice twin — ${link}`
 }
 
 export type CardFormat = 'story' | 'square'

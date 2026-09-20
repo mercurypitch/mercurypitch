@@ -1472,3 +1472,94 @@ body {
   font-size: 0.8rem;
   margin: 0;
 }
+
+/* ── A voiceprint that arrived by link ─────────────────────── */
+
+.shared-vp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 0 16px;
+}
+
+.shared-vp-eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(207, 214, 255, 0.72);
+}
+
+.shared-vp-title {
+  margin: 2px 0 18px;
+  font-size: clamp(1.5rem, 6vw, 2.1rem);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.shared-vp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(420px, 100%);
+  padding: 26px 22px;
+  border: 1px solid rgba(143, 163, 255, 0.28);
+  border-radius: 18px;
+  background: rgba(143, 163, 255, 0.08);
+}
+
+.shared-vp-range {
+  margin: 0;
+  font-size: clamp(2rem, 9vw, 2.9rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--mirror-gold);
+}
+
+.shared-vp-span {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(207, 214, 255, 0.85);
+}
+
+.shared-vp-twin {
+  margin-top: 4px;
+}
+
+.shared-vp-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 26px;
+  margin: 12px 0 0;
+}
+
+.shared-vp-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shared-vp-stat dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(207, 214, 255, 0.66);
+}
+
+.shared-vp-stat dd {
+  margin: 0;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.shared-vp-foot {
+  max-width: 34ch;
+  margin: 12px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: rgba(207, 214, 255, 0.7);
+}
