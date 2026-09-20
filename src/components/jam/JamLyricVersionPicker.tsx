@@ -30,7 +30,20 @@ interface SongChoices {
   choices: JamLyricChoice[]
 }
 
-/** The same words at the same times, line for line. */
+/** Both without word times, or the same ones. */
+function sameWordStarts(
+  a: readonly number[] | undefined,
+  b: readonly number[] | undefined,
+): boolean {
+  if (a === undefined || b === undefined) return a === b
+  return a.length === b.length && a.every((t, i) => t === b[i])
+}
+
+/**
+ * The same words at the same times, line for line -- and word for word,
+ * where the lines say. A word-level correction moves no line, so before the
+ * lines carried their words two such versions were indistinguishable here.
+ */
 function sameLines(
   a: readonly LyricsLineTiming[],
   b: readonly LyricsLineTiming[],
@@ -38,7 +51,10 @@ function sameLines(
   return (
     a.length === b.length &&
     a.every(
-      (line, i) => line.startSec === b[i]?.startSec && line.text === b[i]?.text,
+      (line, i) =>
+        line.startSec === b[i]?.startSec &&
+        line.text === b[i]?.text &&
+        sameWordStarts(line.wordStartsSec, b[i]?.wordStartsSec),
     )
   )
 }
@@ -66,9 +82,9 @@ export const JamLyricVersionPicker: Component = () => {
     return held !== undefined && held.songId === songId() ? held.choices : []
   }
 
-  // Only to break a tie. Two versions can read the same line for line -- a
-  // word-level correction moves no line -- and then the lines cannot say
-  // which button was pressed.
+  // Only to break a tie. Two versions can still read the same, word for
+  // word -- one that differs only in where a word ENDS, say -- and then the
+  // lines cannot say which button was pressed.
   const [picked, setPicked] = createSignal<{
     songId: string
     kind: LyricsVersionKind
