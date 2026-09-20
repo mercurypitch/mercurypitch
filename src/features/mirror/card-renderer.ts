@@ -837,7 +837,17 @@ export function datedFilename(base: string): string {
 export async function shareCard(
   blob: Blob,
   filename = 'voiceprint.png',
-  meta?: { title?: string; text?: string },
+  meta?: {
+    title?: string
+    text?: string
+    /** Called once, synchronously, just before the share sheet opens — and
+     *  never on the download path. It is where anything that only makes
+     *  sense if a LINK is about to leave the device belongs: a browser with
+     *  no share sheet saves the picture and throws the text away, so work
+     *  done on that link's behalf would be done for nobody. Must not await:
+     *  Safari drops a share that does not begin inside the tap. */
+    onSheetOpening?: () => void
+  },
 ): Promise<'shared' | 'downloaded' | 'dismissed'> {
   const file = new File([blob], filename, { type: 'image/png' })
   const shareData: ShareData = {
@@ -851,6 +861,7 @@ export async function shareCard(
     typeof navigator.share === 'function'
   ) {
     try {
+      meta?.onSheetOpening?.()
       await navigator.share(shareData)
       return 'shared'
     } catch (err) {

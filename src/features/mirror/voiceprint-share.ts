@@ -42,12 +42,16 @@ export async function shareVoiceprintRecord(
 
   const blob = await cardToPngBlob(canvas)
   const ogCardId = newOgCardId()
-  uploadOgCard(ogCardId, blob)
   return shareCard(blob, datedFilename('voiceprint'), {
     title: 'My voiceprint',
     text: twinShareText(
       record.twin ?? 'My twin',
       voiceprintShareUrl(record.summary, record.twin, null, ogCardId),
     ),
+    // Only when a sheet is opening: a browser without one saves the picture
+    // and drops the link, and a card stored for a link nobody was given is
+    // a card sent off the device for nothing. (The twin card is square, so
+    // it is already the picture an unfurl wants.)
+    onSheetOpening: () => uploadOgCard(ogCardId, blob),
   })
 }

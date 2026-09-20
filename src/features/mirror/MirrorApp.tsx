@@ -26,7 +26,7 @@ import { summarize } from '@/lib/mirror/metrics'
 import { hasSeenHowItWorks, markHowItWorksSeen } from '@/lib/mirror/onboarding'
 import type { MirrorEvent, MirrorSessionState } from '@/lib/mirror/session'
 import { initialSessionState, reduceSession } from '@/lib/mirror/session'
-import { MIRROR_SHARE_URL, newOgCardId, parseVoiceprintLink, uploadOgCard, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
+import { MIRROR_SHARE_URL, newOgCardId, OG_CARD_PARAM, parseVoiceprintLink, uploadOgCard, VOICEPRINT_PARAM, voiceprintShareUrl, } from '@/lib/mirror/shared-voiceprint'
 import { singerForRange } from '@/lib/mirror/singer-match'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
@@ -1005,7 +1005,9 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
    *  once revealed; honours the "pitch trace" card option. Keyed on metTwin
    *  (sticky), not the current flip state, so the share always matches the
    *  on-screen front card — flipping back must not strip the medallion. */
-  function buildStoryCard(): HTMLCanvasElement | null {
+  function buildStoryCard(
+    format: CardFormat = cardFormat(),
+  ): HTMLCanvasElement | null {
     const state = session()
     if (!state.result) return null
     const legend = metTwin() ? singerForRange(state.result.range) : null
@@ -1018,7 +1020,7 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
         legendImage: legendImage(),
         showTrace: includeTrace(),
       },
-      cardFormat(),
+      format,
     )
   }
 
@@ -1089,14 +1091,22 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
   async function onShare(withTwin = false): Promise<void> {
     const card = withTwin && twinReady() ? buildTwinCard() : buildStoryCard()
     if (!card) return
-    const png = await cardToPngBlob(card)
-    // The upload starts here rather than inside the sheet: Safari only keeps
-    // the share gesture alive if nothing awaits before it, so the id is picked
-    // locally and the PUT runs alongside. The cost is that closing the sheet
-    // without sending still leaves the card in the store — it expires in 30
-    // days, and nobody can reach it without the id, which never left here.
+    // A link unfurls as a square: that is what the tags declare and the only
+    // size the store takes. The twin card is one already; a data card shared
+    // in the tall story format is drawn a second time, square, for the unfurl
+    // alone — what lands in the share sheet is still the format they chose.
+    const unfurlCard =
+      card.width === card.height ? card : buildStoryCard('square')
+    const [png, unfurlPng] = await Promise.all([
+      cardToPngBlob(card),
+      unfurlCard === null || unfurlCard === card
+        ? null
+        : cardToPngBlob(unfurlCard),
+    ])
+    // The id is picked here so the link can be written before anything is
+    // stored: Safari only keeps the share gesture alive if nothing awaits
+    // before it, so there is no asking a server for one.
     const ogCardId = newOgCardId()
-    uploadOgCard(ogCardId, png)
     const link = shareLink(ogCardId)
     const twin = sharedTwin()
     const outcome = await shareCard(png, cardFilename(withTwin), {
@@ -1105,6 +1115,14 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
         withTwin && twin !== null
           ? twinShareText(twin, link)
           : defaultShareText(link),
+      // Stored only once a share sheet is really about to open. Where there
+      // is no sheet this button saves the picture and the link goes nowhere,
+      // so an upload would send someone's card off the device for nothing —
+      // and "it all happens on your device" is a promise we print. The cost
+      // that remains: closing the sheet without sending still leaves the
+      // card in the store. It expires in 30 days, and nobody can reach it
+      // without the id, which never left here.
+      onSheetOpening: () => uploadOgCard(ogCardId, unfurlPng ?? png),
     })
     // Closing the sheet without sending is neither a share nor a save —
     // don't count it (card_shared feeds a live Ads conversion) and don't
@@ -1165,7 +1183,8 @@ export const MirrorApp: Component<MirrorAppProps> = (props) => {
             // a reload, or a back-navigation out of the take, should land
             // on the ordinary Mirror rather than replay someone else's card.
             const url = new URL(window.location.href)
-            url.searchParams.delete('v')
+            url.searchParams.delete(VOICEPRINT_PARAM)
+            url.searchParams.delete(OG_CARD_PARAM)
             window.history.replaceState(null, '', url.pathname + url.search)
             setSharedVoiceprint(null)
           }}
