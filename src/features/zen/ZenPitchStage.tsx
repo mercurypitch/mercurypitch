@@ -47,6 +47,8 @@ interface ZenPitchStageProps {
   startMic: () => Promise<boolean>
   stopMic: () => void
   initialCenterMidi?: number
+  /** See `UseZenPitchSessionOptions.octaveShiftFor`. */
+  octaveShiftFor?: (lowMidi: number, highMidi: number) => number
   onClose: () => void
 }
 
@@ -155,6 +157,7 @@ export const ZenPitchStage: Component<ZenPitchStageProps> = (props) => {
     initialExerciseVersion: props.initialExerciseVersion,
     initialExerciseDefinition: props.initialExerciseDefinition,
     initialCenterMidi: props.initialCenterMidi,
+    octaveShiftFor: (low, high) => props.octaveShiftFor?.(low, high) ?? 0,
     subscribeFrames: (listener: (frame: PracticeFrame) => void) =>
       props.subscribeFrames(listener),
     micActive: () => props.micActive(),

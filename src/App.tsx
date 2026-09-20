@@ -290,7 +290,7 @@ import { surveyMomentOk, surveyUsageEarned } from '@/lib/survey-timing'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
-import { fitPhraseToRange, pickVocalRangeMelody } from '@/lib/vocal-range'
+import { fitPhraseToRange, octaveShiftIntoRange, pickVocalRangeMelody, } from '@/lib/vocal-range'
 import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -3101,9 +3101,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   const zenInitialCenterMidi = (): number => {
     const range = VOCAL_RANGES[vocalRangePreset()]
-    const lowC = 12 * (range.minOctave + 1)
-    const highC = 12 * (range.maxOctave + 1)
-    return (lowC + highC) / 2
+    return (range.lowMidi + range.highMidi) / 2
   }
 
   // ============================================================
@@ -4265,6 +4263,9 @@ const AppShell: Component<AppProps> = (props) => {
                 startMic={() => practiceEngine.startMic()}
                 stopMic={() => practiceEngine.stopMic()}
                 initialCenterMidi={zenInitialCenterMidi()}
+                octaveShiftFor={(low, high) =>
+                  octaveShiftIntoRange(low, high, vocalRangePreset())
+                }
                 onClose={closeSingingZen}
               />
             </Suspense>
