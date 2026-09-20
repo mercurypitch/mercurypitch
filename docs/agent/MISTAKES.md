@@ -904,6 +904,13 @@ that the two sets are disjoint.
 
 ## Tooling and environment
 
+### Ignore new generated entry documents
+
+**Symptom:** formatting a new HTML entry repeatedly passed locally but failed after a build.
+**Cause:** Vite rewrites every document in `ENTRY_PAGES` using the SEO renderer; the new document was accidentally tracked instead of ignored like its peers.
+**Rule:** review the entry model and add its generated root HTML path to `.gitignore`; do not commit or hand-format the generated document.
+**See:** `tools/generate-entry-pages.ts`, `src/seo/entry-pages.ts`.
+
 ### `rg -r` means `--replace`, not recursive
 
 **Symptom:** search output came back garbled and partially rewritten.
