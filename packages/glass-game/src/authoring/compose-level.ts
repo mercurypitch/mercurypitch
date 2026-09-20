@@ -12,6 +12,7 @@ import { compileExhibits } from './exhibits'
 import type { CompiledRoom } from './internal'
 import { diagnostic, mapEncounterRefs, resolveRoomMember, runtimePrefix, runtimeRoomId, sortedById, } from './internal'
 import { compilePresentation } from './presentation'
+import { compileRewards } from './rewards'
 import { assertSupportedRoomTransform } from './transform'
 import { completionClosure, recordRecipe, uniqueIds, validateDependencies, validateExitCoverage, validatePrefab, validateSupportedPose, validBounds3, validId, } from './validation'
 
@@ -417,6 +418,12 @@ export function composeLevel(
   const optionalEncounterIds = new Set(
     exhibitPlacements.filter((item) => item.optional).map((item) => item.id),
   )
+  const rewards = compileRewards(
+    source,
+    runtimeEncounterIds,
+    optionalEncounterIds,
+    diagnostics,
+  )
   const authoredDependencies = validateExhibitPrefabs(
     source,
     catalog,
@@ -520,6 +527,7 @@ export function composeLevel(
       ? {}
       : { movement: { ...source.movement } }),
     ...(guidance === undefined ? {} : { guidance }),
+    ...(rewards === undefined ? {} : { rewards }),
     spawn: {
       position: { ...(spawn?.value.position ?? { x: 0, y: 0, z: 0 }) },
       facingYaw: spawn?.value.facingYaw ?? 0,

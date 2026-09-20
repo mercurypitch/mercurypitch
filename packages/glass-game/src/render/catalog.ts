@@ -19,6 +19,13 @@ export interface BreakableRenderRecipe {
   thickness: number
   portraitTexture?: string
   portraitMaterial?: string
+  /** Separate art plane that remains after only the protective glazing breaks. */
+  persistentPortrait?: {
+    width: number
+    height: number
+    centerY: number
+    z: number
+  }
   faceAnchor?: boolean
   fallbackShape: 'goblet' | 'rounded' | 'fluted' | 'slab'
   fragmentBudget: number
@@ -112,6 +119,26 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     fallbackShape: 'slab',
     portraitTexture: 'legend-johnny-cash',
     portraitMaterial: 'legend_portrait',
+    faceAnchor: true,
+    fragmentBudget: 18,
+  },
+  'archive-glazing-v5': {
+    ...CLEAR_GLASS,
+    bundle: 'legend-slab',
+    intactNode: 'legend_cash_intact',
+    shardPrefix: 'legend_cash_shard_',
+    shardCount: 16,
+    persistentPrefix: 'legend_cash_frame_',
+    displayHeight: 0.84,
+    fallbackShape: 'slab',
+    portraitTexture: 'painting-archive-v5',
+    portraitMaterial: 'legend_portrait',
+    persistentPortrait: {
+      width: 0.58,
+      height: 0.78,
+      centerY: 0.42,
+      z: 0.032,
+    },
     faceAnchor: true,
     fragmentBudget: 18,
   },

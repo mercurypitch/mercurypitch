@@ -1,6 +1,7 @@
 // Adventure progress — validate stable content IDs and restore only reachable checkpoints.
 
 import type { CheckpointDefinition, LevelDefinition, SavedProgress, } from '../contracts'
+import { emptyRewardProgress, mergeRewardProgress, readRewardProgress, } from './rewards'
 
 export function requirementsMet(
   required: readonly string[] | undefined,
@@ -14,16 +15,17 @@ export function readProgress(
   raw: unknown,
 ): SavedProgress {
   const fallback: SavedProgress = {
-    version: 1,
+    version: 2,
     levelId: level.id,
     checkpointId: level.spawn.checkpointId ?? level.checkpoints[0]?.id ?? '',
     completedBreakableIds: [],
     finished: false,
+    rewards: emptyRewardProgress(),
   }
   if (typeof raw !== 'object' || raw === null) return fallback
   const data = raw as Partial<SavedProgress>
   if (
-    data.version !== 1 ||
+    (data.version !== 1 && data.version !== 2) ||
     data.levelId !== level.id ||
     !Array.isArray(data.completedBreakableIds)
   )
@@ -50,14 +52,41 @@ export function readProgress(
       requirementsMet(p.requiresCompleted, completed),
   )
   return {
-    version: 1,
+    version: 2,
     levelId: level.id,
     checkpointId: checkpoint?.id ?? fallback.checkpointId,
     completedBreakableIds: [...completed],
     finished:
       data.finished === true &&
       requirementsMet(level.exit.requiresCompleted, completed),
+    rewards: readRewardProgress(
+      level,
+      data.rewards,
+      completed,
+      data.version === 1,
+    ),
   }
+}
+
+/** Replays can start fresh while writes retain the strongest durable route and rewards. */
+export function mergeSavedProgress(
+  level: LevelDefinition,
+  leftRaw: unknown,
+  rightRaw: unknown,
+): SavedProgress {
+  const left = readProgress(level, leftRaw)
+  const right = readProgress(level, rightRaw)
+  return readProgress(level, {
+    version: 2,
+    levelId: level.id,
+    checkpointId: right.checkpointId,
+    completedBreakableIds: [
+      ...left.completedBreakableIds,
+      ...right.completedBreakableIds,
+    ],
+    finished: left.finished === true || right.finished === true,
+    rewards: mergeRewardProgress(level, left.rewards, right.rewards),
+  })
 }
 
 export function findCheckpoint(

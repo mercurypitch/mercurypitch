@@ -397,6 +397,10 @@ export const GLASSWORKS_JOURNEY_PORTRAIT = exhibit(
   'glassworks-journey-portrait',
   'portrait',
 )
+export const GLASSWORKS_JOURNEY_ARCHIVE_GLAZING = exhibit(
+  'glassworks-journey-archive-glazing',
+  'archive-glazing-v5',
+)
 export const GLASSWORKS_JOURNEY_AMPHORA = exhibit(
   'glassworks-journey-amphora',
   'amphora',
@@ -414,12 +418,14 @@ export const GLASSWORKS_JOURNEY_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     ...ENCLOSED_MUSEUM_AUTHORING_CATALOG.exhibits,
     [GLASSWORKS_JOURNEY_FLUTED.id]: GLASSWORKS_JOURNEY_FLUTED,
     [GLASSWORKS_JOURNEY_PORTRAIT.id]: GLASSWORKS_JOURNEY_PORTRAIT,
+    [GLASSWORKS_JOURNEY_ARCHIVE_GLAZING.id]: GLASSWORKS_JOURNEY_ARCHIVE_GLAZING,
     [GLASSWORKS_JOURNEY_AMPHORA.id]: GLASSWORKS_JOURNEY_AMPHORA,
   },
   availableAssetRecipeIds: [
     ...ENCLOSED_MUSEUM_AUTHORING_CATALOG.availableAssetRecipeIds,
     'fluted',
     'portrait',
+    'archive-glazing-v5',
     'amphora',
   ],
 }

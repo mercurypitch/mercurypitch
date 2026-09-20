@@ -138,6 +138,39 @@ export interface AuthoredLevelGuidance {
   completionNext?: string
 }
 
+export interface AuthoredDiscoveryReward {
+  encounterId: string
+  coinIds: readonly string[]
+}
+
+export interface AuthoredPitchAccuracyGradingPolicy {
+  kind: 'pitch-accuracy-v1'
+  encounterId: string
+  policyRevision: number
+  challengeRevision: number
+  minimumReliableSeconds: number
+  threeStarMaxMeanCents: number
+  twoStarMaxMeanCents: number
+  maximumErrorCents: number
+}
+
+export interface AuthoredPortraitCollectible {
+  portraitId: string
+  legendId: string
+  title: string
+  collectionIndex: number
+  imageAssetId: string
+  awardAfterEncounterId: string
+  representationStatus: 'review' | 'approved'
+}
+
+export interface AuthoredLevelRewards {
+  revision: number
+  discoveries: readonly AuthoredDiscoveryReward[]
+  grading: readonly AuthoredPitchAccuracyGradingPolicy[]
+  portrait?: AuthoredPortraitCollectible
+}
+
 export interface AuthoredLevelSource {
   levelId: string
   layoutId: string
@@ -145,6 +178,7 @@ export interface AuthoredLevelSource {
   title: string
   movement?: LevelMovementDefinition
   guidance?: AuthoredLevelGuidance
+  rewards?: AuthoredLevelRewards
   rooms: readonly RoomPlacement[]
   exhibits: readonly ExhibitPlacement[]
   connections: readonly PortConnection[]

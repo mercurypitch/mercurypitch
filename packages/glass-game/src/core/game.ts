@@ -1,6 +1,6 @@
 // Glass adventure coordinator — pure movement, encounter ownership and durable route progress.
 
-import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PlatformDefinition, } from '../contracts'
+import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PitchAccuracyGradingPolicy, PlatformDefinition, } from '../contracts'
 import type { ChallengeJudge } from './challenge'
 import { createChallengeJudge } from './challenge'
 import type { CourseCollider } from './collision'
@@ -8,6 +8,8 @@ import { containsBody, FLAT_COURSE_COLLIDER } from './collision'
 import { crossesExitPortal, deriveExitPortalGeometry } from './exit-portal'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
 import { findCheckpoint, readProgress, requirementsMet } from './progress'
+import type { SingingQualityAttempt } from './rewards'
+import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress, readRewardProgress, summarizeRewards, ungradedQualityResult, } from './rewards'
 import { getActiveCourseSolids, getActiveSolidIds } from './solid-activation'
 
 const INTERACTION_RADIUS = 0.75
@@ -16,6 +18,8 @@ const SHATTER_SECONDS = 1.4
 interface ActiveEncounter {
   target: BreakableDefinition
   judge: ChallengeJudge
+  qualityPolicy?: PitchAccuracyGradingPolicy
+  qualityAttempt?: SingingQualityAttempt
 }
 
 export function createGlassGame(
@@ -25,6 +29,8 @@ export function createGlassGame(
 ): GlassGame {
   const progress = readProgress(level, saved)
   const completed = new Set(progress.completedBreakableIds)
+  let rewardProgress =
+    progress.rewards ?? readRewardProgress(level, undefined, completed)
   let checkpointId = progress.checkpointId
   const initial = findCheckpoint(level, checkpointId, completed)
   let player = createMovement(
@@ -245,6 +251,7 @@ export function createGlassGame(
         nearbyBreakableId: nearby(),
         elapsedSeconds,
         complete,
+        rewardSummary: summarizeRewards(level, rewardProgress),
       }
     },
     beginEncounter(id, targets) {
@@ -259,6 +266,21 @@ export function createGlassGame(
       active = {
         target,
         judge: challenge.judge,
+        ...(() => {
+          const qualityPolicy = level.rewards?.grading.find(
+            (policy) => policy.encounterId === target.id,
+          )
+          return qualityPolicy === undefined
+            ? {}
+            : {
+                qualityPolicy,
+                qualityAttempt: createSingingQualityAttempt(
+                  level,
+                  target.challenge,
+                  qualityPolicy,
+                ),
+              }
+        })(),
       }
       return true
     },
@@ -266,6 +288,11 @@ export function createGlassGame(
       if (paused || active === null) return []
       const encounter = active
       const id = encounter.target.id
+      encounter.qualityAttempt?.observe(
+        frame,
+        nowMs,
+        encounter.judge.snapshot(),
+      )
       const challengeEvents = encounter.judge.feed(frame, nowMs)
       const events: GameEvent[] = []
       for (const event of challengeEvents) {
@@ -279,16 +306,29 @@ export function createGlassGame(
             completedSteps: event.completedSteps,
             stepCount: encounter.judge.snapshot().stepCount,
           })
-        else if (event.type === 'reset')
+        else if (event.type === 'reset') {
+          encounter.qualityAttempt?.reset()
           events.push({
             type: 'challenge-reset',
             id,
             reason: event.reason,
           })
+        }
       }
       if (!challengeEvents.some((event) => event.type === 'complete'))
         return events
+      const qualityResult =
+        encounter.qualityPolicy === undefined
+          ? undefined
+          : (encounter.qualityAttempt?.finish() ??
+            ungradedQualityResult(level, encounter.qualityPolicy))
       completed.add(id)
+      rewardProgress = applyEncounterRewards(
+        level,
+        rewardProgress,
+        id,
+        qualityResult,
+      )
       brokenAt.set(id, elapsedSeconds)
       active = null
       shattering = { id, until: elapsedSeconds + SHATTER_SECONDS }
@@ -307,11 +347,15 @@ export function createGlassGame(
     },
     saveProgress() {
       return {
-        version: 1,
+        version: 2,
         levelId: level.id,
         checkpointId,
         completedBreakableIds: [...completed],
         finished: complete,
+        rewards:
+          level.rewards === undefined
+            ? emptyRewardProgress()
+            : readRewardProgress(level, rewardProgress, completed),
       }
     },
   }

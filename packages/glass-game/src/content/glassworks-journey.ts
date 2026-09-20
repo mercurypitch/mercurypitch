@@ -74,7 +74,7 @@ export const GLASSWORKS_JOURNEY_ROUTE = {
 export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
   levelId: 'glassworks-journey',
   layoutId: 'journey',
-  contentRevision: 2,
+  contentRevision: 3,
   title: 'Glassworks Journey',
   movement: {
     walkSpeed: 1.55,
@@ -105,6 +105,52 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
     ],
     completionTitle: 'The journey is singing.',
     completionNext: 'Take a moment. You made every gallery sing.',
+  },
+  rewards: {
+    revision: 1,
+    discoveries: [
+      {
+        encounterId: 'garden-amphora',
+        coinIds: ['garden-amphora-coin'],
+      },
+      {
+        encounterId: 'garden-coupe',
+        coinIds: ['garden-coupe-coin'],
+      },
+      {
+        encounterId: 'archive-glazing',
+        coinIds: ['archive-glazing-coin'],
+      },
+      {
+        encounterId: 'panorama-amphora',
+        coinIds: ['panorama-amphora-coin'],
+      },
+      {
+        encounterId: 'panorama-coupe',
+        coinIds: ['panorama-coupe-coin'],
+      },
+    ],
+    grading: [
+      {
+        kind: 'pitch-accuracy-v1',
+        encounterId: 'portrait-finale',
+        policyRevision: 1,
+        challengeRevision: 1,
+        minimumReliableSeconds: 0.9,
+        threeStarMaxMeanCents: 35,
+        twoStarMaxMeanCents: 75,
+        maximumErrorCents: 600,
+      },
+    ],
+    portrait: {
+      portraitId: 'glassworks-awakened-muse',
+      legendId: 'she-who-woke-glass',
+      title: 'She Who Woke the Glass',
+      collectionIndex: 1,
+      imageAssetId: 'painting-portrait-v5',
+      awardAfterEncounterId: 'portrait-finale',
+      representationStatus: 'approved',
+    },
   },
   rooms: [
     {
@@ -285,6 +331,16 @@ export const GLASSWORKS_JOURNEY_SOURCE: AuthoredLevelSource = {
       prefabId: 'glassworks-journey-fluted',
       label: 'Archive carafe',
       optional: false,
+      challenge: COMFORTABLE_HOLD,
+      requiresCompleted: ['garden-decanter'],
+    },
+    {
+      id: 'archive-glazing',
+      roomId: 'archive',
+      mountId: 'west-display',
+      prefabId: 'glassworks-journey-archive-glazing',
+      label: 'Resonant archive glazing',
+      optional: true,
       challenge: COMFORTABLE_HOLD,
       requiresCompleted: ['garden-decanter'],
     },

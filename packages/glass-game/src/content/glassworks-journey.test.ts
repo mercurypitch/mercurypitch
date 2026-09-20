@@ -20,6 +20,7 @@ const ids = {
   portrait: `${prefix}/portrait/encounter/portrait-finale`,
   gardenAmphora: `${prefix}/garden/encounter/garden-amphora`,
   gardenCoupe: `${prefix}/garden/encounter/garden-coupe`,
+  archiveGlazing: `${prefix}/archive/encounter/archive-glazing`,
   panoramaAmphora: `${prefix}/panorama/encounter/panorama-amphora`,
   panoramaCoupe: `${prefix}/panorama/encounter/panorama-coupe`,
   vestibuleGate: `${prefix}/vestibule/solid/east-center-body`,
@@ -40,6 +41,7 @@ const requiredIds = [
   ids.portrait,
 ] as const
 const optionalIds = [
+  ids.archiveGlazing,
   ids.gardenAmphora,
   ids.gardenCoupe,
   ids.panoramaAmphora,
@@ -162,7 +164,7 @@ function passNorthGate(
 }
 
 describe('Glassworks Journey blockout', () => {
-  it('validates into a distinct stable level with four required and four optional exhibits', () => {
+  it('validates into a distinct stable level with four required and five optional exhibits', () => {
     expect(
       composeLevel(
         GLASSWORKS_JOURNEY_SOURCE,
@@ -174,7 +176,7 @@ describe('Glassworks Journey blockout', () => {
     expect(GLASSWORKS_JOURNEY.authored).toEqual({
       levelId: 'glassworks-journey',
       layoutId: 'journey',
-      contentRevision: 2,
+      contentRevision: 3,
     })
     expect(GLASSWORKS_JOURNEY).toMatchObject({
       title: 'Glassworks Journey',
@@ -203,6 +205,28 @@ describe('Glassworks Journey blockout', () => {
     expect(GLASSWORKS_JOURNEY.exit.requiresCompleted).not.toEqual(
       expect.arrayContaining([...optionalIds]),
     )
+    expect(GLASSWORKS_JOURNEY.rewards).toMatchObject({
+      revision: 1,
+      grading: [
+        {
+          encounterId: ids.portrait,
+          minimumReliableSeconds: 0.9,
+          threeStarMaxMeanCents: 35,
+          twoStarMaxMeanCents: 75,
+        },
+      ],
+      portrait: {
+        portraitId: 'glassworks-awakened-muse',
+        imageAssetId: 'painting-portrait-v5',
+        awardAfterEncounterId: ids.portrait,
+      },
+    })
+    expect(GLASSWORKS_JOURNEY.rewards?.discoveries).toHaveLength(
+      optionalIds.length,
+    )
+    expect(
+      GLASSWORKS_JOURNEY.rewards?.discoveries.map((item) => item.encounterId),
+    ).toEqual(expect.arrayContaining([...optionalIds]))
   })
 
   it('keeps every connected camera volume joined by at least 0.48m before clearance', () => {
@@ -408,7 +432,7 @@ describe('Glassworks Journey blockout', () => {
       )
   })
 
-  it('keeps all four optional anchors physically reachable outside the main route', () => {
+  it('keeps all five optional anchors physically reachable outside the main route', () => {
     const garden = createGlassGame(GLASSWORKS_JOURNEY, {
       version: 1,
       levelId: prefix,
@@ -424,6 +448,17 @@ describe('Glassworks Journey blockout', () => {
     walkAxis(garden, 'x', GLASSWORKS_JOURNEY_ROUTE.garden.x + 1.8)
     walkAxis(garden, 'z', GLASSWORKS_JOURNEY_ROUTE.garden.z + 1.15)
     expect(garden.snapshot().nearbyBreakableId).toBe(ids.gardenCoupe)
+
+    const archive = createGlassGame(GLASSWORKS_JOURNEY, {
+      version: 1,
+      levelId: prefix,
+      checkpointId: ids.archiveCheckpoint,
+      completedBreakableIds: [ids.vestibule, ids.garden],
+      finished: false,
+    })
+    walkAxis(archive, 'x', GLASSWORKS_JOURNEY_ROUTE.archive.x - 1.8)
+    walkAxis(archive, 'z', GLASSWORKS_JOURNEY_ROUTE.archive.z + 1.15)
+    expect(archive.snapshot().nearbyBreakableId).toBe(ids.archiveGlazing)
 
     const panorama = createGlassGame(GLASSWORKS_JOURNEY, {
       version: 1,

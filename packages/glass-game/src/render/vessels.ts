@@ -3,7 +3,7 @@
 // ============================================================
 
 import type { BufferGeometry, Material, Texture } from 'three'
-import { BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, RingGeometry, Vector2, Vector3, } from 'three'
+import { BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, Vector2, Vector3, } from 'three'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
@@ -142,7 +142,29 @@ export function createVessel(
     side: DoubleSide,
   })
   let material: Material | Material[] =
-    recipe.portraitTexture !== undefined ? [glass, portrait] : glass
+    recipe.portraitTexture !== undefined &&
+    recipe.persistentPortrait === undefined
+      ? [glass, portrait]
+      : glass
+  const persistentPortraitRecipe = recipe.persistentPortrait
+  let persistentPortrait: Mesh | undefined
+  if (persistentPortraitRecipe !== undefined) {
+    persistentPortrait = new Mesh(
+      new PlaneGeometry(
+        persistentPortraitRecipe.width,
+        persistentPortraitRecipe.height,
+      ),
+      portrait,
+    )
+    persistentPortrait.name = `persistent-portrait-${target.id}`
+    persistentPortrait.position.set(
+      0,
+      persistentPortraitRecipe.centerY,
+      persistentPortraitRecipe.z,
+    )
+    persistentPortrait.visible = false
+    root.add(persistentPortrait)
+  }
   let intact: Mesh
   let shardMeshes: {
     mesh: Mesh
@@ -158,6 +180,7 @@ export function createVessel(
     depthWrite: false,
   })
   const shardGroup = new Group()
+  shardGroup.name = `vessel-shards-${target.id}`
   root.add(shardGroup)
 
   function install(geometry: BufferGeometry, authoredPieces?: FracturePiece[]) {
@@ -174,6 +197,7 @@ export function createVessel(
     shardMeshes = []
     cracks = []
     intact = new Mesh(geometry, material)
+    intact.name = `vessel-intact-${target.id}`
     intact.castShadow = true
     root.add(intact)
     const pieces =
@@ -208,7 +232,10 @@ export function createVessel(
     })
   }
   const initialGeometry = createVesselGeometry(target.variant)
-  if (recipe.portraitTexture !== undefined)
+  if (
+    recipe.portraitTexture !== undefined &&
+    recipe.persistentPortrait === undefined
+  )
     initialGeometry.groups.forEach((group) => {
       group.materialIndex = (group.materialIndex ?? 0) >= 4 ? 1 : 0
     })
@@ -244,13 +271,19 @@ export function createVessel(
         return
       }
       if (authoredMaterials) {
-        material = authoredMaterials
-        for (const imported of authoredMaterials) {
-          if (imported.name !== recipe.portraitMaterial || !portrait.map)
-            continue
-          const face = imported as MeshPhysicalMaterial
-          face.map = portrait.map
-          face.needsUpdate = true
+        if (recipe.persistentPortrait === undefined) {
+          material = authoredMaterials
+          for (const imported of authoredMaterials) {
+            if (imported.name !== recipe.portraitMaterial || !portrait.map)
+              continue
+            const face = imported as MeshPhysicalMaterial
+            face.map = portrait.map
+            face.needsUpdate = true
+          }
+        } else {
+          material = authoredMaterials.map((imported) =>
+            imported.name === recipe.portraitMaterial ? glass : imported,
+          )
         }
       }
       install(geometry, authoredPieces)
@@ -258,7 +291,9 @@ export function createVessel(
     setPortrait(texture: Texture) {
       portrait.map = texture
       portrait.needsUpdate = true
+      if (persistentPortrait !== undefined) persistentPortrait.visible = true
       // The same image binding survives onto authored intact and fragment slots.
+      if (recipe.persistentPortrait !== undefined) return
       for (const imported of materialLibrary.materials) {
         if (imported.name !== recipe.portraitMaterial) continue
         const face = imported as MeshPhysicalMaterial

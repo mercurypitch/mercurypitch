@@ -9,6 +9,7 @@ import { createFreshVisitHost } from './fresh-visit-host'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
+import { RewardSummary } from './RewardSummary'
 import { TouchControls } from './TouchControls'
 import { Tutorial } from './Tutorial'
 import { useAdventure } from './useAdventure'
@@ -598,11 +599,20 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                 {level.guidance?.completionTitle ?? 'You made the museum sing.'}
               </h2>
               <p>
-                {total} exhibits, opened with your voice.
+                {total} required exhibits, opened with your voice.
                 {optionalCount() > 0
                   ? ` And ${optionalCount()} extra ${optionalCount() === 1 ? 'treasure' : 'treasures'} along the way.`
                   : ''}
               </p>
+              <Show when={adventure.snapshot().rewardSummary}>
+                {(summary) => (
+                  <RewardSummary
+                    level={level}
+                    summary={summary()}
+                    assetUrl={(id) => props.host.assetUrl(id)}
+                  />
+                )}
+              </Show>
               <p class={styles.tutorialAside}>
                 {level.guidance?.completionNext ??
                   'The next gallery will teach notes that rise and fall.'}

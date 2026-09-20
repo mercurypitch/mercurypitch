@@ -247,6 +247,49 @@ export interface LevelPresentationDefinition {
   assetRecipeIds: readonly string[]
 }
 
+/** A finite authored exploration reward attached to one optional exhibit. */
+export interface DiscoveryRewardDefinition {
+  encounterId: string
+  /** Stable, one-time museum discovery tokens; they are never spendable currency. */
+  coinIds: readonly string[]
+}
+
+export type SingingQualityGrade = 1 | 2 | 3 | 'not-graded'
+
+/**
+ * Time-weighted pitch grading for challenges whose active target is explicit.
+ * Route success remains owned by the challenge judge and never depends on this policy.
+ */
+export interface PitchAccuracyGradingPolicy {
+  kind: 'pitch-accuracy-v1'
+  encounterId: string
+  policyRevision: number
+  challengeRevision: number
+  minimumReliableSeconds: number
+  threeStarMaxMeanCents: number
+  twoStarMaxMeanCents: number
+  /** Large errors still count, but one detector outlier cannot dominate forever. */
+  maximumErrorCents: number
+}
+
+export interface PortraitCollectibleDefinition {
+  portraitId: string
+  legendId: string
+  title: string
+  collectionIndex: number
+  imageAssetId: string
+  awardAfterEncounterId: string
+  representationStatus: 'review' | 'approved'
+}
+
+/** Optional, level-owned reward policy compiled from stable authored encounter IDs. */
+export interface LevelRewardDefinition {
+  revision: number
+  discoveries: readonly DiscoveryRewardDefinition[]
+  grading: readonly PitchAccuracyGradingPolicy[]
+  portrait?: PortraitCollectibleDefinition
+}
+
 export interface LevelMovementDefinition {
   walkSpeed: number
   runSpeed: number
@@ -266,6 +309,7 @@ export interface LevelDefinition {
   authored?: AuthoredLevelIdentity
   guidance?: LevelGuidanceDefinition
   presentation?: LevelPresentationDefinition
+  rewards?: LevelRewardDefinition
   movement?: LevelMovementDefinition
   spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]
@@ -330,6 +374,7 @@ export interface GameSnapshot {
   nearbyBreakableId: string | null
   elapsedSeconds: number
   complete: boolean
+  rewardSummary?: LevelRewardSummary
 }
 
 export interface PitchObservation {
@@ -341,12 +386,43 @@ export interface PitchObservation {
   confidence: number
 }
 
-export interface SavedProgress {
+export interface SingingQualityResult {
+  encounterId: string
+  grade: SingingQualityGrade
+  challengeRevision: number
+  policyRevision: number
+  contentRevision: number
+  evidenceVersion: 'pitch-accuracy-v1'
+  reliableSeconds: number
+  meanAbsoluteCents?: number
+}
+
+export interface SavedRewardProgress {
   version: 1
+  discoveredEncounterIds: string[]
+  collectedCoinIds: string[]
+  qualityResults: SingingQualityResult[]
+  collectedPortraitIds: string[]
+}
+
+export interface LevelRewardSummary {
+  levelId: string
+  discoveriesFound: number
+  discoveriesTotal: number
+  coinsFound: number
+  coinsTotal: number
+  qualityResults: readonly SingingQualityResult[]
+  portrait?: PortraitCollectibleDefinition & { collected: boolean }
+}
+
+export interface SavedProgress {
+  /** Version 1 remains readable; new writes use version 2 with reward progress. */
+  version: 1 | 2
   levelId: string
   checkpointId: string
   completedBreakableIds: string[]
   finished?: boolean
+  rewards?: SavedRewardProgress
 }
 
 export type GameEvent =

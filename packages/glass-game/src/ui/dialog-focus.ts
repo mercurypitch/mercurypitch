@@ -12,7 +12,7 @@ export function trapDialogKeys(event: KeyboardEvent): void {
   const element = event.currentTarget as HTMLElement
   const controls = Array.from(
     element.querySelectorAll<HTMLElement>(
-      'button:not(:disabled), a[href], input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
+      'button:not(:disabled), summary, a[href], input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
     ),
   ).filter(
     (control) =>
