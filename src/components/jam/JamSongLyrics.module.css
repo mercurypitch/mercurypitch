@@ -103,6 +103,21 @@
   }
 }
 
+/* ...which is a phone's size, and out of scale on a tablet. Owner report,
+   2026-09-20: the lane zoom a hand's width away is 28px on the same screen
+   and reads as "sleek"; these two were "too bulky in height", a 51px row
+   over the words. A phone keeps the 40 -- it is worked one-handed by a
+   thumb -- and a touch screen wider than one takes the lane zoom's size,
+   so the room's three small pills are one height. 641px is where the
+   room's own stylesheet stops being a phone. The alignment buttons are set
+   too, or the two pills in this row would stop being level. */
+@media (pointer: coarse) and (min-width: 641px) {
+  .headerTools {
+    --jam-zoom-target: 28px;
+    --lyrics-align-target: 28px;
+  }
+}
+
 /* ── Fitting the row ────────────────────────────────────────────────
    Two controls and a label do not fit every width this column can be
    given, and a row that wraps costs the words a whole line of height --
@@ -123,13 +138,15 @@
         Each control then has a row to itself, so the readout comes back.
 
    A 360px phone stops at step 1 and a 320px one at step 2; neither
-   reaches step 4, whose column only exists above 900px.
+   reaches step 4, whose column only exists above 900px. A tablet has no
+   step 2: its targets start at 28px, which is as small as they go.
 
    The widths are the row's content box, measured in Chromium with a few
    pixels of slack for a font that is not the one on this machine. The
-   controls are 82 + 95px on a mouse (56 without the readout) and
-   130 + 132px on a thumb (106 + 116 at 32px, 72 without the readout),
-   8px apart; the label wants 48px with its gap. */
+   controls are 82 + 95px on a mouse (56 without the readout),
+   130 + 132px on a phone's thumb (106 + 116 at 32px, 72 without the
+   readout) and 94 + 108px on a tablet (64 without the readout), 8px
+   apart; the label wants 48px with its gap. */
 @container (max-width: 240px) {
   .headerLabel {
     display: none;
@@ -156,7 +173,7 @@
   }
 }
 
-@media (pointer: coarse) {
+@media (pointer: coarse) and (max-width: 640px) {
   @container (max-width: 326px) {
     .headerLabel {
       display: none;
@@ -182,6 +199,34 @@
   }
 
   @container (max-width: 192px) {
+    .headerTools {
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: 4px;
+      --jam-zoom-readout: inline-flex;
+    }
+  }
+}
+
+@media (pointer: coarse) and (min-width: 641px) {
+  @container (max-width: 264px) {
+    .headerLabel {
+      display: none;
+    }
+
+    .headerTools {
+      flex: 1;
+      justify-content: space-between;
+    }
+  }
+
+  @container (max-width: 216px) {
+    .headerTools {
+      --jam-zoom-readout: none;
+    }
+  }
+
+  @container (max-width: 172px) {
     .headerTools {
       flex-wrap: wrap;
       justify-content: center;
