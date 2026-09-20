@@ -31,7 +31,7 @@ export function VoiceChallengePanel(props: {
 }) {
   const percent = () => Math.round(props.charge * 100)
   const stepLabels = () =>
-    props.wave
+    props.wave === true
       ? ['Settle your note', 'Let it sway twice']
       : props.steps.map((step) =>
           step === 'low'
@@ -57,7 +57,7 @@ export function VoiceChallengePanel(props: {
       <Show when={stepLabels().length > 1}>
         <ol
           class={lessonStyles.sequence}
-          aria-label={props.wave ? 'Lesson steps' : 'Note order'}
+          aria-label={props.wave === true ? 'Lesson steps' : 'Note order'}
         >
           <For each={stepLabels()}>
             {(step, index) => (
@@ -115,7 +115,7 @@ export function VoiceChallengePanel(props: {
             type="button"
             onClick={() => props.onReplay()}
           >
-            {props.wave
+            {props.wave === true
               ? 'Hear the gentle wave again'
               : props.steps.length > 1
                 ? 'Hear both notes again'
