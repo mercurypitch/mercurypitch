@@ -93,13 +93,21 @@ describe('pane-shards.opt.glb', () => {
 })
 
 describe('merc.opt.glb', () => {
-  it('ships all five clips, move included', () => {
+  it('ships all gameplay and loading-preview clips', () => {
     const buf = readFileSync(resolve(process.cwd(), 'art/merc/merc.opt.glb'))
     const jsonLength = buf.readUInt32LE(12)
     const gltf = JSON.parse(
       buf.subarray(20, 20 + jsonLength).toString('utf8'),
     ) as { animations?: { name: string }[] }
     const names = (gltf.animations ?? []).map((a) => a.name).sort()
-    expect(names).toEqual(['celebrate', 'fall', 'listen', 'move', 'sing'])
+    expect(names).toEqual([
+      'celebrate',
+      'fall',
+      'laugh',
+      'listen',
+      'move',
+      'sing',
+      'welcome',
+    ])
   })
 })
