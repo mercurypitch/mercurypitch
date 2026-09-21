@@ -15,6 +15,7 @@
 import type { Component } from 'solid-js'
 import { Show } from 'solid-js'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { JamNetworkPanel, jamNetworkPanelAvailable, } from '@/components/jam/JamNetworkPanel'
 import { JamPeerList } from '@/components/jam/JamPeerList'
 import { JamPickerList } from '@/components/jam/JamPickerList'
 import { JamPitchDisplay } from '@/components/jam/JamPitchDisplay'
@@ -71,6 +72,20 @@ const JamRoomPanel: Component = () => {
             <JamPitchDisplay />
           </div>
         </CollapsibleSection>
+        {/* Diagnostics sit under the roster, not over the stage: they are
+            read between takes, and a panel this dense in the main area
+            would be the loudest thing in the room. Absent entirely in a
+            production build -- the gate is inside the component so the
+            rail never has to know the rule. */}
+        <Show when={jamNetworkPanelAvailable()}>
+          <CollapsibleSection
+            title="Network diagnostics"
+            storageKey="sidebar-jam-network-open"
+            defaultOpen={false}
+          >
+            <JamNetworkPanel />
+          </CollapsibleSection>
+        </Show>
         <CollapsibleSection
           title="Songs and drills"
           storageKey="sidebar-jam-picker-open"

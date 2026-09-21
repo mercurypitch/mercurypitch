@@ -1,0 +1,285 @@
+/* Jam network diagnostics — a dense readout, not a dashboard.
+
+   Deliberately plain. This is read on a phone held at arm's length while
+   somebody plays a guitar with the other hand, so the priorities are
+   legible numbers, tabular alignment, and a total that can be seen
+   without focusing. Nothing here animates: a value that moves while you
+   are reading it is worse than a value that updates once a second. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.16));
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.toggle {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.toggleOn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hint {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.labelRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.labelText {
+  color: var(--text-muted);
+}
+
+.input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.action svg {
+  width: 12px;
+  height: 12px;
+}
+
+.copied {
+  margin: 0;
+  color: var(--accent);
+}
+
+.peer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.peerHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.peerName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* The route the media is really taking. Relay is not an error, but it is
+   an extra hop and the one thing on this panel that explains a number
+   nothing else explains. */
+.path {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.path[data-path='direct'] {
+  border-color: var(--green, #3fb950);
+  color: var(--green, #3fb950);
+}
+
+.path[data-path='relay'] {
+  border-color: var(--amber, #d29922);
+  color: var(--amber, #d29922);
+}
+
+.verdict {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.total {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.unit {
+  margin-left: 2px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.verdictCopy {
+  line-height: 1.35;
+}
+
+.verdict[data-verdict='transparent'] .total,
+.verdict[data-verdict='comfortable'] .total {
+  color: var(--green, #3fb950);
+}
+
+.verdict[data-verdict='playable'] .total {
+  color: var(--amber, #d29922);
+}
+
+.verdict[data-verdict='hard'] .total,
+.verdict[data-verdict='not-together'] .total {
+  color: var(--red, #f85149);
+}
+
+.budget {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.budgetRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.budgetLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  cursor: help;
+}
+
+.budgetValue {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+/* A guess and a measurement must not look alike. An unmeasured term is
+   dimmed and says so, because the difference decides whether a number is
+   worth acting on. */
+.source {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.budgetRow[data-source='platform'] .budgetValue,
+.budgetRow[data-source='unknown'] .budgetValue {
+  color: var(--text-muted);
+}
+
+.stats {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.caption {
+  margin-bottom: 4px;
+  text-align: left;
+  line-height: 1.4;
+  color: var(--text-muted);
+  caption-side: top;
+}
+
+.stats th,
+.stats td {
+  padding: 2px 4px;
+  text-align: right;
+  font-weight: 400;
+}
+
+.stats thead th {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.stats tbody th {
+  text-align: left;
+  color: var(--text-secondary);
+}
+
+.stats tbody td {
+  color: var(--text-primary);
+}
+
+.extras {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 4px 10px;
+  margin: 0;
+}
+
+.extra {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.extra dt {
+  color: var(--text-muted);
+}
+
+.extra dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}

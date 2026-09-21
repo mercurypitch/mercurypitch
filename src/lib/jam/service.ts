@@ -6,6 +6,7 @@
 import type { MelodyData } from '@/types'
 import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
+import { readNetSample } from './jam-net-stats'
 import { micErrorMessage, micPermissionState } from './media-errors'
 import { createSignalingClient, jamSignalingIsMocked } from './signaling'
 import type { JamBackgroundCapabilityMessage, JamCallbacks, JamPeer, } from './types'
@@ -561,7 +562,8 @@ export function createJamService(callbacks: JamCallbacks) {
         if (pc.iceConnectionState === 'connected') {
           iceRetries.delete(peerId)
           clearIceRecovery(peerId)
-          measureLatency(peerId, pc)
+          void measureLatency(peerId, pc)
+          startLatencyPolling()
           return
         }
         // A connection that fails stays failed. Switching WiFi to cellular,
@@ -655,6 +657,25 @@ export function createJamService(callbacks: JamCallbacks) {
           peerId,
         )
         switch (data.type) {
+          // Answered inline rather than through a callback: a pong is a
+          // transport fact, and routing it through the store would put the
+          // reply behind whatever else the store is doing this frame --
+          // which is precisely the delay being measured.
+          case 'ping':
+            if (typeof data.t === 'number' && dc.readyState === 'open') {
+              dc.send(JSON.stringify({ type: 'pong', t: data.t }))
+            }
+            return
+          case 'pong': {
+            const sentAt = pingWaiting.get(peerId)
+            // Only the timestamp we are still waiting on counts. A pong
+            // echoing a `t` we never sent is either a late duplicate or a
+            // peer being creative, and either way it is not a measurement.
+            if (sentAt === undefined || data.t !== sentAt) return
+            pingWaiting.delete(peerId)
+            callbacks.onChannelPing?.(peerId, performance.now() - sentAt)
+            return
+          }
           case 'chat':
             callbacks.onChatMessage({
               id: data.id,
@@ -914,33 +935,94 @@ export function createJamService(callbacks: JamCallbacks) {
 
   // ── Latency measurement ─────────────────────────────────────────
 
+  /**
+   * One reading of a pair's round trip, from the candidate pair in use.
+   *
+   * The pair is chosen by readNetSample rather than by iteration order.
+   * ICE leaves every pair it ever tried in the report, most of them dead
+   * and some of them carrying a round trip from a probe that timed out --
+   * so "the last one with an RTT on it", which is what this used to do,
+   * could report a second and a half on a healthy local connection.
+   */
   async function measureLatency(
     peerId: string,
     pc: RTCPeerConnection,
   ): Promise<void> {
     try {
-      const stats = await pc.getStats()
-      let rtt = 0
-      stats.forEach((report) => {
-        if (
-          report.type === 'candidate-pair' &&
-          'currentRoundTripTime' in report
-        ) {
-          rtt = (report.currentRoundTripTime as number) * 1000
-        }
-      })
-      if (rtt > 0) {
-        callbacks.onLatencyUpdate(peerId, Math.round(rtt))
+      const sample = readNetSample(await pc.getStats())
+      if (sample.rttMs !== null && sample.rttMs > 0) {
+        callbacks.onLatencyUpdate(peerId, Math.round(sample.rttMs))
       }
     } catch {
       // Stats not available
     }
   }
 
+  /**
+   * Keep every connected pair's round trip current.
+   *
+   * This used to be measured EXACTLY ONCE, the moment ICE reached
+   * 'connected' -- which is both the least representative moment of a
+   * session (the path has just been chosen, nothing is flowing yet) and
+   * the last one anybody looks at. The number then sat there for the rest
+   * of the evening, and it is not only decoration: the transport's
+   * in-flight correction divides it by two to place a peer's playhead
+   * (see beatsInFlight in jam-store.ts), so a stale reading skews the
+   * room's sense of where the beat is for as long as the room is open.
+   *
+   * One timer for the whole room rather than one per peer: a mesh of 12
+   * is 11 pairs, and 11 intervals to leak instead of one.
+   */
+  const LATENCY_POLL_MS = 3000
+  let latencyPoll: ReturnType<typeof setInterval> | null = null
+
+  function startLatencyPolling(): void {
+    if (latencyPoll !== null || previewMode) return
+    latencyPoll = setInterval(() => {
+      for (const [peerId, pc] of peerConnections) {
+        if (pc.iceConnectionState !== 'connected') continue
+        void measureLatency(peerId, pc)
+      }
+    }, LATENCY_POLL_MS)
+  }
+
+  function stopLatencyPolling(): void {
+    if (latencyPoll === null) return
+    clearInterval(latencyPoll)
+    latencyPoll = null
+  }
+
+  // ── Application-level ping ───────────────────────────────────────
+  // A second opinion on the round trip, over the channel the room's own
+  // messages travel on.
+  //
+  // `currentRoundTripTime` is ICE's number: it comes from STUN binding
+  // requests on the candidate pair, and on a relayed path it measures the
+  // leg to the TURN server rather than the whole route. It is also absent
+  // in some browsers and stops updating in others once the pair settles.
+  // A ping over the DataChannel measures what a message actually costs,
+  // end to end, including SCTP -- which is the number the transport's
+  // in-flight correction is really about.
+  //
+  // Sender-timestamped, so no clock agreement is needed: the pong carries
+  // the sender's own `t` straight back and the sender subtracts.
+
+  const pingWaiting = new Map<string, number>()
+
+  function sendPing(peerId: string): void {
+    const dc = dataChannels.get(peerId)
+    if (dc === undefined || dc.readyState !== 'open') return
+    const t = performance.now()
+    pingWaiting.set(peerId, t)
+    dc.send(JSON.stringify({ type: 'ping', t }))
+  }
+
   // ── Cleanup ─────────────────────────────────────────────────────
 
   function dispose(): void {
     disposed = true
+    stopLatencyPolling()
+    pingWaiting.clear()
     clearAllIceRecovery()
     for (const [, dc] of dataChannels) {
       dc.close()
@@ -986,6 +1068,7 @@ export function createJamService(callbacks: JamCallbacks) {
     sendSong,
     channelTo,
     connectionTo,
+    sendPing,
     sendSongFileMessage,
     sendSongHave,
     sendPlaybackCommandSec,

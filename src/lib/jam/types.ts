@@ -165,6 +165,19 @@ export interface JamPlaybackMessage {
   bpm?: number
 }
 
+/**
+ * Round-trip probe over the DataChannel, and its echo.
+ *
+ * `t` is the SENDER's `performance.now()`, echoed back untouched. Nothing
+ * here needs the two clocks to agree: the sender subtracts its own
+ * timestamp from its own clock, so a peer whose wall clock is a month out
+ * still yields a correct round trip.
+ */
+export interface JamPingMessage {
+  type: 'ping' | 'pong'
+  t: number
+}
+
 export interface JamVideoStateMessage {
   type: 'video-state'
   peerId?: string
@@ -186,6 +199,7 @@ export interface JamBackgroundCapabilityMessage {
 
 export type JamDataMessage =
   | JamChatMessage
+  | JamPingMessage
   | JamPitchMessage
   | JamMelodyMessage
   | JamSongMessage
@@ -337,6 +351,16 @@ export interface JamCallbacks {
     state: JamPeer['connectionState'],
   ) => void
   onLatencyUpdate: (peerId: string, latency: number) => void
+  /**
+   * Round trip of one DataChannel ping, in ms.
+   *
+   * A second opinion on `onLatencyUpdate`, which reports ICE's own STUN
+   * round trip. The two disagree in the cases worth knowing about: a
+   * relayed pair, where ICE measures the leg to the TURN server and this
+   * measures the whole route, and a Safari peer, where ICE reports
+   * nothing at all. Optional -- only the diagnostics panel asks for it.
+   */
+  onChannelPing?: (peerId: string, rttMs: number) => void
   onChatMessage: (message: JamChatMessage) => void
   onRoomClosed: () => void
   onHostStatus?: (isHost: boolean) => void

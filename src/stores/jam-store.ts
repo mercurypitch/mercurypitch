@@ -33,6 +33,8 @@ import type { JamBackgroundCapabilityMessage, JamChatMessage, JamMelodyMessage, 
 import { StemEncodeAbortedError } from '@/lib/portable/portable-audio'
 import { invalidatePremiumBackgroundAccess, premiumBackgroundCatalogState, refreshPremiumBackgroundCatalog, } from '@/stores/background-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
+import type { JamDiagnosticsSources } from '@/stores/jam-diagnostics-store'
+import { recordChannelPing } from '@/stores/jam-diagnostics-store'
 import { abandonJamSongPitch, provideJamSongPitch, } from '@/stores/jam-pitch-provision-store'
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyData } from '@/types'
@@ -1897,6 +1899,9 @@ export function initJam() {
         prev.map((p) => (p.id === peerId ? { ...p, latency } : p)),
       )
     },
+    onChannelPing: (peerId, rttMs) => {
+      recordChannelPing(peerId, rttMs)
+    },
     onPitchMessage: (msg: JamPitchMessage) => {
       // Belt to the transport's braces. service.ts now stamps the real
       // sender, so this only fires on a peer that has already left, but the
@@ -2335,6 +2340,30 @@ export function startJamPitchDetection(): void {
       }
     }
   }, 50)
+}
+
+/**
+ * The diagnostics panel's seam onto the live connections.
+ *
+ * Handed out as a source object rather than as the service itself: the
+ * panel needs exactly three things, and a store that can reach the whole
+ * service is a store that will eventually do something else with it.
+ * `peerIds` is filtered to CONNECTED peers, because a pair still
+ * negotiating has no stats worth reading and would otherwise show up as a
+ * row of dashes that looks like a broken panel.
+ */
+export const jamDiagnosticsSources: JamDiagnosticsSources = {
+  peerIds: () =>
+    jamPeers()
+      .filter((p) => p.connectionState === 'connected')
+      .map((p) => p.id),
+  statsFor: async (peerId) => {
+    const pc = jamService?.connectionTo(peerId) ?? null
+    return pc === null ? null : await pc.getStats()
+  },
+  ping: (peerId) => {
+    jamService?.sendPing(peerId)
+  },
 }
 
 export function stopJamPitchDetection(): void {
