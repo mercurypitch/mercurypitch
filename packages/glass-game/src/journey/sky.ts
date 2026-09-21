@@ -1,13 +1,15 @@
 // ============================================================
-// Journey sky — a generated warm horizon and low-cost distant cloud layers.
+// Journey sky — an original luminous cloudscape and drifting layers beneath the islands.
 // ============================================================
 
 import type { Texture } from 'three'
-import { CanvasTexture, DoubleSide, EquirectangularReflectionMapping, Group, InstancedMesh, LinearFilter, MeshBasicMaterial, Object3D, PlaneGeometry, SRGBColorSpace, } from 'three'
+import { CanvasTexture, DoubleSide, Group, InstancedMesh, LinearFilter, MeshBasicMaterial, Object3D, PlaneGeometry, SRGBColorSpace, } from 'three'
 
 export interface JourneySky {
   root: Group
   background: Texture
+  ready: Promise<void>
+  resize(width: number, height: number): void
   update(visibleSeconds: number, dt: number, reducedMotion: boolean): void
   dispose(): void
 }
@@ -58,15 +60,15 @@ function paintHazeCloud(
 }
 
 function createBackgroundTexture(): CanvasTexture {
-  const surface = canvas(512, 256)
+  const surface = canvas(2048, 1024)
   const context = context2d(surface)
   const gradient = context.createLinearGradient(0, 0, 0, surface.height)
-  gradient.addColorStop(0, '#536b88')
-  gradient.addColorStop(0.34, '#839cab')
-  gradient.addColorStop(0.53, '#d7d4c6')
-  gradient.addColorStop(0.64, '#efc1a5')
-  gradient.addColorStop(0.76, '#c49482')
-  gradient.addColorStop(1, '#666d78')
+  gradient.addColorStop(0, '#a6bede')
+  gradient.addColorStop(0.34, '#c4d8ed')
+  gradient.addColorStop(0.53, '#f0ecf1')
+  gradient.addColorStop(0.64, '#f8f2e9')
+  gradient.addColorStop(0.76, '#e0e8f4')
+  gradient.addColorStop(1, '#faf4ee')
   context.fillStyle = gradient
   context.fillRect(0, 0, surface.width, surface.height)
 
@@ -78,12 +80,13 @@ function createBackgroundTexture(): CanvasTexture {
     [522, 142, 150, 26, 0.2],
   ] as const
   for (const [x, y, width, height, alpha] of haze)
-    paintHazeCloud(context, x, y, width, height, alpha)
+    paintHazeCloud(context, x * 4, y * 4, width * 4, height * 4, alpha)
 
   const texture = new CanvasTexture(surface)
   texture.name = 'journey-sky-background'
   texture.colorSpace = SRGBColorSpace
-  texture.mapping = EquirectangularReflectionMapping
+  // This is a composed sky plate, not a 360-degree capture. UV mapping keeps
+  // its pale cloud sea visible at the authored downward-looking map angle.
   texture.minFilter = LinearFilter
   texture.magFilter = LinearFilter
   texture.generateMipmaps = false
@@ -180,7 +183,12 @@ function createCloudLayer(
   return { mesh, baseRotation: options.phase * 0.18, drift: options.drift }
 }
 
-export function createJourneySky(): JourneySky {
+export function createJourneySky(
+  options: {
+    backgroundUrl?: string
+    signal?: AbortSignal
+  } = {},
+): JourneySky {
   const background = createBackgroundTexture()
   const cloudTexture = createCloudTexture()
   const geometry = new PlaneGeometry(1, 1)
@@ -188,33 +196,33 @@ export function createJourneySky(): JourneySky {
   const root = new Group()
   root.name = 'journey-sky'
   const layers = [
-    createCloudLayer('journey-sky-clouds-peach', geometry, cloudTexture, {
-      count: 7,
-      radius: 28,
-      height: -1.8,
-      width: 7.8,
-      opacity: 0.2,
-      color: 0xffd6bc,
+    createCloudLayer('journey-sky-clouds-foreground', geometry, cloudTexture, {
+      count: 10,
+      radius: 19,
+      height: -4.3,
+      width: 11.8,
+      opacity: 0.6,
+      color: 0xfffcf6,
       phase: 0.22,
       drift: 0.0026,
     }),
     createCloudLayer('journey-sky-clouds-cream', geometry, cloudTexture, {
       count: 8,
-      radius: 33,
-      height: 0.15,
-      width: 8.6,
-      opacity: 0.17,
-      color: 0xfff1da,
+      radius: 28,
+      height: -1.8,
+      width: 12.6,
+      opacity: 0.38,
+      color: 0xfaf9ff,
       phase: 1.1,
       drift: -0.0017,
     }),
     createCloudLayer('journey-sky-clouds-celadon', geometry, cloudTexture, {
       count: 6,
       radius: 38,
-      height: 2.2,
-      width: 9.4,
-      opacity: 0.1,
-      color: 0xc9e0d8,
+      height: 0.8,
+      width: 13.4,
+      opacity: 0.27,
+      color: 0xdbe7fa,
       phase: 2.05,
       drift: 0.0011,
     }),
@@ -225,11 +233,54 @@ export function createJourneySky(): JourneySky {
   }
 
   let disposed = false
+  const abort = new AbortController()
+  const retireFetch = (): void => abort.abort()
+  options.signal?.addEventListener('abort', retireFetch, { once: true })
+  if (options.signal?.aborted === true) abort.abort()
+  const ready =
+    options.backgroundUrl === undefined
+      ? Promise.resolve()
+      : fetch(options.backgroundUrl, { signal: abort.signal })
+          .then((response) => {
+            if (!response.ok)
+              throw new Error('The museum cloudscape could not be loaded.')
+            return response.blob()
+          })
+          .then((blob) => globalThis.createImageBitmap(blob))
+          .then((bitmap) => {
+            try {
+              if (disposed || abort.signal.aborted) return
+              const surface = background.image as HTMLCanvasElement
+              context2d(surface).drawImage(
+                bitmap,
+                0,
+                0,
+                surface.width,
+                surface.height,
+              )
+              background.needsUpdate = true
+            } finally {
+              bitmap.close()
+            }
+          })
+  // Setup can fail before the scene attaches ready; preserve that original error.
+  void ready.catch(() => undefined)
   let lastVisibleSeconds: number | undefined
   const phases = layers.map(() => 0)
   return {
     root,
     background,
+    ready,
+    resize(width, height) {
+      const viewportAspect = Math.max(1, width) / Math.max(1, height)
+      const imageAspect = 2
+      // Crop like CSS cover; stretching the landscape plate makes clouds look
+      // like vertical streaks on a portrait phone.
+      const repeatX = Math.min(1, viewportAspect / imageAspect)
+      const repeatY = Math.min(1, imageAspect / viewportAspect)
+      background.repeat.set(repeatX, repeatY)
+      background.offset.set((1 - repeatX) / 2, (1 - repeatY) / 2)
+    },
     update(visibleSeconds, dt, reducedMotion) {
       if (disposed) return
       const elapsed =
@@ -246,6 +297,8 @@ export function createJourneySky(): JourneySky {
     dispose() {
       if (disposed) return
       disposed = true
+      abort.abort()
+      options.signal?.removeEventListener('abort', retireFetch)
       lastVisibleSeconds = undefined
       root.clear()
       for (const layer of layers) {

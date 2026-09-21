@@ -179,3 +179,19 @@ changes and active agents' ownership; root owns review and Git operations.
   intersections. The 530,232-triangle pre-remesh source has one intersection
   and no production UV atlas. This candidate is rejected; no live recipe was
   changed. The map fidelity pass now proceeds independently using static donors.
+
+- `340b8139`: three new map-specific Meshy donors (temple, limestone cliff and
+  cypress) finalized in a packed Blender source and 3.93 MB runtime kit. All
+  guides, raw/pre-remesh donors, sanitized receipts and isolated renders are
+  retained. The three tasks cost 90 credits. CI at this asset checkpoint passed
+  native Android/iOS, lint/typecheck, unit and journey checks; two general web
+  browser shards were still running at the recorded review.
+- The concept-fidelity runtime pass has been visually reviewed in its final
+  compiled desktop/tablet/phone host. Three landmasses retain four stable
+  destinations. Bright clouds, authored camera, new halls/cliffs/gardens,
+  projected cartouches and a compact illustrated gallery card replace the first
+  prototype composition. Final scoped unit tests: 31/31; journey browser cases:
+  6/6 plus two final exact-center mouse/touch checks. Runtime screenshots and
+  shadow-inclusive counts are archived in `journey-map/v3/proofs/runtime/`.
+  See `FLOATING-MUSEUM-FIDELITY-PASS.md` for remaining art/device acceptance.
+  This does not close the Celadon production gate or authorize merge/release.

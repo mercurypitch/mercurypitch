@@ -29,14 +29,14 @@ completions still have no invented score. No new gameplay gates are introduced.
 
 ## Asset pipeline
 
-- [ ] Generate isolated temple, limestone cliff and cypress guides from concept A.
-- [ ] Preserve exact prompts, untouched generated images and hashes.
-- [ ] Submit Meshy tasks once, record task IDs and actual credit charges.
-- [ ] Preserve raw donors; Blender normalizes metre-space, derives map LODs,
+- [x] Generate isolated temple, limestone cliff and cypress guides from concept A.
+- [x] Preserve exact prompts, untouched generated images and hashes.
+- [x] Submit Meshy tasks once, record task IDs and actual credit charges.
+- [x] Preserve raw donors; Blender normalizes metre-space, derives map LODs,
       retains packed authoring files, and exports named reusable groups.
-- [ ] Inspect actual exported renders and record triangles, draws, textures,
+- [x] Inspect actual exported renders and record triangles, draws, textures,
       bytes, hashes and visual decisions before integration.
-- [ ] Generate a sky-only cloudscape; keep buildings and water as live geometry.
+- [x] Generate a sky-only cloudscape; keep buildings and water as live geometry.
 
 Static architecture does not need the closed-fracture gate used for breakables,
 but still needs sensible normals, complete textures, bounds and no visible holes
@@ -45,18 +45,78 @@ stricter hollow-vessel/fracture requirements.
 
 ## Implementation and review
 
-- [ ] Scene: authored shared first island, central Twins, rear Conservatory.
-- [ ] Camera: reference-facing overview at desktop/tablet; readable phone focus.
-- [ ] Decoration: real medallion placement, architecture, monuments, gardens.
-- [ ] Sky: bright cloud environment and visible depth without orange undercast.
-- [ ] UI: immersive composition, wordmark, anchored labels, illustrated card.
-- [ ] Preserve one renderer, one foreground clock, abort/late-load retirement,
+- [x] Scene: authored shared first island, central Twins, rear Conservatory.
+- [x] Camera: reference-facing overview at desktop/tablet; readable phone focus.
+- [x] Decoration: real medallion placement, architecture, monuments, gardens.
+- [x] Sky: bright cloud environment and visible depth without orange undercast.
+- [x] UI: immersive composition, wordmark, anchored labels, illustrated card.
+- [x] Preserve one renderer, one foreground clock, abort/late-load retirement,
       reduced motion, retry, touch cancellation and audio ownership.
-- [ ] Actual desktop/tablet/phone screenshots compared with the reference.
-- [ ] Check real mouse/touch selection and 320px layout without overlap.
-- [ ] Record complete render counts including shadows; avoid claiming device
+- [x] Actual desktop/tablet/phone screenshots compared with the reference.
+- [x] Check real mouse/touch selection and 320px layout without overlap.
+- [x] Record complete render counts including shadows; avoid claiming device
       frame rate from software-rendered proofs.
-- [ ] Scoped checks, stage commits/pushes, current-head CI and new static preview.
+- [x] Scoped checks and new static preview.
+- [x] Asset stage committed/pushed as `340b8139`.
+- [ ] Runtime stage push and current-head CI acceptance (record below).
 
 The currently shared static HTTPS snapshot stays unchanged during construction.
 Handoff the next snapshot only after the complete host has been inspected.
+
+## Production record
+
+The three new Meshy jobs succeeded. Final and pre-remesh donors are archived in
+`../journey-map/v3/meshy/`, with sanitized task receipts and content hashes.
+They consumed 90 credits in total; the verified balance after archival was 4060.
+Exact prompts and untouched image-generation masters live in `v3/concepts/`.
+No credentials or expiring artifact links are stored in the repository.
+
+The separately authorized Celadon opaque V3 trial also completed, consuming 30
+credits. It was rejected by the fracture geometry audit, including a remaining
+self-intersection in its dense pre-remesh donor. The current game vase is not
+replaced. See the detailed V3 audit in `v6-level2/production/`; do not confuse
+static map acceptance with acceptance of a breakable vessel.
+
+## Runtime review, 2026-09-21
+
+Final compiled screenshots and render receipts are in
+`../journey-map/v3/proofs/runtime/`. All three views were inspected against concept
+A. Desktop is 1600x900; touch tablet is 1024x768; touch phone is 320x640. The phone
+focuses its selected island; desktop/tablet retain the three-island overview.
+The responsive sky plate crops without stretching, and trees/planters leave
+clearance around raised medallions and portraits. Four chapter IDs, progress and
+independent entry remain unchanged.
+
+Validation: 31 focused unit tests across nine files; six journey browser cases;
+then two final exact-center mouse/native-touch cases after raising the medallion
+surfaces. Package typecheck, scoped lint/format, and the BesideCue production
+build passed. Final compiled captures contain zero browser errors. At the
+captured views, desktop/tablet render 178 draws and 317,628 triangles; phone
+renders 132 draws and 272,947 triangles. Counts include the shadow pass.
+SwiftShader evidence does not establish physical tablet FPS or thermal behavior.
+
+Static HTTPS snapshot: `https://192.168.178.33:5292/glass-game/?campaign=1`.
+Output directory: `/tmp/glass-museum-fidelity-final`. HMR is absent. Server was
+started with a three-hour lifetime; restart instructions accompany the handoff.
+
+The packed Blender source is
+`../journey-map/v3/sources/floating-museum-sculpture-kit-v3.blend`. The 3,928,964-byte
+runtime GLB and production receipt are in `v3/exports/`; public runtime bytes
+match SHA-256 `a43c4f9693d97cb48c95cf644745244fa5461e339a606de004bf9c956de6194f`.
+Untouched guides, final/pre-remesh donors and sanitized receipts remain archived.
+
+## Remaining art and acceptance work
+
+- Twin halls now have the intended paired massing, but share the donor's celadon
+  dome material. Separate amber/teal roof materials need a deliberate Blender
+  material split; the target described above is not fully achieved yet.
+- Medallions now sit on the actual route above its geometry. They still need
+  finer engraved/star ornament driven by real progress, without invented grades.
+- Portrait monuments have deliberate placements and a mystery silhouette.
+  Collected portrait/progress remains visible in the HTML card; projecting the
+  owned artwork onto the 3D monument is a follow-up.
+- Flower beds, trailing foliage, distant architecture and bridge ornament are
+  less intricate than the concept. Continue from these reusable source assets
+  after composition/device feedback; this pass is not a pixel-identical rebuild.
+- Physical tablet performance and owner visual acceptance remain open. The
+  independently rejected Celadon breakable remains a separate production task.

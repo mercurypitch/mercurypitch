@@ -39,6 +39,37 @@ async function mapPoint(
   }
 }
 
+async function projectedMedallion(
+  canvas: Locator,
+  label: Locator,
+): Promise<{
+  x: number
+  y: number
+}> {
+  await expect(label).toHaveAttribute('data-projected', 'true')
+  const [bounds, projectedX, projectedY] = await Promise.all([
+    canvas.boundingBox(),
+    label.getAttribute('data-projected-x'),
+    label.getAttribute('data-projected-y'),
+  ])
+  expect(bounds).not.toBeNull()
+  expect(projectedX).not.toBeNull()
+  expect(projectedY).not.toBeNull()
+  const point = {
+    x: bounds!.x + Number(projectedX),
+    y: bounds!.y + Number(projectedY),
+  }
+  expect(
+    await canvas.evaluate(
+      (element, target) =>
+        document.elementFromPoint(target.x, target.y) === element,
+      point,
+    ),
+    'the projected medallion must remain an unobstructed canvas hit target',
+  ).toBe(true)
+  return point
+}
+
 test('mouse selects an island, while a drag remains navigation @smoke', async ({
   page,
 }) => {
@@ -46,8 +77,16 @@ test('mouse selects an island, while a drag remains navigation @smoke', async ({
   const frame = lobby.locator('[data-map-state]')
   const canvas = frame.locator('canvas')
   await expect(frame).toHaveAttribute('data-selected-stage', 'first-light-isle')
+  const projectedLabels = lobby.locator('[data-journey-label]')
+  await expect(projectedLabels).toHaveCount(4)
+  await expect(
+    projectedLabels.filter({ hasText: 'First Light Gallery' }),
+  ).toHaveAttribute('data-projected', 'true')
 
-  const twins = await mapPoint(canvas, 0.58, 0.59)
+  const twins = await projectedMedallion(
+    canvas,
+    projectedLabels.filter({ hasText: 'Twin Galleries' }),
+  )
   await page.mouse.move(twins.x, twins.y)
   await page.mouse.down()
   await page.mouse.up()
@@ -60,6 +99,9 @@ test('mouse selects an island, while a drag remains navigation @smoke', async ({
       name: 'Open selected gallery: Twin Galleries',
     }),
   ).toBeVisible()
+  await expect(
+    projectedLabels.filter({ hasText: 'Twin Galleries' }),
+  ).toHaveAttribute('aria-pressed', 'true')
   const metrics = JSON.parse(
     (await canvas.getAttribute('data-renderer-metrics')) ?? 'null',
   ) as {
@@ -95,7 +137,10 @@ test('native touch cancellation cannot select and a completed tap can', async ({
   const frame = lobby.locator('[data-map-state]')
   const canvas = frame.locator('canvas')
   const session = await page.context().newCDPSession(page)
-  const glassworks = await mapPoint(canvas, 0.43, 0.34)
+  const glassworks = await projectedMedallion(
+    canvas,
+    lobby.locator('[data-journey-label="glassworks-isle"]'),
+  )
 
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
@@ -111,7 +156,10 @@ test('native touch cancellation cannot select and a completed tap can', async ({
   })
   await expect(frame).toHaveAttribute('data-selected-stage', 'first-light-isle')
 
-  const twins = await mapPoint(canvas, 0.58, 0.59)
+  const twins = await projectedMedallion(
+    canvas,
+    lobby.locator('[data-journey-label="twin-galleries-isle"]'),
+  )
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
     touchPoints: [{ ...twins, id: 2 }],
@@ -176,6 +224,11 @@ test('phone exposes the island rail and selected entry in its first viewport', a
     name: 'Open selected gallery: First Light Gallery',
   })
   await expect(rail).toBeVisible()
+  const stageButtons = rail.getByRole('button')
+  await expect(stageButtons).toHaveCount(4)
+  for (let index = 0; index < 4; index++) {
+    await expect(stageButtons.nth(index)).toBeVisible()
+  }
   await expect(entry).toBeVisible()
   const entryBounds = await entry.boundingBox()
   expect(entryBounds).not.toBeNull()

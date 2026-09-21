@@ -35,6 +35,7 @@ vi.mock('./sky', async () => {
     createJourneySky: () => ({
       root: new Group(),
       background: new Texture(),
+      resize: vi.fn(),
       update: vi.fn(),
       dispose: state.skyDispose,
     }),
@@ -52,11 +53,22 @@ import { createMuseumJourneyScene } from './scene'
 const DEFINITION: MuseumJourneyDefinition = {
   id: 'construction-test',
   modelAssetId: 'map',
+  landmasses: [
+    {
+      id: 'island',
+      position: [0, 0, 0],
+      yaw: 0,
+      scale: [1, 1, 1],
+      terraceScale: [1, 1, 1],
+    },
+  ],
   stages: [
     {
       id: 'stage',
       chapterIds: ['chapter'],
+      islandId: 'island',
       position: [0, 0, 0],
+      architecturePosition: [0, 0, 0],
       yaw: 0,
       scale: 1,
       focus: [0, 0, 0],

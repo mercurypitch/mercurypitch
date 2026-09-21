@@ -5,6 +5,7 @@ import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, Fog, HemisphereL
 import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
+import { clampJourneyOrbit, journeyCameraView, projectJourneyStage, } from './camera'
 import { createJourneyPointerTracker } from './interaction'
 import { loadJourneyMapModels } from './models'
 import { acceptJourneyResource, createJourneyFrameLoop } from './resources'
@@ -36,6 +37,16 @@ export interface MuseumJourneySceneOptions {
   reducedMotion: boolean
   onSelect(stageId: string): void
   onFailure(error: unknown): void
+  onProjectStageLabels?(
+    labels: readonly MuseumJourneyStageLabelProjection[],
+  ): void
+}
+
+export interface MuseumJourneyStageLabelProjection {
+  stageId: string
+  x: number
+  y: number
+  visible: boolean
 }
 
 function stageById(
@@ -97,6 +108,11 @@ function buildMuseumJourneyScene(
 ): MuseumJourneyScene {
   const mapUrl = assetUrl(definition.modelAssetId)
   const mercUrl = assetUrl('merc')
+  const sculptureUrl =
+    definition.sculpturalAssetId === undefined
+      ? undefined
+      : assetUrl(definition.sculpturalAssetId)
+  const cloudscapeUrl = assetUrl('floating-museum-cloudscape-v3')
   const environmentUrl = assetUrl('museum-environment-v2')
   const renderer = new WebGLRenderer({
     antialias: true,
@@ -122,27 +138,33 @@ function buildMuseumJourneyScene(
     'display:block;width:100%;height:100%;touch-action:none;'
   renderer.domElement.setAttribute(
     'aria-label',
-    'Interactive floating museum map. Tap an island to select it, or use the gallery list below.',
+    'Interactive floating museum map. Tap a gallery medallion or hall to select it, or use the gallery list below.',
   )
   renderer.domElement.setAttribute('role', 'img')
 
   const scene = new Scene()
   onConstructionFailure(() => disposeObject(scene))
-  const sky = createJourneySky()
+  const abort = new AbortController()
+  onConstructionFailure(() => abort.abort())
+  const sky = createJourneySky({
+    backgroundUrl: cloudscapeUrl,
+    signal: abort.signal,
+  })
   onConstructionFailure(() => sky.dispose())
   scene.background = sky.background
-  scene.fog = new Fog(0x87929a, 22, 44)
+  scene.fog = new Fog(0xd9e5e8, 24, 48)
   scene.add(sky.root)
   scene.environmentIntensity = 0.58
   const environment = createMuseumEnvironment(renderer, scene)
   onConstructionFailure(() => environment.dispose())
-  const camera = new PerspectiveCamera(36, 1, 0.1, 80)
+  const camera = new PerspectiveCamera(34, 1, 0.1, 80)
   const raycaster = new Raycaster()
   const pointer = new Vector2()
   const target = new Vector3()
   const desiredTarget = new Vector3()
-  let orbitYaw = 0.63
-  let orbitPitch = 0.52
+  const projectionScratch = new Vector3()
+  let orbitYaw = -0.14
+  let orbitPitch = 0.45
   let desiredDistance = 21
   let selectedStageId = stageById(definition, options.selectedStageId).id
   let reducedMotion = options.reducedMotion
@@ -180,16 +202,15 @@ function buildMuseumJourneyScene(
   )
   halo.name = 'journey-selection-halo'
   halo.rotation.x = -Math.PI / 2
+  halo.scale.setScalar(0.42)
   halo.position.fromArray(stageById(definition, selectedStageId).position)
-  halo.position.y += 0.12
+  halo.position.y += 0.17
   scene.add(halo)
 
   const water = createJourneyWater(definition.spillways)
   onConstructionFailure(() => water.dispose())
   water.setReducedMotion(reducedMotion)
   scene.add(water.root)
-  const abort = new AbortController()
-  onConstructionFailure(() => abort.abort())
   let publishedMetrics = false
 
   function collectMetrics(): MuseumJourneySceneMetrics {
@@ -208,11 +229,15 @@ function buildMuseumJourneyScene(
 
   function updateDesiredView(immediate = false): void {
     const stage = stageById(definition, selectedStageId)
-    const narrow = container.clientWidth < 640
-    desiredTarget.fromArray(narrow ? stage.focus : [0.45, 0.35, -0.15])
-    desiredDistance = narrow ? 10.8 : container.clientWidth < 900 ? 20.5 : 22
+    const view = journeyCameraView(
+      container.clientWidth,
+      container.clientHeight,
+      stage.focus,
+    )
+    desiredTarget.fromArray(view.target)
+    desiredDistance = view.distance
     halo.position.fromArray(stage.position)
-    halo.position.y += 0.12
+    halo.position.y += 0.17
     models?.setSelected(stage, immediate || reducedMotion)
     if (immediate || reducedMotion) target.copy(desiredTarget)
   }
@@ -223,6 +248,7 @@ function buildMuseumJourneyScene(
     const width = Math.max(1, container.clientWidth)
     const height = Math.max(1, container.clientHeight)
     renderer.setSize(width, height, false)
+    sky.resize(width, height)
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     updateDesiredView(reducedMotion)
@@ -243,6 +269,7 @@ function buildMuseumJourneyScene(
       target.z + Math.cos(orbitYaw) * planar,
     )
     camera.lookAt(target)
+    camera.updateMatrixWorld()
     halo.rotation.z = reducedMotion ? 0 : visibleSeconds * 0.16
     water.update(visibleSeconds, dt)
     sky.update(visibleSeconds, dt, reducedMotion)
@@ -251,6 +278,23 @@ function buildMuseumJourneyScene(
     // in the same totals as the visible scene draw.
     renderer.info.reset()
     renderer.render(scene, camera)
+    options.onProjectStageLabels?.(
+      definition.stages.map((stage) => {
+        const projected = projectJourneyStage(
+          [stage.position[0], stage.position[1] + 0.16, stage.position[2]],
+          camera,
+          Math.max(1, container.clientWidth),
+          Math.max(1, container.clientHeight),
+          projectionScratch,
+        )
+        return {
+          stageId: stage.id,
+          x: projected.x,
+          y: projected.y,
+          visible: models !== undefined && projected.visible,
+        }
+      }),
+    )
     if (models !== undefined && !publishedMetrics) {
       publishedMetrics = true
       renderer.domElement.dataset.rendererMetrics =
@@ -274,8 +318,12 @@ function buildMuseumJourneyScene(
   const onPointerMove = (event: PointerEvent): void => {
     const move = gestures.move(sample(event))
     if (move?.kind !== 'drag') return
-    orbitYaw -= move.dx * 0.005
-    orbitPitch = Math.max(0.3, Math.min(0.73, orbitPitch + move.dy * 0.004))
+    const orbit = clampJourneyOrbit(
+      orbitYaw - move.dx * 0.004,
+      orbitPitch + move.dy * 0.0035,
+    )
+    orbitYaw = orbit.yaw
+    orbitPitch = orbit.pitch
   }
   const onPointerUp = (event: PointerEvent): void => {
     const result = gestures.up(sample(event))
@@ -335,6 +383,7 @@ function buildMuseumJourneyScene(
     if (disposed || contextLost) return
     contextLost = true
     loop.setForeground(false)
+    options.onProjectStageLabels?.([])
     options.onFailure(
       new Error('The floating museum lost its graphics context.'),
     )
@@ -352,6 +401,7 @@ function buildMuseumJourneyScene(
     mapUrl,
     mercUrl,
     abort.signal,
+    { sculptureUrl },
   )
   const environmentReady = environment
     .load(environmentUrl, () => disposed || contextLost)
@@ -365,10 +415,12 @@ function buildMuseumJourneyScene(
       updateDesiredView(true)
     },
   )
-  const ready = Promise.all([acceptedModels, environmentReady]).then(() => {
-    if (contextLost)
-      throw new Error('The floating museum lost its graphics context.')
-  })
+  const ready = Promise.all([acceptedModels, environmentReady, sky.ready]).then(
+    () => {
+      if (contextLost)
+        throw new Error('The floating museum lost its graphics context.')
+    },
+  )
 
   return {
     ready,
@@ -382,6 +434,7 @@ function buildMuseumJourneyScene(
       if (disposed || foreground === next) return
       foreground = next
       if (!next) gestures.reset()
+      if (!next) options.onProjectStageLabels?.([])
       loop.setForeground(next && !contextLost)
     },
     setReducedMotion(next) {
@@ -396,6 +449,7 @@ function buildMuseumJourneyScene(
     dispose() {
       if (disposed) return
       disposed = true
+      options.onProjectStageLabels?.([])
       abort.abort()
       loop.dispose()
       observer.disconnect()

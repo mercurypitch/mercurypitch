@@ -3,7 +3,7 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { GlassMuseumAudio } from '../host'
-import type { MuseumJourneyScene } from '../journey/scene'
+import type { MuseumJourneyScene, MuseumJourneyStageLabelProjection, } from '../journey/scene'
 import styles from './MuseumJourney.module.css'
 
 export interface MuseumJourneyChapterView {
@@ -34,6 +34,7 @@ export function MuseumJourney(props: {
   onExit(): void
 }) {
   let mapContainer: HTMLDivElement | undefined
+  const stageLabels = new Map<string, HTMLButtonElement>()
   let scene: MuseumJourneyScene | undefined
   let music: GlassMuseumAudio | undefined
   let unsubscribeForeground: (() => void) | undefined
@@ -87,6 +88,31 @@ export function MuseumJourney(props: {
     props.onExit()
   }
 
+  function updateProjectedStageLabels(
+    labels: readonly MuseumJourneyStageLabelProjection[],
+  ): void {
+    const projectedStageIds = new Set<string>()
+    for (const label of labels) {
+      const element = stageLabels.get(label.stageId)
+      const visible =
+        label.visible && Number.isFinite(label.x) && Number.isFinite(label.y)
+      if (element === undefined || !visible) continue
+      projectedStageIds.add(label.stageId)
+      element.style.transform = `translate3d(${Math.round(label.x)}px, ${Math.round(label.y)}px, 0) translate(-50%, 38px)`
+      element.dataset.projectedX = String(Math.round(label.x))
+      element.dataset.projectedY = String(Math.round(label.y))
+      element.dataset.projected = 'true'
+      element.tabIndex = 0
+      element.removeAttribute('aria-hidden')
+    }
+    for (const [stageId, element] of stageLabels) {
+      if (projectedStageIds.has(stageId)) continue
+      element.dataset.projected = 'false'
+      element.tabIndex = -1
+      element.setAttribute('aria-hidden', 'true')
+    }
+  }
+
   function mountScene(): void {
     const container = mapContainer
     if (container === undefined) return
@@ -95,6 +121,7 @@ export function MuseumJourney(props: {
     const attempt = ++generation
     scene?.dispose()
     scene = undefined
+    updateProjectedStageLabels([])
     setMapState('loading')
     setMapError('')
     setReloadRequired(false)
@@ -112,6 +139,10 @@ export function MuseumJourney(props: {
               foreground,
               reducedMotion,
               onSelect: select,
+              onProjectStageLabels(labels) {
+                if (attempt !== generation) return
+                updateProjectedStageLabels(labels)
+              },
               onFailure(error) {
                 if (attempt !== generation) return
                 setMapError(
@@ -198,6 +229,8 @@ export function MuseumJourney(props: {
     removeMotionListener?.()
     scene?.dispose()
     scene = undefined
+    updateProjectedStageLabels([])
+    stageLabels.clear()
     music?.dispose()
     music = undefined
   })
@@ -216,87 +249,108 @@ export function MuseumJourney(props: {
       aria-labelledby="glass-campaign-title"
       data-testid="glass-campaign"
     >
-      <header class={styles.header}>
-        <div class={styles.heading}>
-          <span class={styles.eyebrow}>MercuryPitch / Floating Museum</span>
-          <h1 id="glass-campaign-title">
-            Every gallery begins
-            <br />
-            with a breath.
-          </h1>
-          <p>
-            Follow the gold path across four singing islands. Choose a gallery,
-            then step inside when you are ready.
-          </p>
-        </div>
-        <div class={styles.headerActions}>
-          <button
-            type="button"
-            class={styles.roundAction}
-            aria-label={muted() ? 'Turn museum sound on' : 'Mute museum sound'}
-            aria-pressed={muted()}
-            onClick={toggleSound}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 9v6h4l5 4V5L9 9H5Z" />
-              <Show
-                when={muted()}
-                fallback={<path d="M17 9.2a4 4 0 0 1 0 5.6" />}
-              >
-                <path d="m17 9 5 6m0-6-5 6" />
-              </Show>
-            </svg>
-          </button>
-          <button
-            type="button"
-            class={styles.roundAction}
-            aria-label="Leave Glassworks"
-            onClick={exit}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m14 6-6 6 6 6" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
       <section class={styles.mapSection} aria-label="Floating museum map">
-        <div class={styles.mapColumn}>
-          <div
-            class={styles.mapFrame}
-            data-map-state={mapState()}
-            data-selected-stage={props.selectedStageId}
-          >
-            <div class={styles.mapCanvas} ref={mapContainer} />
-            <div class={styles.mapLegend} aria-hidden="true">
-              <span>Four islands</span>
-              <i />
-              <span>One singing path</span>
-            </div>
-            <Show when={mapState() === 'loading'}>
-              <div class={styles.mapNotice} role="status">
-                <span class={styles.loader} aria-hidden="true" />
-                Raising the museum from the clouds…
-              </div>
-            </Show>
-            <Show when={mapState() === 'failed'}>
-              <div class={styles.mapNotice} role="status">
-                <strong>The gallery list is still open.</strong>
-                <span>{mapError()}</span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    reloadRequired() ? window.location.reload() : mountScene()
-                  }
-                >
-                  {reloadRequired()
-                    ? 'Reload to retry interactive map'
-                    : 'Retry interactive map'}
-                </button>
-              </div>
-            </Show>
-          </div>
+        <div
+          class={styles.mapFrame}
+          data-map-state={mapState()}
+          data-selected-stage={props.selectedStageId}
+        >
+          <div class={styles.mapCanvas} ref={mapContainer} />
 
+          <header class={styles.mapHeader}>
+            <div class={styles.brand}>
+              <svg class={styles.sunMark} viewBox="0 0 80 80" aria-hidden>
+                <circle cx="40" cy="40" r="14" />
+                <circle cx="40" cy="40" r="3" />
+                <path d="M40 3v18M40 59v18M3 40h18M59 40h18M14 14l13 13M53 53l13 13M66 14 53 27M27 53 14 66M29 6l5 15M51 59l5 15M6 29l15 5M59 51l15 5M51 6l-5 15M34 59l-5 15M74 29l-15 5M21 51 6 56" />
+              </svg>
+              <h1 id="glass-campaign-title">Glassworks</h1>
+              <p>
+                Find your voice <span>in a brighter world.</span>
+              </p>
+            </div>
+            <div class={styles.headerActions}>
+              <button
+                type="button"
+                class={styles.roundAction}
+                aria-label={
+                  muted() ? 'Turn museum sound on' : 'Mute museum sound'
+                }
+                aria-pressed={muted()}
+                onClick={toggleSound}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 9v6h4l5 4V5L9 9H5Z" />
+                  <Show
+                    when={muted()}
+                    fallback={<path d="M17 9.2a4 4 0 0 1 0 5.6" />}
+                  >
+                    <path d="m17 9 5 6m0-6-5 6" />
+                  </Show>
+                </svg>
+              </button>
+              <button
+                type="button"
+                class={styles.roundAction}
+                aria-label="Leave Glassworks"
+                onClick={exit}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m14 6-6 6 6 6" />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <nav class={styles.stageLabels} aria-label="Museum gallery labels">
+            <For each={props.chapters}>
+              {(chapter) => (
+                <button
+                  ref={(element) => stageLabels.set(chapter.stageId, element)}
+                  type="button"
+                  class={styles.stageCartouche}
+                  classList={{
+                    [styles.stageCartoucheSelected]:
+                      chapter.stageId === props.selectedStageId,
+                  }}
+                  data-journey-label={chapter.stageId}
+                  aria-hidden="true"
+                  aria-pressed={chapter.stageId === props.selectedStageId}
+                  aria-label={`Select ${chapter.title} on the museum map`}
+                  tabIndex={-1}
+                  onClick={() => select(chapter.stageId)}
+                >
+                  <span>{chapter.title}</span>
+                </button>
+              )}
+            </For>
+          </nav>
+
+          <Show when={mapState() === 'loading'}>
+            <div class={styles.mapNotice} role="status">
+              <span class={styles.loader} aria-hidden="true" />
+              Raising the museum from the clouds…
+            </div>
+          </Show>
+          <Show when={mapState() === 'failed'}>
+            <div class={styles.mapNotice} role="status">
+              <strong>The gallery list is still open.</strong>
+              <span>{mapError()}</span>
+              <button
+                type="button"
+                onClick={() =>
+                  reloadRequired() ? window.location.reload() : mountScene()
+                }
+              >
+                {reloadRequired()
+                  ? 'Reload to retry interactive map'
+                  : 'Retry interactive map'}
+              </button>
+            </div>
+          </Show>
+        </div>
+
+        <div class={styles.mapDock}>
           <nav class={styles.stageRail} aria-label="Select a museum island">
             <For each={props.chapters}>
               {(chapter, index) => (
@@ -308,80 +362,84 @@ export function MuseumJourney(props: {
                       chapter.stageId === props.selectedStageId,
                   }}
                   aria-pressed={chapter.stageId === props.selectedStageId}
+                  aria-label={`Select ${chapter.title} on the museum map`}
                   onClick={() => select(chapter.stageId)}
                 >
                   <span>{String(index() + 1).padStart(2, '0')}</span>
-                  {chapter.title}
+                  <span>{chapter.chapterLabel}</span>
                 </button>
               )}
             </For>
           </nav>
-        </div>
 
-        <Show when={selectedChapter()} keyed>
-          {(chapter) => (
-            <article class={styles.selectedCard} aria-live="polite">
-              <div class={styles.selectedTopline}>
-                <span>{chapter.chapterLabel}</span>
-                <span>{chapter.progressLabel}</span>
-              </div>
-              <p class={styles.lesson}>{chapter.lesson}</p>
-              <h2>{chapter.title}</h2>
-              <p class={styles.description}>{chapter.description}</p>
-              <div class={styles.keepsakes}>
-                <Show when={chapter.stars !== undefined}>
-                  <span
-                    class={styles.stars}
-                    aria-label={`${chapter.stars} saved pitch ${chapter.stars === 1 ? 'star' : 'stars'}${chapter.historicalGrade ? ', from an earlier challenge edition' : ''}`}
-                  >
-                    <For each={[1, 2, 3]}>
-                      {(star) => (
-                        <svg
-                          viewBox="0 0 20 20"
-                          classList={{
-                            [styles.starEarned]: star <= (chapter.stars ?? 0),
-                          }}
-                          aria-hidden="true"
-                        >
-                          <path d="m10 1.7 2.45 5 5.5.8-4 3.85.95 5.45L10 14.2l-4.9 2.6.95-5.45-4-3.85 5.5-.8L10 1.7Z" />
-                        </svg>
+          <Show when={selectedChapter()} keyed>
+            {(chapter) => (
+              <article class={styles.selectedCard} aria-live="polite">
+                <div class={styles.selectedArtwork}>
+                  <img src={chapter.imageUrl} alt="" />
+                  <span>{chapter.chapterLabel}</span>
+                </div>
+                <div class={styles.selectedContent}>
+                  <span class={styles.selectedTopline}>
+                    {chapter.progressLabel}
+                  </span>
+                  <p class={styles.lesson}>{chapter.lesson}</p>
+                  <h2>{chapter.title}</h2>
+                  <p class={styles.description}>{chapter.description}</p>
+                  <div class={styles.keepsakes}>
+                    <Show when={chapter.stars !== undefined}>
+                      <span
+                        class={styles.stars}
+                        aria-label={`${chapter.stars} saved pitch ${chapter.stars === 1 ? 'star' : 'stars'}${chapter.historicalGrade ? ', from an earlier challenge edition' : ''}`}
+                      >
+                        <For each={[1, 2, 3]}>
+                          {(star) => (
+                            <svg
+                              viewBox="0 0 20 20"
+                              classList={{
+                                [styles.starEarned]:
+                                  star <= (chapter.stars ?? 0),
+                              }}
+                              aria-hidden="true"
+                            >
+                              <path d="m10 1.7 2.45 5 5.5.8-4 3.85.95 5.45L10 14.2l-4.9 2.6.95-5.45-4-3.85 5.5-.8L10 1.7Z" />
+                            </svg>
+                          )}
+                        </For>
+                      </span>
+                    </Show>
+                    <Show when={chapter.notGraded}>
+                      <span class={styles.ungraded}>
+                        Singing quality not yet graded
+                      </span>
+                    </Show>
+                    <Show when={chapter.portrait} keyed>
+                      {(portrait) => (
+                        <span class={styles.portraitKeepsake}>
+                          <img src={portrait.imageUrl} alt="" />
+                          Portrait collected · {portrait.title}
+                        </span>
                       )}
-                    </For>
-                  </span>
-                </Show>
-                <Show when={chapter.notGraded}>
-                  <span class={styles.ungraded}>
-                    Singing quality not yet graded
-                  </span>
-                </Show>
-                <Show when={chapter.portrait} keyed>
-                  {(portrait) => (
-                    <span class={styles.portraitKeepsake}>
-                      <img src={portrait.imageUrl} alt="" />
-                      Portrait collected · {portrait.title}
+                    </Show>
+                  </div>
+                  <button
+                    type="button"
+                    class={styles.enterSelected}
+                    disabled={enteringChapterId() !== undefined}
+                    aria-label={`Open selected gallery: ${chapter.title}`}
+                    onClick={() => void enter(chapter)}
+                  >
+                    <span>
+                      {enteringChapterId() === chapter.chapterId
+                        ? 'Opening gallery…'
+                        : `${chapter.action} selected gallery`}
                     </span>
-                  )}
-                </Show>
-              </div>
-              <button
-                type="button"
-                class={styles.enterSelected}
-                disabled={enteringChapterId() !== undefined}
-                aria-label={`Open selected gallery: ${chapter.title}`}
-                onClick={() => void enter(chapter)}
-              >
-                <span>
-                  {enteringChapterId() === chapter.chapterId
-                    ? 'Opening gallery…'
-                    : `${chapter.action} selected gallery`}
-                </span>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="m9 5 7 7-7 7" />
-                </svg>
-              </button>
-            </article>
-          )}
-        </Show>
+                  </button>
+                </div>
+              </article>
+            )}
+          </Show>
+        </div>
       </section>
 
       <section class={styles.galleryList} aria-labelledby="gallery-list-title">
@@ -425,9 +483,6 @@ export function MuseumJourney(props: {
                     onClick={() => void enter(chapter)}
                   >
                     {chapter.action}
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="m9 5 7 7-7 7" />
-                    </svg>
                   </button>
                 </div>
               </article>

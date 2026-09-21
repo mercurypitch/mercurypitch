@@ -32,6 +32,39 @@ describe('journey map model loading', () => {
     expect(dispose).toHaveBeenCalledOnce()
   })
 
+  it('retires both base documents when the supplemental sculpture fails', async () => {
+    const mapDispose = vi.fn()
+    const mercDispose = vi.fn()
+    const mapDocument: JourneyGltfDocument = {
+      scene: new Group(),
+      animations: [],
+      dispose: mapDispose,
+    }
+    const mercDocument: JourneyGltfDocument = {
+      scene: new Group(),
+      animations: [new AnimationClip('idle', 1)],
+      dispose: mercDispose,
+    }
+    const failure = new Error('sculpture unavailable')
+    const loadGltf = vi
+      .fn()
+      .mockResolvedValueOnce(mapDocument)
+      .mockResolvedValueOnce(mercDocument)
+      .mockRejectedValueOnce(failure)
+
+    await expect(
+      loadJourneyMapModels(
+        FLOATING_MUSEUM_JOURNEY,
+        '/map.glb',
+        '/merc.glb',
+        new AbortController().signal,
+        { loadGltf, sculptureUrl: '/sculpture.glb' },
+      ),
+    ).rejects.toBe(failure)
+    expect(mapDispose).toHaveBeenCalledOnce()
+    expect(mercDispose).toHaveBeenCalledOnce()
+  })
+
   it('maps the final bridge dimensions onto both authored endpoints', () => {
     for (const bridge of FLOATING_MUSEUM_JOURNEY.bridges) {
       const transform = journeyBridgeTransform(bridge)

@@ -1,10 +1,13 @@
-// Journey models — assemble four map-scale islands from one reusable authored kit.
+// Journey models — assemble three authored landmasses with four stable chapter medallions.
 
-import type { Material, Object3D } from 'three'
-import { AnimationMixer, Box3, CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, SphereGeometry, Vector3, } from 'three'
+import type { BufferGeometry, Material, Mesh, Object3D } from 'three'
+import { AnimationMixer, Box3, CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector3, } from 'three'
 import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
+import type { JourneyAuthoredUnit } from './architecture'
+import { createJourneyArchitecture } from './architecture'
 import type { JourneyGltfDocument } from './resources'
 import { loadJourneyGltf } from './resources'
+import { createJourneyVegetation } from './vegetation'
 
 const REQUIRED_NODES = [
   'map_canopy',
@@ -18,10 +21,17 @@ const REQUIRED_NODES = [
 
 const MAP_BRIDGE_WIDTH = 1.1
 const MAP_BRIDGE_LENGTH = 3.323364
+// Normalize the sculpted 4.5 x 2.464 m top footprint to the original
+// 2.622 x 2.602 m kit unit before applying each authored landmass scale.
+const SCULPTED_CLIFF_SCALE_X = 2.621731 / 4.5
+const SCULPTED_CLIFF_SCALE_Z = 2.602302 / 2.464056
+const SCULPTED_CLIFF_SCALE_Y = 2.25
 
 export interface JourneyMapModels {
   root: Group
   selectableRoots: ReadonlyMap<string, Object3D>
+  /** Stable mystery surfaces that earned portrait art can replace later. */
+  portraitSurfaces: ReadonlyMap<string, Mesh>
   setSelected(stage: MuseumJourneyStage, immediate?: boolean): void
   update(dt: number, reducedMotion: boolean): void
   dispose(): void
@@ -75,161 +85,89 @@ function authoredUnit(document: JourneyGltfDocument, name: string): Object3D {
   return clone
 }
 
-function markSelectable(root: Object3D, stageId: string): void {
-  root.traverse((object) => {
-    object.userData.journeyStageId = stageId
-  })
-}
-
-function addColumns(
-  root: Group,
-  document: JourneyGltfDocument,
-  positions: readonly (readonly [number, number])[],
-  scale = 0.72,
-): void {
-  for (const [x, z] of positions) {
-    const column = authoredUnit(document, 'map_column')
-    column.position.set(x, 0.02, z)
-    column.scale.setScalar(scale)
-    root.add(column)
-  }
-}
-
-function addArchitecture(
-  root: Group,
-  document: JourneyGltfDocument,
-  stage: MuseumJourneyStage,
-  accentMaterials: Readonly<Record<string, Material>>,
-  ownedGeometries: Set<CylinderGeometry | SphereGeometry>,
-): void {
-  const platform = authoredUnit(document, 'map_platform')
-  platform.position.y = 0.03
-  platform.scale.set(1.18, 1, 1.18)
-  root.add(platform)
-
-  if (stage.kind === 'pavilion') {
-    const canopy = authoredUnit(document, 'map_canopy')
-    canopy.scale.setScalar(0.72)
-    root.add(canopy)
-    addColumns(
-      root,
-      document,
-      [
-        [-0.75, -0.7],
-        [0.75, -0.7],
-        [-0.75, 0.7],
-        [0.75, 0.7],
-      ],
-      0.58,
+function createLandmasses(
+  definition: MuseumJourneyDefinition,
+  authored: JourneyAuthoredUnit,
+  sculptural: JourneyAuthoredUnit | undefined,
+): Group {
+  const root = new Group()
+  root.name = 'floating-museum-three-landmasses'
+  for (const island of definition.landmasses) {
+    const islandRoot = new Group()
+    islandRoot.name = island.id
+    const cliff = sculptural?.('map_cliff') ?? authored('map_island_root')
+    cliff.name = `${island.id}-sculpted-cliff`
+    cliff.position.fromArray(island.position)
+    cliff.rotation.y = island.yaw
+    cliff.scale.set(
+      island.scale[0] * (sculptural === undefined ? 1 : SCULPTED_CLIFF_SCALE_X),
+      island.scale[1] * (sculptural === undefined ? 1 : SCULPTED_CLIFF_SCALE_Y),
+      island.scale[2] * (sculptural === undefined ? 1 : SCULPTED_CLIFF_SCALE_Z),
     )
-    for (const x of [-1.27, 1.27]) {
-      const planter = authoredUnit(document, 'map_planter')
-      planter.position.set(x, 0.04, 0.48)
-      planter.scale.setScalar(0.42)
-      root.add(planter)
+    islandRoot.add(cliff)
+
+    if (sculptural === undefined) {
+      for (const [offsetX, offsetZ, scale] of [
+        [-0.72, 0.18, 0.68],
+        [0.68, -0.22, 0.62],
+      ] as const) {
+        const shoulder = authored('map_island_root')
+        shoulder.name = `${island.id}-cliff-shoulder`
+        shoulder.position.set(
+          island.position[0] + offsetX * island.scale[0],
+          island.position[1] - 0.18,
+          island.position[2] + offsetZ * island.scale[2],
+        )
+        shoulder.rotation.y = island.yaw + offsetX * 0.08
+        shoulder.scale.set(
+          island.scale[0] * scale,
+          island.scale[1] * (0.72 + scale * 0.2),
+          island.scale[2] * scale,
+        )
+        islandRoot.add(shoulder)
+      }
     }
-  } else if (stage.kind === 'rotunda') {
-    const canopy = authoredUnit(document, 'map_canopy')
-    canopy.scale.set(1.05, 0.88, 1.05)
-    root.add(canopy)
-    addColumns(root, document, [
-      [-1.05, 0],
-      [1.05, 0],
-      [0, -1.05],
-      [0, 1.05],
-    ])
-    const frame = authoredUnit(document, 'map_frame')
-    frame.position.set(0, 0.08, 1.17)
-    frame.rotation.y = Math.PI
-    frame.scale.setScalar(0.8)
-    root.add(frame)
-    for (const [x, z] of [
-      [-1.38, 0.58],
-      [1.38, 0.58],
-      [0, -1.42],
-    ] as const) {
-      const planter = authoredUnit(document, 'map_planter')
-      planter.position.set(x, 0.04, z)
-      planter.scale.setScalar(0.43)
-      root.add(planter)
-    }
-  } else if (stage.kind === 'twins') {
-    for (const x of [-0.78, 0.78]) {
-      const canopy = authoredUnit(document, 'map_canopy')
-      canopy.position.set(x, 0.02, 0)
-      canopy.scale.setScalar(0.53)
-      root.add(canopy)
-    }
-    const domeGeometry = new SphereGeometry(
-      0.57,
-      24,
-      14,
-      0,
-      Math.PI * 2,
-      0,
-      Math.PI / 2,
-    )
-    ownedGeometries.add(domeGeometry)
-    const amber = new Mesh(domeGeometry, accentMaterials.amber)
-    amber.name = 'twin-amber-dome'
-    amber.position.set(-0.78, 1.02, 0)
-    amber.scale.y = 0.88
-    const celadon = new Mesh(domeGeometry, accentMaterials.celadon)
-    celadon.name = 'twin-celadon-dome'
-    celadon.position.set(0.78, 1.02, 0)
-    celadon.scale.y = 0.88
-    root.add(amber, celadon)
-    for (const [x, z] of [
-      [-1.48, 0.68],
-      [1.48, 0.68],
-      [0, -1.38],
-    ] as const) {
-      const planter = authoredUnit(document, 'map_planter')
-      planter.position.set(x, 0.04, z)
-      planter.scale.setScalar(0.4)
-      root.add(planter)
-    }
-  } else {
-    const canopy = authoredUnit(document, 'map_canopy')
-    canopy.scale.set(1.12, 0.84, 1.12)
-    root.add(canopy)
-    for (const [x, z, turn] of [
-      [-0.9, -0.65, 0],
-      [0.9, -0.65, 0.8],
-      [-0.95, 0.7, -0.5],
-      [0.95, 0.72, 0.35],
-      [0, 1.05, 0.1],
-    ] as const) {
-      const planter = authoredUnit(document, 'map_planter')
-      planter.position.set(x, 0.04, z)
-      planter.rotation.y = turn
-      planter.scale.setScalar(0.66)
-      root.add(planter)
-    }
+
+    const terrace = authored('map_platform')
+    terrace.name = `${island.id}-ivory-terrace`
+    terrace.position.fromArray(island.position)
+    terrace.position.y += 0.035
+    terrace.rotation.y = island.yaw
+    terrace.scale.fromArray(island.terraceScale)
+    islandRoot.add(terrace)
+    root.add(islandRoot)
   }
+  return root
 }
 
 function createGoldTrail(
   definition: MuseumJourneyDefinition,
   material: Material,
-  ownedGeometries: Set<CylinderGeometry | SphereGeometry>,
+  ownedGeometries: Set<BufferGeometry>,
 ): InstancedMesh {
   const points = definition.bridges.flatMap((bridge) => {
     const distance = Math.hypot(
       bridge.to[0] - bridge.from[0],
       bridge.to[2] - bridge.from[2],
     )
-    const count = Math.max(2, Math.floor(distance / 0.5))
+    const count = Math.max(2, Math.floor(distance / 0.42))
     return Array.from({ length: count }, (_, index) => {
       const t = (index + 0.5) / count
+      const bow = Math.sin(t * Math.PI)
+      const dx = bridge.to[0] - bridge.from[0]
+      const dz = bridge.to[2] - bridge.from[2]
+      const horizontalLength = Math.max(0.001, Math.hypot(dx, dz))
       return new Vector3(
-        bridge.from[0] + (bridge.to[0] - bridge.from[0]) * t,
-        bridge.from[1] + (bridge.to[1] - bridge.from[1]) * t + 0.08,
-        bridge.from[2] + (bridge.to[2] - bridge.from[2]) * t,
+        bridge.from[0] + dx * t + (-dz / horizontalLength) * bridge.curve * bow,
+        bridge.from[1] +
+          (bridge.to[1] - bridge.from[1]) * t +
+          (bridge.kind === 'skybridge' ? 0.2 : 0.035) * bow +
+          0.11,
+        bridge.from[2] + dz * t + (dx / horizontalLength) * bridge.curve * bow,
       )
     })
   })
-  const geometry = new CylinderGeometry(0.055, 0.07, 0.025, 12)
+  const geometry = new CylinderGeometry(0.052, 0.065, 0.026, 12)
   ownedGeometries.add(geometry)
   const trail = new InstancedMesh(geometry, material, points.length)
   const matrix = new Matrix4()
@@ -245,72 +183,134 @@ function createGoldTrail(
 function createAssembly(
   definition: MuseumJourneyDefinition,
   document: JourneyGltfDocument,
+  sculptureDocument: JourneyGltfDocument | undefined,
 ) {
   for (const name of REQUIRED_NODES) authoredUnit(document, name)
+  if (sculptureDocument !== undefined) {
+    authoredUnit(sculptureDocument, 'map_temple')
+    authoredUnit(sculptureDocument, 'map_cliff')
+    authoredUnit(sculptureDocument, 'map_cypress')
+  }
   const root = new Group()
   root.name = 'floating-museum-architecture'
-  const selectableRoots = new Map<string, Object3D>()
-  const ownedGeometries = new Set<CylinderGeometry | SphereGeometry>()
+  const ownedGeometries = new Set<BufferGeometry>()
   const materials = {
     gold: new MeshStandardMaterial({
-      color: 0xbd8e43,
+      color: 0xc79a45,
+      emissive: 0x4c310b,
+      emissiveIntensity: 0.12,
       metalness: 0.72,
-      roughness: 0.24,
+      roughness: 0.22,
     }),
     jade: new MeshStandardMaterial({
-      color: 0x224943,
+      color: 0x174d47,
       metalness: 0.08,
-      roughness: 0.48,
+      roughness: 0.42,
+      side: DoubleSide,
+    }),
+    ivory: new MeshStandardMaterial({
+      color: 0xeee3cf,
+      metalness: 0.02,
+      roughness: 0.36,
     }),
     amber: new MeshPhysicalMaterial({
-      color: 0xedc07a,
+      color: 0xf2bd6d,
       transparent: true,
-      opacity: 0.76,
-      metalness: 0.16,
-      roughness: 0.2,
+      opacity: 0.58,
+      depthWrite: false,
+      metalness: 0.06,
+      roughness: 0.12,
       clearcoat: 1,
-      clearcoatRoughness: 0.16,
+      clearcoatRoughness: 0.12,
       side: DoubleSide,
     }),
     celadon: new MeshPhysicalMaterial({
-      color: 0x85bec0,
+      color: 0x78c9c2,
       transparent: true,
-      opacity: 0.76,
-      metalness: 0.14,
-      roughness: 0.18,
+      opacity: 0.54,
+      depthWrite: false,
+      metalness: 0.05,
+      roughness: 0.1,
       clearcoat: 1,
-      clearcoatRoughness: 0.14,
+      clearcoatRoughness: 0.1,
       side: DoubleSide,
     }),
+    clearGlass: new MeshPhysicalMaterial({
+      color: 0xd8f4ee,
+      transparent: true,
+      opacity: 0.4,
+      depthWrite: false,
+      roughness: 0.08,
+      clearcoat: 1,
+      clearcoatRoughness: 0.08,
+      side: DoubleSide,
+    }),
+    shadow: new MeshStandardMaterial({
+      color: 0xa68852,
+      emissive: 0x3d2a0e,
+      emissiveIntensity: 0.1,
+      metalness: 0.18,
+      roughness: 0.56,
+    }),
+    crystal: new MeshPhysicalMaterial({
+      color: 0xbce6df,
+      emissive: 0x2e827b,
+      emissiveIntensity: 0.22,
+      transparent: true,
+      opacity: 0.74,
+      depthWrite: false,
+      roughness: 0.14,
+      side: DoubleSide,
+    }),
+    foliage: new MeshStandardMaterial({
+      color: 0x3c7357,
+      roughness: 0.7,
+    }),
+    darkFoliage: new MeshStandardMaterial({
+      color: 0x174f3d,
+      roughness: 0.72,
+    }),
+    trunk: new MeshStandardMaterial({
+      color: 0x765c3d,
+      roughness: 0.82,
+    }),
+    blossom: new MeshStandardMaterial({
+      color: 0xefd2d1,
+      roughness: 0.56,
+    }),
   }
-
-  for (const stage of definition.stages) {
-    const stageRoot = new Group()
-    stageRoot.name = stage.id
-    stageRoot.position.fromArray(stage.position)
-    stageRoot.rotation.y = stage.yaw
-    stageRoot.scale.setScalar(stage.scale)
-    const island = authoredUnit(document, 'map_island_root')
-    island.scale.set(1.75, 1.18, 1.75)
-    stageRoot.add(island)
-    addArchitecture(stageRoot, document, stage, materials, ownedGeometries)
-    markSelectable(stageRoot, stage.id)
-    selectableRoots.set(stage.id, stageRoot)
-    root.add(stageRoot)
-  }
-
-  for (const bridge of definition.bridges) {
-    const model = authoredUnit(document, 'map_bridge')
-    const transform = journeyBridgeTransform(bridge)
-    model.name = bridge.id
-    model.position.copy(transform.position)
-    model.quaternion.copy(transform.rotation)
-    model.scale.copy(transform.scale)
-    root.add(model)
-  }
+  const authored: JourneyAuthoredUnit = (name) => authoredUnit(document, name)
+  const sculptural: JourneyAuthoredUnit | undefined =
+    sculptureDocument === undefined
+      ? undefined
+      : (name) => authoredUnit(sculptureDocument, name)
+  root.add(createLandmasses(definition, authored, sculptural))
+  const architecture = createJourneyArchitecture(
+    definition,
+    authored,
+    sculptural,
+    materials,
+    ownedGeometries,
+  )
+  root.add(architecture.root)
+  root.add(
+    createJourneyVegetation(
+      definition,
+      authored,
+      sculptural,
+      materials,
+      ownedGeometries,
+    ),
+  )
   const trail = createGoldTrail(definition, materials.gold, ownedGeometries)
   root.add(trail)
-  return { root, selectableRoots, materials, ownedGeometries, trail }
+  return {
+    root,
+    selectableRoots: architecture.selectableRoots,
+    portraitSurfaces: architecture.portraitSurfaces,
+    materials,
+    ownedGeometries,
+  }
 }
 
 function createMerc(document: JourneyGltfDocument, first: MuseumJourneyStage) {
@@ -371,6 +371,7 @@ function createMerc(document: JourneyGltfDocument, first: MuseumJourneyStage) {
     dispose() {
       mixer.stopAllAction()
       mixer.uncacheRoot(body)
+      metal.dispose()
       document.dispose()
     },
   }
@@ -383,13 +384,14 @@ export async function loadJourneyMapModels(
   signal: AbortSignal,
   options: {
     loadGltf?: typeof loadJourneyGltf
+    sculptureUrl?: string
   } = {},
 ): Promise<JourneyMapModels> {
   const loadGltf = options.loadGltf ?? loadJourneyGltf
-  const loaded = await Promise.allSettled([
-    loadGltf(mapUrl, signal),
-    loadGltf(mercUrl, signal),
-  ])
+  const requests = [loadGltf(mapUrl, signal), loadGltf(mercUrl, signal)]
+  if (options.sculptureUrl !== undefined)
+    requests.push(loadGltf(options.sculptureUrl, signal))
+  const loaded = await Promise.allSettled(requests)
   const rejected = loaded.find(
     (result): result is PromiseRejectedResult => result.status === 'rejected',
   )
@@ -398,20 +400,21 @@ export async function loadJourneyMapModels(
       if (result.status === 'fulfilled') result.value.dispose()
     throw rejected.reason
   }
-  const [kitDocument, mercDocument] = loaded.map(
+  const documents = loaded.map(
     (result) => (result as PromiseFulfilledResult<JourneyGltfDocument>).value,
   )
+  const kitDocument = documents[0]!
+  const mercDocument = documents[1]!
+  const sculptureDocument = documents[2]
   if (signal.aborted) {
-    kitDocument.dispose()
-    mercDocument.dispose()
+    for (const document of documents) document.dispose()
     throw new DOMException('Journey asset load cancelled.', 'AbortError')
   }
   let assembly: ReturnType<typeof createAssembly>
   try {
-    assembly = createAssembly(definition, kitDocument)
+    assembly = createAssembly(definition, kitDocument, sculptureDocument)
   } catch (error) {
-    kitDocument.dispose()
-    mercDocument.dispose()
+    for (const document of documents) document.dispose()
     throw error
   }
   const merc = createMerc(mercDocument, definition.stages[0]!)
@@ -420,6 +423,7 @@ export async function loadJourneyMapModels(
   return {
     root: assembly.root,
     selectableRoots: assembly.selectableRoots,
+    portraitSurfaces: assembly.portraitSurfaces,
     setSelected(stage, immediate = false) {
       if (!disposed) merc.setTarget(stage, immediate)
     },
@@ -430,9 +434,12 @@ export async function loadJourneyMapModels(
       if (disposed) return
       disposed = true
       assembly.root.removeFromParent()
+      assembly.root.traverse((object) => {
+        if (object instanceof InstancedMesh) object.dispose()
+      })
       merc.dispose()
       kitDocument.dispose()
-      assembly.trail.dispose()
+      sculptureDocument?.dispose()
       assembly.ownedGeometries.forEach((geometry) => geometry.dispose())
       Object.values(assembly.materials).forEach((material) =>
         material.dispose(),
