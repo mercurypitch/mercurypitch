@@ -1361,6 +1361,7 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 **Symptom:** new voice regressions were reported as having no assertions despite checking real completion and capture lifecycle.
 **Cause:** the test-shape regex also splits on fixture calls such as `test.emit(...)` and `test.wait(...)`, fragmenting a real assertion-bearing test.
 **Rule:** inspect the flagged blocks before adding assertions or changing a baseline. Name local harnesses `fixture` to distinguish them from the test API; preserve the behavioral assertions. Do not add token checks to satisfy a textual collector.
+If local and CI counts differ, compare the exact tested merge revision with the feature head: newly landed main tests are included by CI even before a local rebase. An absence query can assert its null result explicitly instead of being mislabeled by the collector as a presence-only document-membership assertion.
 **See:** `scripts/code-metrics.mjs:testShapeMetrics`, `packages/glass-game/src/ui/voice-challenge.test.ts`.
 
 ## Process

@@ -150,6 +150,12 @@ remain an asset-audit/refactoring worklist, not a reason to split code arbitrari
 No additional file crosses 1,500 lines. Test assertion budgets remain unchanged:
 renaming the local controller harness from `test` to `fixture` removes false test
 registrations in the textual scanner while preserving every behavioral assertion.
+A further main update added a valid toolbar absence test, which the same scanner
+classified as presence-only. Newer main already fixes it with `toBeNull()` plus
+the exact count of unconditional controls; this branch adopts that upstream fix.
+The absence requirement and metric limit are unchanged. The second rebase in the
+receipt verifies unchanged game, BesideCue and asset trees again. Original capture
+source IDs remain the correct provenance for the existing compiled screenshots.
 
 ## Practical limitations
 
