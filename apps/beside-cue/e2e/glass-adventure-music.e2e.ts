@@ -118,7 +118,7 @@ test('exploration music stops before capture and stays stopped after background'
     .toBe(2)
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
   expect(await page.evaluate(() => window.museumMusicProbe.active.size)).toBe(0)
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(

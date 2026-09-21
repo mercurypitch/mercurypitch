@@ -172,16 +172,16 @@ function calibrationQueue(
 function findingCopy(target: PitchTargetId): { message: string; hint: string } {
   if (target === 'low')
     return {
-      message: 'Find a comfortable low note.',
+      message: 'Hum low, gently.',
       hint: 'Choose an easy note in the lower part of your voice and hold it steady.',
     }
   if (target === 'high')
     return {
-      message: 'Now find a comfortable high note.',
+      message: 'Hum higher, gently.',
       hint: 'Choose an easy higher note that sounds clearly different. Stay comfortable; never strain.',
     }
   return {
-    message: 'Hum a comfortable note.',
+    message: 'Hum an easy note.',
     hint: 'Keep it easy and steady. No need to be loud.',
   }
 }
@@ -192,16 +192,16 @@ function referenceCopy(definition: ChallengeDefinition): {
 } {
   if (definition.kind === 'settle-wave')
     return {
-      message: 'Listen: steady, then a gentle wave.',
+      message: 'Listen first.',
       hint: 'It goes above, below, above, below, then returns to the middle. Your turn begins after it is quiet.',
     }
   return definition.kind === 'ordered-pair'
     ? {
-        message: 'Listen to both notes in order.',
+        message: 'Listen first.',
         hint: 'Your turn begins after the second note becomes quiet.',
       }
     : {
-        message: 'Listen to your note.',
+        message: 'Listen first.',
         hint: 'Your turn begins when the reference becomes quiet.',
       }
 }
@@ -212,7 +212,7 @@ function singingCopy(definition: ChallengeDefinition): {
 } {
   if (definition.kind === 'settle-wave')
     return {
-      message: 'First, let your note settle.',
+      message: 'Hold your note.',
       hint: 'Begin with a comfortable steady hum. Then we will let it sway gently.',
     }
   if (definition.kind === 'ordered-pair') {
@@ -469,7 +469,7 @@ export function createVoiceChallenge(
     if (low === undefined || !pairIsDistinct(low, midi, tolerances)) {
       const copy = findingCopy('high')
       emit({
-        message: 'Choose a clearly different comfortable high note.',
+        message: 'Try a higher note.',
         hint: copy.hint,
         target: null,
       })
@@ -562,9 +562,7 @@ export function createVoiceChallenge(
         message:
           current.challenge.kind === 'ordered-pair'
             ? `Try ${targetCopy(firstTarget)} again.`
-            : current.challenge.kind === 'settle-wave'
-              ? 'Try again. Hold your note steady first.'
-              : 'Try again. Hold your note steady.',
+            : 'Hold steady again.',
         hint: `Start with the ${firstNote} note again; take your time.`,
       })
     } else if (
@@ -601,7 +599,7 @@ export function createVoiceChallenge(
       pitch: null,
       encounterId,
       findingTarget: null,
-      message: 'Opening your microphone…',
+      message: 'Opening the mic…',
       hint: 'The museum will stay still while permission opens.',
       pair: isPairChallenge(encounter.challenge),
       stepIndex: 0,

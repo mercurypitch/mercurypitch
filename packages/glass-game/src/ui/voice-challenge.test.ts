@@ -303,6 +303,10 @@ describe('voice challenge controller', () => {
     const pending = test.controller.start('vessel')
     await flush()
     expect(sound.patterns).toEqual(['gentle-wave'])
+    expect(test.controller.snapshot()).toMatchObject({
+      mode: 'reference',
+      message: 'Listen first.',
+    })
     for (let i = 0; i < 140; i++)
       test.emit(
         voice,
@@ -315,6 +319,10 @@ describe('voice challenge controller', () => {
     expect(test.events).toEqual([])
     gate.resolve()
     await pending
+    expect(test.controller.snapshot()).toMatchObject({
+      mode: 'singing',
+      message: 'Hold your note.',
+    })
     for (let i = 140; i <= 144; i++)
       test.emit(voice, observation(i, 57, 1025 + i * 25))
     expect(test.controller.snapshot()).toMatchObject({
@@ -405,6 +413,7 @@ describe('voice challenge controller', () => {
       target: 57,
       encounterId: 'vessel',
       pair: false,
+      message: 'Hold it gently.',
     })
     expect(test.sounds[0].references).toEqual([57])
     for (let sequence = 0; sequence <= 4; sequence++)
@@ -418,7 +427,7 @@ describe('voice challenge controller', () => {
   it('uses only fresh monotonic evidence for comfortable-note calibration', async () => {
     const test = harness(COMFORTABLE)
     await test.controller.start('vessel')
-    expect(test.controller.snapshot().message).toBe('Hum a comfortable note.')
+    expect(test.controller.snapshot().message).toBe('Hum an easy note.')
 
     for (let sequence = 0; sequence < 20; sequence++)
       test.emit(
@@ -439,12 +448,18 @@ describe('voice challenge controller', () => {
   it('collects low before high, stores low alone, and gently rejects overlapping bands', async () => {
     const test = harness(PAIR)
     await test.controller.start('vessel')
-    expect(test.controller.snapshot().findingTarget).toBe('low')
+    expect(test.controller.snapshot()).toMatchObject({
+      findingTarget: 'low',
+      message: 'Hum low, gently.',
+    })
 
     for (let sequence = 0; sequence <= 18; sequence++)
       test.emit(test.voices[0], observation(sequence, 57, 1000 + sequence * 25))
     await flush()
-    expect(test.controller.snapshot().findingTarget).toBe('high')
+    expect(test.controller.snapshot()).toMatchObject({
+      findingTarget: 'high',
+      message: 'Hum higher, gently.',
+    })
     expect(JSON.parse(test.preferences.get('comfortable-pair')!)).toEqual({
       version: 1,
       low: 57,
@@ -456,7 +471,7 @@ describe('voice challenge controller', () => {
     expect(test.controller.snapshot()).toMatchObject({
       mode: 'finding',
       findingTarget: 'high',
-      message: 'Choose a clearly different comfortable high note.',
+      message: 'Try a higher note.',
     })
     expect(JSON.parse(test.preferences.get('comfortable-pair')!)).toEqual({
       version: 1,
@@ -541,6 +556,10 @@ describe('voice challenge controller', () => {
     ])
     const pendingPermission = permission.controller.start('vessel')
     await flush()
+    expect(permission.controller.snapshot()).toMatchObject({
+      mode: 'permission',
+      message: 'Opening the mic…',
+    })
     permission.controller.cancel()
     permissionVoice.startGate.resolve()
     await pendingPermission
@@ -560,7 +579,10 @@ describe('voice challenge controller', () => {
     )
     const pendingReference = reference.controller.start('vessel')
     await flush()
-    expect(reference.controller.snapshot().mode).toBe('reference')
+    expect(reference.controller.snapshot()).toMatchObject({
+      mode: 'reference',
+      message: 'Listen first.',
+    })
     reference.controller.cancel()
     referenceGate.resolve()
     await pendingReference

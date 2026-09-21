@@ -542,9 +542,12 @@ async function expectVoiceActionsStayOnOneLine(
   }
 }
 
-async function expectVoiceGoalStaysOnOneLine(page: Page): Promise<void> {
+async function expectVoiceGoalStaysOnOneLine(
+  page: Page,
+  name: string,
+): Promise<void> {
   const layout = await page
-    .getByRole('heading', { name: 'Sway twice, then return.' })
+    .getByRole('heading', { name, exact: true })
     .evaluate((element) => {
       const range = document.createRange()
       range.selectNodeContents(element)
@@ -555,6 +558,17 @@ async function expectVoiceGoalStaysOnOneLine(page: Page): Promise<void> {
       }
     })
   expect(layout.lines).toBe(1)
+}
+
+async function expectCompactVoiceState(
+  page: Page,
+  heading: string,
+  actions: readonly string[],
+): Promise<void> {
+  expect(await page.evaluate(() => window.innerWidth)).toBe(320)
+  await expectVoiceGoalStaysOnOneLine(page, heading)
+  await expectVoiceActionsStayOnOneLine(page, actions)
+  await expectVoicePanelFits(page)
 }
 
 async function challengeCameraMetrics(
@@ -690,10 +704,12 @@ test('silence cannot earn progress; a fresh comfortable hold breaks and survives
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await openMuseum(page)
+  await page.setViewportSize({ width: 320, height: 640 })
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
+  await expectCompactVoiceState(page, 'Hum an easy note.', ['Change note'])
   const startedAt = await page.evaluate(
     () => window.glassVoiceFixture.sources[0].context.currentTime,
   )
@@ -726,6 +742,18 @@ test('silence cannot earn progress; a fresh comfortable hold breaks and survives
       { timeout: 12_000 },
     )
     .toBe('57')
+  await page.evaluate(() => window.glassVoiceFixture.setAmplitude(0))
+  const panel = page.getByLabel('Voice challenge')
+  await expect(panel).toHaveAttribute('data-voice-mode', 'reference')
+  await expectCompactVoiceState(page, 'Listen first.', ['Change note'])
+  await expect(panel).toHaveAttribute('data-voice-mode', 'singing', {
+    timeout: 6000,
+  })
+  await expectCompactVoiceState(page, 'Hold it gently.', [
+    'Hear example',
+    'Change note',
+  ])
+  await page.evaluate(() => window.glassVoiceFixture.setAmplitude(0.1))
   await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
     'data-completed',
     '1',
@@ -775,7 +803,7 @@ test('cancel and page background stop capture; return requires an explicit fresh
   await openMuseum(page)
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expectMicrophoneOff(page)
@@ -784,7 +812,7 @@ test('cancel and page background stop capture; return requires an explicit fresh
   ).toBeVisible()
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
   expect(
     await page.evaluate(() => window.glassVoiceFixture.sources.length),
@@ -828,7 +856,7 @@ test('a browser permission prompt can blur the window without pausing or cancell
   await page.evaluate(() => window.glassVoiceFixture.deferNextPermission())
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Opening your microphone…' }),
+    page.getByRole('heading', { name: 'Opening the mic…' }),
   ).toBeVisible()
   await expect
     .poll(() =>
@@ -839,12 +867,12 @@ test('a browser permission prompt can blur the window without pausing or cancell
   await page.evaluate(() => window.dispatchEvent(new Event('blur')))
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(
-    page.getByRole('heading', { name: 'Opening your microphone…' }),
+    page.getByRole('heading', { name: 'Opening the mic…' }),
   ).toBeVisible()
 
   await page.evaluate(() => window.glassVoiceFixture.grantPermission())
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
   expect(
     await page.evaluate(() => window.glassVoiceFixture.sources.length),
@@ -858,7 +886,7 @@ test('true background cancels a pending permission grant and a late stream canno
   await page.evaluate(() => window.glassVoiceFixture.deferNextPermission())
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Opening your microphone…' }),
+    page.getByRole('heading', { name: 'Opening the mic…' }),
   ).toBeVisible()
 
   await page.evaluate(() =>
@@ -872,7 +900,7 @@ test('true background cancels a pending permission grant and a late stream canno
   )
   await expect(page.getByRole('dialog')).toContainText('The microphone is off.')
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toHaveCount(0)
   expect(
     await page.evaluate(() => window.glassVoiceFixture.sources.length),
@@ -886,7 +914,7 @@ test('permission denial returns to a fresh start instead of leaving the encounte
   await page.evaluate(() => window.glassVoiceFixture.deferNextPermission())
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Opening your microphone…' }),
+    page.getByRole('heading', { name: 'Opening the mic…' }),
   ).toBeVisible()
   await page.evaluate(() => window.glassVoiceFixture.denyPermission())
 
@@ -900,7 +928,7 @@ test('permission denial returns to a fresh start instead of leaving the encounte
 
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
 })
 
@@ -935,7 +963,7 @@ test('Twin high-note calibration rejects an overlapping range and recovers safel
   await expect(panel).toHaveAttribute('data-voice-mode', 'finding')
   await expect(
     page.getByRole('heading', {
-      name: 'Choose a clearly different comfortable high note.',
+      name: 'Try a higher note.',
     }),
   ).toBeVisible({ timeout: 10_000 })
   await expectVoicePanelFits(page)
@@ -1003,17 +1031,24 @@ test('Twin court requires low then high, Replay resets the partial pair, and onl
     completedBreakableIds: [twinIds.lower, twinIds.upper],
   })
 
+  await page.setViewportSize({ width: 320, height: 640 })
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   const panel = page.getByLabel('Voice challenge')
   await expect(
-    page.getByRole('heading', { name: 'Listen to both notes in order.' }),
+    page.getByRole('heading', { name: 'Listen first.' }),
   ).toBeVisible({ timeout: 6000 })
+  await expectCompactVoiceState(page, 'Listen first.', ['Change notes'])
   await expect
     .poll(() => page.evaluate(() => window.glassVoiceFixture.referenceStarts))
     .toBe(2)
   await expect(panel).toHaveAttribute('data-voice-mode', 'singing', {
     timeout: 8000,
   })
+  await expectCompactVoiceState(page, 'Sing low, then high.', [
+    'Hear example',
+    'Change notes',
+  ])
+  await page.setViewportSize({ width: 1024, height: 768 })
   await expectVoicePanelFits(page)
   await expect(
     page.getByRole('list', { name: 'Note order' }).getByText('Lower note'),
@@ -1113,17 +1148,36 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
   const adventure = page.getByTestId('glass-adventure')
   await expect(adventure).toHaveAttribute('data-completed', '1')
 
-  await setVoice(page, 57, 0.1)
+  await page.setViewportSize({ width: 320, height: 640 })
+  await setVoice(page, 57, 0)
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   const panel = page.getByLabel('Voice challenge')
+  await expect(panel).toHaveAttribute('data-voice-mode', 'finding')
+  await expectCompactVoiceState(page, 'Hum an easy note.', ['Change note'])
+  await setVoice(page, 57, 0.1)
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        localStorage.getItem('beside-cue:glass-adventure:comfortable-note'),
+      ),
+    )
+    .toBe('57')
+  await setVoice(page, 57, 0)
+  await expect(panel).toHaveAttribute('data-voice-mode', 'reference')
+  await expectCompactVoiceState(page, 'Listen first.', ['Change note'])
   await expect(panel).toHaveAttribute('data-voice-mode', 'singing', {
     timeout: 12_000,
   })
+  await expectCompactVoiceState(page, 'Hold your note.', [
+    'Hear example',
+    'Change note',
+  ])
   await expect(
     page
       .getByRole('list', { name: 'Lesson steps' })
       .getByText('Settle your note'),
   ).toHaveAttribute('aria-current', 'step')
+  await setVoice(page, 57, 0.1)
   await expect(panel).toHaveAttribute('data-step-index', '1', {
     timeout: 10_000,
   })
@@ -1147,7 +1201,7 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
   expect(instructionsBounds?.height).toBeGreaterThanOrEqual(43)
   await page.setViewportSize({ width: 390, height: 844 })
   await expectVoiceActionsStayOnOneLine(page, ['Hear example', 'Change note'])
-  await expectVoiceGoalStaysOnOneLine(page)
+  await expectVoiceGoalStaysOnOneLine(page, 'Sway twice, then return.')
   await expectVoicePanelFits(page)
   await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
   const referencesBeforeHelp = await page.evaluate(
@@ -1167,9 +1221,10 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
   await expect(instructions).toBeFocused()
   await expect(panel).toHaveAttribute('data-voice-mode', 'singing')
   await page.setViewportSize({ width: 320, height: 640 })
-  await expectVoiceActionsStayOnOneLine(page, ['Hear example', 'Change note'])
-  await expectVoiceGoalStaysOnOneLine(page)
-  await expectVoicePanelFits(page)
+  await expectCompactVoiceState(page, 'Sway twice, then return.', [
+    'Hear example',
+    'Change note',
+  ])
   await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
   await instructions.press('Enter')
   await expect(instructions).toHaveAttribute('aria-expanded', 'true')

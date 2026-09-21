@@ -115,7 +115,7 @@ test('Merc speaks after a gesture, becomes quiet before capture, and respects hi
   )
   await page.getByRole('button', { name: 'Sing to the glass' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Hum a comfortable note.' }),
+    page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
   expect(await page.evaluate(() => window.mercNarrationProbe.active.size)).toBe(
     0,
