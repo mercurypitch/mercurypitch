@@ -26,7 +26,7 @@
 import { revokeAndForgetAppleGrant } from './apple-auth'
 import { issueCeremony, readCeremony } from './auth-ceremony'
 import type { SessionOrigin } from './auth-sessions'
-import { createAuthSession, endOtherSessions, endSession, listSessions, sessionAlive, sessionRenewable, touchSession, } from './auth-sessions'
+import { createAuthSession, endSession, listSessions, sessionAlive, sessionRenewable, touchSession, } from './auth-sessions'
 import { sendEmailVerification, sendLoginCode, sendPasswordReset, sendSignupWelcome, } from './email'
 import { shouldTouchLastActive } from './last-active'
 import { claimLoginCode, generateLoginCode, hashLoginCode, LOGIN_CODE_TTL_MS, mintLoginCode, } from './login-codes'
@@ -665,13 +665,6 @@ function publicUser(
 //
 // Per-IP counters in D1 (auth_ratelimit table). Each auth endpoint has
 // its own bucket. Counters auto-expire after the window passes.
-
-interface RateLimitBucket {
-  ip: string
-  endpoint: string
-  count: number
-  windowStart: number
-}
 
 const RATE_LIMITS: Record<string, { max: number; windowMs: number }> = {
   // A device mints once, ever, and then reuses the id. The per-minute cap
@@ -2325,7 +2318,6 @@ async function handleDriveStart(
 async function handleGoogleCallback(
   request: Request,
   env: Env,
-  respond: Respond,
 ): Promise<Response> {
   const url = new URL(request.url)
   const state = await verifyState(
@@ -3571,7 +3563,7 @@ export async function handleAuth(
     const ip = request.headers.get('CF-Connecting-IP') ?? '127.0.0.1'
     const rl = await checkRateLimit(env.DB, ip, 'google-callback')
     if (!rl.allowed) return tooMany(respond, rl)
-    return handleGoogleCallback(request, env, respond)
+    return handleGoogleCallback(request, env)
   }
   if (route === 'drive/status' && request.method === 'GET') {
     return handleDriveStatus(request, env, respond)
