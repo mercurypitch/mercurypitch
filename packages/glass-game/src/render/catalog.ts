@@ -2,6 +2,7 @@
 // Render catalog — new exhibits and platform skins are data, not loader branches.
 // ============================================================
 
+import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import type { SurfaceTextures } from './texture-recipe'
 
 export interface BreakableRenderRecipe {
@@ -291,6 +292,34 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
     body: 'teal',
     outline: true,
     suspendedHull: true,
+  },
+  [CLOUDWAY_PLATFORM_RENDER_IDS.marble]: {
+    bundle: CLOUDWAY_PLATFORM_BUNDLE_ID,
+    kitNode: CLOUDWAY_PLATFORM_NODES.marble,
+    body: 'marble',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_PLATFORM_RENDER_IDS.frost]: {
+    bundle: CLOUDWAY_PLATFORM_BUNDLE_ID,
+    kitNode: CLOUDWAY_PLATFORM_NODES.frost,
+    body: 'teal',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_PLATFORM_RENDER_IDS.glide]: {
+    bundle: CLOUDWAY_PLATFORM_BUNDLE_ID,
+    kitNode: CLOUDWAY_PLATFORM_NODES.glide,
+    body: 'teal',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_PLATFORM_RENDER_IDS.crackle]: {
+    bundle: CLOUDWAY_PLATFORM_BUNDLE_ID,
+    kitNode: CLOUDWAY_PLATFORM_NODES.crackleIntact,
+    body: 'teal',
+    outline: false,
+    suspendedHull: false,
   },
 }
 

@@ -8,6 +8,7 @@ import { EXHIBIT_PLINTH } from '../content/solid-props'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, Vec3, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
 import { getPlatformRenderRecipe } from './catalog'
+import { createCloudwayPlatformRenderer } from './cloudway-platforms'
 import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import { createMaterialLibrary } from './material-library'
@@ -279,6 +280,13 @@ export function createMuseum(
       return [platform.id, floor]
     }),
   )
+  const cloudwayPlatforms = createCloudwayPlatformRenderer(
+    level,
+    root,
+    floors,
+    materials,
+    materialLibrary,
+  )
   const pads = new Map<string, Mesh>()
   for (const target of level.breakables) {
     const parent = renderParent(target.id)
@@ -392,6 +400,7 @@ export function createMuseum(
     },
     setKit(scene: Object3D, bundle: string) {
       cameraMeshCache = undefined
+      const cloudwayPlatformIds = cloudwayPlatforms.install(scene, bundle)
       for (const { solid, mesh } of solidProxies)
         if (
           solid.fallback?.replacedByBundle === bundle &&
@@ -414,6 +423,7 @@ export function createMuseum(
         }
       })
       for (const platform of level.platforms) {
+        if (cloudwayPlatformIds.has(platform.id)) continue
         const recipe = getPlatformRenderRecipe(
           platform.renderId ?? platform.kind,
         )
@@ -536,6 +546,7 @@ export function createMuseum(
       floors.forEach((floor, id) => {
         floor.visible = active.has(id)
       })
+      cloudwayPlatforms.update(snapshot)
       pads.forEach((pad, id) => {
         pad.visible = !snapshot.completedBreakableIds.includes(id)
         ;(pad.material as MeshBasicMaterial).opacity =

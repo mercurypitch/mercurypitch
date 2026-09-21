@@ -5,6 +5,8 @@ import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { GlassMuseumAudio } from '../host'
 import type { MuseumJourneyStageProgress } from '../journey/progress'
 import type { MuseumJourneyScene, MuseumJourneyStageLabelProjection, } from '../journey/scene'
+import type { IslandTrialView } from './IslandTrials'
+import { IslandTrials } from './IslandTrials'
 import styles from './MuseumJourney.module.css'
 
 export interface MuseumJourneyChapterView {
@@ -38,6 +40,8 @@ function sceneProgress(
 export function MuseumJourney(props: {
   definition: MuseumJourneyDefinition
   chapters: readonly MuseumJourneyChapterView[]
+  trials?: readonly IslandTrialView[]
+  onEnterTrial?(id: string): void
   selectedStageId: string
   assetUrl(id: string): string
   createMusic?: () => GlassMuseumAudio
@@ -65,6 +69,7 @@ export function MuseumJourney(props: {
   const [reloadRequired, setReloadRequired] = createSignal(false)
   const [muted, setMuted] = createSignal(false)
   const [enteringChapterId, setEnteringChapterId] = createSignal<string>()
+  const [enteringTrialId, setEnteringTrialId] = createSignal<string>()
   const [viewChanged, setViewChanged] = createSignal(false)
 
   const selectedChapter = () =>
@@ -81,6 +86,23 @@ export function MuseumJourney(props: {
     activateMusic()
   }
 
+  function finishEntry(
+    entryLifetime: number,
+    onEnter: (id: string) => void,
+    id: string,
+  ): void {
+    if (entryLifetime !== lifetime) return
+    try {
+      onEnter(id)
+    } finally {
+      // A successful handoff unmounts this lobby. A declined handoff leaves it usable.
+      if (entryLifetime === lifetime) {
+        setEnteringChapterId(undefined)
+        setEnteringTrialId(undefined)
+      }
+    }
+  }
+
   async function enter(chapter: MuseumJourneyChapterView): Promise<void> {
     if (enteringChapterId() !== undefined) return
     const entryLifetime = lifetime
@@ -95,7 +117,29 @@ export function MuseumJourney(props: {
         // A retired or unavailable output is already silent enough to enter.
       }
     }
-    if (entryLifetime === lifetime) onEnter(chapter.chapterId)
+    finishEntry(entryLifetime, onEnter, chapter.chapterId)
+  }
+
+  async function enterTrial(id: string): Promise<void> {
+    const trial = props.trials?.find((candidate) => candidate.id === id)
+    const onEnter = props.onEnterTrial
+    if (
+      trial?.unlock.unlocked !== true ||
+      onEnter === undefined ||
+      enteringChapterId() !== undefined
+    )
+      return
+    const entryLifetime = lifetime
+    setEnteringChapterId(`trial:${id}`)
+    setEnteringTrialId(id)
+    if (music !== undefined) {
+      try {
+        await music.silenceForVoice()
+      } catch {
+        // An unavailable output is already silent enough to enter.
+      }
+    }
+    finishEntry(entryLifetime, onEnter, id)
   }
 
   function exit(): void {
@@ -533,6 +577,12 @@ export function MuseumJourney(props: {
           </For>
         </div>
       </section>
+      <IslandTrials
+        trials={props.trials ?? []}
+        enteringId={enteringTrialId()}
+        disabled={enteringChapterId() !== undefined}
+        onEnter={(id) => void enterTrial(id)}
+      />
     </main>
   )
 }

@@ -2,8 +2,10 @@
 import { createMemo, createSignal, Show } from 'solid-js'
 import type { GalleryChapter } from '../content/campaign'
 import { MUSEUM_CAMPAIGN } from '../content/campaign'
+import { islandChapterIds, MUSEUM_TRIALS } from '../content/campaign-trials'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import { readProgress } from '../core/progress'
+import { evaluateTrialUnlock } from '../core/trial-unlock'
 import type { GlassGameHost } from '../host'
 import { GlassAdventure } from './GlassAdventure'
 import { MuseumJourney } from './MuseumJourney'
@@ -16,6 +18,7 @@ export function GlassCampaign(props: {
   const [activeVisit, setActiveVisit] = createSignal<{
     id: string
     replay: boolean
+    trial?: boolean
   } | null>(null)
   const [selectedStageId, setSelectedStageId] = createSignal(
     FLOATING_MUSEUM_JOURNEY.stages[0]!.id,
@@ -25,10 +28,13 @@ export function GlassCampaign(props: {
   const current = createMemo(() => {
     const selection = activeVisit()
     if (selection === null) return undefined
-    const chapter = chapters().find((item) => item.id === selection.id)
+    const chapter =
+      selection.trial === true
+        ? MUSEUM_TRIALS.find((item) => item.id === selection.id)?.chapter
+        : chapters().find((item) => item.id === selection.id)
     return chapter === undefined
       ? undefined
-      : { chapter, replay: selection.replay }
+      : { chapter, replay: selection.replay, trial: selection.trial === true }
   })
   const journeyChapters = createMemo(() => {
     progressRevision()
@@ -59,6 +65,46 @@ export function GlassCampaign(props: {
     )
   }
 
+  function unlockFor(islandId: string) {
+    return evaluateTrialUnlock(
+      islandChapterIds(FLOATING_MUSEUM_JOURNEY, islandId),
+      chapters().map((chapter) => ({
+        chapterId: chapter.id,
+        title: chapter.level.title,
+        level: chapter.level,
+      })),
+      props.host.loadProgress,
+    )
+  }
+
+  const trials = createMemo(() => {
+    progressRevision()
+    return MUSEUM_TRIALS.map((trial) => ({
+      id: trial.id,
+      islandTitle: trial.islandTitle,
+      title: trial.chapter.level.title,
+      description: trial.chapter.description,
+      imageUrl: props.host.assetUrl(trial.chapter.imageAsset),
+      replay: progressFor(trial.chapter).finished === true,
+      unlock: unlockFor(trial.islandId),
+    }))
+  })
+
+  function enterTrial(id: string): void {
+    const trial = MUSEUM_TRIALS.find((candidate) => candidate.id === id)
+    // Enforce again at the route boundary, independently of the disabled button.
+    if (trial === undefined) return
+    if (!unlockFor(trial.islandId).unlocked) {
+      setProgressRevision((value) => value + 1)
+      return
+    }
+    setActiveVisit({
+      id,
+      trial: true,
+      replay: progressFor(trial.chapter).finished === true,
+    })
+  }
+
   function enter(chapter: GalleryChapter): void {
     const progress = progressFor(chapter)
     const stage = FLOATING_MUSEUM_JOURNEY.stages.find((candidate) =>
@@ -76,6 +122,8 @@ export function GlassCampaign(props: {
         <MuseumJourney
           definition={FLOATING_MUSEUM_JOURNEY}
           chapters={journeyChapters()}
+          trials={trials()}
+          onEnterTrial={enterTrial}
           selectedStageId={selectedStageId()}
           assetUrl={props.host.assetUrl}
           createMusic={props.host.createMusic}
@@ -92,9 +140,11 @@ export function GlassCampaign(props: {
       {(selection) => {
         const chapter = selection.chapter
         const next = () =>
-          chapters().at(
-            chapters().findIndex((item) => item.id === chapter.id) + 1,
-          )
+          selection.trial
+            ? undefined
+            : chapters().at(
+                chapters().findIndex((item) => item.id === chapter.id) + 1,
+              )
         const nextLabel = () => {
           const destination = next()
           if (destination === undefined) return undefined

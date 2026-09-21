@@ -1,6 +1,7 @@
 // Museum scene catalog — level-specific skyline and dressing stay authored data.
 
 import type { Bounds3, LevelDefinition, Vec3 } from '../contracts'
+import { CLOUDWAY_SKY_ASSET_ID, isCloudwayLevel } from './cloudway-scene'
 
 export interface MuseumSceneRecipe {
   skyTexture?: string
@@ -235,7 +236,7 @@ export function getMuseumSceneRecipe(
     return MUSEUM_SCENE_CATALOG[level.id] ?? EMPTY_SCENE
   const origin = centre(presentation.worldBounds)
   return {
-    skyTexture: 'museum-sky',
+    skyTexture: isCloudwayLevel(level) ? CLOUDWAY_SKY_ASSET_ID : 'museum-sky',
     environment: 'museum-environment-v2',
     reflectionProbe: {
       x: level.spawn.position.x,

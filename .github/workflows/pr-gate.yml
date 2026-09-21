@@ -474,6 +474,7 @@ jobs:
             camera,
             campaign,
             chamber,
+            cloudway,
             controls,
             journey,
             loading,

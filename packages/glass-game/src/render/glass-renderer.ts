@@ -13,6 +13,7 @@ import { createAtmosphere } from './atmosphere'
 import type { ChallengeCameraMetrics } from './camera'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
+import { CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_DENSITY, isCloudwayLevel, } from './cloudway-scene'
 import { createContactShadow } from './contact-shadow'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
@@ -157,7 +158,9 @@ function createGlassRendererInstance(
     renderer.domElement.remove()
   })
   const scene = new Scene()
-  scene.fog = new FogExp2(0x59899e, 0.009)
+  scene.fog = isCloudwayLevel(level)
+    ? new FogExp2(CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_DENSITY)
+    : new FogExp2(0x59899e, 0.009)
   const camera = createAdventureCamera(level, {
     reducedMotion: options.reducedMotion,
   })

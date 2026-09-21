@@ -1,0 +1,140 @@
+// Island unlock regressions — completion, grading and chapter membership stay independent.
+import { describe, expect, it } from 'vitest'
+import { MUSEUM_CAMPAIGN } from '../content/campaign'
+import { islandChapterIds, MUSEUM_TRIALS } from '../content/campaign-trials'
+import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
+import type { LevelDefinition, SavedProgress } from '../contracts'
+import { readProgress } from './progress'
+import { evaluateTrialUnlock } from './trial-unlock'
+
+const chapters = MUSEUM_CAMPAIGN.map((chapter) => ({
+  chapterId: chapter.id,
+  title: chapter.level.title,
+  level: chapter.level,
+}))
+const island = ['first-light', 'glassworks']
+
+function completed(
+  level: LevelDefinition,
+  stars: 1 | 2 | 3 = 3,
+): SavedProgress {
+  return {
+    ...readProgress(level, null),
+    completedBreakableIds: level.breakables.map((item) => item.id),
+    finished: true,
+    rewards: {
+      version: 1,
+      discoveredEncounterIds: [],
+      collectedCoinIds: [],
+      collectedPortraitIds: [],
+      qualityResults: (level.rewards?.grading ?? []).map((policy) => ({
+        encounterId: policy.encounterId,
+        grade: stars,
+        policyRevision: policy.policyRevision,
+        challengeRevision: policy.challengeRevision,
+        contentRevision: level.authored?.contentRevision ?? 1,
+        evidenceVersion: 'pitch-accuracy-v1',
+        reliableSeconds: 3,
+        meanAbsoluteCents: 5,
+      })),
+    },
+  }
+}
+
+describe('Cloudway island unlock', () => {
+  it('derives the first-island gate from both mapped galleries without adding the trial to the campaign', () => {
+    expect(
+      islandChapterIds(FLOATING_MUSEUM_JOURNEY, MUSEUM_TRIALS[0]!.islandId),
+    ).toEqual(island)
+    expect(
+      chapters.some(
+        (chapter) => chapter.chapterId === MUSEUM_TRIALS[0]!.chapter.id,
+      ),
+    ).toBe(false)
+  })
+  it('accepts the ungraded tutorial and requires three stars in the graded gallery', () => {
+    const saves = new Map(
+      chapters.map((chapter) => [chapter.level.id, completed(chapter.level)]),
+    )
+    expect(
+      evaluateTrialUnlock(island, chapters, (id) => saves.get(id)),
+    ).toMatchObject({
+      unlocked: true,
+      chapters: [
+        {
+          chapterId: 'first-light',
+          graded: false,
+          completed: true,
+          ready: true,
+        },
+        { chapterId: 'glassworks', graded: true, earnedStars: 3, ready: true },
+      ],
+    })
+    saves.set(chapters[1]!.level.id, completed(chapters[1]!.level, 2))
+    expect(
+      evaluateTrialUnlock(island, chapters, (id) => saves.get(id)),
+    ).toMatchObject({
+      unlocked: false,
+      chapters: [expect.anything(), { earnedStars: 2, ready: false }],
+    })
+  })
+
+  it('does not treat a portrait break as finishing the route', () => {
+    const saves = new Map(
+      chapters.map((chapter) => [chapter.level.id, completed(chapter.level)]),
+    )
+    saves.get(chapters[1]!.level.id)!.finished = false
+    expect(
+      evaluateTrialUnlock(island, chapters, (id) => saves.get(id)),
+    ).toMatchObject({
+      unlocked: false,
+      chapters: [expect.anything(), { earnedStars: 3, completed: false }],
+    })
+  })
+
+  it('fails closed for missing/empty chapter membership and malformed or mismatched saves', () => {
+    expect(evaluateTrialUnlock([], chapters, () => null).unlocked).toBe(false)
+    expect(
+      evaluateTrialUnlock(['unknown'], chapters, () => null),
+    ).toMatchObject({
+      unlocked: false,
+      chapters: [{ title: 'Gallery unavailable', ready: false }],
+    })
+    const wrongSave = completed(chapters[2]!.level)
+    expect(
+      evaluateTrialUnlock(island, chapters, () => wrongSave).unlocked,
+    ).toBe(false)
+    expect(
+      evaluateTrialUnlock(island, chapters, () => ({
+        finished: true,
+        stars: 3,
+      })).unlocked,
+    ).toBe(false)
+  })
+
+  it('a new chapter on an island becomes a requirement without affecting other islands', () => {
+    const saves = new Map(
+      chapters
+        .slice(0, 2)
+        .map((chapter) => [chapter.level.id, completed(chapter.level)]),
+    )
+    expect(
+      evaluateTrialUnlock(island, chapters, (id) => saves.get(id)).unlocked,
+    ).toBe(true)
+    expect(
+      evaluateTrialUnlock([...island, 'twin-galleries'], chapters, (id) =>
+        saves.get(id),
+      ).unlocked,
+    ).toBe(false)
+  })
+
+  it('keeps earned historical stars but rejects star records without a completed graded encounter', () => {
+    const save = completed(chapters[1]!.level)
+    save.rewards!.qualityResults[0]!.policyRevision += 10
+    const load = (id: string) =>
+      id === save.levelId ? save : completed(chapters[0]!.level)
+    expect(evaluateTrialUnlock(island, chapters, load).unlocked).toBe(true)
+    save.completedBreakableIds = []
+    expect(evaluateTrialUnlock(island, chapters, load).unlocked).toBe(false)
+  })
+})

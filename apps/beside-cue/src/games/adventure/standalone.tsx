@@ -22,7 +22,8 @@ async function selectedDevelopmentLevel() {
     layout !== 'tutorial' &&
     layout !== 'journey' &&
     layout !== 'twin-galleries' &&
-    layout !== 'conservatory'
+    layout !== 'conservatory' &&
+    layout !== 'cloudway'
   )
     return undefined
   const {
@@ -30,6 +31,7 @@ async function selectedDevelopmentLevel() {
     GLASSWORKS_JOURNEY,
     TWIN_GALLERIES,
     RESONANCE_CONSERVATORY,
+    CLOUDWAY_GLASS_RIBBON,
     GLASS_FOUNDATION_QUARTER_TURN,
     GLASS_FOUNDATION_STRAIGHT,
   } = await import('@irchiinnuss/glass-game/development-levels')
@@ -38,6 +40,7 @@ async function selectedDevelopmentLevel() {
   if (layout === 'journey') return GLASSWORKS_JOURNEY
   if (layout === 'twin-galleries') return TWIN_GALLERIES
   if (layout === 'conservatory') return RESONANCE_CONSERVATORY
+  if (layout === 'cloudway') return CLOUDWAY_GLASS_RIBBON
   return layout === 'straight'
     ? GLASS_FOUNDATION_STRAIGHT
     : GLASS_FOUNDATION_QUARTER_TURN
