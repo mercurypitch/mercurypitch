@@ -19,6 +19,16 @@
 // from the document through its own <script> tags and then STATIC import
 // edges only. Dynamic imports are deliberately outside it: intent-loaded
 // code is supposed to be there, and is not first-paint work.
+//
+// Stylesheets are weighed separately, against their own table. A render-
+// blocking <link rel="stylesheet"> stops the first paint just as a script
+// does, and this build emits one 871 KB sheet that five documents link --
+// the global stylesheets imported from src/index.tsx, which #379 tracks. A
+// JS-only budget could not see it grow, and could not see it land on a page
+// that has no business paying for it. Two tables rather than one sum,
+// because the diagnosis differs: a JS breach means an import dragged a
+// feature in, a CSS breach means a global sheet grew or reached a page it
+// should not have.
 
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
@@ -73,6 +83,49 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'pitch-training.html': 5400,
 }
 
+/**
+ * Ceilings, in KB of uncompressed render-blocking CSS, per emitted document.
+ *
+ * Same rule as the table above -- a measured build plus about a quarter --
+ * with a 40 KB floor, so the small standalone pages are not tripped by
+ * ordinary growth while still failing loudly if the 871 KB global sheet ever
+ * reaches one. Measured values are in the comments.
+ *
+ * `404.html` is absent on purpose: it links the 3 KB prelude but runs no
+ * script, and `measureFirstPaint` only weighs documents that run one.
+ */
+export const FIRST_PAINT_CSS_BUDGETS_KB = {
+  // The Voice Mirror and its three doors, and the glass room. Measured 26,
+  // 26, 26, 26 and 24 -- nearly all of it one page-scoped sheet.
+  'mirror.html': 40,
+  'vocal-range-test.html': 40,
+  'voice-type-test.html': 40,
+  'which-singer-has-my-vocal-range.html': 40,
+  'glass.html': 40,
+
+  // Karaoke Night and its two other doors. Measured 67.
+  'karaoke-night.html': 90,
+  'karaoke.html': 90,
+  'vocal-remover.html': 90,
+
+  // The night rooms. Measured 74, 98 and 316; the room's own sheet is 48,
+  // 82 and 262 KB of that, which is where any reduction has to come from.
+  'piano-night.html': 95,
+  'drum-night.html': 125,
+  'guitar-night.html': 400,
+
+  // The main app and the crawlable doors that are the main app. Measured
+  // 1009, of which 871 is the single `index` sheet that src/index.tsx
+  // builds by importing uvr.css, vocal-analysis.css, exercises.css and
+  // app.css globally. A ceiling on growth, not a claim the number is good:
+  // splitting it is #379.
+  'index.html': 1260,
+  'jam.html': 1260,
+  'jam-rooms.html': 1260,
+  'ear-lab.html': 1260,
+  'pitch-training.html': 1260,
+}
+
 const KB = 1024
 
 function normalizePath(path) {
@@ -87,6 +140,28 @@ export function documentScriptUrls(html) {
   while (match !== null) {
     urls.add(match[1])
     match = pattern.exec(html)
+  }
+  return [...urls]
+}
+
+/**
+ * Every stylesheet a document blocks its first paint on.
+ *
+ * Only `rel="stylesheet"`. A `preload` or `prefetch` names the same file
+ * without blocking on it, and the attribute order inside the tag is Vite's
+ * business, so each <link> is read whole rather than matched positionally.
+ */
+export function documentStylesheetUrls(html) {
+  const urls = new Set()
+  const linkPattern = /<link\b[^>]*>/gi
+  let match = linkPattern.exec(html)
+  while (match !== null) {
+    const tag = match[0]
+    if (/\brel=["']stylesheet["']/i.test(tag)) {
+      const href = /\bhref=["'](\/assets\/[^"']+\.css)["']/i.exec(tag)
+      if (href !== null) urls.add(href[1])
+    }
+    match = linkPattern.exec(html)
   }
   return [...urls]
 }
@@ -154,9 +229,25 @@ export async function firstPaintOf(documentPath, distDir) {
       bytes,
     }))
     .sort((a, b) => b.bytes - a.bytes)
+
+  // No closure to walk here: Vite inlines @import at build time, so what the
+  // document links is what the browser fetches.
+  const stylesheets = []
+  for (const url of documentStylesheetUrls(html)) {
+    const sheetPath = resolveSpecifier(url, documentPath, distDir)
+    if (sheetPath === null) continue
+    stylesheets.push({
+      file: normalizePath(relative(distDir, sheetPath)),
+      bytes: (await stat(sheetPath)).size,
+    })
+  }
+  stylesheets.sort((a, b) => b.bytes - a.bytes)
+
   return {
     chunks,
     bytes: chunks.reduce((total, chunk) => total + chunk.bytes, 0),
+    stylesheets,
+    cssBytes: stylesheets.reduce((total, sheet) => total + sheet.bytes, 0),
   }
 }
 
@@ -185,7 +276,11 @@ export async function measureFirstPaint(distDirectory = 'dist') {
  * ceiling (a new page must not arrive unweighed); a ceiling for a document
  * the build no longer emits (a table that has drifted protects nothing).
  */
-export function judgeFirstPaint(measured, budgets = FIRST_PAINT_BUDGETS_KB) {
+export function judgeFirstPaint(
+  measured,
+  budgets = FIRST_PAINT_BUDGETS_KB,
+  cssBudgets = FIRST_PAINT_CSS_BUDGETS_KB,
+) {
   const problems = []
 
   for (const [name, result] of measured) {
@@ -214,20 +309,58 @@ export function judgeFirstPaint(measured, budgets = FIRST_PAINT_BUDGETS_KB) {
     }
   }
 
+  // The stylesheet half. A measurement with no `cssBytes` predates this check
+  // and is left alone; a document that links no stylesheet needs no ceiling,
+  // and will be asked for one the moment it links its first.
+  for (const [name, result] of measured) {
+    if (result.cssBytes === undefined || result.cssBytes === 0) continue
+    const cssBudget = cssBudgets[name]
+    if (cssBudget === undefined) {
+      problems.push(
+        `${name} has no first-paint CSS budget. It links ${Math.ceil(result.cssBytes / KB)} KB of render-blocking CSS; add it to FIRST_PAINT_CSS_BUDGETS_KB.`,
+      )
+      continue
+    }
+    if (result.cssBytes <= cssBudget * KB) continue
+    const heaviest = (result.stylesheets ?? [])
+      .slice(0, 5)
+      .map((sheet) => `    ${Math.ceil(sheet.bytes / KB)} KB  ${sheet.file}`)
+      .join('\n')
+    problems.push(
+      `${name} blocks first paint on ${Math.ceil(result.cssBytes / KB)} KB of CSS; its budget is ${cssBudget} KB (${result.stylesheets?.length ?? 0} stylesheets). Heaviest:\n${heaviest}`,
+    )
+  }
+
+  for (const name of Object.keys(cssBudgets)) {
+    if (!measured.has(name)) {
+      problems.push(
+        `FIRST_PAINT_CSS_BUDGETS_KB lists ${name}, which this build did not emit. Remove it, or find out why the page is gone.`,
+      )
+    }
+  }
+
   return problems
 }
 
-export function firstPaintReport(measured, budgets = FIRST_PAINT_BUDGETS_KB) {
+export function firstPaintReport(
+  measured,
+  budgets = FIRST_PAINT_BUDGETS_KB,
+  cssBudgets = FIRST_PAINT_CSS_BUDGETS_KB,
+) {
   const rows = [...measured].map(([name, result]) => {
     const budget = budgets[name]
+    const cssBudget = cssBudgets[name]
     return [
       name,
-      `${Math.ceil(result.bytes / KB)} KB`,
+      `${Math.ceil(result.bytes / KB)} KB js`,
       `${result.chunks.length} chunks`,
       budget === undefined ? 'no budget' : `budget ${budget} KB`,
+      `${Math.ceil((result.cssBytes ?? 0) / KB)} KB css`,
+      `${result.stylesheets?.length ?? 0} sheets`,
+      cssBudget === undefined ? 'no budget' : `budget ${cssBudget} KB`,
     ]
   })
-  const widths = [0, 1, 2, 3].map((column) =>
+  const widths = [0, 1, 2, 3, 4, 5, 6].map((column) =>
     Math.max(...rows.map((row) => row[column].length)),
   )
   return rows
@@ -259,8 +392,14 @@ if (invokedPath === fileURLToPath(import.meta.url)) {
           `First-paint budgets failed:\n${problems.map((problem) => `- ${problem}`).join('\n')}`,
         )
       }
+      const js = [...measured.values()].reduce((t, r) => t + r.bytes, 0)
+      const css = [...measured.values()].reduce(
+        (t, r) => t + (r.cssBytes ?? 0),
+        0,
+      )
       console.log(
-        `First-paint budgets passed: ${measured.size} documents weighed.`,
+        `First-paint budgets passed: ${measured.size} documents weighed, ` +
+          `${Math.ceil(js / KB)} KB of JavaScript and ${Math.ceil(css / KB)} KB of CSS across them.`,
       )
     }
   } catch (error) {
