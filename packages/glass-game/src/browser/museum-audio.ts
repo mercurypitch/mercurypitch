@@ -19,6 +19,7 @@ const SCENES: Record<MuseumAudioScene, readonly [string, string]> = {
   museum: ['audio-m01-loop', 'audio-a01-loop'],
   garden: ['audio-m03-loop', 'audio-a02-loop'],
   gallery: ['audio-m01-loop', 'audio-a03-loop'],
+  journey: ['audio-m03-loop', 'audio-a02-loop'],
 }
 const clampVolume = (value: unknown, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value)

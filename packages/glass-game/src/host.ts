@@ -19,7 +19,7 @@ export interface GlassSound {
   dispose(): void
 }
 
-export type MuseumAudioScene = 'museum' | 'garden' | 'gallery'
+export type MuseumAudioScene = 'museum' | 'garden' | 'gallery' | 'journey'
 
 export interface MuseumAudioPreferences {
   muted: boolean

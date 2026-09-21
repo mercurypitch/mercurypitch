@@ -65,6 +65,7 @@ export function createBrowserGlassHost(
         document.addEventListener('visibilitychange', changed)
         window.addEventListener('pagehide', hide)
         window.addEventListener('pageshow', changed)
+        changed()
         return () => {
           document.removeEventListener('visibilitychange', changed)
           window.removeEventListener('pagehide', hide)

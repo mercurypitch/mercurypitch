@@ -138,6 +138,43 @@ describe('journey water', () => {
     water.dispose()
   })
 
+  it('omits only authored abyss basins and accounts for their resources', () => {
+    const partial = createJourneyWater(
+      [{ ...SPILLWAYS[0], basin: false }, SPILLWAYS[1]],
+      { mist: false },
+    )
+    const partialBasins = partial.root.getObjectByName(
+      'journey-water-basins',
+    ) as InstancedMesh
+    expect(partialBasins.count).toBe(1)
+    expect(partial.getMetrics()).toEqual({
+      spillways: 2,
+      drawCalls: 3,
+      triangles: 1392,
+      geometries: 3,
+      materials: 2,
+      mistParticles: 0,
+      secondaryRenderPasses: 0,
+    })
+    partial.dispose()
+
+    const abyss = createJourneyWater(
+      SPILLWAYS.map((spillway) => ({ ...spillway, basin: false })),
+      { mist: false },
+    )
+    expect(abyss.root.getObjectByName('journey-water-basins')).toBeUndefined()
+    expect(abyss.getMetrics()).toEqual({
+      spillways: 2,
+      drawCalls: 2,
+      triangles: 1344,
+      geometries: 2,
+      materials: 1,
+      mistParticles: 0,
+      secondaryRenderPasses: 0,
+    })
+    expect(() => abyss.dispose()).not.toThrow()
+  })
+
   it('disposes every owned GPU resource once and tolerates late updates', () => {
     const water = createJourneyWater(SPILLWAYS)
     const basins = water.root.getObjectByName(

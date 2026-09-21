@@ -142,6 +142,19 @@ describe('approved museum soundtrack', () => {
     expect(sharedAudioContextOwners()).toHaveLength(0)
   })
 
+  it('uses the approved garden score and water basin ambience for the journey map', async () => {
+    const music = createBrowserMuseumAudio(options)
+
+    expect(await music.start('journey')).toBe(true)
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      '/assets/audio-m03-loop.mp3',
+      '/assets/audio-a02-loop.mp3',
+    ])
+
+    music.dispose()
+    await vi.advanceTimersByTimeAsync(240)
+  })
+
   it('waits for physical silence before handing the microphone its capture permission', async () => {
     const music = createBrowserMuseumAudio(options)
     await music.start()

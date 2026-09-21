@@ -474,6 +474,7 @@ jobs:
             campaign,
             chamber,
             controls,
+            journey,
             loading,
             music,
             narration,

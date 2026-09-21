@@ -10,6 +10,8 @@ export interface JourneyWaterSpillway {
   readonly height: number
   /** Rotation around world Y. Local +Z is the outward flow direction. */
   readonly yaw: number
+  /** Set false when the fall disappears into an abyss instead of a pool. */
+  readonly basin?: boolean
 }
 
 export interface JourneyWaterOptions {
@@ -483,9 +485,7 @@ export function createJourneyWater(
   const ownedGeometries = new Set<BufferGeometry>()
   const ownedMaterials = new Set<ShaderMaterial>()
   const waterMaterial = createWaterMaterial(uniforms)
-  const basinMaterial = createBasinMaterial(uniforms)
   ownedMaterials.add(waterMaterial)
-  ownedMaterials.add(basinMaterial)
 
   for (const spillway of spillways) {
     const geometry = createSheetGeometry(spillway)
@@ -499,49 +499,57 @@ export function createJourneyWater(
     root.add(sheet)
   }
 
-  const basinGeometry = new CircleGeometry(1, BASIN_SEGMENTS)
-  basinGeometry.name = 'journey-water-basin-shared'
-  ownedGeometries.add(basinGeometry)
-  const basins = new InstancedMesh(
-    basinGeometry,
-    basinMaterial,
-    spillways.length,
+  const basinSpillways = spillways.filter(
+    (spillway) => spillway.basin !== false,
   )
-  basins.name = 'journey-water-basins'
-  basins.instanceMatrix.setUsage(DynamicDrawUsage)
-  basins.castShadow = false
-  basins.receiveShadow = false
-  const basinMatrix = new Matrix4()
-  const basinPosition = new Vector3()
-  const basinScale = new Vector3()
-  const basinRotation = new Quaternion()
-  const horizontal = new Quaternion().setFromEuler(
-    new Euler(-Math.PI / 2, 0, 0),
-  )
-  const yawRotation = new Quaternion()
-  for (const [index, spillway] of spillways.entries()) {
-    const outset = spillwayOutset(spillway)
-    basinPosition
-      .set(...spillway.position)
-      .add(
-        new Vector3(
-          Math.sin(spillway.yaw) * outset,
-          -spillway.height + 0.018,
-          Math.cos(spillway.yaw) * outset,
-        ),
-      )
-    yawRotation.setFromAxisAngle(new Vector3(0, 1, 0), spillway.yaw)
-    basinRotation.copy(yawRotation).multiply(horizontal)
-    basinScale.set(
-      Math.max(0.32, spillway.width * 0.58),
-      Math.max(0.24, spillway.width * 0.32),
-      1,
+  let basins: InstancedMesh | undefined
+  if (basinSpillways.length > 0) {
+    const basinGeometry = new CircleGeometry(1, BASIN_SEGMENTS)
+    basinGeometry.name = 'journey-water-basin-shared'
+    ownedGeometries.add(basinGeometry)
+    const basinMaterial = createBasinMaterial(uniforms)
+    ownedMaterials.add(basinMaterial)
+    basins = new InstancedMesh(
+      basinGeometry,
+      basinMaterial,
+      basinSpillways.length,
     )
-    basinMatrix.compose(basinPosition, basinRotation, basinScale)
-    basins.setMatrixAt(index, basinMatrix)
+    basins.name = 'journey-water-basins'
+    basins.instanceMatrix.setUsage(DynamicDrawUsage)
+    basins.castShadow = false
+    basins.receiveShadow = false
+    const basinMatrix = new Matrix4()
+    const basinPosition = new Vector3()
+    const basinScale = new Vector3()
+    const basinRotation = new Quaternion()
+    const horizontal = new Quaternion().setFromEuler(
+      new Euler(-Math.PI / 2, 0, 0),
+    )
+    const yawRotation = new Quaternion()
+    for (const [index, spillway] of basinSpillways.entries()) {
+      const outset = spillwayOutset(spillway)
+      basinPosition
+        .set(...spillway.position)
+        .add(
+          new Vector3(
+            Math.sin(spillway.yaw) * outset,
+            -spillway.height + 0.018,
+            Math.cos(spillway.yaw) * outset,
+          ),
+        )
+      yawRotation.setFromAxisAngle(new Vector3(0, 1, 0), spillway.yaw)
+      basinRotation.copy(yawRotation).multiply(horizontal)
+      basinScale.set(
+        Math.max(0.32, spillway.width * 0.58),
+        Math.max(0.24, spillway.width * 0.32),
+        1,
+      )
+      basinMatrix.compose(basinPosition, basinRotation, basinScale)
+      basins.setMatrixAt(index, basinMatrix)
+    }
+    basins.instanceMatrix.needsUpdate = true
+    root.add(basins)
   }
-  basins.instanceMatrix.needsUpdate = true
-  if (spillways.length > 0) root.add(basins)
 
   const includeMist = options.mist !== false && spillways.length > 0
   const mist = includeMist ? createMist(spillways, uniforms) : undefined
@@ -552,11 +560,13 @@ export function createJourneyWater(
   }
 
   const sheetTriangles = spillways.length * WIDTH_SEGMENTS * FALL_SEGMENTS * 2
-  const basinTriangles = spillways.length * BASIN_SEGMENTS
+  const basinTriangles = basinSpillways.length * BASIN_SEGMENTS
   const metrics: JourneyWaterMetrics = Object.freeze({
     spillways: spillways.length,
     drawCalls:
-      spillways.length + (spillways.length > 0 ? 1 : 0) + (includeMist ? 1 : 0),
+      spillways.length +
+      (basinSpillways.length > 0 ? 1 : 0) +
+      (includeMist ? 1 : 0),
     triangles: sheetTriangles + basinTriangles,
     geometries: ownedGeometries.size,
     materials: ownedMaterials.size,
@@ -608,7 +618,7 @@ export function createJourneyWater(
       if (disposed) return
       disposed = true
       root.clear()
-      basins.dispose()
+      basins?.dispose()
       ownedGeometries.forEach((geometry) => geometry.dispose())
       ownedMaterials.forEach((material) => material.dispose())
       ownedGeometries.clear()

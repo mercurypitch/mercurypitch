@@ -5,6 +5,11 @@ the repository Vite server. It owns no alternate water implementation. The
 scene uses two differently sized spillways and a fixed camera so frame changes
 come from the water shader and geometry.
 
+Each spillway accepts an optional `basin` flag. It defaults to `true` for falls
+that land in a visible pool; use `basin: false` for falls that continue into a
+cloud abyss. The latter retains the animated sheet and impact mist while
+omitting the unsupported horizontal ripple mesh and its GPU resources.
+
 Run against the approved local HTTP Vite origin:
 
 ```bash

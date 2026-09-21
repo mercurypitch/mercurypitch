@@ -35,7 +35,7 @@ async function ready(page: Page, id: string): Promise<void> {
   await expect(game).toHaveAttribute('data-ready', 'true', { timeout: 60_000 })
 }
 
-test('phone, tablet and desktop catalogue fit and defer 3D loading until entry @smoke', async ({
+test('phone, tablet and desktop map load only lobby models before gallery entry @smoke', async ({
   page,
 }) => {
   await prepare(page)
@@ -49,18 +49,35 @@ test('phone, tablet and desktop catalogue fit and defer 3D loading until entry @
   await expect(
     lobby.getByRole('button', { name: /^(Enter|Continue|Replay) / }),
   ).toHaveCount(4)
-  expect(models).toEqual([])
+  await expect(lobby.locator('[data-map-state]')).toHaveAttribute(
+    'data-map-state',
+    'ready',
+    { timeout: 60_000 },
+  )
+  expect(models.map((url) => new URL(url).pathname).sort()).toEqual(
+    [
+      '/games/glass3d/merc.glb',
+      '/games/journey-map-v1/floating-museum-map-kit-v1.glb',
+    ].sort(),
+  )
+  expect(models.some((url) => /\/games\/adventure-v\d+\//u.test(url))).toBe(
+    false,
+  )
   for (const viewport of [
     { width: 320, height: 640 },
     { width: 1024, height: 768 },
     { width: 1440, height: 900 },
   ]) {
     await page.setViewportSize(viewport)
-    expect(
-      await lobby.evaluate(
-        (element) => element.scrollWidth <= element.clientWidth,
-      ),
-    ).toBe(true)
+    const horizontalLayout = await lobby.evaluate((element) => ({
+      overflowX: getComputedStyle(element).overflowX,
+      pageWidth: document.documentElement.scrollWidth,
+      viewportWidth: document.documentElement.clientWidth,
+    }))
+    expect(horizontalLayout.overflowX).toBe('hidden')
+    expect(horizontalLayout.pageWidth).toBeLessThanOrEqual(
+      horizontalLayout.viewportWidth,
+    )
     const card = lobby.getByRole('button', {
       name: 'Enter First Light Gallery',
     })

@@ -32,6 +32,10 @@ describe('Glassworks asset contract', () => {
     expect(required.has('adventure-v7/manifest.json')).toBe(true)
     expect(required.has('adventure-v7/listening-garden.webp')).toBe(true)
     expect(required.has('adventure-v7/wave-keeper.webp')).toBe(true)
+    expect(required.has('journey-map-v1/floating-museum-map-kit-v1.glb')).toBe(
+      true,
+    )
+    expect(required.has('journey-map-v1/manifest.json')).toBe(true)
     expect(required.has('adventure-voice-v2/manifest.json')).toBe(true)
   })
 })

@@ -58,6 +58,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'amber-v6': 'adventure-v6/amber-cadence-urn.glb',
   'painting-listening-garden-v7': 'adventure-v7/listening-garden.webp',
   'painting-wave-keeper-v7': 'adventure-v7/wave-keeper.webp',
+  'floating-museum-map-kit-v1': 'journey-map-v1/floating-museum-map-kit-v1.glb',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
@@ -89,6 +90,7 @@ const MANIFEST_FILES = [
   'adventure-v5/manifest.json',
   'adventure-v6/manifest.json',
   'adventure-v7/manifest.json',
+  'journey-map-v1/manifest.json',
   'adventure-voice-v1/manifest.json',
   'adventure-voice-v2/manifest.json',
 ] as const

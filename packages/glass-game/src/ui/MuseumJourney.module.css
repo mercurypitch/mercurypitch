@@ -1,0 +1,712 @@
+/* A live marble-and-jade museum map with a durable catalogue beneath it. */
+.lobby {
+  --jade: #224943;
+  --gold: #bd8e43;
+  --celadon: #85bec0;
+  --marble: #f4ebdb;
+  --sky: #b5c9d9;
+  --peach: #edcaba;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: max(22px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  color: var(--jade);
+  background:
+    radial-gradient(circle at 8% 5%, #fff8e7 0 8%, transparent 31%),
+    radial-gradient(circle at 93% 16%, #cfe2db 0, transparent 28%),
+    linear-gradient(165deg, #f8f0df 0%, #eff0df 45%, #d9e7e2 100%);
+  font-family: 'Gabarito Variable', 'Avenir Next', sans-serif;
+}
+.lobby::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: '';
+  opacity: 0.34;
+  background-image: repeating-linear-gradient(
+    115deg,
+    transparent 0 72px,
+    #fff 73px,
+    transparent 74px 142px
+  );
+}
+.header,
+.mapSection,
+.galleryList {
+  position: relative;
+  z-index: 1;
+  width: min(1240px, 100%);
+  margin-inline: auto;
+}
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 8px 2px 22px;
+}
+.heading {
+  max-width: 660px;
+}
+.eyebrow,
+.listHeading > span {
+  color: #6d765b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.heading h1 {
+  margin: 13px 0 12px;
+  max-width: 700px;
+  color: #1d3e39;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  font-size: clamp(40px, 4.8vw, 62px);
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+.heading p {
+  max-width: 540px;
+  margin: 0;
+  color: #536c62;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.headerActions {
+  display: flex;
+  gap: 10px;
+}
+.roundAction {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid #a5b39b;
+  border-radius: 50%;
+  color: var(--jade);
+  background: #fff9e8d9;
+  box-shadow: 0 8px 24px #25453b12;
+  cursor: pointer;
+}
+.roundAction svg,
+.enterSelected svg,
+.chapterStatus svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mapSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.95fr) minmax(290px, 0.78fr);
+  min-height: clamp(500px, 62vh, 690px);
+  overflow: hidden;
+  border: 1px solid #8da79c;
+  border-radius: 36px 36px 16px 16px;
+  background: #dce7e4;
+  box-shadow:
+    0 30px 80px #1c44352a,
+    inset 0 1px #fff;
+}
+.mapColumn {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  background: #dce7e4;
+}
+.mapFrame {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 500px;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(180deg, #b5c9d9 0 65%, #d7e2df 100%);
+}
+.mapFrame::after {
+  position: absolute;
+  inset: 16px;
+  z-index: 2;
+  border: 1px solid #fff9;
+  border-radius: 25px;
+  pointer-events: none;
+  content: '';
+}
+.mapCanvas {
+  position: absolute;
+  inset: 0;
+}
+.mapCanvas canvas {
+  cursor: grab;
+}
+.mapCanvas canvas:active {
+  cursor: grabbing;
+}
+.mapLegend {
+  position: absolute;
+  top: 30px;
+  left: 32px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border: 1px solid #fff9;
+  border-radius: 40px;
+  color: #244943;
+  background: #fff8e4c9;
+  backdrop-filter: blur(10px);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mapLegend i {
+  width: 24px;
+  height: 1px;
+  background: var(--gold);
+}
+.mapNotice {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 4;
+  display: flex;
+  width: min(310px, calc(100% - 60px));
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 20px;
+  border: 1px solid #f9eed2;
+  border-radius: 18px;
+  text-align: center;
+  color: #fdf7e8;
+  background: #183d38dc;
+  box-shadow: 0 16px 50px #14322f38;
+  backdrop-filter: blur(12px);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.mapNotice strong {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 400;
+}
+.mapNotice button {
+  margin-top: 4px;
+  padding: 9px 14px;
+  border: 1px solid #dbc483;
+  border-radius: 30px;
+  color: #173e39;
+  background: #fff5d9;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.loader {
+  width: 26px;
+  height: 26px;
+  border: 2px solid #ffffff52;
+  border-top-color: #f5d58b;
+  border-radius: 50%;
+  animation: turn 1.1s linear infinite;
+}
+@keyframes turn {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.selectedCard {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: clamp(24px, 3.2vw, 42px);
+  border-left: 1px solid #a5b5a6;
+  background:
+    radial-gradient(circle at 100% 0, #edcaba70 0, transparent 34%),
+    linear-gradient(150deg, #fff9e9 0%, #f3ead7 100%);
+}
+.selectedCard::before {
+  display: block;
+  width: 54px;
+  height: 4px;
+  margin-bottom: 28px;
+  border-radius: 6px;
+  background: var(--gold);
+  content: '';
+}
+.selectedTopline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #718074;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.lesson {
+  margin: 42px 0 8px;
+  color: #9a7133;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.selectedCard h2 {
+  margin: 0;
+  color: #20453f;
+  font-family: 'Iowan Old Style', Georgia, serif;
+  font-size: clamp(30px, 3.3vw, 46px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.description {
+  margin: 18px 0 20px;
+  color: #5c6d62;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.keepsakes {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 24px;
+}
+.stars {
+  display: flex;
+  gap: 4px;
+}
+.stars svg {
+  width: 18px;
+  height: 18px;
+  fill: transparent;
+  stroke: #ad9d77;
+  stroke-width: 1.2;
+}
+.stars .starEarned {
+  fill: #c69743;
+  stroke: #8f692c;
+}
+.ungraded {
+  color: #7b7566;
+  font-size: 11px;
+}
+.portraitKeepsake {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #76572a;
+  font-family: Georgia, serif;
+  font-size: 12px;
+}
+.portraitKeepsake img {
+  width: 34px;
+  height: 42px;
+  object-fit: cover;
+  border: 2px solid #bd8e43;
+  border-radius: 16px 16px 3px 3px;
+}
+.enterSelected {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 0 18px 0 21px;
+  border: 1px solid #173c36;
+  border-radius: 8px 26px 26px 8px;
+  color: #fff8e8;
+  background: #244943;
+  box-shadow: 0 14px 28px #21443b22;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.enterSelected:disabled,
+.chapterStatus button:disabled {
+  cursor: wait;
+  opacity: 0.66;
+}
+.stageRail {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid #a5b5a6;
+  background: #e8eee6;
+  scrollbar-width: thin;
+}
+.stageChip {
+  display: flex;
+  min-width: max-content;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px 8px 8px;
+  border: 1px solid #a9b9a7;
+  border-radius: 30px;
+  color: #526b61;
+  background: #fff9e8a8;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.stageChip span {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff8e8;
+  background: #67867a;
+  font-size: 9px;
+}
+.stageChipSelected {
+  border-color: #9b7131;
+  color: #244943;
+  background: #fff6dd;
+  box-shadow: inset 0 0 0 1px #d1b369;
+}
+.stageChipSelected span {
+  background: var(--gold);
+}
+.galleryList {
+  padding: 58px 2px 24px;
+}
+.listHeading {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) minmax(260px, 0.8fr);
+  align-items: end;
+  column-gap: 30px;
+  margin-bottom: 22px;
+}
+.listHeading > span {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+}
+.listHeading h2 {
+  margin: 0;
+  font-family: 'Iowan Old Style', Georgia, serif;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+.listHeading p {
+  margin: 0;
+  color: #65776e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.chapters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.chapter {
+  overflow: hidden;
+  border: 1px solid #b3bea9;
+  border-radius: 88px 88px 14px 14px;
+  background: #fffaf0;
+  box-shadow: 0 13px 34px #29493b0c;
+}
+.chapterSelected {
+  border-color: #b2843b;
+  box-shadow:
+    0 13px 34px #29493b12,
+    inset 0 0 0 1px #dfc675;
+}
+.chapterSelect {
+  display: block;
+  width: 100%;
+  padding: 8px 8px 0;
+  border: 0;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.chapterArt {
+  position: relative;
+  display: block;
+  height: 148px;
+  overflow: hidden;
+  border-radius: 78px 78px 5px 5px;
+  background: var(--jade);
+}
+.chapterArt img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 320ms ease;
+}
+.chapterSelect:hover .chapterArt img {
+  transform: scale(1.035);
+}
+.chapterArt i {
+  position: absolute;
+  bottom: 9px;
+  left: 50%;
+  padding: 5px 10px;
+  transform: translateX(-50%);
+  border: 1px solid #dec17d;
+  border-radius: 20px;
+  color: #fff7e5;
+  background: #1d403bd9;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.chapterCopy {
+  display: flex;
+  min-height: 154px;
+  flex-direction: column;
+  padding: 17px 14px 13px;
+}
+.chapterCopy small {
+  color: #927039;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.chapterCopy strong {
+  margin: 7px 0 9px;
+  font-family: 'Iowan Old Style', Georgia, serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+.chapterCopy > span {
+  color: #65756b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.chapterStatus {
+  display: flex;
+  min-height: 47px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 14px;
+  border-top: 1px solid #d9decb;
+  color: #697970;
+  font-size: 10px;
+}
+.chapterStatus button {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 0 6px 8px;
+  border: 0;
+  color: #244943;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chapterStatus svg {
+  width: 16px;
+  height: 16px;
+}
+.roundAction:focus-visible,
+.mapNotice button:focus-visible,
+.enterSelected:focus-visible,
+.stageChip:focus-visible,
+.chapterSelect:focus-visible,
+.chapterStatus button:focus-visible {
+  outline: 3px solid #b7873d;
+  outline-offset: 3px;
+}
+@media (width < 980px) {
+  .mapSection {
+    grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.72fr);
+  }
+  .chapters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (width >= 700px) and (width < 1100px) and (orientation: landscape) {
+  .header {
+    padding-bottom: 15px;
+  }
+  .mapSection {
+    min-height: 470px;
+  }
+  .mapFrame {
+    min-height: 420px;
+  }
+}
+@media (width < 700px) {
+  .lobby {
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-inline: max(14px, env(safe-area-inset-left));
+  }
+  .header {
+    align-items: center;
+    gap: 12px;
+    padding: 0 0 9px;
+  }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.11em;
+  }
+  .heading h1 {
+    margin: 5px 0 0;
+    font-size: clamp(29px, 9.6vw, 36px);
+    line-height: 0.9;
+  }
+  .heading p {
+    display: none;
+  }
+  .headerActions {
+    gap: 6px;
+  }
+  .roundAction {
+    width: 38px;
+    height: 38px;
+  }
+  .mapSection {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    border-radius: 28px 28px 12px 12px;
+  }
+  .mapFrame {
+    min-height: clamp(230px, 40dvh, 280px);
+  }
+  .mapFrame::after {
+    inset: 10px;
+    border-radius: 20px;
+  }
+  .mapLegend {
+    top: 16px;
+    left: 18px;
+    padding: 6px 9px;
+  }
+  .selectedCard {
+    min-height: 0;
+    padding: 13px 16px 15px;
+    border-top: 1px solid #a5b5a6;
+    border-left: 0;
+  }
+  .selectedCard::before {
+    width: 38px;
+    height: 3px;
+    margin-bottom: 8px;
+  }
+  .lesson {
+    margin: 7px 0 3px;
+    font-size: 10px;
+  }
+  .selectedCard h2 {
+    font-size: clamp(25px, 8.4vw, 31px);
+  }
+  .description {
+    display: none;
+  }
+  .keepsakes {
+    min-height: 12px;
+    margin: 7px 0;
+  }
+  .stars svg {
+    width: 14px;
+    height: 14px;
+  }
+  .portraitKeepsake img {
+    width: 25px;
+    height: 30px;
+  }
+  .enterSelected {
+    min-height: 46px;
+    margin-top: 3px;
+  }
+  .stageRail {
+    gap: 6px;
+    padding: 7px 8px;
+  }
+  .stageChip {
+    gap: 6px;
+    padding: 5px 10px 5px 5px;
+    font-size: 11px;
+  }
+  .stageChip span {
+    width: 24px;
+    height: 24px;
+  }
+  .galleryList {
+    padding-top: 40px;
+  }
+  .listHeading {
+    display: block;
+  }
+  .listHeading p {
+    margin-top: 8px;
+  }
+  .chapters {
+    grid-template-columns: 1fr;
+  }
+  .chapter {
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    border-radius: 58px 13px 13px 58px;
+  }
+  .chapterSelect {
+    display: contents;
+  }
+  .chapterArt {
+    grid-row: 1 / 3;
+    height: 100%;
+    min-height: 172px;
+    margin: 7px;
+    border-radius: 52px 8px 8px 52px;
+  }
+  .chapterArt i {
+    bottom: 12px;
+    font-size: 8px;
+  }
+  .chapterCopy {
+    min-height: 0;
+    padding: 18px 14px 8px 9px;
+  }
+  .chapterCopy strong {
+    font-size: 20px;
+  }
+  .chapterCopy > span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .chapterStatus {
+    margin: 0 13px 0 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loader {
+    animation: none;
+  }
+  .chapterArt img {
+    transition: none;
+  }
+}

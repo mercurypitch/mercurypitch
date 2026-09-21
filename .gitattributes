@@ -10,3 +10,4 @@
 # Browser-reviewed Glassworks reward-pilot proofs are binary source artifacts.
 art/glass-adventure/rewards-pilot/v1/proofs/*.png filter=lfs diff=lfs merge=lfs -text
 art/glass-adventure/delivery/v1/proofs/*.png filter=lfs diff=lfs merge=lfs -text
+apps/beside-cue/public/games/journey-map-v1/*.glb filter=lfs diff=lfs merge=lfs -text
