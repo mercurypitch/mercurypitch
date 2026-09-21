@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "asset": "animated Merc loader",
+  "status": "validated-for-loader-integration",
+  "generatedAt": "2026-09-21T12:43:56Z",
+  "production": {
+    "method": "Blender finishing of the committed Merc sculpt cache; no rerigging service or new model generation",
+    "meshyCreditsSpent": 0,
+    "resculptInvoked": false,
+    "canonicalSculpt": {
+      "path": "apps/beside-cue/art/merc/merc-sculpt.blend",
+      "bytes": 332791,
+      "sha256Before": "a6a46d5da588aa2077d43b203fadf8ee3a7030c0d5270e649600a1cba132de04",
+      "sha256After": "a6a46d5da588aa2077d43b203fadf8ee3a7030c0d5270e649600a1cba132de04",
+      "byteIdentityPreserved": true,
+      "description": "Committed processed Meshy-derived sculpt cache used as the reproducible stage-two input"
+    },
+    "sourceFiles": [
+      "apps/beside-cue/art/merc/make_merc.py",
+      "apps/beside-cue/art/merc/preview.py",
+      "apps/beside-cue/scripts/assets-merc.sh",
+      "apps/beside-cue/scripts/assets-glass.sh",
+      "art/glass-adventure/loader/v1/production/audit_merc_loader.py",
+      "art/glass-adventure/loader/v1/production/inspect_merc_glb.py"
+    ],
+    "commands": [
+      "rtk proxy pnpm --dir apps/beside-cue assets:merc",
+      "rtk proxy env ALSOFT_DRIVERS=null blender --background --factory-startup -noaudio apps/beside-cue/art/merc/merc.blend --python-exit-code 1 --python art/glass-adventure/loader/v1/production/audit_merc_loader.py -- art/glass-adventure/loader/v1/proofs/animation-audit.json",
+      "rtk proxy python3 art/glass-adventure/loader/v1/production/inspect_merc_glb.py"
+    ],
+    "tools": {
+      "blender": "5.2.2 LTS d13f752e3b9c",
+      "blenderGltfExporter": "Khronos glTF Blender I/O v5.2.40",
+      "gltfTransform": "4.4.2",
+      "imageMagick": "7.1.2-31"
+    }
+  },
+  "animationContract": {
+    "fps": 30,
+    "timingConvention": "Blender exports the first keyed frame at 1/30 s. Authored key span is last minus first; Three.js AnimationClip.duration is the last input time and is one frame longer.",
+    "bones": [
+      "root",
+      "base",
+      "head",
+      "hand_l",
+      "hand_r"
+    ],
+    "morphTargets": [
+      "blink",
+      "wide",
+      "sing"
+    ],
+    "clips": [
+      {
+        "name": "sing",
+        "kind": "preserved",
+        "authoredKeySpanSeconds": 0.9666666649281979,
+        "gltfPlaybackDurationSeconds": 1.0
+      },
+      {
+        "name": "listen",
+        "kind": "preserved",
+        "authoredKeySpanSeconds": 1.300000037997961,
+        "gltfPlaybackDurationSeconds": 1.3333333730697632
+      },
+      {
+        "name": "welcome",
+        "kind": "new-grounded-one-shot",
+        "authoredFrames": [
+          1,
+          49
+        ],
+        "authoredKeySpanSeconds": 1.5999999903142452,
+        "gltfPlaybackDurationSeconds": 1.6333333253860474
+      },
+      {
+        "name": "laugh",
+        "kind": "new-grounded-one-shot",
+        "authoredFrames": [
+          1,
+          37
+        ],
+        "authoredKeySpanSeconds": 1.2000000141561031,
+        "gltfPlaybackDurationSeconds": 1.2333333492279053
+      },
+      {
+        "name": "celebrate",
+        "kind": "preserved",
+        "authoredKeySpanSeconds": 1.0333333872258663,
+        "gltfPlaybackDurationSeconds": 1.0666667222976685
+      },
+      {
+        "name": "move",
+        "kind": "preserved",
+        "authoredKeySpanSeconds": 1.3333333395421505,
+        "gltfPlaybackDurationSeconds": 1.3666666746139526
+      },
+      {
+        "name": "fall",
+        "kind": "preserved",
+        "authoredKeySpanSeconds": 1.36666664108634,
+        "gltfPlaybackDurationSeconds": 1.399999976158142
+      }
+    ],
+    "runtimeGeometry": {
+      "triangles": 12178,
+      "meshes": 4,
+      "materials": 1,
+      "images": 0,
+      "authoredSculptPolygonsBeforeExportTriangulation": 11098,
+      "authoredFacePolygonsBeforeExportTriangulation": 600
+    }
+  },
+  "outputs": {
+    "packedBlenderSource": {
+      "path": "apps/beside-cue/art/merc/merc.blend",
+      "bytes": 422522,
+      "sha256": "eb05774d00c7bbf2db4186f9bea8ef4a1f62cafb3b4474d7a131c197c976129e"
+    },
+    "previewGlb": {
+      "path": "apps/beside-cue/art/merc/merc-preview.glb",
+      "bytes": 452144,
+      "sha256": "e5e9d31624294f7ab80328269ccbacd844f50d22b833820a217c3610be7b92bb"
+    },
+    "optimizedGlb": {
+      "path": "apps/beside-cue/art/merc/merc.opt.glb",
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16"
+    },
+    "publicGlb": {
+      "path": "apps/beside-cue/public/games/glass3d/merc.glb",
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16",
+      "byteIdenticalToOptimized": true
+    }
+  },
+  "proofs": [
+    {
+      "path": "art/glass-adventure/loader/v1/proofs/welcome-motion-contact-sheet.png",
+      "bytes": 1222481,
+      "sha256": "9c3f44189a91af0bb9e14bb8cc31ce09234aac71f55646f4d3d07ef620623539",
+      "views": "five front and five three-quarter fixed frames"
+    },
+    {
+      "path": "art/glass-adventure/loader/v1/proofs/laugh-motion-contact-sheet.png",
+      "bytes": 1224998,
+      "sha256": "302811cb3801ae578e6a5a32896ff828d1f98ec4996c2a7d615fef6c91b538bb",
+      "views": "five front and five three-quarter fixed frames"
+    },
+    {
+      "path": "art/glass-adventure/loader/v1/proofs/animation-audit.json",
+      "result": "pass"
+    },
+    {
+      "path": "art/glass-adventure/loader/v1/proofs/glb-contract.json",
+      "result": "pass"
+    }
+  ],
+  "validation": {
+    "sculptCacheUnchanged": true,
+    "allSevenClipsExported": true,
+    "oldClipsRetained": true,
+    "rigAndMorphTargetsRetained": true,
+    "welcomeAndLaughRootMotionZero": true,
+    "welcomeAndLaughFloorDeltaFromListen": 0.0,
+    "welcomeAndLaughEndpointMaxChannelDeltaFromListen": 0.0,
+    "optimizedAndPublicByteIdentical": true,
+    "runtimeGlbUnder500KiB": true,
+    "fixedFrameVisualReview": "pass; preserved Merc silhouette and face, readable wave and two-beat laugh, no visible collapse or intersections in selected frames"
+  },
+  "knownConstraints": [
+    "The committed sculpt cache is the reproducible source for this stage; the original high-detail Meshy donor is not archived in this loader batch.",
+    "Blender proofs use a neutral clay body material so deformation is readable; the runtime owns Merc's final presentation material.",
+    "The new clips are authored in place and intentionally contain no locomotion or root translation."
+  ]
+}

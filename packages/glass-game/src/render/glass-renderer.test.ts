@@ -13,6 +13,8 @@ const state = vi.hoisted(() => {
     listeners: new Map<string, EventListener>(),
     loseContext: false,
     assetFailure: null as Error | null,
+    assetCompletions: [] as string[],
+    assetInstalled: null as ((taskId: string) => void) | null,
     museumFailure: null as Error | null,
     environmentLoadFailure: null as Error | null,
     rendererDispose: vi.fn(),
@@ -63,7 +65,9 @@ vi.mock('./environment', () => ({
   }),
 }))
 vi.mock('./asset-kit', () => ({
-  loadMuseumAssets: async () => {
+  loadMuseumAssets: async (...args: unknown[]) => {
+    state.assetInstalled = args[8] as (taskId: string) => void
+    state.assetCompletions.forEach((taskId) => state.assetInstalled?.(taskId))
     if (state.assetFailure) throw state.assetFailure
   },
 }))
@@ -104,6 +108,7 @@ vi.mock('./museum', () => ({
 vi.mock('./resonance-portal', () => ({
   createResonancePortal: () => ({ root: new Group(), update: vi.fn() }),
 }))
+import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { createGlassRenderer } from './glass-renderer'
 
 function browserFixture() {
@@ -127,6 +132,8 @@ afterEach(() => {
   state.listeners.clear()
   state.loseContext = false
   state.assetFailure = null
+  state.assetCompletions = []
+  state.assetInstalled = null
   state.museumFailure = null
   state.environmentLoadFailure = null
   state.render.mockClear()
@@ -171,6 +178,78 @@ it.each([false, true])(
     renderer.dispose()
   },
 )
+
+it('publishes a fixed plan synchronously and reaches full only after installs and accepted fallbacks', async () => {
+  const assetPlan = createMuseumAssetLoadPlan(GLASSWORKS)
+  state.assetCompletions = [...assetPlan.taskIds]
+  const updates: { completedUnits: number; totalUnits: number }[] = []
+
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { onLoadingProgress: (progress) => updates.push(progress) },
+  )
+  const expectedTotal = assetPlan.taskIds.length + 3
+  expect(updates[0]).toEqual({ completedUnits: 0, totalUnits: expectedTotal })
+
+  await expect(renderer.ready).resolves.toBeUndefined()
+  expect(updates.at(-1)).toEqual({
+    completedUnits: expectedTotal,
+    totalUnits: expectedTotal,
+  })
+  expect(updates).toHaveLength(expectedTotal + 1)
+  updates.forEach((progress, index) => {
+    expect(progress.completedUnits).toBe(index)
+    expect(progress.totalUnits).toBe(expectedTotal)
+  })
+  renderer.dispose()
+})
+
+it('freezes progress after a required failure and ignores later installs', async () => {
+  const assetPlan = createMuseumAssetLoadPlan(GLASSWORKS)
+  state.assetCompletions = assetPlan.taskIds.slice(0, 1)
+  state.assetFailure = new Error('required window failed')
+  const updates: { completedUnits: number; totalUnits: number }[] = []
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { onLoadingProgress: (progress) => updates.push(progress) },
+  )
+
+  await expect(renderer.ready).rejects.toThrow('required window failed')
+  const frozen = updates.at(-1)
+  const updateCount = updates.length
+  state.assetInstalled?.(assetPlan.taskIds[1]!)
+  await Promise.resolve()
+  expect(updates).toHaveLength(updateCount)
+  expect(updates.at(-1)).toEqual(frozen)
+  renderer.dispose()
+})
+
+it('freezes progress on context loss before late asset callbacks resolve', async () => {
+  const assetPlan = createMuseumAssetLoadPlan(GLASSWORKS)
+  const lateTask = assetPlan.taskIds.at(-1)!
+  state.assetCompletions = assetPlan.taskIds.slice(0, -1)
+  state.loseContext = true
+  const updates: { completedUnits: number; totalUnits: number }[] = []
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { onLoadingProgress: (progress) => updates.push(progress) },
+  )
+
+  await expect(renderer.ready).resolves.toBeUndefined()
+  const updateCount = updates.length
+  state.assetInstalled?.(lateTask)
+  expect(updates).toHaveLength(updateCount)
+  expect(updates.at(-1)?.completedUnits).toBeLessThan(
+    updates.at(-1)?.totalUnits ?? 0,
+  )
+  renderer.dispose()
+})
 
 it('rejects readiness when required museum art fails', async () => {
   state.assetFailure = new Error('required window failed')

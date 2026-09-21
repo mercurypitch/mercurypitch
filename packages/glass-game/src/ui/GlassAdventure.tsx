@@ -61,6 +61,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
   let canvas!: HTMLDivElement
   const level = untrack(() => props.level) ?? GLASSWORKS
   const mercLoadingArt = untrack(() => props.host.assetUrl('merc-loading'))
+  const mercModel = untrack(() => props.host.assetUrl('merc'))
   const adventure = useAdventure(
     untrack(() => props.host),
     level,
@@ -268,6 +269,9 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             error={adventure.loadError()}
             levelTitle={level.title}
             mercArtUrl={mercLoadingArt}
+            mercModelUrl={mercModel}
+            generation={adventure.loadingGeneration()}
+            progress={adventure.loadingProgress()}
             onRetry={adventure.retryLoading}
             onLeave={() => props.host.onExit()}
           />

@@ -1,0 +1,134 @@
+{
+  "animations": {
+    "celebrate": {
+      "authoredKeySpanSeconds": 1.0333333872258663,
+      "channelCount": 16,
+      "firstKeySeconds": 0.03333333507180214,
+      "gltfPlaybackDurationSeconds": 1.0666667222976685,
+      "lastKeySeconds": 1.0666667222976685,
+      "targetPaths": [
+        "rotation",
+        "scale",
+        "translation",
+        "weights"
+      ]
+    },
+    "fall": {
+      "authoredKeySpanSeconds": 1.36666664108634,
+      "channelCount": 16,
+      "firstKeySeconds": 0.03333333507180214,
+      "gltfPlaybackDurationSeconds": 1.399999976158142,
+      "lastKeySeconds": 1.399999976158142,
+      "targetPaths": [
+        "rotation",
+        "scale",
+        "translation",
+        "weights"
+      ]
+    },
+    "laugh": {
+      "authoredKeySpanSeconds": 1.2000000141561031,
+      "channelCount": 16,
+      "firstKeySeconds": 0.03333333507180214,
+      "gltfPlaybackDurationSeconds": 1.2333333492279053,
+      "lastKeySeconds": 1.2333333492279053,
+      "targetPaths": [
+        "rotation",
+        "scale",
+        "translation",
+        "weights"
+      ]
+    },
+    "listen": {
+      "authoredKeySpanSeconds": 1.300000037997961,
+      "channelCount": 16,
+      "firstKeySeconds": 0.03333333507180214,
+      "gltfPlaybackDurationSeconds": 1.3333333730697632,
+      "lastKeySeconds": 1.3333333730697632,
+      "targetPaths": [
+        "rotation",
+        "scale",
+        "translation",
+        "weights"
+      ]
+    },
+    "move": {
+      "authoredKeySpanSeconds": 1.3333333395421505,
+      "channelCount": 16,
+      "firstKeySeconds": 0.03333333507180214,
+      "gltfPlaybackDurationSeconds": 1.3666666746139526,
+      "lastKeySeconds": 1.3666666746139526,
+      "targetPaths": [
+        "rotation",
+        "scale",
+        "translation",
+        "weights"
+      ]
+    },
+    "sing": {
+      "authoredKeySpanSeconds": 0.9666666649281979,
+      "channelCount": 16,
+      "firstKeySeconds": 0.03333333507180214,
+      "gltfPlaybackDurationSeconds": 1.0,
+      "lastKeySeconds": 1.0,
+      "targetPaths": [
+        "rotation",
+        "scale",
+        "translation",
+        "weights"
+      ]
+    },
+    "welcome": {
+      "authoredKeySpanSeconds": 1.5999999903142452,
+      "channelCount": 16,
+      "firstKeySeconds": 0.03333333507180214,
+      "gltfPlaybackDurationSeconds": 1.6333333253860474,
+      "lastKeySeconds": 1.6333333253860474,
+      "targetPaths": [
+        "rotation",
+        "scale",
+        "translation",
+        "weights"
+      ]
+    }
+  },
+  "assetGenerator": "glTF-Transform v4.4.2",
+  "bones": [
+    "base",
+    "hand_l",
+    "hand_r",
+    "head",
+    "root"
+  ],
+  "checks": {
+    "allMorphTargetsPresent": true,
+    "allSevenClipsPresent": true,
+    "fiveJointRigPresent": true,
+    "noTexturePayload": true,
+    "optimizedAndPublicByteIdentical": true,
+    "passed": true,
+    "under500KiB": true
+  },
+  "failures": [],
+  "generatedAt": "2026-09-21T12:49:56.976441+00:00",
+  "imageCount": 0,
+  "materialCount": 1,
+  "meshCount": 4,
+  "morphTargets": [
+    "blink",
+    "sing",
+    "wide"
+  ],
+  "optimized": {
+    "bytes": 431512,
+    "path": "apps/beside-cue/art/merc/merc.opt.glb",
+    "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16"
+  },
+  "public": {
+    "bytes": 431512,
+    "path": "apps/beside-cue/public/games/glass3d/merc.glb",
+    "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16"
+  },
+  "schemaVersion": 1,
+  "triangleCount": 12178
+}

@@ -5,7 +5,10 @@
 import type { Material } from 'three'
 import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition, Vec3 } from '../contracts'
+import type { LoadingProgress } from '../loading-progress'
+import { createLoadingProgressLedger } from '../loading-progress'
 import { loadMuseumAssets } from './asset-kit'
+import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { createAtmosphere } from './atmosphere'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
@@ -17,12 +20,13 @@ import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
 import { createResonancePortal } from './resonance-portal'
-import { getMuseumSceneFrame, getMuseumSceneRecipe, getMuseumVisualRecipe, } from './scene-catalog'
+import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
 import { createVessel } from './vessels'
 
 export interface GlassRendererOptions {
   reducedMotion?: boolean
   onAssetError?: (id: string, error: unknown) => void
+  onLoadingProgress?: (progress: LoadingProgress) => void
   onContextLost?: () => void
   onExitCelebrationComplete?: () => void
 }
@@ -97,7 +101,25 @@ function createGlassRendererInstance(
   level.presentation?.visuals.forEach((visual) =>
     getMuseumVisualRecipe(visual.recipeId),
   )
-  const sceneRecipe = getMuseumSceneRecipe(level)
+  const assetPlan = createMuseumAssetLoadPlan(level)
+  const sceneRecipe = assetPlan.sceneRecipe
+  const environmentTaskId =
+    sceneRecipe.environment === undefined
+      ? undefined
+      : `environment:${sceneRecipe.environment}`
+  const reflectionTaskId = sceneRecipe.reflectionProbe
+    ? 'reflection-probe'
+    : undefined
+  const loading = createLoadingProgressLedger(
+    [
+      'merc:model',
+      ...assetPlan.taskIds,
+      ...(environmentTaskId === undefined ? [] : [environmentTaskId]),
+      ...(reflectionTaskId === undefined ? [] : [reflectionTaskId]),
+    ],
+    options.onLoadingProgress ?? (() => undefined),
+  )
+  registerPartialCleanup(() => loading.freeze())
   const sceneFrame = getMuseumSceneFrame(level)
   const renderer = new WebGLRenderer({
     antialias: true,
@@ -209,6 +231,7 @@ function createGlassRendererInstance(
     event.preventDefault()
     if (disposed || contextLost) return
     contextLost = true
+    loading.freeze()
     options.onContextLost?.()
   }
   renderer.domElement.addEventListener('webglcontextlost', onContextLost)
@@ -244,6 +267,7 @@ function createGlassRendererInstance(
     merc = actor
     scene.add(actor.root)
     if (latest) actor.update(latest, 0, options.reducedMotion ?? false)
+    loading.complete('merc:model')
   })
   registerPartialCleanup(() => {
     void mercReady.catch(() => undefined)
@@ -257,6 +281,7 @@ function createGlassRendererInstance(
     atmosphere.setSky,
     () => disposed,
     options.onAssetError,
+    (taskId) => loading.complete(taskId),
   )
   registerPartialCleanup(() => {
     void assetsReady.catch(() => undefined)
@@ -269,12 +294,15 @@ function createGlassRendererInstance(
             if (!disposed)
               options.onAssetError?.(sceneRecipe.environment!, error)
           })
+          .then(() => {
+            if (!disposed && !contextLost) loading.complete(environmentTaskId!)
+          })
       : Promise.resolve()
   registerPartialCleanup(() => {
     void environmentReady.catch(() => undefined)
   })
-  const ready = Promise.all([mercReady, assetsReady, environmentReady]).then(
-    () => {
+  const ready = Promise.all([mercReady, assetsReady, environmentReady])
+    .then(() => {
       if (disposed || contextLost || !sceneRecipe.reflectionProbe) return
       const position = new Vector3().copy(sceneRecipe.reflectionProbe)
       try {
@@ -293,8 +321,12 @@ function createGlassRendererInstance(
         if (!disposed && !contextLost)
           options.onAssetError?.('museum-reflection-probe', error)
       }
-    },
-  )
+      if (!disposed && !contextLost) loading.complete(reflectionTaskId!)
+    })
+    .catch((error: unknown) => {
+      loading.freeze()
+      throw error
+    })
   return {
     ready,
     resize,
@@ -366,6 +398,7 @@ function createGlassRendererInstance(
     dispose() {
       if (disposed) return
       disposed = true
+      loading.freeze()
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
       observer.disconnect()
       merc?.dispose()

@@ -73,6 +73,63 @@ it('does not restart the minimum on retry and ignores stale attempts', () => {
   })
 })
 
+it('keeps progress monotonic, freezes errors and resets a retry generation', () => {
+  const { lifecycle, states } = fixture()
+  const first = lifecycle.beginAttempt()
+  expect(
+    lifecycle.reportProgress(first, { completedUnits: 0, totalUnits: 3 }),
+  ).toBe(true)
+  expect(
+    lifecycle.reportProgress(first, { completedUnits: 1, totalUnits: 3 }),
+  ).toBe(true)
+  expect(
+    lifecycle.reportProgress(first, { completedUnits: 0, totalUnits: 3 }),
+  ).toBe(false)
+  expect(
+    lifecycle.reportProgress(first, { completedUnits: 2, totalUnits: 4 }),
+  ).toBe(false)
+  lifecycle.fail(first, 'required art failed')
+  expect(
+    lifecycle.reportProgress(first, { completedUnits: 2, totalUnits: 3 }),
+  ).toBe(false)
+  expect(states.at(-1)).toMatchObject({
+    generation: first,
+    phase: 'error',
+    progress: { completedUnits: 1, totalUnits: 3 },
+  })
+
+  const retry = lifecycle.beginAttempt()
+  expect(states.at(-1)).toMatchObject({
+    generation: retry,
+    phase: 'loading-assets',
+    progress: { completedUnits: 0, totalUnits: 0 },
+  })
+  expect(
+    lifecycle.reportProgress(first, { completedUnits: 3, totalUnits: 3 }),
+  ).toBe(false)
+  expect(
+    lifecycle.reportProgress(retry, { completedUnits: 0, totalUnits: 2 }),
+  ).toBe(true)
+  expect(
+    lifecycle.reportProgress(retry, { completedUnits: 2, totalUnits: 2 }),
+  ).toBe(true)
+  expect(lifecycle.assetsInstalled(retry)).toBe(true)
+})
+
+it('does not enter the frame gate before every declared unit is installed', () => {
+  const { lifecycle, states } = fixture()
+  const generation = lifecycle.beginAttempt()
+  lifecycle.reportProgress(generation, { completedUnits: 0, totalUnits: 2 })
+  lifecycle.reportProgress(generation, { completedUnits: 1, totalUnits: 2 })
+
+  expect(lifecycle.assetsInstalled(generation)).toBe(false)
+  expect(states.at(-1)?.phase).toBe('loading-assets')
+
+  lifecycle.reportProgress(generation, { completedUnits: 2, totalUnits: 2 })
+  expect(lifecycle.assetsInstalled(generation)).toBe(true)
+  expect(states.at(-1)?.phase).toBe('awaiting-first-frame')
+})
+
 it('requires an active attempt when a later frame reaches the deadline', () => {
   const first = fixture()
   const failed = first.lifecycle.beginAttempt()

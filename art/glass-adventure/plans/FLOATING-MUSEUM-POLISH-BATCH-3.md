@@ -62,7 +62,9 @@ This pass does not add levels, change singing evaluation, alter rewards policy o
 - [x] Three falls, source pools and planted outlets inspected in motion.
 - [x] Compiled browser proofs and regressions complete.
 - [x] Stable HTTPS preview prepared; scoped delivery on existing PR #807.
-- [ ] Final pushed-revision CI acceptance and owner device playtest.
+- [x] All required CI checks passed on `25fed35f`, including PR Gate and native games-on builds.
+- [x] Owner accepted the integrated mystery portrait and approved the loader follow-up.
+- [ ] Sustained owner device playtest for the map remains separate.
 
 Prior-head gate evidence: `cab03138` passed native builds and all Beside Cue adventure lanes. Root browser shard 2 failed because the cover decode check exhausted its outer five-second poll during traced software-renderer round trips. The trace screenshot already contains the valid cover. This pass retains the decode assertion and polls in the page under a bounded wait; it does not suppress broken asset checks or replace real gallery loading with mocks.
 

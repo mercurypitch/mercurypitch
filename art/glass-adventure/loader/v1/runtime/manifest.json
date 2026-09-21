@@ -1,0 +1,177 @@
+{
+  "capturedAt": "2026-09-21T12:46:04.172Z",
+  "base": "https://localhost:5296",
+  "evidence": "Actual compiled app and actual 3D Merc under SwiftShader. Required texture deliberately held; no draw calls stubbed. Not physical-device performance acceptance.",
+  "records": [
+    {
+      "name": "desktop",
+      "width": 1280,
+      "height": 800,
+      "appearance": {
+        "width": 1280,
+        "scrollWidth": 1280,
+        "canvas": {
+          "top": 146.609375,
+          "bottom": 710.546875,
+          "width": 406,
+          "height": 563.9375,
+          "opacity": "1"
+        },
+        "progress": {
+          "now": "14",
+          "max": "28",
+          "width": 338,
+          "fill": "matrix(0.493685, 0, 0, 1, 0, 0)"
+        },
+        "button": {
+          "height": 44,
+          "font": "\"Gabarito Variable\", system-ui, sans-serif"
+        }
+      },
+      "errors": [],
+      "filename": "desktop.png"
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024,
+      "appearance": {
+        "width": 768,
+        "scrollWidth": 768,
+        "canvas": {
+          "top": 353.09375,
+          "bottom": 706.859375,
+          "width": 254.1875,
+          "height": 353.765625,
+          "opacity": "1"
+        },
+        "progress": {
+          "now": "14",
+          "max": "28",
+          "width": 299,
+          "fill": "matrix(0.49078, 0, 0, 1, 0, 0)"
+        },
+        "button": {
+          "height": 44,
+          "font": "\"Gabarito Variable\", system-ui, sans-serif"
+        }
+      },
+      "errors": [],
+      "filename": "tablet.png"
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 740,
+      "appearance": {
+        "width": 390,
+        "scrollWidth": 390,
+        "canvas": {
+          "top": 125.984375,
+          "bottom": 441.046875,
+          "width": 226.25,
+          "height": 315.0625,
+          "opacity": "1"
+        },
+        "progress": {
+          "now": "14",
+          "max": "28",
+          "width": 332,
+          "fill": "matrix(0.5, 0, 0, 1, 0, 0)"
+        },
+        "button": {
+          "height": 44,
+          "font": "\"Gabarito Variable\", system-ui, sans-serif"
+        }
+      },
+      "errors": [],
+      "filename": "phone.png"
+    },
+    {
+      "name": "short-landscape",
+      "width": 740,
+      "height": 390,
+      "appearance": {
+        "width": 740,
+        "scrollWidth": 740,
+        "canvas": {
+          "top": 60.828125,
+          "bottom": 359.546875,
+          "width": 214.4375,
+          "height": 298.71875,
+          "opacity": "1"
+        },
+        "progress": {
+          "now": "14",
+          "max": "28",
+          "width": 338,
+          "fill": "matrix(0.5, 0, 0, 1, 0, 0)"
+        },
+        "button": {
+          "height": 44,
+          "font": "\"Gabarito Variable\", system-ui, sans-serif"
+        }
+      },
+      "errors": [],
+      "filename": "short-landscape.png"
+    },
+    {
+      "name": "reduced-motion",
+      "width": 390,
+      "height": 740,
+      "still": true,
+      "appearance": {
+        "width": 390,
+        "scrollWidth": 390,
+        "canvas": {
+          "top": 125.984375,
+          "bottom": 441.046875,
+          "width": 226.25,
+          "height": 315.0625,
+          "opacity": "1"
+        },
+        "progress": {
+          "now": "14",
+          "max": "28",
+          "width": 332,
+          "fill": "matrix(0.5, 0, 0, 1, 0, 0)"
+        },
+        "button": {
+          "height": 44,
+          "font": "\"Gabarito Variable\", system-ui, sans-serif"
+        }
+      },
+      "errors": [],
+      "filename": "reduced-motion.png"
+    },
+    {
+      "name": "error",
+      "width": 320,
+      "height": 568,
+      "failure": true,
+      "appearance": {
+        "width": 320,
+        "scrollWidth": 320,
+        "canvas": {
+          "top": 69.46875,
+          "bottom": 240.140625,
+          "width": 121.9375,
+          "height": 170.671875,
+          "opacity": "1"
+        },
+        "progress": {
+          "now": "0",
+          "max": "28",
+          "width": 262,
+          "fill": "matrix(0, 0, 0, 1, 0, 0)"
+        },
+        "button": {
+          "height": 48,
+          "font": "\"Gabarito Variable\", system-ui, sans-serif"
+        }
+      },
+      "errors": [],
+      "filename": "error.png"
+    }
+  ]
+}

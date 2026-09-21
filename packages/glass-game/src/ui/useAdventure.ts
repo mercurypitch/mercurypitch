@@ -6,6 +6,7 @@ import { museumSoundscape } from '../content/soundscapes'
 import type { GameEvent, LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
 import type { GlassGameHost, MuseumAudioPreferences } from '../host'
+import type { LoadingProgress } from '../loading-progress'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
@@ -39,6 +40,11 @@ export function useAdventure(
   )
   const [loadingPhase, setLoadingPhase] =
     createSignal<AdventureLoadingPhase>('loading-assets')
+  const [loadingProgress, setLoadingProgress] = createSignal<LoadingProgress>({
+    completedUnits: 0,
+    totalUnits: 0,
+  })
+  const [loadingGeneration, setLoadingGeneration] = createSignal(0)
   const [loadError, setLoadError] = createSignal<string | null>(null)
   const ready = () => loadingPhase() === 'ready'
   const [error, setError] = createSignal<string | null>(null)
@@ -86,6 +92,8 @@ export function useAdventure(
     minimumVisibleMs: LOADING_PRESENTATION_MS,
     onChange: (state) => {
       if (!alive) return
+      setLoadingGeneration(state.generation)
+      setLoadingProgress(state.progress)
       setLoadingPhase(state.phase)
       setLoadError(state.error)
       if (state.phase !== 'ready') return
@@ -352,6 +360,9 @@ export function useAdventure(
     try {
       attempt = createGlassRenderer(mount(), level, host.assetUrl, {
         reducedMotion,
+        onLoadingProgress: (progress) => {
+          loading.reportProgress(generation, progress)
+        },
         onExitCelebrationComplete: () => {
           if (
             loading.isCurrent(generation) &&
@@ -520,6 +531,8 @@ export function useAdventure(
     snapshot,
     completionPresented,
     loadingPhase,
+    loadingProgress,
+    loadingGeneration,
     loadError,
     retryLoading,
     ready,

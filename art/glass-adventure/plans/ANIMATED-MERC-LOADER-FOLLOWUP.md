@@ -1,10 +1,43 @@
 # Animated Merc loader follow-up
 
-**Status:** Research complete; implementation is intentionally deferred until
-the current museum polish is complete. No Meshy rigging or animation task was
-submitted and this research spent zero credits.
+**Status:** Implemented and locally verified after the owner accepted the
+museum portrait polish. Final PR-revision CI and physical-device acceptance
+remain separate. No Meshy rigging task was submitted; the existing custom
+Merc rig is preserved.
 
 **Updated:** 2026-09-21
+
+## Implementation checkpoint
+
+- [x] Author and verify welcome/laugh clips; preserve old clips and sculpt source.
+- [x] Share the game's Merc material identity with a temporary 3D loading preview.
+- [x] Track unique completed asset installations; preserve retry and reveal guards.
+- [x] Integrate the clear progress track and reduced-motion/fallback presentation.
+- [x] Verify actual desktop, phone, tablet and short landscape output; error/retry.
+- [x] Prepare a separate static HTTPS testing preview on port 5296, without HMR.
+- [ ] Final pushed revision's full CI result (recorded in the dotfiles task checkpoint).
+- [ ] Owner tests repeat entry/retry/leave on a physical tablet/phone.
+
+The accepted museum snapshot is unchanged. Sources, hashes, contact sheets and
+six real compiled browser captures are in
+[`../loader/v1/`](../loader/v1/README.md). The runtime GLB is 431,512 bytes;
+welcome/laugh playback durations are approximately 1.633/1.233 seconds under
+the existing frame-one glTF export convention. The extra frame is documented
+separately from the authored 1.6/1.2-second spans; old clips were not retimed.
+
+The loader preview is disposable and optional; only game asset installation
+and the existing successful-frame/minimum-time boundary determine reveal.
+Retry mounts a fresh canvas. Failed required textures now keep their shared
+installation prerequisite handled while model downloads finish, avoiding an
+unhandled browser rejection while retaining the visible Retry/Leave error.
+
+Focused progress and preview lifecycle tests, actual-rig checks, shared/mobile
+typechecking, both host builds and all five loading browser scenarios passed.
+Six compiled visual captures have no page errors or horizontal overflow.
+These are Chromium software-renderer proofs, not a physical memory/heat test.
+
+The sections below retain the approved design and pre-implementation research.
+The checkpoint above and versioned source receipt describe the delivered state.
 
 ## Recommendation
 
@@ -25,7 +58,7 @@ arbitrary existing GLB rig. Re-rigging would risk the silhouette, floating-hand
 motion, facial expressions, clip names and runtime material contract while
 providing no advantage over the source pipeline already in the repository.
 
-## Evidence from the shipped Merc
+## Pre-implementation Merc baseline
 
 The runtime asset is
 `apps/beside-cue/public/games/glass3d/merc.glb`:
@@ -75,10 +108,9 @@ grounded clips and repeated jumps. The separate 240-frame proof at
 `art/glass-adventure/journey-map/v4/proofs/merc-centering.json` measured less
 than 0.005 m of lateral body drift at all four journey destinations.
 
-One stale comment should be corrected during implementation:
-`apps/beside-cue/src/games/glass3d/assets.ts` currently describes these as
-"node-transform clips, no rig", although the delivered GLB contains one skin
-and five joints.
+The stale "node-transform clips, no rig" comment in
+`apps/beside-cue/src/games/glass3d/assets.ts` has been corrected; the delivered
+GLB contains one skin and five joints.
 
 ## Official Meshy API findings
 
@@ -319,9 +351,10 @@ keys, signed Meshy result URLs or private account responses in the repository.
 The current binary sources are not LFS-filtered, although they are small. An
 asset revision should record SHA-256, byte size, Blender version, export
 settings, glTF Transform version and the exact build command in a sanitized
-receipt. The current shell wrapper also ends both Blender pipelines with
-`|| true`; that can mask a failed build despite `pipefail`. Harden it before
-treating a regenerated GLB as accepted evidence.
+receipt. The old shell wrapper ended both Blender pipelines with `|| true`,
+which could mask a failed build despite `pipefail`. The delivered pipeline
+removes that masking and supplies Blender's Python failure exit code before
+accepting a regenerated GLB.
 
 Expected local entry point after that hardening:
 

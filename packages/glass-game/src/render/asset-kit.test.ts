@@ -7,6 +7,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import { loadMuseumAssets, RequiredMuseumAssetError } from './asset-kit'
+import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { MUSEUM_MATERIAL_CATALOG } from './catalog'
 import type { MuseumMaterials } from './materials'
 import type { createMuseum } from './museum'
@@ -68,6 +69,25 @@ function levelWithRequiredDecoration(): LevelDefinition {
         },
       ],
       assetRecipeIds: ['garden-painting-v5'],
+    },
+  }
+}
+
+function levelWithPreferredBundle(): LevelDefinition {
+  const fixture = levelWithRequiredVisual()
+  return {
+    ...fixture,
+    id: 'preferred-bundle-fixture',
+    presentation: {
+      ...fixture.presentation!,
+      visuals: [
+        {
+          id: 'required-arch',
+          recipeId: 'museum-arch',
+          position: { x: 0, y: 0, z: 0 },
+          yaw: 0,
+        },
+      ],
     },
   }
 }
@@ -301,4 +321,47 @@ it('disposes a late required texture without installing it after teardown', asyn
   await expect(pending).resolves.toBeUndefined()
   expect(setSky).not.toHaveBeenCalled()
   expect(disposed).toHaveBeenCalledTimes(1)
+})
+
+it('declares one logical preferred/fallback bundle unit and completes it after installation', async () => {
+  const level = levelWithPreferredBundle()
+  const plan = createMuseumAssetLoadPlan(level)
+  expect(new Set(plan.taskIds).size).toBe(plan.taskIds.length)
+  expect(plan.taskIds).toContain('bundle:museum-kit')
+  expect(plan.taskIds).not.toContain('bundle:museum-kit-v2')
+
+  vi.spyOn(TextureLoader.prototype, 'loadAsync').mockImplementation(async () =>
+    texture(),
+  )
+  const bundleLoad = vi
+    .spyOn(GLTFLoader.prototype, 'loadAsync')
+    .mockImplementation(async (url) => {
+      if (url === 'museum-kit-v2') throw new Error('preferred unavailable')
+      return gltf()
+    })
+  const order: string[] = []
+  const installed: string[] = []
+  const setKit = vi.fn((_: Group, bundle: string) => {
+    if (bundle === 'museum-kit') order.push('installed')
+  })
+
+  await loadMuseumAssets(
+    level,
+    (id) => id,
+    new Map(),
+    museum(setKit),
+    materials(),
+    vi.fn(),
+    () => false,
+    vi.fn(),
+    (taskId) => {
+      installed.push(taskId)
+      if (taskId === 'bundle:museum-kit') order.push('completed')
+    },
+  )
+
+  expect(bundleLoad).toHaveBeenCalledWith('museum-kit-v2')
+  expect(bundleLoad).toHaveBeenCalledWith('museum-kit')
+  expect(installed.filter((id) => id === 'bundle:museum-kit')).toHaveLength(1)
+  expect(order).toEqual(['installed', 'completed'])
 })

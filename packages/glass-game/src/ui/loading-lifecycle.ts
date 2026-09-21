@@ -1,5 +1,7 @@
 // Adventure loading lifecycle — gate one stable installed frame behind an initial presentation deadline.
 
+import type { LoadingProgress } from '../loading-progress'
+
 export type AdventureLoadingPhase =
   | 'loading-assets'
   | 'awaiting-first-frame'
@@ -10,6 +12,7 @@ export interface AdventureLoadingState {
   generation: number
   phase: AdventureLoadingPhase
   error: string | null
+  progress: LoadingProgress
 }
 
 interface AdventureLoadingLifecycleOptions {
@@ -26,9 +29,15 @@ export function createAdventureLoadingLifecycle(
   let generation = 0
   let phase: AdventureLoadingPhase = 'loading-assets'
   let error: string | null = null
+  let progress: LoadingProgress = { completedUnits: 0, totalUnits: 0 }
   let disposed = false
 
-  const state = (): AdventureLoadingState => ({ generation, phase, error })
+  const state = (): AdventureLoadingState => ({
+    generation,
+    phase,
+    error,
+    progress,
+  })
   const publish = () => options.onChange(state())
 
   return {
@@ -37,14 +46,46 @@ export function createAdventureLoadingLifecycle(
       generation++
       phase = 'loading-assets'
       error = null
+      progress = { completedUnits: 0, totalUnits: 0 }
       publish()
       return generation
     },
     isCurrent(attempt: number): boolean {
       return !disposed && attempt === generation
     },
+    reportProgress(attempt: number, next: LoadingProgress): boolean {
+      if (
+        disposed ||
+        attempt !== generation ||
+        phase !== 'loading-assets' ||
+        !Number.isSafeInteger(next.completedUnits) ||
+        !Number.isSafeInteger(next.totalUnits) ||
+        next.completedUnits < progress.completedUnits ||
+        next.totalUnits < 0 ||
+        next.completedUnits > next.totalUnits ||
+        (progress.totalUnits !== 0 && next.totalUnits !== progress.totalUnits)
+      )
+        return false
+      if (
+        next.completedUnits === progress.completedUnits &&
+        next.totalUnits === progress.totalUnits
+      )
+        return true
+      progress = {
+        completedUnits: next.completedUnits,
+        totalUnits: next.totalUnits,
+      }
+      publish()
+      return true
+    },
     assetsInstalled(attempt: number): boolean {
-      if (disposed || attempt !== generation || phase !== 'loading-assets')
+      if (
+        disposed ||
+        attempt !== generation ||
+        phase !== 'loading-assets' ||
+        (progress.totalUnits > 0 &&
+          progress.completedUnits !== progress.totalUnits)
+      )
         return false
       phase = 'awaiting-first-frame'
       publish()

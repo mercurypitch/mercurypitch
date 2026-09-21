@@ -1,11 +1,13 @@
 // Adventure jump pose — the shipped mascot remains upright throughout airborne travel.
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { Box3, SkinnedMesh } from 'three'
+import type { Mesh } from 'three'
+import { Box3, Group, MeshPhysicalMaterial, SkinnedMesh } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
+import { disposeObject } from './dispose'
 import { loadAdventureMerc, mercMoveTimeScale } from './merc'
 
 afterEach(() => vi.restoreAllMocks())
@@ -35,6 +37,112 @@ async function parseActualMerc() {
     '',
   )
 }
+
+it('retains the actual rig, authored eyes, morphs, and gameplay clips', async () => {
+  const gltf = await parseActualMerc()
+  try {
+    const names = new Set<string>()
+    gltf.scene.traverse((object) => names.add(object.name))
+    expect([...names]).toEqual(
+      expect.arrayContaining([
+        'base',
+        'head',
+        'hand_l',
+        'hand_r',
+        'merc_body',
+        'merc_face',
+        'merc_hand_l',
+        'merc_hand_r',
+      ]),
+    )
+    const body = gltf.scene.getObjectByName('merc_body')
+    const face = gltf.scene.getObjectByName('merc_face') as Mesh
+    expect(body).toBeInstanceOf(SkinnedMesh)
+    expect(face).toBeInstanceOf(SkinnedMesh)
+    expect(
+      (body as SkinnedMesh).skeleton.bones.map((bone) => bone.name),
+    ).toEqual(
+      expect.arrayContaining(['base', 'head', 'hand_l', 'hand_r', 'root']),
+    )
+    expect(face.morphTargetDictionary).toMatchObject({
+      blink: expect.any(Number),
+      wide: expect.any(Number),
+      sing: expect.any(Number),
+    })
+    expect(
+      Array.isArray(face.material)
+        ? face.material[0]?.name
+        : face.material.name,
+    ).toBe('merc_eye')
+    expect(gltf.animations.map((clip) => clip.name).sort()).toEqual([
+      'celebrate',
+      'fall',
+      'laugh',
+      'listen',
+      'move',
+      'sing',
+      'welcome',
+    ])
+    const clips = new Map(gltf.animations.map((clip) => [clip.name, clip]))
+    // The source spans are 1.6s/1.2s. Blender retains a 1/30s key origin,
+    // and Three defines clip duration as the largest key time.
+    expect(clips.get('welcome')?.duration).toBeCloseTo(49 / 30, 5)
+    expect(clips.get('laugh')?.duration).toBeCloseTo(37 / 30, 5)
+    for (const name of ['welcome', 'laugh']) {
+      const clip = clips.get(name)!
+      expect(clip.tracks).toHaveLength(16)
+      expect(
+        clip.tracks.some((track) =>
+          track.name.includes('morphTargetInfluences'),
+        ),
+      ).toBe(true)
+      expect(
+        clip.tracks.every((track) =>
+          Array.from(track.values).every(Number.isFinite),
+        ),
+      ).toBe(true)
+    }
+  } finally {
+    disposeObject(gltf.scene)
+  }
+})
+
+it('uses one canonical physical finish for the actual body and hands without replacing the eyes', async () => {
+  const gltf = await parseActualMerc()
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf)
+  const actor = await loadAdventureMerc('local-test-merc.glb')
+  try {
+    const body = actor.root.getObjectByName('merc_body') as SkinnedMesh
+    const left = actor.root.getObjectByName('merc_hand_l') as SkinnedMesh
+    const right = actor.root.getObjectByName('merc_hand_r') as SkinnedMesh
+    const face = actor.root.getObjectByName('merc_face') as SkinnedMesh
+    expect(body.material).toBe(left.material)
+    expect(body.material).toBe(right.material)
+    expect(body.material).toBeInstanceOf(MeshPhysicalMaterial)
+    expect(body.material).toMatchObject({
+      metalness: 1,
+      roughness: 0.065,
+      iridescence: 0.85,
+      iridescenceIOR: 1.65,
+      envMapIntensity: 1.25,
+    })
+    expect(face.material).not.toBe(body.material)
+    expect(
+      Array.isArray(face.material)
+        ? face.material[0]?.name
+        : face.material.name,
+    ).toBe('merc_eye')
+    expect(body.castShadow).toBe(true)
+    expect(face.castShadow).toBe(true)
+    const parent = new Group()
+    parent.add(actor.root)
+    actor.dispose()
+    expect(actor.root.parent).toBeNull()
+    expect(() => actor.dispose()).not.toThrow()
+  } finally {
+    actor.dispose()
+  }
+})
 
 function animatedMinimumY(
   root: Awaited<ReturnType<typeof loadAdventureMerc>>['root'],

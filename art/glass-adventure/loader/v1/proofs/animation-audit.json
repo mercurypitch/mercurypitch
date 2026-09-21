@@ -1,0 +1,137 @@
+{
+  "checks": {
+    "allTracksOnFaceMorphs": true,
+    "allTracksOnRig": true,
+    "loaderClipsAreGrounded": true,
+    "loaderClipsEndAtListenPose": true,
+    "passed": true
+  },
+  "clips": {
+    "laugh": {
+      "authoredKeySpanSeconds": 1.2,
+      "endpointMaxChannelDeltaFromListen": 0.0,
+      "expectedGltfPlaybackDurationSeconds": 1.2333333333333334,
+      "floorDeltaFromListen": 0.0,
+      "frameEnd": 37,
+      "frameStart": 1,
+      "listenFloorZ": -0.9519039392471313,
+      "minimumEvaluatedZ": -0.9519039392471313,
+      "minimumEvaluatedZFrame": 1,
+      "rootMaxLocationOrRotationMagnitude": 0.0
+    },
+    "welcome": {
+      "authoredKeySpanSeconds": 1.6,
+      "endpointMaxChannelDeltaFromListen": 0.0,
+      "expectedGltfPlaybackDurationSeconds": 1.6333333333333333,
+      "floorDeltaFromListen": 0.0,
+      "frameEnd": 49,
+      "frameStart": 1,
+      "listenFloorZ": -0.9519039392471313,
+      "minimumEvaluatedZ": -0.9519039392471313,
+      "minimumEvaluatedZFrame": 1,
+      "rootMaxLocationOrRotationMagnitude": 0.0
+    }
+  },
+  "expectedTracks": [
+    "sing",
+    "listen",
+    "welcome",
+    "laugh",
+    "celebrate",
+    "move",
+    "fall"
+  ],
+  "faceTrackRanges": {
+    "celebrate": {
+      "frameEnd": 32.0,
+      "frameStart": 1.0,
+      "stripEnd": 32.0,
+      "stripStart": 1.0
+    },
+    "fall": {
+      "frameEnd": 42.0,
+      "frameStart": 1.0,
+      "stripEnd": 42.0,
+      "stripStart": 1.0
+    },
+    "laugh": {
+      "frameEnd": 37.0,
+      "frameStart": 1.0,
+      "stripEnd": 37.0,
+      "stripStart": 1.0
+    },
+    "listen": {
+      "frameEnd": 40.0,
+      "frameStart": 1.0,
+      "stripEnd": 40.0,
+      "stripStart": 1.0
+    },
+    "move": {
+      "frameEnd": 41.0,
+      "frameStart": 1.0,
+      "stripEnd": 41.0,
+      "stripStart": 1.0
+    },
+    "sing": {
+      "frameEnd": 30.0,
+      "frameStart": 1.0,
+      "stripEnd": 30.0,
+      "stripStart": 1.0
+    },
+    "welcome": {
+      "frameEnd": 49.0,
+      "frameStart": 1.0,
+      "stripEnd": 49.0,
+      "stripStart": 1.0
+    }
+  },
+  "failures": [],
+  "fps": 30.0,
+  "generatedAt": "2026-09-21T12:46:59.213224+00:00",
+  "rigTrackRanges": {
+    "celebrate": {
+      "frameEnd": 32.0,
+      "frameStart": 1.0,
+      "stripEnd": 32.0,
+      "stripStart": 1.0
+    },
+    "fall": {
+      "frameEnd": 42.0,
+      "frameStart": 1.0,
+      "stripEnd": 42.0,
+      "stripStart": 1.0
+    },
+    "laugh": {
+      "frameEnd": 37.0,
+      "frameStart": 1.0,
+      "stripEnd": 37.0,
+      "stripStart": 1.0
+    },
+    "listen": {
+      "frameEnd": 40.0,
+      "frameStart": 1.0,
+      "stripEnd": 40.0,
+      "stripStart": 1.0
+    },
+    "move": {
+      "frameEnd": 41.0,
+      "frameStart": 1.0,
+      "stripEnd": 41.0,
+      "stripStart": 1.0
+    },
+    "sing": {
+      "frameEnd": 30.0,
+      "frameStart": 1.0,
+      "stripEnd": 30.0,
+      "stripStart": 1.0
+    },
+    "welcome": {
+      "frameEnd": 49.0,
+      "frameStart": 1.0,
+      "stripEnd": 49.0,
+      "stripStart": 1.0
+    }
+  },
+  "schemaVersion": 1,
+  "source": "apps/beside-cue/art/merc/merc.blend"
+}

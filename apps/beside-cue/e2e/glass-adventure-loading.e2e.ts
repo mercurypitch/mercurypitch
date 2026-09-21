@@ -122,6 +122,8 @@ test('a slow asset keeps an opaque phone cover and cannot collect movement or ca
 test('required texture failure retries without resetting progress; context loss is covered too', async ({
   page,
 }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
   await prepare(page)
   await page.setViewportSize({ width: 390, height: 740 })
   await page.addInitScript(() =>
@@ -136,46 +138,141 @@ test('required texture failure retries without resetting progress; context loss 
     ),
   )
   let fail = true
+  let releaseRetry!: () => void
+  const heldRetry = new Promise<void>((resolve) => {
+    releaseRetry = resolve
+  })
   await page.route(
     '**/games/adventure-v2/textures/warm-carrara-normal.png',
     async (route) => {
       if (fail) {
         fail = false
         await route.abort('failed')
-      } else await route.continue()
+      } else {
+        await heldRetry
+        await route.continue()
+      }
     },
   )
-  await page.goto('/glass-game/')
-  const cover = page.getByTestId('glass-loading-screen')
-  await expect(cover).toHaveAttribute('data-phase', 'error', {
-    timeout: 30_000,
-  })
-  await expect(
-    cover.getByRole('button', { name: 'Retry', exact: true }),
-  ).toBeFocused()
-  await expect(page.getByRole('button', { name: 'Pause game' })).toHaveCount(0)
-  await cover.getByRole('button', { name: 'Retry', exact: true }).tap()
-  await ready(page)
-  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
-    'data-completed',
-    '1',
-  )
-  await page
-    .getByLabel('Floating glass museum')
-    .evaluate((element: HTMLCanvasElement) => {
-      const extension = element
-        .getContext('webgl2')
-        ?.getExtension('WEBGL_lose_context')
-      if (!extension) throw new Error('Context-loss extension unavailable')
-      extension.loseContext()
+  try {
+    await page.goto('/glass-game/')
+    const cover = page.getByTestId('glass-loading-screen')
+    await expect(cover).toHaveAttribute('data-phase', 'error', {
+      timeout: 30_000,
     })
-  await expect(cover).toHaveAttribute('data-phase', 'error')
-  await cover.getByRole('button', { name: 'Retry', exact: true }).tap()
-  await ready(page)
-  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
-    'data-completed',
-    '1',
+    await expect(
+      cover.getByRole('button', { name: 'Retry', exact: true }),
+    ).toBeFocused()
+    await expect(page.getByRole('button', { name: 'Pause game' })).toHaveCount(
+      0,
+    )
+    const progress = cover.getByRole('progressbar', {
+      name: 'Gallery preparation',
+    })
+    const failedUnits = await progress.getAttribute('aria-valuenow')
+    const previousCanvas = await cover.locator('canvas').elementHandle()
+    await page.waitForTimeout(250)
+    await expect(progress).toHaveAttribute('aria-valuenow', failedUnits!)
+    expect(pageErrors).toEqual([])
+    await cover.getByRole('button', { name: 'Retry', exact: true }).tap()
+    await expect(cover).toHaveAttribute('data-phase', 'loading-assets')
+    await expect(cover.getByTestId('glass-loading-merc')).toHaveAttribute(
+      'data-ready',
+      'true',
+      { timeout: 30_000 },
+    )
+    expect(
+      await previousCanvas!.evaluate((element) => element.isConnected),
+    ).toBe(false)
+    await expect(progress).not.toHaveAttribute(
+      'aria-valuenow',
+      (await progress.getAttribute('aria-valuemax')) ?? '',
+    )
+    releaseRetry()
+    await ready(page)
+    await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+      'data-completed',
+      '1',
+    )
+    expect(pageErrors).toEqual([])
+    await page
+      .getByLabel('Floating glass museum')
+      .evaluate((element: HTMLCanvasElement) => {
+        const extension = element
+          .getContext('webgl2')
+          ?.getExtension('WEBGL_lose_context')
+        if (!extension) throw new Error('Context-loss extension unavailable')
+        extension.loseContext()
+      })
+    await expect(cover).toHaveAttribute('data-phase', 'error')
+    await cover.getByRole('button', { name: 'Retry', exact: true }).tap()
+    await ready(page)
+    await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+      'data-completed',
+      '1',
+    )
+  } finally {
+    releaseRetry()
+  }
+})
+
+test('installed assets advance the track; a held asset keeps it still while the real Merc is visible', async ({
+  page,
+}) => {
+  await prepare(page)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  let release!: () => void
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route(
+    '**/games/adventure-v2/textures/warm-carrara-normal.png',
+    async (route) => {
+      await held
+      if (!page.isClosed()) await route.continue().catch(() => undefined)
+    },
   )
+  try {
+    // An intentionally held image can delay the browser's load event itself.
+    // Inspect the live cover after DOM startup, before that image is released.
+    await page.goto('/glass-game/', { waitUntil: 'domcontentloaded' })
+    const cover = page.getByTestId('glass-loading-screen')
+    const progress = cover.getByRole('progressbar', {
+      name: 'Gallery preparation',
+    })
+    const merc = cover.getByTestId('glass-loading-merc')
+    await expect(merc).toHaveAttribute('data-ready', 'true', {
+      timeout: 30_000,
+    })
+    await expect(merc).toHaveAttribute('data-reduced-motion', 'true')
+    await expect
+      .poll(async () => Number(await progress.getAttribute('aria-valuenow')))
+      .toBeGreaterThan(0)
+    const total = Number(await progress.getAttribute('aria-valuemax'))
+    // Allow every unblocked task to settle, then prove time alone cannot fill it.
+    await page.waitForTimeout(2000)
+    const installed = Number(await progress.getAttribute('aria-valuenow'))
+    expect(installed).toBeLessThan(total)
+    await page.waitForTimeout(1000)
+    await expect(progress).toHaveAttribute('aria-valuenow', String(installed))
+    expect(await cover.innerText()).not.toMatch(/\d+\s*%/)
+    const bar = await progress.evaluate((element) => ({
+      track: getComputedStyle(element).backgroundColor,
+      fill: getComputedStyle(element.firstElementChild!).backgroundImage,
+      transition: getComputedStyle(element.firstElementChild!)
+        .transitionDuration,
+      width: element.getBoundingClientRect().width,
+    }))
+    expect(bar.width).toBeGreaterThan(150)
+    expect(bar.track).not.toBe('rgba(0, 0, 0, 0)')
+    expect(bar.fill).toContain('linear-gradient')
+    expect(bar.transition).toBe('0s')
+    release()
+    await ready(page)
+    await expect(page.getByTestId('glass-loading-merc')).toHaveCount(0)
+  } finally {
+    release()
+  }
 })
 
 test('a pending visit can be left; late downloads never reopen it', async ({

@@ -31,10 +31,14 @@ waterfalls with planted source pools and soft spray termination. That document
 compares the original concept against actual runtime images element by element
 and orders the remaining structural, material and landscape work.
 
-The [animated 3D Merc loader](./ANIMATED-MERC-LOADER-FOLLOWUP.md) follows museum
-polish. Reuse the actual custom mascot rig, author welcome/laugh clips in
-Blender, retain right-side copy and show honest left-to-right loading progress
-without numbers. Meshy's API supports rigging and animations, but its documented
+The owner accepted the museum portrait polish. The
+[animated 3D Merc loader](./ANIMATED-MERC-LOADER-FOLLOWUP.md) is now implemented:
+the actual custom mascot rig has welcome/laugh clips, the right-side copy is
+preserved, and a clear track follows installed assets without visible numbers.
+Retry, graphics cleanup, reduced motion and error handling are verified locally;
+owner device acceptance and final PR-revision CI remain open. Next art work is
+the Twin connector/conservatory kit, richer marble/inlay, medallions and planting.
+Meshy's API supports rigging and animations, but its documented
 humanoid contract is not suitable for this droplet mascot; no rigging experiment
 was submitted. Standing permission to use Meshy credits remains valid for
 appropriate models.
@@ -45,11 +49,10 @@ replacement production is still open and has no approval blocker. Detailed
 lesson/asset evidence remains in
 [TWIN-GALLERIES-IMPLEMENTATION.md](./TWIN-GALLERIES-IMPLEMENTATION.md).
 
-At `cab03138`, native/mobile builds and all Beside Cue adventure lanes passed.
-The root web smoke's cover check timed out during traced software-renderer
-round trips, despite a visibly decoded cover. Batch 3 preserves the assertion
-and moves its polling into the browser; final pushed-revision CI remains
-required. Historical revision details are retained in each batch document.
+All required checks passed on museum polish commit `25fed35f`, including PR
+Gate, web/browser, Beside Cue adventure lanes and native games-on builds.
+The loader update will need its own checks. Historical revision details are
+retained in each batch document.
 
 | Area                 | Implemented                                                                                                                                                | Still missing                                                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
