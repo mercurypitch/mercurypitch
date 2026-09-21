@@ -83,6 +83,11 @@ new recording system and dynamic-platform physics in the same initial experiment
 
 ## Timing and camera fairness
 
+The owner also requested light enemies and singing contests as a future variant.
+[Friendly rivals and resonance duels](./FRIENDLY-RIVALS-AND-RESONANCE-DUELS.md)
+compares an echoing curator, bubble sentry and glass-breaking race. These are
+brainstorming only; introduce safe turn-based singing before simultaneous hazards.
+
 The user's timed singing idea belongs in an explicitly introduced optional advanced
 segment. Beginner ice/moving/cracking lessons separate movement from singing. A
 later timed singing platform offers a broad stable top while its rim slowly cracks;

@@ -99,8 +99,11 @@ challenge, held through the shatter and smoothly restored afterward, plus a
 Conservatory beginner sway completion investigation. These fixes precede the
 next landscape batch. Implementation/verification is tracked in
 [CHALLENGE-CAMERA-AND-SWAY-POLISH.md](./CHALLENGE-CAMERA-AND-SWAY-POLISH.md).
+The same polish batch simplifies singing actions and puts detailed guidance behind
+a tap/click help control, while preserving gallery stories and adding outside-click
+dismissal to artwork inspection.
 
-Two new ideas are **planning only**:
+These new ideas are **planning only**:
 
 - [Replay difficulty and level stars](./REPLAY-DIFFICULTY-AND-LEVEL-STARS.md): first
   clear on easy, selected harder replays for higher level stars, possible separate
@@ -109,8 +112,22 @@ Two new ideas are **planning only**:
 - [Cloudway platform trials](./CLOUDWAY-PLATFORM-TRIALS.md): optional ice/moving/
   cracking-platform journeys, with [three imagegen auditions](../platform-trials/v1/README.md).
   Mechanics and visual approval precede new Meshy production and runtime work.
+- [Friendly rivals and resonance duels](./FRIENDLY-RIVALS-AND-RESONANCE-DUELS.md):
+  gentle enemies, bubble projectiles and singing races. Start with a safe echoing
+  rival, keep demonstration audio separate from capture and prototype pressure
+  before approving combat, rewards or production assets.
 
 ## Next executable milestones
+
+### Asset quality follow-up — before increasing scene density
+
+After the current camera/sway fixes, complete the
+[Meshy → Blender → game audit](./GAME-ASSET-QUALITY-AUDIT.md): hidden bevels,
+intersections, correct surface contact, normals, repeated-object instancing,
+fracture/animation preparation and measured rendering cost. It defines a full
+asset inventory, per-family evidence, source-preserving fixes and a reusable
+checklist/skill built from verified guidance and our own production lessons.
+The current assets have not yet passed this new audit.
 
 ### N2 finish — close the current visual polish
 
