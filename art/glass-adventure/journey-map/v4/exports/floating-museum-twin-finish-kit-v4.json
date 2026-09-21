@@ -1,0 +1,864 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-twin-finish-kit-v4",
+  "status": "structurally validated and visually approved map-scale replacement kit",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "root": "map_twin_finish_kit_root",
+  "sources": {
+    "v3PackedSculptureKit": {
+      "file": "art/glass-adventure/journey-map/v3/sources/floating-museum-sculpture-kit-v3.blend",
+      "bytes": 42348807,
+      "sha256": "3c757515f88c2ca388eee1bf55ba2836bd98d923b849c887e8d78ce91456ce98",
+      "receipt": "art/glass-adventure/journey-map/v3/exports/floating-museum-sculpture-kit-v3.json",
+      "reuse": [
+        "temple donor geometry/materials",
+        "map_cliff",
+        "map_cypress"
+      ]
+    },
+    "v1CrystalPlanterLod": {
+      "file": "art/glass-adventure/journey-map/v2/exports/floating-museum-map-kit-v1.glb",
+      "bytes": 6831200,
+      "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709",
+      "receipt": "art/glass-adventure/journey-map/v2/exports/floating-museum-map-kit-v1.json",
+      "reuse": "map_planter accepted 1,800-triangle LOD",
+      "sourceNode": "map_planter",
+      "sourceMesh": "map_planter",
+      "storedTriangles": 1800,
+      "materialSlots": [
+        "map_planter_atlas_00"
+      ],
+      "topology": {
+        "vertices": 3611,
+        "triangles": 1800,
+        "boundaryEdges": 3616,
+        "nonManifoldEdges": 3616,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      }
+    },
+    "newExternalGeneration": false,
+    "creditsConsumed": 0
+  },
+  "templeVariants": {
+    "partition": {
+      "criterion": "face-centre authoring Z >= 1.65m",
+      "triangles": {
+        "source": 10000,
+        "structure": 7243,
+        "dome": 2757
+      },
+      "exactFaceParity": true,
+      "exteriorGeometryChanged": false
+    },
+    "materials": {
+      "structure": "map_temple_structure_atlas",
+      "amberDome": "map_temple_dome_amber_atlas",
+      "tealDome": "map_temple_dome_teal_atlas"
+    },
+    "derivedTextures": {
+      "amber": {
+        "file": "sources/textures/temple-dome-amber-base-2k.png",
+        "bytes": 6119580,
+        "sha256": "c792e197a369b7f5a6df5789c8134717eab4cfbe8ab0a0657c4e5b82056fa86c",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Cool-celadon pixel mask shifted to target hue; neutral ivory and warm gold pixels protected."
+      },
+      "teal": {
+        "file": "sources/textures/temple-dome-teal-base-2k.png",
+        "bytes": 6136669,
+        "sha256": "61a787c2580e8228ac780746a02f81638c6037da3f9052f605389ab0c88372fe",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Cool-celadon pixel mask shifted to target hue; neutral ivory and warm gold pixels protected."
+      }
+    },
+    "policy": "Only cool celadon pixels used by the dome face set are hue-shifted; ivory stone and warm gold remain donor-authored."
+  },
+  "flowerCluster": {
+    "children": [
+      "map_flower_cluster_bloom_a",
+      "map_flower_cluster_bloom_b",
+      "map_flower_cluster_bloom_c"
+    ],
+    "storedTriangles": 1800,
+    "renderedTriangles": 5400,
+    "boundsBlenderZUpMetres": {
+      "min": [
+        -0.48184850811958313,
+        -0.36290448904037476,
+        0.0
+      ],
+      "max": [
+        0.48184847831726074,
+        0.36290448904037476,
+        0.4931323230266571
+      ]
+    },
+    "dimensionsGlTfYUpMetres": [
+      0.9636969864368439,
+      0.4931323230266571,
+      0.7258089780807495
+    ],
+    "anchorErrorMetres": 0.0
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-twin-finish-kit-v4.blend",
+    "bytes": 60509167,
+    "sha256": "a1189cd3f9281f9a392f98e2d68350e508290f868601cc9851f5cee5e3c0d9fc",
+    "fullTextureResolution": true,
+    "missingExternalFiles": []
+  },
+  "runtimeImagesBeforeGlbCompression": [
+    {
+      "name": "map_cliff_texture_00",
+      "roles": [
+        "baseColor"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_cliff_texture_01",
+      "roles": [
+        "metallicRoughness"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_cliff_texture_02",
+      "roles": [
+        "emissive"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_cliff_texture_03",
+      "roles": [
+        "normal"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_cypress_texture_00",
+      "roles": [
+        "baseColor"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_cypress_texture_01",
+      "roles": [
+        "metallicRoughness"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_cypress_texture_02",
+      "roles": [
+        "emissive"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_cypress_texture_03",
+      "roles": [
+        "normal"
+      ],
+      "dimensions": [
+        256,
+        256
+      ],
+      "limit": 256
+    },
+    {
+      "name": "map_planter_texture_00",
+      "roles": [
+        "baseColor"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_planter_texture_01",
+      "roles": [
+        "emissive"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_planter_texture_02",
+      "roles": [
+        "normal"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_planter_texture_03",
+      "roles": [
+        "metallicRoughness"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    },
+    {
+      "name": "map_temple_dome_amber_base",
+      "roles": [
+        "baseColor"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_temple_dome_teal_base",
+      "roles": [
+        "baseColor"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_temple_texture_00",
+      "roles": [
+        "baseColor"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_temple_texture_01",
+      "roles": [
+        "metallicRoughness"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_temple_texture_02",
+      "roles": [
+        "emissive"
+      ],
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "limit": 1024
+    },
+    {
+      "name": "map_temple_texture_03",
+      "roles": [
+        "normal"
+      ],
+      "dimensions": [
+        512,
+        512
+      ],
+      "limit": 512
+    }
+  ],
+  "runtimeCompression": {
+    "method": "JPEG quality 84 for color/emissive, 78 with 4:4:4 sampling for packed metallic-roughness; PNG normals retained",
+    "sourceBytes": 16902076,
+    "runtimeBytes": 5642860,
+    "images": [
+      {
+        "name": "map_cliff_texture_02",
+        "roles": [
+          "emissive"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 57734,
+        "runtimeBytes": 9188
+      },
+      {
+        "name": "map_cliff_texture_03",
+        "roles": [
+          "normal"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 607995,
+        "runtimeBytes": 607995
+      },
+      {
+        "name": "map_cliff_texture_00",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 2324544,
+        "runtimeBytes": 432318
+      },
+      {
+        "name": "map_cliff_texture_01",
+        "roles": [
+          "metallicRoughness"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 1283315,
+        "runtimeBytes": 138549
+      },
+      {
+        "name": "map_cypress_texture_02",
+        "roles": [
+          "emissive"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 13744,
+        "runtimeBytes": 2379
+      },
+      {
+        "name": "map_cypress_texture_03",
+        "roles": [
+          "normal"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          256,
+          256
+        ],
+        "sourceBytes": 159298,
+        "runtimeBytes": 159298
+      },
+      {
+        "name": "map_cypress_texture_00",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 529729,
+        "runtimeBytes": 83016
+      },
+      {
+        "name": "map_cypress_texture_01",
+        "roles": [
+          "metallicRoughness"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 335589,
+        "runtimeBytes": 44940
+      },
+      {
+        "name": "map_planter_texture_01",
+        "roles": [
+          "emissive"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 295006,
+        "runtimeBytes": 54189
+      },
+      {
+        "name": "map_planter_texture_02",
+        "roles": [
+          "normal"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 583683,
+        "runtimeBytes": 583683
+      },
+      {
+        "name": "map_planter_texture_00",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 594706,
+        "runtimeBytes": 113055
+      },
+      {
+        "name": "map_planter_texture_03",
+        "roles": [
+          "metallicRoughness"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 385766,
+        "runtimeBytes": 68319
+      },
+      {
+        "name": "map_temple_texture_02",
+        "roles": [
+          "emissive"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 217838,
+        "runtimeBytes": 12397
+      },
+      {
+        "name": "map_temple_texture_03",
+        "roles": [
+          "normal"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 545071,
+        "runtimeBytes": 545071
+      },
+      {
+        "name": "temple-dome-amber-base-2k",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 1918826,
+        "runtimeBytes": 288744
+      },
+      {
+        "name": "map_temple_texture_01",
+        "roles": [
+          "metallicRoughness"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 1537317,
+        "runtimeBytes": 232174
+      },
+      {
+        "name": "map_temple_texture_00",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 1913288,
+        "runtimeBytes": 291515
+      },
+      {
+        "name": "temple-dome-teal-base-2k",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 1922494,
+        "runtimeBytes": 299909
+      }
+    ]
+  },
+  "glb": {
+    "file": "exports/floating-museum-twin-finish-kit-v4.glb",
+    "bytes": 5642860,
+    "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+    "nodes": 15,
+    "meshes": 6,
+    "primitives": 6,
+    "materials": 6,
+    "images": 18,
+    "textures": 24,
+    "requiredNamedNodesPresent": true,
+    "extensionsUsed": []
+  },
+  "freshReimport": {
+    "root": "map_twin_finish_kit_root",
+    "coordinates": "Fresh GLB reimport into Blender Z-up; dimensions listed in glTF X/Y/Z order.",
+    "nodes": {
+      "map_temple_amber": {
+        "meshChildren": [
+          "map_temple_amber_structure",
+          "map_temple_amber_dome"
+        ],
+        "trianglesRendered": 9993,
+        "uniqueMeshDatablocks": 2,
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -1.2000000476837158,
+            -1.3312113285064697,
+            0.0
+          ],
+          "max": [
+            1.2000000476837158,
+            1.3312113285064697,
+            2.667686939239502
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          2.4000000953674316,
+          2.667686939239502,
+          2.6624226570129395
+        ],
+        "anchorErrorMetres": 0.0,
+        "materials": [
+          "map_temple_dome_amber_atlas",
+          "map_temple_structure_atlas"
+        ],
+        "uv0Present": true,
+        "topology": {
+          "map_temple_amber_structure": {
+            "vertices": 14118,
+            "triangles": 7236,
+            "boundaryEdges": 14232,
+            "nonManifoldEdges": 14232,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          },
+          "map_temple_amber_dome": {
+            "vertices": 5419,
+            "triangles": 2757,
+            "boundaryEdges": 5485,
+            "nonManifoldEdges": 5485,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          }
+        }
+      },
+      "map_temple_teal": {
+        "meshChildren": [
+          "map_temple_teal_structure",
+          "map_temple_teal_dome"
+        ],
+        "trianglesRendered": 9993,
+        "uniqueMeshDatablocks": 2,
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -1.2000000476837158,
+            -1.3312113285064697,
+            0.0
+          ],
+          "max": [
+            1.2000000476837158,
+            1.3312113285064697,
+            2.667686939239502
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          2.4000000953674316,
+          2.667686939239502,
+          2.6624226570129395
+        ],
+        "anchorErrorMetres": 0.0,
+        "materials": [
+          "map_temple_dome_teal_atlas",
+          "map_temple_structure_atlas"
+        ],
+        "uv0Present": true,
+        "topology": {
+          "map_temple_teal_structure": {
+            "vertices": 14118,
+            "triangles": 7236,
+            "boundaryEdges": 14232,
+            "nonManifoldEdges": 14232,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          },
+          "map_temple_teal_dome": {
+            "vertices": 5419,
+            "triangles": 2757,
+            "boundaryEdges": 5485,
+            "nonManifoldEdges": 5485,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          }
+        }
+      },
+      "map_cliff": {
+        "meshChildren": [
+          "map_cliff_geometry"
+        ],
+        "trianglesRendered": 7975,
+        "uniqueMeshDatablocks": 1,
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -2.25,
+            -1.2320277690887451,
+            -2.0313870906829834
+          ],
+          "max": [
+            2.25,
+            1.2320277690887451,
+            0.0
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          4.5,
+          2.0313870906829834,
+          2.4640555381774902
+        ],
+        "anchorErrorMetres": 0.0,
+        "materials": [
+          "map_cliff_atlas"
+        ],
+        "uv0Present": true,
+        "topology": {
+          "map_cliff_geometry": {
+            "vertices": 16462,
+            "triangles": 7975,
+            "boundaryEdges": 16613,
+            "nonManifoldEdges": 16613,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          }
+        }
+      },
+      "map_cypress": {
+        "meshChildren": [
+          "map_cypress_geometry"
+        ],
+        "trianglesRendered": 1192,
+        "uniqueMeshDatablocks": 1,
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -0.19224664568901062,
+            -0.22946946322917938,
+            0.0
+          ],
+          "max": [
+            0.19224664568901062,
+            0.22946946322917938,
+            1.7999999523162842
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          0.38449329137802124,
+          1.7999999523162842,
+          0.45893892645835876
+        ],
+        "anchorErrorMetres": 0.0,
+        "materials": [
+          "map_cypress_atlas"
+        ],
+        "uv0Present": true,
+        "topology": {
+          "map_cypress_geometry": {
+            "vertices": 3079,
+            "triangles": 1192,
+            "boundaryEdges": 3102,
+            "nonManifoldEdges": 3102,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          }
+        }
+      },
+      "map_flower_cluster": {
+        "meshChildren": [
+          "map_flower_cluster_bloom_c",
+          "map_flower_cluster_bloom_b",
+          "map_flower_cluster_bloom_a"
+        ],
+        "trianglesRendered": 5400,
+        "uniqueMeshDatablocks": 1,
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -0.48184847831726074,
+            -0.36290448904037476,
+            0.0
+          ],
+          "max": [
+            0.48184847831726074,
+            0.36290448904037476,
+            0.4931323230266571
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          0.9636969566345215,
+          0.4931323230266571,
+          0.7258089780807495
+        ],
+        "anchorErrorMetres": 0.0,
+        "materials": [
+          "map_planter_atlas_00"
+        ],
+        "uv0Present": true,
+        "topology": {
+          "map_flower_cluster_bloom_c": {
+            "vertices": 3613,
+            "triangles": 1800,
+            "boundaryEdges": 3616,
+            "nonManifoldEdges": 3616,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          },
+          "map_flower_cluster_bloom_b": {
+            "vertices": 3613,
+            "triangles": 1800,
+            "boundaryEdges": 3616,
+            "nonManifoldEdges": 3616,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          },
+          "map_flower_cluster_bloom_a": {
+            "vertices": 3613,
+            "triangles": 1800,
+            "boundaryEdges": 3616,
+            "nonManifoldEdges": 3616,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          }
+        }
+      }
+    }
+  },
+  "validation": {
+    "acceptedSourceHashesMatched": true,
+    "packedFullResolutionSource": true,
+    "requiredNamedHierarchy": true,
+    "freshGlbReimport": true,
+    "templeExactFaceParity": true,
+    "templeBoundsParity": true,
+    "uv0Present": true,
+    "anchorsPassed": true,
+    "runtimeTextureBudgetsPassed": true,
+    "encodedImageDimensionsRecorded": true,
+    "visualProof": "approved from matching front and three-quarter renders: amber and teal read on the dome face set, while shared ivory/gold architecture remains unchanged; the crystal-flower cluster remains legible",
+    "runtimeIntegration": "not performed",
+    "staticTopologyScope": "Static map scenery preserves accepted open textured donor surfaces; fracture/manifold gates do not apply."
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/journey-map/v4/production/build_twin_finish_kit.py",
+    "blender": "5.2.2 LTS"
+  },
+  "proofs": [
+    {
+      "file": "proofs/floating-museum-twin-temples-front-v4.png",
+      "bytes": 1241867,
+      "sha256": "f4f97aeed87c93ace00a1893b38bbb44f71b916a10bd6d1d7c4a9f479b77e54b"
+    },
+    {
+      "file": "proofs/floating-museum-twin-temples-angle-v4.png",
+      "bytes": 1202621,
+      "sha256": "ba72d368cdeef21b7ef4b9a99d8288b2e638899f8a9878be3eaff3508785f677"
+    },
+    {
+      "file": "proofs/floating-museum-flower-cluster-v4.png",
+      "bytes": 997053,
+      "sha256": "84fbc24d1fefc9935d6ca3be566202a3abaf071b3cde6c1eb182185102963340"
+    }
+  ],
+  "proofRender": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/journey-map/v4/production/render_twin_finish_proofs.py",
+    "blender": "5.2.2 LTS",
+    "sourceGlbSha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+    "lighting": "Neutral warm key, cool fill, cream rim, and slate background; matching temple transforms."
+  }
+}

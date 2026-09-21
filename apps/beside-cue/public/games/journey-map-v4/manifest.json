@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "description": "Twin Gallery amber/teal temple variants, accepted cliff and cypress, and reusable crystal-flower cluster for the live Floating Museum map.",
+  "assets": [
+    {
+      "id": "floating-museum-twin-finish-kit-v4",
+      "file": "floating-museum-twin-finish-kit-v4.glb",
+      "source": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "sourceReceipt": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.json",
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+      "bytes": 5642860,
+      "root": "map_twin_finish_kit_root",
+      "nodes": [
+        "map_temple_amber",
+        "map_temple_teal",
+        "map_cliff",
+        "map_cypress",
+        "map_flower_cluster"
+      ]
+    }
+  ]
+}
