@@ -299,16 +299,21 @@ describe('voice challenge controller', () => {
     const sound = new FakeSound()
     const gate = deferred()
     sound.gates.push(gate)
-    const test = harness(WAVE, { 'comfortable-note': '57' }, [voice], [sound])
-    const pending = test.controller.start('vessel')
+    const fixture = harness(
+      WAVE,
+      { 'comfortable-note': '57' },
+      [voice],
+      [sound],
+    )
+    const pending = fixture.controller.start('vessel')
     await flush()
     expect(sound.patterns).toEqual(['gentle-wave'])
-    expect(test.controller.snapshot()).toMatchObject({
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'reference',
       message: 'Listen first.',
     })
     for (let i = 0; i < 140; i++)
-      test.emit(
+      fixture.emit(
         voice,
         observation(
           i,
@@ -316,22 +321,22 @@ describe('voice challenge controller', () => {
           1025 + i * 25,
         ),
       )
-    expect(test.events).toEqual([])
+    expect(fixture.events).toEqual([])
     gate.resolve()
     await pending
-    expect(test.controller.snapshot()).toMatchObject({
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'singing',
       message: 'Hold your note.',
     })
     for (let i = 140; i <= 144; i++)
-      test.emit(voice, observation(i, 57, 1025 + i * 25))
-    expect(test.controller.snapshot()).toMatchObject({
+      fixture.emit(voice, observation(i, 57, 1025 + i * 25))
+    expect(fixture.controller.snapshot()).toMatchObject({
       stepIndex: 1,
       message: 'Sway twice, then return.',
     })
-    expect(test.events.some((event) => event.type === 'break')).toBe(false)
+    expect(fixture.events.some((event) => event.type === 'break')).toBe(false)
     for (let i = 145; i < 270; i++)
-      test.emit(
+      fixture.emit(
         voice,
         observation(
           i,
@@ -339,17 +344,20 @@ describe('voice challenge controller', () => {
           1025 + i * 25,
         ),
       )
-    expect(test.events.filter((event) => event.type === 'break')).toEqual([
+    expect(fixture.events.filter((event) => event.type === 'break')).toEqual([
       { type: 'break', id: 'vessel' },
     ])
   })
 
   it('breaks on a deliberate whole-tone wave with a brief pitch dropout and latches before trailing silence', async () => {
-    const test = harness(WAVE, { 'comfortable-note': '57' })
-    await test.controller.start('vessel')
+    const fixture = harness(WAVE, { 'comfortable-note': '57' })
+    await fixture.controller.start('vessel')
     for (let sequence = 0; sequence <= 4; sequence++)
-      test.emit(test.voices[0], observation(sequence, 57, 1025 + sequence * 25))
-    expect(test.controller.snapshot().stepIndex).toBe(1)
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 57, 1025 + sequence * 25),
+      )
+    expect(fixture.controller.snapshot().stepIndex).toBe(1)
 
     for (let sample = 0; sample <= 112; sample++) {
       const sequence = sample + 5
@@ -358,40 +366,48 @@ describe('voice challenge controller', () => {
         sample === 52 || sample === 53
           ? null
           : 57 + beginnerWaveCents(seconds) / 100
-      test.emit(
-        test.voices[0],
+      fixture.emit(
+        fixture.voices[0],
         observation(sequence, midi, 1025 + sequence * 25),
       )
       if (sample === 98) {
         expect(
-          Math.round((test.game.snapshot().activeEncounter?.charge ?? 0) * 100),
+          Math.round(
+            (fixture.game.snapshot().activeEncounter?.charge ?? 0) * 100,
+          ),
         ).toBe(98)
-        expect(test.events.some((event) => event.type === 'break')).toBe(false)
+        expect(fixture.events.some((event) => event.type === 'break')).toBe(
+          false,
+        )
       }
     }
 
-    expect(test.events.filter((event) => event.type === 'break')).toEqual([
+    expect(fixture.events.filter((event) => event.type === 'break')).toEqual([
       { type: 'break', id: 'vessel' },
     ])
-    expect(test.game.saveProgress().completedBreakableIds).toEqual(['vessel'])
-    test.emit(test.voices[0], observation(118, null, 3975))
-    expect(test.game.saveProgress().completedBreakableIds).toEqual(['vessel'])
-    expect(test.events.filter((event) => event.type === 'break')).toHaveLength(
-      1,
-    )
-    test.controller.completeBreak()
-    expect(test.sounds[0].shatterCount).toBe(1)
+    expect(fixture.game.saveProgress().completedBreakableIds).toEqual([
+      'vessel',
+    ])
+    fixture.emit(fixture.voices[0], observation(118, null, 3975))
+    expect(fixture.game.saveProgress().completedBreakableIds).toEqual([
+      'vessel',
+    ])
+    expect(
+      fixture.events.filter((event) => event.type === 'break'),
+    ).toHaveLength(1)
+    fixture.controller.completeBreak()
+    expect(fixture.sounds[0].shatterCount).toBe(1)
   })
 
   it('cancels a settled wave and ignores its retained microphone callback', async () => {
-    const test = harness(WAVE, { 'comfortable-note': '57' })
-    await test.controller.start('vessel')
+    const fixture = harness(WAVE, { 'comfortable-note': '57' })
+    await fixture.controller.start('vessel')
     for (let i = 0; i <= 4; i++)
-      test.emit(test.voices[0], observation(i, 57, 1025 + i * 25))
-    expect(test.controller.snapshot().stepIndex).toBe(1)
-    test.controller.cancel()
+      fixture.emit(fixture.voices[0], observation(i, 57, 1025 + i * 25))
+    expect(fixture.controller.snapshot().stepIndex).toBe(1)
+    fixture.controller.cancel()
     for (let i = 5; i < 160; i++)
-      test.voices[0].emitRetained(
+      fixture.voices[0].emitRetained(
         0,
         observation(
           i,
@@ -399,138 +415,156 @@ describe('voice challenge controller', () => {
           1025 + i * 25,
         ),
       )
-    expect(test.game.snapshot().activeEncounter).toBeNull()
-    expect(test.game.saveProgress().completedBreakableIds).toEqual([])
-    expect(test.events.some((event) => event.type === 'break')).toBe(false)
+    expect(fixture.game.snapshot().activeEncounter).toBeNull()
+    expect(fixture.game.saveProgress().completedBreakableIds).toEqual([])
+    expect(fixture.events.some((event) => event.type === 'break')).toBe(false)
   })
 
   it('preserves the stored comfortable-note hold flow and break contract', async () => {
-    const test = harness(COMFORTABLE, { 'comfortable-note': '57' })
-    await test.controller.start('vessel')
+    const fixture = harness(COMFORTABLE, { 'comfortable-note': '57' })
+    await fixture.controller.start('vessel')
 
-    expect(test.controller.snapshot()).toMatchObject({
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'singing',
       target: 57,
       encounterId: 'vessel',
       pair: false,
       message: 'Hold it gently.',
     })
-    expect(test.sounds[0].references).toEqual([57])
+    expect(fixture.sounds[0].references).toEqual([57])
     for (let sequence = 0; sequence <= 4; sequence++)
-      test.emit(test.voices[0], observation(sequence, 57, 1025 + sequence * 25))
-    expect(test.events).toEqual([{ type: 'break', id: 'vessel' }])
-    test.controller.completeBreak()
-    expect(test.controller.snapshot().mode).toBe('off')
-    expect(test.sounds[0].shatterCount).toBe(1)
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 57, 1025 + sequence * 25),
+      )
+    expect(fixture.events).toEqual([{ type: 'break', id: 'vessel' }])
+    fixture.controller.completeBreak()
+    expect(fixture.controller.snapshot().mode).toBe('off')
+    expect(fixture.sounds[0].shatterCount).toBe(1)
   })
 
   it('uses only fresh monotonic evidence for comfortable-note calibration', async () => {
-    const test = harness(COMFORTABLE)
-    await test.controller.start('vessel')
-    expect(test.controller.snapshot().message).toBe('Hum an easy note.')
+    const fixture = harness(COMFORTABLE)
+    await fixture.controller.start('vessel')
+    expect(fixture.controller.snapshot().message).toBe('Hum an easy note.')
 
     for (let sequence = 0; sequence < 20; sequence++)
-      test.emit(
-        test.voices[0],
+      fixture.emit(
+        fixture.voices[0],
         observation(sequence, 57, 0),
         1000 + sequence * 25,
       )
-    expect(test.controller.snapshot().mode).toBe('finding')
+    expect(fixture.controller.snapshot().mode).toBe('finding')
     for (let sequence = 20; sequence <= 38; sequence++) {
       const capturedAtMs = 1000 + sequence * 25
-      test.emit(test.voices[0], observation(sequence, 57.1, capturedAtMs))
+      fixture.emit(fixture.voices[0], observation(sequence, 57.1, capturedAtMs))
     }
     await flush()
-    expect(test.preferences.get('comfortable-note')).toBe('57')
-    expect(test.controller.snapshot().mode).toBe('singing')
+    expect(fixture.preferences.get('comfortable-note')).toBe('57')
+    expect(fixture.controller.snapshot().mode).toBe('singing')
   })
 
   it('collects low before high, stores low alone, and gently rejects overlapping bands', async () => {
-    const test = harness(PAIR)
-    await test.controller.start('vessel')
-    expect(test.controller.snapshot()).toMatchObject({
+    const fixture = harness(PAIR)
+    await fixture.controller.start('vessel')
+    expect(fixture.controller.snapshot()).toMatchObject({
       findingTarget: 'low',
       message: 'Hum low, gently.',
     })
 
     for (let sequence = 0; sequence <= 18; sequence++)
-      test.emit(test.voices[0], observation(sequence, 57, 1000 + sequence * 25))
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 57, 1000 + sequence * 25),
+      )
     await flush()
-    expect(test.controller.snapshot()).toMatchObject({
+    expect(fixture.controller.snapshot()).toMatchObject({
       findingTarget: 'high',
       message: 'Hum higher, gently.',
     })
-    expect(JSON.parse(test.preferences.get('comfortable-pair')!)).toEqual({
+    expect(JSON.parse(fixture.preferences.get('comfortable-pair')!)).toEqual({
       version: 1,
       low: 57,
     })
 
     for (let sequence = 19; sequence <= 37; sequence++)
-      test.emit(test.voices[0], observation(sequence, 58, 1000 + sequence * 25))
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 58, 1000 + sequence * 25),
+      )
     await flush()
-    expect(test.controller.snapshot()).toMatchObject({
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'finding',
       findingTarget: 'high',
       message: 'Try a higher note.',
     })
-    expect(JSON.parse(test.preferences.get('comfortable-pair')!)).toEqual({
+    expect(JSON.parse(fixture.preferences.get('comfortable-pair')!)).toEqual({
       version: 1,
       low: 57,
     })
 
     for (let sequence = 38; sequence <= 56; sequence++)
-      test.emit(test.voices[0], observation(sequence, 60, 1000 + sequence * 25))
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 60, 1000 + sequence * 25),
+      )
     await flush()
-    expect(JSON.parse(test.preferences.get('comfortable-pair')!)).toEqual({
+    expect(JSON.parse(fixture.preferences.get('comfortable-pair')!)).toEqual({
       version: 1,
       low: 57,
       high: 60,
     })
-    expect(test.sounds[0].references).toEqual([57, 60])
-    expect(test.controller.snapshot().mode).toBe('singing')
+    expect(fixture.sounds[0].references).toEqual([57, 60])
+    expect(fixture.controller.snapshot().mode).toBe('singing')
   })
 
   it('collects low before high even when the first visited encounter asks for high', async () => {
-    const test = harness(HIGH_HOLD)
-    await test.controller.start('vessel')
-    expect(test.controller.snapshot()).toMatchObject({
+    const fixture = harness(HIGH_HOLD)
+    await fixture.controller.start('vessel')
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'finding',
       findingTarget: 'low',
     })
 
     for (let sequence = 0; sequence <= 18; sequence++)
-      test.emit(test.voices[0], observation(sequence, 57, 1000 + sequence * 25))
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 57, 1000 + sequence * 25),
+      )
     await flush()
-    expect(test.controller.snapshot()).toMatchObject({
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'finding',
       findingTarget: 'high',
     })
   })
 
   it('downgrades a saved pair whose tolerance bands overlap', () => {
-    const test = harness(PAIR, {
+    const fixture = harness(PAIR, {
       'comfortable-pair': JSON.stringify({ version: 1, low: 57, high: 58 }),
     })
-    expect(JSON.parse(test.preferences.get('comfortable-pair')!)).toEqual({
+    expect(JSON.parse(fixture.preferences.get('comfortable-pair')!)).toEqual({
       version: 1,
       low: 57,
     })
   })
 
   it('surfaces a safe retry after a stabilized reversed pair, then completes low to high', async () => {
-    const test = harness(PAIR, {
+    const fixture = harness(PAIR, {
       'comfortable-pair': JSON.stringify({ version: 1, low: 57, high: 60 }),
     })
-    await test.controller.start('vessel')
+    await fixture.controller.start('vessel')
 
     for (let sequence = 0; sequence <= 4; sequence++)
-      test.emit(test.voices[0], observation(sequence, 60, 1025 + sequence * 25))
-    expect(test.events).toContainEqual({
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 60, 1025 + sequence * 25),
+      )
+    expect(fixture.events).toContainEqual({
       type: 'challenge-reset',
       id: 'vessel',
       reason: 'wrong-order',
     })
-    expect(test.controller.snapshot()).toMatchObject({
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'singing',
       stepIndex: 0,
       message: 'Try the lower note again.',
@@ -538,14 +572,20 @@ describe('voice challenge controller', () => {
     })
 
     for (let sequence = 5; sequence <= 9; sequence++)
-      test.emit(test.voices[0], observation(sequence, 57, 1025 + sequence * 25))
-    expect(test.controller.snapshot()).toMatchObject({
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 57, 1025 + sequence * 25),
+      )
+    expect(fixture.controller.snapshot()).toMatchObject({
       stepIndex: 1,
       message: 'Sing the higher note.',
     })
     for (let sequence = 10; sequence <= 14; sequence++)
-      test.emit(test.voices[0], observation(sequence, 60, 1025 + sequence * 25))
-    expect(test.events).toContainEqual({ type: 'break', id: 'vessel' })
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 60, 1025 + sequence * 25),
+      )
+    expect(fixture.events).toContainEqual({ type: 'break', id: 'vessel' })
   })
 
   it('does not resurrect after late permission or reference completion', async () => {
@@ -593,22 +633,22 @@ describe('voice challenge controller', () => {
   it('rejects a retained callback from an older session', async () => {
     const first = new FakeVoice()
     const second = new FakeVoice()
-    const test = harness(
+    const fixture = harness(
       COMFORTABLE,
       { 'comfortable-note': '57' },
       [first, second],
       [new FakeSound(), new FakeSound()],
     )
-    await test.controller.start('vessel')
-    test.controller.cancel()
-    await test.controller.start('vessel')
+    await fixture.controller.start('vessel')
+    fixture.controller.cancel()
+    await fixture.controller.start('vessel')
     expect(first.activeSubscriptions).toBe(0)
     expect(second.activeSubscriptions).toBe(1)
 
     for (let sequence = 0; sequence <= 4; sequence++)
       first.emitRetained(0, observation(sequence, 57, 1025 + sequence * 25))
-    expect(test.game.snapshot().activeEncounter?.charge).toBe(0)
-    expect(test.events).toEqual([])
+    expect(fixture.game.snapshot().activeEncounter?.charge).toBe(0)
+    expect(fixture.events).toEqual([])
   })
 
   it('rejects a delayed frame captured before the final reference quiet boundary', async () => {
@@ -616,47 +656,53 @@ describe('voice challenge controller', () => {
     const sound = new FakeSound()
     const gate = deferred()
     sound.gates.push(gate)
-    const test = harness(
+    const fixture = harness(
       COMFORTABLE,
       { 'comfortable-note': '57' },
       [voice],
       [sound],
     )
-    const pending = test.controller.start('vessel')
+    const pending = fixture.controller.start('vessel')
     await flush()
     const delayed = observation(100, 57, 1090)
-    test.setClock(1100)
+    fixture.setClock(1100)
     gate.resolve()
     await pending
 
-    test.emit(voice, delayed, 1110)
+    fixture.emit(voice, delayed, 1110)
     for (let sequence = 101; sequence <= 104; sequence++)
-      test.emit(voice, observation(sequence, 57, 1100 + (sequence - 100) * 25))
-    expect(test.events).toEqual([])
-    expect(test.game.snapshot().activeEncounter?.charge).toBeCloseTo(0.75)
-    test.emit(voice, observation(105, 57, 1225))
-    expect(test.events).toContainEqual({ type: 'break', id: 'vessel' })
+      fixture.emit(
+        voice,
+        observation(sequence, 57, 1100 + (sequence - 100) * 25),
+      )
+    expect(fixture.events).toEqual([])
+    expect(fixture.game.snapshot().activeEncounter?.charge).toBeCloseTo(0.75)
+    fixture.emit(voice, observation(105, 57, 1225))
+    expect(fixture.events).toContainEqual({ type: 'break', id: 'vessel' })
   })
 
   it('replays a partial pair through the same microphone and clears its core step', async () => {
-    const test = harness(PAIR, {
+    const fixture = harness(PAIR, {
       'comfortable-pair': JSON.stringify({ version: 1, low: 57, high: 60 }),
     })
-    await test.controller.start('vessel')
+    await fixture.controller.start('vessel')
     for (let sequence = 0; sequence <= 4; sequence++)
-      test.emit(test.voices[0], observation(sequence, 57, 1025 + sequence * 25))
-    expect(test.controller.snapshot().stepIndex).toBe(1)
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 57, 1025 + sequence * 25),
+      )
+    expect(fixture.controller.snapshot().stepIndex).toBe(1)
 
-    await test.controller.replay()
-    expect(test.voices[0].subscriptions).toBe(1)
-    expect(test.voices[0].activeSubscriptions).toBe(1)
-    expect(test.sounds[0].references).toEqual([57, 60, 57, 60])
-    expect(test.controller.snapshot()).toMatchObject({
+    await fixture.controller.replay()
+    expect(fixture.voices[0].subscriptions).toBe(1)
+    expect(fixture.voices[0].activeSubscriptions).toBe(1)
+    expect(fixture.sounds[0].references).toEqual([57, 60, 57, 60])
+    expect(fixture.controller.snapshot()).toMatchObject({
       mode: 'singing',
       stepIndex: 0,
       stepCharge: 0,
     })
-    expect(test.game.saveProgress().completedBreakableIds).toEqual([])
+    expect(fixture.game.saveProgress().completedBreakableIds).toEqual([])
   })
 
   it('cleans up and unpauses when a session factory throws', async () => {
@@ -722,17 +768,20 @@ describe('voice challenge controller', () => {
   })
 
   it('cancels partial pair progress without saving it when the outer session pauses', async () => {
-    const test = harness(PAIR, {
+    const fixture = harness(PAIR, {
       'comfortable-pair': JSON.stringify({ version: 1, low: 57, high: 60 }),
     })
-    await test.controller.start('vessel')
+    await fixture.controller.start('vessel')
     for (let sequence = 0; sequence <= 4; sequence++)
-      test.emit(test.voices[0], observation(sequence, 57, 1025 + sequence * 25))
-    test.setCanPlay(false)
-    test.game.setPaused(true)
-    test.controller.cancel()
-    expect(test.game.snapshot().activeEncounter).toBeNull()
-    expect(test.game.snapshot().paused).toBe(true)
-    expect(test.game.saveProgress().completedBreakableIds).toEqual([])
+      fixture.emit(
+        fixture.voices[0],
+        observation(sequence, 57, 1025 + sequence * 25),
+      )
+    fixture.setCanPlay(false)
+    fixture.game.setPaused(true)
+    fixture.controller.cancel()
+    expect(fixture.game.snapshot().activeEncounter).toBeNull()
+    expect(fixture.game.snapshot().paused).toBe(true)
+    expect(fixture.game.saveProgress().completedBreakableIds).toEqual([])
   })
 })

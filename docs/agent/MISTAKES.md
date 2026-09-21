@@ -1356,6 +1356,13 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 **Rule:** verify projected face overlap and front-to-back depth in the exported GLB, then confirm the actual in-game painting and mirror. Isolate the inset and give it measured clearance without deforming the rim.
 **See:** `art/glass-adventure/v5/finalize_frame.py` and `v5/exports/runtime-reimport.json`.
 
+### Distinguish fixture calls from test registrations in metric reports
+
+**Symptom:** new voice regressions were reported as having no assertions despite checking real completion and capture lifecycle.
+**Cause:** the test-shape regex also splits on fixture calls such as `test.emit(...)` and `test.wait(...)`, fragmenting a real assertion-bearing test.
+**Rule:** inspect the flagged blocks before adding assertions or changing a baseline. Name local harnesses `fixture` to distinguish them from the test API; preserve the behavioral assertions. Do not add token checks to satisfy a textual collector.
+**See:** `scripts/code-metrics.mjs:testShapeMetrics`, `packages/glass-game/src/ui/voice-challenge.test.ts`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

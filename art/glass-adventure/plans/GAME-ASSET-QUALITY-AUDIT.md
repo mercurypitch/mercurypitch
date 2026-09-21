@@ -117,6 +117,10 @@ Starting sources:
 
 - [ ] Research and record version-specific references and any unresolved conflicts.
 - [ ] Produce asset/runtime inventory and baseline measurements.
+- [ ] Review the large authored modules `enclosed-museum-kit.ts`,
+      `journey/architecture.ts` and `journey/water.ts` while mapping asset ownership.
+      Extract reusable families only where they improve authoring or lifecycle clarity;
+      the current code-health baseline records their deliberate growth above 800 lines.
 - [ ] Audit representative families, then every shipped asset and placement.
 - [ ] Prioritize visible defects, interaction defects, then measured cost regressions.
 - [ ] Repair the highest-priority family; verify before/after and commit separately.

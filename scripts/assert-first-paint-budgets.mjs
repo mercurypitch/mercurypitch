@@ -107,6 +107,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'which-singer-has-my-vocal-range.html': 40,
   'glass.html': 40,
 
+  // The separate 3D museum campaign. Measured 46 across its page-scoped
+  // sheet, the entry prelude and vendor CSS.
+  'glass-game.html': 60,
+
   // Karaoke Night and its two other doors. Measured 67.
   'karaoke-night.html': 90,
   'karaoke.html': 90,

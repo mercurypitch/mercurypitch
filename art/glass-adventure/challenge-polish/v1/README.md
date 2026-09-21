@@ -135,6 +135,22 @@ completed runtime cases. It is outside the repository ESLint project-service
 configuration and the existing changed-source lint candidate set; a direct ESLint
 invocation rejects that path before parsing. No lint configuration was relaxed.
 
+## Main-branch gate integration
+
+The new first-paint CSS gate measures 46,648 bytes (45.55 KiB) for the compiled
+Glassworks entry across three stylesheets. Its explicit 60 KiB budget follows the
+existing rounded-headroom convention; the separate JavaScript budget is unchanged.
+The budget tests and all 17 compiled entry checks pass locally.
+
+The code-health baseline records four deliberate additions above 800 lines:
+`enclosed-museum-kit.ts` (821), `journey/architecture.ts` (817),
+`journey/water.ts` (870), and the voice browser specification (1,367, currently
+classified as production by the collector). The three authored scene modules
+remain an asset-audit/refactoring worklist, not a reason to split code arbitrarily.
+No additional file crosses 1,500 lines. Test assertion budgets remain unchanged:
+renaming the local controller harness from `test` to `fixture` removes false test
+registrations in the textual scanner while preserving every behavioral assertion.
+
 ## Practical limitations
 
 Shot endpoints and subject sight rays are constrained by authored rooms and
