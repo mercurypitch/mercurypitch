@@ -80,10 +80,33 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Two deliberate choices here.
+         Variable ranges, not four static cuts per family: the stylesheets ask
+         for 650, 680, 720, 750, 760, 780 and 800 as well, and against static
+         cuts the browser rounds every one of those to the nearest it was
+         given. A `wght@400..800` face renders them as written, in one file
+         per family instead of four.
+         And it loads without blocking the first paint. As a plain stylesheet
+         this cost ~850 ms of render-blocking time on a throttled phone --
+         a cross-origin DNS, TLS and round trip that nothing can paint
+         through. `display=swap` was already set, so text has always drawn in
+         the fallback face first and swapped; this only stops the document
+         waiting for the swap to become possible. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Outfit:wght@400..800&family=Plus+Jakarta+Sans:wght@400..800&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="
+        this.media = 'all'
+        this.onload = null
+      "
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Outfit:wght@400..800&family=Plus+Jakarta+Sans:wght@400..800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
 
     <!-- Open Graph -->
     <meta
