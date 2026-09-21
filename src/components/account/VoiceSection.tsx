@@ -23,6 +23,7 @@ import { adoptDeviceVoiceprints, adoptionNoticeDue, declineAdoption, listAdoptab
 import { legendArt, LegendCaricature, legendThumbSrc, } from '@/features/mirror/LegendCaricature'
 import { copyVoiceprintRecordLink, renderVoiceprintCard, shareVoiceprintRecord, } from '@/features/mirror/voiceprint-share'
 import { openVoiceConstellation } from '@/features/voice-constellation/navigation'
+import { trackEvent } from '@/lib/analytics'
 import { computeDelta } from '@/lib/mirror/metrics'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { showNotification } from '@/stores/notifications-store'
@@ -112,6 +113,15 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
     setSharing(true)
     try {
       const outcome = await shareVoiceprintRecord(record, variant)
+      // Counted whichever way it left: a share sheet, a saved picture, or a
+      // saved picture with the link copied beside it. Not on 'dismissed'
+      // (the sheet opened and was closed) and not on 'unavailable'.
+      if (
+        outcome === 'shared' ||
+        outcome === 'downloaded' ||
+        outcome === 'downloaded-link-copied'
+      )
+        trackEvent('voice_share')
       if (outcome === 'unavailable')
         showNotification('This voiceprint has no twin card to share.', 'info')
       // No share sheet here (a desktop): the picture was saved and the link
@@ -144,6 +154,7 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
     setCopyingLink(true)
     try {
       const outcome = await copyVoiceprintRecordLink(record)
+      if (outcome === 'copied') trackEvent('voice_link_copied')
       showNotification(
         outcome === 'copied'
           ? 'Link copied. Paste it anywhere and it shows your card.'

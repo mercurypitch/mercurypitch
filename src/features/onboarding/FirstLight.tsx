@@ -139,6 +139,16 @@ export const FirstLight: Component<FirstLightProps> = (props) => {
       },
       'face',
     )
+    // First Light's own share count. Not the Mirror's `card_shared`: that one
+    // is a live Google Ads conversion and has to go on meaning a share from
+    // the Voice Mirror. Counted whichever way the card left, but not when the
+    // sheet was opened and dismissed, and not when there was nothing to share.
+    if (
+      outcome === 'shared' ||
+      outcome === 'downloaded' ||
+      outcome === 'downloaded-link-copied'
+    )
+      trackOnboarding('onboarding_share')
     return outcome === 'downloaded-link-copied'
       ? shareOutcomeMessage(outcome)
       : null

@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   copyVoiceprintRecordLink: vi.fn(),
   listVoiceprints: vi.fn(),
   renderVoiceprintCard: vi.fn(),
+  shareVoiceprintRecord: vi.fn(),
+  trackEvent: vi.fn(),
 }))
 
 vi.mock('@/db/services/voiceprint-service', () => ({
@@ -33,7 +35,11 @@ vi.mock('@/features/mirror/LegendCaricature', () => ({
 vi.mock('@/features/mirror/voiceprint-share', () => ({
   copyVoiceprintRecordLink: mocks.copyVoiceprintRecordLink,
   renderVoiceprintCard: mocks.renderVoiceprintCard,
-  shareVoiceprintRecord: vi.fn(async () => 'shared'),
+  shareVoiceprintRecord: mocks.shareVoiceprintRecord,
+}))
+
+vi.mock('@/lib/analytics', () => ({
+  trackEvent: mocks.trackEvent,
 }))
 
 vi.mock('@/features/voice-constellation/navigation', () => ({
@@ -92,6 +98,7 @@ beforeEach(() => {
   localStorage.clear()
   currentPrints = [bowie]
   mocks.listVoiceprints.mockImplementation(async () => currentPrints)
+  mocks.shareVoiceprintRecord.mockResolvedValue('shared')
 })
 
 // A desktop has no share sheet, so Share there only ever saved a picture and
@@ -110,6 +117,7 @@ describe('VoiceSection — copy link', () => {
       expect.stringMatching(/link copied/i),
       'success',
     )
+    expect(mocks.trackEvent).toHaveBeenCalledWith('voice_link_copied')
   })
 
   it('says when the link could not be copied, rather than nothing', async () => {
@@ -124,7 +132,43 @@ describe('VoiceSection — copy link', () => {
         'error',
       )
     })
+    expect(mocks.trackEvent).not.toHaveBeenCalled()
   })
+})
+
+// Until 0.9.12 this page reported nothing at all: every share and every copy
+// here was invisible in the funnel, and the Mirror's own names could not be
+// borrowed — `card_shared` is a live Ads conversion that has to keep meaning
+// a share from the Voice Mirror.
+describe('VoiceSection — share metrics', () => {
+  it.each(['shared', 'downloaded', 'downloaded-link-copied'] as const)(
+    'counts a share that left as %s',
+    async (outcome) => {
+      mocks.shareVoiceprintRecord.mockResolvedValue(outcome)
+      render(() => <VoiceSection signedIn />)
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Share' }))
+
+      await waitFor(() => {
+        expect(mocks.trackEvent).toHaveBeenCalledWith('voice_share')
+      })
+    },
+  )
+
+  it.each(['dismissed', 'unavailable'] as const)(
+    'counts nothing when the share ended as %s',
+    async (outcome) => {
+      mocks.shareVoiceprintRecord.mockResolvedValue(outcome)
+      render(() => <VoiceSection signedIn />)
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Share' }))
+
+      await waitFor(() => {
+        expect(mocks.shareVoiceprintRecord).toHaveBeenCalled()
+      })
+      expect(mocks.trackEvent).not.toHaveBeenCalled()
+    },
+  )
 })
 
 describe('VoiceSection portrait flip', () => {
