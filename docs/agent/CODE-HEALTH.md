@@ -53,6 +53,38 @@ finding below is a case of a rule that was written down but never made
 executable. The fix pattern is the same each time — turn the convention into a
 check.
 
+### Re-measured 2026-09-21 at `608891d7`
+
+The table above is the 2026-08-14 audit and is kept as written, because most of
+this document reasons from those numbers. Half of them have since moved, in one
+direction. Run `pnpm metrics` for today's; this is what five weeks without the
+ratchet running did:
+
+| Signal                                 | 2026-08-14   | 2026-09-21    |
+| -------------------------------------- | ------------ | ------------- |
+| Production files over 800 lines        | 78           | **129**       |
+| ...of those, over 1500                 | 26           | **44**        |
+| Layer-boundary violations              | 181          | **227**       |
+| Cross-feature imports                  | 300          | **506**       |
+| Import cycles                          | 22           | **38**        |
+| Functions over cognitive complexity 15 | 306          | **435**       |
+| ...of those, over 50                   | 30           | **46**        |
+| Explicit `any` in production           | 7            | **11**        |
+| Code duplication                       | 2.2% / 2.41% | 1.68% / 1.87% |
+
+Duplication is the only one that improved. `@ts-ignore` / `@ts-nocheck` is still
+0 and `tsc --noEmit` is still clean, so the compiler-refereed half of the verdict
+holds exactly as stated.
+
+**Not re-measured:** type coverage, TODO/FIXME count, test coverage, and the
+mutation study in §5 — those need a full audit pass rather than
+`scripts/code-metrics.mjs`, so treat their figures as 2026-08-14 values. The
+test-shape metrics that _are_ in the harness got worse too: presence-only blocks
+166 → 333, blocks without assertion 44 → 50, e2e hard waits 485 → 500.
+
+The gap this exposes is not in the numbers, it is in §8 item 2 — see the note
+there. The ratchet existed, was documented as done, and ran nowhere.
+
 ---
 
 ## 2. What is genuinely good
