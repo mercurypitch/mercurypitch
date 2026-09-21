@@ -690,6 +690,28 @@ input:checked + .settingsSlider:before {
   color: var(--on-accent, var(--bg-primary));
 }
 
+/* A directory's own badge image (PeerPush). Sized by the width it ships at,
+   with the height written down so the row does not jump when it loads, and
+   held back a shade until it is hovered — it is an acknowledgement, not a
+   call to action. */
+.directoryBadge {
+  display: inline-block;
+  margin-top: 14px;
+  border-radius: 6px;
+  opacity: 0.78;
+  transition: opacity 0.2s;
+}
+.directoryBadge:hover,
+.directoryBadge:focus-visible {
+  opacity: 1;
+}
+.directoryBadge img {
+  display: block;
+  width: 230px;
+  height: auto;
+  max-width: 100%;
+}
+
 /* Pitch Buffer Pills */
 .pitchBufferPills {
   --pitch-buffer-active-bg: var(--accent-dim);
