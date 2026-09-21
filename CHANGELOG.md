@@ -12,6 +12,19 @@ whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 - **MercuryPitch on PeerPush.** The listing is linked at the bottom of
   Settings, under About.
 
+### Changed
+
+- **The home page is a quarter lighter on a phone.** The fonts and the room
+  pictures load smaller and later, so the page draws sooner on a slow
+  connection.
+
+### Fixed
+
+- **Your lyrics come back whole.** A line whose first word had no timing could
+  vanish when you exported the words and opened them again. It stays now, with
+  its words, and an empty line holds its place instead of pulling the timings
+  after it out of step.
+
 ## [0.9.11] - 2026-09-20
 
 A tablet's jam room gets its song list back and a row of its screen, and the
