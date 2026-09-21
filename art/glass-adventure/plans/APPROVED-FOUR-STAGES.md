@@ -186,7 +186,7 @@ changes and active agents' ownership; root owns review and Git operations.
   retained. The three tasks cost 90 credits. CI at this asset checkpoint passed
   native Android/iOS, lint/typecheck, unit and journey checks; two general web
   browser shards were still running at the recorded review.
-- The concept-fidelity runtime pass has been visually reviewed in its final
+- `8fa38d83`: concept-fidelity runtime pass pushed and visually reviewed in its final
   compiled desktop/tablet/phone host. Three landmasses retain four stable
   destinations. Bright clouds, authored camera, new halls/cliffs/gardens,
   projected cartouches and a compact illustrated gallery card replace the first

@@ -58,7 +58,9 @@ stricter hollow-vessel/fracture requirements.
       frame rate from software-rendered proofs.
 - [x] Scoped checks and new static preview.
 - [x] Asset stage committed/pushed as `340b8139`.
-- [ ] Runtime stage push and current-head CI acceptance (record below).
+- [x] Runtime stage committed/pushed as `8fa38d83`; final visual review found no
+      blockers.
+- [ ] Current-head CI acceptance. New runtime checks are running; no merge.
 
 The currently shared static HTTPS snapshot stays unchanged during construction.
 Handoff the next snapshot only after the complete host has been inspected.
