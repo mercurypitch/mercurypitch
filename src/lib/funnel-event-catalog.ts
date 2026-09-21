@@ -83,6 +83,13 @@ export const APP_FUNNEL_EVENTS = [
   'voice_compare_start',
   'voice_compare_complete',
   'voice_export',
+  /** The account page's own share buttons (Account -> Voice). Deliberately NOT
+   *  the Mirror's `card_shared` / `link_copied`: `card_shared` is a live Google
+   *  Ads conversion and has to go on meaning "someone shared from the Voice
+   *  Mirror", and mirrorEvents stores an event name and a client id and nothing
+   *  else — a name per surface is the only way to tell two surfaces apart. */
+  'voice_share',
+  'voice_link_copied',
   'voice_delete',
   'voice_storage_warning',
 ] as const
@@ -146,6 +153,10 @@ export const ONBOARDING_FUNNEL_EVENTS = [
   'onboarding_track_full',
   'onboarding_track_gallery',
   'onboarding_another_voiceprint',
+  /** The twin beat's Share button got the card out — a share sheet, a saved
+   *  picture, or a saved picture with the link copied beside it. First Light's
+   *  own name, for the same reason the account page has one. */
+  'onboarding_share',
   'onboarding_mic_granted',
   'onboarding_mic_denied',
   'onboarding_map_room',
