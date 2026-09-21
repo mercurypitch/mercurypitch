@@ -11,6 +11,226 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.12] - 2026-09-21
 
+### A line whose first word carries no stamp is no longer deleted (#841)
+
+`LRC_LINE_RE` in `lyrics-service.ts` requires a leading timestamp, so
+`parseLrcFile` skips a body that opens with a bare word outright. The line is
+not mistimed — its text is gone. Four builders emit one stamp per word and none
+of them guaranteed one at the head: `lyricsfileToLrc`, `buildWordLevelLrc`,
+`buildLrcTextFromCanonical` and `plainLineToLrc`. `segmentsToLrc` does not,
+because Whisper stamps every word.
+
+The maps are sparse by construction. `parseLyricsfile` fills `starts[wordIdx]`
+only for a word carrying `start_ms` and keeps the line's map as soon as _any_
+word had one, so a `.lyricsfile` from another tool whose opening word is untimed
+lost the whole line on the way in.
+
+One helper, `stampedLrcLine` in `lrc-generator.ts`, is now the only place that
+writes a word-stamped line, and it always opens with a stamp:
+`starts?.[0] ?? lineTime`. That is not a shortcut — it is the only encoding the
+parser reads back. `parseLrcFile` eats the head stamp as the line time and
+`parseLrcWordTimings` then reads word 0 as starting with the line, so a first
+word that has a start is already fully described by the head; writing it again
+would put a second square stamp at the head of the body, which is standard LRC
+for a repeated line and which `parseLrcWordTimings` deliberately refuses to read
+as a word time. Output is byte-identical wherever the first word was already
+stamped.
+
+A line that cannot name a time is not free to claim `0` either — `parseLrcFile`
+sorts by time, so a zero head moves it to the front of the file. Callers carry
+the previous line's time forward and the sort is stable, so an equal time leaves
+the line where it was.
+
+Second bug in the same path: `lyricsfileToLrc` wrote `[time] ` for a line with
+no words, and a stamp with nothing after it is dropped just as surely — taking
+every following timing key one index out of step. It writes `[time] ~Rest~`
+now, which is what the rest of the app already uses for a timed line with
+nothing to sing.
+
+Known and deliberately not fixed here: `buildWordLevelLrc` receives no line
+times (both call sites in `handleDownloadLrc` pass raw text and a map), so a
+line with an untimed opening word reads back at word 1's time. Lossy; the
+alternative was losing the line. Threading `lineTimes` through those two call
+sites is the real fix.
+
+`src/tests/lrc-leading-stamp-roundtrip.test.ts` round-trips all four builders
+through `parseLrcFile` + `parseLrcWordTimings` rather than asserting on the
+emitted text — a string assertion passes for any leading stamp, including one
+the parser reads as a repeated-line marker. Two of its seven tests passed before
+the fix and are regression guards for exactly that.
+
+### The code-health ratchet had never run anywhere (#842, and a fix in #848)
+
+`pnpm metrics:check` was listed in `CODE-HEALTH.md` §8 as "Done — freeze the
+architecture baseline". It was in no workflow, no git hook, and this repo has no
+husky or lefthook. It was a command a human could choose to type, and in the
+five weeks from `ad480455` to today **twelve of the fifteen tracked numbers had
+regressed** — `layering.crossFeatureImports` 329 -> 506, `tests.presenceOnlyBlocks`
+166 -> 333, `complexity.functionsOverCognitive15` 311 -> 435, `cycles.circular`
+22 -> 38.
+
+Re-baselined onto today rather than gated against 2026-08-14, which would fail
+every PR on arrival and have the gate switched off inside a day. The baseline is
+a record of agreed debt, not a high-water mark.
+
+The `Code health ratchet` job in `pr-gate.yml` is gated on the scope step's
+`install` output — true exactly when a source surface is in scope — and is in
+the `PR Gate` job's `needs`, so the single required check covers it. Its own job
+rather than a step in `lint` because it spends ~100s on a second full
+audit-ESLint pass plus dependency-cruiser; alongside the browser shards that
+disappears into the existing wall clock.
+
+`--check` also fails now when a tracked metric is _missing_, not only when one
+regressed. `currentRatchet()` keeps numbers only and every collector returns
+`{ skipped: '...' }` when its tool is absent, and the comparison walked
+`current` — so an absent metric was never examined and the ratchet would keep
+reporting "No regressions" while covering nine metrics instead of fifteen.
+
+**It caught one the same evening, on `main`.** #847 merged on checks that had
+gone green before the job existed, so the ratchet never ran on it, and its
+`omits the button when no toggle is supplied` pushed `presenceOnlyBlocks`
+333 -> 334. The metric counts a block whose every matcher is one of four weak
+ones (`toBeInTheDocument`, `toBeVisible`, `toBeTruthy`, `toBeDefined`), and that
+block asserted only `not.toBeInTheDocument()`. Fixed on #848's branch:
+`toBeNull()` for the absent button, plus a count of the two unconditional
+controls beside it, because an assertion that something is absent passes just as
+well when nothing rendered at all.
+
+### `lint:audit`'s errors mean something now (#843, #844)
+
+275 errors, of which **272 were artefacts of the audit config**.
+`eslint.audit.config.js` did not load `eslint-plugin-solid`, which
+`eslint.config.js:5` does, so every `// eslint-disable-next-line solid/reactivity`
+in `src` reported as `Definition for rule ... was not found` — 143 of them, plus
+2 for `solid/prefer-for`, and the count grew each time someone correctly
+suppressed the rule. It also spread `tseslint.configs.recommended` without the
+everyday gate's four `^_` ignore patterns, so `no-unused-vars` fired on 127
+deliberately underscore-prefixed names.
+
+Both gaps closed, at the severities `eslint.config.js` already uses. Side effect
+worth naming: with the rule actually resolving, the audit now reports the same
+11 genuine `solid/reactivity` warnings that `pnpm lint` does, which is the whole
+5666 -> 5677 warning delta.
+
+The three surviving errors were real and all in `workers/db-worker/src/auth.ts`:
+`endOtherSessions` imported and never called, a `RateLimitBucket` interface
+nothing reads, and a `respond` parameter `handleGoogleCallback` never uses
+because every exit path there redirects rather than answering with JSON.
+Removed rather than renamed to `_respond` — in this codebase `_` is reserved for
+a signature an external contract fixes, like Cloudflare's `scheduled()` shape at
+`index.ts:2270-2272`. Together: 275 errors -> 0. The 5677 warnings are a
+separate pass. Refs #464.
+
+### The first-paint budget weighs CSS too (#845)
+
+`FIRST_PAINT_BUDGETS_KB` was documented as "KB of uncompressed JavaScript", and
+a render-blocking `<link rel="stylesheet">` stops the first paint exactly as a
+script does. Measured on `608891d7`: `index.html` and the four crawlable doors
+that are the main app each block on **1009 KB of CSS**, 871 of it the single
+`index-*.css` that `src/index.tsx:10-13` builds by importing `uvr.css`,
+`vocal-analysis.css`, `exercises.css` and `app.css` globally. Splitting that is
+#379; this makes sure it cannot grow, or quietly land on a standalone page,
+without the build saying so.
+
+`documentStylesheetUrls` reads each `<link>` whole rather than matching
+positionally, because attribute order inside the tag is Vite's business, and
+takes `rel="stylesheet"` only — a `preload` names the same file without blocking
+on it. There is no closure to walk: Vite inlines `@import` at build time.
+
+Two tables rather than one sum, because the diagnosis differs — a JS breach
+means an import dragged a feature in, a CSS breach means a global sheet grew or
+reached a page it should not have. A test asserts the two tables describe the
+same set of documents. Both stale-ceiling cases fail: a budget for a page the
+build no longer emits, and a budget for a page that still exists and no longer
+links any stylesheet.
+
+### The agent docs were 30-44% low (#846)
+
+`REFACTOR-PLAN.md`'s LOC table, re-measured: `StemMixer.tsx` 6,268 -> 8,172,
+`App.tsx` 3,286 -> 4,723, `UvrPanel.tsx` 2,641 -> 3,444, `piano-roll.ts`
+5,086 -> 5,965. `VocalAnalysis.tsx` was still listed and had been deleted on
+2026-08-01 by `591bc095` — the same integration-train commit that last revised
+the document.
+
+The churn column read "Commits (last 400)", and 400 commits is fifteen days in
+this repo, so that column silently meant something different at every reading.
+Replaced with twelve-month churn, the window `scripts/code-metrics.mjs` uses.
+§3.5's "low churn" rationale for deferring `piano-roll.ts` was wrong in the
+other direction: it is the top hotspot, 61 commits in twelve months and summed
+cognitive complexity 687, the highest in the codebase. It still goes last, on
+difficulty rather than on safety. §3.3 is repointed at `UvrPanel.tsx`, which
+carries 46 `createSignal` calls.
+
+### StemMixer slices D and C1 (#847, #848)
+
+**Slice D** — the melody-audition signal, its playhead-following effect, the
+toggle and the synth's disposal move to
+`useStemMixerMelodyAuditionController.ts`. The plan said "`melody-synth.ts`
+already exists — move the remainder there"; the remainder is a `createSignal`, a
+`createEffect` and an `onCleanup`, and folding those into a pure audio graph
+with no Solid import would give a leaf module a dependency on both the audio and
+the pitch-analysis controller. Same call slice F made (#683).
+
+Worth recording: the original effect reads `elapsed` _before_ deciding whether
+to sound anything, and the first explanation written for it — that this is what
+subscribes the effect to the playhead so a mid-song toggle follows immediately —
+is wrong. `enabled` is tracked, so a toggle re-runs the effect by itself. What
+the early read really does is keep the effect subscribed while the feature is
+off, waking every frame to re-send silence. A mutation test caught it. The
+ordering is preserved exactly; narrowing it is a behaviour change wanting its
+own PR.
+
+**Slice C1** — the alignment memo's note-source ladder becomes
+`selectAlignmentNotes()` in `transcription-alignment-utils.ts`, beside
+`selectAlignmentSegments` and `computeAlignment`. Slice C was three unrelated
+things and the plan table now carries them as three rows: C2 (auto word-sync) is
+reactive orchestration and belongs in the lyrics controller, and C3 is mis-filed
+— it is A/B loop plumbing, not word-sync, and belongs with slice A.
+
+One behaviour-adjacent change, stated plainly: `audio.getPitchHistory()` was
+called only when both offline series were empty and is now called on every
+recompute. Safe here specifically because it is not reactive —
+`useStemMixerAudioController.ts:1819` defines it as `() => pitchHistory`, a plain
+closure over a mutable `let`. The expensive part, mapping and merging the
+history, still happens only on the rung that needs it, and a spy asserts that.
+`canonicalLrcLines()` **is** an `Accessor`, so its read deliberately stays after
+the no-notes return: hoisting it would subscribe the memo to every lyric edit
+with nothing to align, and each recompute hands downstream a fresh object.
+
+### A quarter less data on the landing page (#850)
+
+Lighthouse 13.5.0, mobile preset, five runs each of `main` and the branch back
+to back, because a single run on this app swings the score six points. Page
+weight 3049 KB -> **2266 KB**, LCP 17719 ms -> **14858 ms**, score unchanged at
+51 — the LCP curve is flat that far out, so the improvement is real for people
+on phones and invisible to the number.
+
+- **mediabunny on demand.** `jam-store` imports `StemEncodeAbortedError` from
+  `portable-audio`, and a value import drags the module's dependencies with it,
+  so every visitor downloaded a 169 KB audio encoder to look at a landing page
+  that never encodes anything. Both use sites were already inside `async`
+  functions. -133 KiB, and the chunk is no longer requested.
+- **Fonts as variable ranges, off the critical path.** The request asked for
+  four static cuts per family while the stylesheets ask for 650, 680, 720, 750,
+  760, 780 and 800 — every one of which the browser rounded to the nearest cut
+  it had. `wght@400..800` renders them as written, in one file per family.
+  `display=swap` was already set, so text always drew in the fallback and
+  swapped; `media="print"` + `onload` only stops the document waiting for that
+  to become possible. -841 ms of render-blocking time. A `noscript` copy covers
+  JavaScript being off, and `script-src` already carries `'unsafe-inline'`.
+- **Gallery cards at card size.** The cards render at 378 CSS px on a phone and
+  434 on a desktop and were handed the rooms' full backgrounds — 1672x941, and
+  2048x1143 at 401 KB for the jam stage. Each has an 880w and a ~1100-1320w cut
+  now, chosen with `srcset`/`sizes`; the jam card is a CSS background so it uses
+  `image-set` with a plain `url()` first, without which a browser lacking
+  `image-set` would fall back to the 401 KB original. -597 KiB. The originals
+  are untouched — the rooms still load them.
+
+`home-destinations.test.tsx` derives its set of permitted pictures from
+`BACKGROUND_CATALOG`, so a cover pointing at a supporter picture fails there
+rather than shipping. Rather than loosen that, it strips a cut back to its
+source and checks _that_, so a card cut of a supporter picture still fails.
+
 ### Every share surface reports, and none of them borrows the Mirror's name
 
 Measured against prod D1 on 2026-09-21: `trackFunnel('link_copied')` had
