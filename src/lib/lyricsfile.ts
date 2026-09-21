@@ -382,7 +382,12 @@ export function lyricsfileToLrc(parsed: ParsedLyricsfile): string {
   const body = parsed.lines.map((line, lineIdx) => {
     const words = splitWithSpacing(line.text).map((word) => word.trim())
     const starts = parsed.wordTimings[lineIdx]
-    if (starts === undefined || words.length === 0) {
+    // A stamp with nothing after it is dropped by `parseLrcFile` just as
+    // surely as a line with no stamp, and it takes every following timing
+    // key one index out of step. `~Rest~` is what the rest of the app writes
+    // for a blank timed line, and it survives the round trip.
+    if (words.length === 0) return `[${formatTimeLrc(line.time)}] ~Rest~`
+    if (starts === undefined) {
       return `[${formatTimeLrc(line.time)}] ${line.text}`
     }
     return stampedLrcLine(words, starts, line.time)

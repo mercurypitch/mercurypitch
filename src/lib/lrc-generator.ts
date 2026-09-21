@@ -41,29 +41,35 @@ export function formatTimeLrc(secs: number): string {
  * mistimed, its text is lost — and that is what a line whose FIRST word has
  * no start of its own used to produce.
  *
- * The head stamp is the first word's start when it has one, because
- * `parseLrcFile` eats the head stamp as the line time and
- * `parseLrcWordTimings` then reads the first word as starting with the line.
- * Spelling that word's time again would put a second SQUARE stamp at the head
- * of the body, which is standard LRC for "sung again at" and which the parser
- * deliberately refuses to read as a word time — so the word would silently
- * fall back to the line time instead. Only when the first word has no start
- * does the line's own time go in the head, which is exactly the answer the
- * parser gives that word anyway.
+ * So the first word is the only one that always carries a stamp, and the only
+ * one that falls back to `lineTime`. Its stamp IS the line's: `parseLrcFile`
+ * eats it as the line time, and `parseLrcWordTimings` then reads that word as
+ * starting with the line. Writing a separate head stamp in front of it would
+ * put a second SQUARE stamp at the head of the body, which is standard LRC
+ * for "sung again at" and which the parser deliberately refuses to read as a
+ * word time — the word would silently fall back to the line time instead.
+ *
+ * `lineTime` must be a time that keeps the line in source order. A line that
+ * cannot name one is NOT free to claim `0`: `parseLrcFile` sorts by time, so
+ * a zero head would move it to the front of the file. Callers carry the
+ * previous line's time forward, and the sort is stable, so an equal time
+ * leaves the line exactly where it was.
  */
 export function stampedLrcLine(
   words: readonly string[],
   starts: readonly (number | undefined)[] | undefined,
   lineTime: number,
 ): string {
-  const body = words
-    // Word 0 never carries its own stamp: it is already the head stamp.
+  return words
     .map((word, i) => {
-      const start = i === 0 ? undefined : starts?.[i]
+      const start = starts?.[i]
+      // The first word always carries a stamp, and it is the only one that
+      // falls back to the line time. That stamp IS the line's — nothing
+      // prepends a second one.
+      if (i === 0) return `[${formatTimeLrc(start ?? lineTime)}] ${word}`
       return start === undefined ? word : `[${formatTimeLrc(start)}] ${word}`
     })
     .join(' ')
-  return `[${formatTimeLrc(starts?.[0] ?? lineTime)}] ${body}`
 }
 
 /**
@@ -141,19 +147,20 @@ export function buildWordLevelLrc(
   lines: string[],
   wordTimings: Record<number, (number | undefined)[]>,
 ): string {
+  // No line times reach this builder, so a line's own start is the earliest
+  // word start it has. A line that has none inherits the previous line's,
+  // which is what keeps it in source order — see `stampedLrcLine`.
+  let carried = 0
   return lines
     .map((line, i) => {
       if (!line.trim()) return ''
       const words = line.split(/\s+/).filter((w) => w.length > 0)
       const lineWt = wordTimings[i]
+      carried = lineWt?.find((t) => t !== undefined) ?? carried
       if (lineWt === undefined || lineWt.length === 0 || words.length === 0) {
-        return `[00:00.00] ${line}`
+        return `[${formatTimeLrc(carried)}] ${line}`
       }
-      // No line time reaches this builder, so the head falls back to the
-      // first start there is — better than the `00:00.00` placeholder, and
-      // the only alternative to losing the line.
-      const lineTime = lineWt.find((t) => t !== undefined) ?? 0
-      return stampedLrcLine(words, lineWt, lineTime)
+      return stampedLrcLine(words, lineWt, carried)
     })
     .filter((l) => l !== '')
     .join('\n')

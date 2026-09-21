@@ -536,10 +536,20 @@ export function composeGenResult(
     Object.assign(wordTimings, wordTimesCanon)
     Object.assign(wordEndTimings, wordEndsCanon)
     Object.assign(wordSweepTimings, wordSweepsCanon)
+    // `estimateUnmappedTimes` only fills the tail, so a line the session
+    // never touched can still have no time of its own. It inherits the
+    // previous line's rather than claiming 0, which would sort it to the
+    // front of the file — see `stampedLrcLine`.
+    let carried = 0
     const lrcText = lines
-      .map((line, i) =>
-        plainLineToLrc(line, wordTimings[i], finalTimes[i] ?? 0),
-      )
+      .map((line, i) => {
+        const starts = wordTimings[i]
+        const lineTime = finalTimes[i] ?? carried
+        // What the line will actually open with, which is what the next
+        // untimed line should inherit.
+        carried = starts?.[0] ?? lineTime
+        return plainLineToLrc(line, starts, lineTime)
+      })
       .filter((line) => line !== '')
       .join('\n')
     return {
