@@ -1,0 +1,82 @@
+{
+  "assetSha256": "05deefa049031550b3aa7897a6d7a3345718b2e10a7595a272ea513195bb9e3e",
+  "kind": "scripted fixed-state renderer proof; traversal was validated separately without teleportation",
+  "pageErrors": [],
+  "reports": [
+    {
+      "scenario": "scripted-glide-midroute",
+      "assetErrors": [],
+      "metrics": {
+        "drawCalls": 101,
+        "triangles": 312632,
+        "textures": 31,
+        "geometries": 51,
+        "reflectionCaptures": 0,
+        "reflectionTargetPixels": 0
+      },
+      "platformStates": [
+        {
+          "id": "cloudway-glide-raft",
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0.95
+          },
+          "phase": "moving",
+          "phaseProgress": 0.5,
+          "collisionEnabled": true
+        }
+      ]
+    },
+    {
+      "scenario": "scripted-crackle-warning",
+      "assetErrors": [],
+      "metrics": {
+        "drawCalls": 99,
+        "triangles": 290392,
+        "textures": 31,
+        "geometries": 51,
+        "reflectionCaptures": 0,
+        "reflectionTargetPixels": 0
+      },
+      "platformStates": [
+        {
+          "id": "cloudway-crackle-two",
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "phase": "warning",
+          "phaseProgress": 0.375,
+          "collisionEnabled": true
+        }
+      ]
+    },
+    {
+      "scenario": "scripted-crackle-release",
+      "assetErrors": [],
+      "metrics": {
+        "drawCalls": 111,
+        "triangles": 283468,
+        "textures": 31,
+        "geometries": 51,
+        "reflectionCaptures": 0,
+        "reflectionTargetPixels": 0
+      },
+      "platformStates": [
+        {
+          "id": "cloudway-crackle-two",
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "phase": "released",
+          "phaseProgress": 0.52,
+          "collisionEnabled": false
+        }
+      ]
+    }
+  ]
+}

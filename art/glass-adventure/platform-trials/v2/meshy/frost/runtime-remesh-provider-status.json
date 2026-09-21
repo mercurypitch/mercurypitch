@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "taskType": "remesh",
+  "taskId": "01a0c57f-b423-77b4-a2cd-0e4648510e29",
+  "finalStatus": {
+    "task_id": "01a0c57f-b423-77b4-a2cd-0e4648510e29",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 5
+  },
+  "archivedAtUtc": "2026-09-21T21:07:44.167043+00:00",
+  "artifacts": [
+    {
+      "role": "runtime_remesh_glb",
+      "file": "meshy/frost/runtime-remesh.glb",
+      "bytes": 48061304,
+      "sha256": "25108cd697518b86b133ce6d23b130a244372bd0cbc87d4ad7d102565ef362a6"
+    },
+    {
+      "role": "runtime_pbr_map",
+      "file": "meshy/frost/runtime-remesh_textures/base_color.png",
+      "bytes": 19630361,
+      "sha256": "5a56c8a9065f1695373d64b29df57d48bea7a9b0bc9fc2c30b6dcbbc58790267",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "runtime_pbr_map",
+      "file": "meshy/frost/runtime-remesh_textures/metallic.png",
+      "bytes": 2677344,
+      "sha256": "614e8cba84b2ef5960d04f76d018113dee3a082aca410fc24b6d3c72a33783bc",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "runtime_pbr_map",
+      "file": "meshy/frost/runtime-remesh_textures/metallic_roughness.png",
+      "bytes": 10681628,
+      "sha256": "f088781eb78d8f448f5753daa8095e471ed94a30cba25d7a0db1045176d859f9",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "runtime_pbr_map",
+      "file": "meshy/frost/runtime-remesh_textures/normal.png",
+      "bytes": 17387857,
+      "sha256": "6e42cffacbb3d1f53a828912bd1b36a57b7c23a83cce5e2fd0b0674d5b561a1e",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "runtime_pbr_map",
+      "file": "meshy/frost/runtime-remesh_textures/roughness.png",
+      "bytes": 3600191,
+      "sha256": "11c256972e6ddd4fb7e33c42dc3305e8be53525edbb3dbb6ac49921214f610f1",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false
+}
