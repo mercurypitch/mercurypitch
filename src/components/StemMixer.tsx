@@ -43,12 +43,9 @@ import { rmsOfAnalyser } from '@/lib/mic-level'
 import { micManager } from '@/lib/mic-manager'
 import type { ComparisonPoint, MicScore } from '@/lib/mic-scoring'
 import type { MidiNoteEvent } from '@/lib/midi-generator'
-import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
-import { mergeConsecutiveNotes } from '@/lib/midi-generator'
 import type { AlignmentResult } from '@/lib/pitch-word-alignment'
-import { freqToMidi } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
-import { computeAlignment, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
+import { computeAlignment, emptyAlignmentResult, formatAlignmentDebugLog, logAlignmentComparison, selectAlignmentNotes, selectAlignmentSegments, } from '@/lib/transcription-alignment-utils'
 import { useConfirm } from '@/lib/use-confirm'
 import { syncKaraokeCaptureWithMic, useKaraokeVoiceCaptureController, } from '@/lib/use-karaoke-voice-capture-controller'
 import { isNarrow } from '@/lib/use-viewport'
@@ -1331,52 +1328,31 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Pitch-word alignment memo ────────────────────────────────
+  // The note-source ladder is selectAlignmentNotes() in
+  // transcription-alignment-utils.ts (Slice C). What stays here is the part
+  // that has to: reading the signals, and the diagnostics that name which
+  // source won. `canonicalLrcLines()` in particular is read lazily, AFTER the
+  // no-notes return — hoisting it would subscribe this memo to every lyric
+  // edit even with nothing to align, and each recompute hands downstream a
+  // fresh object.
   const alignmentResult = createMemo<AlignmentResult>(() => {
-    // Prefer denoised (segmented) notes, fall back to raw merged
-    let merged: MergedNote[] = []
-    let noteSource = 'none'
-
     // Always read both signals unconditionally for proper SolidJS tracking
     const segmentedNotes = pitchAnalysis.offlineSegmentedNotes()
     const mergedNotes = pitchAnalysis.offlineMergedNotes()
     const wsSegs = whisper.segments()
 
-    if (useDenoised() && segmentedNotes.length > 0) {
-      merged = segmentedNotes
-      noteSource = 'denoised'
-    }
-
-    if (merged.length === 0 && mergedNotes.length > 0) {
-      merged = mergedNotes
-      noteSource = 'raw-offline'
-    }
-
-    // Fallback: use realtime pitch history when offline analysis hasn't run
-    if (merged.length === 0) {
-      const pitchHistory = audio.getPitchHistory()
-      if (pitchHistory.length > 0) {
-        const detections: PitchDetection[] = pitchHistory.map((p) => ({
-          midi: freqToMidi(p.frequency),
-          noteName: p.noteName,
-          timeSec: p.time,
-        }))
-        merged = mergeConsecutiveNotes(detections)
-        if (merged.length > 0) noteSource = 'raw-realtime'
-      }
-    }
+    const { notes: merged, noteSource } = selectAlignmentNotes({
+      preferDenoised: useDenoised(),
+      segmentedNotes,
+      mergedNotes,
+      realtimePitchHistory: audio.getPitchHistory(),
+    })
 
     if (merged.length === 0) {
       console.log(
         `[StemMixer] Alignment: no notes available (denoised=${segmentedNotes.length}, raw-offline=${mergedNotes.length}, whisper=${wsSegs.length})`,
       )
-      return {
-        alignedWords: [],
-        totalWords: 0,
-        mappedWords: 0,
-        unmappedWords: 0,
-        accuracy: 0,
-        debugEntries: [],
-      }
+      return emptyAlignmentResult()
     }
 
     // Word-window source priority: word-timed LRC (user taps / enhanced LRC)
@@ -1389,14 +1365,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       console.log(
         `[StemMixer] Alignment: no word segments (${noteSource} has ${merged.length} notes but no whisper/LRC segments)`,
       )
-      return {
-        alignedWords: [],
-        totalWords: 0,
-        mappedWords: 0,
-        unmappedWords: 0,
-        accuracy: 0,
-        debugEntries: [],
-      }
+      return emptyAlignmentResult()
     }
 
     console.log(

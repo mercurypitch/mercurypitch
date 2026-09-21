@@ -182,6 +182,7 @@ These are the rules that break things when ignored.
 | [hash-router.ts](../../src/lib/hash-router.ts) | 450 | Hash Router — Client-side hash-based routing |
 | [midi-generator.ts](../../src/lib/midi-generator.ts) | 450 | MIDI Generator — pitch-detect vocal audio → Standard MIDI File |
 | [midi-song.ts](../../src/lib/midi-song.ts) | 450 | MIDI Song Parser — multi-track import with instrument names Unlike importMelodyFromMIDI (which flattens everything into one melody), this... |
+| [transcription-alignment-utils.ts](../../src/lib/transcription-alignment-utils.ts) | 450 | Shared transcription + alignment utilities. |
 | [consent.ts](../../src/lib/consent.ts) | 400 | Cookie consent + Google Consent Mode v2 (Google Ads + GA4). |
 | [lyricsfile.ts](../../src/lib/lyricsfile.ts) | 400 | lyricsfile 1.0 — serialising a mapping to the interchange format Enhanced LRC is what the app has always exported, and it is lossy in way... |
 | [pwa-service-worker.ts](../../src/lib/pwa-service-worker.ts) | 400 | pwa-service-worker — register src/sw.ts and route its updates to the user The worker (src/sw.ts) serves the app from a precache, one buil... |
@@ -348,7 +349,7 @@ Grep for the symbol and read the surrounding range instead.
 
 | File | LOC |
 |---|---|
-| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.2k |
+| [src/components/StemMixer.tsx](../../src/components/StemMixer.tsx) | 8.1k |
 | [src/lib/piano-roll.ts](../../src/lib/piano-roll.ts) | 6.0k |
 | [src/features/drum-night/DrumNightApp.tsx](../../src/features/drum-night/DrumNightApp.tsx) | 5.2k |
 | [src/App.tsx](../../src/App.tsx) | 4.7k |
