@@ -312,8 +312,10 @@ export function judgeFirstPaint(
   // The stylesheet half. A measurement with no `cssBytes` predates this check
   // and is left alone; a document that links no stylesheet needs no ceiling,
   // and will be asked for one the moment it links its first.
+  const cssWeighed = new Set()
   for (const [name, result] of measured) {
     if (result.cssBytes === undefined || result.cssBytes === 0) continue
+    cssWeighed.add(name)
     const cssBudget = cssBudgets[name]
     if (cssBudget === undefined) {
       problems.push(
@@ -331,10 +333,19 @@ export function judgeFirstPaint(
     )
   }
 
+  // Two ways a CSS ceiling goes stale, and both are worth a word: the page is
+  // gone, or the page is still here and its stylesheet is not. Without the
+  // second case a document could keep its JavaScript, drop every stylesheet,
+  // and leave a ceiling behind that no longer describes anything — the JS half
+  // above catches its own version of this, so this half should too.
   for (const name of Object.keys(cssBudgets)) {
     if (!measured.has(name)) {
       problems.push(
         `FIRST_PAINT_CSS_BUDGETS_KB lists ${name}, which this build did not emit. Remove it, or find out why the page is gone.`,
+      )
+    } else if (!cssWeighed.has(name)) {
+      problems.push(
+        `FIRST_PAINT_CSS_BUDGETS_KB lists ${name}, which this build emitted no render-blocking CSS for. Remove it, or find out why the stylesheet is gone.`,
       )
     }
   }
