@@ -5,6 +5,13 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.12] - 2026-09-21
+
+### Added
+
+- **MercuryPitch on PeerPush.** The listing is linked at the bottom of
+  Settings, under About.
+
 ## [0.9.11] - 2026-09-20
 
 A tablet's jam room gets its song list back and a row of its screen, and the
