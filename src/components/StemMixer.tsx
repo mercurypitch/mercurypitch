@@ -13,7 +13,6 @@ import { useMicInsights } from '@/features/mic-feedback/useMicInsights'
 import type { NightMusicSessionGuard } from '@/features/play-along/night-music-import'
 import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
-import { createMelodySynth } from '@/features/stem-mixer/melody-synth'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
 import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
@@ -25,6 +24,7 @@ import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerA
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
+import { useStemMixerMelodyAuditionController } from '@/features/stem-mixer/useStemMixerMelodyAuditionController'
 import { useStemMixerMicController } from '@/features/stem-mixer/useStemMixerMicController'
 import { useStemMixerPitchAnalysisController } from '@/features/stem-mixer/useStemMixerPitchAnalysisController'
 import { useStemMixerVocalLyricsController } from '@/features/stem-mixer/useStemMixerVocalLyricsController'
@@ -1547,27 +1547,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   }
 
   // ── Melody audition synth ──────────────────────────────────────
-  // Optionally sound the detected notes as a monophonic synth, following the
-  // playhead, so the user can hear how the cleaned melody sounds.
-  const [melodyAudio, setMelodyAudio] = createSignal(false)
-  const melodySynth = createMelodySynth()
-  onCleanup(() => melodySynth.dispose())
-  createEffect(() => {
-    const on = melodyAudio() && audio.playing()
-    const t = audio.elapsed()
-    if (!on) {
-      melodySynth.setNote(null)
-      return
-    }
-    const notes = pitchAnalysis.offlineSegmentedNotes()
-    const active = notes.find((n) => t >= n.startSec && t < n.endSec)
-    melodySynth.setNote(active !== undefined ? active.midi : null)
+  const melodyAudition = useStemMixerMelodyAuditionController({
+    audio,
+    pitchAnalysis,
   })
-  const toggleMelodyAudio = (): void => {
-    const next = !melodyAudio()
-    setMelodyAudio(next)
-    if (next) melodySynth.resume()
-  }
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
 
@@ -2861,8 +2844,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             setShowMicLine={setShowMicLine}
             showUserNoteLabels={showUserNoteLabels}
             setShowUserNoteLabels={setShowUserNoteLabels}
-            melodyAudio={melodyAudio}
-            onToggleMelodyAudio={toggleMelodyAudio}
+            melodyAudio={melodyAudition.enabled}
+            onToggleMelodyAudio={melodyAudition.toggle}
             whisperStatus={whisperStatus}
             whisperProgress={whisperProgress}
             transcribeElapsed={transcribeElapsed}
@@ -2923,8 +2906,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             setShowLyricNoteLabels={setShowLyricNoteLabels}
             showScoreDiffBars={showScoreDiffBars}
             setShowScoreDiffBars={setShowScoreDiffBars}
-            melodyAudio={melodyAudio}
-            onToggleMelodyAudio={toggleMelodyAudio}
+            melodyAudio={melodyAudition.enabled}
+            onToggleMelodyAudio={melodyAudition.toggle}
             whisperStatus={whisperStatus}
             whisperProgress={whisperProgress}
             transcribeElapsed={transcribeElapsed}
