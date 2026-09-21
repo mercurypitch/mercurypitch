@@ -4,31 +4,75 @@ Working plan for breaking up the files that dominate context cost and change
 risk. Written so an agent picking up any single slice has everything it needs
 without re-deriving the analysis.
 
-**Status: proposed, two slices done.** The lyrics controller was split on
-`feat/lrc-mapper-studio` (see
+**Status: proposed, two slices done, and losing ground.** The lyrics
+controller was split on `feat/lrc-mapper-studio` (see
 [docs/plans/lrc-mapper-studio-plan.md](../plans/lrc-mapper-studio-plan.md)
 Phase 0), and the "From vocal" orchestration left StemMixer for
 `useStemMixerVocalLyricsController.ts` (#683). Everything else stands.
 Sequence and scope are open to change; ordering rationale is in §5.
 
+**Every number below was re-measured on 2026-09-21 at `608891d7`**, and the
+table in §1 had drifted 30-44% low on four of its six files. Re-measure before
+trusting any figure here: `pnpm metrics` prints the LOC and hotspot tables this
+document is built from. The counts are ratcheted in CI from #842 onward, so the
+files can no longer grow unremarked — but nothing shrinks them except this work.
+
 ---
 
 ## 1. Why these files
 
-Six files carry disproportionate cost. They are simultaneously the largest and
-among the most-changed, so every session that touches them pays to re-read them.
+A handful of files carry disproportionate cost. They are simultaneously the
+largest and among the most-changed, so every session that touches them pays to
+re-read them.
 
-| File                                                      | LOC             | ~tokens to read | Commits (last 400) |
-| --------------------------------------------------------- | --------------- | --------------- | ------------------ |
-| `src/components/StemMixer.tsx`                            | 6,268           | ~46,200         | 48                 |
-| `src/lib/piano-roll.ts`                                   | 5,086           | ~44,000         | —                  |
-| `src/App.tsx`                                             | 3,286           | ~35,400         | 34                 |
-| `src/components/VocalAnalysis.tsx`                        | 3,102           | ~28,000         | —                  |
-| `src/features/stem-mixer/useStemMixerLyricsController.ts` | ~~2,967~~ 1,886 | ~25,000         | 11                 |
-| `src/components/UvrPanel.tsx`                             | 2,641           | ~26,000         | 30                 |
+Measured 2026-09-21 at `608891d7`. Churn is over twelve months, which is the
+window `scripts/code-metrics.mjs` uses; the old "last 400 commits" column is
+gone because 400 commits is fifteen days in this repo and an unlabelled window
+quietly changes meaning between readings. "Cog" is summed cognitive complexity
+per file, from the same harness.
 
-`StemMixer.tsx` and `App.tsx` together are ~82k tokens and account for 82 of
-the last 400 commits. That is the whole problem in one line.
+| File                                                      | LOC   | ~tokens to read | Commits (12 mo) | Cog |
+| --------------------------------------------------------- | ----- | --------------- | --------------- | --- |
+| `src/components/StemMixer.tsx`                            | 8,172 | ~64,800         | 200             | 25  |
+| `src/lib/piano-roll.ts`                                   | 5,965 | ~58,800         | 61              | 687 |
+| `src/features/drum-night/DrumNightApp.tsx`                | 5,183 | ~52,600         | 38              | 184 |
+| `src/App.tsx`                                             | 4,723 | ~53,100         | 248             | 86  |
+| `src/components/UvrPanel.tsx`                             | 3,444 | ~36,300         | 116             | 104 |
+| `src/features/stem-mixer/useStemMixerLyricsController.ts` | 1,964 | ~17,900         | 20              | 67  |
+
+`StemMixer.tsx` and `App.tsx` together are ~118k tokens. That is still the
+problem in one line, and both files are bigger than when this was written:
+StemMixer by 1,904 lines (+30%), App.tsx by 1,437 (+44%), `UvrPanel.tsx` by 803
+(+30%), `piano-roll.ts` by 879 (+17%).
+
+`src/components/VocalAnalysis.tsx` has left the table: it was **deleted on
+2026-08-01 by `591bc095`**, the same integration-train commit that last revised
+this document. It was already gone when it was listed. §3.3 is kept for the
+method it describes, which now applies to a different file.
+
+Three files belong in this conversation and were never in it:
+
+| File                                                   | LOC   | Note                                                |
+| ------------------------------------------------------ | ----- | --------------------------------------------------- |
+| `src/features/drum-night/DrumNightApp.tsx`             | 5,183 | 43 `createSignal` calls; no extraction started      |
+| `workers/db-worker/src/auth.ts`                        | 3,706 | the largest file outside `src/`; hotspot score 5369 |
+| `apps/beside-cue/src/games/glass/JourneyPrototype.tsx` | 3,196 | a different app, but the same reading cost          |
+
+### The extraction is working on complexity, not on size
+
+`StemMixer.tsx` is the largest file in the repo and its summed cognitive
+complexity is **25** — lower than almost anything else on the list. The
+complexity left with the controllers, exactly as intended:
+`useStemMixerCanvasController.ts` is now at **374**, the second-highest in the
+codebase.
+
+That is worth being honest about, because it changes what finishing the
+extraction buys. It buys **reading cost** — 65k tokens per session that touches
+the file — and it buys merge surface on a file with 200 commits a year. It does
+not buy much risk reduction, because the risky code has already moved. Anyone
+justifying a slice on "this file is dangerous" should say "this file is
+expensive" instead, and anyone looking for danger should look at
+`useStemMixerCanvasController.ts` and `piano-roll.ts`.
 
 ## 2. The pattern to apply
 
@@ -58,9 +102,12 @@ Each slice is independently shippable and independently reviewable. Line
 numbers are from the section banners at time of writing — re-grep
 `^\s*// ──` before starting, they will have moved.
 
-### 3.1 StemMixer.tsx → 6,268 to ~1,200
+### 3.1 StemMixer.tsx → 8,172 to ~1,200
 
-Already extracted: mic, audio, lyrics, pitch-analysis, canvas, layout.
+Already extracted: mic, audio, lyrics, pitch-analysis, canvas, layout. The
+file has grown 1,904 lines since these seams were catalogued, so the section
+banners below have moved and the list is no longer exhaustive — re-grep
+`^\s*// ──` first, and add any new section to this table before starting.
 Remaining seams, roughly in dependency order:
 
 | Slice | Sections                                                                            | Target                                                                                                                                                           |
@@ -75,10 +122,13 @@ Remaining seams, roughly in dependency order:
 Slices C, D and F move code into files that **already exist**; those are the
 cheapest and should go first.
 
-### 3.2 App.tsx → 3,286 to ~800
+### 3.2 App.tsx → 4,723 to ~800
 
-27 section banners, most already mirroring a `src/features/` module that exists
-but is only partially used. Highest value first:
+27 section banners when this was written, most already mirroring a
+`src/features/` module that exists but is only partially used. 1,437 lines have
+arrived since, and at 248 commits in twelve months this is the most-changed file
+in the repo — which is both why it is worth splitting and why a slice here
+conflicts most easily with work in flight. Highest value first:
 
 | Slice | Sections                                                          | Target                                                           |
 | ----- | ----------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -92,33 +142,51 @@ but is only partially used. Highest value first:
 App.tsx's job afterwards is composition: mount controllers, wire them, render
 the shell. It should hold close to zero business logic.
 
-### 3.3 VocalAnalysis.tsx → 3,102
+### 3.3 The signal-density method (was VocalAnalysis.tsx)
 
-**46 `createSignal` calls in one component** — the highest state density in the
-codebase, and the reason this file is hard to change safely. Group state before
-moving anything:
+`VocalAnalysis.tsx` was deleted on 2026-08-01 by `591bc095`. The slice is moot;
+the method it described is not, because the density it warned about moved.
 
-1. Group the 46 signals into a handful of `createStore` objects by concern
-   (live-mic, annotations, analysis tools, advanced features — the existing
-   section banners name them).
+Highest `createSignal` counts in one file today, non-test:
+
+| File                                       | `createSignal` |
+| ------------------------------------------ | -------------- |
+| `src/stores/jam-store.ts`                  | 50             |
+| `src/components/UvrPanel.tsx`              | 46             |
+| `src/features/drum-night/DrumNightApp.tsx` | 43             |
+| `src/App.tsx`                              | 36             |
+
+`jam-store.ts` is a store, so loose signals are its job. **`UvrPanel.tsx` now
+carries the exact 46 that made the old file hard to change safely** — up from
+the 35 recorded in §3.4 below. So the method applies there:
+
+1. Group the signals into a handful of `createStore` objects by concern.
 2. Then extract each group with its logic into a controller hook.
 
 Do not attempt a straight file split first; splitting 46 loose signals across
 files makes the coupling worse, not better.
 
-### 3.4 UvrPanel.tsx → 2,641
+### 3.4 UvrPanel.tsx → 3,444
 
-35 signals and only one section banner — the least internally structured of the
-six. **Add section banners first** as a separate, reviewable commit. That makes
-the seams visible and the subsequent extraction mechanical. Do not combine the
-two steps.
+46 signals (was 35) and only one section banner — the least internally
+structured file on the list. **Add section banners first** as a separate,
+reviewable commit. That makes the seams visible and the subsequent extraction
+mechanical. Do not combine the two steps. Then group the signals per §3.3
+before extracting anything.
 
-### 3.5 piano-roll.ts → 5,086
+### 3.5 piano-roll.ts → 5,965
 
-Deliberately last, and possibly never. It is a canvas editor with its own
-internal architecture, is not a Solid component, communicates via
-`@/lib/event-bus`, and has low churn. It is large but not a change-risk hotspot.
-Revisit only if churn rises.
+**The "low churn" rationale for deferring this no longer holds, and the file is
+now the repo's top hotspot.** Measured 2026-09-21: 61 commits in twelve months
+and summed cognitive complexity **687**, the highest in the codebase, giving a
+churn × complexity score of 43,281 — roughly double the next file (`App.tsx`,
+21,328) and eight times `StemMixer.tsx` (5,000).
+
+Everything else the original note said is still true: it is a canvas editor with
+its own internal architecture, it is not a Solid component, and it talks through
+`@/lib/event-bus`. Those are reasons it is _awkward_ to split, not reasons it is
+safe to leave. It stays last in §5 on difficulty, not on risk — and if a defect
+lands anywhere on this list, the measurement says to expect it here.
 
 ## 4. Rules for every slice
 
@@ -154,3 +222,8 @@ Revisit only if churn rises.
 - No file in `src/` over ~1,500 LOC except `piano-roll.ts`.
 - `StemMixer.tsx` and `App.tsx` are composition shells.
 - The context-hazard table in [INDEX.md](INDEX.md) is under ten entries.
+
+The distance, measured 2026-09-21: **44 files over 1,500 LOC** across `src`,
+`workers`, `apps` and `packages`; **56 files over 1,200** in `src` alone; **129
+over 800**. The first goal above is therefore 43 files away, not a handful. Land
+it in slices and let the ratchet hold each one.
