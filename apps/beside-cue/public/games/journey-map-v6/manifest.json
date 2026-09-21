@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Twin Galleries connector and distinct botanical conservatory landmarks for the live Floating Museum map.",
+  "assets": [
+    {
+      "id": "floating-museum-architecture-kit-v6",
+      "file": "floating-museum-architecture-kit-v6.glb",
+      "source": "art/glass-adventure/journey-map/v6/exports/floating-museum-architecture-kit-v6.glb",
+      "sourceReceipt": "art/glass-adventure/journey-map/v6/exports/floating-museum-architecture-kit-v6.json",
+      "sha256": "32143c948457c0c8acef7c9b6a9f977874e131c59dd3b19bcc7d6f71ff23e5be",
+      "bytes": 5628320,
+      "root": "map_museum_polish_kit_root",
+      "nodes": ["map_twin_connector", "map_conservatory"]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-twin-connector-v6",
+  "taskType": "image-to-3d",
+  "state": "archived",
+  "authorization": "Owner approved unrestricted Meshy use for Glassworks asset production in this conversation; initial batch estimates 60 credits for two PBR guides.",
+  "taskId": "01a0c42f-a362-7199-a2f8-50dc99efb112",
+  "guide": {
+    "file": "sources/twin-connector-guide-opaque.png",
+    "bytes": 1984931,
+    "sha256": "0274f17d5b011e5d52c2c9d21c50a3031c1ac356f298a8f711e1d94c80f44a7f"
+  },
+  "finalStatus": {
+    "task_id": "01a0c42f-a362-7199-a2f8-50dc99efb112",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T13:50:50.867793+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "files": [
+    {
+      "role": "glb",
+      "file": "meshy/twin-connector-final.glb",
+      "bytes": 17720364,
+      "sha256": "e889e129074dafc7e31723005399e14c23cedbbb33394be2fa5986ec90b8d221"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/twin-connector-pre-remesh.glb",
+      "bytes": 20461604,
+      "sha256": "77bbff7370682ed153e290af7c267e2bbf49ad87dfa63fe20dba32b5e2828e4d",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "balanceBeforeBatch": 4060,
+  "balanceAfterArchiveCheck": 4000,
+  "readiness": "Raw source archive only; Blender normalization, LOD, material sizing, fresh-export validation, and visual proof remain separate gates."
+}

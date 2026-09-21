@@ -13,3 +13,4 @@ art/glass-adventure/delivery/v1/proofs/*.png filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/journey-map-v1/*.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/journey-map-v3/*.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/journey-map-v4/*.glb filter=lfs diff=lfs merge=lfs -text
+apps/beside-cue/public/games/journey-map-v6/*.glb filter=lfs diff=lfs merge=lfs -text

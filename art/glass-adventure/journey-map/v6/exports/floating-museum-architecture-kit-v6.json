@@ -1,0 +1,781 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-architecture-kit-v6",
+  "status": "structurally validated and source-visually-approved map landmark kit",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "root": "map_museum_polish_kit_root",
+  "sources": {
+    "twin_connector": {
+      "source": {
+        "file": "meshy/twin-connector-final.glb",
+        "bytes": 17720364,
+        "sha256": "e889e129074dafc7e31723005399e14c23cedbbb33394be2fa5986ec90b8d221",
+        "receipt": "meshy/twin-connector-receipt.json",
+        "taskId": "01a0c42f-a362-7199-a2f8-50dc99efb112",
+        "consumedCredits": 30
+      },
+      "rawTopology": {
+        "Mesh_0": {
+          "vertices": 36240,
+          "triangles": 18259,
+          "boundaryEdges": 36051,
+          "nonManifoldEdges": 36051,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      },
+      "weld": {
+        "Mesh_0": {
+          "sourceVertices": 36240,
+          "sourceTriangles": 18259,
+          "weldedVertices": 8968,
+          "weldedTriangles": 18259
+        }
+      },
+      "weldedTopology": {
+        "Mesh_0": {
+          "vertices": 8968,
+          "triangles": 18259,
+          "boundaryEdges": 284,
+          "nonManifoldEdges": 582,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      },
+      "lod": {
+        "sourceTriangles": 18259,
+        "targetTriangles": 19000,
+        "collapseRatio": 1.0,
+        "lodTriangles": 18259
+      },
+      "normalization": {
+        "scaleBlenderXYZ": [
+          1.4457712173461914,
+          1.1729191541671753,
+          1.47540283203125
+        ],
+        "sourceDimensionsGlTfYUp": [
+          1.1758430004119873,
+          1.8977868556976318,
+          0.6820589303970337
+        ],
+        "anchor": "ground/bottom Y=0",
+        "authoringBoundsBlenderZUp": {
+          "min": [
+            -0.8499999642372131,
+            -0.4000000059604645,
+            0.0
+          ],
+          "max": [
+            0.8499999642372131,
+            0.4000000059604645,
+            2.8000001907348633
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          1.6999999284744263,
+          2.8000001907348633,
+          0.800000011920929
+        ],
+        "anchorErrorMetres": 0.0
+      },
+      "apertureCorrection": {
+        "method": "symmetric lower-inner arch expansion with linear falloff to the fixed outer silhouette and zero influence above the balcony spring line",
+        "maximumConfiguredShiftMetresPerSide": 0.065,
+        "largestAppliedShiftMetres": 0.04047331925700693,
+        "fullInfluenceBelowMetres": 1.288,
+        "zeroInfluenceAboveMetres": 1.736,
+        "verticesAdjusted": 11965,
+        "outerWidthPreservedMetres": 1.7
+      },
+      "front": "exported glTF +Z (Blender -Y)",
+      "uvLayers": {
+        "map_twin_connector_geometry": [
+          "UVMap"
+        ]
+      },
+      "fullTextureImages": [
+        {
+          "name": "map_twin_connector_texture_00",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true
+        },
+        {
+          "name": "map_twin_connector_texture_01",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true
+        },
+        {
+          "name": "map_twin_connector_texture_02",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true
+        },
+        {
+          "name": "map_twin_connector_texture_03",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true
+        }
+      ],
+      "materials": [
+        "map_twin_connector_atlas"
+      ],
+      "runtimeMaterials": [
+        {
+          "material": "map_twin_connector_atlas",
+          "semanticResponse": {
+            "method": "continuous texture-space material masks; no face-level material boundaries",
+            "goldPixelsAboveHalf": 24241,
+            "goldCoverageAboveHalf": 0.09247207641601562,
+            "foliagePixelsAboveHalf": 20599,
+            "foliageCoverageAboveHalf": 0.07857894897460938,
+            "glazingPixelsAboveHalf": 0,
+            "glazingCoverageAboveHalf": 0.0,
+            "totalPixels": 262144,
+            "metallicRange": [
+              0.014999999664723873,
+              0.6349999904632568
+            ],
+            "roughnessRange": [
+              0.27000001072883606,
+              0.6800000071525574
+            ],
+            "transmissionRange": [
+              0.0,
+              0.0
+            ]
+          },
+          "runtimeTextures": [
+            {
+              "file": "sources/textures/twin_connector-00-base-1k.jpg",
+              "bytes": 481988,
+              "sha256": "6c42d8a6c522ea14bfeff73cb8f3ec42b2860dce21e595f64d59aa450dc01409",
+              "dimensions": [
+                1024,
+                1024
+              ]
+            },
+            {
+              "file": "sources/textures/twin_connector-00-orm-512.png",
+              "bytes": 285553,
+              "sha256": "cd2da032946387200e52e139772ab7a9261c291d163657aad8a64a71ca298614",
+              "dimensions": [
+                512,
+                512
+              ]
+            },
+            {
+              "file": "sources/textures/twin_connector-00-normal-512.png",
+              "bytes": 625483,
+              "sha256": "65641e29486d81c60c07bc89640eb5f9ea8c95673c78406905c11c3e69661282",
+              "dimensions": [
+                512,
+                512
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "conservatory": {
+      "source": {
+        "file": "meshy/conservatory-final.glb",
+        "bytes": 16032368,
+        "sha256": "643280e10516cdc360e2a57f98b0cd1e3bd304a73a9c914ce28be936c634c4b1",
+        "receipt": "meshy/conservatory-receipt.json",
+        "taskId": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
+        "consumedCredits": 30
+      },
+      "rawTopology": {
+        "Mesh_0": {
+          "vertices": 45720,
+          "triangles": 22870,
+          "boundaryEdges": 45290,
+          "nonManifoldEdges": 45290,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      },
+      "weld": {
+        "Mesh_0": {
+          "sourceVertices": 45720,
+          "sourceTriangles": 22870,
+          "weldedVertices": 10615,
+          "weldedTriangles": 22870
+        }
+      },
+      "weldedTopology": {
+        "Mesh_0": {
+          "vertices": 10615,
+          "triangles": 22870,
+          "boundaryEdges": 1046,
+          "nonManifoldEdges": 2571,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      },
+      "lod": {
+        "sourceTriangles": 22870,
+        "targetTriangles": 24000,
+        "collapseRatio": 1.0,
+        "lodTriangles": 22870
+      },
+      "normalization": {
+        "scaleBlenderXYZ": [
+          1.215628743171692,
+          1.217854619026184,
+          1.3975496292114258
+        ],
+        "sourceDimensionsGlTfYUp": [
+          1.892025113105774,
+          1.8961759805679321,
+          1.8885669708251953
+        ],
+        "anchor": "ground/bottom Y=0",
+        "authoringBoundsBlenderZUp": {
+          "min": [
+            -1.1500000953674316,
+            -1.1500000953674316,
+            0.0
+          ],
+          "max": [
+            1.1500000953674316,
+            1.1500000953674316,
+            2.6500000953674316
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          2.3000001907348633,
+          2.6500000953674316,
+          2.3000001907348633
+        ],
+        "anchorErrorMetres": 0.0
+      },
+      "apertureCorrection": null,
+      "front": "exported glTF +Z (Blender -Y)",
+      "uvLayers": {
+        "map_conservatory_geometry": [
+          "UVMap"
+        ]
+      },
+      "fullTextureImages": [
+        {
+          "name": "map_conservatory_texture_00",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true
+        },
+        {
+          "name": "map_conservatory_texture_01",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true
+        },
+        {
+          "name": "map_conservatory_texture_02",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true
+        },
+        {
+          "name": "map_conservatory_texture_03",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true
+        }
+      ],
+      "materials": [
+        "map_conservatory_atlas"
+      ],
+      "runtimeMaterials": [
+        {
+          "material": "map_conservatory_atlas",
+          "semanticResponse": {
+            "method": "continuous texture-space material masks; no face-level material boundaries",
+            "goldPixelsAboveHalf": 19066,
+            "goldCoverageAboveHalf": 0.07273101806640625,
+            "foliagePixelsAboveHalf": 31307,
+            "foliageCoverageAboveHalf": 0.11942672729492188,
+            "glazingPixelsAboveHalf": 7102,
+            "glazingCoverageAboveHalf": 0.02709197998046875,
+            "totalPixels": 262144,
+            "metallicRange": [
+              0.014999999664723873,
+              0.6349999904632568
+            ],
+            "roughnessRange": [
+              0.20000000298023224,
+              0.6800000071525574
+            ],
+            "transmissionRange": [
+              0.0,
+              0.41999998688697815
+            ]
+          },
+          "runtimeTextures": [
+            {
+              "file": "sources/textures/conservatory-00-base-1k.jpg",
+              "bytes": 428626,
+              "sha256": "1ab5696cd859afb02652a3851d81249687bf6771814241ab4461a0be30f6212c",
+              "dimensions": [
+                1024,
+                1024
+              ]
+            },
+            {
+              "file": "sources/textures/conservatory-00-orm-512.png",
+              "bytes": 265653,
+              "sha256": "45c12b4619880e6e8f0241fc312f3a36df7a43a8cd828ae4c12b830f6090ac13",
+              "dimensions": [
+                512,
+                512
+              ]
+            },
+            {
+              "file": "sources/textures/conservatory-00-transmission-512.png",
+              "bytes": 64596,
+              "sha256": "3949c83eff64b60852ae7326a1d0313f94c5f30096aec203316a7a01a14fc929",
+              "dimensions": [
+                512,
+                512
+              ]
+            },
+            {
+              "file": "sources/textures/conservatory-00-normal-512.png",
+              "bytes": 558337,
+              "sha256": "5a5c10a738a7d161ffcd3faf8f2e1e7dad484e703e943e5e40293df1ba668758",
+              "dimensions": [
+                512,
+                512
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-architecture-kit-v6.blend",
+    "bytes": 4757561,
+    "sha256": "49f100954f2a821306f044db4eccb22ce99e3f5de3664e07b69ad49d656acde0",
+    "exactProductionTexturesPacked": true,
+    "missingExternalFiles": []
+  },
+  "glb": {
+    "file": "exports/floating-museum-architecture-kit-v6.glb",
+    "bytes": 5628320,
+    "sha256": "32143c948457c0c8acef7c9b6a9f977874e131c59dd3b19bcc7d6f71ff23e5be",
+    "nodes": 5,
+    "meshes": 2,
+    "primitives": 2,
+    "materials": 2,
+    "images": 7,
+    "textures": 7,
+    "requiredNamedNodesPresent": true,
+    "extensionsUsed": [
+      "KHR_materials_transmission",
+      "KHR_materials_ior"
+    ],
+    "materialContract": [
+      {
+        "name": "map_conservatory_atlas",
+        "baseColor": {
+          "textureIndex": 2,
+          "imageIndex": 2,
+          "imageName": "conservatory-00-base-1k",
+          "mimeType": "image/jpeg"
+        },
+        "metallicRoughness": {
+          "textureIndex": 3,
+          "imageIndex": 3,
+          "imageName": "conservatory-00-orm-512",
+          "mimeType": "image/png"
+        },
+        "normal": {
+          "textureIndex": 1,
+          "imageIndex": 1,
+          "imageName": "conservatory-00-normal-512",
+          "mimeType": "image/png"
+        },
+        "transmissionFactor": 1,
+        "transmission": {
+          "textureIndex": 0,
+          "imageIndex": 0,
+          "imageName": "conservatory-00-transmission-512",
+          "mimeType": "image/png"
+        }
+      },
+      {
+        "name": "map_twin_connector_atlas",
+        "baseColor": {
+          "textureIndex": 5,
+          "imageIndex": 5,
+          "imageName": "twin_connector-00-base-1k",
+          "mimeType": "image/jpeg"
+        },
+        "metallicRoughness": {
+          "textureIndex": 6,
+          "imageIndex": 6,
+          "imageName": "twin_connector-00-orm-512",
+          "mimeType": "image/png"
+        },
+        "normal": {
+          "textureIndex": 4,
+          "imageIndex": 4,
+          "imageName": "twin_connector-00-normal-512",
+          "mimeType": "image/png"
+        },
+        "transmissionFactor": null,
+        "transmission": null
+      }
+    ]
+  },
+  "runtimeCompression": {
+    "method": "JPEG quality 84 for base-color/emissive; channel-packed metallic-roughness, transmission masks, and normals remain PNG",
+    "sourceBytes": 5628320,
+    "runtimeBytes": 5628320,
+    "images": [
+      {
+        "name": "conservatory-00-transmission-512",
+        "roles": [],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 64596,
+        "runtimeBytes": 64596
+      },
+      {
+        "name": "conservatory-00-normal-512",
+        "roles": [
+          "normal"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 558337,
+        "runtimeBytes": 558337
+      },
+      {
+        "name": "conservatory-00-base-1k",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 428626,
+        "runtimeBytes": 428626
+      },
+      {
+        "name": "conservatory-00-orm-512",
+        "roles": [
+          "metallicRoughness"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 265653,
+        "runtimeBytes": 265653
+      },
+      {
+        "name": "twin_connector-00-normal-512",
+        "roles": [
+          "normal"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 625483,
+        "runtimeBytes": 625483
+      },
+      {
+        "name": "twin_connector-00-base-1k",
+        "roles": [
+          "baseColor"
+        ],
+        "mimeType": "image/jpeg",
+        "encodedDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 481988,
+        "runtimeBytes": 481988
+      },
+      {
+        "name": "twin_connector-00-orm-512",
+        "roles": [
+          "metallicRoughness"
+        ],
+        "mimeType": "image/png",
+        "encodedDimensions": [
+          512,
+          512
+        ],
+        "sourceBytes": 285553,
+        "runtimeBytes": 285553
+      }
+    ]
+  },
+  "freshReimport": {
+    "root": "map_museum_polish_kit_root",
+    "coordinates": "Fresh GLB reimport into Blender Z-up; dimensions listed in glTF X/Y/Z order.",
+    "nodes": {
+      "map_twin_connector": {
+        "meshChildren": [
+          "map_twin_connector_geometry"
+        ],
+        "triangles": 18259,
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -0.8499999642372131,
+            -0.4000000059604645,
+            0.0
+          ],
+          "max": [
+            0.8499999642372131,
+            0.4000000059604645,
+            2.8000001907348633
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          1.6999999284744263,
+          2.8000001907348633,
+          0.800000011920929
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": {
+          "map_twin_connector_geometry": [
+            "UVMap"
+          ]
+        },
+        "topology": {
+          "map_twin_connector_geometry": {
+            "vertices": 36435,
+            "triangles": 18259,
+            "boundaryEdges": 36271,
+            "nonManifoldEdges": 36271,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          }
+        },
+        "runtimeTextureImages": [
+          {
+            "name": "twin_connector-00-base-1k",
+            "dimensions": [
+              1024,
+              1024
+            ],
+            "colorSpace": "sRGB",
+            "packed": true
+          },
+          {
+            "name": "twin_connector-00-normal-512",
+            "dimensions": [
+              512,
+              512
+            ],
+            "colorSpace": "Non-Color",
+            "packed": true
+          },
+          {
+            "name": "twin_connector-00-orm-512",
+            "dimensions": [
+              512,
+              512
+            ],
+            "colorSpace": "Non-Color",
+            "packed": true
+          }
+        ],
+        "aperture": {
+          "method": "front-to-back ray grid through the central opening after fresh GLB import",
+          "samplesAcrossWidth": 401,
+          "rows": [
+            {
+              "heightFraction": 0.16,
+              "heightMetres": 0.44800003051757814,
+              "clearWidthMetres": 0.8074999660253523
+            },
+            {
+              "heightFraction": 0.28,
+              "heightMetres": 0.7840000534057618,
+              "clearWidthMetres": 0.8414999645948409
+            },
+            {
+              "heightFraction": 0.4,
+              "heightMetres": 1.1200000762939453,
+              "clearWidthMetres": 0.8159999656677246
+            }
+          ],
+          "minimumSampledClearWidthMetres": 0.8074999660253523
+        }
+      },
+      "map_conservatory": {
+        "meshChildren": [
+          "map_conservatory_geometry"
+        ],
+        "triangles": 22870,
+        "boundsBlenderZUpMetres": {
+          "min": [
+            -1.1500000953674316,
+            -1.1500000953674316,
+            0.0
+          ],
+          "max": [
+            1.1500000953674316,
+            1.1500000953674316,
+            2.6500000953674316
+          ]
+        },
+        "dimensionsGlTfYUpMetres": [
+          2.3000001907348633,
+          2.6500000953674316,
+          2.3000001907348633
+        ],
+        "anchorErrorMetres": 0.0,
+        "uvLayers": {
+          "map_conservatory_geometry": [
+            "UVMap"
+          ]
+        },
+        "topology": {
+          "map_conservatory_geometry": {
+            "vertices": 46910,
+            "triangles": 22870,
+            "boundaryEdges": 46594,
+            "nonManifoldEdges": 46594,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          }
+        },
+        "runtimeTextureImages": [
+          {
+            "name": "conservatory-00-base-1k",
+            "dimensions": [
+              1024,
+              1024
+            ],
+            "colorSpace": "sRGB",
+            "packed": true
+          },
+          {
+            "name": "conservatory-00-normal-512",
+            "dimensions": [
+              512,
+              512
+            ],
+            "colorSpace": "Non-Color",
+            "packed": true
+          },
+          {
+            "name": "conservatory-00-orm-512",
+            "dimensions": [
+              512,
+              512
+            ],
+            "colorSpace": "Non-Color",
+            "packed": true
+          },
+          {
+            "name": "conservatory-00-transmission-512",
+            "dimensions": [
+              512,
+              512
+            ],
+            "colorSpace": "Non-Color",
+            "packed": true
+          }
+        ],
+        "aperture": null
+      }
+    }
+  },
+  "totalTriangles": 41129,
+  "validation": {
+    "rawArchiveReceiptsMatched": true,
+    "packedEditableProductionSource": true,
+    "requiredNamedHierarchy": true,
+    "freshGlbReimport": true,
+    "triangleBudgetsPassed": true,
+    "runtimeTextureBudgetsPassed": true,
+    "uv0Present": true,
+    "anchorsPassed": true,
+    "connectorAperturePassed": true,
+    "continuousSemanticMaterialMaps": true,
+    "visualProof": "approved from the recorded front and three-quarter isolated renders: the connector keeps a clear central arch and planted balcony; the conservatory keeps an open lower rotunda with frosted celadon glazing, matte ivory columns, localized gold, and foliage",
+    "runtimeIntegration": "not performed",
+    "staticTopologyScope": "Static map scenery may contain open textured surfaces; topology counts are recorded but airtight fracture gates do not apply."
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v6/production/build_architecture_kit.py",
+    "blender": "5.2.2 LTS"
+  },
+  "proofs": [
+    {
+      "file": "proofs/floating-museum-architecture-kit-front-v6.png",
+      "bytes": 1363559,
+      "sha256": "1f973651522ffc0fc383a99337d75b19fe15981150eabdcf6c7d12d486f14cc9"
+    },
+    {
+      "file": "proofs/floating-museum-architecture-kit-angle-v6.png",
+      "bytes": 1356456,
+      "sha256": "9805379b106a69179984b0779845530eb9c9ec310419894b869a70237bb3b26d"
+    }
+  ],
+  "proofRender": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v6/production/render_architecture_proofs.py",
+    "blender": "5.2.2 LTS",
+    "sourceGlbSha256": "32143c948457c0c8acef7c9b6a9f977874e131c59dd3b19bcc7d6f71ff23e5be",
+    "lighting": "Warm key, cream-blue fill, celadon rim, and slate museum background."
+  },
+  "visualReview": {
+    "decision": "approved",
+    "scope": "source isolated renders",
+    "notes": "Approved after inspection of both frozen proof PNGs. Runtime placement, draw cost, and matched overview performance remain integration gates owned by the scene implementation."
+  }
+}

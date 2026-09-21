@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-conservatory-v6",
+  "taskType": "image-to-3d",
+  "state": "archived",
+  "authorization": "Owner approved unrestricted Meshy use for Glassworks asset production in this conversation; initial batch estimates 60 credits for two PBR guides.",
+  "taskId": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
+  "guide": {
+    "file": "sources/conservatory-guide.png",
+    "bytes": 2172121,
+    "sha256": "5ff42286d3b1a0ac4f82f60c3cb31b1d9fe0f8b5b4d1b2fbd03ed32e11804dc1"
+  },
+  "finalStatus": {
+    "task_id": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T13:50:50.867793+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "files": [
+    {
+      "role": "glb",
+      "file": "meshy/conservatory-final.glb",
+      "bytes": 16032368,
+      "sha256": "643280e10516cdc360e2a57f98b0cd1e3bd304a73a9c914ce28be936c634c4b1"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/conservatory-pre-remesh.glb",
+      "bytes": 21519992,
+      "sha256": "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "balanceBeforeBatch": 4060,
+  "balanceAfterArchiveCheck": 4000,
+  "readiness": "Raw source archive only; Blender normalization, LOD, material sizing, fresh-export validation, and visual proof remain separate gates."
+}
