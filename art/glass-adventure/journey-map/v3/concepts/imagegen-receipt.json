@@ -1,0 +1,30 @@
+{
+  "provider": "OpenAI built-in imagegen",
+  "reference": "journey-map/v1/a-floating-museum.png",
+  "files": [
+    {
+      "file": "temple-guide.png",
+      "bytes": 1859031,
+      "sha256": "a4c58ee7e579f9e3fe655eb7228d8a17bcf64e35c79ba906b3f0fd38dca72062",
+      "generatedFilename": "exec-b26fb8f9-97b4-4baf-a6cf-0eccac5c749d.png"
+    },
+    {
+      "file": "cliff-guide.png",
+      "bytes": 2215417,
+      "sha256": "21b70135639b6cbeefb567af19bd9abe2e1a31db952c1ab60d95fe8e6a7c4a38",
+      "generatedFilename": "exec-da6af73c-b912-4bc5-a0f8-9232878c5c44.png"
+    },
+    {
+      "file": "cloudscape-master.png",
+      "bytes": 1784507,
+      "sha256": "fef58f06f0fe20756be8c9c400641775041ce01a3a63d59b68f771649f75cbe7",
+      "generatedFilename": "exec-d4bcb059-0c78-47c4-a760-60c8eddf2d88.png"
+    },
+    {
+      "file": "cypress-guide.png",
+      "generatedFilename": "exec-9947ee7e-e69f-46f4-99a5-2c167e6d756b.png",
+      "bytes": 1618210,
+      "sha256": "9a329f32bc027c3f5951594aa7750275e878c832b23ae5eae968b7012f2c4974"
+    }
+  ]
+}

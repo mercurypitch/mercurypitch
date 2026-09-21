@@ -3,3 +3,7 @@ v2/**/*.glb filter=lfs diff=lfs merge=lfs -text
 v2/**/*.blend filter=lfs diff=lfs merge=lfs -text
 v2/**/*.jpg filter=lfs diff=lfs merge=lfs -text
 v2/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+v3/**/*.glb filter=lfs diff=lfs merge=lfs -text
+v3/**/*.blend filter=lfs diff=lfs merge=lfs -text
+v3/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+v3/**/*.jpeg filter=lfs diff=lfs merge=lfs -text

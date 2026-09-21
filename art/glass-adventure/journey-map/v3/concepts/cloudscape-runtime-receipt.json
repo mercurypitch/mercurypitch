@@ -1,0 +1,13 @@
+{
+  "id": "floating-museum-cloudscape-v3",
+  "file": "cloudscape.webp",
+  "source": "art/glass-adventure/journey-map/v3/concepts/cloudscape-master.png",
+  "sourceSha256": "fef58f06f0fe20756be8c9c400641775041ce01a3a63d59b68f771649f75cbe7",
+  "sha256": "3cab6e70611c1166e536e4c1de78a063abc7bc51030eb1026c2caab82db5b75c",
+  "bytes": 181750,
+  "dimensions": [
+    1774,
+    887
+  ],
+  "role": "Sky-only original environment texture; all islands, routes, waterfalls and interactive features remain live geometry."
+}

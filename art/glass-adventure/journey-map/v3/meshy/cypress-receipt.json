@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-cypress-v3",
+  "taskType": "image-to-3d",
+  "state": "archived",
+  "authorization": "User requested concept fidelity modeling and authorized broad Meshy spending. Exact guide files generated from selected concept A.",
+  "taskId": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+  "guide": {
+    "file": "concepts/cypress-guide.png",
+    "bytes": 1618210,
+    "sha256": "9a329f32bc027c3f5951594aa7750275e878c832b23ae5eae968b7012f2c4974"
+  },
+  "finalStatus": {
+    "task_id": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T03:17:34.059794+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "files": [
+    {
+      "role": "glb",
+      "file": "meshy/floating-museum-cypress-v3.glb",
+      "bytes": 14166912,
+      "sha256": "2d19cf0cf1c29c69c1143c3a3d6221b4e9a32487c9944a7fa54f540cb60ade65"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/floating-museum-cypress-v3-pre-remesh.glb",
+      "bytes": 11942508,
+      "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "balanceBeforeBatch": 4150,
+  "balanceAfterArchiveCheck": 4060,
+  "readiness": "Raw source archive only; Blender normalization, LOD, material sizing, fresh-export validation, and visual proof remain separate gates."
+}

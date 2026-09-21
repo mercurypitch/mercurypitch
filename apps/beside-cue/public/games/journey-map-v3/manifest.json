@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Runtime assets for the live Floating Museum journey map: compressed supplemental Meshy sculpture kit and original sky-only cloudscape.",
+  "assets": [
+    {
+      "id": "floating-museum-sculpture-kit-v3",
+      "file": "floating-museum-sculpture-kit-v3.glb",
+      "source": "art/glass-adventure/journey-map/v3/exports/floating-museum-sculpture-kit-v3.glb",
+      "sourceReceipt": "art/glass-adventure/journey-map/v3/exports/floating-museum-sculpture-kit-v3.json",
+      "sha256": "a43c4f9693d97cb48c95cf644745244fa5461e339a606de004bf9c956de6194f",
+      "bytes": 3928964,
+      "root": "map_sculpture_kit_root",
+      "nodes": ["map_temple", "map_cliff", "map_cypress"]
+    },
+    {
+      "id": "floating-museum-cloudscape-v3",
+      "file": "cloudscape.webp",
+      "source": "art/glass-adventure/journey-map/v3/concepts/cloudscape-master.png",
+      "sourceReceipt": "art/glass-adventure/journey-map/v3/concepts/cloudscape-runtime-receipt.json",
+      "sourceSha256": "fef58f06f0fe20756be8c9c400641775041ce01a3a63d59b68f771649f75cbe7",
+      "sha256": "3cab6e70611c1166e536e4c1de78a063abc7bc51030eb1026c2caab82db5b75c",
+      "bytes": 181750,
+      "dimensions": [1774, 887]
+    }
+  ]
+}
