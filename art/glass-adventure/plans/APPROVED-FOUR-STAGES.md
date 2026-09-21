@@ -18,10 +18,12 @@ Existing static playtest builds remain unchanged until a new build is ready.
 - [x] Amber Cadence Urn: valid donor, hollow cavity, fracture, packed Blender
       project, materials, dimensions, topology and reconstruction receipts.
 - [ ] Celadon Lark Decanter: same production gates; preserve rejected remeshes.
-- [ ] Integrate both approved derivatives with catalog/native mappings and
-      exact source/public checksums. Preserve encounter/save identities.
-- [ ] Actual intact/shatter renders, focused tests and bounded render-cost
-      evidence. Record software versus physical-device measurements honestly.
+- [x] Integrate the approved Amber derivative with catalog/native mappings,
+      exact source/public checksums and unchanged encounter/save identities.
+- [ ] Integrate Celadon only after its replacement passes the same gates.
+- [x] Amber intact/shatter renders, focused tests and bounded render-cost
+      evidence; software versus physical-device evidence is labeled.
+- [ ] Repeat the production/render gates for the replacement Celadon.
 - [ ] Commit and push this stage; record commit and CI result here.
 
 Meshy produces modeled donors; Blender prepares production forms. Do not weaken
@@ -139,3 +141,19 @@ changes and active agents' ownership; root owns review and Git operations.
   Entry-model tests 10/10. `fa214b25` preserves the reviewed live-water module,
   6/6 focused tests and real-render motion/reduced-motion evidence. Map assembly,
   lifecycle review and full-host visual acceptance are still in progress.
+
+- `2b550a71` preserves the packed map kit, seven named reusable model groups,
+  6.83 MB GLB and matching source/public hashes. Existing approved Meshy models
+  were simplified and assembled in Blender; rejected Celadon inputs were not
+  substituted into production.
+- `d398b3e0` fixes the optional Conservatory wave guidance lint gate. Its
+  games-enabled Android and iOS Simulator jobs also succeeded. The remaining
+  Home destination-order browser assertion was fixed in `69a25078` and its
+  focused real-browser check passed. Live-map integration gets its own CI.
+
+- `f0d0c68a`: shared live map integrated, with compiled phone/tablet/desktop
+  proofs, 421 package tests, focused mouse/touch/recovery browser cases and
+  construction rollback. A static HTTPS preview is available without HMR.
+  This completes the first map implementation, not the outstanding Celadon
+  production replacement or physical-device acceptance. Current-head CI is
+  still running after push; no merge or release has occurred.

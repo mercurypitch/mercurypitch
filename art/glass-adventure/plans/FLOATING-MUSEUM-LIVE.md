@@ -86,14 +86,14 @@ does not suit the map; save original prompt, receipt, WAV and runtime derivative
 ## Acceptance and handoff
 
 - [ ] Stage 1–4 commits are pushed before map integration begins.
-- [ ] Named models, packed source, exact hashes and provenance are saved.
-- [ ] Water visibly changes geometry/surface flow across real rendered frames.
-- [ ] Desktop mouse and actual emulated touch selection; keyboard list/focus.
-- [ ] Portrait hidden/revealed states read existing saves correctly.
-- [ ] Narrow phone, tablet and desktop composition inspected in the real host.
-- [ ] Map → gallery → map does not retain duplicate canvas/audio/render loops.
-- [ ] Reduced motion, tab hide/resume, context failure and asset retry checked.
-- [ ] Measured renderer cost recorded separately from physical-device FPS.
+- [x] Named models, packed source, exact hashes and provenance are saved.
+- [x] Water visibly changes geometry/surface flow across real rendered frames.
+- [x] Desktop mouse and actual emulated touch selection; keyboard list/focus.
+- [x] Portrait hidden/revealed states read existing saves correctly.
+- [x] Narrow phone, tablet and desktop composition inspected in the real host.
+- [x] Map → gallery → map does not retain duplicate canvas/audio/render loops.
+- [x] Reduced motion, tab hide/resume, context failure and asset retry checked.
+- [x] Measured renderer cost recorded separately from physical-device FPS.
 - [ ] Commit/push, fresh static HTTPS preview, owner polish test instructions.
 
 ## Implementation boundaries for the first build
@@ -195,3 +195,48 @@ Focused checks: late import/parse disposal, retry race, initial-hidden state,
 one loop across hide/resume, cancelled/dragged/multitouch input, one faded entry,
 map → gallery → map resource lifecycle, and old/historical/ungraded saves. Record
 actual mouse and emulated touch evidence separately from owner device testing.
+
+## First live version and art follow-up
+
+The first runtime uses the approved local Meshy architecture prepared as a
+separate Blender map kit. Rounded marble terraces and suspended tapered cliffs
+carry four distinct arrangements; paired amber/celadon domes identify Twins.
+Long, segmented waterfall surfaces spill outside the cliff perimeter, with
+visible downward surface flow and pooled mist. They have no artificial basin
+floating in midair. A generated warm sky and three distant cloud layers replace
+the temporary blue background. All motion uses the scene's foreground clock.
+
+This is a playable interpretation of the audition, not pixel-equivalent finished
+concept art. After owner inspection, prioritize the island silhouettes and lush
+hanging gardens, fuller dome glazing, and convincing water-source channels before
+adding more islands. Keep the shared model kit and bounded render cost. Preserve
+B/C concepts unchanged for future chapters; they are not discarded.
+
+The current soundtrack reuses the owner's approved M03 garden music and A02
+water ambience. No new ElevenLabs expenditure was needed for this first map.
+The Celadon upload block is independent of the map, which uses existing accepted
+local source assets; it does not authorize uploading the pending guide.
+
+## Integration checkpoint — f0d0c68a
+
+The map is integrated into the shared campaign. Package suite: 421/421; package
+TypeScript and scoped ESLint pass. The focused map/campaign browser cases pass
+10/10 across the main run and a deterministic interrupted-fade follow-up. The
+Home destination regression also passes after updating the new room order.
+Construction rollback has a regression that forces PMREM setup failure plus a
+throwing disposer and checks cleanup without masking the original failure.
+The root web host and compiled BesideCue host both open the map without browser
+errors. New-head cloud gates remain authoritative.
+
+Compiled desktop/tablet/phone proofs and reproducible capture script are saved
+under `../journey-map/v2/proofs/runtime/` and `production/capture-runtime.mjs`.
+Measured totals include the shadow pass: desktop/tablet 157 draws and 253,126
+triangles; phone 113 draws and 186,599 triangles. Water contributes 5 draws and
+2,688 triangles, with no reflection/refraction pass. These are SwiftShader
+render counts, not device FPS. They must not be compared with a visible-pass-only
+budget as if shadows were free. Physical-device profiling remains open.
+
+Source, public and compiled-preview map GLBs share SHA-256
+`17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709`.
+The collected portrait currently appears in the selected HTML keepsake panel;
+revealing its art on the 3D monument is a later visual pass.
