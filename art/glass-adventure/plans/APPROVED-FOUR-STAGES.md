@@ -157,3 +157,11 @@ changes and active agents' ownership; root owns review and Git operations.
   This completes the first map implementation, not the outstanding Celadon
   production replacement or physical-device acceptance. Current-head CI is
   still running after push; no merge or release has occurred.
+
+- Current map runtime `afa9a62e` passes its journey browser gate, package/unit
+  and type checks, web/mobile builds and both games-enabled native packages.
+  CI found one old Twin court assertion still expecting a v1 persisted save;
+  the exact expectation now includes v2 and empty reward fields. Its focused
+  real-browser voice/order/replay/save case passes (23.6 seconds). This is a
+  test-only follow-up: the static preview's gameplay bytes remain unchanged.
+  Final cloud checks for the follow-up must still be inspected.

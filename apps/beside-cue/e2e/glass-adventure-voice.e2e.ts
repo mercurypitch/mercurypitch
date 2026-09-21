@@ -905,11 +905,18 @@ test('Twin court requires low then high, Replay resets the partial pair, and onl
   })
   await expectMicrophoneOff(page)
   expect(await savedProgress(page, twinPrefix)).toEqual({
-    version: 1,
+    version: 2,
     levelId: twinPrefix,
     checkpointId: twinIds.courtCheckpoint,
     completedBreakableIds: [twinIds.lower, twinIds.upper, twinIds.bridgePair],
     finished: false,
+    rewards: {
+      version: 1,
+      discoveredEncounterIds: [],
+      collectedCoinIds: [],
+      qualityResults: [],
+      collectedPortraitIds: [],
+    },
   })
 })
 
