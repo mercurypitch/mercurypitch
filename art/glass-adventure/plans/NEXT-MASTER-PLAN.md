@@ -104,10 +104,20 @@ a tap/click help control, while preserving gallery stories and adding outside-cl
 dismissal to artwork inspection.
 
 The owner approved the first [Cloudway pilot](./CLOUDWAY-PILOT-IMPLEMENTATION.md)
-after the challenge-polish batch passed its checks. Meshy/Blender assets, a safe
-introductory platform route and optional first-island unlock are now in progress.
-First Light is ungraded: complete it and earn three saved pitch stars in Glassworks
-Journey. This does not implement the proposed replay difficulty system.
+after the challenge-polish batch passed its checks. The Glass Ribbon now has an
+authored eleven-platform route, frost, a carrying raft, two cracking steps, three
+comfortable-note stations and five safe checkpoints. It has a separate save and
+replay, plus a guarded first-island entry. First Light is ungraded: complete it
+and earn three saved pitch stars in Glassworks Journey. This does not implement
+the proposed replay difficulty system. Meshy export review, input-driven
+traversal and rendered browser checks pass. The HTTPS playtest route and
+new-head PR gate are tracked in the pilot checklist; tablet acceptance remains
+open.
+
+After tablet acceptance, choose between The Opaline Ferry (staggered moving
+rafts with low/high lessons on docks) and The Frost Conservatory (curving frost
+with optional crackle shortcuts and safe gentle-wave stations). Both reuse this
+simulation and platform family; neither is implemented yet.
 
 These other ideas remain **planning only**:
 
@@ -130,7 +140,9 @@ intersections, correct surface contact, normals, repeated-object instancing,
 fracture/animation preparation and measured rendering cost. It defines a full
 asset inventory, per-family evidence, source-preserving fixes and a reusable
 checklist/skill built from verified guidance and our own production lessons.
-The current assets have not yet passed this new audit.
+The Cloudway family passes its scoped production audit, including landing
+proxies, coherent outward fracture winding, hashes and instanced parts. The
+broader existing museum inventory has not yet passed this new audit.
 
 ### N2 finish — close the current visual polish
 

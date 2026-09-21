@@ -46,10 +46,17 @@ lives in `proofs/cloudway-platform-kit-validation.json`.
   SHA-256 `9dbc295af712ed390cae4f3db5a341e12cccc06caf27e3adbcbd2e621154ac3c`
 - `proofs/cloudway-platform-kit-final-crackle.png`: optimized crackle-state render;
   SHA-256 `ee6723aaf3432b8e6702a78c480bfa5b4b9a48d9afd27cb96c8906cec5ae5cda`
+- `proofs/scripted-scene/`: actual gameplay-renderer snapshots from the source host and
+  their fixed-state capture report
+- `proofs/compiled-entry/`: actual compiled trial-card and entry screenshots,
+  with viewport-specific capture metadata
 
 `cloudway-ribbon-preview.webp` is a wide derivative of the approved Cloudway
 route concept. It is card art, not a gameplay screenshot. The two `final-*`
-PNG files above are actual Blender renders of the optimized GLB.
+PNG files above are Blender renders of the optimized GLB; the `scripted-scene`
+and `compiled-entry` PNGs are actual browser captures. Only `compiled-entry`
+uses the production build; `scripted-scene` uses a source host and fixed
+simulation snapshots.
 
 Meshy used 90 credits for the three original textured image-to-3D donors and
 15 credits for their runtime remeshes: 105 credits total. The final checked

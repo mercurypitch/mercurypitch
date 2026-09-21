@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "review": "cloudway-platform-trials-v2-archive",
+  "reviewedOn": "2026-09-21",
+  "outcome": "passed",
+  "scope": [
+    "art/glass-adventure/platform-trials/v2",
+    "apps/beside-cue/public/games/cloudway-v1"
+  ],
+  "sourceVersion": {
+    "initialCloudwaySourceCommit": "9946caba",
+    "finalEntryCopyCommit": "a6bf3140",
+    "platformRuntimeCommit": "728338dc",
+    "assetArchiveCommit": "6fe969de",
+    "runtimeBundleSha256": "05deefa049031550b3aa7897a6d7a3345718b2e10a7595a272ea513195bb9e3e",
+    "runtimeBundleBytes": 7921368
+  },
+  "inventoryExcludingThisReviewRecord": {
+    "archiveFiles": 108,
+    "archiveBytes": 637785353,
+    "publicFiles": 4,
+    "publicBytes": 8135607,
+    "jsonFilesParsed": 21,
+    "glbFilesParsed": 12,
+    "selfContainedGlbFiles": 12,
+    "lfsBinaryFiles": 71,
+    "providerJsonFiles": 12,
+    "providerArtifactRecords": 78,
+    "sourceHashRecords": 15,
+    "releaseShards": 6,
+    "releaseShardsClosed": 6,
+    "releaseShardsConsistentlyWound": 6,
+    "releaseShardsPositiveVolume": 6,
+    "requiredGameAssets": 79,
+    "adventureBrowserSpecs": 13,
+    "cloudwayBrowserCases": 3,
+    "compiledEntryProofFiles": 7,
+    "scriptedSceneProofFiles": 6
+  },
+  "sanitation": {
+    "queryUrlFiles": 0,
+    "opaqueOrAuthenticatedUrlFiles": 0,
+    "credentialPatternFiles": 0,
+    "strayCacheBackupOrSymlinkFiles": 0
+  },
+  "results": {
+    "archivePublicBundleDigestMatch": true,
+    "manifestAndBuildDigestsMatch": true,
+    "providerReferencesAreRelativeAndHashed": true,
+    "signedArtifactUrlsPersisted": false,
+    "credentialsPersisted": false,
+    "allBinaryArtifactsUseGitLfs": true,
+    "publicShippingSetIsMinimal": true,
+    "rebuildCommandsDocumented": true,
+    "ciAndNativeStagingCoverCloudway": true,
+    "releaseShardTopologyValidated": true,
+    "compiledEntryManifestHashesMatch": true
+  },
+  "evidence": [
+    "README.md",
+    "exports/manifest.json",
+    "production/cloudway-platform-kit-build.json",
+    "proofs/cloudway-platform-kit-validation.json",
+    "proofs/compiled-entry/manifest.json",
+    "proofs/scripted-scene/scripted-render-report.json"
+  ],
+  "limitations": [
+    "This review is scoped to the two listed Cloudway asset directories.",
+    "Inventory counts exclude proofs/archive-review.json itself."
+  ]
+}
