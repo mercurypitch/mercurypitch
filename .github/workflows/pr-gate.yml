@@ -229,6 +229,35 @@ jobs:
       - name: Test repository scripts
         run: pnpm run test:scripts
 
+  metrics:
+    name: Code health ratchet
+    needs: scope
+    # `install` is true whenever any source surface is in scope, which is
+    # exactly when a tracked number can move: the script measures src,
+    # workers, packages and apps. A docs-only PR cannot change it and skips.
+    if: needs.scope.outputs.install == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      # A ratchet, not an absolute threshold: this fails only when a number is
+      # worse than docs/agent/code-metrics.baseline.json. Growth that is
+      # deliberate lands by re-running `--update` in the same PR and saying why
+      # in the commit message.
+      #
+      # Its own job rather than a step in `lint`, because it spends ~100s on a
+      # second full audit-ESLint pass plus dependency-cruiser. Behind `lint`
+      # that would make static analysis the critical path; alongside the
+      # browser shards it disappears into the existing wall clock.
+      #
+      # The checkout is shallow, which is deliberate: the churn-weighted
+      # hotspot ranking needs real history and reports itself skipped without
+      # it, and that metric is context for a human, never ratcheted.
+      - name: Check code health against the baseline
+        run: pnpm run metrics:check
+
   units:
     name: Unit tests (${{ matrix.shard }}/2)
     needs: scope
@@ -423,7 +452,17 @@ jobs:
     # matrix's individual jobs stably, and a job skipped by `scope` reports
     # `skipped` rather than `success`, so neither can be required directly.
     needs:
-      [scope, validate, lint, units, e2e, workers, beside-cue, mercurypitch]
+      [
+        scope,
+        validate,
+        lint,
+        metrics,
+        units,
+        e2e,
+        workers,
+        beside-cue,
+        mercurypitch,
+      ]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

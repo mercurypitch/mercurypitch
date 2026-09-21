@@ -492,7 +492,7 @@ for the three options and the recommendation.
 Ranked by value per hour, not by severity.
 
 1. **Done — make CI run the worker tests.** Highest value in the audit; cost was a five-line YAML change.
-2. **Done — freeze the architecture baseline.** `pnpm metrics:check` now fails on any regression in layering, cycles, complexity, file size, type escapes, or test-shape metrics.
+2. **Done — freeze the architecture baseline, and gate on it.** `pnpm metrics:check` fails on any regression in layering, cycles, complexity, file size, type escapes, or test-shape metrics, and the `Code health ratchet` job in `pr-gate.yml` runs it on every PR that touches source. It was a local command only between 2026-08-14 and 2026-09-21, and the baseline it guarded was never enforced in that window: twelve of the fifteen tracked numbers regressed, several by 50-100%. A ratchet nobody turns is a ratchet nobody has.
 3. **Fix the confirmed bugs in [BUGS.md](BUGS.md)**, highest severity first. Each one gets a mutation-verified regression test — a fix without a test that fails without it is not finished.
 4. **Kill the 22 cycles.** Tractable, and they are the violations that cause real module-init bugs. Three are barrel-file artefacts.
 5. **Extract geometry from the canvases.** `PitchCanvas.tsx` (complexity 255), `GuitarFretboardCanvas.tsx` (135) and `OfflinePitchCanvas.tsx` (153) contain pure coordinate math that is currently untestable because it is welded to a 2D context. Extracting it fixes the complexity number, the coverage number and the arc-physics copy problem in one move.
@@ -507,6 +507,7 @@ Ranked by value per hour, not by severity.
 This document is only worth committing if it cannot quietly become false.
 
 - `scripts/code-metrics.mjs` produces every number above. `pnpm metrics` prints them; `pnpm metrics:json` emits the full record including per-violation samples.
-- `docs/agent/code-metrics.baseline.json` is the frozen baseline. `pnpm metrics:check` exits non-zero if any tracked number grew, and names which.
+- `docs/agent/code-metrics.baseline.json` is the frozen baseline. `pnpm metrics:check` exits non-zero if any tracked number grew, and names which. It also fails when a tracked number is _missing_ — a skipped collector must not read as a pass.
+- CI runs it: the `Code health ratchet` job in `.github/workflows/pr-gate.yml`, gated on the scope step's `install` output, and required through the `PR Gate` job. Verifying that a metric is enforced means finding it in a workflow, not finding a script that can compute it.
 - When a regression is deliberate, `pnpm metrics:update` and say why in the commit message. The baseline is a record of agreed debt, not a high-water mark to hide behind.
 - The ratchet caught a regression introduced _during this audit_, which is the only real evidence that it works.
