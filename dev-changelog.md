@@ -9,6 +9,73 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.12] - 2026-09-21
+
+### Every share surface reports, and none of them borrows the Mirror's name
+
+Measured against prod D1 on 2026-09-21: `trackFunnel('link_copied')` had
+exactly two call sites, both in `MirrorApp.tsx`. The account page's Copy link
+and Share, and First Light's Share on the twin beat, fired nothing at all — so
+a share from either was invisible in D1, in GA4 and in the report console, and
+the only shares anyone could count were from the standalone Voice Mirror. maff
+tested all three on prod after the 0.9.11 deploy and only the Mirror's two
+copies landed, which is what surfaced it.
+
+The obvious fix — reuse `card_shared` / `link_copied` — is the wrong one twice
+over:
+
+- `card_shared` is a live Google Ads conversion action. Firing it from two more
+  surfaces silently changes what a running campaign is bidding on.
+- `mirrorEvents` stores `id`, `createdAt`, `clientId`, `event` and a
+  `metricsJson` that only `results_view` writes. There is no surface column, so
+  two surfaces under one name can never be told apart again — not in a query,
+  not retrospectively.
+
+So each surface gets its own name, all three added to
+`src/lib/funnel-event-catalog.ts` (which the db-worker builds its ingest
+allowlist from, so client and worker cannot drift):
+
+| Name                | Surface                            | Fires on                                         |
+| ------------------- | ---------------------------------- | ------------------------------------------------ |
+| `voice_share`       | Account -> Voice, Share            | `shared`, `downloaded`, `downloaded-link-copied` |
+| `voice_link_copied` | Account -> Voice, Copy link        | a clipboard write that actually succeeded        |
+| `onboarding_share`  | First Light, the twin beat's Share | `shared`, `downloaded`, `downloaded-link-copied` |
+
+None of the three is an Ad conversion. `voice_*` go through
+`trackEvent` (`src/lib/analytics.ts`) because the account page is the app;
+`onboarding_share` goes through `trackOnboarding`
+(`src/features/onboarding/funnel.ts`) because First Light has its own funnel.
+`dismissed` (the sheet opened and was closed) and `unavailable` (no twin card
+to share) count nothing — a share that did not happen is not a share.
+
+**Deploy order.** The worker rejects a name it does not know, and `beacon()`
+never reads the response, so an event the worker has not learned yet is dropped
+silently. `deploy-db.yml` lists `funnel-event-catalog.ts` in its dev push
+filter, so merging to `main` redeploys dev's db-worker; `build.yml`'s
+`deploy-db-prod` runs unconditionally on any `v*` tag, so the release tag ships
+both halves. The two jobs inside one tag are not ordered against each other, so
+a share in the first minute or two after a prod deploy may still be dropped.
+Nothing to do about it beyond knowing it.
+
+Tests: `src/components/__tests__/VoiceSection.test.tsx` (both buttons, all five
+outcomes) and a new `src/tests/onboarding-share-metric.test.tsx`, which stands
+First Light on the twin beat through the store rather than walking the whole
+flow. `workers/db-worker/src/funnel-events.test.ts` already iterates every
+catalog array, so the three names are covered on the worker side for free.
+
+### PeerPush
+
+`peerpush.com/p/mercurypitch` lists the app, and the listing links back. Their
+own badge image (460x130, served at 230 CSS px), under the About links in
+Settings rather than inside that row — at 230px it would be four times the
+width of every pill beside it. Held at `opacity: .78` until hover: it is an
+acknowledgement, not a call to action. No CSP change needed —
+`public/_headers` already allows `img-src ... https:`.
+
+The Product Hunt badge stays where it is, on the billing Promo Codes card,
+where the launch bonus it refers to lives. The landing gets its own, in the
+disjoint-colliders repo.
+
 ## [0.9.11] - 2026-09-20
 
 Four things from the owner's tablet pass over 0.9.10 on prod, all in the jam
