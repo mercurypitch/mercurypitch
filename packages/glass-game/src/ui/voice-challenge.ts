@@ -564,7 +564,7 @@ export function createVoiceChallenge(
       emit({
         message:
           current.challenge.kind === 'settle-wave'
-            ? 'Now sway above and below twice, then return to the middle.'
+            ? 'Sway twice, then return.'
             : `Now sing ${options.game.snapshot().activeEncounter!.target}.`,
         hint:
           current.challenge.kind === 'settle-wave'

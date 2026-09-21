@@ -1,5 +1,5 @@
 // Adventure session — orchestrates host services without putting UI or audio in the game core.
-import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import type { GalleryArtwork } from '../content/gallery-artworks'
 import { galleryArtwork } from '../content/gallery-artworks'
 import { museumSoundscape } from '../content/soundscapes'
@@ -50,6 +50,11 @@ export function useAdventure(
   const [error, setError] = createSignal<string | null>(null)
   const [voiceState, setVoiceState] = createSignal<VoiceChallengeSnapshot>()
   const voiceMode = () => voiceState()?.mode ?? 'off'
+  const voicePanelVisible = createMemo(() => voiceMode() !== 'off')
+  const [challengeSafeBottom, setChallengeSafeBottom] = createSignal<number>()
+  const [challengeCamera, setChallengeCamera] = createSignal<ReturnType<
+    GlassRenderer['getChallengeCameraMetrics']
+  > | null>(null)
   const pitch = () => voiceState()?.pitch ?? null
   const target = () => voiceState()?.target ?? null
   const [notice, setNotice] = createSignal(
@@ -88,6 +93,7 @@ export function useAdventure(
   let completionTimer: ReturnType<typeof setTimeout> | undefined
   let reducedMotion = false
   let lastArtworkCheck = 0
+  let lastCameraMetricsAt = -Infinity
   const loading = createAdventureLoadingLifecycle({
     minimumVisibleMs: LOADING_PRESENTATION_MS,
     onChange: (state) => {
@@ -402,6 +408,45 @@ export function useAdventure(
   }
 
   onMount(() => {
+    const viewport = mount()
+    let voicePanel: HTMLElement | null = null
+    const measureChallengePanel = (): void => {
+      if (voicePanel === null) {
+        // An absent panel is not a new zero budget: the renderer retains the
+        // last composition while the completed exhibit is still shattering.
+        setChallengeSafeBottom(undefined)
+        return
+      }
+      const view = viewport.getBoundingClientRect()
+      const panel = voicePanel.getBoundingClientRect()
+      setChallengeSafeBottom(
+        view.height > 0 && panel.height > 0
+          ? Math.min(
+              0.62,
+              Math.max(0, (view.bottom - panel.top + 16) / view.height),
+            )
+          : undefined,
+      )
+    }
+    const panelResize = new ResizeObserver(measureChallengePanel)
+    panelResize.observe(viewport)
+    createEffect(() => {
+      const visible = voicePanelVisible()
+      // Conditional Solid content is mounted by the end of this update. Watch
+      // its actual size so changed instructions, fonts and rotation reframe too.
+      queueMicrotask(() => {
+        if (!alive) return
+        if (voicePanel !== null) panelResize.unobserve(voicePanel)
+        voicePanel = visible
+          ? (viewport.parentElement?.querySelector<HTMLElement>(
+              '[aria-label="Voice challenge"]',
+            ) ?? null)
+          : null
+        if (voicePanel !== null) panelResize.observe(voicePanel)
+        measureChallengePanel()
+      })
+    })
+    onCleanup(() => panelResize.disconnect())
     reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
@@ -427,7 +472,16 @@ export function useAdventure(
       const needsStableFrame = phase === 'awaiting-first-frame'
       if (activeRenderer !== null && (phase === 'ready' || needsStableFrame))
         try {
-          activeRenderer.render(game.snapshot(), Math.min(0.05, elapsed))
+          activeRenderer.render(game.snapshot(), Math.min(0.05, elapsed), {
+            challengeEncounterId: voiceState()?.encounterId ?? null,
+            paused: paused() || tutorial(),
+            safeBottomFraction: challengeSafeBottom(),
+          })
+          // Inspection attributes are sampled, not a second per-frame UI loop.
+          if (needsStableFrame || now - lastCameraMetricsAt >= 100) {
+            lastCameraMetricsAt = now
+            setChallengeCamera(activeRenderer.getChallengeCameraMetrics())
+          }
           if (phase === 'ready' && !paused() && now - lastArtworkCheck >= 250) {
             lastArtworkCheck = now
             setNearbyArtwork(
@@ -572,6 +626,7 @@ export function useAdventure(
     narrationPreferences,
     changeNarration,
     gameplayGesture,
+    challengeCamera,
     cameraYaw: () => {
       snapshot()
       return renderer?.getCameraYaw() ?? 0

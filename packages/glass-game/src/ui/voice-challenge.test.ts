@@ -319,7 +319,7 @@ describe('voice challenge controller', () => {
       test.emit(voice, observation(i, 57, 1025 + i * 25))
     expect(test.controller.snapshot()).toMatchObject({
       stepIndex: 1,
-      message: 'Now sway above and below twice, then return to the middle.',
+      message: 'Sway twice, then return.',
     })
     expect(test.events.some((event) => event.type === 'break')).toBe(false)
     for (let i = 145; i < 270; i++)

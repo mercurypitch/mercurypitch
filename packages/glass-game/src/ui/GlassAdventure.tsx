@@ -202,6 +202,16 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       data-player-y={adventure.snapshot().player.position.y}
       data-player-z={adventure.snapshot().player.position.z}
       data-camera-yaw={adventure.cameraYaw()}
+      data-challenge-camera-mode={
+        adventure.challengeCamera()?.mode ?? 'exploration'
+      }
+      data-challenge-camera-progress={
+        adventure.challengeCamera()?.progress ?? 0
+      }
+      data-challenge-camera-encounter={
+        adventure.challengeCamera()?.encounterId ?? undefined
+      }
+      data-challenge-camera={JSON.stringify(adventure.challengeCamera())}
     >
       <div
         ref={canvas}
@@ -426,10 +436,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               onRefind={adventure.changeNote}
             />
           </Show>
-          <div class={styles.desktopHint}>
-            WASD move <span>Space jump</span>
-            <span>Drag to look</span>
-          </div>
+          <Show when={adventure.voiceMode() === 'off'}>
+            <div class={styles.desktopHint}>
+              WASD move <span>Space jump</span>
+              <span>Drag to look</span>
+            </div>
+          </Show>
         </Show>
         <Show when={adventure.tutorial()}>
           <Tutorial

@@ -57,7 +57,11 @@ export function TouchControls(props: TouchControlsProps) {
     props.input.setJump(false)
   }
   return (
-    <div class={styles.touchControls} aria-label="Movement controls">
+    <div
+      class={styles.touchControls}
+      aria-label="Movement controls"
+      style={{ visibility: props.disabled ? 'hidden' : undefined }}
+    >
       <div
         ref={stickElement}
         class={styles.stick}

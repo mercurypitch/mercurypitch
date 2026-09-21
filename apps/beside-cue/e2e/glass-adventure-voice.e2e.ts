@@ -25,6 +25,25 @@ interface PendingPermission {
   resolve(stream: MediaStream): void
   reject(cause: unknown): void
 }
+interface ChallengeCameraMetrics {
+  encounterId: string | null
+  mode: 'exploration' | 'entering' | 'holding' | 'restoring'
+  safeBottomFraction: number
+  safeBottomNdc: number | null
+  mercFrame: { minX: number; maxX: number; minY: number; maxY: number } | null
+  targetFrame: {
+    minX: number
+    maxX: number
+    minY: number
+    maxY: number
+  } | null
+  combinedFrame: {
+    minX: number
+    maxX: number
+    minY: number
+    maxY: number
+  } | null
+}
 declare global {
   interface Window {
     glassVoiceFixture: {
@@ -497,6 +516,72 @@ async function expectVoicePanelFits(page: Page): Promise<void> {
   expect(bounds.top).toBeGreaterThanOrEqual(0)
   expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth)
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight)
+}
+
+async function challengeCameraMetrics(
+  page: Page,
+): Promise<ChallengeCameraMetrics | null> {
+  const value = await page
+    .getByTestId('glass-adventure')
+    .getAttribute('data-challenge-camera')
+  return value === null || value === 'null'
+    ? null
+    : (JSON.parse(value) as ChallengeCameraMetrics)
+}
+
+async function voicePanelTopNdc(page: Page): Promise<number | null> {
+  const panelBounds = await page.getByLabel('Voice challenge').boundingBox()
+  const viewport = page.viewportSize()
+  return panelBounds === null || viewport === null
+    ? null
+    : 1 - (panelBounds.y / viewport.height) * 2
+}
+
+async function expectChallengeCameraFitsPanel(
+  page: Page,
+  encounterId: string,
+): Promise<void> {
+  const adventure = page.getByTestId('glass-adventure')
+  await expect(adventure).toHaveAttribute(
+    'data-challenge-camera-mode',
+    'holding',
+    { timeout: 20_000 },
+  )
+  await expect
+    .poll(
+      async () => {
+        const [metrics, panelTopNdc] = await Promise.all([
+          challengeCameraMetrics(page),
+          voicePanelTopNdc(page),
+        ])
+        const frame = metrics?.combinedFrame
+        return (
+          metrics?.encounterId === encounterId &&
+          metrics.mercFrame !== null &&
+          metrics.targetFrame !== null &&
+          frame !== null &&
+          panelTopNdc !== null &&
+          metrics.safeBottomFraction > 0.2 &&
+          frame.minX >= -0.9 &&
+          frame.maxX <= 0.9 &&
+          frame.minY >= panelTopNdc &&
+          frame.maxY <= 0.88
+        )
+      },
+      { timeout: 20_000, intervals: [100] },
+    )
+    .toBe(true)
+
+  const metrics = await challengeCameraMetrics(page)
+  const panelTopNdc = await voicePanelTopNdc(page)
+  expect(metrics?.encounterId).toBe(encounterId)
+  expect(metrics?.mercFrame).not.toBeNull()
+  expect(metrics?.targetFrame).not.toBeNull()
+  expect(metrics?.combinedFrame?.minX).toBeGreaterThanOrEqual(-0.9)
+  expect(metrics?.combinedFrame?.maxX).toBeLessThanOrEqual(0.9)
+  expect(panelTopNdc).not.toBeNull()
+  expect(metrics?.combinedFrame?.minY).toBeGreaterThanOrEqual(panelTopNdc ?? 1)
+  expect(metrics?.combinedFrame?.maxY).toBeLessThanOrEqual(0.88)
 }
 
 async function savedProgress(
@@ -997,15 +1082,18 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
     timeout: 10_000,
   })
   await expect(
-    page
-      .getByRole('list', { name: 'Lesson steps' })
-      .getByText('Sway twice, return to middle'),
+    page.getByRole('list', { name: 'Lesson steps' }).getByText(/Sway twice/),
   ).toHaveAttribute('aria-current', 'step')
   await expect(
-    page.getByRole('heading', {
-      name: 'Now sway above and below twice, then return to the middle.',
-    }),
+    page.getByRole('heading', { name: /sway.*twice/i }),
   ).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expectVoicePanelFits(page)
+  await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
+  await page.setViewportSize({ width: 320, height: 640 })
+  await expectVoicePanelFits(page)
+  await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
+  await page.setViewportSize({ width: 640, height: 480 })
 
   for (const midi of [59, 57, 55, 57]) await glideVoice(page, midi, 0.35)
   await page.evaluate(() => window.glassVoiceFixture.setAmplitude(0))

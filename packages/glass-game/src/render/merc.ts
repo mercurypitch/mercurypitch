@@ -15,6 +15,13 @@ const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
 const MINIMUM_MOVE_TIME_SCALE = 0.35
 const MAXIMUM_MOVE_TIME_SCALE = 2.4
 
+export interface AdventureMercPresentation {
+  /** Render-only root yaw toward the active exhibit. */
+  facingYaw?: number | null
+  /** Presentation clock, independent of a voice-paused simulation. */
+  turnDeltaSeconds?: number
+}
+
 export function mercMoveTimeScale(horizontalSpeed: number): number {
   const speed =
     Number.isFinite(horizontalSpeed) && horizontalSpeed > 0
@@ -65,7 +72,12 @@ export async function loadAdventureMerc(url: string) {
   }
   return {
     root,
-    update(snapshot: GameSnapshot, dt: number, reducedMotion: boolean) {
+    update(
+      snapshot: GameSnapshot,
+      dt: number,
+      reducedMotion: boolean,
+      presentation: AdventureMercPresentation = {},
+    ) {
       const player = snapshot.player
       const count = snapshot.breakables.filter(
         (item) => item.phase === 'complete',
@@ -106,12 +118,15 @@ export async function loadAdventureMerc(url: string) {
       )
       body.position.y = -visualGroundY * scale * stretch + 0.015
       root.position.copy(player.position)
-      const desiredYaw = player.facingYaw + Math.PI
+      const desiredYaw = presentation.facingYaw ?? player.facingYaw + Math.PI
       const angle = Math.atan2(
         Math.sin(desiredYaw - root.rotation.y),
         Math.cos(desiredYaw - root.rotation.y),
       )
-      const turnDt = Number.isFinite(dt) ? Math.max(0, Math.min(0.05, dt)) : 0
+      const requestedTurnDt = presentation.turnDeltaSeconds ?? dt
+      const turnDt = Number.isFinite(requestedTurnDt)
+        ? Math.max(0, Math.min(0.05, requestedTurnDt))
+        : 0
       const blended = angle * (1 - Math.exp(-TURN_RESPONSE * turnDt))
       const maximumStep = MAXIMUM_TURN_RADIANS_PER_SECOND * turnDt
       root.rotation.y += Math.max(-maximumStep, Math.min(maximumStep, blended))

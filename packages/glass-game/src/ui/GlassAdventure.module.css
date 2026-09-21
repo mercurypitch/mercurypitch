@@ -608,6 +608,33 @@
     padding: 12px 20px;
   }
 }
+@media (max-width: 360px) {
+  .encounter {
+    width: calc(100% - 20px);
+    padding: 12px 14px 10px;
+    border-radius: 20px;
+  }
+  .encounter h2 {
+    font-size: 20px;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .voiceMeter {
+    gap: 10px;
+  }
+  .noteDisc {
+    width: 50px;
+    height: 50px;
+  }
+  .noteDisc > span {
+    width: 42px;
+    height: 42px;
+    font-size: 16px;
+  }
+  .encounterActions {
+    gap: 8px;
+  }
+}
 @media (max-height: 500px) {
   .tutorialDrawing {
     display: none;

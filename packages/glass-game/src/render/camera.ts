@@ -5,9 +5,12 @@
 import type { Object3D } from 'three'
 import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
+import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
+import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
 
 const ORBIT_FOLLOW_GRACE_SECONDS = 0.2
+const EXPLORATION_FOV_DEGREES = 48
 const FOLLOW_RESPONSE = 5
 const MAXIMUM_FOLLOW_RADIANS_PER_SECOND = 2.8
 const FOLLOW_COMPLETE_RADIANS = 0.01
@@ -33,6 +36,34 @@ export interface AdventureCameraOptions {
   reducedMotion?: boolean
 }
 
+export interface ChallengeCameraMetrics {
+  mode: 'exploration' | 'entering' | 'holding' | 'restoring'
+  encounterId: string | null
+  progress: number
+  safeBottomFraction: number
+  position: { x: number; y: number; z: number }
+  target: { x: number; y: number; z: number }
+  mercFrame: ChallengeCameraScreenFrame | null
+  targetFrame: ChallengeCameraScreenFrame | null
+  combinedFrame: ChallengeCameraScreenFrame | null
+  safeBottomNdc: number | null
+  side: -1 | 1 | null
+  clearance: number | null
+  occluded: boolean | null
+}
+
+function frameUnion(
+  first: ChallengeCameraScreenFrame,
+  second: ChallengeCameraScreenFrame,
+): ChallengeCameraScreenFrame {
+  return {
+    minX: Math.min(first.minX, second.minX),
+    maxX: Math.max(first.maxX, second.maxX),
+    minY: Math.min(first.minY, second.minY),
+    maxY: Math.max(first.maxY, second.maxY),
+  }
+}
+
 function shortestAngleDelta(from: number, to: number): number {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from))
 }
@@ -54,10 +85,11 @@ export function createAdventureCamera(
   level: LevelDefinition,
   options: AdventureCameraOptions = {},
 ) {
-  const camera = new PerspectiveCamera(48, 1, 0.05, 180)
+  const camera = new PerspectiveCamera(EXPLORATION_FOV_DEGREES, 1, 0.05, 180)
   const target = new Vector3()
     .copy(level.spawn.position)
     .add(new Vector3(0, 0.42, 0))
+  const renderedTarget = target.clone()
   const bodyTarget = new Vector3()
   const desired = new Vector3()
   const direction = new Vector3()
@@ -66,6 +98,9 @@ export function createAdventureCamera(
   const hit = new Vector3()
   const ray = new Ray()
   const raycaster = new Raycaster()
+  const challengeDirection = new Vector3()
+  const challengePosition = new Vector3()
+  const challengeReturnOffset = new Vector3()
   let occluders: Object3D[] = []
   let yaw = level.spawn.facingYaw
   let pitch = 0.36
@@ -86,6 +121,17 @@ export function createAdventureCamera(
   let zoomChanged = false
   let hasRetainedPosition = false
   let firstFrame = true
+  let requestedChallengeId: string | null = null
+  let challengeSubjects: ChallengeCameraSubjects | null = null
+  let challengeShot: ChallengeCameraShot | null = null
+  let challengePlanKey = ''
+  let challengeSafeBottomFraction = 0
+  let challengePlanningPosition: Vector3 | null = null
+  let challengePlayerOrigin: Vector3 | null = null
+  let renderedChallengeYaw = yaw
+  const challengeDirector = createChallengeCameraDirector({
+    reducedMotion: options.reducedMotion === true,
+  })
   const enclosure = createEnclosureFraming(level)
   const obstacles = level.platforms.map((platform) => ({
     id: platform.id,
@@ -111,40 +157,40 @@ export function createAdventureCamera(
     )
   }
 
-  function safeBoomDistance(
-    atPitch: number,
+  function safeRayDistance(
+    origin: Vector3,
+    rayDirection: Vector3,
     reach: number,
     enabledPlatformIds: readonly string[],
     activeSolidIds: readonly string[],
     constrainToEnclosure: boolean,
   ): number {
-    pointBoom(atPitch)
-    ray.set(target, direction)
+    ray.set(origin, rayDirection)
     let safeDistance = reach
     for (const obstacle of obstacles) {
       if (!enabledPlatformIds.includes(obstacle.id)) continue
       if (ray.intersectBox(obstacle.box, hit))
         safeDistance = Math.min(
           safeDistance,
-          Math.max(0.35, target.distanceTo(hit) - 0.1),
+          Math.max(0.35, origin.distanceTo(hit) - 0.1),
         )
     }
     if (enclosure !== null) {
       safeDistance = Math.min(
         safeDistance,
-        enclosure.solidDistance(target, direction, reach, activeSolidIds),
+        enclosure.solidDistance(origin, rayDirection, reach, activeSolidIds),
       )
       if (constrainToEnclosure) {
         const volumeDistance = enclosure.volumeDistance(
-          target,
-          direction,
+          origin,
+          rayDirection,
           reach,
         )
         if (volumeDistance !== null)
           safeDistance = Math.min(safeDistance, volumeDistance)
       }
     }
-    raycaster.set(target, direction)
+    raycaster.set(origin, rayDirection)
     raycaster.far = safeDistance
     const obstruction = raycaster.intersectObjects(occluders, false)[0]
     if (obstruction !== undefined) {
@@ -153,6 +199,24 @@ export function createAdventureCamera(
         enclosure === null ? meshDistance : Math.min(safeDistance, meshDistance)
     }
     return safeDistance
+  }
+
+  function safeBoomDistance(
+    atPitch: number,
+    reach: number,
+    enabledPlatformIds: readonly string[],
+    activeSolidIds: readonly string[],
+    constrainToEnclosure: boolean,
+  ): number {
+    pointBoom(atPitch)
+    return safeRayDistance(
+      target,
+      direction,
+      reach,
+      enabledPlatformIds,
+      activeSolidIds,
+      constrainToEnclosure,
+    )
   }
 
   function chooseLiftedPitch(
@@ -189,12 +253,222 @@ export function createAdventureCamera(
     return bestPitch
   }
 
+  function focusedChallengeId(snapshot: GameSnapshot): string | null {
+    if (requestedChallengeId !== null) return requestedChallengeId
+    if (snapshot.activeEncounter !== null) return snapshot.activeEncounter.id
+    return (
+      snapshot.breakables.find((item) => item.phase === 'shattering')?.id ??
+      null
+    )
+  }
+
+  function fallbackChallengeSubjects(
+    encounterId: string,
+    snapshot: GameSnapshot,
+  ): ChallengeCameraSubjects {
+    const playerPosition = new Vector3().copy(snapshot.player.position)
+    const exhibit = level.breakables.find((item) => item.id === encounterId)
+    const exhibitBase = new Vector3().copy(
+      exhibit?.position ?? snapshot.player.position,
+    )
+    exhibitBase.y += exhibit?.mount?.height ?? 0.255
+    return {
+      encounterId,
+      merc: new Box3(
+        playerPosition.clone().add(new Vector3(-0.34, 0, -0.26)),
+        playerPosition.clone().add(new Vector3(0.34, 1.35, 0.26)),
+      ),
+      target: new Box3(
+        exhibitBase.clone().add(new Vector3(-0.42, 0, -0.42)),
+        exhibitBase.clone().add(new Vector3(0.42, 1.15, 0.42)),
+      ),
+    }
+  }
+
+  function challengePositionConstraint(
+    snapshot: GameSnapshot,
+    focus: Vector3,
+    requested: Vector3,
+  ): Vector3 {
+    challengeDirection.copy(requested).sub(focus)
+    const reach = challengeDirection.length()
+    if (reach <= 0.001) return challengePosition.copy(focus)
+    challengeDirection.multiplyScalar(1 / reach)
+    const activeSolidIds =
+      snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
+    const safeDistance = safeRayDistance(
+      focus,
+      challengeDirection,
+      reach,
+      snapshot.enabledPlatformIds,
+      activeSolidIds,
+      true,
+    )
+    return challengePosition
+      .copy(focus)
+      .addScaledVector(challengeDirection, safeDistance)
+  }
+
+  function challengeSubjectOccluded(
+    snapshot: GameSnapshot,
+    position: Vector3,
+    subject: Vector3,
+  ): boolean {
+    challengeDirection.copy(subject).sub(position)
+    const reach = challengeDirection.length()
+    if (reach <= 0.001) return false
+    challengeDirection.multiplyScalar(1 / reach)
+    const activeSolidIds =
+      snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
+    if (
+      enclosure !== null &&
+      enclosure.solidDistance(
+        position,
+        challengeDirection,
+        reach,
+        activeSolidIds,
+      ) <
+        reach - 0.08
+    )
+      return true
+    ray.set(position, challengeDirection)
+    for (const obstacle of obstacles) {
+      if (!snapshot.enabledPlatformIds.includes(obstacle.id)) continue
+      if (ray.intersectBox(obstacle.box, hit)) {
+        const distance = position.distanceTo(hit)
+        if (distance < reach - 0.08) return true
+      }
+    }
+    raycaster.set(position, challengeDirection)
+    raycaster.far = Math.max(0, reach - 0.08)
+    return raycaster.intersectObjects(occluders, false).length > 0
+  }
+
+  function updateChallengePlan(
+    encounterId: string,
+    snapshot: GameSnapshot,
+  ): void {
+    challengeSubjects ??= fallbackChallengeSubjects(encounterId, snapshot)
+    if (challengeSubjects.encounterId !== encounterId)
+      challengeSubjects = fallbackChallengeSubjects(encounterId, snapshot)
+    challengePlanningPosition ??= camera.position.clone()
+    challengePlayerOrigin ??= new Vector3().copy(snapshot.player.position)
+    const planKey = [
+      encounterId,
+      camera.aspect.toFixed(4),
+      challengeSafeBottomFraction.toFixed(4),
+    ].join(':')
+    if (planKey === challengePlanKey && challengeShot !== null) return
+    challengeShot = planChallengeCameraShot(challengeSubjects, {
+      aspect: camera.aspect,
+      fovDegrees: EXPLORATION_FOV_DEGREES,
+      near: camera.near,
+      far: camera.far,
+      safeBottomFraction: challengeSafeBottomFraction,
+      currentPosition: challengePlanningPosition,
+      constrainPosition: (focus, requested) =>
+        challengePositionConstraint(snapshot, focus, requested),
+      isOccluded: (position, subject) =>
+        challengeSubjectOccluded(snapshot, position, subject),
+    })
+    challengePlanKey = planKey
+  }
+
+  function challengeInputLocked(): boolean {
+    return requestedChallengeId !== null || challengeDirector.active()
+  }
+
+  function metrics(): ChallengeCameraMetrics {
+    const state = challengeDirector.snapshot()
+    const presenting = state.mode !== 'exploration'
+    let mercFrame: ChallengeCameraScreenFrame | null = null
+    let targetFrame: ChallengeCameraScreenFrame | null = null
+    let combinedFrame: ChallengeCameraScreenFrame | null = null
+    if (presenting && challengeSubjects !== null) {
+      mercFrame = projectChallengeBounds(challengeSubjects.merc, camera)
+      targetFrame = projectChallengeBounds(challengeSubjects.target, camera)
+      combinedFrame = frameUnion(mercFrame, targetFrame)
+    }
+    return {
+      ...state,
+      safeBottomFraction: challengeSafeBottomFraction,
+      position: {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+      },
+      target: {
+        x: renderedTarget.x,
+        y: renderedTarget.y,
+        z: renderedTarget.z,
+      },
+      mercFrame,
+      targetFrame,
+      combinedFrame,
+      safeBottomNdc: presenting ? (challengeShot?.safeBottomNdc ?? null) : null,
+      side: presenting ? (challengeShot?.side ?? null) : null,
+      clearance: presenting ? (challengeShot?.clearance ?? null) : null,
+      occluded: presenting ? (challengeShot?.occluded ?? null) : null,
+    }
+  }
+
   return {
     camera,
     setOccluders(objects: Object3D[]) {
       occluders = objects
     },
-    yaw: () => yaw,
+    setChallengeEncounter(encounterId: string | null) {
+      if (
+        encounterId !== null &&
+        encounterId !== requestedChallengeId &&
+        encounterId !== challengeSubjects?.encounterId
+      ) {
+        challengeSubjects = null
+        challengeShot = null
+        challengePlanKey = ''
+        challengePlanningPosition = null
+        challengePlayerOrigin = null
+      }
+      requestedChallengeId = encounterId
+      if (encounterId !== null) orbitActive = false
+    },
+    setChallengeSafeBottomFraction(fraction: number) {
+      if (!Number.isFinite(fraction)) return
+      challengeSafeBottomFraction = MathUtils.clamp(fraction, 0, 0.62)
+    },
+    setChallengeSubjects(subjects: ChallengeCameraSubjects) {
+      const currentEncounterId =
+        requestedChallengeId ?? challengeDirector.snapshot().encounterId
+      if (
+        (currentEncounterId !== null &&
+          subjects.encounterId !== currentEncounterId) ||
+        subjects.merc.isEmpty() ||
+        subjects.target.isEmpty()
+      )
+        return
+      if (challengeSubjects?.encounterId === subjects.encounterId) return
+      challengeSubjects = {
+        encounterId: subjects.encounterId,
+        merc: subjects.merc.clone(),
+        target: subjects.target.clone(),
+      }
+      challengeShot = null
+      challengePlanKey = ''
+    },
+    focusedChallengeId,
+    getChallengeMetrics: metrics,
+    clearChallenge() {
+      requestedChallengeId = null
+      challengeSubjects = null
+      challengeShot = null
+      challengePlanKey = ''
+      challengePlanningPosition = null
+      challengePlayerOrigin = null
+      challengeSafeBottomFraction = 0
+      challengeDirector.clear()
+      orbitActive = false
+    },
+    yaw: () => (challengeDirector.active() ? renderedChallengeYaw : yaw),
     movementYaw: () => movementReferenceYaw,
     setMovementActive(active: boolean) {
       movementActive = active
@@ -210,6 +484,10 @@ export function createAdventureCamera(
       movementReferenceYaw = yaw
     },
     setOrbitActive(active: boolean) {
+      if (challengeInputLocked()) {
+        if (!active) orbitActive = false
+        return
+      }
       orbitActive = active
       orbitQuietSeconds = 0
       if (active) {
@@ -218,6 +496,7 @@ export function createAdventureCamera(
       }
     },
     orbit(dx: number, dy: number) {
+      if (challengeInputLocked()) return
       const safeX = Number.isFinite(dx) ? dx : 0
       const safeY = Number.isFinite(dy) ? dy : 0
       yaw += safeX
@@ -235,21 +514,65 @@ export function createAdventureCamera(
       }
     },
     zoom(delta: number) {
+      if (challengeInputLocked()) return
       if (Number.isFinite(delta) && delta !== 0) {
         distance = MathUtils.clamp(distance + delta, 1.8, 6.5)
         zoomChanged = true
       }
     },
     recenter() {
+      if (challengeInputLocked()) return
       yaw += shortestAngleDelta(yaw, facing)
       movementReferenceYaw = yaw
       orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
       committedHeading = null
     },
-    update(snapshot: GameSnapshot, dt: number) {
-      const safeDt = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, 0.05) : 0
+    update(snapshot: GameSnapshot, dt: number, presentationPaused = false) {
+      const safeDt =
+        !presentationPaused && Number.isFinite(dt)
+          ? MathUtils.clamp(dt, 0, 0.05)
+          : 0
       if (Number.isFinite(snapshot.player.facingYaw))
         facing = snapshot.player.facingYaw
+      const challengeId = focusedChallengeId(snapshot)
+      if (challengeId !== null) updateChallengePlan(challengeId, snapshot)
+      const cinematicPose = challengeDirector.update({
+        encounterId: challengeId,
+        paused: presentationPaused,
+        deltaSeconds: safeDt,
+        explorationPose: {
+          position: camera.position,
+          target,
+          fovDegrees: EXPLORATION_FOV_DEGREES,
+        },
+        returnOffset:
+          challengePlayerOrigin === null
+            ? undefined
+            : challengeReturnOffset
+                .copy(snapshot.player.position)
+                .sub(challengePlayerOrigin),
+        shot: challengeId === null ? null : challengeShot,
+      })
+      if (cinematicPose !== null) {
+        if (camera.fov !== cinematicPose.fovDegrees) {
+          camera.fov = cinematicPose.fovDegrees
+          camera.updateProjectionMatrix()
+        }
+        camera.position.copy(cinematicPose.position)
+        renderedTarget.copy(cinematicPose.target)
+        if (!challengeDirector.active()) target.copy(cinematicPose.target)
+        camera.lookAt(renderedTarget)
+        const offset = camera.position.clone().sub(renderedTarget)
+        renderedChallengeYaw = Math.atan2(offset.x, offset.z)
+        return
+      }
+      if (challengeId === null && !challengeDirector.active()) {
+        challengeSubjects = null
+        challengeShot = null
+        challengePlanKey = ''
+        challengePlanningPosition = null
+        challengePlayerOrigin = null
+      }
       const activeSolidIds =
         snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
       bodyTarget.copy(snapshot.player.position)
@@ -408,7 +731,8 @@ export function createAdventureCamera(
           hasRetainedPosition = true
         }
       }
-      camera.lookAt(target)
+      renderedTarget.copy(target)
+      camera.lookAt(renderedTarget)
     },
   }
 }

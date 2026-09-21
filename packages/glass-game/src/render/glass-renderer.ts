@@ -3,13 +3,14 @@
 // ============================================================
 
 import type { Material } from 'three'
-import { ACESFilmicToneMapping, DirectionalLight, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
+import { ACESFilmicToneMapping, Box3, DirectionalLight, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition, Vec3 } from '../contracts'
 import type { LoadingProgress } from '../loading-progress'
 import { createLoadingProgressLedger } from '../loading-progress'
 import { loadMuseumAssets } from './asset-kit'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { createAtmosphere } from './atmosphere'
+import type { ChallengeCameraMetrics } from './camera'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
 import { createContactShadow } from './contact-shadow'
@@ -31,10 +32,22 @@ export interface GlassRendererOptions {
   onExitCelebrationComplete?: () => void
 }
 
+export interface GlassRendererPresentation {
+  challengeEncounterId: string | null
+  /** Host pause or tutorial state; voice setup pause remains camera-active. */
+  paused: boolean
+  /** Fraction of the viewport covered by the live voice panel and its margin. */
+  safeBottomFraction?: number
+}
+
 export interface GlassRenderer {
   /** Required assets are installed; the host still owns the first-frame gate. */
   ready: Promise<void>
-  render(snapshot: GameSnapshot, dt: number): void
+  render(
+    snapshot: GameSnapshot,
+    dt: number,
+    presentation?: GlassRendererPresentation,
+  ): void
   resize(): void
   orbit(dxRadians: number, dyRadians: number): void
   setOrbitActive(active: boolean): void
@@ -49,6 +62,7 @@ export interface GlassRenderer {
   cancelHeadingFollow(): void
   pickArtwork(clientX: number, clientY: number): string | null
   nearbyArtwork(position: Vec3): string | null
+  getChallengeCameraMetrics(): ChallengeCameraMetrics
   getMetrics(): {
     drawCalls: number
     triangles: number
@@ -217,6 +231,9 @@ function createGlassRendererInstance(
       return [target.id, vessel]
     }),
   )
+  const mercBounds = new Box3()
+  const targetBounds = new Box3()
+  let boundsEncounterId: string | null = null
   const vesselRoomIds = new Map(
     level.breakables.map((target) => [
       target.id,
@@ -341,6 +358,7 @@ function createGlassRendererInstance(
     cancelHeadingFollow: camera.cancelHeadingFollow,
     pickArtwork: gallery.pick,
     nearbyArtwork: gallery.nearby,
+    getChallengeCameraMetrics: camera.getChallengeMetrics,
     getMetrics: () => ({
       drawCalls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -351,14 +369,61 @@ function createGlassRendererInstance(
         museum.planarReflectionMetrics.targetWidth *
         museum.planarReflectionMetrics.targetHeight,
     }),
-    render(snapshot, delta) {
+    render(snapshot, delta, presentation) {
       if (disposed || contextLost) return
       latest = snapshot
-      const dt = snapshot.paused ? 0 : Math.max(0, Math.min(0.05, delta))
+      const cameraDt = Math.max(0, Math.min(0.05, delta))
+      const simulationDt = snapshot.paused ? 0 : cameraDt
+      const presentationPaused = presentation?.paused ?? snapshot.paused
+      camera.setChallengeEncounter(presentation?.challengeEncounterId ?? null)
+      if (presentation?.safeBottomFraction !== undefined)
+        camera.setChallengeSafeBottomFraction(presentation.safeBottomFraction)
+      const challengeId = camera.focusedChallengeId(snapshot)
+      const challengeDefinition =
+        challengeId === null
+          ? undefined
+          : level.breakables.find((item) => item.id === challengeId)
+      const presentationFacingYaw =
+        challengeDefinition === undefined
+          ? undefined
+          : Math.atan2(
+              challengeDefinition.position.x - snapshot.player.position.x,
+              challengeDefinition.position.z - snapshot.player.position.z,
+            )
       museum.update(snapshot)
-      if (portal.update(snapshot, dt)) options.onExitCelebrationComplete?.()
+      if (portal.update(snapshot, simulationDt))
+        options.onExitCelebrationComplete?.()
+      contact.update(snapshot)
+      merc?.update(snapshot, simulationDt, options.reducedMotion ?? false, {
+        facingYaw: presentationFacingYaw,
+        turnDeltaSeconds: presentationPaused ? 0 : cameraDt,
+      })
+      for (const state of snapshot.breakables)
+        vessels.get(state.id)?.update(state, snapshot.elapsedSeconds)
       camera.setOccluders(museum.cameraOccluders())
-      camera.update(snapshot, dt)
+      const challengeVessel =
+        challengeId === null ? undefined : vessels.get(challengeId)
+      if (
+        challengeId !== null &&
+        challengeId !== boundsEncounterId &&
+        merc !== undefined &&
+        challengeVessel
+      ) {
+        merc.root.updateWorldMatrix(true, true)
+        challengeVessel.root.updateWorldMatrix(true, true)
+        mercBounds.setFromObject(merc.root, true)
+        targetBounds.setFromObject(challengeVessel.root, true)
+        if (!mercBounds.isEmpty() && !targetBounds.isEmpty()) {
+          camera.setChallengeSubjects({
+            encounterId: challengeId,
+            merc: mercBounds,
+            target: targetBounds,
+          })
+          boundsEncounterId = challengeId
+        }
+      }
+      if (challengeId === null) boundsEncounterId = null
+      camera.update(snapshot, cameraDt, presentationPaused)
       const visibleRooms = museum.updateRoomVisibility(
         snapshot.player.position,
         camera.camera,
@@ -367,10 +432,6 @@ function createGlassRendererInstance(
         const roomId = vesselRoomIds.get(id)
         vessel.root.visible = roomId === undefined || visibleRooms.has(roomId)
       })
-      contact.update(snapshot)
-      merc?.update(snapshot, dt, options.reducedMotion ?? false)
-      for (const state of snapshot.breakables)
-        vessels.get(state.id)?.update(state, snapshot.elapsedSeconds)
       museum.updatePlanarReflection(
         renderer,
         scene,
@@ -401,6 +462,7 @@ function createGlassRendererInstance(
       loading.freeze()
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
       observer.disconnect()
+      camera.clearChallenge()
       merc?.dispose()
       vessels.forEach((vessel) => vessel.dispose())
       scene.environment = null

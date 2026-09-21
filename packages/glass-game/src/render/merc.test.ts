@@ -255,3 +255,34 @@ it('turns toward a side step smoothly and independently of frame cadence', async
   expect(sixtyFps).toBeLessThan(1.35)
   expect(thirtyFps).toBeCloseTo(sixtyFps, 5)
 })
+
+it('uses the presentation clock to face an exhibit while simulation is paused', async () => {
+  const gltf = await parseActualMerc()
+  vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockResolvedValue(gltf)
+  const actor = await loadAdventureMerc('local-test-merc.glb')
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  snapshot.paused = true
+  try {
+    for (let frame = 0; frame < 30; frame++)
+      actor.update(snapshot, 0, false, {
+        facingYaw: Math.PI / 2,
+        turnDeltaSeconds: 1 / 60,
+      })
+    expect(actor.root.rotation.y).toBeGreaterThan(1.4)
+    expect(actor.root.rotation.y).toBeLessThan(Math.PI / 2)
+
+    const frozen = actor.root.rotation.y
+    actor.update(snapshot, 0, false, {
+      facingYaw: 0,
+      turnDeltaSeconds: 0,
+    })
+    expect(actor.root.rotation.y).toBe(frozen)
+
+    for (let frame = 0; frame < 30; frame++)
+      actor.update(snapshot, 0, false, { turnDeltaSeconds: 1 / 60 })
+    expect(actor.root.rotation.y).toBeLessThan(frozen)
+    expect(actor.root.rotation.y).toBeGreaterThanOrEqual(0)
+  } finally {
+    actor.dispose()
+  }
+})

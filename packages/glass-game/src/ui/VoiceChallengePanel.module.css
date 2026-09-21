@@ -44,3 +44,15 @@
   margin: 0 0 14px;
   color: #52665b;
 }
+@media (max-width: 360px) {
+  .sequence {
+    margin-bottom: 8px;
+  }
+  .sequence li {
+    padding: 6px;
+    font-size: 12px;
+  }
+  .hint {
+    margin-bottom: 8px;
+  }
+}
