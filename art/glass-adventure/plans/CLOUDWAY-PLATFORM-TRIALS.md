@@ -1,10 +1,10 @@
 # Cloudway Trials — optional platform journey research and art audition
 
-Status: concept and research only, 2026-09-21. Owner requested prototypes before
-mechanics/art approval, then Meshy models and Blender finishing. No platform-trial
-runtime or paid Meshy job is authorized by this proposal alone. Existing standing
-Meshy permission applies to accepted production tasks; this new mode has an explicit
-concept-approval gate. Working name is provisional.
+Status: first pilot approved for production, 2026-09-21. After approving the
+concepts, the owner requested Meshy assets and an example mini-game for the first
+island. The implementation scope, unlock semantics and live checklist are in
+[CLOUDWAY-PILOT-IMPLEMENTATION.md](CLOUDWAY-PILOT-IMPLEMENTATION.md). Advanced
+timed singing, Legend rules and additional variants remain research proposals.
 
 ## The experience
 

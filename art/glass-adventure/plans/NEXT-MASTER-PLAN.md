@@ -103,15 +103,18 @@ The same polish batch simplifies singing actions and puts detailed guidance behi
 a tap/click help control, while preserving gallery stories and adding outside-click
 dismissal to artwork inspection.
 
-These new ideas are **planning only**:
+The owner approved the first [Cloudway pilot](./CLOUDWAY-PILOT-IMPLEMENTATION.md)
+after the challenge-polish batch passed its checks. Meshy/Blender assets, a safe
+introductory platform route and optional first-island unlock are now in progress.
+First Light is ungraded: complete it and earn three saved pitch stars in Glassworks
+Journey. This does not implement the proposed replay difficulty system.
+
+These other ideas remain **planning only**:
 
 - [Replay difficulty and level stars](./REPLAY-DIFFICULTY-AND-LEVEL-STARS.md): first
   clear on easy, selected harder replays for higher level stars, possible separate
   Legend crest; preserve coins/portraits and distinguish the existing final-portrait
   accuracy pilot. Its migration and candidate durations need explicit later review.
-- [Cloudway platform trials](./CLOUDWAY-PLATFORM-TRIALS.md): optional ice/moving/
-  cracking-platform journeys, with [three imagegen auditions](../platform-trials/v1/README.md).
-  Mechanics and visual approval precede new Meshy production and runtime work.
 - [Friendly rivals and resonance duels](./FRIENDLY-RIVALS-AND-RESONANCE-DUELS.md):
   gentle enemies, bubble projectiles and singing races. Start with a safe echoing
   rival, keep demonstration audio separate from capture and prototype pressure
@@ -121,7 +124,7 @@ These new ideas are **planning only**:
 
 ### Asset quality follow-up — before increasing scene density
 
-After the current camera/sway fixes, complete the
+Apply this checklist to the new Cloudway family during production, then complete the
 [Meshy → Blender → game audit](./GAME-ASSET-QUALITY-AUDIT.md): hidden bevels,
 intersections, correct surface contact, normals, repeated-object instancing,
 fracture/animation preparation and measured rendering cost. It defines a full
