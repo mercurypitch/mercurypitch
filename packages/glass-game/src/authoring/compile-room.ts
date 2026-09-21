@@ -14,6 +14,16 @@ function transformPlatform(
   runtimeEncounterIds: ReadonlyMap<string, string>,
   diagnostics: LevelAuthoringDiagnostic[],
 ): PlatformDefinition {
+  const behavior =
+    platform.behavior?.kind === 'glide'
+      ? {
+          ...platform.behavior,
+          translation: transformPoint(platform.behavior.translation, {
+            translate: { x: 0, y: 0, z: 0 },
+            yawQuarterTurns: placement.yawQuarterTurns,
+          }),
+        }
+      : platform.behavior
   return {
     ...platform,
     ...transformBoundsXZ(platform, placement),
@@ -38,6 +48,7 @@ function transformPlatform(
       platform.catchCheckpointId === undefined
         ? undefined
         : checkpointIds.get(platform.catchCheckpointId),
+    behavior,
   }
 }
 

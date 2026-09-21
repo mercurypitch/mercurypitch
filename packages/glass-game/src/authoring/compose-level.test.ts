@@ -43,6 +43,25 @@ function transformedFixture(): {
         renderId: 'deck',
         presentation: { role: 'floor', material: 'stone' },
       },
+      {
+        id: 'glide',
+        kind: 'deck',
+        minX: 1.8,
+        maxX: 2.4,
+        minZ: -0.8,
+        maxZ: -0.2,
+        top: 0,
+        thickness: 0.25,
+        material: 'stone',
+        renderId: 'deck',
+        presentation: { role: 'floor', material: 'stone' },
+        behavior: {
+          kind: 'glide',
+          translation: { x: 2, y: 0, z: 0 },
+          travelSeconds: 2,
+          dwellSeconds: 1,
+        },
+      },
     ],
     solids: [
       {
@@ -281,6 +300,14 @@ describe('composeLevel', () => {
       top: 2,
     })
     expect(
+      level.platforms.find((platform) => platform.id.endsWith('/glide')),
+    ).toMatchObject({
+      behavior: {
+        kind: 'glide',
+        translation: { x: 0, y: 0, z: -2 },
+      },
+    })
+    expect(
       level.solids?.find((solid) => solid.id.endsWith('/wall')),
     ).toMatchObject({
       shape: 'box',
@@ -335,6 +362,11 @@ describe('composeLevel', () => {
     expect(level.presentation?.floorArt).toEqual([
       {
         platformId: 'transform-proof/turned/room-z/platform/floor',
+        recipeId: 'orbital-rings',
+        palette: 'portrait',
+      },
+      {
+        platformId: 'transform-proof/turned/room-z/platform/glide',
         recipeId: 'orbital-rings',
         palette: 'portrait',
       },

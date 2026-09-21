@@ -3,6 +3,7 @@
 import type { Bounds3, LevelDefinition, PlatformDefinition, SolidPropDefinition, Vec3, } from '../contracts'
 import { containsBody } from '../core/collision'
 import { MOVEMENT } from '../core/movement'
+import { platformRuntimeDefinitionError } from '../core/platform-runtime'
 import { getActiveCourseSolids } from '../core/solid-activation'
 import type { ExhibitPlacement, LevelAuthoringDiagnostic, RoomPrefab, } from './contracts'
 import { diagnostic, ID_PATTERN } from './internal'
@@ -118,7 +119,10 @@ export function validatePrefab(
   uniqueIds(prefab.decorations ?? [], `${path}.decorations`, diagnostics)
   uniqueIds(prefab.audioRegions, `${path}.audioRegions`, diagnostics)
 
-  const platformIds = new Set(prefab.platforms.map((item) => item.id))
+  const platformsById = new Map(
+    prefab.platforms.map((item) => [item.id, item] as const),
+  )
+  const platformIds = new Set(platformsById.keys())
   const solidIds = new Set(prefab.solids.map((item) => item.id))
   const checkpointIds = new Set(prefab.checkpoints.map((item) => item.id))
   for (const platform of prefab.platforms) {
@@ -140,6 +144,14 @@ export function validatePrefab(
         'invalid-solid',
         `${path}.platforms.${platform.id}`,
         'Platform bounds, top and positive thickness must be finite.',
+      )
+    const runtimeError = platformRuntimeDefinitionError(platform)
+    if (runtimeError !== undefined)
+      diagnostic(
+        diagnostics,
+        'invalid-platform-behavior',
+        `${path}.platforms.${platform.id}`,
+        runtimeError,
       )
     if ((platform.activation?.noneCompleted?.length ?? 0) > 0)
       diagnostic(
@@ -204,6 +216,16 @@ export function validatePrefab(
         'missing-reference',
         `${path}.solids.${solid.id}.platformId`,
         `Unknown local platform "${solid.platformId}".`,
+      )
+    else if (
+      solid.platformId !== undefined &&
+      platformsById.get(solid.platformId)?.behavior !== undefined
+    )
+      diagnostic(
+        diagnostics,
+        'unsupported-platform-parent',
+        `${path}.solids.${solid.id}.platformId`,
+        `Solid props cannot reference behavioral platform "${solid.platformId}" until transform parenting is supported.`,
       )
     recordRecipe(
       solid.presentation?.assetRecipeId,

@@ -2,8 +2,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
-import type { GameEvent, LevelDefinition, MovementInput, Vec3, } from '../contracts'
+import type { GameEvent, LevelDefinition, MovementInput, PlatformDefinition, Vec3, } from '../contracts'
+import { FLAT_COURSE_COLLIDER } from './collision'
 import { createGlassGame } from './game'
+import { MOVEMENT } from './movement'
 
 interface Approach {
   name: string
@@ -159,4 +161,53 @@ describe('Glassworks floor contact', () => {
       }
     },
   )
+
+  it('does not seam-forgive an explicitly marked same-height gap', () => {
+    const left: PlatformDefinition = {
+      id: 'left',
+      minX: -1,
+      maxX: 0,
+      minZ: -1,
+      maxZ: 1,
+      top: 0,
+      thickness: 0.2,
+      kind: 'deck',
+      material: 'stone',
+    }
+    const right: PlatformDefinition = {
+      ...left,
+      id: 'right',
+      minX: 0.004,
+      maxX: 1,
+    }
+    const position = { x: -0.001, y: 0, z: 0 }
+    const displacement = { x: 0.006, y: -0.001, z: 0 }
+    const ordinarySeam = FLAT_COURSE_COLLIDER.move(
+      position,
+      displacement,
+      [left, right],
+      MOVEMENT,
+    )
+    const markedGap = FLAT_COURSE_COLLIDER.move(
+      position,
+      displacement,
+      [left, right],
+      MOVEMENT,
+      [
+        {
+          id: 'intentional-gap',
+          minX: 0,
+          maxX: 0.004,
+          minZ: -1,
+          maxZ: 1,
+          top: 0,
+        },
+      ],
+    )
+
+    expect(ordinarySeam.support?.id).toBe('right')
+    expect(ordinarySeam.position.y).toBe(0)
+    expect(markedGap.support).toBeNull()
+    expect(markedGap.position.y).toBeLessThan(0)
+  })
 })

@@ -36,6 +36,45 @@ export interface SolidPresentation {
   assetRecipeId?: string
 }
 
+/** Grounded-only surface tuning; ordinary air control resumes after take-off. */
+export interface FrostSurfaceDefinition {
+  kind: 'frost'
+  controlMultiplier: number
+  brakingMultiplier: number
+  maximumSpeed: number
+}
+
+export type PlatformSurfaceDefinition = FrostSurfaceDefinition
+
+/** First-pilot platform behaviors are translation-only and deterministic. */
+export type PlatformBehaviorDefinition =
+  | {
+      kind: 'glide'
+      translation: Vec3
+      travelSeconds: number
+      dwellSeconds: number
+    }
+  | {
+      kind: 'crackle'
+      warningSeconds: number
+      releaseSeconds: number
+      resetSeconds: number
+    }
+
+export const PLATFORM_BEHAVIOR_LIMITS = {
+  maximumTranslation: 20,
+  maximumTravelSeconds: 30,
+  maximumDwellSeconds: 10,
+  maximumPhaseSeconds: 30,
+  minimumSurfaceMultiplier: 0.05,
+} as const
+
+/** A deliberately authored void that fixed-step floor contact must not bridge. */
+export interface IntentionalGapDefinition extends BoundsXZ {
+  id: string
+  top: number
+}
+
 export interface PlatformDefinition extends BoundsXZ {
   id: string
   top: number
@@ -49,6 +88,8 @@ export interface PlatformDefinition extends BoundsXZ {
   /** Legacy single-encounter bridge activation retained for Glassworks saves. */
   unlockAfter?: string
   catchCheckpointId?: string
+  surface?: PlatformSurfaceDefinition
+  behavior?: PlatformBehaviorDefinition
 }
 
 interface SolidPropBase {
@@ -244,6 +285,7 @@ export interface LevelGuidanceDefinition {
 }
 
 export interface LevelPresentationDefinition {
+  theme?: 'museum' | 'cloudway'
   worldBounds: Bounds3
   lightBounds: Bounds3
   rooms: readonly RoomPresentationDefinition[]
@@ -318,6 +360,7 @@ export interface LevelDefinition {
   presentation?: LevelPresentationDefinition
   rewards?: LevelRewardDefinition
   movement?: LevelMovementDefinition
+  intentionalGaps?: readonly IntentionalGapDefinition[]
   spawn: { position: Vec3; facingYaw: number; checkpointId?: string }
   platforms: readonly PlatformDefinition[]
   solids?: readonly SolidPropDefinition[]
@@ -339,8 +382,27 @@ export interface PlayerState {
   position: Vec3
   velocity: Vec3
   grounded: boolean
+  /** Present on live snapshots; optional so older presentation fixtures stay readable. */
+  supportPlatformId?: string | null
   /** Zero faces world -Z, matching the follow camera convention. */
   facingYaw: number
+}
+
+export type PlatformPhase =
+  | 'stable'
+  | 'moving'
+  | 'intact'
+  | 'warning'
+  | 'released'
+  | 'resetting'
+
+/** Authoritative simulation transform and lifecycle consumed by presentation. */
+export interface PlatformRuntimeSnapshot {
+  id: string
+  offset: Vec3
+  phase: PlatformPhase
+  phaseProgress: number
+  collisionEnabled: boolean
 }
 
 export type EncounterPhase =
@@ -360,6 +422,8 @@ export interface BreakableSnapshot {
 
 export interface GameSnapshot {
   player: PlayerState
+  /** Always emitted by the live game; optional for backwards-compatible fixtures. */
+  platformStates?: readonly PlatformRuntimeSnapshot[]
   breakables: readonly BreakableSnapshot[]
   /** All active collision IDs, including floors and props. */
   activeSolidIds?: readonly string[]

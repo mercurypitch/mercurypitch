@@ -4,14 +4,15 @@ import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, Glas
 import type { ChallengeJudge } from './challenge'
 import { createChallengeJudge } from './challenge'
 import type { CourseCollider } from './collision'
-import { containsBody, FLAT_COURSE_COLLIDER } from './collision'
+import { containsBody, findSupport, FLAT_COURSE_COLLIDER, intentionalGapDefinitionError, } from './collision'
 import { crossesExitPortal, deriveExitPortalGeometry } from './exit-portal'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
+import { createPlatformRuntime } from './platform-runtime'
 import { findCheckpoint, readProgress, requirementsMet } from './progress'
 import type { SingingQualityAttempt } from './rewards'
 import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress, readRewardProgress, summarizeRewards, ungradedQualityResult, } from './rewards'
 import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
-import { getActiveCourseSolids, getActiveSolidIds } from './solid-activation'
+import { getActiveCourseSolids } from './solid-activation'
 
 const INTERACTION_RADIUS = 0.75
 
@@ -27,13 +28,62 @@ export function createGlassGame(
   saved?: unknown,
   collider: CourseCollider = FLAT_COURSE_COLLIDER,
 ): GlassGame {
+  for (const gap of level.intentionalGaps ?? []) {
+    const error = intentionalGapDefinitionError(gap)
+    if (error !== undefined)
+      throw new Error(`Invalid intentional gap "${gap.id}": ${error}.`)
+  }
+  const behavioralPlatformIds = new Set(
+    level.platforms
+      .filter((platform) => platform.behavior !== undefined)
+      .map((platform) => platform.id),
+  )
+  for (const solid of level.solids ?? [])
+    if (
+      solid.platformId !== undefined &&
+      behavioralPlatformIds.has(solid.platformId)
+    )
+      throw new Error(
+        `Invalid solid "${solid.id}": platformId cannot reference behavioral platform "${solid.platformId}" until transform parenting is supported.`,
+      )
   const progress = readProgress(level, saved)
   const completed = new Set(progress.completedBreakableIds)
   let rewardProgress =
     progress.rewards ?? readRewardProgress(level, undefined, completed)
   let checkpointId = progress.checkpointId
   const initial = findCheckpoint(level, checkpointId, completed)
-  let player = createMovement(
+  const platformRuntime = createPlatformRuntime(level.platforms)
+  let activeBaseSolidsCache = getActiveCourseSolids(level, completed)
+  let activePlatformIdsCache = new Set(
+    activeBaseSolidsCache
+      .filter((solid): solid is PlatformDefinition => solid.kind !== 'prop')
+      .map((platform) => platform.id),
+  )
+  const activeBaseSolids = () => activeBaseSolidsCache
+  const refreshActiveBaseSolids = (): void => {
+    activeBaseSolidsCache = getActiveCourseSolids(level, completed)
+    activePlatformIdsCache = new Set(
+      activeBaseSolidsCache
+        .filter((solid): solid is PlatformDefinition => solid.kind !== 'prop')
+        .map((platform) => platform.id),
+    )
+  }
+  const activePlatformIds = (): ReadonlySet<string> => activePlatformIdsCache
+  const activeCourseSolids = () =>
+    platformRuntime.materialize(activeBaseSolids())
+  const movementAt = (
+    position: GameSnapshot['player']['position'],
+    yaw: number,
+  ) => {
+    const state = createMovement(position, yaw)
+    const support = findSupport(state.position, MOVEMENT, activeCourseSolids())
+    state.grounded = support !== null
+    state.supportSolidId = support?.id ?? null
+    state.supportPlatformId =
+      support === null || support.kind === 'prop' ? null : support.id
+    return state
+  }
+  let player = movementAt(
     initial?.position ?? level.spawn.position,
     initial?.facingYaw ?? level.spawn.facingYaw,
   )
@@ -47,7 +97,7 @@ export function createGlassGame(
   const exitPortal = deriveExitPortalGeometry(level.exit)
 
   const platforms = () =>
-    getActiveCourseSolids(level, completed).filter(
+    activeCourseSolids().filter(
       (solid): solid is PlatformDefinition => solid.kind !== 'prop',
     )
 
@@ -106,7 +156,8 @@ export function createGlassGame(
       findCheckpoint(level, preferred ?? checkpointId, completed) ??
       findCheckpoint(level, checkpointId, completed)
     if (checkpoint !== undefined) checkpointId = checkpoint.id
-    player = createMovement(
+    platformRuntime.reset()
+    player = movementAt(
       checkpoint?.position ?? level.spawn.position,
       checkpoint?.facingYaw ?? level.spawn.facingYaw,
     )
@@ -143,8 +194,12 @@ export function createGlassGame(
       ) {
         accumulator = Math.max(0, accumulator - MOVEMENT.fixedStep)
         steps++
-        const activeSolids = getActiveCourseSolids(level, completed)
+        const activeBase = activeBaseSolids()
+        const enabledPlatforms = activePlatformIds()
+        platformRuntime.advance(MOVEMENT.fixedStep, enabledPlatforms)
+        const activeSolids = platformRuntime.materialize(activeBase)
         const previousPosition = { ...player.position }
+        const previousSupportId = player.supportPlatformId
         const step = stepMovement(
           player,
           input,
@@ -152,7 +207,19 @@ export function createGlassGame(
           activeSolids,
           collider,
           level.movement,
+          {
+            supportDelta: platformRuntime.supportDelta(previousSupportId),
+            surface: platformRuntime.surface(previousSupportId),
+            intentionalGaps: level.intentionalGaps,
+            platformMotions: platformRuntime.motions(enabledPlatforms),
+          },
         )
+        if (step.crushed) {
+          respawn(undefined, events)
+          break
+        }
+        if (step.support !== null && step.support.kind !== 'prop')
+          platformRuntime.armCrackle(step.support.id)
         if (step.jumped) events.push({ type: 'jumped' })
         if (step.landed) events.push({ type: 'landed' })
         if (
@@ -210,14 +277,16 @@ export function createGlassGame(
       return events
     },
     snapshot(): GameSnapshot {
-      const activeSolidIds = getActiveSolidIds(level, completed)
+      const activeSolidIds = activeCourseSolids().map((solid) => solid.id)
       return {
         player: {
           position: { ...player.position },
           velocity: { ...player.velocity },
           grounded: player.grounded,
+          supportPlatformId: player.supportPlatformId,
           facingYaw: player.facingYaw,
         },
+        platformStates: platformRuntime.snapshots(),
         breakables: level.breakables.map((target) => ({
           id: target.id,
           charge:
@@ -237,8 +306,8 @@ export function createGlassGame(
           brokenAt: brokenAt.get(target.id) ?? null,
         })),
         activeSolidIds,
-        enabledPlatformIds: level.platforms
-          .filter((platform) => activeSolidIds.includes(platform.id))
+        enabledPlatformIds: activeBaseSolids()
+          .filter((solid): solid is PlatformDefinition => solid.kind !== 'prop')
           .map((platform) => platform.id),
         completedBreakableIds: [...completed],
         activeEncounter:
@@ -323,6 +392,7 @@ export function createGlassGame(
           : (encounter.qualityAttempt?.finish() ??
             ungradedQualityResult(level, encounter.qualityPolicy))
       completed.add(id)
+      refreshActiveBaseSolids()
       rewardProgress = applyEncounterRewards(
         level,
         rewardProgress,

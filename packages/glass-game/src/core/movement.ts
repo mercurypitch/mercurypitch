@@ -1,9 +1,9 @@
 // Adventure movement — manual free-space intent with fixed-step jump forgiveness.
 
-import type { CourseSolid, LevelMovementDefinition, MovementInput, PlayerState, Vec3, } from '../contracts'
+import type { CourseSolid, IntentionalGapDefinition, LevelMovementDefinition, MovementInput, PlatformSurfaceDefinition, PlayerState, Vec3, } from '../contracts'
 import { LEVEL_MOVEMENT_LIMITS } from '../contracts'
-import type { CourseCollider } from './collision'
-import { FLAT_COURSE_COLLIDER } from './collision'
+import type { CourseCollider, MovingPlatformCollision } from './collision'
+import { findSupport, FLAT_COURSE_COLLIDER, resolveMovingPlatformPushes, } from './collision'
 
 export const MOVEMENT = {
   speed: 1.15,
@@ -37,7 +37,32 @@ export interface MovementState extends PlayerState {
   /** Session-only run-up state; snapshots continue to expose PlayerState only. */
   runSeconds: number
   runDirection: { x: number; z: number } | null
+  supportPlatformId: string | null
+  supportSolidId: string | null
 }
+
+export interface MovementRuntimeStep {
+  supportDelta?: Vec3
+  surface?: PlatformSurfaceDefinition
+  intentionalGaps?: readonly IntentionalGapDefinition[]
+  platformMotions?: readonly MovingPlatformCollision[]
+}
+
+export interface MovementStepResult {
+  jumped: boolean
+  landed: boolean
+  support: CourseSolid | null
+  crushed: boolean
+}
+
+const displacementBlocked = (
+  before: Vec3,
+  after: Vec3,
+  requested: Vec3,
+): boolean =>
+  (requested.x !== 0 && Math.abs(after.x - before.x - requested.x) > 1e-7) ||
+  (requested.y !== 0 && Math.abs(after.y - before.y - requested.y) > 1e-7) ||
+  (requested.z !== 0 && Math.abs(after.z - before.z - requested.z) > 1e-7)
 
 function validMovement(
   movement: LevelMovementDefinition | undefined,
@@ -80,6 +105,8 @@ export function createMovement(
     requireJumpRelease: false,
     runSeconds: 0,
     runDirection: null,
+    supportPlatformId: null,
+    supportSolidId: null,
   }
 }
 
@@ -102,10 +129,72 @@ export function stepMovement(
   platforms: readonly CourseSolid[],
   collider: CourseCollider = FLAT_COURSE_COLLIDER,
   configuredMovement?: LevelMovementDefinition,
-): { jumped: boolean; landed: boolean; support: CourseSolid | null } {
+  runtime: MovementRuntimeStep = {},
+): MovementStepResult {
   const movement = validMovement(configuredMovement)
     ? configuredMovement
     : LEGACY_MOVEMENT
+  const platformMotions = runtime.platformMotions
+  if (platformMotions !== undefined && platformMotions.length > 0) {
+    const platformPush = resolveMovingPlatformPushes(
+      state.position,
+      MOVEMENT,
+      platformMotions,
+      platforms,
+      collider,
+      state.supportPlatformId,
+      runtime.intentionalGaps,
+    )
+    state.position = platformPush.position
+    if (platformPush.crushed) {
+      state.grounded = false
+      state.supportPlatformId = null
+      state.supportSolidId = null
+      return { jumped: false, landed: false, support: null, crushed: true }
+    }
+  }
+  let standing =
+    state.supportSolidId === null
+      ? null
+      : (platforms.find((solid) => solid.id === state.supportSolidId) ?? null)
+  if (standing === null && state.grounded)
+    standing = findSupport(state.position, MOVEMENT, platforms)
+  if (standing === null) {
+    state.grounded = false
+    state.supportPlatformId = null
+    state.supportSolidId = null
+  } else {
+    state.supportSolidId = standing.id
+    state.supportPlatformId = standing.kind === 'prop' ? null : standing.id
+  }
+  const supportDelta = runtime.supportDelta ?? { x: 0, y: 0, z: 0 }
+  if (
+    standing !== null &&
+    state.grounded &&
+    (supportDelta.x !== 0 || supportDelta.y !== 0 || supportDelta.z !== 0)
+  ) {
+    const beforeCarry = state.position
+    const carried = collider.move(
+      state.position,
+      supportDelta,
+      platforms,
+      MOVEMENT,
+      runtime.intentionalGaps,
+    )
+    state.position = carried.position
+    if (displacementBlocked(beforeCarry, state.position, supportDelta)) {
+      state.grounded = false
+      state.supportPlatformId = null
+      state.supportSolidId = null
+      return { jumped: false, landed: false, support: null, crushed: true }
+    }
+    standing = findSupport(state.position, MOVEMENT, platforms)
+    state.grounded = standing !== null
+    state.supportSolidId = standing?.id ?? null
+    state.supportPlatformId =
+      standing === null ? null : standing.kind === 'prop' ? null : standing.id
+  }
+  const surface = state.grounded ? runtime.surface : undefined
   let x = Number.isFinite(input.moveX) ? input.moveX : 0
   let z = Number.isFinite(input.moveZ) ? input.moveZ : 0
   const magnitude = Math.hypot(x, z)
@@ -142,8 +231,12 @@ export function stepMovement(
         ),
       )
     : 0
-  const speed =
+  const authoredSpeed =
     movement.walkSpeed + (movement.runSpeed - movement.walkSpeed) * runProgress
+  const speed =
+    surface === undefined
+      ? authoredSpeed
+      : Math.min(authoredSpeed, surface.maximumSpeed)
   const desiredX = x * speed
   const desiredZ = z * speed
   const deltaX = desiredX - state.velocity.x
@@ -155,7 +248,14 @@ export function stepMovement(
   // bounded stopping time after the higher configured run speed is reached.
   const responseSpeed =
     desiredSpeed >= currentSpeed ? movement.walkSpeed : movement.runSpeed
-  const acceleration = (responseSpeed / MOVEMENT.accelerationSeconds) * dt
+  const surfaceResponse =
+    surface === undefined
+      ? 1
+      : desiredSpeed < currentSpeed || intentMagnitude === 0
+        ? surface.brakingMultiplier
+        : surface.controlMultiplier
+  const acceleration =
+    (responseSpeed / MOVEMENT.accelerationSeconds) * dt * surfaceResponse
   const mix = difference > acceleration ? acceleration / difference : 1
   state.velocity.x += deltaX * mix
   state.velocity.z += deltaZ * mix
@@ -176,6 +276,8 @@ export function stepMovement(
     state.grounded = false
     state.coyoteLeft = 0
     state.bufferedJump = 0
+    state.supportPlatformId = null
+    state.supportSolidId = null
   }
   const wasGrounded = state.grounded
   state.velocity.y = Math.max(
@@ -193,6 +295,7 @@ export function stepMovement(
     },
     platforms,
     MOVEMENT,
+    runtime.intentionalGaps,
   )
   state.position = collision.position
   if (collision.blockedX) state.velocity.x = 0
@@ -212,6 +315,13 @@ export function stepMovement(
     else resetRunUp(state)
   }
   state.grounded = collision.support !== null
+  state.supportSolidId = collision.support?.id ?? null
+  state.supportPlatformId =
+    collision.support === null
+      ? null
+      : collision.support.kind === 'prop'
+        ? null
+        : collision.support.id
   state.coyoteLeft = state.grounded
     ? MOVEMENT.coyoteSeconds
     : Math.max(0, state.coyoteLeft - dt)
@@ -219,5 +329,6 @@ export function stepMovement(
     jumped,
     landed: !wasGrounded && state.grounded,
     support: collision.support,
+    crushed: false,
   }
 }

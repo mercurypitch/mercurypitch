@@ -434,6 +434,37 @@ describe('authoring validation', () => {
     )
   })
 
+  it('rejects a solid prop owned by a behavioral platform until transform parenting exists', () => {
+    const room = foundationRoom()
+    const catalog = replaceFoundationRoom({
+      platforms: room.platforms.map((platform) =>
+        platform.id === 'floor'
+          ? {
+              ...platform,
+              behavior: {
+                kind: 'glide' as const,
+                translation: { x: 1, y: 0, z: 0 },
+                travelSeconds: 1,
+                dwellSeconds: 0.1,
+              },
+            }
+          : platform,
+      ),
+      solids: room.solids.map((solid, index) =>
+        index === 0 ? { ...solid, platformId: 'floor' } : solid,
+      ),
+    })
+
+    const diagnostics = diagnosticsFrom(FOUNDATION_STRAIGHT_SOURCE, catalog)
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'unsupported-platform-parent',
+        path: expect.stringContaining('platformId'),
+      }),
+    )
+  })
+
   it('rejects two exhibit placements that occupy the same room mount', () => {
     const exhibits = FOUNDATION_STRAIGHT_SOURCE.exhibits.map((exhibit) =>
       exhibit.id === 'gallery-optional'

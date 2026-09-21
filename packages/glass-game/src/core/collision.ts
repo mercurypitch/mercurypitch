@@ -1,6 +1,6 @@
 // Flat-course collision — swept stable body against floor boxes and round solid props.
 
-import type { CourseSolid, PlatformDefinition, SolidPropDefinition, Vec3, } from '../contracts'
+import type { CourseSolid, IntentionalGapDefinition, PlatformDefinition, SolidPropDefinition, Vec3, } from '../contracts'
 
 export interface BodyShape {
   radius: number
@@ -14,6 +14,18 @@ export interface CollisionResult {
   support: CourseSolid | null
 }
 
+export interface MovingPlatformCollision {
+  id: string
+  previous: PlatformDefinition
+  current: PlatformDefinition
+  displacement: Vec3
+}
+
+export interface MovingPlatformPushResult {
+  position: Vec3
+  crushed: boolean
+}
+
 /** Replace this adapter for slopes/moving platforms; content and voice rules do not change. */
 export interface CourseCollider {
   move(
@@ -21,10 +33,23 @@ export interface CourseCollider {
     displacement: Vec3,
     platforms: readonly CourseSolid[],
     shape: BodyShape,
+    intentionalGaps?: readonly IntentionalGapDefinition[],
   ): CollisionResult
 }
 
 const EPSILON = 1e-7
+
+export function intentionalGapDefinitionError(
+  gap: IntentionalGapDefinition,
+): string | undefined {
+  if (
+    ![gap.minX, gap.maxX, gap.minZ, gap.maxZ, gap.top].every(Number.isFinite) ||
+    gap.minX >= gap.maxX ||
+    gap.minZ >= gap.maxZ
+  )
+    return 'bounds and top must be finite, with ordered horizontal bounds'
+  return undefined
+}
 
 type RoundSolid = Extract<SolidPropDefinition, { shape: 'cylinder' }>
 const isRound = (solid: CourseSolid): solid is RoundSolid =>
@@ -141,6 +166,65 @@ function supportsFeet(position: Vec3, p: CourseSolid): boolean {
   )
 }
 
+/** Finds exact standing support without granting body-width support over a gap. */
+export function findSupport(
+  position: Vec3,
+  shape: BodyShape,
+  solids: readonly CourseSolid[],
+): CourseSolid | null {
+  let support: CourseSolid | null = null
+  for (const solid of solids) {
+    if (
+      Math.abs(position.y - solid.top) > 0.02 ||
+      !footprint(position, shape, solid, false) ||
+      !supportsFeet(position, solid)
+    )
+      continue
+    if (support === null || solid.top > support.top) support = solid
+  }
+  return support
+}
+
+function segmentIntersectsGap(
+  from: Vec3,
+  to: Vec3,
+  gap: IntentionalGapDefinition,
+): boolean {
+  let first = 0
+  let last = 1
+  for (const axis of ['x', 'z'] as const) {
+    const start = from[axis]
+    const delta = to[axis] - start
+    const minimum = axis === 'x' ? gap.minX : gap.minZ
+    const maximum = axis === 'x' ? gap.maxX : gap.maxZ
+    if (Math.abs(delta) <= EPSILON) {
+      if (start <= minimum + EPSILON || start >= maximum - EPSILON) return false
+      continue
+    }
+    const enter = (minimum + EPSILON - start) / delta
+    const leave = (maximum - EPSILON - start) / delta
+    first = Math.max(first, Math.min(enter, leave))
+    last = Math.min(last, Math.max(enter, leave))
+    if (first > last) return false
+  }
+  return last >= 0 && first <= 1
+}
+
+function crossesIntentionalGap(
+  from: Vec3,
+  to: Vec3,
+  top: number,
+  gaps: readonly IntentionalGapDefinition[],
+): boolean {
+  // A real jump may land beyond the marked void. This guard only blocks the
+  // fixed-step ground contact that could otherwise skip a narrow authored gap.
+  if (from.y > top + 0.02) return false
+  return gaps.some(
+    (gap) =>
+      Math.abs(gap.top - top) <= 0.02 && segmentIntersectsGap(from, to, gap),
+  )
+}
+
 export function containsBody(
   position: Vec3,
   shape: BodyShape,
@@ -155,8 +239,124 @@ export function containsBody(
   )
 }
 
+function platformSweptOverlap(
+  position: Vec3,
+  shape: BodyShape,
+  motion: MovingPlatformCollision,
+  axis: 'x' | 'z',
+): boolean {
+  const other = axis === 'x' ? 'z' : 'x'
+  const otherMinimum = Math.min(
+    other === 'x' ? motion.previous.minX : motion.previous.minZ,
+    other === 'x' ? motion.current.minX : motion.current.minZ,
+  )
+  const otherMaximum = Math.max(
+    other === 'x' ? motion.previous.maxX : motion.previous.maxZ,
+    other === 'x' ? motion.current.maxX : motion.current.maxZ,
+  )
+  const bottom = Math.min(
+    motion.previous.top - motion.previous.thickness,
+    motion.current.top - motion.current.thickness,
+  )
+  const top = Math.max(motion.previous.top, motion.current.top)
+  return (
+    overlap(
+      position[other] - shape.radius,
+      position[other] + shape.radius,
+      otherMinimum,
+      otherMaximum,
+    ) && overlap(position.y, position.y + shape.height, bottom, top)
+  )
+}
+
+/** Resolves authored platform translation against a non-riding body before input. */
+export function resolveMovingPlatformPushes(
+  position: Vec3,
+  shape: BodyShape,
+  motions: readonly MovingPlatformCollision[],
+  solids: readonly CourseSolid[],
+  collider: CourseCollider,
+  ignoredPlatformId: string | null,
+  intentionalGaps: readonly IntentionalGapDefinition[] = [],
+): MovingPlatformPushResult {
+  let next = { ...position }
+  let crushed = false
+  for (const motion of motions) {
+    if (motion.id === ignoredPlatformId) continue
+    for (const axis of ['x', 'z'] as const) {
+      const delta = motion.displacement[axis]
+      if (Math.abs(delta) <= EPSILON) continue
+      if (!platformSweptOverlap(next, shape, motion, axis)) continue
+      const previousLeading =
+        delta > 0
+          ? motion.previous[axis === 'x' ? 'maxX' : 'maxZ'] + shape.radius
+          : motion.previous[axis === 'x' ? 'minX' : 'minZ'] - shape.radius
+      const currentLeading =
+        delta > 0
+          ? motion.current[axis === 'x' ? 'maxX' : 'maxZ'] + shape.radius
+          : motion.current[axis === 'x' ? 'minX' : 'minZ'] - shape.radius
+      const crossed =
+        delta > 0
+          ? next[axis] >= previousLeading - EPSILON &&
+            next[axis] < currentLeading
+          : next[axis] <= previousLeading + EPSILON &&
+            next[axis] > currentLeading
+      if (!crossed) continue
+      const push = { x: 0, y: 0, z: 0 }
+      push[axis] = currentLeading - next[axis]
+      const before = next
+      const result = collider.move(
+        next,
+        push,
+        solids.filter((solid) => solid.id !== motion.id),
+        shape,
+        intentionalGaps,
+      )
+      next = result.position
+      if (Math.abs(next[axis] - before[axis] - push[axis]) > EPSILON)
+        crushed = true
+    }
+
+    const deltaY = motion.displacement.y
+    if (Math.abs(deltaY) <= EPSILON) continue
+    const inFootprint = footprint(next, shape, motion.current, deltaY < 0)
+    if (!inFootprint) continue
+    let pushY = 0
+    if (
+      deltaY > 0 &&
+      next.y >= motion.previous.top - EPSILON &&
+      next.y < motion.current.top
+    )
+      pushY = motion.current.top - next.y
+    else {
+      const previousBottom = motion.previous.top - motion.previous.thickness
+      const currentBottom = motion.current.top - motion.current.thickness
+      const head = next.y + shape.height
+      if (
+        deltaY < 0 &&
+        head <= previousBottom + EPSILON &&
+        head > currentBottom
+      )
+        pushY = currentBottom - head
+    }
+    if (pushY !== 0) {
+      const beforeY = next.y
+      const result = collider.move(
+        next,
+        { x: 0, y: pushY, z: 0 },
+        solids.filter((solid) => solid.id !== motion.id),
+        shape,
+        intentionalGaps,
+      )
+      next = result.position
+      if (Math.abs(next.y - beforeY - pushY) > EPSILON) crushed = true
+    }
+  }
+  return { position: next, crushed }
+}
+
 export const FLAT_COURSE_COLLIDER: CourseCollider = {
-  move(position, displacement, platforms, shape) {
+  move(position, displacement, platforms, shape, intentionalGaps = []) {
     const next = { ...position }
     const result: CollisionResult = {
       position: next,
@@ -228,7 +428,8 @@ export const FLAT_COURSE_COLLIDER: CourseCollider = {
         displacement.y <= 0 &&
         supportsFeet(next, p) &&
         position.y >= p.top - EPSILON &&
-        next.y <= p.top
+        next.y <= p.top &&
+        !crossesIntentionalGap(position, next, p.top, intentionalGaps)
       ) {
         if (result.support === null || p.top > result.support.top) {
           next.y = p.top
