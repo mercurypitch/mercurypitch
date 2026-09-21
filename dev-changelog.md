@@ -9,6 +9,41 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.13] - 2026-09-21
+
+### The PeerPush badge was somewhere their crawler cannot reach (#852)
+
+0.9.12 put the listing's badge under About in Settings, which is the right
+place for a person and the wrong one for the verification: PeerPush asks for
+the badge, "or just add any plain link to this page instead", and grants the
+verified badge once it finds a link back. It looks for that link on the site
+the listing points at, which is `https://mercurypitch.com` — the app.
+
+Measured on prod after the 0.9.12 tag: `curl https://mercurypitch.com/` returns
+**zero** occurrences of `peerpush`. The badge lives in a JavaScript chunk and
+only renders once Settings is open, so a crawler that fetches the document
+never sees it, and one that does run JavaScript would still have to open a
+panel to find it. `about.mercurypitch.com` does carry it in its HTML, in the
+footer, but that is a different host and not the URL on the listing.
+
+So a plain text link goes in `index.html`'s entry prelude, beside the
+`about.mercurypitch.com` link that is already there. The prelude is real markup
+in the first bytes of the body — it exists because a non-rendering crawler saw
+nothing but an empty `#root` before, which is what left four entry pages
+"Discovered — currently not indexed" for a month. Whether PeerPush executes
+JavaScript stops mattering.
+
+Text rather than the 230x65 badge image: that nav is a row of text links, and
+a badge four times the width of everything beside it would wrap awkwardly on a
+phone. No `rel="nofollow"` — a backlink check would refuse to count one, and
+PeerPush's own snippet carries `rel="noopener"` and nothing else.
+
+The Settings badge stays. One is for people, the other is for the crawler.
+
+`launch-entry-seo.test.ts` asserts the prelude _contains_ every sibling path and
+the landing link rather than matching an exact set, so an extra link is inside
+the contract it already guards.
+
 ## [0.9.12] - 2026-09-21
 
 ### A line whose first word carries no stamp is no longer deleted (#841)
