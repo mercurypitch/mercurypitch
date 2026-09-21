@@ -1,0 +1,91 @@
+{
+  "capturedAt": "2026-09-21T16:45:19.857Z",
+  "url": "https://127.0.0.1:5298/glass-game/?campaign=1",
+  "proofs": [
+    {
+      "case": "desktop-goblet",
+      "evidence": "Compiled campaign host, real keyboard entry on desktop and real tap on touch contexts. Saved earlier checkpoint only; PCM settles the wave first step but never completes this target. Only traversal raster minimized; full buffers restored for screenshots. Software rendering, not physical-device performance.",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "before": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.7424851889692948e-16",
+        "playerY": "0",
+        "playerZ": "-0.5605908978174712",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"safeBottomFraction\":0,\"position\":{\"x\":1.2642121226849972e-16,\"y\":1.8192686688664936,\"z\":-3.8323075384390046},\"target\":{\"x\":-3.288383292039001e-16,\"y\":0.42,\"z\":-0.11483126863313697},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "singing": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.7424851889692948e-16",
+        "playerY": "0",
+        "playerZ": "-0.5605908978174712",
+        "cameraYaw": "-1.279405002554395",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-chamber/chamber/chamber/encounter/threshold-goblet\",\"progress\":1,\"safeBottomFraction\":0.3381423611111111,\"position\":{\"x\":-2.268560282984743,\"y\":0.24092264272446384,\"z\":0.833721559855237},\"target\":{\"x\":0.00008876883719255435,\"y\":0.20569566409813975,\"z\":0.1532887377303223},\"mercFrame\":{\"minX\":-0.554321365549539,\"maxX\":-0.21522737736800288,\"minY\":-0.1850882065325462,\"maxY\":0.35790758639303993},\"targetFrame\":{\"minX\":0.21866862146291852,\"maxX\":0.5890881553387808,\"minY\":0.03230172247432351,\"maxY\":0.8261421256683795},\"combinedFrame\":{\"minX\":-0.554321365549539,\"maxX\":0.5890881553387808,\"minY\":-0.1850882065325462,\"maxY\":0.8261421256683795},\"safeBottomNdc\":-0.25371527777777775,\"side\":1,\"clearance\":0.9198271139569812,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      },
+      "returned": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.7424851889692948e-16",
+        "playerY": "0",
+        "playerZ": "-0.5605908978174712",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"safeBottomFraction\":0.3381423611111111,\"position\":{\"x\":1.2642121226849972e-16,\"y\":1.8192686688664936,\"z\":-3.8323075384390046},\"target\":{\"x\":-3.288383292039001e-16,\"y\":0.42,\"z\":-0.11483126863313697},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "panelBounds": {
+        "x": 500,
+        "y": 611.671875,
+        "width": 440,
+        "height": 260.328125
+      },
+      "files": [
+        "desktop-goblet-singing.png",
+        "desktop-goblet-returned.png"
+      ],
+      "errors": []
+    },
+    {
+      "case": "tablet-fern",
+      "failure": "Error: expect(locator).toBeVisible() failed\n\nLocator: getByRole('button', { name: 'Sing to the glass' })\nExpected: visible\nTimeout: 60000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"to.be.visible\" with timeout 60000ms\n  - waiting for getByRole('button', { name: 'Sing to the glass' })\n",
+      "errors": [],
+      "state": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/fern-house/checkpoint/entry",
+        "completed": "1",
+        "playerX": "-2.2170010018775687e-16",
+        "playerY": "0",
+        "playerZ": "13.952558528506604",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"safeBottomFraction\":0,\"position\":{\"x\":2.0727697560698512e-16,\"y\":1.8290969331003597,\"z\":10.44969487758772},\"target\":{\"x\":-2.51180244172758e-16,\"y\":0.42,\"z\":14.19328217229946},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      }
+    }
+  ]
+}

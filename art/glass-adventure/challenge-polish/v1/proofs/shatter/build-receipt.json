@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "2fe9f8f5fc00e466cc0e8a13233c1de5fa025faa",
+  "method": "Both production builds were made from the frozen runtime source committed here; source files remained unchanged between build and commit.",
+  "hosts": {
+    "besidecue": {
+      "buildDirectory": "/tmp/glass-challenge-polish-v1",
+      "challengeBundles": [
+        {
+          "path": "assets/AdventureScreen-CqnYpIju.js",
+          "bytes": 1023997,
+          "sha256": "db9f33c12eef146903b44e1a174899c4e1cb7c2a6178f97e3070f14789923761"
+        }
+      ]
+    },
+    "mercurypitch": {
+      "buildDirectory": "/tmp/glass-challenge-web-v1",
+      "challengeBundles": [
+        {
+          "path": "assets/glassGame-BvSAfJhs.js",
+          "bytes": 307633,
+          "sha256": "c4bb4b72eaf1f8e3992af9fe2a6073058f251e3537bfcaef3aa8dd8dbda0547f"
+        }
+      ]
+    }
+  }
+}
