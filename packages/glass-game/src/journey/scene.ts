@@ -5,8 +5,8 @@ import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, Fog, HemisphereL
 import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
-import { clampJourneyOrbit, journeyCameraView, projectJourneyStage, } from './camera'
-import { createJourneyPointerTracker } from './interaction'
+import { clampJourneyInspectionZoom, clampJourneyOrbit, JOURNEY_DEFAULT_ORBIT, journeyCameraView, projectJourneyStage, } from './camera'
+import { createJourneyPointerTracker, journeyWheelZoomDelta, } from './interaction'
 import { JOURNEY_MEDALLION_CLEARANCE_Y, journeyMarkerPoint } from './landmarks'
 import { loadJourneyMapModels } from './models'
 import type { JourneyProgressDisplay, MuseumJourneyStageProgress, } from './progress'
@@ -31,6 +31,7 @@ export interface MuseumJourneyScene {
   setProgress(progress: readonly MuseumJourneyStageProgress[]): void
   setForeground(foreground: boolean): void
   setReducedMotion(reduced: boolean): void
+  resetView(): void
   getMetrics(): MuseumJourneySceneMetrics
   dispose(): void
 }
@@ -41,6 +42,7 @@ export interface MuseumJourneySceneOptions {
   reducedMotion: boolean
   onSelect(stageId: string): void
   onFailure(error: unknown): void
+  onViewChange?(changed: boolean): void
   onProjectStageLabels?(
     labels: readonly MuseumJourneyStageLabelProjection[],
   ): void
@@ -147,6 +149,7 @@ function buildMuseumJourneyScene(
     definition.sculpturalAssetId === undefined
       ? undefined
       : assetUrl(definition.sculpturalAssetId)
+  const mysteryPortraitUrl = assetUrl('floating-museum-mystery-portrait-v5')
   const cloudscapeUrl = assetUrl('floating-museum-cloudscape-v3')
   const environmentUrl = assetUrl('museum-environment-v2')
   const renderer = new WebGLRenderer({
@@ -173,7 +176,7 @@ function buildMuseumJourneyScene(
     'display:block;width:100%;height:100%;touch-action:none;'
   renderer.domElement.setAttribute(
     'aria-label',
-    'Interactive floating museum map. Tap a gallery medallion or hall to select it, or use the gallery list below.',
+    'Interactive floating museum map. Tap a gallery to select it, drag to orbit, and scroll or pinch to zoom. The gallery list below is also available.',
   )
   renderer.domElement.setAttribute('role', 'img')
 
@@ -198,14 +201,17 @@ function buildMuseumJourneyScene(
   const target = new Vector3()
   const desiredTarget = new Vector3()
   const projectionScratch = new Vector3()
-  let orbitYaw = -0.14
-  let orbitPitch = 0.45
+  let orbitYaw: number = JOURNEY_DEFAULT_ORBIT.yaw
+  let orbitPitch: number = JOURNEY_DEFAULT_ORBIT.pitch
+  let inspectionZoom = 0
   let desiredDistance = 21
+  let cameraDistance = desiredDistance
   let selectedStageId = stageById(definition, options.selectedStageId).id
   let reducedMotion = options.reducedMotion
   let foreground = options.foreground
   let disposed = false
   let contextLost = false
+  let viewChanged = false
   let models: Awaited<ReturnType<typeof loadJourneyMapModels>> | undefined
   let progressDisplay: JourneyProgressDisplay | undefined
   let latestProgress: readonly MuseumJourneyStageProgress[] = []
@@ -270,6 +276,18 @@ function buildMuseumJourneyScene(
   scene.add(water.root)
   let publishedMetrics = false
 
+  function publishCameraState(): void {
+    renderer.domElement.dataset.journeyCameraZoom = inspectionZoom.toFixed(3)
+    renderer.domElement.dataset.journeyCameraYaw = orbitYaw.toFixed(3)
+    renderer.domElement.dataset.journeyCameraPitch = orbitPitch.toFixed(3)
+  }
+
+  function setViewChanged(next: boolean): void {
+    if (viewChanged === next) return
+    viewChanged = next
+    options.onViewChange?.(next)
+  }
+
   function collectMetrics(): MuseumJourneySceneMetrics {
     const waterMetrics = water.getMetrics()
     return {
@@ -290,6 +308,7 @@ function buildMuseumJourneyScene(
       container.clientWidth,
       container.clientHeight,
       stage.focus,
+      inspectionZoom,
     )
     desiredTarget.fromArray(view.target)
     desiredDistance = view.distance
@@ -297,9 +316,13 @@ function buildMuseumJourneyScene(
       journeyMarkerPoint(stage, JOURNEY_MEDALLION_CLEARANCE_Y),
     )
     models?.setSelected(stage, immediate || reducedMotion)
-    if (immediate || reducedMotion) target.copy(desiredTarget)
+    if (immediate || reducedMotion) {
+      target.copy(desiredTarget)
+      cameraDistance = desiredDistance
+    }
   }
   updateDesiredView(true)
+  publishCameraState()
 
   function resize(): void {
     if (disposed) return
@@ -318,12 +341,18 @@ function buildMuseumJourneyScene(
 
   function renderFrame(visibleSeconds: number, dt: number): void {
     if (disposed || contextLost) return
-    if (reducedMotion) target.copy(desiredTarget)
-    else target.lerp(desiredTarget, 1 - Math.exp(-3.8 * dt))
-    const planar = Math.cos(orbitPitch) * desiredDistance
+    if (reducedMotion) {
+      target.copy(desiredTarget)
+      cameraDistance = desiredDistance
+    } else {
+      target.lerp(desiredTarget, 1 - Math.exp(-3.8 * dt))
+      cameraDistance +=
+        (desiredDistance - cameraDistance) * (1 - Math.exp(-7.5 * dt))
+    }
+    const planar = Math.cos(orbitPitch) * cameraDistance
     camera.position.set(
       target.x + Math.sin(orbitYaw) * planar,
-      target.y + Math.sin(orbitPitch) * desiredDistance,
+      target.y + Math.sin(orbitPitch) * cameraDistance,
       target.z + Math.cos(orbitYaw) * planar,
     )
     camera.lookAt(target)
@@ -373,6 +402,20 @@ function buildMuseumJourneyScene(
   onConstructionFailure(() => loop.dispose())
 
   const gestures = createJourneyPointerTracker()
+
+  function setInspectionZoom(next: number): boolean {
+    const clamped = clampJourneyInspectionZoom(next)
+    if (Math.abs(clamped - inspectionZoom) < 0.0001) return false
+    inspectionZoom = clamped
+    const orbit = clampJourneyOrbit(orbitYaw, orbitPitch, inspectionZoom)
+    orbitYaw = orbit.yaw
+    orbitPitch = orbit.pitch
+    updateDesiredView()
+    publishCameraState()
+    setViewChanged(true)
+    return true
+  }
+
   const sample = (event: PointerEvent) => ({
     pointerId: event.pointerId,
     clientX: event.clientX,
@@ -386,13 +429,21 @@ function buildMuseumJourneyScene(
   const onPointerMove = (event: PointerEvent): void => {
     if (disposed || contextLost || !foreground) return
     const move = gestures.move(sample(event))
+    if (move?.kind === 'pinch') {
+      setInspectionZoom(inspectionZoom + Math.log(move.scale) / Math.log(2.5))
+      return
+    }
     if (move?.kind !== 'drag') return
     const orbit = clampJourneyOrbit(
       orbitYaw - move.dx * 0.004,
       orbitPitch + move.dy * 0.0035,
+      inspectionZoom,
     )
+    if (orbit.yaw === orbitYaw && orbit.pitch === orbitPitch) return
     orbitYaw = orbit.yaw
     orbitPitch = orbit.pitch
+    publishCameraState()
+    setViewChanged(true)
   }
   const onPointerUp = (event: PointerEvent): void => {
     if (disposed || contextLost || !foreground) {
@@ -426,6 +477,17 @@ function buildMuseumJourneyScene(
   const onLostPointerCapture = (event: PointerEvent): void => {
     gestures.cancel(event.pointerId)
   }
+  const onWheel = (event: WheelEvent): void => {
+    if (disposed || contextLost || !foreground) return
+    const delta = journeyWheelZoomDelta(
+      event.deltaY,
+      event.deltaMode,
+      container.clientHeight,
+    )
+    if (delta === 0) return
+    event.preventDefault()
+    setInspectionZoom(inspectionZoom + delta)
+  }
   renderer.domElement.addEventListener('pointerdown', onPointerDown)
   onConstructionFailure(() =>
     renderer.domElement.removeEventListener('pointerdown', onPointerDown),
@@ -452,6 +514,10 @@ function buildMuseumJourneyScene(
       onLostPointerCapture,
     ),
   )
+  renderer.domElement.addEventListener('wheel', onWheel, { passive: false })
+  onConstructionFailure(() =>
+    renderer.domElement.removeEventListener('wheel', onWheel),
+  )
 
   const onContextLost = (event: Event): void => {
     event.preventDefault()
@@ -459,6 +525,7 @@ function buildMuseumJourneyScene(
     contextLost = true
     loop.setForeground(false)
     gestures.reset()
+    setViewChanged(false)
     options.onProjectStageLabels?.([])
     progressDisplay?.dispose()
     progressDisplay = undefined
@@ -480,7 +547,7 @@ function buildMuseumJourneyScene(
     mapUrl,
     mercUrl,
     abort.signal,
-    { sculptureUrl },
+    { sculptureUrl, mysteryPortraitUrl },
   )
   const environmentReady = environment
     .load(environmentUrl, () => disposed || contextLost)
@@ -551,6 +618,18 @@ function buildMuseumJourneyScene(
       water.setReducedMotion(next)
       updateDesiredView(next)
     },
+    resetView() {
+      if (disposed || contextLost) return
+      inspectionZoom = 0
+      orbitYaw = JOURNEY_DEFAULT_ORBIT.yaw
+      orbitPitch = JOURNEY_DEFAULT_ORBIT.pitch
+      // Retire the moving DOM hit targets until the first frame at the exact
+      // approved composition republishes them.
+      options.onProjectStageLabels?.([])
+      updateDesiredView(true)
+      publishCameraState()
+      setViewChanged(false)
+    },
     getMetrics() {
       return collectMetrics()
     },
@@ -571,6 +650,7 @@ function buildMuseumJourneyScene(
         'lostpointercapture',
         onLostPointerCapture,
       )
+      renderer.domElement.removeEventListener('wheel', onWheel)
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
       progressDisplay?.dispose()
       progressDisplay = undefined

@@ -1,8 +1,9 @@
 // Journey water tests — authored placement, visible-time motion, budgets and ownership.
 
 import type { BufferAttribute, BufferGeometry, InstancedMesh, Mesh, Points, ShaderMaterial, } from 'three'
-import { Vector3 } from 'three'
+import { Matrix4, QuadraticBezierCurve3, Quaternion, Vector3 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
+import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import type { JourneyWaterSpillway } from './water'
 import { createJourneyWater } from './water'
 
@@ -31,6 +32,44 @@ function materialFor(
 }
 
 describe('journey water', () => {
+  it('keeps authored source ponds clear of medallions and bridge decks', () => {
+    for (const spillway of FLOATING_MUSEUM_JOURNEY.spillways) {
+      const source = spillway.source
+      if (source === undefined) continue
+      const center = new Vector3(...source.position)
+      const supportRadius = Math.max(source.width, source.length) * 0.5
+
+      for (const stage of FLOATING_MUSEUM_JOURNEY.stages) {
+        const markerDistance = Math.hypot(
+          center.x - stage.position[0],
+          center.z - stage.position[2],
+        )
+        expect(markerDistance).toBeGreaterThanOrEqual(supportRadius + 0.5)
+      }
+
+      for (const bridge of FLOATING_MUSEUM_JOURNEY.bridges) {
+        const from = new Vector3(...bridge.from)
+        const to = new Vector3(...bridge.to)
+        const delta = to.clone().sub(from)
+        const lateral = new Vector3(-delta.z, 0, delta.x).normalize()
+        const midpoint = from.clone().lerp(to, 0.5)
+        midpoint.addScaledVector(lateral, bridge.curve)
+        const curve = new QuadraticBezierCurve3(from, midpoint, to)
+        let routeDistance = Number.POSITIVE_INFINITY
+        for (let sample = 0; sample <= 64; sample++) {
+          const point = curve.getPoint(sample / 64)
+          routeDistance = Math.min(
+            routeDistance,
+            Math.hypot(center.x - point.x, center.z - point.z),
+          )
+        }
+        expect(routeDistance).toBeGreaterThanOrEqual(
+          supportRadius + bridge.width * 0.5,
+        )
+      }
+    }
+  })
+
   it('places a pinned top edge at the authored origin and curves toward yaw', () => {
     const water = createJourneyWater(SPILLWAYS, { mist: false })
     const north = water.root.getObjectByName(
@@ -114,11 +153,12 @@ describe('journey water', () => {
 
     expect(water.getMetrics()).toEqual({
       spillways: 4,
+      sourcePools: 0,
       drawCalls: 6,
       triangles: 2880,
       geometries: 6,
       materials: 3,
-      mistParticles: 72,
+      mistParticles: 128,
       secondaryRenderPasses: 0,
     })
     water.dispose()
@@ -149,6 +189,7 @@ describe('journey water', () => {
     expect(partialBasins.count).toBe(1)
     expect(partial.getMetrics()).toEqual({
       spillways: 2,
+      sourcePools: 0,
       drawCalls: 3,
       triangles: 1392,
       geometries: 3,
@@ -165,6 +206,7 @@ describe('journey water', () => {
     expect(abyss.root.getObjectByName('journey-water-basins')).toBeUndefined()
     expect(abyss.getMetrics()).toEqual({
       spillways: 2,
+      sourcePools: 0,
       drawCalls: 2,
       triangles: 1344,
       geometries: 2,
@@ -175,8 +217,74 @@ describe('journey water', () => {
     expect(() => abyss.dispose()).not.toThrow()
   })
 
+  it('authors one pooled source draw and dissolves into mixed mist and bubbles', () => {
+    const sourceSpillway = {
+      ...SPILLWAYS[0],
+      visibleDrop: 2.1,
+      basin: false,
+      source: {
+        position: [2, 5.04, -3.48],
+        width: 1.4,
+        length: 0.9,
+      },
+    } as const satisfies JourneyWaterSpillway
+    const water = createJourneyWater([sourceSpillway])
+    const sheet = water.root.getObjectByName(
+      'journey-water-sheet:north-fall',
+    ) as Mesh<BufferGeometry>
+    const dissolves = sheet.geometry.getAttribute(
+      'aDissolve',
+    ) as BufferAttribute
+    expect(dissolves.getX(0)).toBeCloseTo(2.1 / 3.2)
+
+    const sources = water.root.getObjectByName(
+      'journey-water-source-pools',
+    ) as InstancedMesh
+    const sourceMatrix = new Matrix4()
+    sources.getMatrixAt(0, sourceMatrix)
+    const sourcePosition = new Vector3()
+    const sourceScale = new Vector3()
+    sourceMatrix.decompose(sourcePosition, new Quaternion(), sourceScale)
+    expect(sourcePosition.x).toBeCloseTo(2)
+    expect(sourcePosition.y).toBeCloseTo(5.04)
+    expect(sourcePosition.z).toBeCloseTo(-3.48)
+    expect(sourceScale.x).toBeCloseTo(0.7)
+    expect(sourceScale.y).toBeCloseTo(0.45)
+    expect(sourceScale.z).toBeCloseTo(1)
+
+    const mist = water.root.getObjectByName('journey-water-mist') as Points
+    const kinds = mist.geometry.getAttribute('aKind') as BufferAttribute
+    expect(kinds.count).toBe(32)
+    expect(
+      Array.from({ length: kinds.count }, (_, index) =>
+        kinds.getX(index),
+      ).filter((kind) => kind === 1),
+    ).toHaveLength(10)
+    expect(water.getMetrics()).toEqual({
+      spillways: 1,
+      sourcePools: 1,
+      drawCalls: 3,
+      triangles: 712,
+      geometries: 3,
+      materials: 3,
+      mistParticles: 32,
+      secondaryRenderPasses: 0,
+    })
+    water.dispose()
+  })
+
   it('disposes every owned GPU resource once and tolerates late updates', () => {
-    const water = createJourneyWater(SPILLWAYS)
+    const water = createJourneyWater([
+      {
+        ...SPILLWAYS[0],
+        source: {
+          position: [2, 5.04, -3.48],
+          width: 1.4,
+          length: 0.9,
+        },
+      },
+      SPILLWAYS[1],
+    ])
     const basins = water.root.getObjectByName(
       'journey-water-basins',
     ) as InstancedMesh
@@ -229,5 +337,24 @@ describe('journey water', () => {
     expect(() => createJourneyWater([SPILLWAYS[0], SPILLWAYS[0]])).toThrow(
       'Duplicate journey water spillway ID: north-fall',
     )
+    expect(() =>
+      createJourneyWater([{ ...SPILLWAYS[0], visibleDrop: 3.3 }]),
+    ).toThrow('north-fall.visibleDrop must be greater than zero')
+    expect(() =>
+      createJourneyWater([
+        {
+          ...SPILLWAYS[0],
+          source: { position: [0, 0, 0], width: 0, length: 1 },
+        },
+      ]),
+    ).toThrow('north-fall.source.width must be greater than zero')
+    expect(() =>
+      createJourneyWater([
+        {
+          ...SPILLWAYS[0],
+          source: { position: [2, 5, -4], width: 1.4, length: 0.9 },
+        },
+      ]),
+    ).toThrow('north-fall.source must overlap the waterfall lip')
   })
 })

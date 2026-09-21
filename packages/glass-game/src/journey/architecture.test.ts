@@ -128,7 +128,7 @@ describe('journey architecture', () => {
     }
   })
 
-  it('exposes hidden earned stars and portrait mystery groups by stable id', () => {
+  it('exposes hidden earned stars and flat arched mystery artwork by stable id', () => {
     const fixture = createFixture()
     try {
       expect(fixture.assembly.starMarkers.size).toBe(
@@ -172,6 +172,18 @@ describe('journey architecture', () => {
         expect(
           fixture.assembly.portraitMysteries.get(portrait.portraitId)?.name,
         ).toBe(`${portrait.portraitId}-mystery`)
+
+        const mystery = fixture.assembly.portraitMysteries.get(
+          portrait.portraitId,
+        ) as Mesh
+        expect(mystery.isMesh).toBe(true)
+        expect(mystery.geometry).toBe(surface?.geometry)
+        expect(mystery.position.toArray()).toEqual(surface?.position.toArray())
+        expect(mystery.quaternion.toArray()).toEqual(
+          surface?.quaternion.toArray(),
+        )
+        expect(mystery.visible).toBe(true)
+        expect(mystery.children).toHaveLength(0)
 
         surface!.visible = true
         const frame = surface!.parent!

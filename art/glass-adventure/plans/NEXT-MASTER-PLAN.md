@@ -8,49 +8,48 @@ Code and production sources are preserved in draft PR #807 on
 
 ## Where we are
 
-The owner approved the next four stages: finish Twin production, implement a
-rewards/portrait pilot, build the Resonance Conservatory, and verify shared
-web/native delivery. The active checklist is
-[APPROVED-FOUR-STAGES.md](./APPROVED-FOUR-STAGES.md). The later journey map has a
-[three-direction visual audition](./JOURNEY-MAP-AUDITION.md); implementation
-now follows the owner-selected A, Floating Museum. The live 3D map was
-authorized and its V3 composition accepted; B/C remain archived. See
-[FLOATING-MUSEUM-LIVE.md](./FLOATING-MUSEUM-LIVE.md) and the active
-[second polish batch](./FLOATING-MUSEUM-POLISH-BATCH-2.md).
+The shared campaign contains First Light, Glassworks Journey, Twin Galleries
+and Resonance Conservatory, with separate progress and the Journey rewards
+pilot. The owner accepted the longer enclosed route, controls/collisions, music,
+artwork inspection, mirror fixes and the Twin Galleries low/high teaching.
+Conservatory microphone fairness, timed pacing and sustained physical-device
+performance remain acceptance work.
 
-The owner accepted the longer Journey and tablet controls, music, enclosure,
-decoration, Merc clearance and artwork inspection. The owner also completed Twin
-Galleries and accepted its lower-note, higher-note and ordered-pair teaching.
-The mirror backing artifact is resolved. The current polish adds sharper
-close-up reflections, places artwork inspection in the first header row, and
-keeps the exit rim and finish sparkles above the floor. The shared campaign has
-four authored galleries with independent progress. The Conservatory is pushed
-in `d2c6af3d` with automated lesson/route/UI evidence; owner microphone acceptance
-is still pending. Shared web/native delivery is pushed in `35637b54`, with
-browser regression updates in `b0bcc9c9`. Android debug/instrumentation APKs and
-the unsigned iOS Simulator app both built successfully at `fa214b25`; this
-proves packaging, not physical microphone or performance acceptance. The
-floating-map source kit is preserved in `2b550a71`; shared runtime integration
-is in `f0d0c68a`, with compiled phone/tablet/desktop proofs and a static HTTPS
-playtest. The owner accepted the V3 fidelity composition. Its active follow-up is
-[FLOATING-MUSEUM-POLISH-BATCH-2.md](./FLOATING-MUSEUM-POLISH-BATCH-2.md); the
-amber/teal dome and botanical art checkpoint is pushed in `619e41e4`. CI for the
-prior documentation head `4f109ab0` failed the web heading, map-kit inventory and
-projected-label readiness checks. Batch 2 fixes those regressions and its targeted checks pass; final-head CI
-remains required. Its runtime, Merc centring and earned-portrait presentation
-have passed compiled desktop/tablet/phone review. Owner device acceptance also remains open.
-The exact Celadon guide upload and further Meshy attempts were explicitly
-authorized. The 30-credit opaque V3 trial completed, failed geometry review and
-is archived; there is no approval blocker, but the production replacement is
-still open.
+The approved four-stage checklist is
+[APPROVED-FOUR-STAGES.md](./APPROVED-FOUR-STAGES.md). Shared web/native delivery
+is implemented; games-on Android APKs and the unsigned iOS Simulator package
+have built in CI. Standard store builds still keep games disabled. Packaging
+and software-renderer proofs do not establish physical-device performance.
 
-The detailed implementation, validation and next device test are in
+The owner chose A, Floating Museum, from the
+[map audition](./JOURNEY-MAP-AUDITION.md); B/C remain archived. The live map,
+accepted composition, amber/teal domes, planting, saved stars/portrait display,
+and corrected Merc centering are preserved through `cab03138`. The current
+[third polish batch](./FLOATING-MUSEUM-POLISH-BATCH-3.md) adds selected-island
+inspection zoom/orbit/reset, flat generated mystery artwork, and three broad
+waterfalls with planted source pools and soft spray termination. That document
+compares the original concept against actual runtime images element by element
+and orders the remaining structural, material and landscape work.
+
+The [animated 3D Merc loader](./ANIMATED-MERC-LOADER-FOLLOWUP.md) follows museum
+polish. Reuse the actual custom mascot rig, author welcome/laugh clips in
+Blender, retain right-side copy and show honest left-to-right loading progress
+without numbers. Meshy's API supports rigging and animations, but its documented
+humanoid contract is not suitable for this droplet mascot; no rigging experiment
+was submitted. Standing permission to use Meshy credits remains valid for
+appropriate models.
+
+The authorized 30-credit opaque Celadon V3 trial failed geometry acceptance and
+is archived. The existing fluted Celadon fallback remains in use; transparent
+replacement production is still open and has no approval blocker. Detailed
+lesson/asset evidence remains in
 [TWIN-GALLERIES-IMPLEMENTATION.md](./TWIN-GALLERIES-IMPLEMENTATION.md).
-The previous revision `b9892888` completed CI (33 successful checks, one skipped).
-Revision `624f3f12` passes the glass, mobile, typecheck and unit jobs; a root-app
-Jam lyric gesture browser test failed on unchanged root-app code. New changes
-still require their own pushed-revision CI. Playtest acceptance
-and software render proofs are not measured device FPS/thermal evidence.
+
+At `cab03138`, native/mobile builds and all Beside Cue adventure lanes passed.
+The root web smoke's cover check timed out during traced software-renderer
+round trips, despite a visibly decoded cover. Batch 3 preserves the assertion
+and moves its polling into the browser; final pushed-revision CI remains
+required. Historical revision details are retained in each batch document.
 
 | Area                 | Implemented                                                                                                                                                | Still missing                                                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |

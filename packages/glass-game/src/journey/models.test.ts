@@ -1,6 +1,6 @@
 // Journey model tests — partial loads retire resources and bridge transforms meet endpoints.
 
-import { AnimationClip, BufferGeometry, Group, Material, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3, } from 'three'
+import { AnimationClip, BufferGeometry, Group, Material, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import { journeyBridgeTransform, loadJourneyMapModels } from './models'
@@ -157,6 +157,94 @@ describe('journey map model loading', () => {
     ).rejects.toBe(failure)
     expect(mapDispose).toHaveBeenCalledOnce()
     expect(mercDispose).toHaveBeenCalledOnce()
+  })
+
+  it('retires decoded mystery art when a sibling model fails', async () => {
+    const bitmap = { close: vi.fn() }
+    const texture = new Texture(bitmap)
+    const dispose = vi.spyOn(texture, 'dispose')
+    const kit = { scene: new Group(), animations: [], dispose: vi.fn() }
+    const failure = new Error('merc unavailable')
+    await expect(
+      loadJourneyMapModels(
+        FLOATING_MUSEUM_JOURNEY,
+        '/map.glb',
+        '/merc.glb',
+        new AbortController().signal,
+        {
+          loadGltf: vi
+            .fn()
+            .mockResolvedValueOnce(kit)
+            .mockRejectedValueOnce(failure),
+          mysteryPortraitUrl: '/mystery.webp',
+          loadTexture: vi.fn().mockResolvedValue(texture),
+        },
+      ),
+    ).rejects.toBe(failure)
+    expect(kit.dispose).toHaveBeenCalledOnce()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(bitmap.close).toHaveBeenCalledOnce()
+  })
+
+  it('does not reveal a half-loaded museum when mystery artwork fails', async () => {
+    const kit = { scene: new Group(), animations: [], dispose: vi.fn() }
+    const merc = { scene: new Group(), animations: [], dispose: vi.fn() }
+    const failure = new Error('portrait unavailable')
+    await expect(
+      loadJourneyMapModels(
+        FLOATING_MUSEUM_JOURNEY,
+        '/map.glb',
+        '/merc.glb',
+        new AbortController().signal,
+        {
+          loadGltf: vi
+            .fn()
+            .mockResolvedValueOnce(kit)
+            .mockResolvedValueOnce(merc),
+          mysteryPortraitUrl: '/mystery.webp',
+          loadTexture: vi.fn().mockRejectedValue(failure),
+        },
+      ),
+    ).rejects.toBe(failure)
+    expect(kit.dispose).toHaveBeenCalledOnce()
+    expect(merc.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('shares one correctly oriented mystery texture and retires it once', async () => {
+    const bitmap = { close: vi.fn(), width: 768, height: 1152 }
+    const texture = new Texture(bitmap)
+    const disposeTexture = vi.spyOn(texture, 'dispose')
+    const kit = { scene: createKitScene(), animations: [], dispose: vi.fn() }
+    const mercScene = new Group()
+    mercScene.add(new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial()))
+    const merc = { scene: mercScene, animations: [], dispose: vi.fn() }
+    const models = await loadJourneyMapModels(
+      FLOATING_MUSEUM_JOURNEY,
+      '/map.glb',
+      '/merc.glb',
+      new AbortController().signal,
+      {
+        loadGltf: vi
+          .fn()
+          .mockResolvedValueOnce(kit)
+          .mockResolvedValueOnce(merc),
+        mysteryPortraitUrl: '/mystery.webp',
+        loadTexture: vi.fn().mockResolvedValue(texture),
+      },
+    )
+    for (const object of models.portraitMysteries.values()) {
+      const mystery = object as Mesh<BufferGeometry, MeshBasicMaterial>
+      expect(mystery.material.map).toBe(texture)
+      expect(mystery.visible).toBe(true)
+    }
+    expect(texture.repeat.toArray()).toEqual([-1, -1])
+    expect(texture.offset.toArray()).toEqual([1, 1])
+    models.dispose()
+    models.dispose()
+    expect(disposeTexture).toHaveBeenCalledOnce()
+    expect(bitmap.close).toHaveBeenCalledOnce()
+    expect(kit.dispose).toHaveBeenCalledOnce()
+    expect(merc.dispose).toHaveBeenCalledOnce()
   })
 
   it('maps the final bridge dimensions onto both authored endpoints', () => {

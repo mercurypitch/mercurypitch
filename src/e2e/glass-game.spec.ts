@@ -72,17 +72,23 @@ test('Glassworks opens from its own entry and loads a real gallery @smoke', asyn
     page.getByTestId('glass-campaign').locator('[data-map-state]'),
   ).toHaveAttribute('data-map-state', 'ready', { timeout: 60_000 })
 
-  const firstCover = page.getByTestId('glass-campaign').locator('img').first()
-  await expect
-    .poll(() =>
-      firstCover.evaluate(
-        (image) =>
-          image instanceof HTMLImageElement &&
-          image.complete &&
-          image.naturalWidth > 0,
-      ),
-    )
-    .toBe(true)
+  // Keep decode polling in the browser. The traced CI failure spent the
+  // entire outer five-second poll on locator/screenshot round trips while
+  // SwiftShader rendered the already-decoded cover; it never read a value.
+  await page.waitForFunction(
+    () => {
+      const image = document.querySelector(
+        '[data-testid="glass-campaign"] article img',
+      )
+      return (
+        image instanceof HTMLImageElement &&
+        image.complete &&
+        image.naturalWidth > 0
+      )
+    },
+    undefined,
+    { polling: 250, timeout: 30_000 },
+  )
 
   await page.getByRole('button', { name: 'Enter First Light Gallery' }).click()
   await expect(

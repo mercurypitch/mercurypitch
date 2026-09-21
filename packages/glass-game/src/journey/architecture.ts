@@ -13,6 +13,7 @@ export interface JourneyArchitectureMaterials {
   celadon: Material
   clearGlass: Material
   shadow: Material
+  mysteryPortrait?: Material
   crystal: Material
 }
 
@@ -103,8 +104,6 @@ interface ArchitectureGeometry {
   detailStud: CylinderGeometry
   progressStar: ShapeGeometry
   connectorArch: TorusGeometry
-  portraitFace: SphereGeometry
-  portraitBust: SphereGeometry
   crystal: OctahedronGeometry
 }
 
@@ -154,8 +153,6 @@ function createGeometry(owned: Set<BufferGeometry>): ArchitectureGeometry {
     detailStud: own(new CylinderGeometry(1, 1, 0.018, 12), owned),
     progressStar: own(createProgressStarGeometry(), owned),
     connectorArch: own(new TorusGeometry(1, 0.075, 8, 32, Math.PI), owned),
-    portraitFace: own(new SphereGeometry(0.16, 14, 8), owned),
-    portraitBust: own(new SphereGeometry(0.3, 14, 8), owned),
     crystal: own(new OctahedronGeometry(0.22, 0), owned),
   }
 }
@@ -556,7 +553,6 @@ function addPortraitMonument(
   stageId: string,
   portrait: MuseumJourneyPortraitMonument,
   authoredUnit: JourneyAuthoredUnit,
-  geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
   portraitSurfaces: Map<string, Mesh>,
   portraitMysteries: Map<string, Object3D>,
@@ -578,20 +574,21 @@ function addPortraitMonument(
   surface.userData.journeyPortraitUv = 'authored'
   frame.add(surface)
 
-  const mystery = new Group()
+  // Both states use the measured arched inset. A separate flat mystery insert
+  // lets the progress owner swap earned art without mutating donor materials.
+  const mystery = new Mesh(
+    surface.geometry,
+    materials.mysteryPortrait ?? materials.jade,
+  )
+  mystery.position.copy(surface.position)
+  mystery.quaternion.copy(surface.quaternion)
+  mystery.scale.copy(surface.scale)
+  mystery.castShadow = false
+  mystery.receiveShadow = false
   mystery.name = `${portrait.portraitId}-mystery`
   mystery.userData.journeyPortraitId = portrait.portraitId
-  const face = new Mesh(geometry.portraitFace, materials.shadow)
-  face.position.set(0, 0.82, 0.04)
-  face.scale.set(0.82, 0.96, 0.16)
-  const neck = new Mesh(geometry.step, materials.shadow)
-  neck.position.set(0, 0.64, 0.04)
-  neck.scale.set(0.11, 0.18, 0.03)
-  const bust = new Mesh(geometry.portraitBust, materials.shadow)
-  bust.position.set(0, 0.48, 0.04)
-  bust.scale.set(0.95, 0.48, 0.12)
-  mystery.add(face, neck, bust)
-  monument.add(mystery)
+  mystery.userData.journeyPortraitUv = 'authored'
+  frame.add(mystery)
   portraitSurfaces.set(portrait.portraitId, surface)
   portraitMysteries.set(portrait.portraitId, mystery)
   markSelectable(monument, stageId)
@@ -764,7 +761,6 @@ export function createJourneyArchitecture(
         stage.id,
         stage.portrait,
         authoredUnit,
-        geometry,
         materials,
         portraitSurfaces,
         portraitMysteries,

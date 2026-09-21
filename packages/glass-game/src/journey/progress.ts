@@ -1,8 +1,9 @@
 // Journey progress display — apply saved stars and earned portrait art without owning game progress.
 
-import type { Material, Mesh, Object3D } from 'three'
-import { DoubleSide, MeshBasicMaterial, SRGBColorSpace, Texture } from 'three'
+import type { Material, Mesh, Object3D, Texture } from 'three'
+import { DoubleSide, MeshBasicMaterial } from 'three'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
+import { disposeJourneyPortraitTexture, fitJourneyPortraitTexture, loadJourneyPortraitTexture, } from './portrait-texture'
 
 export interface MuseumJourneyPortraitProgress {
   /** Saved collectible evidence; the authored stage still chooses the monument. */
@@ -62,87 +63,8 @@ interface StarState {
   originalVisibility: readonly [boolean, boolean, boolean]
 }
 
-function abortError(): DOMException {
-  return new DOMException('Journey portrait request cancelled.', 'AbortError')
-}
-
-async function loadPortraitTexture(
-  url: string,
-  signal: AbortSignal,
-): Promise<Texture> {
-  const response = await fetch(url, { signal })
-  if (!response.ok) throw new Error('The earned portrait could not be loaded.')
-  const bitmap = await globalThis.createImageBitmap(await response.blob(), {
-    imageOrientation: 'flipY',
-    premultiplyAlpha: 'none',
-  })
-  if (signal.aborted) {
-    bitmap.close()
-    throw abortError()
-  }
-  const texture = new Texture(bitmap)
-  texture.name = `journey-earned-portrait:${url}`
-  texture.colorSpace = SRGBColorSpace
-  // ImageBitmap uploads ignore Texture.flipY. The bitmap is flipped above so
-  // the explicit texture state remains correct for Three's bitmap path.
-  texture.flipY = false
-  texture.needsUpdate = true
-  return texture
-}
-
-function disposeTexture(texture: Texture): void {
-  texture.dispose()
-  const image = texture.image as { close?: () => void } | undefined
-  image?.close?.()
-}
-
 function savedStars(value: unknown): 0 | 1 | 2 | 3 {
   return value === 1 || value === 2 || value === 3 ? value : 0
-}
-
-function cropTextureToSurface(texture: Texture, surface: Mesh): void {
-  if (surface.userData.journeyPortraitUv === 'authored') {
-    // The donor inset already maps its arched 2:3 opening. Its monument is
-    // turned around to face the camera, so reverse U. Its glTF V runs from one
-    // at the bottom to zero at the top, unlike PlaneGeometry, so reverse V on
-    // the already-upright ImageBitmap too while preserving the authored crop.
-    texture.repeat.set(-1, -1)
-    texture.offset.set(1, 1)
-    texture.needsUpdate = true
-    return
-  }
-  const image = texture.image as
-    | { readonly width?: number; readonly height?: number }
-    | undefined
-  const width = image?.width
-  const height = image?.height
-  surface.geometry.computeBoundingBox()
-  const bounds = surface.geometry.boundingBox
-  if (
-    width === undefined ||
-    height === undefined ||
-    width <= 0 ||
-    height <= 0 ||
-    bounds === null
-  )
-    return
-  const surfaceWidth =
-    Math.abs(bounds.max.x - bounds.min.x) * Math.abs(surface.scale.x)
-  const surfaceHeight =
-    Math.abs(bounds.max.y - bounds.min.y) * Math.abs(surface.scale.y)
-  if (surfaceWidth <= 0 || surfaceHeight <= 0) return
-  const imageAspect = width / height
-  const surfaceAspect = surfaceWidth / surfaceHeight
-  texture.repeat.set(1, 1)
-  texture.offset.set(0, 0)
-  if (imageAspect > surfaceAspect) {
-    texture.repeat.x = surfaceAspect / imageAspect
-    texture.offset.x = (1 - texture.repeat.x) / 2
-  } else if (imageAspect < surfaceAspect) {
-    texture.repeat.y = imageAspect / surfaceAspect
-    texture.offset.y = (1 - texture.repeat.y) / 2
-  }
-  texture.needsUpdate = true
 }
 
 /**
@@ -154,7 +76,7 @@ export function createJourneyProgressDisplay(
   targets: JourneyProgressTargets,
   options: JourneyProgressDisplayOptions = {},
 ): JourneyProgressDisplay {
-  const loadTexture = options.loadTexture ?? loadPortraitTexture
+  const loadTexture = options.loadTexture ?? loadJourneyPortraitTexture
   const stagesById = new Map(
     definition.stages.map((stage) => [stage.id, stage]),
   )
@@ -216,7 +138,7 @@ export function createJourneyProgressDisplay(
       state.material = undefined
     }
     if (state.texture !== undefined) {
-      disposeTexture(state.texture)
+      disposeJourneyPortraitTexture(state.texture)
       state.texture = undefined
     }
     state.installedUrl = undefined
@@ -241,11 +163,11 @@ export function createJourneyProgressDisplay(
           state.request?.token !== token ||
           controller.signal.aborted
         ) {
-          disposeTexture(texture)
+          disposeJourneyPortraitTexture(texture)
           return
         }
         state.request = undefined
-        cropTextureToSurface(texture, state.surface)
+        fitJourneyPortraitTexture(texture, state.surface)
         const material = new MeshBasicMaterial({
           map: texture,
           side: DoubleSide,

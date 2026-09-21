@@ -3,7 +3,7 @@
 import { PerspectiveCamera, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
-import { clampJourneyOrbit, journeyCameraView, projectJourneyStage, } from './camera'
+import { clampJourneyInspectionZoom, clampJourneyOrbit, JOURNEY_DEFAULT_ORBIT, JOURNEY_MIN_INSPECTION_DISTANCE, journeyCameraView, projectJourneyStage, } from './camera'
 
 describe('journey overview camera', () => {
   it('keeps desktop selection as a subtle focus shift', () => {
@@ -11,6 +11,19 @@ describe('journey overview camera', () => {
     const right = journeyCameraView(1100, 700, [5, 2, -3])
     expect(Math.abs(left.target[0] - right.target[0])).toBeLessThan(0.75)
     expect(left.distance).toBe(right.distance)
+  })
+
+  it('preserves the approved overview and brings close inspection onto the selected island', () => {
+    const focus = [5.08, 1.85, -2.85] as const
+    const overview = journeyCameraView(1600, 900, focus)
+    const inspection = journeyCameraView(1600, 900, focus, 1)
+
+    expect(overview.target[0]).toBeCloseTo(0.2794)
+    expect(overview.target[1]).toBeCloseTo(0.93335)
+    expect(overview.target[2]).toBeCloseTo(0.01335)
+    expect(overview.distance).toBe(18.8)
+    expect(inspection.target).toEqual(focus)
+    expect(inspection.distance).toBe(JOURNEY_MIN_INSPECTION_DISTANCE)
   })
 
   it('frames the selected island on phones and portrait tablets', () => {
@@ -55,6 +68,18 @@ describe('journey overview camera', () => {
   it('bounds manual orbit away from flat and reversed views', () => {
     expect(clampJourneyOrbit(-4, 0)).toEqual({ yaw: -0.34, pitch: 0.38 })
     expect(clampJourneyOrbit(4, 2)).toEqual({ yaw: 0.08, pitch: 0.58 })
+    expect(clampJourneyOrbit(-4, 0, 1)).toEqual({ yaw: -1.55, pitch: 0.26 })
+    expect(clampJourneyOrbit(4, 2, 1)).toEqual({ yaw: 1.27, pitch: 0.9 })
+    expect(
+      clampJourneyOrbit(
+        JOURNEY_DEFAULT_ORBIT.yaw,
+        JOURNEY_DEFAULT_ORBIT.pitch,
+        1,
+      ),
+    ).toEqual(JOURNEY_DEFAULT_ORBIT)
+    expect(clampJourneyInspectionZoom(-1)).toBe(0)
+    expect(clampJourneyInspectionZoom(2)).toBe(1)
+    expect(clampJourneyInspectionZoom(Number.NaN)).toBe(0)
   })
 
   it('projects visible labels into container pixels and rejects offscreen ones', () => {

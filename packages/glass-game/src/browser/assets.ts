@@ -58,6 +58,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'amber-v6': 'adventure-v6/amber-cadence-urn.glb',
   'painting-listening-garden-v7': 'adventure-v7/listening-garden.webp',
   'painting-wave-keeper-v7': 'adventure-v7/wave-keeper.webp',
+  'floating-museum-mystery-portrait-v5': 'journey-map-v5/mystery-muse.webp',
   'floating-museum-cloudscape-v3': 'journey-map-v3/cloudscape.webp',
   'floating-museum-twin-finish-kit-v4':
     'journey-map-v4/floating-museum-twin-finish-kit-v4.glb',

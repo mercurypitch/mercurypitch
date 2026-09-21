@@ -53,7 +53,15 @@ export interface MuseumJourneySpillway {
   position: JourneyPoint
   width: number
   height: number
+  /** Visible drop before the waterfall dissolves into mist. */
+  visibleDrop?: number
   yaw: number
+  /** Terrace pond that feeds the waterfall lip. */
+  source?: {
+    position: JourneyPoint
+    width: number
+    length: number
+  }
   basin?: boolean
 }
 
@@ -195,37 +203,46 @@ export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
     {
       id: 'glassworks-falls',
       stageId: 'glassworks-isle',
-      position: [-5.22, 0.26, 4.42],
-      width: 0.72,
+      position: [-7.26, 0.26, 1.67],
+      width: 0.95,
       height: 7.6,
-      yaw: 0,
+      visibleDrop: 4.7,
+      yaw: -Math.PI / 2 - 0.12,
+      source: {
+        position: [-6.92, 0.315, 1.71],
+        width: 0.95,
+        length: 0.72,
+      },
       basin: false,
     },
     {
       id: 'twin-falls',
       stageId: 'twin-galleries-isle',
-      position: [0.1, 0.74, 2.63],
-      width: 0.62,
+      position: [1.15, 0.74, 2.12],
+      width: 1.25,
       height: 6.7,
+      visibleDrop: 4.6,
       yaw: 0,
+      source: {
+        position: [1.15, 0.795, 1.55],
+        width: 1.25,
+        length: 1.2,
+      },
       basin: false,
     },
     {
       id: 'conservatory-east-falls',
       stageId: 'resonance-conservatory-isle',
       position: [7.1, 1.07, -3.2],
-      width: 0.65,
+      width: 1.2,
       height: 7.45,
+      visibleDrop: 4.5,
       yaw: Math.PI / 2,
-      basin: false,
-    },
-    {
-      id: 'conservatory-south-falls',
-      stageId: 'resonance-conservatory-isle',
-      position: [6.15, 1.07, -1.45],
-      width: 0.5,
-      height: 7.45,
-      yaw: 0,
+      source: {
+        position: [6.53, 1.145, -3.2],
+        width: 1.25,
+        length: 1.2,
+      },
       basin: false,
     },
   ],

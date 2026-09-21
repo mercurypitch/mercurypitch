@@ -21,6 +21,25 @@ function expectClearOfLandmarks(point: Vector3): void {
   }
 }
 
+function expectClearOfSourcePonds(point: Vector3): void {
+  for (const spillway of FLOATING_MUSEUM_JOURNEY.spillways) {
+    const source = spillway.source
+    if (source === undefined) continue
+    const dx = point.x - source.position[0]
+    const dz = point.z - source.position[2]
+    const sine = Math.sin(spillway.yaw)
+    const cosine = Math.cos(spillway.yaw)
+    const localX = cosine * dx - sine * dz
+    const localZ = sine * dx + cosine * dz
+    const clearanceX = source.width * 0.5 + 0.055
+    const clearanceZ = source.length * 0.5 + 0.055
+    expect(
+      (localX * localX) / (clearanceX * clearanceX) +
+        (localZ * localZ) / (clearanceZ * clearanceZ),
+    ).toBeGreaterThanOrEqual(1)
+  }
+}
+
 describe('journey vegetation', () => {
   it('bounds shared flower donors and clears every marker and portrait', () => {
     const material = new MeshBasicMaterial()
@@ -61,6 +80,7 @@ describe('journey vegetation', () => {
           object.getMatrixAt(index, matrix)
           point.setFromMatrixPosition(matrix)
           expectClearOfLandmarks(point)
+          expectClearOfSourcePonds(point)
         }
       })
       for (const planter of root.children.filter(
@@ -75,6 +95,25 @@ describe('journey vegetation', () => {
       expect(flowerDonor.count).toBeLessThanOrEqual(
         FLOATING_MUSEUM_JOURNEY.landmasses.length * 2,
       )
+      const sourceFlowerCount = Number(flowerDonor.userData.sourceFlowerCount)
+      expect(sourceFlowerCount).toBe(FLOATING_MUSEUM_JOURNEY.spillways.length)
+      const sourceCenters = FLOATING_MUSEUM_JOURNEY.spillways.flatMap(
+        (spillway) =>
+          spillway.source === undefined
+            ? []
+            : [new Vector3(...spillway.source.position)],
+      )
+      for (let index = 0; index < sourceFlowerCount; index++) {
+        flowerDonor.getMatrixAt(index, matrix)
+        point.setFromMatrixPosition(matrix)
+        expect(
+          Math.min(
+            ...sourceCenters.map((center) =>
+              Math.hypot(point.x - center.x, point.z - center.z),
+            ),
+          ),
+        ).toBeLessThan(1)
+      }
     } finally {
       for (const geometry of ownedGeometries) geometry.dispose()
       donorGeometry.dispose()

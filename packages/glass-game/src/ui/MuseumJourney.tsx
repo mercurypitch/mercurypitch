@@ -65,6 +65,7 @@ export function MuseumJourney(props: {
   const [reloadRequired, setReloadRequired] = createSignal(false)
   const [muted, setMuted] = createSignal(false)
   const [enteringChapterId, setEnteringChapterId] = createSignal<string>()
+  const [viewChanged, setViewChanged] = createSignal(false)
 
   const selectedChapter = () =>
     props.chapters.find(
@@ -139,6 +140,7 @@ export function MuseumJourney(props: {
     setMapState('loading')
     setMapError('')
     setReloadRequired(false)
+    setViewChanged(false)
     void import('../journey/scene')
       .then((module) => {
         if (attempt !== generation) return
@@ -153,6 +155,9 @@ export function MuseumJourney(props: {
               foreground,
               reducedMotion,
               onSelect: select,
+              onViewChange(changed) {
+                if (attempt === generation) setViewChanged(changed)
+              },
               onProjectStageLabels(labels) {
                 if (attempt !== generation) return
                 updateProjectedStageLabels(labels)
@@ -263,6 +268,10 @@ export function MuseumJourney(props: {
     if (!next) activateMusic()
   }
 
+  function resetView(): void {
+    scene?.resetView()
+  }
+
   return (
     <main
       class={styles.lobby}
@@ -321,6 +330,20 @@ export function MuseumJourney(props: {
               </button>
             </div>
           </header>
+
+          <Show when={mapState() === 'ready' && viewChanged()}>
+            <button
+              type="button"
+              class={styles.viewReset}
+              aria-label="Reset museum view"
+              onClick={resetView}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5.2 8.2A8 8 0 1 1 4.8 15M5.2 8.2V3.8m0 4.4h4.4" />
+              </svg>
+              <span>Reset view</span>
+            </button>
+          </Show>
 
           <nav class={styles.stageLabels} aria-label="Museum gallery labels">
             <For each={props.chapters}>

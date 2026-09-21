@@ -1,7 +1,7 @@
 // Journey gesture tests — touch cancellation and drag cannot become island taps.
 
 import { describe, expect, it } from 'vitest'
-import { createJourneyPointerTracker } from './interaction'
+import { createJourneyPointerTracker, journeyWheelZoomDelta, } from './interaction'
 
 const point = (pointerId: number, clientX: number, clientY: number) => ({
   pointerId,
@@ -64,5 +64,43 @@ describe('journey pointer tracker', () => {
 
     tracker.down(point(6, 10, 10))
     expect(tracker.up(point(6, 10, 10))?.kind).toBe('tap')
+  })
+
+  it('reports two-pointer scale without allowing either pointer to select', () => {
+    const tracker = createJourneyPointerTracker()
+    tracker.down(point(1, 20, 40))
+    tracker.down(point(2, 60, 40))
+    expect(tracker.move(point(2, 100, 40))).toEqual({
+      kind: 'pinch',
+      scale: 2,
+    })
+    expect(tracker.move(point(2, 80, 40))).toEqual({
+      kind: 'pinch',
+      scale: 0.75,
+    })
+    expect(tracker.up(point(1, 20, 40))).toBeUndefined()
+    expect(tracker.up(point(2, 80, 40))).toBeUndefined()
+  })
+
+  it('rebases pinch distance when the active pointer pair changes', () => {
+    const tracker = createJourneyPointerTracker()
+    tracker.down(point(1, 0, 0))
+    tracker.down(point(2, 40, 0))
+    tracker.down(point(3, 80, 0))
+    expect(tracker.up(point(1, 0, 0))).toBeUndefined()
+    expect(tracker.move(point(3, 100, 0))).toEqual({
+      kind: 'pinch',
+      scale: 1.5,
+    })
+    expect(tracker.up(point(2, 40, 0))).toBeUndefined()
+    expect(tracker.up(point(3, 100, 0))).toBeUndefined()
+  })
+
+  it('normalizes wheel, trackpad and page deltas without one-event jumps', () => {
+    expect(journeyWheelZoomDelta(-100, 0, 800)).toBeCloseTo(1 / 7)
+    expect(journeyWheelZoomDelta(3, 1, 800)).toBeCloseTo(-48 / 700)
+    expect(journeyWheelZoomDelta(-1, 2, 800)).toBeCloseTo(240 / 700)
+    expect(journeyWheelZoomDelta(100_000, 0, 800)).toBeCloseTo(-240 / 700)
+    expect(journeyWheelZoomDelta(Number.NaN, 0, 800)).toBe(0)
   })
 })

@@ -1,0 +1,17 @@
+{
+  "url": "https://127.0.0.1:5295/glass-game/?campaign=1",
+  "capturedAt": "2026-09-21T09:09:38.026Z",
+  "evidence": "Actual compiled scene; real wheel and mouse drag. SwiftShader, not device performance acceptance.",
+  "proofs": [
+    {
+      "id": "twin-galleries-isle",
+      "screenshot": "twin-galleries-isle-close.png",
+      "camera": {
+        "zoom": "1.000",
+        "yaw": "0.660",
+        "pitch": "0.450"
+      },
+      "errors": []
+    }
+  ]
+}

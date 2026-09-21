@@ -147,6 +147,40 @@
   stroke-linejoin: round;
 }
 
+.viewReset {
+  position: absolute;
+  z-index: 6;
+  top: max(88px, calc(env(safe-area-inset-top) + 64px));
+  right: max(28px, env(safe-area-inset-right));
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px 0 11px;
+  border: 1px solid #a78048;
+  border-radius: 22px;
+  color: var(--deep-jade);
+  background: #fff8e8e8;
+  box-shadow:
+    inset 0 0 0 2px #fff9,
+    0 8px 24px #163e3730;
+  backdrop-filter: blur(8px);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.viewReset svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .stageLabels {
   position: absolute;
   inset: 0;
@@ -785,6 +819,7 @@
 }
 
 .roundAction:focus-visible,
+.viewReset:focus-visible,
 .stageCartouche:focus-visible,
 .mapNotice button:focus-visible,
 .enterSelected:focus-visible,
@@ -888,6 +923,19 @@
   .roundAction svg {
     width: 17px;
     height: 17px;
+  }
+
+  .viewReset {
+    top: max(52px, calc(env(safe-area-inset-top) + 42px));
+    right: max(10px, env(safe-area-inset-right));
+    min-height: 44px;
+    padding: 0 11px 0 9px;
+    font-size: 9px;
+  }
+
+  .viewReset svg {
+    width: 15px;
+    height: 15px;
   }
 
   .stageLabels {

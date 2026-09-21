@@ -1,0 +1,17 @@
+{
+  "url": "https://127.0.0.1:5295/glass-game/?campaign=1",
+  "capturedAt": "2026-09-21T09:06:03.627Z",
+  "evidence": "Actual compiled scene; real wheel and mouse drag. SwiftShader, not device performance acceptance.",
+  "proofs": [
+    {
+      "id": "resonance-conservatory-isle",
+      "screenshot": "resonance-conservatory-isle-close.png",
+      "camera": {
+        "zoom": "1.000",
+        "yaw": "-0.860",
+        "pitch": "0.450"
+      },
+      "errors": []
+    }
+  ]
+}

@@ -6,7 +6,9 @@ export interface JourneyPointerSample {
   clientY: number
 }
 
-export type JourneyPointerMove = { kind: 'drag'; dx: number; dy: number }
+export type JourneyPointerMove =
+  | { kind: 'drag'; dx: number; dy: number }
+  | { kind: 'pinch'; scale: number }
 
 export interface JourneyPointerTracker {
   down(sample: JourneyPointerSample): void
@@ -22,7 +24,7 @@ export interface JourneyPointerTracker {
 export function createJourneyPointerTracker(
   movementThresholdPixels = 7,
 ): JourneyPointerTracker {
-  const pointers = new Set<number>()
+  const pointers = new Map<number, JourneyPointerSample>()
   let primary:
     | {
         id: number
@@ -34,19 +36,32 @@ export function createJourneyPointerTracker(
       }
     | undefined
   let suppressed = false
+  let previousPinchDistance: number | undefined
+
+  function pinchDistance(): number | undefined {
+    if (pointers.size < 2) return undefined
+    const [first, second] = [...pointers.values()]
+    if (first === undefined || second === undefined) return undefined
+    return Math.hypot(
+      second.clientX - first.clientX,
+      second.clientY - first.clientY,
+    )
+  }
 
   function clearIfIdle(): void {
     if (pointers.size === 0) {
       primary = undefined
       suppressed = false
+      previousPinchDistance = undefined
     }
   }
 
   return {
     down(sample) {
-      pointers.add(sample.pointerId)
+      pointers.set(sample.pointerId, sample)
       if (primary !== undefined || pointers.size > 1) {
         suppressed = true
+        previousPinchDistance = pinchDistance()
         return
       }
       primary = {
@@ -59,6 +74,25 @@ export function createJourneyPointerTracker(
       }
     },
     move(sample) {
+      if (!pointers.has(sample.pointerId)) return undefined
+      pointers.set(sample.pointerId, sample)
+      if (pointers.size >= 2) {
+        suppressed = true
+        const currentDistance = pinchDistance()
+        const priorDistance = previousPinchDistance
+        previousPinchDistance = currentDistance
+        if (
+          currentDistance === undefined ||
+          priorDistance === undefined ||
+          currentDistance <= 0 ||
+          priorDistance <= 0
+        )
+          return undefined
+        const scale = currentDistance / priorDistance
+        return Number.isFinite(scale) && scale !== 1
+          ? { kind: 'pinch', scale }
+          : undefined
+      }
       if (suppressed || primary?.id !== sample.pointerId) return undefined
       const dx = sample.clientX - primary.previousX
       const dy = sample.clientY - primary.previousY
@@ -89,20 +123,39 @@ export function createJourneyPointerTracker(
           sample.clientY - primary.startY,
         ) < movementThresholdPixels
       pointers.delete(sample.pointerId)
+      previousPinchDistance = pinchDistance()
       clearIfIdle()
       return tapped
         ? { kind: 'tap', clientX: sample.clientX, clientY: sample.clientY }
         : undefined
     },
     cancel(pointerId) {
-      if (primary?.id === pointerId) suppressed = true
+      suppressed = true
       pointers.delete(pointerId)
+      previousPinchDistance = pinchDistance()
       clearIfIdle()
     },
     reset() {
       pointers.clear()
       primary = undefined
       suppressed = false
+      previousPinchDistance = undefined
     },
   }
+}
+
+/** Convert browser wheel units into one bounded inspection-zoom delta. */
+export function journeyWheelZoomDelta(
+  deltaY: number,
+  deltaMode: number,
+  viewportHeight: number,
+): number {
+  if (!Number.isFinite(deltaY)) return 0
+  const pixels =
+    deltaMode === 1
+      ? deltaY * 16
+      : deltaMode === 2
+        ? deltaY * Math.max(1, viewportHeight)
+        : deltaY
+  return -Math.max(-240, Math.min(240, pixels)) / 700
 }

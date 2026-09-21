@@ -2,7 +2,7 @@
 
 import type { BufferGeometry, Material, Mesh } from 'three'
 import { ConeGeometry, CylinderGeometry, Group, IcosahedronGeometry, InstancedMesh, Matrix4, Quaternion, SphereGeometry, Vector3, } from 'three'
-import type { MuseumJourneyDefinition, MuseumJourneyLandmass, } from '../content/museum-journey'
+import type { MuseumJourneyDefinition, MuseumJourneyLandmass, MuseumJourneySpillway, } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
 
 export interface JourneyVegetationMaterials {
@@ -52,7 +52,44 @@ function clearsJourneyLandmarks(
     )
       return false
   }
+  for (const spillway of definition.spillways) {
+    const source = spillway.source
+    if (source === undefined) continue
+    const dx = point.x - source.position[0]
+    const dz = point.z - source.position[2]
+    const sine = Math.sin(spillway.yaw)
+    const cosine = Math.cos(spillway.yaw)
+    const localX = cosine * dx - sine * dz
+    const localZ = sine * dx + cosine * dz
+    const clearanceX = source.width * 0.5 + 0.055
+    const clearanceZ = source.length * 0.5 + 0.055
+    if (
+      (localX * localX) / (clearanceX * clearanceX) +
+        (localZ * localZ) / (clearanceZ * clearanceZ) <
+      1
+    )
+      return false
+  }
   return true
+}
+
+function sourceFloraPoint(
+  spillway: MuseumJourneySpillway,
+  across: number,
+  downstream: number,
+): Vector3 {
+  const source = spillway.source
+  if (source === undefined)
+    throw new Error(`Journey spillway ${spillway.id} has no source pond.`)
+  const localX = across * (source.width * 0.5 + 0.09)
+  const localZ = downstream * (source.length * 0.5 + 0.08)
+  const sine = Math.sin(spillway.yaw)
+  const cosine = Math.cos(spillway.yaw)
+  return new Vector3(
+    source.position[0] + cosine * localX + sine * localZ,
+    source.position[1] + 0.035,
+    source.position[2] - sine * localX + cosine * localZ,
+  )
 }
 
 export function createJourneyVegetation(
@@ -65,6 +102,9 @@ export function createJourneyVegetation(
   const root = new Group()
   root.name = 'floating-museum-gardens'
   const treeCount = definition.landmasses.length * 10
+  const sourceCount = definition.spillways.filter(
+    (spillway) => spillway.source !== undefined,
+  ).length
   const trunkGeometry = own(
     new CylinderGeometry(0.055, 0.075, 1, 7),
     ownedGeometries,
@@ -81,12 +121,12 @@ export function createJourneyVegetation(
   const flowers = new InstancedMesh(
     flowerGeometry,
     materials.blossom,
-    treeCount * 2 + definition.landmasses.length * 30,
+    treeCount * 2 + definition.landmasses.length * 30 + sourceCount * 10,
   )
   const bedLeaves = new InstancedMesh(
     ivyGeometry,
     materials.foliage,
-    definition.landmasses.length * 18,
+    definition.landmasses.length * 18 + sourceCount * 5,
   )
   const ivyPerIsland = 40
   const ivy = new InstancedMesh(
@@ -117,7 +157,8 @@ export function createJourneyVegetation(
   let ivyIndex = 0
   let darkIvyIndex = 0
   const cypressTransforms: Matrix4[] = []
-  const authoredFlowerTransforms: Matrix4[] = []
+  const authoredSourceFlowerTransforms: Matrix4[] = []
+  const authoredRimFlowerTransforms: Matrix4[] = []
 
   for (
     let islandIndex = 0;
@@ -207,13 +248,45 @@ export function createJourneyVegetation(
       }
     }
 
+    const islandStageIds = new Set(
+      definition.stages
+        .filter((stage) => stage.islandId === island.id)
+        .map((stage) => stage.id),
+    )
+    const islandSources = definition.spillways.filter(
+      (spillway) =>
+        spillway.source !== undefined && islandStageIds.has(spillway.stageId),
+    )
     let authoredFlowerCount = 0
+    for (const spillway of islandSources) {
+      if (authoredFlowerCount === 2) break
+      for (const [across, downstream] of [
+        [0, -1.25],
+        [-1.05, -0.55],
+        [1.05, -0.55],
+      ] as const) {
+        const point = sourceFloraPoint(spillway, across, downstream)
+        if (!clearsJourneyLandmarks(definition, point)) continue
+        authoredSourceFlowerTransforms.push(
+          new Matrix4().compose(
+            point,
+            new Quaternion().setFromAxisAngle(
+              new Vector3(0, 1, 0),
+              spillway.yaw + across * 0.22,
+            ),
+            new Vector3(0.72, 0.72, 0.72),
+          ),
+        )
+        authoredFlowerCount++
+        break
+      }
+    }
     for (let candidate = 0; candidate < 10; candidate++) {
       if (authoredFlowerCount === 2) break
       const angle = ((candidate + 0.55) / 10) * Math.PI * 2 + islandIndex * 0.53
       const point = rimPoint(island, angle, candidate % 2 === 0 ? 0.7 : 0.76)
       if (!clearsJourneyLandmarks(definition, point)) continue
-      authoredFlowerTransforms.push(
+      authoredRimFlowerTransforms.push(
         new Matrix4().compose(
           point,
           new Quaternion().setFromAxisAngle(
@@ -224,6 +297,44 @@ export function createJourneyVegetation(
         ),
       )
       authoredFlowerCount++
+    }
+
+    for (const spillway of islandSources) {
+      for (const [pointIndex, [across, downstream]] of [
+        [-1.05, -0.05],
+        [1.05, -0.05],
+        [-0.76, -0.92],
+        [0, -1.18],
+        [0.76, -0.92],
+      ].entries()) {
+        const point = sourceFloraPoint(spillway, across, downstream)
+        if (!clearsJourneyLandmarks(definition, point)) continue
+        const tangent = new Vector3(
+          Math.cos(spillway.yaw),
+          0,
+          -Math.sin(spillway.yaw),
+        )
+        for (const offset of [-0.045, 0.045]) {
+          const blossomPoint = point.clone().addScaledVector(tangent, offset)
+          if (!clearsJourneyLandmarks(definition, blossomPoint)) continue
+          const size = 0.76 + ((pointIndex + (offset > 0 ? 1 : 0)) % 3) * 0.12
+          matrix.compose(
+            blossomPoint,
+            rotation,
+            new Vector3(size, size * 0.68, size),
+          )
+          flowers.setMatrixAt(flowerIndex++, matrix)
+        }
+        matrix.compose(
+          point.clone().add(new Vector3(0, -0.022, 0)),
+          new Quaternion().setFromAxisAngle(
+            new Vector3(0, 1, 0),
+            spillway.yaw + pointIndex * 0.72,
+          ),
+          new Vector3(0.92, 0.38, 1.38),
+        )
+        bedLeaves.setMatrixAt(leafIndex++, matrix)
+      }
     }
 
     for (let strand = 0; strand < 8; strand++) {
@@ -301,6 +412,10 @@ export function createJourneyVegetation(
     })
   }
 
+  const authoredFlowerTransforms = [
+    ...authoredSourceFlowerTransforms,
+    ...authoredRimFlowerTransforms,
+  ]
   const flowerCluster = sculpturalUnit?.('map_flower_cluster')
   if (flowerCluster !== undefined && authoredFlowerTransforms.length > 0) {
     flowerCluster.updateMatrixWorld(true)
@@ -314,6 +429,8 @@ export function createJourneyVegetation(
         authoredFlowerTransforms.length,
       )
       instances.name = `instanced-authored-flower-clusters-${meshIndex++}`
+      instances.userData.sourceFlowerCount =
+        authoredSourceFlowerTransforms.length
       instances.castShadow = true
       instances.receiveShadow = true
       const instanceMatrix = new Matrix4()

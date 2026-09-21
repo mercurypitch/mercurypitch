@@ -1,11 +1,12 @@
 // Journey models — assemble three authored landmasses with four stable chapter medallions.
 
-import type { BufferGeometry, Material, Mesh, Object3D } from 'three'
-import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector3, } from 'three'
+import type { BufferGeometry, Material, Mesh, Object3D, Texture } from 'three'
+import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector3, } from 'three'
 import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
 import { createJourneyArchitecture, findJourneyPortraitInset, } from './architecture'
 import { createJourneyMerc } from './merc'
+import { disposeJourneyPortraitTexture, fitJourneyPortraitTexture, loadJourneyPortraitTexture, } from './portrait-texture'
 import type { JourneyGltfDocument } from './resources'
 import { loadJourneyGltf } from './resources'
 import { createJourneyVegetation } from './vegetation'
@@ -187,6 +188,7 @@ function createAssembly(
   definition: MuseumJourneyDefinition,
   document: JourneyGltfDocument,
   sculptureDocument: JourneyGltfDocument | undefined,
+  mysteryTexture: Texture | undefined,
 ) {
   for (const name of REQUIRED_NODES) {
     const unit = authoredUnit(document, name)
@@ -203,6 +205,12 @@ function createAssembly(
   root.name = 'floating-museum-architecture'
   const ownedGeometries = new Set<BufferGeometry>()
   const materials = {
+    mysteryPortrait: new MeshBasicMaterial({
+      color: mysteryTexture === undefined ? 0x235c56 : 0xffffff,
+      map: mysteryTexture ?? null,
+      side: DoubleSide,
+      toneMapped: false,
+    }),
     gold: new MeshStandardMaterial({
       color: 0xc79a45,
       emissive: 0x4c310b,
@@ -300,6 +308,10 @@ function createAssembly(
     materials,
     ownedGeometries,
   )
+  if (mysteryTexture !== undefined) {
+    const inset = architecture.portraitSurfaces.values().next().value
+    if (inset !== undefined) fitJourneyPortraitTexture(mysteryTexture, inset)
+  }
   root.add(architecture.root)
   root.add(
     createJourneyVegetation(
@@ -340,36 +352,62 @@ export async function loadJourneyMapModels(
   options: {
     loadGltf?: typeof loadJourneyGltf
     sculptureUrl?: string
+    mysteryPortraitUrl?: string
+    loadTexture?: typeof loadJourneyPortraitTexture
   } = {},
 ): Promise<JourneyMapModels> {
   const loadGltf = options.loadGltf ?? loadJourneyGltf
   const requests = [loadGltf(mapUrl, signal), loadGltf(mercUrl, signal)]
   if (options.sculptureUrl !== undefined)
     requests.push(loadGltf(options.sculptureUrl, signal))
-  const loaded = await Promise.allSettled(requests)
+  const portraitRequest =
+    options.mysteryPortraitUrl === undefined
+      ? Promise.resolve(undefined)
+      : (options.loadTexture ?? loadJourneyPortraitTexture)(
+          options.mysteryPortraitUrl,
+          signal,
+        ).then((texture) => ({
+          texture,
+          dispose: () => disposeJourneyPortraitTexture(texture),
+        }))
+  const loaded = await Promise.allSettled([...requests, portraitRequest])
   const rejected = loaded.find(
     (result): result is PromiseRejectedResult => result.status === 'rejected',
   )
   if (rejected !== undefined) {
     for (const result of loaded)
-      if (result.status === 'fulfilled') result.value.dispose()
+      if (result.status === 'fulfilled') result.value?.dispose()
     throw rejected.reason
   }
-  const documents = loaded.map(
-    (result) => (result as PromiseFulfilledResult<JourneyGltfDocument>).value,
-  )
+  const documents = loaded
+    .slice(0, requests.length)
+    .map(
+      (result) => (result as PromiseFulfilledResult<JourneyGltfDocument>).value,
+    )
+  const portrait = (
+    loaded[requests.length] as PromiseFulfilledResult<
+      { texture: Texture; dispose(): void } | undefined
+    >
+  ).value
   const kitDocument = documents[0]!
   const mercDocument = documents[1]!
   const sculptureDocument = documents[2]
   if (signal.aborted) {
     for (const document of documents) document.dispose()
+    portrait?.dispose()
     throw new DOMException('Journey asset load cancelled.', 'AbortError')
   }
   let assembly: ReturnType<typeof createAssembly>
   try {
-    assembly = createAssembly(definition, kitDocument, sculptureDocument)
+    assembly = createAssembly(
+      definition,
+      kitDocument,
+      sculptureDocument,
+      portrait?.texture,
+    )
   } catch (error) {
     for (const document of documents) document.dispose()
+    portrait?.dispose()
     throw error
   }
   let merc: ReturnType<typeof createJourneyMerc>
@@ -378,6 +416,7 @@ export async function loadJourneyMapModels(
   } catch (error) {
     disposeAssembly(assembly)
     for (const document of documents) document.dispose()
+    portrait?.dispose()
     throw error
   }
   assembly.root.add(merc.root)
@@ -401,6 +440,7 @@ export async function loadJourneyMapModels(
       merc.dispose()
       kitDocument.dispose()
       sculptureDocument?.dispose()
+      portrait?.dispose()
     },
   }
 }

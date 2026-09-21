@@ -289,6 +289,148 @@ it('does not report ready before a model-backed label projection is published', 
   }
 })
 
+it('zooms and orbits without turning a pinch into a gallery selection, then resets', async () => {
+  state.environmentShouldFail = false
+  const hitTarget = new Group()
+  hitTarget.userData.journeyStageId = 'stage'
+  const model = {
+    root: new Group(),
+    selectableRoots: new Map([['stage', hitTarget]]),
+    portraitSurfaces: new Map(),
+    portraitMysteries: new Map(),
+    starMarkers: new Map([
+      ['stage', [new Group(), new Group(), new Group()] as const],
+    ]),
+    setSelected: vi.fn(),
+    update: vi.fn(),
+    dispose: vi.fn(),
+  }
+  state.loadModels.mockResolvedValueOnce(model)
+  const onSelect = vi.fn()
+  const onViewChange = vi.fn()
+  const onProjectStageLabels = vi.fn()
+  const append = vi.fn()
+  stubBrowser()
+  const scene = createMuseumJourneyScene(
+    {
+      append,
+      clientWidth: 1024,
+      clientHeight: 768,
+    } as unknown as HTMLElement,
+    DEFINITION,
+    (id) => id,
+    {
+      selectedStageId: 'stage',
+      foreground: true,
+      reducedMotion: false,
+      onSelect,
+      onViewChange,
+      onProjectStageLabels,
+      onFailure: vi.fn(),
+    },
+  )
+
+  try {
+    await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
+    const renderFrame = state.renderFrame
+    if (renderFrame === undefined)
+      throw new Error('Missing scene frame callback')
+    renderFrame(0, 0)
+    await scene.ready
+    const canvas = append.mock.calls[0]![0] as {
+      dataset: Record<string, string>
+    }
+    expect(canvas.dataset.journeyCameraZoom).toBe('0.000')
+    expect(canvas.dataset.journeyCameraYaw).toBe('-0.140')
+
+    const preventDefault = vi.fn()
+    dispatchCanvasEvent('wheel', {
+      deltaY: -240,
+      deltaMode: 0,
+      preventDefault,
+    } as unknown as WheelEvent)
+    expect(preventDefault).toHaveBeenCalledOnce()
+    expect(Number(canvas.dataset.journeyCameraZoom)).toBeGreaterThan(0.3)
+    expect(onViewChange).toHaveBeenLastCalledWith(true)
+
+    dispatchCanvasEvent('pointerdown', {
+      pointerId: 1,
+      clientX: 400,
+      clientY: 380,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointerdown', {
+      pointerId: 2,
+      clientX: 600,
+      clientY: 380,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointermove', {
+      pointerId: 2,
+      clientX: 800,
+      clientY: 380,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointerup', {
+      pointerId: 1,
+      clientX: 400,
+      clientY: 380,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointerup', {
+      pointerId: 2,
+      clientX: 800,
+      clientY: 380,
+    } as PointerEvent)
+    expect(canvas.dataset.journeyCameraZoom).toBe('1.000')
+    expect(onSelect).not.toHaveBeenCalled()
+
+    const boundaryPreventDefault = vi.fn()
+    dispatchCanvasEvent('wheel', {
+      deltaY: -240,
+      deltaMode: 0,
+      preventDefault: boundaryPreventDefault,
+    } as unknown as WheelEvent)
+    expect(boundaryPreventDefault).toHaveBeenCalledOnce()
+    expect(canvas.dataset.journeyCameraZoom).toBe('1.000')
+
+    dispatchCanvasEvent('pointerdown', {
+      pointerId: 3,
+      clientX: 500,
+      clientY: 380,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointermove', {
+      pointerId: 3,
+      clientX: 580,
+      clientY: 340,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointerup', {
+      pointerId: 3,
+      clientX: 580,
+      clientY: 340,
+    } as PointerEvent)
+    expect(Number(canvas.dataset.journeyCameraYaw)).toBeLessThan(-0.4)
+    expect(onSelect).not.toHaveBeenCalled()
+
+    scene.resetView()
+    expect(canvas.dataset).toMatchObject({
+      journeyCameraZoom: '0.000',
+      journeyCameraYaw: '-0.140',
+      journeyCameraPitch: '0.450',
+    })
+    expect(onViewChange).toHaveBeenLastCalledWith(false)
+    expect(onProjectStageLabels).toHaveBeenLastCalledWith([])
+
+    const overviewBoundaryPreventDefault = vi.fn()
+    dispatchCanvasEvent('wheel', {
+      deltaY: 240,
+      deltaMode: 0,
+      preventDefault: overviewBoundaryPreventDefault,
+    } as unknown as WheelEvent)
+    expect(overviewBoundaryPreventDefault).toHaveBeenCalledOnce()
+    expect(canvas.dataset.journeyCameraZoom).toBe('0.000')
+  } finally {
+    scene.dispose()
+    vi.unstubAllGlobals()
+  }
+})
+
 it('retires active gestures and ignores selection mutations after context loss', async () => {
   state.environmentShouldFail = false
   const hitTarget = new Group()

@@ -70,7 +70,7 @@ async function projectedMedallion(
   return point
 }
 
-test('mouse selects an island, while a drag remains navigation @smoke', async ({
+test('mouse selects, zooms, orbits and resets without entering a gallery @smoke', async ({
   page,
 }) => {
   const lobby = await openJourney(page)
@@ -112,7 +112,7 @@ test('mouse selects an island, while a drag remains navigation @smoke', async ({
     secondaryRenderPasses: number
   } | null
   expect(metrics).toMatchObject({
-    waterTriangles: 2688,
+    waterTriangles: 2136,
     waterDrawCalls: 5,
     secondaryRenderPasses: 1,
   })
@@ -120,19 +120,54 @@ test('mouse selects an island, while a drag remains navigation @smoke', async ({
   expect(metrics?.triangles).toBeGreaterThan(99_000)
 
   const dragStart = await mapPoint(canvas, 0.33, 0.36)
+  expect(
+    await canvas.evaluate(
+      (element, point) =>
+        document.elementFromPoint(point.x, point.y) === element,
+      dragStart,
+    ),
+    'the inspection gesture must begin on the live canvas',
+  ).toBe(true)
   await page.mouse.move(dragStart.x, dragStart.y)
+  await page.mouse.wheel(0, -720)
+  await page.mouse.wheel(0, -720)
+  await page.mouse.wheel(0, -720)
+  await expect
+    .poll(async () =>
+      Number(await canvas.getAttribute('data-journey-camera-zoom')),
+    )
+    .toBeGreaterThan(0.95)
+  const reset = lobby.getByRole('button', { name: 'Reset museum view' })
+  await expect(reset).toBeVisible()
+
+  const yawBeforeDrag = Number(
+    await canvas.getAttribute('data-journey-camera-yaw'),
+  )
   await page.mouse.down()
-  await page.mouse.move(dragStart.x + 90, dragStart.y + 36, { steps: 6 })
+  await page.mouse.move(dragStart.x + 150, dragStart.y - 42, { steps: 6 })
   await page.mouse.up()
+  await expect
+    .poll(async () =>
+      Number(await canvas.getAttribute('data-journey-camera-yaw')),
+    )
+    .toBeLessThan(yawBeforeDrag - 0.3)
   await expect(frame).toHaveAttribute(
     'data-selected-stage',
     'twin-galleries-isle',
   )
+  await expect(page.getByTestId('glass-adventure')).toHaveCount(0)
+
+  await reset.click()
+  await expect(canvas).toHaveAttribute('data-journey-camera-zoom', '0.000')
+  await expect(canvas).toHaveAttribute('data-journey-camera-yaw', '-0.140')
+  await expect(canvas).toHaveAttribute('data-journey-camera-pitch', '0.450')
+  await expect(reset).toHaveCount(0)
 })
 
-test('native touch cancellation cannot select and a completed tap can', async ({
+test('native pinch zoom and cancellation cannot select, while a completed tap can', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 320, height: 640 })
   const lobby = await openJourney(page)
   const frame = lobby.locator('[data-map-state]')
   const canvas = frame.locator('canvas')
@@ -156,22 +191,65 @@ test('native touch cancellation cannot select and a completed tap can', async ({
   })
   await expect(frame).toHaveAttribute('data-selected-stage', 'first-light-isle')
 
-  const twins = await projectedMedallion(
-    canvas,
-    lobby.locator('[data-journey-label="twin-galleries-isle"]'),
-  )
+  const pinchCenter = await mapPoint(canvas, 0.46, 0.35)
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchStart',
-    touchPoints: [{ ...twins, id: 2 }],
+    touchPoints: [
+      { x: pinchCenter.x - 28, y: pinchCenter.y, id: 10 },
+      { x: pinchCenter.x + 28, y: pinchCenter.y, id: 11 },
+    ],
+  })
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [
+      { x: pinchCenter.x - 94, y: pinchCenter.y - 4, id: 10 },
+      { x: pinchCenter.x + 94, y: pinchCenter.y + 4, id: 11 },
+    ],
   })
   await session.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],
   })
-  await expect(frame).toHaveAttribute(
-    'data-selected-stage',
-    'twin-galleries-isle',
+  await expect
+    .poll(async () =>
+      Number(await canvas.getAttribute('data-journey-camera-zoom')),
+    )
+    .toBeGreaterThan(0.5)
+  await expect(frame).toHaveAttribute('data-selected-stage', 'first-light-isle')
+  await expect(page.getByTestId('glass-adventure')).toHaveCount(0)
+
+  const reset = lobby.getByRole('button', { name: 'Reset museum view' })
+  const headerActions = [
+    lobby.getByRole('button', { name: 'Mute museum sound' }),
+    lobby.getByRole('button', { name: 'Leave Glassworks' }),
+  ]
+  const [resetBounds, ...headerBounds] = await Promise.all([
+    reset.boundingBox(),
+    ...headerActions.map((action) => action.boundingBox()),
+  ])
+  expect(resetBounds).not.toBeNull()
+  expect(resetBounds!.height).toBeGreaterThanOrEqual(44)
+  expect(resetBounds!.x + resetBounds!.width).toBeLessThanOrEqual(320)
+  for (const bounds of headerBounds) {
+    expect(bounds).not.toBeNull()
+    expect(resetBounds!.y).toBeGreaterThanOrEqual(bounds!.y + bounds!.height)
+  }
+  await reset.tap()
+  await expect(canvas).toHaveAttribute('data-journey-camera-zoom', '0.000')
+
+  const glassworksAfterReset = await projectedMedallion(
+    canvas,
+    lobby.locator('[data-journey-label="glassworks-isle"]'),
   )
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ ...glassworksAfterReset, id: 2 }],
+  })
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  })
+  await expect(frame).toHaveAttribute('data-selected-stage', 'glassworks-isle')
 })
 
 test('map asset failure and WebGL context loss recover with one live canvas', async ({
