@@ -2427,6 +2427,27 @@ export const SettingsPanel: Component = () => {
                   </button>
                 </Show>
               </div>
+              {/* PeerPush lists MercuryPitch, and the listing links back here.
+                  Their own badge image, at the width their snippet asks for,
+                  on its own line: dropped into the row above it would be four
+                  times the size of every pill beside it. */}
+              <a
+                href="https://peerpush.com/p/mercurypitch"
+                target="_blank"
+                rel="noopener noreferrer"
+                class={styles.directoryBadge}
+                data-testid="about-peerpush-link"
+                title="MercuryPitch on PeerPush"
+              >
+                <img
+                  src="https://peerpush.com/p/mercurypitch/badge.png"
+                  alt="MercuryPitch on PeerPush"
+                  width="230"
+                  height="65"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
             </div>
           </div>
         </Show>
