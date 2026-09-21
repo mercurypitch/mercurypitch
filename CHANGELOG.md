@@ -5,6 +5,13 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.13] - 2026-09-21
+
+### Added
+
+- **The PeerPush listing is linked from the entry page.** It sits with the
+  other links on the page you see while the app is loading.
+
 ## [0.9.12] - 2026-09-21
 
 ### Added
