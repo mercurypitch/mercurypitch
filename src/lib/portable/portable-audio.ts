@@ -20,8 +20,23 @@
 //
 // See docs/plans/device-sync.md and docs/plans/jam-song-p2p-transfer.md.
 
-import { AudioBufferSource, BufferTarget, canEncodeAudio, Mp4OutputFormat, Output, } from 'mediabunny'
+// Type-only, so it is erased at build and brings no runtime dependency with
+// it -- the whole point of the loader below.
+import type * as Mediabunny from 'mediabunny'
 import { wavSampleRate } from '@/lib/wav-meta'
+
+// mediabunny is ~169 KB, and only exporting a song ever reaches it. A static
+// import put it on the first-paint graph for every visitor: `jam-store`
+// imports `StemEncodeAbortedError` from this module, and a value import drags
+// the whole module's dependencies along with it, so a landing page that never
+// encodes anything still paid for the encoder. Loaded on demand instead --
+// the same way the sibling `@mediabunny/aac-encoder` below has always been.
+let mediabunnyModule: Promise<typeof Mediabunny> | null = null
+
+function loadMediabunny(): Promise<typeof Mediabunny> {
+  mediabunnyModule ??= import('mediabunny')
+  return mediabunnyModule
+}
 
 /**
  * How good a portable copy is, and what it costs.
@@ -76,6 +91,7 @@ export function resetStemEncoderProbe(): void {
 export async function ensureAacEncoder(): Promise<boolean> {
   encoderReady ??= (async () => {
     try {
+      const { canEncodeAudio } = await loadMediabunny()
       if (await canEncodeAudio('aac', { sampleRate: DEFAULT_RATE })) return true
       const { registerAacEncoder } = await import('@mediabunny/aac-encoder')
       registerAacEncoder()
@@ -229,6 +245,8 @@ export async function encodeStemToAac(
   // before an encoder is even started, so nothing needs tearing down.
   if (stopped()) throw new StemEncodeAbortedError()
 
+  const { AudioBufferSource, BufferTarget, Mp4OutputFormat, Output } =
+    await loadMediabunny()
   const output = new Output({
     format: new Mp4OutputFormat(),
     target: new BufferTarget(),
