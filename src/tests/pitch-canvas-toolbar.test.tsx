@@ -94,8 +94,13 @@ describe('PitchCanvasToolbar melody audition', () => {
       />
     ))
 
+    // `toBeNull` rather than `not.toBeInTheDocument`, and the count beside
+    // it: an assertion that something is absent passes just as well when
+    // nothing rendered at all, so the two unconditional controls are pinned
+    // too. Everything else in this toolbar is behind a `<Show>`.
     expect(
       screen.queryByTitle('Hear the detected melody as notes during playback'),
-    ).not.toBeInTheDocument()
+    ).toBeNull()
+    expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 })
