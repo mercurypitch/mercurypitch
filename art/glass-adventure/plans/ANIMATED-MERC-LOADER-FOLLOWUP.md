@@ -1,9 +1,9 @@
 # Animated Merc loader follow-up
 
-**Status:** Implemented and locally verified after the owner accepted the
-museum portrait polish. Final PR-revision CI and physical-device acceptance
-remain separate. No Meshy rigging task was submitted; the existing custom
-Merc rig is preserved.
+**Status:** Implemented and locally verified. The owner accepted the loading
+portrait and progress presentation on 2026-09-21. All required CI passed on
+`3457a7cd`; sustained physical-device memory/heat checks remain separate. No Meshy rigging
+task was submitted; the existing custom Merc rig is preserved.
 
 **Updated:** 2026-09-21
 
@@ -15,7 +15,8 @@ Merc rig is preserved.
 - [x] Integrate the clear progress track and reduced-motion/fallback presentation.
 - [x] Verify actual desktop, phone, tablet and short landscape output; error/retry.
 - [x] Prepare a separate static HTTPS testing preview on port 5296, without HMR.
-- [ ] Final pushed revision's full CI result (recorded in the dotfiles task checkpoint).
+- [x] Owner accepted the loading portrait and progress presentation.
+- [x] Final loader revision `3457a7cd`: all required CI including PR Gate passed.
 - [ ] Owner tests repeat entry/retry/leave on a physical tablet/phone.
 
 The accepted museum snapshot is unchanged. Sources, hashes, contact sheets and

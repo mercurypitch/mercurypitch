@@ -36,8 +36,14 @@ The owner accepted the museum portrait polish. The
 the actual custom mascot rig has welcome/laugh clips, the right-side copy is
 preserved, and a clear track follows installed assets without visible numbers.
 Retry, graphics cleanup, reduced motion and error handling are verified locally;
-owner device acceptance and final PR-revision CI remain open. Next art work is
-the Twin connector/conservatory kit, richer marble/inlay, medallions and planting.
+the owner accepted the improved portrait and progress presentation. Sustained
+physical-device cost remains unmeasured. The
+[fourth museum polish batch](./FLOATING-MUSEUM-POLISH-BATCH-4.md) is integrated
+and pushed through `87677aea`: an open planted Twin connector, botanical
+Conservatory, warm Carrara terraces, thinner luminous medallions and planting
+clearance. Source production is preserved at `3f1354ad`. Full-map tablet cost
+and owner visual acceptance remain open; the next art pass is denser authored
+flower beds, marble bridges, varied cliffs and a crystal landmark.
 Meshy's API supports rigging and animations, but its documented
 humanoid contract is not suitable for this droplet mascot; no rigging experiment
 was submitted. Standing permission to use Meshy credits remains valid for
@@ -51,8 +57,10 @@ lesson/asset evidence remains in
 
 All required checks passed on museum polish commit `25fed35f`, including PR
 Gate, web/browser, Beside Cue adventure lanes and native games-on builds.
-The loader update will need its own checks. Historical revision details are
-retained in each batch document.
+The loader's stale five-clip test was corrected at `3457a7cd`; every required
+check including PR Gate, browser and native builds passed on that revision.
+The fourth art batch has separate verification. Historical revision details
+are retained in each batch document.
 
 | Area                 | Implemented                                                                                                                                                | Still missing                                                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
