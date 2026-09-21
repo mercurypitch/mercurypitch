@@ -10,6 +10,7 @@
 // (detect-object-injection, which fires on every bracket/Map access) is off.
 
 import security from 'eslint-plugin-security'
+import solid from 'eslint-plugin-solid'
 import sonarjs from 'eslint-plugin-sonarjs'
 import tseslint from 'typescript-eslint'
 
@@ -67,6 +68,46 @@ export default tseslint.config(
       'sonarjs/elseif-without-else': 'off',
       'sonarjs/no-built-in-override': 'off',
       'sonarjs/variable-name': 'off',
+    },
+  },
+  // eslint-plugin-solid, registered for one reason: this config's job is
+  // complexity and security, but without the plugin every
+  // `// eslint-disable-next-line solid/reactivity` in src — 143 of them, all
+  // legitimate under the everyday gate — is reported as "Definition for rule
+  // 'solid/reactivity' was not found". That made 145 of this config's 275
+  // errors artefacts of the config rather than defects in the code, and the
+  // count grew every time someone correctly suppressed the rule.
+  //
+  // Severity matches eslint.config.js (warn, pending a dedicated cleanup
+  // pass), so a suppression the main gate accepts is never an audit error.
+  // Scoped to src: workers carry no JSX and no solid directives.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    plugins: { solid },
+    rules: {
+      'solid/reactivity': 'warn',
+      'solid/prefer-for': 'warn',
+    },
+  },
+  // The everyday gate's ignore patterns (eslint.config.js:105-113), carried
+  // over verbatim. `no-unused-vars` arrives as an error from
+  // tseslint.configs.recommended above; without these patterns it fires on
+  // every deliberately underscore-prefixed name — 127 of them — which is a
+  // convention this repo enforces, not a defect it tolerates. A name the main
+  // gate is happy with must not read as an audit finding, or the errors this
+  // config reports cannot be trusted enough to act on.
+  {
+    files: ['src/**/*.{ts,tsx}', 'workers/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
     },
   },
 )
