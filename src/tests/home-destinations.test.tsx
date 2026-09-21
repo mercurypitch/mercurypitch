@@ -28,6 +28,18 @@ const FREE_IMAGE_SOURCES = new Set<string>([
   ),
 ])
 
+/**
+ * The gallery draws with card cuts, not with the full pictures: resized copies
+ * named `<source>-card-<width>.webp`, because a card 434 CSS px wide was being
+ * handed a 1672x941 room background. Cutting one back to its source keeps the
+ * check below derived from the catalogue rather than from a list -- a card cut
+ * of a SUPPORTER picture still fails, because its source is not in the free
+ * set.
+ */
+function cardCutSource(source: string): string {
+  return source.replace(/-card-\d+\.webp$/, '.webp')
+}
+
 afterEach(() => {
   cleanup()
   setActiveTab(TAB_HOME)
@@ -57,11 +69,15 @@ describe('Home destination gallery', () => {
 
     // Each room shows a backdrop already available to every user. Supporter
     // room bytes remain behind the protected room picker and delivery API.
-    expect(sources).toContain('/piano-night/afterglow-studio-landscape.webp')
-    expect(sources).toContain('/guitar-night/velvet-rehearsal.webp')
-    expect(sources).toContain('/drum-night/pocket-console-landscape.webp')
+    expect(sources).toContain(
+      '/piano-night/afterglow-studio-landscape-card-880.webp',
+    )
+    expect(sources).toContain('/guitar-night/velvet-rehearsal-card-880.webp')
+    expect(sources).toContain(
+      '/drum-night/pocket-console-landscape-card-880.webp',
+    )
     for (const source of sources) {
-      expect([...FREE_IMAGE_SOURCES]).toContain(source)
+      expect([...FREE_IMAGE_SOURCES]).toContain(cardCutSource(source))
     }
     expect(
       container.querySelector('[data-destination="drumNight"] img'),

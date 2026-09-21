@@ -606,9 +606,21 @@
 }
 
 .jamVisual {
+  /* The full stage still is 2048x1143 and 401 KB -- the heaviest asset on the
+     landing page, for a card that is never wider than 434 CSS px. These are
+     the same cuts the photo cards use. The plain `url()` goes first so a
+     browser without `image-set()` still gets the small one rather than
+     falling back to the 401 KB original. */
   background:
     linear-gradient(180deg, rgba(6, 10, 16, 0.04), rgba(6, 10, 16, 0.24)),
-    url('/jam/room-stage.webp') center 42% / cover no-repeat;
+    url('/jam/room-stage-card-880.webp') center 42% / cover no-repeat;
+  background:
+    linear-gradient(180deg, rgba(6, 10, 16, 0.04), rgba(6, 10, 16, 0.24)),
+    image-set(
+        url('/jam/room-stage-card-880.webp') 1x,
+        url('/jam/room-stage-card-1100.webp') 2x
+      )
+      center 42% / cover no-repeat;
   transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
