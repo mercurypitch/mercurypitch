@@ -109,7 +109,7 @@ export const CONSERVATORY_SOURCE: AuthoredLevelSource = {
           title: 'Let the note sway.',
           body: 'Listen to the example. Settle your note, then glide gently above, below, above, and below before returning to your starting note. That makes two waves. A semitone each way is plenty; a whole tone is okay. There is no exact beat to catch or need to sing loudly.',
           aside:
-            'Hear the example again or find your note again at any time. Take a breath to retry the wave; the settled first step stays with you.',
+            'Use Hear example or Change note at any time. Take a breath to retry the wave; the settled first step stays with you.',
         },
       ],
     },

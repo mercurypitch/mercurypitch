@@ -5,6 +5,7 @@
 import type { BufferGeometry, Material, Texture } from 'three'
 import { BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, Vector2, Vector3, } from 'three'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
+import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
 import { disposeObject } from './dispose'
 import type { FracturePiece } from './fracture'
@@ -306,7 +307,10 @@ export function createVessel(
       const restored = state.phase === 'complete' && state.brokenAt === null
       const age =
         state.brokenAt === null ? -1 : Math.max(0, now - state.brokenAt)
-      const delay = reducedMotion ? 0 : 0.1
+      const timing = reducedMotion
+        ? SHATTER_PRESENTATION_TIMING.reducedMotion
+        : SHATTER_PRESENTATION_TIMING.normal
+      const delay = timing.anticipationSeconds
       const shattered = age >= delay && age >= 0
       intact.visible = !restored && !shattered
       const stress =
@@ -330,10 +334,10 @@ export function createVessel(
       } else intact.rotation.z = 0
       const flight = Math.max(0, age - delay)
       shardGroup.visible =
-        shattered && !restored && flight < (reducedMotion ? 0.45 : 2.2)
+        shattered && !restored && flight < timing.visibleFlightSeconds
       if (shardGroup.visible)
         for (const shard of shardMeshes) {
-          const t = reducedMotion ? flight * 0.14 : flight
+          const t = flight * timing.flightTimeScale
           shard.mesh.position
             .copy(shard.origin)
             .addScaledVector(shard.velocity, t)
@@ -343,9 +347,12 @@ export function createVessel(
             shard.spin.y * t,
             shard.spin.z * t,
           )
-          shard.mesh.scale.setScalar(
-            Math.max(0.001, 1 - Math.max(0, flight - 1.45) / 0.75),
-          )
+          const fade =
+            timing.fadeSeconds === 0
+              ? 0
+              : Math.max(0, flight - timing.fadeStartSeconds) /
+                timing.fadeSeconds
+          shard.mesh.scale.setScalar(Math.max(0.001, 1 - fade))
         }
       wave.visible = !reducedMotion && shattered && flight < 0.55
       wave.scale.setScalar(1 + flight * 4)

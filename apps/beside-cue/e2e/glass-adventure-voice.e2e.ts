@@ -28,6 +28,7 @@ interface PendingPermission {
 interface ChallengeCameraMetrics {
   encounterId: string | null
   mode: 'exploration' | 'entering' | 'holding' | 'restoring'
+  settled: boolean
   safeBottomFraction: number
   safeBottomNdc: number | null
   mercFrame: { minX: number; maxX: number; minY: number; maxY: number } | null
@@ -518,6 +519,44 @@ async function expectVoicePanelFits(page: Page): Promise<void> {
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight)
 }
 
+async function expectVoiceActionsStayOnOneLine(
+  page: Page,
+  names: readonly string[],
+): Promise<void> {
+  for (const name of names) {
+    const action = page.getByRole('button', { name, exact: true })
+    await expect(action).toBeVisible()
+    const layout = await action.evaluate((element) => {
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const lineTops = new Set(
+        [...range.getClientRects()].map((rect) => Math.round(rect.top)),
+      )
+      return {
+        height: element.getBoundingClientRect().height,
+        lines: lineTops.size,
+      }
+    })
+    expect(layout.height).toBeGreaterThanOrEqual(43)
+    expect(layout.lines).toBe(1)
+  }
+}
+
+async function expectVoiceGoalStaysOnOneLine(page: Page): Promise<void> {
+  const layout = await page
+    .getByRole('heading', { name: 'Sway twice, then return.' })
+    .evaluate((element) => {
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      return {
+        lines: new Set(
+          [...range.getClientRects()].map((rect) => Math.round(rect.top)),
+        ).size,
+      }
+    })
+  expect(layout.lines).toBe(1)
+}
+
 async function challengeCameraMetrics(
   page: Page,
 ): Promise<ChallengeCameraMetrics | null> {
@@ -557,6 +596,7 @@ async function expectChallengeCameraFitsPanel(
         const frame = metrics?.combinedFrame
         return (
           metrics?.encounterId === encounterId &&
+          metrics.settled &&
           metrics.mercFrame !== null &&
           metrics.targetFrame !== null &&
           frame !== null &&
@@ -985,6 +1025,9 @@ test('Twin court requires low then high, Replay resets the partial pair, and onl
   await holdForAudioSeconds(page, 1.25)
   await expect(panel).toHaveAttribute('data-step-index', '0')
   await expect(
+    page.getByRole('heading', { name: 'Try the lower note again.' }),
+  ).toBeVisible()
+  await expect(
     page.getByRole('progressbar', { name: 'Glass resonance' }),
   ).toHaveAttribute('aria-valuenow', '0')
   await expect(adventure).toHaveAttribute('data-completed', '2')
@@ -1008,7 +1051,10 @@ test('Twin court requires low then high, Replay resets the partial pair, and onl
   const referencesBeforeReplay = await page.evaluate(
     () => window.glassVoiceFixture.referenceStarts,
   )
-  await page.getByRole('button', { name: 'Hear both notes again' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Change notes', exact: true }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Hear example' }).click()
   await expect(panel).toHaveAttribute('data-voice-mode', 'reference')
   await expect(panel).toHaveAttribute('data-step-index', '0')
   await expect
@@ -1087,12 +1133,53 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
   await expect(
     page.getByRole('heading', { name: /sway.*twice/i }),
   ).toBeVisible()
+  const instructions = panel.getByRole('button', {
+    name: /singing instructions/i,
+  })
+  const detailedGesture = panel.getByText(
+    'Up, down, up, down, then back to the middle. A semitone is enough; keep it comfortable.',
+    { exact: true },
+  )
+  await expect(instructions).toHaveAttribute('aria-expanded', 'false')
+  await expect(detailedGesture).toBeHidden()
+  const instructionsBounds = await instructions.boundingBox()
+  expect(instructionsBounds?.width).toBeGreaterThanOrEqual(43)
+  expect(instructionsBounds?.height).toBeGreaterThanOrEqual(43)
   await page.setViewportSize({ width: 390, height: 844 })
+  await expectVoiceActionsStayOnOneLine(page, ['Hear example', 'Change note'])
+  await expectVoiceGoalStaysOnOneLine(page)
   await expectVoicePanelFits(page)
   await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
+  const referencesBeforeHelp = await page.evaluate(
+    () => window.glassVoiceFixture.referenceStarts,
+  )
+  await instructions.click()
+  await expect(instructions).toHaveAttribute('aria-expanded', 'true')
+  await expect(detailedGesture).toBeVisible()
+  await expect(panel).toHaveAttribute('data-voice-mode', 'singing')
+  expect(
+    await page.evaluate(() => window.glassVoiceFixture.referenceStarts),
+  ).toBe(referencesBeforeHelp)
+  await expectVoicePanelFits(page)
+  await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
+  await page.keyboard.press('Escape')
+  await expect(instructions).toHaveAttribute('aria-expanded', 'false')
+  await expect(instructions).toBeFocused()
+  await expect(panel).toHaveAttribute('data-voice-mode', 'singing')
   await page.setViewportSize({ width: 320, height: 640 })
+  await expectVoiceActionsStayOnOneLine(page, ['Hear example', 'Change note'])
+  await expectVoiceGoalStaysOnOneLine(page)
   await expectVoicePanelFits(page)
   await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
+  await instructions.press('Enter')
+  await expect(instructions).toHaveAttribute('aria-expanded', 'true')
+  await expect(detailedGesture).toBeVisible()
+  await expectVoicePanelFits(page)
+  await expectChallengeCameraFitsPanel(page, conservatoryIds.fern)
+  await page.keyboard.press('Escape')
+  await expect(instructions).toHaveAttribute('aria-expanded', 'false')
+  await expect(instructions).toBeFocused()
+  await expect(panel).toHaveAttribute('data-voice-mode', 'singing')
   await page.setViewportSize({ width: 640, height: 480 })
 
   for (const midi of [59, 57, 55, 57]) await glideVoice(page, midi, 0.35)

@@ -6,7 +6,7 @@
 // module therefore deals only in an explicit encounter id, real display bounds
 // and camera poses; scoring and challenge timing remain in the game core.
 
-import type { Box3} from 'three';
+import type { Box3 } from 'three'
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
 
 export type ChallengeCameraMode =
@@ -25,6 +25,8 @@ export interface ChallengeCameraSubjects {
   encounterId: string
   merc: Box3
   target: Box3
+  /** World-space normal for a flat exhibit whose face must stay readable. */
+  targetFacing?: Vector3
 }
 
 export interface ChallengeCameraScreenFrame {
@@ -52,6 +54,8 @@ export interface ChallengeCameraPlanOptions {
   far: number
   safeBottomFraction: number
   currentPosition: Vector3
+  /** Keeps live-panel reframes on their established side when it still fits. */
+  preferredSide?: -1 | 1
   /** Restricts a desired centre to real room and wall clearance. */
   constrainPosition?: (focus: Vector3, desired: Vector3) => Vector3
   /** True when authored geometry blocks a subject from this centre. */
@@ -226,6 +230,12 @@ export function planChallengeCameraShot(
   const combined = merc.clone().union(target)
   const mercCentre = merc.getCenter(new Vector3())
   const targetCentre = target.getCenter(new Vector3())
+  const targetFacing = subjects.targetFacing?.clone()
+  if (targetFacing !== undefined) {
+    targetFacing.y = 0
+    if (targetFacing.lengthSq() < 0.0001) targetFacing.set(0, 0, 0)
+    else targetFacing.normalize()
+  }
   const focus = combined.getCenter(new Vector3())
   const size = combined.getSize(new Vector3())
   const safeBottomFraction = MathUtils.clamp(
@@ -310,13 +320,28 @@ export function planChallengeCameraShot(
         (mercFrame.minX + mercFrame.maxX) / 2 -
           (targetFrame.minX + targetFrame.maxX) / 2,
       )
+      const targetView = pose.position.clone().sub(targetCentre)
+      targetView.y = 0
+      const faceReadability =
+        targetFacing === undefined || targetFacing.lengthSq() === 0
+          ? 1
+          : Math.abs(targetView.normalize().dot(targetFacing))
+      const fits = overflow <= 0.001
+      const readableFaceScore =
+        targetFacing === undefined
+          ? 0
+          : faceReadability * 26 - Math.max(0, 0.55 - faceReadability) * 50
+      const preferredSideScore =
+        fits && !occluded && candidate.side === options.preferredSide ? 18 : 0
       const score =
-        (overflow <= 0.001 ? 100 : 0) -
+        (fits ? 100 : 0) -
         overflow * 120 -
         (occluded ? 80 : 0) +
         clearance * 8 +
         screenSeparation * 3 -
-        pose.position.distanceTo(options.currentPosition) * 0.12
+        pose.position.distanceTo(options.currentPosition) * 0.12 +
+        readableFaceScore +
+        preferredSideScore
       if (best === undefined || score > best.score)
         best = {
           pose,

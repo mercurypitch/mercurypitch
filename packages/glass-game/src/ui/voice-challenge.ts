@@ -146,6 +146,12 @@ function isPairChallenge(definition: ChallengeDefinition): boolean {
   )
 }
 
+function targetCopy(target: PitchTargetId): string {
+  if (target === 'low') return 'the lower note'
+  if (target === 'high') return 'the higher note'
+  return 'your note'
+}
+
 function calibrationQueue(
   definition: ChallengeDefinition,
   targets: PitchTargets,
@@ -542,7 +548,6 @@ export function createVoiceChallenge(
     syncProgress()
     if (state.mode !== 'singing' || current === null) return
     if (batch.some((event) => event.type === 'challenge-reset')) {
-      const copy = singingCopy(current.challenge)
       const firstTarget =
         current.challenge.kind === 'ordered-pair'
           ? current.challenge.steps[0].target
@@ -554,7 +559,12 @@ export function createVoiceChallenge(
             ? 'higher'
             : 'first'
       emit({
-        message: `Try again. ${copy.message}`,
+        message:
+          current.challenge.kind === 'ordered-pair'
+            ? `Try ${targetCopy(firstTarget)} again.`
+            : current.challenge.kind === 'settle-wave'
+              ? 'Try again. Hold your note steady first.'
+              : 'Try again. Hold your note steady.',
         hint: `Start with the ${firstNote} note again; take your time.`,
       })
     } else if (
@@ -565,10 +575,10 @@ export function createVoiceChallenge(
         message:
           current.challenge.kind === 'settle-wave'
             ? 'Sway twice, then return.'
-            : `Now sing ${options.game.snapshot().activeEncounter!.target}.`,
+            : `Sing ${targetCopy(options.game.snapshot().activeEncounter!.target)}.`,
         hint:
           current.challenge.kind === 'settle-wave'
-            ? 'Glide gently up, down, up, and down, then return to your starting note to finish. A semitone is plenty.'
+            ? 'Up, down, up, down, then back to the middle. A semitone is enough; keep it comfortable.'
             : 'Settle the second note gently.',
       })
     }

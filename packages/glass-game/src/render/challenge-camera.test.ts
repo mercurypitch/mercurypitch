@@ -80,6 +80,56 @@ describe('planChallengeCameraShot', () => {
     expect(result.occluded).toBe(false)
   })
 
+  it('keeps the authored face of a flat portrait readable', () => {
+    const targetFacing = new Vector3(1, 0, 0)
+    const result = planChallengeCameraShot(
+      {
+        encounterId: 'flat-portrait',
+        merc,
+        target: tallExhibit,
+        targetFacing,
+      },
+      {
+        aspect: 320 / 640,
+        fovDegrees: 48,
+        near: 0.05,
+        far: 180,
+        safeBottomFraction: 0.55,
+        currentPosition: new Vector3(0, 2, 4),
+      },
+    )
+    const targetCentre = tallExhibit.getCenter(new Vector3())
+    const view = result.pose.position.sub(targetCentre).setY(0).normalize()
+
+    expect(Math.abs(view.dot(targetFacing))).toBeGreaterThan(0.65)
+    expect(result.combinedFrame.minX).toBeGreaterThanOrEqual(-0.881)
+    expect(result.combinedFrame.maxX).toBeLessThanOrEqual(0.881)
+  })
+
+  it('preserves the established side when a live-panel reframe still fits', () => {
+    const options = {
+      aspect: 390 / 844,
+      fovDegrees: 48,
+      near: 0.05,
+      far: 180,
+      safeBottomFraction: 0.46,
+      currentPosition: new Vector3(0, 2, 4),
+    }
+    const initial = planChallengeCameraShot(
+      { encounterId: 'portrait', merc, target: tallExhibit },
+      options,
+    )
+    const preferredSide = initial.side === 1 ? -1 : 1
+    const reframed = planChallengeCameraShot(
+      { encounterId: 'portrait', merc, target: tallExhibit },
+      { ...options, safeBottomFraction: 0.5, preferredSide },
+    )
+
+    expect(reframed.side).toBe(preferredSide)
+    expect(reframed.combinedFrame.minX).toBeGreaterThanOrEqual(-0.881)
+    expect(reframed.combinedFrame.maxX).toBeLessThanOrEqual(0.881)
+  })
+
   it('still returns a bounded fallback for an exhibit larger than its search range', () => {
     const hugePortrait = new Box3(
       new Vector3(-12, 0, -1),

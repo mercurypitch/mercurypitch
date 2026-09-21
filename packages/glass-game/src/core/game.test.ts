@@ -5,6 +5,7 @@ import { GLASSWORKS } from '../content/glassworks'
 import type { GameEvent, GlassGame, LevelDefinition, MovementInput, } from '../contracts'
 import { createGlassGame } from './game'
 import { MOVEMENT } from './movement'
+import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
 const goblet = GLASSWORKS.breakables[0].id
@@ -191,6 +192,15 @@ describe('Glassworks simulation', () => {
     expect(game.snapshot().enabledPlatformIds).toContain('arch-bridge')
     expect(game.snapshot().enabledPlatformIds).not.toContain('hero-bridge')
     expect(sing(game)).toEqual([])
+
+    const shatterPosition = game.snapshot().player.position
+    game.step(idle, SHATTER_LIFECYCLE_SECONDS - MOVEMENT.fixedStep / 2)
+    expect(game.snapshot().phase).toBe('shattering')
+    expect(game.snapshot().breakables[0]?.phase).toBe('shattering')
+    expect(game.snapshot().player.position).toEqual(shatterPosition)
+    game.step(idle, MOVEMENT.fixedStep)
+    expect(game.snapshot().phase).toBe('idle')
+    expect(game.snapshot().breakables[0]?.phase).toBe('complete')
 
     const restored = createGlassGame(GLASSWORKS, game.saveProgress())
     expect(restored.snapshot().phase).toBe('idle')

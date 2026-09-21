@@ -109,7 +109,7 @@ export const TWIN_GALLERIES_SOURCE: AuthoredLevelSource = {
           title: 'Listen low, then high.',
           body: 'At paired exhibits, listen to both notes first. When it is your turn, sing your lower note, then your higher note. The portrait asks for the same order.',
           aside:
-            'Use Hear both notes again or Find my notes again whenever you need it. There is no need to shout and no time limit; cancel to rest.',
+            'Use Hear example or Change notes whenever you need it. There is no need to shout and no time limit; cancel to rest.',
         },
       ],
     },

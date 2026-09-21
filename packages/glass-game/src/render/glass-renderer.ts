@@ -233,6 +233,7 @@ function createGlassRendererInstance(
   )
   const mercBounds = new Box3()
   const targetBounds = new Box3()
+  const targetFacing = new Vector3()
   let boundsEncounterId: string | null = null
   const vesselRoomIds = new Map(
     level.breakables.map((target) => [
@@ -414,10 +415,17 @@ function createGlassRendererInstance(
         mercBounds.setFromObject(merc.root, true)
         targetBounds.setFromObject(challengeVessel.root, true)
         if (!mercBounds.isEmpty() && !targetBounds.isEmpty()) {
+          const planarTarget =
+            challengeDefinition !== undefined &&
+            getBreakableRenderRecipe(challengeDefinition.variant).faceAnchor ===
+              true
           camera.setChallengeSubjects({
             encounterId: challengeId,
             merc: mercBounds,
             target: targetBounds,
+            targetFacing: planarTarget
+              ? challengeVessel.root.getWorldDirection(targetFacing)
+              : undefined,
           })
           boundsEncounterId = challengeId
         }

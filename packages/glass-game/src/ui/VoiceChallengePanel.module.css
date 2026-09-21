@@ -1,4 +1,49 @@
 /* Numbered note steps make the order readable without relying on colour. */
+.goal {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.goal h2 {
+  flex: 1;
+  min-width: 0;
+}
+.instructionsButton {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  margin-top: -3px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #315c53;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.instructionsButton > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #789088;
+  border-radius: 50%;
+  background: #e7ecdf;
+}
+.instructionsButton:hover > span,
+.instructionsButton[aria-expanded='true'] > span {
+  border-color: #416e64;
+  background: #dce6d8;
+}
+.instructionsButton:focus-visible > span {
+  outline: 3px solid #af8638;
+  outline-offset: 2px;
+}
 .sequence {
   display: flex;
   gap: 8px;
@@ -38,13 +83,24 @@
   background: #345e4d;
   color: #fff9e8;
 }
-.hint {
+.instructions {
   font-size: 13px;
   line-height: 1.45;
   margin: 0 0 14px;
+  padding: 9px 11px;
+  border-left: 2px solid #739186;
+  border-radius: 0 9px 9px 0;
+  background: #e7ebdc;
   color: #52665b;
 }
 @media (max-width: 360px) {
+  .goal {
+    gap: 4px;
+  }
+  .instructionsButton > span {
+    width: 34px;
+    height: 34px;
+  }
   .sequence {
     margin-bottom: 8px;
   }
@@ -52,7 +108,8 @@
     padding: 6px;
     font-size: 12px;
   }
-  .hint {
+  .instructions {
     margin-bottom: 8px;
+    padding: 7px 9px;
   }
 }

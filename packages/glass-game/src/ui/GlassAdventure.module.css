@@ -312,6 +312,13 @@
   justify-content: space-evenly;
   gap: 12px;
 }
+.encounterActions .textButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 6px;
+}
 .touchControls {
   position: absolute;
   inset: 0;

@@ -27,7 +27,12 @@ export function ArtworkInspection(props: {
   onClose(): void
 }) {
   return (
-    <div class={styles.scrim}>
+    <div
+      class={styles.scrim}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) props.onClose()
+      }}
+    >
       <section
         class={styles.panel}
         role="dialog"

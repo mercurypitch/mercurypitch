@@ -10,10 +10,10 @@ import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './move
 import { findCheckpoint, readProgress, requirementsMet } from './progress'
 import type { SingingQualityAttempt } from './rewards'
 import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress, readRewardProgress, summarizeRewards, ungradedQualityResult, } from './rewards'
+import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
 import { getActiveCourseSolids, getActiveSolidIds } from './solid-activation'
 
 const INTERACTION_RADIUS = 0.75
-const SHATTER_SECONDS = 1.4
 
 interface ActiveEncounter {
   target: BreakableDefinition
@@ -331,7 +331,10 @@ export function createGlassGame(
       )
       brokenAt.set(id, elapsedSeconds)
       active = null
-      shattering = { id, until: elapsedSeconds + SHATTER_SECONDS }
+      shattering = {
+        id,
+        until: elapsedSeconds + SHATTER_LIFECYCLE_SECONDS,
+      }
       events.push({ type: 'break', id })
       return events
     },

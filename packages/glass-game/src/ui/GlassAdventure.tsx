@@ -436,7 +436,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               onRefind={adventure.changeNote}
             />
           </Show>
-          <Show when={adventure.voiceMode() === 'off'}>
+          <Show
+            when={
+              adventure.voiceMode() === 'off' &&
+              adventure.snapshot().phase !== 'shattering'
+            }
+          >
             <div class={styles.desktopHint}>
               WASD move <span>Space jump</span>
               <span>Drag to look</span>

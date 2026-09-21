@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { Bounds3, GameEvent, GlassGame, MovementInput, SolidPropDefinition, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
+import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
 import { ENCLOSED_CHAMBER_SOURCE, GLASS_ENCLOSED_CHAMBER, } from './enclosed-chamber'
 import { ENCLOSED_CHAMBER_BAY_CENTER, ENCLOSED_CHAMBER_ROOM, } from './enclosed-museum-kit'
 import { MUSEUM_WALL_TOP, MUSEUM_WINDOW_APERTURE_HALF_WIDTH, MUSEUM_WINDOW_LINTEL_BOTTOM, MUSEUM_WINDOW_SILL_TOP, } from './enclosed-wall-kit'
@@ -87,7 +88,7 @@ function sing(game: GlassGame, encounterId: string): void {
     )
   }
   expect(events).toContainEqual({ type: 'break', id: encounterId })
-  steps(game, Math.ceil(1.4 / MOVEMENT.fixedStep) + 1)
+  steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
   expect(game.snapshot().phase).toBe('idle')
 }
 

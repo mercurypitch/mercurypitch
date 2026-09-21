@@ -5,6 +5,7 @@ import { composeLevel } from '../authoring/compose-level'
 import type { Bounds3, GameEvent, GlassGame, MovementInput } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
+import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CHAMBER_ROOM, } from './enclosed-museum-kit'
 import { GLASSWORKS } from './glassworks'
 import { GLASSWORKS_JOURNEY, GLASSWORKS_JOURNEY_ROUTE, GLASSWORKS_JOURNEY_SOURCE, } from './glassworks-journey'
@@ -120,7 +121,7 @@ function sing(game: GlassGame, encounterId: string): void {
     )
   }
   expect(events).toContainEqual({ type: 'break', id: encounterId })
-  steps(game, Math.ceil(1.4 / MOVEMENT.fixedStep) + 1)
+  steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
   expect(game.snapshot().phase).toBe('idle')
 }
 

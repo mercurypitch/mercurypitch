@@ -220,6 +220,16 @@ test('nearby artwork opens with real mouse, traps focus, and returns to the same
   await expect(
     page.getByLabel('Glass museum; drag to look around'),
   ).toBeFocused()
+  await button.click()
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('img').click()
+  await dialog.getByRole('heading').click()
+  await expect(dialog).toBeVisible()
+  await dialog.locator('..').click({ position: { x: 2, y: 2 } })
+  await expect(dialog).toHaveCount(0)
+  await expect(
+    page.getByLabel('Glass museum; drag to look around'),
+  ).toBeFocused()
   await page.mouse.move(400, 290)
   await page.mouse.down()
   await page.mouse.move(450, 295, { steps: 5 })
@@ -255,7 +265,14 @@ test('phone and tablet touch inspection fits, and backgrounding does not resume 
     expect(dimensions.right).toBeLessThanOrEqual(viewport.width)
     expect(dimensions.bottom).toBeLessThanOrEqual(viewport.height)
     expect(dimensions.overflow).toBe(false)
+    await dialog.tap({ position: { x: 5, y: 5 } })
+    await expect(dialog).toBeVisible()
+    await dialog.locator('..').tap({ position: { x: 2, y: 2 } })
+    await expect(dialog).toHaveCount(0)
+    await page.getByRole('button', { name: 'View nearby artwork' }).tap()
+    await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Back to the gallery' }).tap()
+    await expect(dialog).toHaveCount(0)
   }
   await page.getByRole('button', { name: 'View nearby artwork' }).tap()
   await page.evaluate(() => {

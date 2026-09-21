@@ -518,7 +518,7 @@ describe('voice challenge controller', () => {
     expect(test.controller.snapshot()).toMatchObject({
       mode: 'singing',
       stepIndex: 0,
-      message: 'Try again. Sing low, then high.',
+      message: 'Try the lower note again.',
       hint: 'Start with the lower note again; take your time.',
     })
 
@@ -526,7 +526,7 @@ describe('voice challenge controller', () => {
       test.emit(test.voices[0], observation(sequence, 57, 1025 + sequence * 25))
     expect(test.controller.snapshot()).toMatchObject({
       stepIndex: 1,
-      message: 'Now sing high.',
+      message: 'Sing the higher note.',
     })
     for (let sequence = 10; sequence <= 14; sequence++)
       test.emit(test.voices[0], observation(sequence, 60, 1025 + sequence * 25))

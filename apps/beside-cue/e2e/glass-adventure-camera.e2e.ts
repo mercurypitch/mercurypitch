@@ -4,6 +4,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 interface CameraMetrics {
   mode: 'exploration' | 'entering' | 'holding' | 'restoring'
+  settled: boolean
   safeBottomFraction: number
   position: { x: number; y: number; z: number }
   mercFrame: { minX: number; maxX: number; minY: number; maxY: number } | null
@@ -61,8 +62,34 @@ async function settledCameraMetrics(page: Page): Promise<CameraMetrics> {
   throw new Error('Exploration camera did not settle.')
 }
 
+async function settledChallengeMetrics(page: Page): Promise<CameraMetrics> {
+  await expect
+    .poll(
+      async () => {
+        const current = await metrics(page)
+        return current.mode === 'holding' && current.settled
+      },
+      { timeout: 30_000, intervals: [100] },
+    )
+    .toBe(true)
+  return metrics(page)
+}
+
 async function installCameraVoice(page: Page): Promise<void> {
   await page.addInitScript(() => {
+    // This spec asserts camera metrics and input behavior. Pixel output has
+    // separate compiled screenshot proofs, so skip costly SwiftShader draws.
+    for (const method of [
+      'clear',
+      'drawArrays',
+      'drawArraysInstanced',
+      'drawElements',
+      'drawElementsInstanced',
+    ])
+      Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+        configurable: true,
+        value: () => undefined,
+      })
     const prefix = 'beside-cue:glass-adventure:'
     localStorage.setItem(`${prefix}tutorial`, 'seen')
     localStorage.setItem(`${prefix}comfortable-note`, '57')
@@ -133,7 +160,7 @@ test('frames Merc and the exhibit above the phone panel and restores after cance
     { timeout: 30_000 },
   )
   await expect(movementControls).toBeHidden()
-  const held = await metrics(page)
+  const held = await settledChallengeMetrics(page)
   const panelBounds = await panel.boundingBox()
   expect(panelBounds).not.toBeNull()
   expect(held.safeBottomFraction).toBeGreaterThan(0.2)
@@ -161,7 +188,7 @@ test('frames Merc and the exhibit above the phone panel and restores after cance
   )
   await page.mouse.wheel(0, 500)
   await page.mouse.up()
-  const afterInput = await metrics(page)
+  const afterInput = await settledChallengeMetrics(page)
   expect(afterInput.mode).toBe('holding')
   expect(afterInput.position.x).toBeCloseTo(held.position.x, 3)
   expect(afterInput.position.y).toBeCloseTo(held.position.y, 3)
@@ -173,7 +200,7 @@ test('frames Merc and the exhibit above the phone panel and restores after cance
     'exploration',
     { timeout: 30_000 },
   )
-  const returned = await metrics(page)
+  const returned = await settledCameraMetrics(page)
   expect(returned.position.x).toBeCloseTo(before.position.x, 3)
   expect(returned.position.y).toBeCloseTo(before.position.y, 3)
   expect(returned.position.z).toBeCloseTo(before.position.z, 3)
@@ -231,7 +258,7 @@ test('tap entry holds the shot through the full shatter before restoring @smoke'
     'exploration',
     { timeout: 90_000 },
   )
-  const returned = await metrics(page)
+  const returned = await settledCameraMetrics(page)
   expect(returned.position.x).toBeCloseTo(before.position.x, 3)
   expect(returned.position.y).toBeCloseTo(before.position.y, 3)
   expect(returned.position.z).toBeCloseTo(before.position.z, 3)

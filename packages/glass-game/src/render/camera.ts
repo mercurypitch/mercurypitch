@@ -40,6 +40,8 @@ export interface ChallengeCameraMetrics {
   mode: 'exploration' | 'entering' | 'holding' | 'restoring'
   encounterId: string | null
   progress: number
+  /** True only when a held live-panel reframe has reached its planned pose. */
+  settled: boolean
   safeBottomFraction: number
   position: { x: number; y: number; z: number }
   target: { x: number; y: number; z: number }
@@ -366,6 +368,7 @@ export function createAdventureCamera(
       far: camera.far,
       safeBottomFraction: challengeSafeBottomFraction,
       currentPosition: challengePlanningPosition,
+      preferredSide: challengeShot?.side,
       constrainPosition: (focus, requested) =>
         challengePositionConstraint(snapshot, focus, requested),
       isOccluded: (position, subject) =>
@@ -381,6 +384,12 @@ export function createAdventureCamera(
   function metrics(): ChallengeCameraMetrics {
     const state = challengeDirector.snapshot()
     const presenting = state.mode !== 'exploration'
+    const settled =
+      state.mode === 'holding' &&
+      challengeShot !== null &&
+      camera.position.distanceTo(challengeShot.pose.position) < 0.005 &&
+      renderedTarget.distanceTo(challengeShot.pose.target) < 0.005 &&
+      Math.abs(camera.fov - challengeShot.pose.fovDegrees) < 0.01
     let mercFrame: ChallengeCameraScreenFrame | null = null
     let targetFrame: ChallengeCameraScreenFrame | null = null
     let combinedFrame: ChallengeCameraScreenFrame | null = null
@@ -391,6 +400,7 @@ export function createAdventureCamera(
     }
     return {
       ...state,
+      settled,
       safeBottomFraction: challengeSafeBottomFraction,
       position: {
         x: camera.position.x,
@@ -451,6 +461,7 @@ export function createAdventureCamera(
         encounterId: subjects.encounterId,
         merc: subjects.merc.clone(),
         target: subjects.target.clone(),
+        targetFacing: subjects.targetFacing?.clone(),
       }
       challengeShot = null
       challengePlanKey = ''

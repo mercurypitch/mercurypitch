@@ -1,5 +1,5 @@
 // Voice challenge presentation — shared guidance for held notes, pairs and gentle waves.
-import { For, Show } from 'solid-js'
+import { createSignal, createUniqueId, For, Show } from 'solid-js'
 import type { PitchTargetId } from '../contracts'
 import styles from './GlassAdventure.module.css'
 import type { VoiceChallengeMode } from './voice-challenge'
@@ -29,6 +29,9 @@ export function VoiceChallengePanel(props: {
   onReplay(): void
   onRefind(): void
 }) {
+  const instructionsId = createUniqueId()
+  const [instructionsOpen, setInstructionsOpen] = createSignal(false)
+  let instructionsButton!: HTMLButtonElement
   const percent = () => Math.round(props.charge * 100)
   const stepLabels = () =>
     props.wave === true
@@ -40,12 +43,23 @@ export function VoiceChallengePanel(props: {
               ? 'Higher note'
               : 'Your note',
         )
+  const closeInstructions = (): void => {
+    setInstructionsOpen(false)
+    instructionsButton.focus({ preventScroll: true })
+  }
+  const handlePanelKeyDown = (event: KeyboardEvent): void => {
+    if (event.code !== 'Escape' || !instructionsOpen()) return
+    event.preventDefault()
+    event.stopPropagation()
+    closeInstructions()
+  }
   return (
     <section
       class={styles.encounter}
       aria-label="Voice challenge"
       data-voice-mode={props.mode}
       data-step-index={props.stepIndex}
+      onKeyDown={handlePanelKeyDown}
     >
       <div class={styles.encounterHeading}>
         <span>{props.label}</span>
@@ -53,7 +67,24 @@ export function VoiceChallengePanel(props: {
           Cancel
         </button>
       </div>
-      <h2 aria-live="polite">{props.message}</h2>
+      <div class={lessonStyles.goal}>
+        <h2 aria-live="polite">{props.message}</h2>
+        <button
+          ref={instructionsButton}
+          class={lessonStyles.instructionsButton}
+          type="button"
+          aria-label={
+            instructionsOpen()
+              ? 'Hide singing instructions'
+              : 'Show singing instructions'
+          }
+          aria-controls={instructionsId}
+          aria-expanded={instructionsOpen()}
+          onClick={() => setInstructionsOpen((open) => !open)}
+        >
+          <span aria-hidden="true">{instructionsOpen() ? '×' : '?'}</span>
+        </button>
+      </div>
       <Show when={stepLabels().length > 1}>
         <ol
           class={lessonStyles.sequence}
@@ -81,7 +112,13 @@ export function VoiceChallengePanel(props: {
           </For>
         </ol>
       </Show>
-      <p class={lessonStyles.hint}>{props.hint}</p>
+      <p
+        id={instructionsId}
+        class={lessonStyles.instructions}
+        hidden={!instructionsOpen()}
+      >
+        {props.hint}
+      </p>
       <div class={styles.voiceMeter}>
         <div class={styles.noteDisc} style={{ '--charge': `${percent()}%` }}>
           <span>{noteName(props.target)}</span>
@@ -89,11 +126,11 @@ export function VoiceChallengePanel(props: {
         <div class={styles.voiceReadout}>
           <span>
             {props.mode === 'finding'
-              ? 'The glass is finding your voice.'
+              ? 'Finding your note…'
               : props.mode === 'reference'
                 ? 'Your turn in a moment…'
                 : props.pitch === null
-                  ? 'Sing or hum. No need to be loud.'
+                  ? 'Sing or hum gently.'
                   : `${noteName(props.pitch)} · ${percent()}%`}
           </span>
           <div
@@ -115,11 +152,7 @@ export function VoiceChallengePanel(props: {
             type="button"
             onClick={() => props.onReplay()}
           >
-            {props.wave === true
-              ? 'Hear the gentle wave again'
-              : props.steps.length > 1
-                ? 'Hear both notes again'
-                : 'Hear the note again'}
+            Hear example
           </button>
         </Show>
         <button
@@ -127,7 +160,7 @@ export function VoiceChallengePanel(props: {
           type="button"
           onClick={() => props.onRefind()}
         >
-          {props.pair ? 'Find my notes again' : 'Find my note again'}
+          {props.pair ? 'Change notes' : 'Change note'}
         </button>
       </div>
     </section>
