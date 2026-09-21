@@ -187,7 +187,7 @@ function referenceCopy(definition: ChallengeDefinition): {
   if (definition.kind === 'settle-wave')
     return {
       message: 'Listen: steady, then a gentle wave.',
-      hint: 'The note sways above and below its starting point. Your turn begins after it is quiet.',
+      hint: 'It goes above, below, above, below, then returns to the middle. Your turn begins after it is quiet.',
     }
   return definition.kind === 'ordered-pair'
     ? {
@@ -564,11 +564,11 @@ export function createVoiceChallenge(
       emit({
         message:
           current.challenge.kind === 'settle-wave'
-            ? 'Now let it sway gently above and below.'
+            ? 'Now sway above and below twice, then return to the middle.'
             : `Now sing ${options.game.snapshot().activeEncounter!.target}.`,
         hint:
           current.challenge.kind === 'settle-wave'
-            ? 'Follow a small, smooth wave twice. Take a breath and try again whenever you need.'
+            ? 'Glide gently up, down, up, and down, then return to your starting note to finish. A semitone is plenty.'
             : 'Settle the second note gently.',
       })
     }

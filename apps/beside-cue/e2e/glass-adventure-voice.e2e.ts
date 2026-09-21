@@ -37,6 +37,7 @@ declare global {
       pendingPermissionCount(): number
       setAmplitude(value: number): void
       setMidi(value: number): void
+      glideMidi(value: number, durationSeconds: number): void
       dispose(): Promise<void>
     }
   }
@@ -49,6 +50,13 @@ const twinIds = {
   bridgePair: `${twinPrefix}/court/encounter/bridge-pair`,
   coolCheckpoint: `${twinPrefix}/cool/checkpoint/entry`,
   courtCheckpoint: `${twinPrefix}/court/checkpoint/entry`,
+} as const
+const conservatoryPrefix =
+  'glassworks-resonance-conservatory/resonance-conservatory'
+const conservatoryIds = {
+  entrance: `${conservatoryPrefix}/foyer/encounter/entrance-goblet`,
+  fern: `${conservatoryPrefix}/fern-house/encounter/fern-wave`,
+  fernCheckpoint: `${conservatoryPrefix}/fern-house/checkpoint/entry`,
 } as const
 
 test.use({
@@ -199,6 +207,25 @@ async function openMuseum(
               frequency,
               source.context.currentTime,
             )
+      },
+      glideMidi(value, durationSeconds) {
+        if (!Number.isFinite(value)) throw new Error('MIDI must be finite.')
+        if (!Number.isFinite(durationSeconds) || durationSeconds <= 0)
+          throw new Error('Glide duration must be positive.')
+        midi = value
+        const frequency = 440 * 2 ** ((value - 69) / 12)
+        for (const source of sources) {
+          if (source.track.readyState !== 'live') continue
+          const now = source.context.currentTime
+          const parameter = source.oscillator.frequency
+          const current = parameter.value
+          parameter.cancelScheduledValues(now)
+          parameter.setValueAtTime(current, now)
+          parameter.exponentialRampToValueAtTime(
+            frequency,
+            now + durationSeconds,
+          )
+        }
       },
       async dispose() {
         for (const pending of pendingPermissions.splice(0))
@@ -373,6 +400,20 @@ async function setVoice(
     },
     { nextMidi: midi, nextAmplitude: amplitude },
   )
+}
+
+async function glideVoice(
+  page: Page,
+  midi: number,
+  seconds: number,
+): Promise<void> {
+  await page.evaluate(
+    ({ nextMidi, durationSeconds }) => {
+      window.glassVoiceFixture.glideMidi(nextMidi, durationSeconds)
+    },
+    { nextMidi: midi, durationSeconds: seconds },
+  )
+  await holdForAudioSeconds(page, seconds)
 }
 
 async function holdForAudioSeconds(page: Page, seconds: number): Promise<void> {
@@ -918,6 +959,73 @@ test('Twin court requires low then high, Replay resets the partial pair, and onl
       collectedPortraitIds: [],
     },
   })
+})
+
+test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and a return to the middle', async ({
+  page,
+}) => {
+  await omitMuseumRasterOutput(page)
+  await openMuseum(page, {
+    path: '/glass-game/?layout=conservatory',
+    levelId: conservatoryPrefix,
+    checkpointId: conservatoryIds.fernCheckpoint,
+    completedBreakableIds: [conservatoryIds.entrance],
+    tutorialPreference: `tutorial:${conservatoryPrefix}:settle-and-wave:v2`,
+    waitForEncounter: false,
+  })
+  await approachRestoredEncounter(
+    page,
+    conservatoryIds.fernCheckpoint,
+    'The first gentle wave',
+    { x: 0, z: 1 },
+  )
+  const adventure = page.getByTestId('glass-adventure')
+  await expect(adventure).toHaveAttribute('data-completed', '1')
+
+  await setVoice(page, 57, 0.1)
+  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  const panel = page.getByLabel('Voice challenge')
+  await expect(panel).toHaveAttribute('data-voice-mode', 'singing', {
+    timeout: 12_000,
+  })
+  await expect(
+    page
+      .getByRole('list', { name: 'Lesson steps' })
+      .getByText('Settle your note'),
+  ).toHaveAttribute('aria-current', 'step')
+  await expect(panel).toHaveAttribute('data-step-index', '1', {
+    timeout: 10_000,
+  })
+  await expect(
+    page
+      .getByRole('list', { name: 'Lesson steps' })
+      .getByText('Sway twice, return to middle'),
+  ).toHaveAttribute('aria-current', 'step')
+  await expect(
+    page.getByRole('heading', {
+      name: 'Now sway above and below twice, then return to the middle.',
+    }),
+  ).toBeVisible()
+
+  for (const midi of [59, 57, 55, 57]) await glideVoice(page, midi, 0.35)
+  await page.evaluate(() => window.glassVoiceFixture.setAmplitude(0))
+  await holdForAudioSeconds(page, 0.075)
+  await page.evaluate(() => window.glassVoiceFixture.setAmplitude(0.1))
+  for (const midi of [59, 57, 55]) await glideVoice(page, midi, 0.35)
+  await holdForAudioSeconds(page, 0.15)
+  await expect(
+    page.getByRole('progressbar', { name: 'Glass resonance' }),
+  ).toHaveAttribute('aria-valuenow', '98', { timeout: 6000 })
+  await expect(adventure).toHaveAttribute('data-completed', '1')
+
+  await glideVoice(page, 57, 0.35)
+  await expect(adventure).toHaveAttribute('data-completed', '2', {
+    timeout: 12_000,
+  })
+  await expectMicrophoneOff(page)
+  expect(
+    (await savedProgress(page, conservatoryPrefix)).completedBreakableIds,
+  ).toEqual([conservatoryIds.entrance, conservatoryIds.fern])
 })
 
 test('visible-window blur releases held movement and orbit without opening Pause', async ({

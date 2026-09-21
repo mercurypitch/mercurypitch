@@ -86,6 +86,11 @@ describe('museum audio release', () => {
     expect(curve[60]).toBeCloseTo(220)
     expect(Math.max(...curve)).toBeCloseTo(220 * 2 ** (70 / 1200))
     expect(Math.min(...curve)).toBeCloseTo(220 * 2 ** (-70 / 1200))
+    expect(curve[105]).toBeCloseTo(220 * 2 ** (70 / 1200))
+    expect(curve[155]).toBeCloseTo(220 * 2 ** (-70 / 1200))
+    expect(curve[205]).toBeCloseTo(220 * 2 ** (70 / 1200))
+    expect(curve[255]).toBeCloseTo(220 * 2 ** (-70 / 1200))
+    expect(curve[300]).toBeCloseTo(220)
     context.currentTime = 3.3
     await vi.advanceTimersByTimeAsync(25)
     expect(done).toBe(false)

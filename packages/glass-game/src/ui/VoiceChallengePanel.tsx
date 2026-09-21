@@ -32,7 +32,7 @@ export function VoiceChallengePanel(props: {
   const percent = () => Math.round(props.charge * 100)
   const stepLabels = () =>
     props.wave === true
-      ? ['Settle your note', 'Let it sway twice']
+      ? ['Settle your note', 'Sway twice, return to middle']
       : props.steps.map((step) =>
           step === 'low'
             ? 'Lower note'

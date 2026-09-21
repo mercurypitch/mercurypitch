@@ -45,6 +45,26 @@ function walk(game: GlassGame, axis: 'x' | 'z', destination: number) {
   rest(game)
 }
 
+function beginnerWaveCents(seconds: number): number {
+  const anchors = [
+    [0, 0],
+    [0.35, 200],
+    [0.7, 0],
+    [1.05, -200],
+    [1.4, 0],
+    [1.75, 200],
+    [2.1, 0],
+    [2.45, -200],
+    [2.8, 0],
+  ] as const
+  const after = anchors.findIndex(([at]) => at >= seconds)
+  if (after <= 0) return anchors[Math.max(0, after)]?.[1] ?? 0
+  const [fromTime, fromCents] = anchors[after - 1]
+  const [toTime, toCents] = anchors[after]
+  const mix = (seconds - fromTime) / (toTime - fromTime)
+  return fromCents + (toCents - fromCents) * mix
+}
+
 function sing(game: GlassGame, room: string, localId: string) {
   const id = encounter(room, localId)
   const exhibit = RESONANCE_CONSERVATORY.breakables.find(
@@ -56,15 +76,20 @@ function sing(game: GlassGame, room: string, localId: string) {
   const holdEnd = exhibit.challenge.kind === 'settle-wave' ? 0.9 : 1.3
   for (let i = 0; i < 200; i++) {
     const t = i * 0.025
+    const waveSample = Math.round((t - holdEnd) / 0.025)
     const midi =
-      t <= holdEnd ? 57 : 57 + 0.7 * Math.sin((t - holdEnd) * 2 * Math.PI)
+      t <= holdEnd
+        ? 57
+        : waveSample === 52 || waveSample === 53
+          ? null
+          : 57 + beginnerWaveCents(t - holdEnd) / 100
     const events = game.feedPitch(
       {
         sequence: i,
         captureSeconds: t,
         capturedAtMs: t * 1000,
         midi,
-        confidence: 0.9,
+        confidence: midi === null ? 0 : 0.9,
       },
       t * 1000,
     )
@@ -80,6 +105,7 @@ function sing(game: GlassGame, room: string, localId: string) {
 describe('Resonance Conservatory', () => {
   it('has independent identity, four required teaching encounters and three optional finds', () => {
     expect(RESONANCE_CONSERVATORY.id).toBe(prefix)
+    expect(RESONANCE_CONSERVATORY.authored?.contentRevision).toBe(2)
     expect(
       RESONANCE_CONSERVATORY.breakables
         .filter((item) => !item.optional)

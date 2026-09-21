@@ -18,11 +18,15 @@ export function createWaveJudge(
   let sequence = -Infinity
   let captureSeconds = -Infinity
   let advancedAtMs = -Infinity
+  let latestCapturedAtMs = -Infinity
   let previous: {
     cents: number
     captureSeconds: number
-    capturedAtMs: number
   } | null = null
+  // A bounded detector dropout pauses the gesture. It must not manufacture
+  // singing time or make a cached pitch look like continued evidence.
+  let dropout = false
+  let voicedSeconds = 0
   let filtered = 0
   let direction = 0
   let hitAt = 0
@@ -35,8 +39,12 @@ export function createWaveJudge(
 
   const resetWave = (): void => {
     previous = null
+    dropout = false
+    voicedSeconds = 0
     filtered = 0
     direction = 0
+    hitAt = 0
+    startedAt = 0
     alternations = 0
   }
 
@@ -46,7 +54,7 @@ export function createWaveJudge(
     if (
       !complete &&
       previous !== null &&
-      nowMs - previous.capturedAtMs > evidence.maximumSampleAgeMs
+      nowMs - latestCapturedAtMs > evidence.maximumSampleAgeMs
     )
       resetWave()
   }
@@ -67,35 +75,54 @@ export function createWaveJudge(
       sequence = frame.sequence
       captureSeconds = frame.captureSeconds
       const age = nowMs - frame.capturedAtMs
-      const cents = frame.midi === null ? NaN : (frame.midi - centreMidi) * 100
       if (
         !Number.isFinite(age) ||
         age < -5 ||
         age > evidence.maximumSampleAgeMs ||
-        !Number.isFinite(cents) ||
         !Number.isFinite(frame.confidence) ||
-        frame.confidence < evidence.confidenceFloor ||
-        Math.abs(cents) > definition.maximumExcursionCents
+        (frame.midi !== null && !Number.isFinite(frame.midi))
       ) {
+        resetWave()
+        return false
+      }
+      latestCapturedAtMs = frame.capturedAtMs
+      if (frame.midi === null || frame.confidence < evidence.confidenceFloor) {
+        if (
+          previous !== null &&
+          frame.captureSeconds - previous.captureSeconds >
+            evidence.dropoutGraceSeconds + 1e-9
+        )
+          resetWave()
+        else dropout = previous !== null
+        return false
+      }
+      const cents = (frame.midi - centreMidi) * 100
+      if (Math.abs(cents) > definition.maximumExcursionCents) {
         resetWave()
         return false
       }
       const prior = previous
       const elapsed =
         prior === null ? 0 : frame.captureSeconds - prior.captureSeconds
+      const resumedFromDropout = prior !== null && dropout
       if (
         prior !== null &&
-        (elapsed > evidence.maximumSampleGapSeconds + 1e-9 ||
+        (elapsed >
+          (resumedFromDropout
+            ? evidence.dropoutGraceSeconds
+            : evidence.maximumSampleGapSeconds) +
+            1e-9 ||
           Math.abs(cents - prior.cents) / elapsed >
             definition.maximumCentsPerSecond)
       )
         resetWave()
-      const contiguous = previous !== null
+      const contiguous = previous !== null && !resumedFromDropout
+      if (contiguous) voicedSeconds += elapsed
       previous = {
         cents,
         captureSeconds: frame.captureSeconds,
-        capturedAtMs: frame.capturedAtMs,
       }
+      dropout = false
       filtered = contiguous
         ? filtered +
           (cents - filtered) *
@@ -109,7 +136,7 @@ export function createWaveJudge(
             : 0
       if (
         direction !== 0 &&
-        frame.captureSeconds - hitAt > definition.maximumCycleSeconds / 2
+        voicedSeconds - hitAt > definition.maximumCycleSeconds / 2
       ) {
         direction = 0
         alternations = 0
@@ -117,12 +144,9 @@ export function createWaveJudge(
       if (
         direction !== 0 &&
         alternations >= requiredAlternations &&
-        Math.abs(filtered) <= definition.minimumExcursionCents / 2
+        Math.abs(cents) <= definition.minimumExcursionCents
       ) {
-        if (
-          frame.captureSeconds - startedAt + 1e-9 >=
-          definition.minimumWaveSeconds
-        ) {
+        if (voicedSeconds - startedAt + 1e-9 >= definition.minimumWaveSeconds) {
           complete = true
           return true
         }
@@ -133,11 +157,11 @@ export function createWaveJudge(
       if (nextDirection === 0 || nextDirection === direction) return false
       if (direction === 0) {
         direction = nextDirection
-        hitAt = frame.captureSeconds
+        hitAt = voicedSeconds
         startedAt = hitAt
         return false
       }
-      const halfPeriod = frame.captureSeconds - hitAt
+      const halfPeriod = voicedSeconds - hitAt
       if (halfPeriod + 1e-9 < definition.minimumCycleSeconds / 2) {
         // Rapid detector chatter cannot be accumulated as intentional movement.
         resetWave()
@@ -145,7 +169,7 @@ export function createWaveJudge(
       }
       alternations++
       direction = nextDirection
-      hitAt = frame.captureSeconds
+      hitAt = voicedSeconds
       return false
     },
     advanceTo,

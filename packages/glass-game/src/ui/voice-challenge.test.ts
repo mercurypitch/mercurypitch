@@ -255,7 +255,7 @@ const WAVE: ChallengeDefinition = {
   wave: {
     requiredCycles: 2,
     minimumExcursionCents: 35,
-    maximumExcursionCents: 180,
+    maximumExcursionCents: 225,
     minimumCycleSeconds: 0.3,
     maximumCycleSeconds: 2.5,
     minimumWaveSeconds: 1.2,
@@ -271,6 +271,26 @@ const PAIR: ChallengeDefinition = {
     { target: 'high', hold: HOLD },
   ],
   wrongOrder: 'reset',
+}
+
+function beginnerWaveCents(seconds: number): number {
+  const anchors = [
+    [0, 0],
+    [0.35, 200],
+    [0.7, 0],
+    [1.05, -200],
+    [1.4, 0],
+    [1.75, 200],
+    [2.1, 0],
+    [2.45, -200],
+    [2.8, 0],
+  ] as const
+  const after = anchors.findIndex(([at]) => at >= seconds)
+  if (after <= 0) return anchors[Math.max(0, after)]?.[1] ?? 0
+  const [fromTime, fromCents] = anchors[after - 1]
+  const [toTime, toCents] = anchors[after]
+  const mix = (seconds - fromTime) / (toTime - fromTime)
+  return fromCents + (toCents - fromCents) * mix
 }
 
 describe('voice challenge controller', () => {
@@ -299,7 +319,7 @@ describe('voice challenge controller', () => {
       test.emit(voice, observation(i, 57, 1025 + i * 25))
     expect(test.controller.snapshot()).toMatchObject({
       stepIndex: 1,
-      message: 'Now let it sway gently above and below.',
+      message: 'Now sway above and below twice, then return to the middle.',
     })
     expect(test.events.some((event) => event.type === 'break')).toBe(false)
     for (let i = 145; i < 270; i++)
@@ -314,6 +334,45 @@ describe('voice challenge controller', () => {
     expect(test.events.filter((event) => event.type === 'break')).toEqual([
       { type: 'break', id: 'vessel' },
     ])
+  })
+
+  it('breaks on a deliberate whole-tone wave with a brief pitch dropout and latches before trailing silence', async () => {
+    const test = harness(WAVE, { 'comfortable-note': '57' })
+    await test.controller.start('vessel')
+    for (let sequence = 0; sequence <= 4; sequence++)
+      test.emit(test.voices[0], observation(sequence, 57, 1025 + sequence * 25))
+    expect(test.controller.snapshot().stepIndex).toBe(1)
+
+    for (let sample = 0; sample <= 112; sample++) {
+      const sequence = sample + 5
+      const seconds = sample * 0.025
+      const midi =
+        sample === 52 || sample === 53
+          ? null
+          : 57 + beginnerWaveCents(seconds) / 100
+      test.emit(
+        test.voices[0],
+        observation(sequence, midi, 1025 + sequence * 25),
+      )
+      if (sample === 98) {
+        expect(
+          Math.round((test.game.snapshot().activeEncounter?.charge ?? 0) * 100),
+        ).toBe(98)
+        expect(test.events.some((event) => event.type === 'break')).toBe(false)
+      }
+    }
+
+    expect(test.events.filter((event) => event.type === 'break')).toEqual([
+      { type: 'break', id: 'vessel' },
+    ])
+    expect(test.game.saveProgress().completedBreakableIds).toEqual(['vessel'])
+    test.emit(test.voices[0], observation(118, null, 3975))
+    expect(test.game.saveProgress().completedBreakableIds).toEqual(['vessel'])
+    expect(test.events.filter((event) => event.type === 'break')).toHaveLength(
+      1,
+    )
+    test.controller.completeBreak()
+    expect(test.sounds[0].shatterCount).toBe(1)
   })
 
   it('cancels a settled wave and ignores its retained microphone callback', async () => {

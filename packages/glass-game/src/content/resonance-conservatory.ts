@@ -39,7 +39,7 @@ export const CONSERVATORY_WAVE: ChallengeDefinition & { kind: 'settle-wave' } =
     wave: {
       requiredCycles: 2,
       minimumExcursionCents: 35,
-      maximumExcursionCents: 180,
+      maximumExcursionCents: 225,
       minimumCycleSeconds: 0.3,
       maximumCycleSeconds: 2.5,
       minimumWaveSeconds: 1.2,
@@ -84,7 +84,7 @@ function room(
 export const CONSERVATORY_SOURCE: AuthoredLevelSource = {
   levelId: 'glassworks-resonance-conservatory',
   layoutId: 'resonance-conservatory',
-  contentRevision: 1,
+  contentRevision: 2,
   title: 'Resonance Conservatory',
   movement: {
     walkSpeed: 1.55,
@@ -97,7 +97,7 @@ export const CONSERVATORY_SOURCE: AuthoredLevelSource = {
     openingNotice: 'Let the entrance goblet hear a familiar steady note.',
     tutorial: {
       id: 'settle-and-wave',
-      version: 1,
+      version: 2,
       pages: [
         {
           title: 'Begin with stillness.',
@@ -107,7 +107,7 @@ export const CONSERVATORY_SOURCE: AuthoredLevelSource = {
         },
         {
           title: 'Let the note sway.',
-          body: 'Listen to the example. Settle your note, then glide a little above and below it twice, like a small wave. There is no beat to catch and no need to go far or sing loudly.',
+          body: 'Listen to the example. Settle your note, then glide gently above, below, above, and below before returning to your starting note. That makes two waves. A semitone each way is plenty; a whole tone is okay. There is no exact beat to catch or need to sing loudly.',
           aside:
             'Hear the example again or find your note again at any time. Take a breath to retry the wave; the settled first step stays with you.',
         },
