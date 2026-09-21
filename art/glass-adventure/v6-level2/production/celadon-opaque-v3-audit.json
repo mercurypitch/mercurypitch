@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "variant": "opaque-guide-v3",
+  "status": "rejected by strict donor gate",
+  "donor": {
+    "file": "meshy/celadon-lark-decanter-opaque-v3.glb",
+    "bytes": 10617000,
+    "sha256": "9e95f6b85af68a1ff1cd82eb257f2c6d57cac4d5c4c4037dd10003d33a4f3521"
+  },
+  "normalization": {
+    "uniformScale": 0.6055608289760526,
+    "sourceFootCentre": [
+      -0.0010674744844436646,
+      0.0008789598941802979,
+      -0.9505289793014526
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.19170573353767395,
+        -0.19181746244430542,
+        0.0
+      ],
+      "max": [
+        0.19170573353767395,
+        0.19181744754314423,
+        1.1500000953674316
+      ]
+    },
+    "dimensionsMetres": [
+      0.3834114670753479,
+      0.38363492488861084,
+      1.1500000953674316
+    ]
+  },
+  "rawImportedTopology": {
+    "triangles": 16228,
+    "vertices": 20374,
+    "nonManifoldEdges": 19012,
+    "nonManifoldVertices": 5,
+    "nonContiguousEdges": 19012,
+    "selfIntersectionPairs": 1666,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.018659671358383527
+  },
+  "cleanup": {
+    "weld": {
+      "vertices": 20374,
+      "faces": 16228,
+      "weldedVertices": 7976,
+      "weldedFaces": 16228
+    },
+    "repair": "none"
+  },
+  "strictTopology": {
+    "triangles": 16228,
+    "vertices": 7976,
+    "nonManifoldEdges": 177,
+    "nonManifoldVertices": 191,
+    "nonContiguousEdges": 177,
+    "selfIntersectionPairs": 554,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.02495959084999118
+  },
+  "connectedFaceComponents": 2,
+  "materialContract": {
+    "material": "Material_0",
+    "uvLayer": "UVMap",
+    "images": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB"
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color"
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "normalMapStrengthSource": 1.0
+  },
+  "triangleBudget": {
+    "maximumDonorTriangles": 18000,
+    "actual": 16228,
+    "enforced": true
+  },
+  "gateConditions": [
+    "exactly one imported mesh and one coherent textured PBR atlas",
+    "one connected fused face component after a 0.1 micrometre weld",
+    "zero non-manifold edges and vertices",
+    "zero non-contiguous edges and geometric self-intersection pairs",
+    "positive signed volume and no Blender mesh validation defect",
+    "no more than 18000 exterior triangles",
+    "UV0 plus embedded base-color, packed metallic-roughness, and normal images"
+  ],
+  "failures": [
+    "post-weld surface is not closed, oriented, and self-intersection-free",
+    "expected one connected fused surface, found 2"
+  ],
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "blender": "5.2.2 LTS (d13f752e3b9c)",
+    "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/production/finalize_celadon_opaque_v3.py -- --phase audit"
+  },
+  "readiness": "Donor gate only; open cavity, measured wall, matched shards, fresh GLB reimport, visual proofs, and runtime integration remain separate gates."
+}

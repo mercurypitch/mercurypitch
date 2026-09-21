@@ -4,8 +4,8 @@
   "assetId": "celadon-lark-decanter",
   "variant": "opaque-guide-v3",
   "taskType": "image-to-3d",
-  "authorization": "Standing user authorization covers broad Meshy asset generation and credit spend. Upload of this exact locally generated guide to Meshy awaits the automatic-review-requested explicit confirmation.",
-  "submissionApproval": "pending exact guide upload confirmation",
+  "authorization": "User explicitly approved this exact Celadon guide upload to Meshy on 2026-09-21 and authorized further Meshy spending as needed.",
+  "submissionApproval": "approved",
   "guide": {
     "file": "concepts/celadon-lark-opaque-guide-v3.png",
     "bytes": 1679147,
@@ -32,5 +32,6 @@
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Generation request only; strict topology, cavity, fracture, runtime export, and proofs remain gated."
+  "readiness": "Generation request only; strict topology, cavity, fracture, runtime export, and proofs remain gated.",
+  "taskId": "01a0c1e6-c597-7073-8d77-3cce7a8201bf"
 }

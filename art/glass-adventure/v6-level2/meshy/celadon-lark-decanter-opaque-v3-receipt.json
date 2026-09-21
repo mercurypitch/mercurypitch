@@ -4,10 +4,55 @@
   "assetId": "celadon-lark-decanter",
   "variant": "opaque-guide-v3",
   "taskType": "image-to-3d",
-  "state": "external-approval-required",
+  "state": "archived",
   "guideSha256": "4cb9d0f3508eadf5d1ba9a104597685212d5dc5e3e0059a6514821de1d037080",
   "blockedAtUtc": "2026-09-20T23:09:13.301928+00:00",
-  "submissionBlock": "Automatic approval review rejected uploading the local opaque guide to Meshy without exact payload/destination approval. No task was created and no credits were spent.",
   "credentialsPersisted": false,
-  "signedArtifactUrlsPersisted": false
+  "signedArtifactUrlsPersisted": false,
+  "approvalResolvedAtUtc": "2026-09-21T02:58:36.259477+00:00",
+  "authorization": "User explicitly approved this exact Celadon guide upload to Meshy on 2026-09-21 and authorized further Meshy spending as needed.",
+  "balanceBefore": 4180,
+  "taskId": "01a0c1e6-c597-7073-8d77-3cce7a8201bf",
+  "submittedAtUtc": "2026-09-21T02:58:59.601839+00:00",
+  "lastStatus": {
+    "task_id": "01a0c1e6-c597-7073-8d77-3cce7a8201bf",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "lastCheckedAtUtc": "2026-09-21T03:00:57.277302+00:00",
+  "finalStatus": {
+    "task_id": "01a0c1e6-c597-7073-8d77-3cce7a8201bf",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "balanceAfterArchiveCheck": 4150,
+  "archivedAtUtc": "2026-09-21T03:01:01.909674+00:00",
+  "files": [
+    {
+      "role": "glb",
+      "file": "meshy/celadon-lark-decanter-opaque-v3.glb",
+      "bytes": 10617000,
+      "sha256": "9e95f6b85af68a1ff1cd82eb257f2c6d57cac4d5c4c4037dd10003d33a4f3521"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/celadon-lark-decanter-opaque-v3-pre-remesh.glb",
+      "bytes": 9541648,
+      "sha256": "00f9a381f57636e37c647e4c882e3b8dafe9e35b2111738e6a01ad4dde0ad834",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "readiness": "Raw Meshy sources only; the separate strict topology audit determines whether cavity and fracture work may begin.",
+  "previousSubmissionBlock": "Automatic approval review rejected uploading the local opaque guide to Meshy without exact payload/destination approval. No task was created and no credits were spent.",
+  "productionAcceptance": {
+    "state": "rejected",
+    "texturedDonorAudit": "production/celadon-opaque-v3-audit.json",
+    "preRemeshAudit": "production/celadon-opaque-v3-pre-remesh-audit.json",
+    "reason": "Textured donor has nonmanifold edges and self-intersections. Pre-remesh source retains one self-intersection and has no production UV atlas. No hollowing, fracture or live replacement accepted."
+  },
+  "observedBalanceDelta": 30
 }

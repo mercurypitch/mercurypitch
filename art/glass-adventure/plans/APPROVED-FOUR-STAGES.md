@@ -165,3 +165,17 @@ changes and active agents' ownership; root owns review and Git operations.
   real-browser voice/order/replay/save case passes (23.6 seconds). This is a
   test-only follow-up: the static preview's gameplay bytes remain unchanged.
   Final cloud checks for the follow-up must still be inspected.
+
+- 2026-09-21: owner explicitly approved the exact Celadon opaque guide upload
+  and further Meshy spending as needed. Task `01a0c1e6-c597-7073-8d77-3cce7a8201bf`
+  is submitted for the 16K textured donor (30 credits). The earlier upload
+  approval block is resolved; geometry and runtime acceptance remain open.
+- Baseline `57268b5c` is fully green: PR Gate, all adventure/browser shards,
+  web/mobile checks and games-enabled Android/iOS Simulator packages passed.
+  The next Celadon commit needs its own changed-asset validation and cloud checks.
+
+- Celadon opaque V3 completed for 30 credits; source files and audit receipts are
+  preserved. The textured donor has 177 nonmanifold edges and 554 geometric
+  intersections. The 530,232-triangle pre-remesh source has one intersection
+  and no production UV atlas. This candidate is rejected; no live recipe was
+  changed. The map fidelity pass now proceeds independently using static donors.

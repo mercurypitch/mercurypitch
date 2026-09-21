@@ -162,11 +162,10 @@ def main() -> None:
         "variant": "opaque-guide-v3",
         "taskType": "image-to-3d",
         "authorization": (
-            "Standing user authorization covers broad Meshy asset generation and credit spend. "
-            "Upload of this exact locally generated guide to Meshy awaits the automatic-review-"
-            "requested explicit confirmation."
+            "User explicitly approved this exact Celadon guide upload to Meshy on "
+            "2026-09-21 and authorized further Meshy spending as needed."
         ),
-        "submissionApproval": "pending exact guide upload confirmation",
+        "submissionApproval": "approved",
         "guide": {
             "file": str(GUIDE.relative_to(ROOT)),
             "bytes": GUIDE.stat().st_size,

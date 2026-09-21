@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "variant": "opaque-guide-v3-pre-remesh-source",
+  "status": "rejected by strict donor gate",
+  "donor": {
+    "file": "meshy/celadon-lark-decanter-opaque-v3-pre-remesh.glb",
+    "bytes": 9541648,
+    "sha256": "00f9a381f57636e37c647e4c882e3b8dafe9e35b2111738e6a01ad4dde0ad834"
+  },
+  "normalization": {
+    "uniformScale": 0.6054381300973173,
+    "sourceFootCentre": [
+      -0.0010569840669631958,
+      0.0008634328842163086,
+      -0.9506394267082214
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.19167640805244446,
+        -0.19178801774978638,
+        0.0
+      ],
+      "max": [
+        0.19167640805244446,
+        0.19178800284862518,
+        1.149999976158142
+      ]
+    },
+    "dimensionsMetres": [
+      0.3833528161048889,
+      0.38357603549957275,
+      1.149999976158142
+    ]
+  },
+  "rawImportedTopology": {
+    "triangles": 530232,
+    "vertices": 264840,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 1,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.018472589259303507
+  },
+  "cleanup": {
+    "weld": {
+      "vertices": 264840,
+      "faces": 530232,
+      "weldedVertices": 264840,
+      "weldedFaces": 530232
+    },
+    "repair": "none"
+  },
+  "strictTopology": {
+    "triangles": 530232,
+    "vertices": 264840,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 1,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.018472589259303507
+  },
+  "connectedFaceComponents": 1,
+  "materialContract": {
+    "materials": [],
+    "uvLayers": [],
+    "runtimeMaterialGateApplied": false
+  },
+  "triangleBudget": {
+    "maximumDonorTriangles": 18000,
+    "actual": 530232,
+    "enforced": false
+  },
+  "gateConditions": [
+    "exactly one imported mesh; material eligibility recorded separately",
+    "one connected fused face component after a 0.1 micrometre weld",
+    "zero non-manifold edges and vertices",
+    "zero non-contiguous edges and geometric self-intersection pairs",
+    "positive signed volume and no Blender mesh validation defect",
+    "triangle count recorded for source provenance; runtime budget not applied",
+    "geometry-only source audit; runtime material gate not applied"
+  ],
+  "failures": [
+    "post-weld surface is not closed, oriented, and self-intersection-free"
+  ],
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "blender": "5.2.2 LTS (d13f752e3b9c)",
+    "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/production/finalize_celadon_opaque_v3.py -- --phase audit-pre-remesh"
+  },
+  "readiness": "Preserved source geometry audit only; no repair or runtime reduction was attempted."
+}
