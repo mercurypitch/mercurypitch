@@ -152,21 +152,19 @@ export const CLOUDWAY_GLASS_RIBBON: LevelDefinition = {
         },
       ],
     },
-    openingNotice:
-      'Begin on marble with one easy note, then take the frost garden at your own pace.',
+    openingNotice: 'Sing to the goblet to begin.',
     encounterSuccessNotices: [
       {
         encounterId: CLOUDWAY_ENCOUNTER_IDS.arrival,
-        notice: 'The Glass Ribbon is awake. The frost garden is ready.',
+        notice: 'Time to cross the frost.',
       },
       {
         encounterId: CLOUDWAY_ENCOUNTER_IDS.crossing,
-        notice:
-          'The crackle ribbon is open. Cross each glowing tile to marble.',
+        notice: 'Cross the glowing tiles.',
       },
       {
         encounterId: CLOUDWAY_ENCOUNTER_IDS.finale,
-        notice: 'A beautiful finish. Step through the gold light.',
+        notice: 'Step through the gold light.',
       },
     ],
     completionTitle: 'The Glass Ribbon shines from shore to shore.',
