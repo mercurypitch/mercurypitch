@@ -446,7 +446,16 @@ function KaraokeVisual(): JSX.Element {
  * supporter pays for stay behind that door.
  */
 function RoomPhoto(props: {
-  src: string
+  /**
+   * Base path of the card cuts, without the `-<width>.webp` tail.
+   *
+   * These cards render at 378 CSS px on a phone and 434 on a desktop, and
+   * they used to be served the room's full background -- 1672x941, and
+   * 2048x1143 for the jam stage, which alone was 401 KB. A phone downloaded
+   * about 900 KB of scenery for five thumbnails. The two cuts below cover a
+   * 2x phone (880w) and a 3x one (1320w).
+   */
+  base: string
   className: string
   nugget: string
 }): JSX.Element {
@@ -457,7 +466,11 @@ function RoomPhoto(props: {
     >
       <img
         class={styles.roomPhoto}
-        src={props.src}
+        src={`${props.base}-880.webp`}
+        srcset={`${props.base}-880.webp 880w, ${props.base}-1320.webp 1320w`}
+        sizes="(max-width: 700px) 378px, 434px"
+        width={880}
+        height={495}
         alt=""
         loading="lazy"
         decoding="async"
@@ -472,7 +485,7 @@ function RoomPhoto(props: {
 function PianoNightVisual(): JSX.Element {
   return (
     <RoomPhoto
-      src="/piano-night/afterglow-studio-landscape.webp"
+      base="/piano-night/afterglow-studio-landscape-card"
       className={styles.pianoNightVisual}
       nugget="MIDI ready · falling notes"
     />
@@ -482,7 +495,7 @@ function PianoNightVisual(): JSX.Element {
 function EarLabVisual(): JSX.Element {
   return (
     <RoomPhoto
-      src="/ear-lab/regulator-room-landscape.webp"
+      base="/ear-lab/regulator-room-landscape-card"
       className={styles.earLabVisual}
       nugget="Cents · milliseconds · chords"
     />
@@ -492,7 +505,7 @@ function EarLabVisual(): JSX.Element {
 function GuitarNightVisual(): JSX.Element {
   return (
     <RoomPhoto
-      src="/guitar-night/velvet-rehearsal.webp"
+      base="/guitar-night/velvet-rehearsal-card"
       className={styles.guitarNightVisual}
       nugget="Tuner · tab · Jam Doctor"
     />
@@ -502,7 +515,7 @@ function GuitarNightVisual(): JSX.Element {
 function DrumNightVisual(): JSX.Element {
   return (
     <RoomPhoto
-      src="/drum-night/pocket-console-landscape.webp"
+      base="/drum-night/pocket-console-landscape-card"
       className={styles.drumNightVisual}
       nugget="Pocket · kit · score"
     />
