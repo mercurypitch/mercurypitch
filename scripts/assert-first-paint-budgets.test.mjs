@@ -260,6 +260,20 @@ test('a page that links no stylesheet needs no CSS budget', () => {
   )
 })
 
+test('fails a CSS budget for a page that still builds but dropped its CSS', () => {
+  const problems = judgeFirstPaint(
+    new Map([['room.html', styled(0, [])]]),
+    { 'room.html': 1 },
+    { 'room.html': 40 },
+  )
+
+  assert.equal(problems.length, 1)
+  assert.match(
+    problems[0],
+    /lists room\.html, which this build emitted no render-blocking CSS for/,
+  )
+})
+
 test('a measurement taken without cssBytes is left alone', () => {
   assert.deepEqual(
     judgeFirstPaint(
