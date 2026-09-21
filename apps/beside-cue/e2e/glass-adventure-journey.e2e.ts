@@ -264,6 +264,7 @@ test('phone exposes the island rail and selected entry in its first viewport', a
 test('saved portrait appears independently from singing-quality stars', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 320, height: 568 })
   await page.addInitScript(() => {
     localStorage.setItem(
       'beside-cue:glass-adventure:progress:glassworks-journey/journey',
@@ -285,6 +286,24 @@ test('saved portrait appears independently from singing-quality stars', async ({
   })
   await page.goto('/glass-game/?campaign=1')
   const lobby = page.getByTestId('glass-campaign')
+  const frame = lobby.locator('[data-map-state]')
+  await expect(frame).toHaveAttribute('data-map-state', 'ready', {
+    timeout: 60_000,
+  })
+  const canvas = frame.locator('canvas')
+  await expect
+    .poll(async () => {
+      const serialized = await canvas.getAttribute('data-journey-progress')
+      if (serialized === null) return null
+      return JSON.parse(serialized) as {
+        stars: Record<string, number>
+        earnedPortraitIds: string[]
+      }
+    })
+    .toMatchObject({
+      stars: { 'glassworks-isle': 0 },
+      earnedPortraitIds: ['glassworks-journey-portrait-monument'],
+    })
   await lobby
     .getByRole('navigation', { name: 'Select a museum island' })
     .getByRole('button', { name: /Glassworks Journey/u })
@@ -292,6 +311,48 @@ test('saved portrait appears independently from singing-quality stars', async ({
   await expect(
     lobby.getByText('Portrait collected · She Who Woke the Glass'),
   ).toBeVisible()
+  const portraitKeepsake = lobby.getByText(
+    'Portrait collected · She Who Woke the Glass',
+  )
+  const entry = lobby.getByRole('button', {
+    name: 'Open selected gallery: Glassworks Journey',
+  })
+  const card = entry.locator('xpath=ancestor::article[1]')
+  const title = card.getByRole('heading', { name: 'Glassworks Journey' })
+  for (const viewportHeight of [568, 640]) {
+    await page.setViewportSize({ width: 320, height: viewportHeight })
+    const [
+      cardBounds,
+      titleBounds,
+      keepsakeBounds,
+      entryBounds,
+      thumbnailBounds,
+    ] = await Promise.all([
+      card.boundingBox(),
+      title.boundingBox(),
+      portraitKeepsake.boundingBox(),
+      entry.boundingBox(),
+      portraitKeepsake.locator('img').boundingBox(),
+    ])
+    expect(cardBounds).not.toBeNull()
+    expect(titleBounds).not.toBeNull()
+    expect(keepsakeBounds).not.toBeNull()
+    expect(entryBounds).not.toBeNull()
+    expect(thumbnailBounds).not.toBeNull()
+    expect(titleBounds!.y + titleBounds!.height).toBeLessThanOrEqual(
+      keepsakeBounds!.y,
+    )
+    expect(keepsakeBounds!.y + keepsakeBounds!.height).toBeLessThanOrEqual(
+      entryBounds!.y,
+    )
+    expect(entryBounds!.y + entryBounds!.height).toBeLessThanOrEqual(
+      cardBounds!.y + cardBounds!.height,
+    )
+    expect(entryBounds!.y + entryBounds!.height).toBeLessThanOrEqual(
+      viewportHeight,
+    )
+    expect(thumbnailBounds!.height).toBe(22)
+  }
   await expect(lobby.locator('[aria-label*="saved pitch"]')).toHaveCount(0)
   await expect(lobby.getByText('Singing quality not yet graded')).toHaveCount(0)
 })

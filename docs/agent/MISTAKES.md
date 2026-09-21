@@ -760,6 +760,13 @@ audio needed about 1.6 seconds of analysis locally, leaving little CI headroom.
 took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queues.
 **See:** `src/lib/pitch-detector.ts`, `docs/guitar-recording-testing.md`
 
+### Prove an imported display surface is visible before swapping its texture
+
+**Symptom:** an earned museum portrait loaded successfully, but its frame stayed black.
+**Cause:** the generated ornate primitive contained a solid slab in front of its separately named inset. Material replacement and ready-state tests could not reveal the occlusion.
+**Rule:** raycast the delivered donor from the actual viewing side and inspect a rendered earned state. Preserve the inset silhouette/UVs and derive front clearance from geometry; do not substitute a rectangle or trust texture-install diagnostics as visual proof.
+**See:** `packages/glass-game/src/journey/architecture.ts`, `art/glass-adventure/journey-map/v4/proofs/runtime/`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag

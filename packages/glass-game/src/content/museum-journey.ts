@@ -30,7 +30,6 @@ export interface MuseumJourneyStage {
   yaw: number
   scale: number
   focus: JourneyPoint
-  merc: JourneyPoint
   portrait?: MuseumJourneyPortraitMonument
   kind: 'pavilion' | 'garden' | 'rotunda' | 'twins' | 'conservatory'
   accent: 'jade' | 'gold' | 'amber-celadon' | 'celadon'
@@ -71,7 +70,7 @@ export interface MuseumJourneyDefinition {
 export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
   id: 'floating-museum-v1',
   modelAssetId: 'floating-museum-map-kit-v1',
-  sculpturalAssetId: 'floating-museum-sculpture-kit-v3',
+  sculpturalAssetId: 'floating-museum-twin-finish-kit-v4',
   landmasses: [
     {
       id: 'first-light-landmass',
@@ -105,12 +104,6 @@ export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
       yaw: -0.18,
       scale: 0.94,
       focus: [-5.7, 1.05, 2.75],
-      merc: [-5.72, 0.38, 3.98],
-      portrait: {
-        position: [-6.72, 0.27, 2.84],
-        yaw: 0.22,
-        portraitId: 'first-light-mystery-portrait',
-      },
       kind: 'pavilion',
       accent: 'jade',
     },
@@ -123,7 +116,11 @@ export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
       yaw: 0.12,
       scale: 0.88,
       focus: [-4.3, 1.05, 2.15],
-      merc: [-4.31, 0.38, 3.38],
+      portrait: {
+        position: [-6.72, 0.27, 2.84],
+        yaw: 0.22,
+        portraitId: 'glassworks-journey-portrait-monument',
+      },
       kind: 'garden',
       accent: 'gold',
     },
@@ -136,7 +133,6 @@ export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
       yaw: -0.08,
       scale: 1.28,
       focus: [0.25, 1.65, 0.1],
-      merc: [-0.02, 0.86, 1.87],
       portrait: {
         position: [2.1, 0.75, 0.73],
         yaw: -0.34,
@@ -154,7 +150,6 @@ export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
       yaw: 0.18,
       scale: 0.76,
       focus: [5.08, 1.85, -2.85],
-      merc: [4.66, 1.18, -1.42],
       portrait: {
         position: [3.85, 1.08, -2.73],
         yaw: -0.38,

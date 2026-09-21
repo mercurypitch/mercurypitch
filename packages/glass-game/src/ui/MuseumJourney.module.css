@@ -520,6 +520,16 @@
   border-radius: 12px 12px 2px 2px;
 }
 
+.selectedCard:has(.portraitKeepsake) .description {
+  flex-shrink: 0;
+  -webkit-line-clamp: 1;
+}
+
+.keepsakes:has(.portraitKeepsake) {
+  min-height: 32px;
+  flex-shrink: 0;
+}
+
 .enterSelected {
   display: flex;
   min-height: 43px;
@@ -986,6 +996,10 @@
     margin: 3px 0;
   }
 
+  .keepsakes:has(.portraitKeepsake) {
+    min-height: 22px;
+  }
+
   .stars svg {
     width: 11px;
     height: 11px;
@@ -997,6 +1011,7 @@
   }
 
   .portraitKeepsake img {
+    box-sizing: border-box;
     width: 18px;
     height: 22px;
   }

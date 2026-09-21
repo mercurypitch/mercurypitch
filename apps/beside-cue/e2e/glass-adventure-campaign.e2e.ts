@@ -58,6 +58,7 @@ test('phone, tablet and desktop map load only lobby models before gallery entry 
     [
       '/games/glass3d/merc.glb',
       '/games/journey-map-v1/floating-museum-map-kit-v1.glb',
+      '/games/journey-map-v4/floating-museum-twin-finish-kit-v4.glb',
     ].sort(),
   )
   expect(models.some((url) => /\/games\/adventure-v\d+\//u.test(url))).toBe(
@@ -83,7 +84,7 @@ test('phone, tablet and desktop map load only lobby models before gallery entry 
     })
     expect(
       await card.evaluate((element) => getComputedStyle(element).color),
-    ).toBe('rgb(36, 73, 67)')
+    ).toBe('rgb(34, 73, 67)')
     await card.focus()
     await expect(card).toBeFocused()
   }

@@ -1,8 +1,9 @@
 // Journey architecture — compose authored kit pieces into palatial halls, medallions and arched paths.
 
 import type { BufferGeometry, Material, Object3D } from 'three'
-import { BoxGeometry, CatmullRomCurve3, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, OctahedronGeometry, PlaneGeometry, QuadraticBezierCurve3, Quaternion, RingGeometry, SphereGeometry, TorusGeometry, TubeGeometry, Vector3, } from 'three'
+import { BoxGeometry, CatmullRomCurve3, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, OctahedronGeometry, QuadraticBezierCurve3, Quaternion, RingGeometry, Shape, ShapeGeometry, SphereGeometry, TorusGeometry, TubeGeometry, Vector3, } from 'three'
 import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyPortraitMonument, MuseumJourneyStage, } from '../content/museum-journey'
+import { JOURNEY_MEDALLION_FACE_Y, JOURNEY_MEDALLION_SURFACE_Y, } from './landmarks'
 
 export interface JourneyArchitectureMaterials {
   gold: Material
@@ -17,14 +18,91 @@ export interface JourneyArchitectureMaterials {
 
 export type JourneyAuthoredUnit = (name: string) => Object3D
 
+export const JOURNEY_PORTRAIT_INSET_MATERIAL = 'map_frame_atlas_00'
+const JOURNEY_PORTRAIT_SURFACE_CLEARANCE = 0.003
+
+export function findJourneyPortraitInset(frame: Object3D): Mesh {
+  const matches: Mesh[] = []
+  frame.traverse((object) => {
+    const candidate = object as Mesh
+    if (
+      candidate.isMesh &&
+      !Array.isArray(candidate.material) &&
+      candidate.material.name === JOURNEY_PORTRAIT_INSET_MATERIAL
+    )
+      matches.push(candidate)
+  })
+  if (matches.length !== 1)
+    throw new Error(
+      `Journey map_frame must contain exactly one portrait inset using material ${JOURNEY_PORTRAIT_INSET_MATERIAL}; found ${matches.length}.`,
+    )
+  return matches[0]!
+}
+
+function minimumFrameZ(frame: Object3D, object: Object3D): number {
+  frame.updateWorldMatrix(true, true)
+  const frameInverse = frame.matrixWorld.clone().invert()
+  const point = new Vector3()
+  let minimum = Number.POSITIVE_INFINITY
+  object.traverse((candidate) => {
+    const mesh = candidate as Mesh
+    if (!mesh.isMesh) return
+    const positions = mesh.geometry.getAttribute('position')
+    if (positions === undefined) return
+    const relative = new Matrix4().multiplyMatrices(
+      frameInverse,
+      mesh.matrixWorld,
+    )
+    for (let index = 0; index < positions.count; index++) {
+      point
+        .set(
+          positions.getX(index),
+          positions.getY(index),
+          positions.getZ(index),
+        )
+        .applyMatrix4(relative)
+      minimum = Math.min(minimum, point.z)
+    }
+  })
+  if (!Number.isFinite(minimum))
+    throw new Error('Journey map_frame has no positioned portrait geometry.')
+  return minimum
+}
+
+function createJourneyPortraitSurface(
+  frame: Object3D,
+  inset: Mesh,
+  material: Material,
+): Mesh {
+  frame.updateWorldMatrix(true, true)
+  const relative = new Matrix4()
+    .copy(frame.matrixWorld)
+    .invert()
+    .multiply(inset.matrixWorld)
+  const frameFrontZ = minimumFrameZ(frame, frame)
+  const insetFrontZ = minimumFrameZ(frame, inset)
+  const surface = new Mesh(inset.geometry, material)
+  relative.decompose(surface.position, surface.quaternion, surface.scale)
+  surface.position.z +=
+    frameFrontZ - JOURNEY_PORTRAIT_SURFACE_CLEARANCE - insetFrontZ
+  surface.visible = false
+  surface.castShadow = false
+  surface.receiveShadow = false
+  surface.userData.journeyPortraitFrontZ =
+    frameFrontZ - JOURNEY_PORTRAIT_SURFACE_CLEARANCE
+  return surface
+}
+
 interface ArchitectureGeometry {
   base: CylinderGeometry
   step: BoxGeometry
   dome: SphereGeometry
   medallion: CylinderGeometry
   medallionRing: RingGeometry
+  medallionBeadRing: TorusGeometry
+  detailStud: CylinderGeometry
+  progressStar: ShapeGeometry
   connectorArch: TorusGeometry
-  portraitPanel: PlaneGeometry
   portraitFace: SphereGeometry
   portraitBust: SphereGeometry
   crystal: OctahedronGeometry
@@ -34,7 +112,11 @@ export interface JourneyArchitectureAssembly {
   root: Group
   selectableRoots: ReadonlyMap<string, Object3D>
   portraitSurfaces: ReadonlyMap<string, Mesh>
+  portraitMysteries: ReadonlyMap<string, Object3D>
+  starMarkers: ReadonlyMap<string, JourneyProgressStars>
 }
+
+export type JourneyProgressStars = readonly [Object3D, Object3D, Object3D]
 
 function own<T extends BufferGeometry>(
   geometry: T,
@@ -42,6 +124,20 @@ function own<T extends BufferGeometry>(
 ): T {
   owned.add(geometry)
   return geometry
+}
+
+function createProgressStarGeometry(): ShapeGeometry {
+  const shape = new Shape()
+  for (let point = 0; point < 10; point++) {
+    const angle = -Math.PI / 2 + (point * Math.PI) / 5
+    const radius = point % 2 === 0 ? 0.052 : 0.023
+    const x = Math.cos(angle) * radius
+    const y = Math.sin(angle) * radius
+    if (point === 0) shape.moveTo(x, y)
+    else shape.lineTo(x, y)
+  }
+  shape.closePath()
+  return new ShapeGeometry(shape)
 }
 
 function createGeometry(owned: Set<BufferGeometry>): ArchitectureGeometry {
@@ -54,8 +150,10 @@ function createGeometry(owned: Set<BufferGeometry>): ArchitectureGeometry {
     ),
     medallion: own(new CylinderGeometry(1, 1, 0.075, 40), owned),
     medallionRing: own(new RingGeometry(0.72, 0.96, 40), owned),
+    medallionBeadRing: own(new TorusGeometry(0.365, 0.014, 6, 40), owned),
+    detailStud: own(new CylinderGeometry(1, 1, 0.018, 12), owned),
+    progressStar: own(createProgressStarGeometry(), owned),
     connectorArch: own(new TorusGeometry(1, 0.075, 8, 32, Math.PI), owned),
-    portraitPanel: own(new PlaneGeometry(0.82, 1.34), owned),
     portraitFace: own(new SphereGeometry(0.16, 14, 8), owned),
     portraitBust: own(new SphereGeometry(0.3, 14, 8), owned),
     crystal: own(new OctahedronGeometry(0.22, 0), owned),
@@ -184,7 +282,7 @@ function addPavilion(
   geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
 ): void {
-  const temple = sculpturalUnit?.('map_temple')
+  const temple = sculpturalUnit?.('map_temple_teal')
   if (temple !== undefined) {
     temple.position.y = 0.02
     temple.scale.setScalar(0.9)
@@ -284,11 +382,11 @@ function addTwinGalleries(
   geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
 ): void {
-  for (const [x, glass] of [
-    [-0.9, materials.amber],
-    [0.9, materials.celadon],
+  for (const [x, glass, templeName] of [
+    [-0.9, materials.amber, 'map_temple_amber'],
+    [0.9, materials.celadon, 'map_temple_teal'],
   ] as const) {
-    const temple = sculpturalUnit?.('map_temple')
+    const temple = sculpturalUnit?.(templeName)
     if (temple !== undefined) {
       temple.position.set(x, 0.02, -0.05)
       temple.scale.setScalar(0.72)
@@ -357,30 +455,100 @@ function addConservatory(
 function addMedallion(
   stageRoot: Group,
   stage: MuseumJourneyStage,
+  variantIndex: number,
   geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
+  starMarkers: Map<string, JourneyProgressStars>,
 ): void {
+  const marker = new Group()
+  marker.name = `${stage.id}-journey-medallion`
+  marker.position.fromArray(stage.position)
+  marker.userData.journeyStageId = stage.id
+  marker.userData.journeyMedallionSurfaceY = JOURNEY_MEDALLION_SURFACE_Y
+
   const medallion = new Mesh(geometry.medallion, materials.gold)
   medallion.name = `${stage.id}-path-medallion`
-  medallion.position.fromArray(stage.position)
   // The authored stairs and promenade sit above the terrace surface. Sink the
   // pedestal into that surface and lift its face clear of those ribbons.
-  medallion.position.y += 0.05
+  medallion.position.y = 0.05
   medallion.scale.set(0.5, 2.6, 0.5)
   medallion.castShadow = true
   medallion.receiveShadow = true
   const face = new Mesh(geometry.medallion, materials.jade)
   face.name = `${stage.id}-medallion-face`
-  face.position.fromArray(stage.position)
-  face.position.y += 0.153
+  face.position.y = JOURNEY_MEDALLION_FACE_Y
   face.scale.set(0.36, 0.14, 0.36)
   const ring = new Mesh(geometry.medallionRing, materials.gold)
   ring.name = `${stage.id}-medallion-ring`
   ring.rotation.x = -Math.PI / 2
-  ring.position.fromArray(stage.position)
-  ring.position.y += 0.16
+  ring.position.y = JOURNEY_MEDALLION_SURFACE_Y
   ring.scale.setScalar(0.52)
-  stageRoot.add(medallion, face, ring)
+
+  const beadRing = new Mesh(geometry.medallionBeadRing, materials.gold)
+  beadRing.name = `${stage.id}-engraved-inner-rim`
+  beadRing.rotation.x = Math.PI / 2
+  beadRing.position.y = JOURNEY_MEDALLION_SURFACE_Y + 0.007
+
+  const inlay = new InstancedMesh(geometry.detailStud, materials.gold, 14)
+  inlay.name = `${stage.id}-sun-and-route-inlay`
+  const matrix = new Matrix4()
+  for (let index = 0; index < 8; index++) {
+    const angle = (index / 8) * Math.PI * 2 + variantIndex * (Math.PI / 16)
+    matrix.compose(
+      new Vector3(
+        Math.sin(angle) * 0.13,
+        JOURNEY_MEDALLION_SURFACE_Y + 0.009,
+        Math.cos(angle) * 0.13,
+      ),
+      new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), angle),
+      new Vector3(0.018, 0.25, 0.11),
+    )
+    inlay.setMatrixAt(index, matrix)
+  }
+  matrix.compose(
+    new Vector3(0, JOURNEY_MEDALLION_SURFACE_Y + 0.011, 0),
+    new Quaternion(),
+    new Vector3(0.06, 0.25, 0.06),
+  )
+  inlay.setMatrixAt(8, matrix)
+  for (let index = 0; index < 5; index++) {
+    const angle = -Math.PI * 0.82 + index * 0.32 + variantIndex * (Math.PI / 20)
+    const radius = 0.26 + Math.sin(index * 1.8) * 0.018
+    matrix.compose(
+      new Vector3(
+        Math.cos(angle) * radius,
+        JOURNEY_MEDALLION_SURFACE_Y + 0.011,
+        Math.sin(angle) * radius,
+      ),
+      new Quaternion(),
+      new Vector3(0.022, 0.22, 0.022),
+    )
+    inlay.setMatrixAt(index + 9, matrix)
+  }
+  inlay.instanceMatrix.needsUpdate = true
+
+  const earnedStars = new Group()
+  earnedStars.name = `${stage.id}-earned-stars`
+  const createStar = (slot: 1 | 2 | 3, x: number): Mesh => {
+    const star = new Mesh(geometry.progressStar, materials.gold)
+    star.name = `${stage.id}-progress-star-${slot}`
+    star.position.set(x, JOURNEY_MEDALLION_SURFACE_Y + 0.012, 0.235)
+    star.rotation.x = -Math.PI / 2
+    star.visible = false
+    star.userData.journeyStageId = stage.id
+    star.userData.journeyStarSlot = slot
+    return star
+  }
+  const stars: JourneyProgressStars = [
+    createStar(1, -0.115),
+    createStar(2, 0),
+    createStar(3, 0.115),
+  ]
+  earnedStars.add(...stars)
+  starMarkers.set(stage.id, stars)
+
+  marker.add(medallion, face, ring, beadRing, inlay, earnedStars)
+  stageRoot.add(marker)
 }
 
 function addPortraitMonument(
@@ -391,6 +559,7 @@ function addPortraitMonument(
   geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
   portraitSurfaces: Map<string, Mesh>,
+  portraitMysteries: Map<string, Object3D>,
 ): void {
   const monument = new Group()
   monument.name = `${portrait.portraitId}-monument`
@@ -401,14 +570,17 @@ function addPortraitMonument(
   frame.scale.setScalar(0.72)
   monument.add(frame)
 
-  const surface = new Mesh(geometry.portraitPanel, materials.jade)
+  const inset = findJourneyPortraitInset(frame)
+  const surface = createJourneyPortraitSurface(frame, inset, materials.jade)
   surface.name = `${portrait.portraitId}-surface`
-  surface.position.set(0, 0.63, 0.015)
-  surface.scale.set(0.72, 0.72, 1)
   surface.userData.journeyPortraitId = portrait.portraitId
   surface.userData.journeyPortraitState = 'mystery'
-  monument.add(surface)
+  surface.userData.journeyPortraitUv = 'authored'
+  frame.add(surface)
 
+  const mystery = new Group()
+  mystery.name = `${portrait.portraitId}-mystery`
+  mystery.userData.journeyPortraitId = portrait.portraitId
   const face = new Mesh(geometry.portraitFace, materials.shadow)
   face.position.set(0, 0.82, 0.04)
   face.scale.set(0.82, 0.96, 0.16)
@@ -418,14 +590,17 @@ function addPortraitMonument(
   const bust = new Mesh(geometry.portraitBust, materials.shadow)
   bust.position.set(0, 0.48, 0.04)
   bust.scale.set(0.95, 0.48, 0.12)
-  monument.add(face, neck, bust)
+  mystery.add(face, neck, bust)
+  monument.add(mystery)
   portraitSurfaces.set(portrait.portraitId, surface)
+  portraitMysteries.set(portrait.portraitId, mystery)
   markSelectable(monument, stageId)
   stageRoot.add(monument)
 }
 
 function createBridge(
   bridge: MuseumJourneyBridge,
+  geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
   owned: Set<BufferGeometry>,
 ): Group {
@@ -481,6 +656,36 @@ function createBridge(
   edges.instanceMatrix.needsUpdate = true
   root.add(deck, edges)
 
+  const ornamentCount = Math.ceil(segmentCount / 2) * 2
+  const ornaments = new InstancedMesh(
+    geometry.crystal,
+    materials.gold,
+    ornamentCount,
+  )
+  ornaments.name = `${bridge.id}-gilded-rail-finials`
+  ornaments.castShadow = true
+  let ornamentIndex = 0
+  for (let index = 0; index < segmentCount; index += 2) {
+    const t = (index + 0.5) / segmentCount
+    const point = curve.getPoint(t)
+    const tangent = curve.getTangent(t).normalize()
+    const side = new Vector3(-tangent.z, 0, tangent.x).normalize()
+    for (const sideIndex of [-1, 1] as const) {
+      matrix.compose(
+        point
+          .clone()
+          .addScaledVector(side, sideIndex * bridge.width * 0.48)
+          .add(new Vector3(0, 0.17, 0)),
+        new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), index * 0.37),
+        new Vector3(0.15, 0.26, 0.15),
+      )
+      ornaments.setMatrixAt(ornamentIndex++, matrix)
+    }
+  }
+  ornaments.count = ornamentIndex
+  ornaments.instanceMatrix.needsUpdate = true
+  root.add(ornaments)
+
   if (bridge.kind === 'skybridge') {
     for (const sideSign of [-1, 1] as const) {
       const side = lateral
@@ -524,9 +729,11 @@ export function createJourneyArchitecture(
   root.name = 'floating-museum-palaces'
   const selectableRoots = new Map<string, Object3D>()
   const portraitSurfaces = new Map<string, Mesh>()
+  const portraitMysteries = new Map<string, Object3D>()
+  const starMarkers = new Map<string, JourneyProgressStars>()
   const geometry = createGeometry(ownedGeometries)
 
-  for (const stage of definition.stages) {
+  for (const [stageIndex, stage] of definition.stages.entries()) {
     const stageRoot = new Group()
     stageRoot.name = stage.id
     const building = new Group()
@@ -550,7 +757,7 @@ export function createJourneyArchitecture(
       )
     else addConservatory(building, authoredUnit, geometry, materials)
     stageRoot.add(building)
-    addMedallion(stageRoot, stage, geometry, materials)
+    addMedallion(stageRoot, stage, stageIndex, geometry, materials, starMarkers)
     if (stage.portrait !== undefined)
       addPortraitMonument(
         stageRoot,
@@ -560,6 +767,7 @@ export function createJourneyArchitecture(
         geometry,
         materials,
         portraitSurfaces,
+        portraitMysteries,
       )
     markSelectable(stageRoot, stage.id)
     selectableRoots.set(stage.id, stageRoot)
@@ -567,7 +775,13 @@ export function createJourneyArchitecture(
   }
 
   for (const bridge of definition.bridges)
-    root.add(createBridge(bridge, materials, ownedGeometries))
+    root.add(createBridge(bridge, geometry, materials, ownedGeometries))
 
-  return { root, selectableRoots, portraitSurfaces }
+  return {
+    root,
+    selectableRoots,
+    portraitSurfaces,
+    portraitMysteries,
+    starMarkers,
+  }
 }

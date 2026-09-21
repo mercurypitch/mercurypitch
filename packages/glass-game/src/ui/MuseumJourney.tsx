@@ -3,6 +3,7 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { GlassMuseumAudio } from '../host'
+import type { MuseumJourneyStageProgress } from '../journey/progress'
 import type { MuseumJourneyScene, MuseumJourneyStageLabelProjection, } from '../journey/scene'
 import styles from './MuseumJourney.module.css'
 
@@ -20,6 +21,18 @@ export interface MuseumJourneyChapterView {
   historicalGrade: boolean
   notGraded: boolean
   portrait?: { title: string; imageUrl: string }
+}
+
+function sceneProgress(
+  chapters: readonly MuseumJourneyChapterView[],
+): readonly MuseumJourneyStageProgress[] {
+  return chapters.map((chapter) => ({
+    stageId: chapter.stageId,
+    ...(chapter.stars === undefined ? {} : { stars: chapter.stars }),
+    ...(chapter.portrait === undefined
+      ? {}
+      : { portrait: { imageUrl: chapter.portrait.imageUrl } }),
+  }))
 }
 
 export function MuseumJourney(props: {
@@ -42,6 +55,7 @@ export function MuseumJourney(props: {
   let generation = 0
   let lifetime = 0
   let latestSelectedStageId = untrack(() => props.selectedStageId)
+  let latestProgress = untrack(() => sceneProgress(props.chapters))
   let foreground = true
   let reducedMotion = false
   const [mapState, setMapState] = createSignal<'loading' | 'ready' | 'failed'>(
@@ -166,6 +180,7 @@ export function MuseumJourney(props: {
           handle.dispose()
           return
         }
+        handle.setProgress(latestProgress)
         scene = handle
         void handle.ready.then(
           () => {
@@ -199,6 +214,11 @@ export function MuseumJourney(props: {
   createEffect(() => {
     latestSelectedStageId = props.selectedStageId
     scene?.setSelected(latestSelectedStageId)
+  })
+
+  createEffect(() => {
+    latestProgress = sceneProgress(props.chapters)
+    scene?.setProgress(latestProgress)
   })
 
   onMount(() => {

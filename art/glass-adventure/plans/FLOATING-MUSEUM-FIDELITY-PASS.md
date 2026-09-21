@@ -5,6 +5,10 @@ map. This follows the working navigation/water prototype. Preserve all four
 playable gallery IDs, saves, independent access and selected Merc voice. Commit
 reviewed stages to PR #807; no merge, release or store publication.
 
+The owner accepted the resulting V3 composition. This document preserves that
+pass; current follow-up work is tracked in
+[FLOATING-MUSEUM-POLISH-BATCH-2.md](./FLOATING-MUSEUM-POLISH-BATCH-2.md).
+
 ## Reference and diagnosis
 
 Reference: `../journey-map/v1/a-floating-museum.png`.
@@ -58,9 +62,11 @@ stricter hollow-vessel/fracture requirements.
       frame rate from software-rendered proofs.
 - [x] Scoped checks and new static preview.
 - [x] Asset stage committed/pushed as `340b8139`.
-- [x] Runtime stage committed/pushed as `8fa38d83`; final visual review found no
-      blockers.
-- [ ] Current-head CI acceptance. New runtime checks are running; no merge.
+- [x] Runtime stage committed/pushed as `8fa38d83`; the owner accepted the V3
+      composition.
+- [ ] Final Batch 2 CI acceptance. CI for the later documentation head
+      `4f109ab0` failed the web heading, map-kit inventory and projected-label
+      readiness checks. Batch 2 is fixing them; no final green result is claimed.
 
 The currently shared static HTTPS snapshot stays unchanged during construction.
 Handoff the next snapshot only after the complete host has been inspected.
@@ -73,17 +79,25 @@ They consumed 90 credits in total; the verified balance after archival was 4060.
 Exact prompts and untouched image-generation masters live in `v3/concepts/`.
 No credentials or expiring artifact links are stored in the repository.
 
-The separately authorized Celadon opaque V3 trial also completed, consuming 30
-credits. It was rejected by the fracture geometry audit, including a remaining
-self-intersection in its dense pre-remesh donor. The current game vase is not
-replaced. See the detailed V3 audit in `v6-level2/production/`; do not confuse
-static map acceptance with acceptance of a breakable vessel.
+The owner explicitly approved the exact Celadon guide upload and further Meshy
+attempts as needed. The resulting opaque V3 trial completed, consuming 30
+credits, and was rejected by the fracture geometry audit, including a remaining
+self-intersection in its dense pre-remesh donor. It is archived and the current
+game vase is not replaced. No upload approval blocker remains; production of an
+acceptable replacement is still open. See the detailed V3 audit in
+`v6-level2/production/`; do not confuse static map acceptance with acceptance of
+a breakable vessel.
+
+Batch 2 art checkpoint `619e41e4` preserves the packed V4 twin-finish source,
+runtime GLB, amber/teal dome textures, botanical cluster, manifests and isolated
+proof renders. Runtime integration and final Batch 2 review remain open.
 
 ## Runtime review, 2026-09-21
 
 Final compiled screenshots and render receipts are in
 `../journey-map/v3/proofs/runtime/`. All three views were inspected against concept
-A. Desktop is 1600x900; touch tablet is 1024x768; touch phone is 320x640. The phone
+A, and the owner accepted this V3 composition. Desktop is 1600x900; touch tablet
+is 1024x768; touch phone is 320x640. The phone
 focuses its selected island; desktop/tablet retain the three-island overview.
 The responsive sky plate crops without stretching, and trees/planters leave
 clearance around raised medallions and portraits. Four chapter IDs, progress and
@@ -109,16 +123,17 @@ Untouched guides, final/pre-remesh donors and sanitized receipts remain archived
 
 ## Remaining art and acceptance work
 
-- Twin halls now have the intended paired massing, but share the donor's celadon
-  dome material. Separate amber/teal roof materials need a deliberate Blender
-  material split; the target described above is not fully achieved yet.
-- Medallions now sit on the actual route above its geometry. They still need
-  finer engraved/star ornament driven by real progress, without invented grades.
-- Portrait monuments have deliberate placements and a mystery silhouette.
-  Collected portrait/progress remains visible in the HTML card; projecting the
-  owned artwork onto the 3D monument is a follow-up.
-- Flower beds, trailing foliage, distant architecture and bridge ornament are
-  less intricate than the concept. Continue from these reusable source assets
-  after composition/device feedback; this pass is not a pixel-identical rebuild.
-- Physical tablet performance and owner visual acceptance remain open. The
+These follow-ups moved into the active
+[second polish batch](./FLOATING-MUSEUM-POLISH-BATCH-2.md):
+
+- The accepted V3 twin massing shared a celadon dome material. Distinct
+  amber/teal dome art is pushed in `619e41e4`; Batch 2 runtime integration and
+  compiled desktop/tablet/phone review are complete.
+- Batch 2 adds finer medallion engraving and stars driven only by saved progress,
+  without invented grades.
+- Batch 2 maps the earned portrait onto its physical monument while retaining a
+  mystery fallback for uncollected, failed and loading states.
+- Batch 2 enriches flower beds, trailing foliage and bridge ornament from the
+  reusable assets while retaining the accepted three-island composition.
+- Owner tablet performance and Batch 2 playtest acceptance remain open. The
   independently rejected Celadon breakable remains a separate production task.

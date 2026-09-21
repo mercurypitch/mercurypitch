@@ -7,7 +7,10 @@ import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
 import { clampJourneyOrbit, journeyCameraView, projectJourneyStage, } from './camera'
 import { createJourneyPointerTracker } from './interaction'
+import { JOURNEY_MEDALLION_CLEARANCE_Y, journeyMarkerPoint } from './landmarks'
 import { loadJourneyMapModels } from './models'
+import type { JourneyProgressDisplay, MuseumJourneyStageProgress, } from './progress'
+import { createJourneyProgressDisplay } from './progress'
 import { acceptJourneyResource, createJourneyFrameLoop } from './resources'
 import { createJourneySky } from './sky'
 import { createJourneyWater } from './water'
@@ -25,6 +28,7 @@ export interface MuseumJourneySceneMetrics {
 export interface MuseumJourneyScene {
   ready: Promise<void>
   setSelected(stageId: string): void
+  setProgress(progress: readonly MuseumJourneyStageProgress[]): void
   setForeground(foreground: boolean): void
   setReducedMotion(reduced: boolean): void
   getMetrics(): MuseumJourneySceneMetrics
@@ -66,6 +70,37 @@ function stageIdFromHit(object: Object3D | null): string | undefined {
     cursor = cursor.parent
   }
   return undefined
+}
+
+function normalizeProgress(
+  definition: MuseumJourneyDefinition,
+  progress: readonly MuseumJourneyStageProgress[],
+): readonly MuseumJourneyStageProgress[] {
+  const knownStageIds = new Set(definition.stages.map((stage) => stage.id))
+  const byStage = new Map<string, MuseumJourneyStageProgress>()
+  for (const entry of progress) {
+    if (!knownStageIds.has(entry.stageId)) continue
+    byStage.set(entry.stageId, {
+      stageId: entry.stageId,
+      ...(entry.stars === 1 || entry.stars === 2 || entry.stars === 3
+        ? { stars: entry.stars }
+        : {}),
+      ...(entry.portrait !== undefined && entry.portrait.imageUrl.trim() !== ''
+        ? {
+            portrait: {
+              ...(entry.portrait.id === undefined
+                ? {}
+                : { id: entry.portrait.id }),
+              imageUrl: entry.portrait.imageUrl,
+            },
+          }
+        : {}),
+    })
+  }
+  return definition.stages.flatMap((stage) => {
+    const entry = byStage.get(stage.id)
+    return entry === undefined ? [] : [entry]
+  })
 }
 
 type RegisterConstructionCleanup = (cleanup: () => void) => void
@@ -172,6 +207,24 @@ function buildMuseumJourneyScene(
   let disposed = false
   let contextLost = false
   let models: Awaited<ReturnType<typeof loadJourneyMapModels>> | undefined
+  let progressDisplay: JourneyProgressDisplay | undefined
+  let latestProgress: readonly MuseumJourneyStageProgress[] = []
+  let projectionSettled = false
+  let resolveProjection!: () => void
+  let rejectProjection!: (reason: unknown) => void
+  const firstModelProjection = new Promise<void>((resolve, reject) => {
+    resolveProjection = resolve
+    rejectProjection = reject
+  })
+  // A scene can be disposed before its consumer observes ready. Keep the
+  // internal gate rejection handled while the public ready promise reports it.
+  void firstModelProjection.catch(() => undefined)
+
+  function failProjection(reason: unknown): void {
+    if (projectionSettled) return
+    projectionSettled = true
+    rejectProjection(reason)
+  }
 
   scene.add(new AmbientLight(0xfff2dc, 0.3))
   scene.add(new HemisphereLight(0xddeef2, 0x294a43, 0.62))
@@ -203,8 +256,12 @@ function buildMuseumJourneyScene(
   halo.name = 'journey-selection-halo'
   halo.rotation.x = -Math.PI / 2
   halo.scale.setScalar(0.42)
-  halo.position.fromArray(stageById(definition, selectedStageId).position)
-  halo.position.y += 0.17
+  halo.position.fromArray(
+    journeyMarkerPoint(
+      stageById(definition, selectedStageId),
+      JOURNEY_MEDALLION_CLEARANCE_Y,
+    ),
+  )
   scene.add(halo)
 
   const water = createJourneyWater(definition.spillways)
@@ -236,8 +293,9 @@ function buildMuseumJourneyScene(
     )
     desiredTarget.fromArray(view.target)
     desiredDistance = view.distance
-    halo.position.fromArray(stage.position)
-    halo.position.y += 0.17
+    halo.position.fromArray(
+      journeyMarkerPoint(stage, JOURNEY_MEDALLION_CLEARANCE_Y),
+    )
     models?.setSelected(stage, immediate || reducedMotion)
     if (immediate || reducedMotion) target.copy(desiredTarget)
   }
@@ -278,23 +336,33 @@ function buildMuseumJourneyScene(
     // in the same totals as the visible scene draw.
     renderer.info.reset()
     renderer.render(scene, camera)
-    options.onProjectStageLabels?.(
-      definition.stages.map((stage) => {
-        const projected = projectJourneyStage(
-          [stage.position[0], stage.position[1] + 0.16, stage.position[2]],
-          camera,
-          Math.max(1, container.clientWidth),
-          Math.max(1, container.clientHeight),
-          projectionScratch,
-        )
-        return {
-          stageId: stage.id,
-          x: projected.x,
-          y: projected.y,
-          visible: models !== undefined && projected.visible,
-        }
-      }),
-    )
+    const projections = definition.stages.map((stage) => {
+      const projected = projectJourneyStage(
+        journeyMarkerPoint(stage),
+        camera,
+        Math.max(1, container.clientWidth),
+        Math.max(1, container.clientHeight),
+        projectionScratch,
+      )
+      return {
+        stageId: stage.id,
+        x: projected.x,
+        y: projected.y,
+        visible: models !== undefined && projected.visible,
+      }
+    })
+    options.onProjectStageLabels?.(projections)
+    if (
+      models !== undefined &&
+      !projectionSettled &&
+      projections.some(
+        (projection) =>
+          projection.stageId === selectedStageId && projection.visible,
+      )
+    ) {
+      projectionSettled = true
+      resolveProjection()
+    }
     if (models !== undefined && !publishedMetrics) {
       publishedMetrics = true
       renderer.domElement.dataset.rendererMetrics =
@@ -311,11 +379,12 @@ function buildMuseumJourneyScene(
     clientY: event.clientY,
   })
   const onPointerDown = (event: PointerEvent): void => {
-    if (disposed || !foreground) return
+    if (disposed || contextLost || !foreground) return
     gestures.down(sample(event))
     renderer.domElement.setPointerCapture(event.pointerId)
   }
   const onPointerMove = (event: PointerEvent): void => {
+    if (disposed || contextLost || !foreground) return
     const move = gestures.move(sample(event))
     if (move?.kind !== 'drag') return
     const orbit = clampJourneyOrbit(
@@ -326,6 +395,12 @@ function buildMuseumJourneyScene(
     orbitPitch = orbit.pitch
   }
   const onPointerUp = (event: PointerEvent): void => {
+    if (disposed || contextLost || !foreground) {
+      gestures.cancel(event.pointerId)
+      if (renderer.domElement.hasPointerCapture(event.pointerId))
+        renderer.domElement.releasePointerCapture(event.pointerId)
+      return
+    }
     const result = gestures.up(sample(event))
     if (renderer.domElement.hasPointerCapture(event.pointerId))
       renderer.domElement.releasePointerCapture(event.pointerId)
@@ -383,10 +458,14 @@ function buildMuseumJourneyScene(
     if (disposed || contextLost) return
     contextLost = true
     loop.setForeground(false)
+    gestures.reset()
     options.onProjectStageLabels?.([])
-    options.onFailure(
-      new Error('The floating museum lost its graphics context.'),
-    )
+    progressDisplay?.dispose()
+    progressDisplay = undefined
+    delete renderer.domElement.dataset.journeyProgress
+    const error = new Error('The floating museum lost its graphics context.')
+    failProjection(error)
+    options.onFailure(error)
   }
   renderer.domElement.addEventListener('webglcontextlost', onContextLost)
   onConstructionFailure(() =>
@@ -410,35 +489,64 @@ function buildMuseumJourneyScene(
     modelsReady,
     () => (contextLost ? 'failed' : disposed ? 'disposed' : 'active'),
     (loaded) => {
-      models = loaded
-      scene.add(loaded.root)
-      updateDesiredView(true)
+      const display = createJourneyProgressDisplay(definition, loaded, {
+        onChange(snapshot) {
+          if (!disposed && !contextLost)
+            renderer.domElement.dataset.journeyProgress =
+              JSON.stringify(snapshot)
+        },
+      })
+      try {
+        models = loaded
+        progressDisplay = display
+        scene.add(loaded.root)
+        display.setProgress(latestProgress)
+        updateDesiredView(true)
+      } catch (error) {
+        models = undefined
+        progressDisplay = undefined
+        display.dispose()
+        loaded.dispose()
+        throw error
+      }
     },
   )
-  const ready = Promise.all([acceptedModels, environmentReady, sky.ready]).then(
-    () => {
-      if (contextLost)
-        throw new Error('The floating museum lost its graphics context.')
-    },
-  )
+  const ready = Promise.all([
+    acceptedModels,
+    environmentReady,
+    sky.ready,
+    firstModelProjection,
+  ]).then(() => {
+    if (contextLost)
+      throw new Error('The floating museum lost its graphics context.')
+  })
 
   return {
     ready,
     setSelected(stageId) {
-      if (disposed || !definition.stages.some((stage) => stage.id === stageId))
+      if (
+        disposed ||
+        contextLost ||
+        !definition.stages.some((stage) => stage.id === stageId)
+      )
         return
       selectedStageId = stageId
       updateDesiredView()
     },
+    setProgress(progress) {
+      if (disposed || contextLost) return
+      latestProgress = normalizeProgress(definition, progress)
+      progressDisplay?.setProgress(latestProgress)
+    },
     setForeground(next) {
-      if (disposed || foreground === next) return
+      if (disposed || contextLost || foreground === next) return
       foreground = next
       if (!next) gestures.reset()
       if (!next) options.onProjectStageLabels?.([])
       loop.setForeground(next && !contextLost)
     },
     setReducedMotion(next) {
-      if (disposed || reducedMotion === next) return
+      if (disposed || contextLost || reducedMotion === next) return
       reducedMotion = next
       water.setReducedMotion(next)
       updateDesiredView(next)
@@ -449,6 +557,7 @@ function buildMuseumJourneyScene(
     dispose() {
       if (disposed) return
       disposed = true
+      failProjection(new DOMException('Journey scene disposed.', 'AbortError'))
       options.onProjectStageLabels?.([])
       abort.abort()
       loop.dispose()
@@ -463,6 +572,8 @@ function buildMuseumJourneyScene(
         onLostPointerCapture,
       )
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost)
+      progressDisplay?.dispose()
+      progressDisplay = undefined
       models?.dispose()
       water.dispose()
       environment.dispose()

@@ -1,16 +1,29 @@
-// Journey scene construction — partial WebGL ownership rolls back without hiding setup failures.
+// Journey scene lifecycle tests — setup rollback and readiness include a projected model frame.
 
 import type * as ThreeTypes from 'three'
-import { expect, it, vi } from 'vitest'
+import { Group, Raycaster } from 'three'
+import { beforeEach, expect, it, vi } from 'vitest'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
+import type * as JourneyResourceTypes from './resources'
 
 const state = vi.hoisted(() => ({
   setupFailure: new Error('initial reflection failed'),
   cleanupFailure: new Error('renderer cleanup failed'),
+  environmentShouldFail: true,
   rendererDispose: vi.fn(),
   forceContextLoss: vi.fn(),
   canvasRemove: vi.fn(),
   skyDispose: vi.fn(),
+  waterDispose: vi.fn(),
+  environmentDispose: vi.fn(),
+  environmentLoad: vi.fn(() => Promise.resolve()),
+  loadModels: vi.fn(),
+  loopDispose: vi.fn(),
+  loopSetForeground: vi.fn(),
+  canvasListeners: new Map<string, EventListenerOrEventListenerObject>(),
+  renderFrame: undefined as
+    | ((visibleSeconds: number, dt: number) => void)
+    | undefined,
 }))
 
 vi.mock('three', async (original) => ({
@@ -18,23 +31,54 @@ vi.mock('three', async (original) => ({
   WebGLRenderer: class {
     domElement = {
       style: { cssText: '' },
+      dataset: {} as Record<string, string>,
       setAttribute: vi.fn(),
+      addEventListener: vi.fn(
+        (type: string, listener: EventListenerOrEventListenerObject) =>
+          state.canvasListeners.set(type, listener),
+      ),
+      removeEventListener: vi.fn(
+        (type: string, listener: EventListenerOrEventListenerObject) => {
+          if (state.canvasListeners.get(type) === listener)
+            state.canvasListeners.delete(type)
+        },
+      ),
+      setPointerCapture: vi.fn(),
+      releasePointerCapture: vi.fn(),
+      hasPointerCapture: vi.fn(() => false),
+      getBoundingClientRect: vi.fn(() => ({
+        left: 0,
+        top: 0,
+        width: 1024,
+        height: 768,
+      })),
       remove: state.canvasRemove,
     }
-    info = { autoReset: true }
+    info = {
+      autoReset: true,
+      render: { calls: 0, triangles: 0 },
+      memory: { geometries: 0, textures: 0 },
+      reset: vi.fn(),
+    }
     shadowMap = { enabled: false }
     setPixelRatio = vi.fn()
+    setSize = vi.fn()
+    render = vi.fn(() => {
+      this.info.render.calls++
+    })
     dispose = state.rendererDispose
     forceContextLoss = state.forceContextLoss
   },
 }))
 
 vi.mock('./sky', async () => {
-  const { Group, Texture } = await vi.importActual<typeof ThreeTypes>('three')
+  const { Group: ThreeGroup, Texture } =
+    await vi.importActual<typeof ThreeTypes>('three')
   return {
     createJourneySky: () => ({
-      root: new Group(),
+      root: new ThreeGroup(),
       background: new Texture(),
+      ready: Promise.resolve(),
       resize: vi.fn(),
       update: vi.fn(),
       dispose: state.skyDispose,
@@ -42,9 +86,49 @@ vi.mock('./sky', async () => {
   }
 })
 
+vi.mock('./water', async () => {
+  const { Group: ThreeGroup } =
+    await vi.importActual<typeof ThreeTypes>('three')
+  return {
+    createJourneyWater: () => ({
+      root: new ThreeGroup(),
+      setReducedMotion: vi.fn(),
+      update: vi.fn(),
+      getMetrics: () => ({
+        triangles: 0,
+        drawCalls: 0,
+        secondaryRenderPasses: 0,
+      }),
+      dispose: state.waterDispose,
+    }),
+  }
+})
+
+vi.mock('./resources', async (original) => ({
+  ...(await original<typeof JourneyResourceTypes>()),
+  createJourneyFrameLoop: (
+    update: (visibleSeconds: number, dt: number) => void,
+  ) => {
+    state.renderFrame = update
+    return {
+      setForeground: state.loopSetForeground,
+      visibleSeconds: () => 0,
+      dispose: state.loopDispose,
+    }
+  },
+}))
+
+vi.mock('./models', () => ({
+  loadJourneyMapModels: (...args: unknown[]) => state.loadModels(...args),
+}))
+
 vi.mock('../render/environment', () => ({
   createMuseumEnvironment: () => {
-    throw state.setupFailure
+    if (state.environmentShouldFail) throw state.setupFailure
+    return {
+      load: state.environmentLoad,
+      dispose: state.environmentDispose,
+    }
   },
 }))
 
@@ -72,7 +156,6 @@ const DEFINITION: MuseumJourneyDefinition = {
       yaw: 0,
       scale: 1,
       focus: [0, 0, 0],
-      merc: [0, 0, 0],
       kind: 'pavilion',
       accent: 'jade',
     },
@@ -81,15 +164,41 @@ const DEFINITION: MuseumJourneyDefinition = {
   spillways: [],
 }
 
+beforeEach(() => {
+  vi.clearAllMocks()
+  state.environmentShouldFail = true
+  state.renderFrame = undefined
+  state.canvasListeners.clear()
+  state.environmentLoad.mockResolvedValue(undefined)
+})
+
+function stubBrowser(): void {
+  vi.stubGlobal('window', {
+    devicePixelRatio: 1,
+    matchMedia: () => ({ matches: false }),
+  })
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe = vi.fn()
+      disconnect = vi.fn()
+    },
+  )
+}
+
+function dispatchCanvasEvent(type: string, event: Event): void {
+  const listener = state.canvasListeners.get(type)
+  if (listener === undefined) throw new Error(`Missing ${type} listener`)
+  if (typeof listener === 'function') listener(event)
+  else listener.handleEvent(event)
+}
+
 it('retires acquired owners and preserves the original construction failure', () => {
   state.rendererDispose.mockImplementationOnce(() => {
     throw state.cleanupFailure
   })
   const append = vi.fn()
-  vi.stubGlobal('window', {
-    devicePixelRatio: 1,
-    matchMedia: () => ({ matches: false }),
-  })
+  stubBrowser()
 
   let thrown: unknown
   try {
@@ -117,4 +226,152 @@ it('retires acquired owners and preserves the original construction failure', ()
   expect(state.forceContextLoss).toHaveBeenCalledOnce()
   expect(state.canvasRemove).toHaveBeenCalledOnce()
   expect(append).not.toHaveBeenCalled()
+})
+
+it('does not report ready before a model-backed label projection is published', async () => {
+  state.environmentShouldFail = false
+  const markers = [new Group(), new Group(), new Group()] as const
+  const model = {
+    root: new Group(),
+    selectableRoots: new Map([['stage', new Group()]]),
+    portraitSurfaces: new Map(),
+    portraitMysteries: new Map(),
+    starMarkers: new Map([['stage', markers]]),
+    setSelected: vi.fn(),
+    update: vi.fn(),
+    dispose: vi.fn(),
+  }
+  state.loadModels.mockResolvedValueOnce(model)
+  const projections = vi.fn()
+  const append = vi.fn()
+  stubBrowser()
+  const scene = createMuseumJourneyScene(
+    {
+      append,
+      clientWidth: 1024,
+      clientHeight: 768,
+    } as unknown as HTMLElement,
+    DEFINITION,
+    (id) => id,
+    {
+      selectedStageId: 'stage',
+      foreground: true,
+      reducedMotion: false,
+      onSelect: vi.fn(),
+      onFailure: vi.fn(),
+      onProjectStageLabels: projections,
+    },
+  )
+  let readySettled = false
+  void scene.ready.then(() => {
+    readySettled = true
+  })
+
+  try {
+    await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
+    await Promise.resolve()
+    expect(readySettled).toBe(false)
+    expect(append).toHaveBeenCalledOnce()
+
+    const renderFrame = state.renderFrame
+    if (renderFrame === undefined)
+      throw new Error('Missing scene frame callback')
+    renderFrame(0, 0)
+    await scene.ready
+
+    expect(readySettled).toBe(true)
+    expect(projections).toHaveBeenLastCalledWith([
+      expect.objectContaining({ stageId: 'stage', visible: true }),
+    ])
+  } finally {
+    scene.dispose()
+    vi.unstubAllGlobals()
+  }
+})
+
+it('retires active gestures and ignores selection mutations after context loss', async () => {
+  state.environmentShouldFail = false
+  const hitTarget = new Group()
+  hitTarget.userData.journeyStageId = 'stage'
+  const intersect = vi
+    .spyOn(Raycaster.prototype, 'intersectObjects')
+    .mockReturnValue([{ object: hitTarget }] as never)
+  const model = {
+    root: new Group(),
+    selectableRoots: new Map([['stage', hitTarget]]),
+    portraitSurfaces: new Map(),
+    portraitMysteries: new Map(),
+    starMarkers: new Map([
+      ['stage', [new Group(), new Group(), new Group()] as const],
+    ]),
+    setSelected: vi.fn(),
+    update: vi.fn(),
+    dispose: vi.fn(),
+  }
+  state.loadModels.mockResolvedValueOnce(model)
+  const onSelect = vi.fn()
+  const onFailure = vi.fn()
+  stubBrowser()
+  const scene = createMuseumJourneyScene(
+    {
+      append: vi.fn(),
+      clientWidth: 1024,
+      clientHeight: 768,
+    } as unknown as HTMLElement,
+    DEFINITION,
+    (id) => id,
+    {
+      selectedStageId: 'stage',
+      foreground: true,
+      reducedMotion: false,
+      onSelect,
+      onFailure,
+    },
+  )
+
+  try {
+    await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
+    const renderFrame = state.renderFrame
+    if (renderFrame === undefined)
+      throw new Error('Missing scene frame callback')
+    renderFrame(0, 0)
+    await scene.ready
+    const selectionsBeforeLoss = model.setSelected.mock.calls.length
+
+    dispatchCanvasEvent('pointerdown', {
+      pointerId: 1,
+      clientX: 512,
+      clientY: 384,
+    } as PointerEvent)
+    const preventDefault = vi.fn()
+    dispatchCanvasEvent('webglcontextlost', {
+      preventDefault,
+    } as unknown as Event)
+    dispatchCanvasEvent('pointerup', {
+      pointerId: 1,
+      clientX: 512,
+      clientY: 384,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointerdown', {
+      pointerId: 2,
+      clientX: 512,
+      clientY: 384,
+    } as PointerEvent)
+    dispatchCanvasEvent('pointerup', {
+      pointerId: 2,
+      clientX: 512,
+      clientY: 384,
+    } as PointerEvent)
+    scene.setSelected('stage')
+
+    expect(preventDefault).toHaveBeenCalledOnce()
+    expect(onFailure).toHaveBeenCalledOnce()
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(intersect).not.toHaveBeenCalled()
+    expect(model.setSelected).toHaveBeenCalledTimes(selectionsBeforeLoss)
+  } finally {
+    scene.dispose()
+    intersect.mockRestore()
+    vi.unstubAllGlobals()
+  }
 })

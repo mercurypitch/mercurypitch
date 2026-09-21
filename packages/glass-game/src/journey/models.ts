@@ -1,10 +1,11 @@
 // Journey models — assemble three authored landmasses with four stable chapter medallions.
 
 import type { BufferGeometry, Material, Mesh, Object3D } from 'three'
-import { AnimationMixer, Box3, CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector3, } from 'three'
+import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector3, } from 'three'
 import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
-import { createJourneyArchitecture } from './architecture'
+import { createJourneyArchitecture, findJourneyPortraitInset, } from './architecture'
+import { createJourneyMerc } from './merc'
 import type { JourneyGltfDocument } from './resources'
 import { loadJourneyGltf } from './resources'
 import { createJourneyVegetation } from './vegetation'
@@ -30,8 +31,10 @@ const SCULPTED_CLIFF_SCALE_Y = 2.25
 export interface JourneyMapModels {
   root: Group
   selectableRoots: ReadonlyMap<string, Object3D>
-  /** Stable mystery surfaces that earned portrait art can replace later. */
+  /** Save-derived visuals are applied by the scene-owned progress display. */
   portraitSurfaces: ReadonlyMap<string, Mesh>
+  portraitMysteries: ReadonlyMap<string, Object3D>
+  starMarkers: ReadonlyMap<string, readonly [Object3D, Object3D, Object3D]>
   setSelected(stage: MuseumJourneyStage, immediate?: boolean): void
   update(dt: number, reducedMotion: boolean): void
   dispose(): void
@@ -185,11 +188,16 @@ function createAssembly(
   document: JourneyGltfDocument,
   sculptureDocument: JourneyGltfDocument | undefined,
 ) {
-  for (const name of REQUIRED_NODES) authoredUnit(document, name)
+  for (const name of REQUIRED_NODES) {
+    const unit = authoredUnit(document, name)
+    if (name === 'map_frame') findJourneyPortraitInset(unit)
+  }
   if (sculptureDocument !== undefined) {
-    authoredUnit(sculptureDocument, 'map_temple')
+    authoredUnit(sculptureDocument, 'map_temple_amber')
+    authoredUnit(sculptureDocument, 'map_temple_teal')
     authoredUnit(sculptureDocument, 'map_cliff')
     authoredUnit(sculptureDocument, 'map_cypress')
+    authoredUnit(sculptureDocument, 'map_flower_cluster')
   }
   const root = new Group()
   root.name = 'floating-museum-architecture'
@@ -308,73 +316,20 @@ function createAssembly(
     root,
     selectableRoots: architecture.selectableRoots,
     portraitSurfaces: architecture.portraitSurfaces,
+    portraitMysteries: architecture.portraitMysteries,
+    starMarkers: architecture.starMarkers,
     materials,
     ownedGeometries,
   }
 }
 
-function createMerc(document: JourneyGltfDocument, first: MuseumJourneyStage) {
-  const body = document.scene
-  const bounds = new Box3().setFromObject(body)
-  const height = Math.max(0.001, bounds.getSize(new Vector3()).y)
-  const ground = bounds.min.y
-  const scale = 0.68 / height
-  body.scale.setScalar(scale)
-  body.position.y = -ground * scale
-  const metal = new MeshPhysicalMaterial({
-    color: 0xf4f7f8,
-    metalness: 1,
-    roughness: 0.07,
-    iridescence: 0.8,
-    iridescenceIOR: 1.65,
-    iridescenceThicknessRange: [120, 460],
-    envMapIntensity: 1.25,
+function disposeAssembly(assembly: ReturnType<typeof createAssembly>): void {
+  assembly.root.removeFromParent()
+  assembly.root.traverse((object) => {
+    if (object instanceof InstancedMesh) object.dispose()
   })
-  const replacedMaterials = new Set<Material>()
-  body.traverse((object) => {
-    const mesh = object as Mesh
-    if (!mesh.isMesh) return
-    if (mesh.name === 'merc_body' || mesh.name.startsWith('merc_hand')) {
-      for (const material of Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material])
-        replacedMaterials.add(material)
-      mesh.material = metal
-    }
-    mesh.castShadow = true
-    mesh.receiveShadow = true
-  })
-  replacedMaterials.forEach((material) => material.dispose())
-  const root = new Group()
-  root.name = 'journey-merc'
-  root.add(body)
-  root.position.fromArray(first.merc)
-  const target = new Vector3().fromArray(first.merc)
-  const mixer = new AnimationMixer(body)
-  const idle =
-    document.animations.find((clip) => /listen|idle/i.test(clip.name)) ??
-    document.animations[0]
-  if (idle !== undefined) mixer.clipAction(idle).play()
-  return {
-    root,
-    setTarget(stage: MuseumJourneyStage, immediate: boolean) {
-      target.fromArray(stage.merc)
-      if (immediate) root.position.copy(target)
-    },
-    update(dt: number, reducedMotion: boolean) {
-      const safeDt = Math.max(0, Math.min(0.05, dt))
-      mixer.update(reducedMotion ? 0 : safeDt)
-      if (reducedMotion) root.position.copy(target)
-      else root.position.lerp(target, 1 - Math.exp(-4.8 * safeDt))
-      root.position.y += reducedMotion ? 0 : Math.sin(mixer.time * 1.6) * 0.0005
-    },
-    dispose() {
-      mixer.stopAllAction()
-      mixer.uncacheRoot(body)
-      metal.dispose()
-      document.dispose()
-    },
-  }
+  assembly.ownedGeometries.forEach((geometry) => geometry.dispose())
+  Object.values(assembly.materials).forEach((material) => material.dispose())
 }
 
 export async function loadJourneyMapModels(
@@ -417,13 +372,22 @@ export async function loadJourneyMapModels(
     for (const document of documents) document.dispose()
     throw error
   }
-  const merc = createMerc(mercDocument, definition.stages[0]!)
+  let merc: ReturnType<typeof createJourneyMerc>
+  try {
+    merc = createJourneyMerc(mercDocument, definition.stages[0]!)
+  } catch (error) {
+    disposeAssembly(assembly)
+    for (const document of documents) document.dispose()
+    throw error
+  }
   assembly.root.add(merc.root)
   let disposed = false
   return {
     root: assembly.root,
     selectableRoots: assembly.selectableRoots,
     portraitSurfaces: assembly.portraitSurfaces,
+    portraitMysteries: assembly.portraitMysteries,
+    starMarkers: assembly.starMarkers,
     setSelected(stage, immediate = false) {
       if (!disposed) merc.setTarget(stage, immediate)
     },
@@ -433,17 +397,10 @@ export async function loadJourneyMapModels(
     dispose() {
       if (disposed) return
       disposed = true
-      assembly.root.removeFromParent()
-      assembly.root.traverse((object) => {
-        if (object instanceof InstancedMesh) object.dispose()
-      })
+      disposeAssembly(assembly)
       merc.dispose()
       kitDocument.dispose()
       sculptureDocument?.dispose()
-      assembly.ownedGeometries.forEach((geometry) => geometry.dispose())
-      Object.values(assembly.materials).forEach((material) =>
-        material.dispose(),
-      )
     },
   }
 }

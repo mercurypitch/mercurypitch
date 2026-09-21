@@ -81,18 +81,30 @@ export function createJourneyVegetation(
   const flowers = new InstancedMesh(
     flowerGeometry,
     materials.blossom,
-    treeCount * 2,
+    treeCount * 2 + definition.landmasses.length * 30,
   )
-  const ivyPerIsland = 24
+  const bedLeaves = new InstancedMesh(
+    ivyGeometry,
+    materials.foliage,
+    definition.landmasses.length * 18,
+  )
+  const ivyPerIsland = 40
   const ivy = new InstancedMesh(
     ivyGeometry,
     materials.foliage,
     definition.landmasses.length * ivyPerIsland,
   )
+  const darkIvy = new InstancedMesh(
+    ivyGeometry,
+    materials.darkFoliage,
+    definition.landmasses.length * ivyPerIsland,
+  )
   trunks.name = 'instanced-museum-cypress-trunks'
   crowns.name = 'instanced-museum-cypress-crowns'
   flowers.name = 'instanced-museum-rim-blossoms'
+  bedLeaves.name = 'instanced-museum-flower-bed-leaves'
   ivy.name = 'instanced-hanging-cliff-ivy'
+  darkIvy.name = 'instanced-hanging-cliff-ivy-shadow'
   trunks.castShadow = true
   crowns.castShadow = true
   crowns.receiveShadow = true
@@ -101,8 +113,11 @@ export function createJourneyVegetation(
   let treeIndex = 0
   let crownIndex = 0
   let flowerIndex = 0
+  let leafIndex = 0
   let ivyIndex = 0
+  let darkIvyIndex = 0
   const cypressTransforms: Matrix4[] = []
+  const authoredFlowerTransforms: Matrix4[] = []
 
   for (
     let islandIndex = 0;
@@ -157,21 +172,83 @@ export function createJourneyVegetation(
       }
     }
 
-    for (let index = 0; index < ivyPerIsland; index++) {
-      const strand = index % 6
-      const depth = Math.floor(index / 6)
-      const angle =
-        Math.PI * (0.08 + strand * 0.17) + island.yaw + islandIndex * 0.51
-      const point = rimPoint(island, angle, 1.02)
-      point.y -= 0.18 + depth * (0.28 + (strand % 2) * 0.05)
-      point.x += Math.sin(depth * 1.7 + strand) * 0.08
-      point.z += Math.cos(depth * 1.3 + strand) * 0.06
-      matrix.compose(
-        point,
-        rotation,
-        new Vector3(0.78 + (index % 3) * 0.12, 1.25, 0.65),
+    for (let bed = 0; bed < 6; bed++) {
+      const angle = ((bed + 0.2) / 6) * Math.PI * 2 + islandIndex * 0.37
+      const center = rimPoint(island, angle, bed % 2 === 0 ? 0.64 : 0.7)
+      for (let blossom = 0; blossom < 5; blossom++) {
+        const turn = blossom * 2.399 + bed * 0.41
+        const radius = 0.07 + (blossom % 3) * 0.035
+        const point = center
+          .clone()
+          .add(
+            new Vector3(
+              Math.cos(turn) * radius,
+              0.075 + (blossom % 2) * 0.025,
+              Math.sin(turn) * radius,
+            ),
+          )
+        if (!clearsJourneyLandmarks(definition, point)) continue
+        const size = 0.78 + ((bed + blossom) % 3) * 0.13
+        matrix.compose(point, rotation, new Vector3(size, size * 0.72, size))
+        flowers.setMatrixAt(flowerIndex++, matrix)
+      }
+      for (let leaf = 0; leaf < 3; leaf++) {
+        const turn = leaf * ((Math.PI * 2) / 3) + bed * 0.31
+        const point = center
+          .clone()
+          .add(new Vector3(Math.cos(turn) * 0.13, 0.035, Math.sin(turn) * 0.13))
+        if (!clearsJourneyLandmarks(definition, point)) continue
+        matrix.compose(
+          point,
+          new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -turn),
+          new Vector3(0.92, 0.42, 1.42),
+        )
+        bedLeaves.setMatrixAt(leafIndex++, matrix)
+      }
+    }
+
+    let authoredFlowerCount = 0
+    for (let candidate = 0; candidate < 10; candidate++) {
+      if (authoredFlowerCount === 2) break
+      const angle = ((candidate + 0.55) / 10) * Math.PI * 2 + islandIndex * 0.53
+      const point = rimPoint(island, angle, candidate % 2 === 0 ? 0.7 : 0.76)
+      if (!clearsJourneyLandmarks(definition, point)) continue
+      authoredFlowerTransforms.push(
+        new Matrix4().compose(
+          point,
+          new Quaternion().setFromAxisAngle(
+            new Vector3(0, 1, 0),
+            -angle + Math.PI / 2,
+          ),
+          new Vector3(0.85, 0.85, 0.85),
+        ),
       )
-      ivy.setMatrixAt(ivyIndex++, matrix)
+      authoredFlowerCount++
+    }
+
+    for (let strand = 0; strand < 8; strand++) {
+      const angle = Math.PI * (0.04 + strand * 0.13) + islandIndex * 0.19
+      const strandTop = rimPoint(island, angle, 1.02)
+      if (!clearsJourneyLandmarks(definition, strandTop)) continue
+      for (let depth = 0; depth < 5; depth++) {
+        const point = strandTop.clone()
+        point.y -= 0.16 + depth * (0.25 + (strand % 3) * 0.025)
+        point.x += Math.sin(depth * 1.7 + strand) * 0.075
+        point.z += Math.cos(depth * 1.3 + strand) * 0.055
+        if (!clearsJourneyLandmarks(definition, point)) continue
+        matrix.compose(
+          point,
+          rotation,
+          new Vector3(
+            0.58 + ((strand + depth) % 3) * 0.1,
+            1.14 + depth * 0.08,
+            0.52,
+          ),
+        )
+        if ((strand + depth) % 3 === 0)
+          darkIvy.setMatrixAt(darkIvyIndex++, matrix)
+        else ivy.setMatrixAt(ivyIndex++, matrix)
+      }
     }
 
     for (let index = 0; index < 3; index++) {
@@ -192,7 +269,12 @@ export function createJourneyVegetation(
   crowns.count = crownIndex
   flowers.instanceMatrix.needsUpdate = true
   flowers.count = flowerIndex
+  bedLeaves.instanceMatrix.needsUpdate = true
+  bedLeaves.count = leafIndex
   ivy.instanceMatrix.needsUpdate = true
+  ivy.count = ivyIndex
+  darkIvy.instanceMatrix.needsUpdate = true
+  darkIvy.count = darkIvyIndex
   if (sculpturalUnit === undefined) root.add(trunks, crowns)
   else {
     const cypress = sculpturalUnit('map_cypress')
@@ -218,6 +300,31 @@ export function createJourneyVegetation(
       root.add(instances)
     })
   }
-  root.add(flowers, ivy)
+
+  const flowerCluster = sculpturalUnit?.('map_flower_cluster')
+  if (flowerCluster !== undefined && authoredFlowerTransforms.length > 0) {
+    flowerCluster.updateMatrixWorld(true)
+    let meshIndex = 0
+    flowerCluster.traverse((object) => {
+      const mesh = object as Mesh
+      if (!mesh.isMesh) return
+      const instances = new InstancedMesh(
+        mesh.geometry,
+        mesh.material,
+        authoredFlowerTransforms.length,
+      )
+      instances.name = `instanced-authored-flower-clusters-${meshIndex++}`
+      instances.castShadow = true
+      instances.receiveShadow = true
+      const instanceMatrix = new Matrix4()
+      authoredFlowerTransforms.forEach((transform, index) => {
+        instanceMatrix.multiplyMatrices(transform, mesh.matrixWorld)
+        instances.setMatrixAt(index, instanceMatrix)
+      })
+      instances.instanceMatrix.needsUpdate = true
+      root.add(instances)
+    })
+  }
+  root.add(flowers, bedLeaves, ivy, darkIvy)
   return root
 }

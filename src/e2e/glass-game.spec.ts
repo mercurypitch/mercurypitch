@@ -63,11 +63,14 @@ test('Glassworks opens from its own entry and loads a real gallery @smoke', asyn
   await expect(page).toHaveURL(/\/glass-game$/u)
   await expect(page.getByTestId('glass-campaign')).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: /Every gallery begins/u }),
+    page.getByRole('heading', { name: 'Glassworks', exact: true }),
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Enter Resonance Conservatory' }),
   ).toBeVisible()
+  await expect(
+    page.getByTestId('glass-campaign').locator('[data-map-state]'),
+  ).toHaveAttribute('data-map-state', 'ready', { timeout: 60_000 })
 
   const firstCover = page.getByTestId('glass-campaign').locator('img').first()
   await expect

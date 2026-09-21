@@ -1,0 +1,66 @@
+{
+  "createdAt": "2026-09-21T06:30:49.833Z",
+  "evidence": "Actual delivered merc.glb, 240 animation frames per destination. Body footprint measured independently of the authored donor origin; tiny idle motion is preserved.",
+  "proofs": [
+    {
+      "stageId": "first-light-isle",
+      "marker": [
+        -6.1,
+        0.3,
+        4.15
+      ],
+      "standingPoint": [
+        -6.1,
+        0.47,
+        4.15
+      ],
+      "maximumLateralOffset": 0.00472262914319978,
+      "minimumBodyClearance": 0.10004129969073616
+    },
+    {
+      "stageId": "glassworks-isle",
+      "marker": [
+        -4.02,
+        0.3,
+        3.55
+      ],
+      "standingPoint": [
+        -4.02,
+        0.47,
+        3.55
+      ],
+      "maximumLateralOffset": 0.004722629143198931,
+      "minimumBodyClearance": 0.10004129969073616
+    },
+    {
+      "stageId": "twin-galleries-isle",
+      "marker": [
+        0.1,
+        0.78,
+        2.03
+      ],
+      "standingPoint": [
+        0.1,
+        0.9500000000000001,
+        2.03
+      ],
+      "maximumLateralOffset": 0.004722629143198947,
+      "minimumBodyClearance": 0.10004129969073616
+    },
+    {
+      "stageId": "resonance-conservatory-isle",
+      "marker": [
+        4.72,
+        1.11,
+        -1.2
+      ],
+      "standingPoint": [
+        4.72,
+        1.28,
+        -1.2
+      ],
+      "maximumLateralOffset": 0.004722629143199152,
+      "minimumBodyClearance": 0.10004129969073627
+    }
+  ]
+}

@@ -13,9 +13,10 @@ rewards/portrait pilot, build the Resonance Conservatory, and verify shared
 web/native delivery. The active checklist is
 [APPROVED-FOUR-STAGES.md](./APPROVED-FOUR-STAGES.md). The later journey map has a
 [three-direction visual audition](./JOURNEY-MAP-AUDITION.md); implementation
-now follows the owner-selected A, Floating Museum. A live 3D map is authorized
-after the four-stage pass; B/C remain archived. See
-[FLOATING-MUSEUM-LIVE.md](./FLOATING-MUSEUM-LIVE.md).
+now follows the owner-selected A, Floating Museum. The live 3D map was
+authorized and its V3 composition accepted; B/C remain archived. See
+[FLOATING-MUSEUM-LIVE.md](./FLOATING-MUSEUM-LIVE.md) and the active
+[second polish batch](./FLOATING-MUSEUM-POLISH-BATCH-2.md).
 
 The owner accepted the longer Journey and tablet controls, music, enclosure,
 decoration, Merc clearance and artwork inspection. The owner also completed Twin
@@ -31,8 +32,17 @@ the unsigned iOS Simulator app both built successfully at `fa214b25`; this
 proves packaging, not physical microphone or performance acceptance. The
 floating-map source kit is preserved in `2b550a71`; shared runtime integration
 is in `f0d0c68a`, with compiled phone/tablet/desktop proofs and a static HTTPS
-playtest. Current-head CI and owner device acceptance remain open. The Celadon replacement remains the one production asset awaiting an
-exact-upload approval.
+playtest. The owner accepted the V3 fidelity composition. Its active follow-up is
+[FLOATING-MUSEUM-POLISH-BATCH-2.md](./FLOATING-MUSEUM-POLISH-BATCH-2.md); the
+amber/teal dome and botanical art checkpoint is pushed in `619e41e4`. CI for the
+prior documentation head `4f109ab0` failed the web heading, map-kit inventory and
+projected-label readiness checks. Batch 2 fixes those regressions and its targeted checks pass; final-head CI
+remains required. Its runtime, Merc centring and earned-portrait presentation
+have passed compiled desktop/tablet/phone review. Owner device acceptance also remains open.
+The exact Celadon guide upload and further Meshy attempts were explicitly
+authorized. The 30-credit opaque V3 trial completed, failed geometry review and
+is archived; there is no approval blocker, but the production replacement is
+still open.
 
 The detailed implementation, validation and next device test are in
 [TWIN-GALLERIES-IMPLEMENTATION.md](./TWIN-GALLERIES-IMPLEMENTATION.md).
@@ -42,19 +52,19 @@ Jam lyric gesture browser test failed on unchanged root-app code. New changes
 still require their own pushed-revision CI. Playtest acceptance
 and software render proofs are not measured device FPS/thermal evidence.
 
-| Area                 | Implemented                                                                                                                                                | Still missing                                                                                                |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Integration          | Mini-game slice PRs #774–#782 and follow-ups #802/#803, #785, #804, #806 merged                                                                            | Standard store builds intentionally keep games disabled                                                      |
-| Controls             | Manual keyboard/touch movement and jump; follow/orbit/zoom camera; automatic run ramp; floor/prop/gate collision                                           | Physical-device tuning as new routes grow                                                                    |
-| Content architecture | Prefab composer, shared hold/pair lessons, validation, room ownership, independent saves and campaign transitions                                          | Further judge types and richer authoring tools                                                               |
-| First Light          | Short enclosed tutorial and panorama; two required and one optional held-note exhibit                                                                      | Device regression through the shared campaign                                                                |
-| Glassworks Journey   | Sixteen room/presentation instances; four required and five optional held-note encounters; garden, archive, salon, panorama                                | Timed pacing study; ongoing room polish                                                                      |
-| Twin Galleries       | Eighteen connected placements; four required and three optional low/high encounters; owner accepted the learning sequence                                  | Timed pacing and sustained device performance; remaining V6 vessel production                                |
-| Art                  | Meshy/Blender vessels and wall kit; original paintings including three Level 2 works, planters, varied floors; loading cover                               | Amber approved and pushed; replacement Celadon guide upload awaits exact automatic-review-requested approval |
-| Sound                | Approved M01/M03 music/ambience; Gentle Whimsical D2 Merc voice and shuffled reactions; two-note references; quiet capture                                 | Additional level-specific Merc narration                                                                     |
-| Rendering            | Conservative room visibility, camera obstruction, shadow tuning                                                                                            | Sustained real-device profiling, LOD/compression strategy if measurements require it                         |
-| Delivery             | Shared package/hosts; canonical `/glass-game`, Home CTA, selective LFS hydration, all-file native hashes, successful games-on Android/iOS Simulator builds | Physical-device acceptance and publication remain separate; later map changes need their own CI              |
-| Rewards              | Journey pilot committed/pushed (`25dbb403`): finite discovery tokens, final-portrait singing stars, durable portrait ownership                             | Owner device acceptance; broader collection UI, recordings/replay/sharing remain future                      |
+| Area                 | Implemented                                                                                                                                                | Still missing                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Integration          | Mini-game slice PRs #774–#782 and follow-ups #802/#803, #785, #804, #806 merged                                                                            | Standard store builds intentionally keep games disabled                                           |
+| Controls             | Manual keyboard/touch movement and jump; follow/orbit/zoom camera; automatic run ramp; floor/prop/gate collision                                           | Physical-device tuning as new routes grow                                                         |
+| Content architecture | Prefab composer, shared hold/pair lessons, validation, room ownership, independent saves and campaign transitions                                          | Further judge types and richer authoring tools                                                    |
+| First Light          | Short enclosed tutorial and panorama; two required and one optional held-note exhibit                                                                      | Device regression through the shared campaign                                                     |
+| Glassworks Journey   | Sixteen room/presentation instances; four required and five optional held-note encounters; garden, archive, salon, panorama                                | Timed pacing study; ongoing room polish                                                           |
+| Twin Galleries       | Eighteen connected placements; four required and three optional low/high encounters; owner accepted the learning sequence                                  | Timed pacing and sustained device performance; remaining V6 vessel production                     |
+| Art                  | Meshy/Blender vessels and wall kit; original paintings including three Level 2 works, planters, varied floors; loading cover                               | Amber approved/pushed; Celadon upload approved, V3 rejected/archived; replacement production open |
+| Sound                | Approved M01/M03 music/ambience; Gentle Whimsical D2 Merc voice and shuffled reactions; two-note references; quiet capture                                 | Additional level-specific Merc narration                                                          |
+| Rendering            | Conservative room visibility, camera obstruction, shadow tuning                                                                                            | Sustained real-device profiling, LOD/compression strategy if measurements require it              |
+| Delivery             | Shared package/hosts; canonical `/glass-game`, Home CTA, selective LFS hydration, all-file native hashes, successful games-on Android/iOS Simulator builds | Physical-device acceptance and publication remain separate; later map changes need their own CI   |
+| Rewards              | Journey pilot committed/pushed (`25dbb403`): finite discovery tokens, final-portrait singing stars, durable portrait ownership                             | Owner device acceptance; broader collection UI, recordings/replay/sharing remain future           |
 
 ## Approved direction
 
@@ -145,9 +155,12 @@ measured base proxy, 9,837-triangle render derivative and actual scene proof.
 Opaline V2 has a validated hollow cavity and 18-piece fracture; its continuous
 opal/gold/jade materials and optional court integration passed review, with
 actual intact and shattering render proofs. V1 is retained as rejected material evidence. Amber V2 is now approved and integrated in the lower gallery (`e2279942`),
-with a 16-piece hollow fracture and exact render/source receipts. Celadon is
-still being finalized; rejected remeshes remain archived. The extra
-five-credit Celadon remesh failed topology and was archived as rejected input.
+with a 16-piece hollow fracture and exact render/source receipts. The owner
+explicitly approved the exact Celadon guide upload and further Meshy attempts as
+needed. The resulting 30-credit opaque V3 trial failed geometry review and is
+archived with the earlier rejected remeshes; replacement production remains
+open. The extra five-credit Celadon remesh also failed topology and remains
+archived as rejected input.
 The route keeps approved existing breakable recipes until replacements pass. An intact download is
 not a finished breakable. Do not inflate the current level's download with
 unused candidates.
@@ -219,8 +232,9 @@ Detailed companions: `LEVEL-AUTHORING-PLAN.md`, `LONGER-LEVELS.md`,
 also have a repository copy in
 [OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md](./OPTIONAL-EXHIBITS-REWARDS-PORTRAIT-FINALES.md).
 
-No new game-design choice blocks Level 2; exact approval for the new Celadon
-guide upload is still pending after automatic review rejected that upload. The
-owner accepted the comfortable low/high learning sequence and authorized the
-rewards defaults and next stages; physical-device mirror cost and journey
-duration still need measured feedback.
+No new game-design choice or asset-upload approval blocks Level 2. The owner
+explicitly approved the exact Celadon guide and further Meshy attempts; the
+completed 30-credit opaque V3 trial was rejected and archived, so production of
+an acceptable replacement remains open. The owner accepted the comfortable
+low/high learning sequence and authorized the rewards defaults and next stages;
+physical-device mirror cost and journey duration still need measured feedback.
