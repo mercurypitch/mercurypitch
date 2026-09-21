@@ -1,5 +1,11 @@
 # Optional Exhibits, Rewards, Portraits, and Later Voice Finales
 
+**Later proposal (2026-09-21):** The owner proposed level stars for selected replay
+difficulty tiers, independent of coins/portraits. See
+[REPLAY-DIFFICULTY-AND-LEVEL-STARS.md](./REPLAY-DIFFICULTY-AND-LEVEL-STARS.md).
+The accuracy-star pilot below describes current behavior and historical design;
+it is not yet migrated or replaced by that proposal.
+
 **Status:** Design only; implementation deferred.
 **Date:** 2026-09-20
 

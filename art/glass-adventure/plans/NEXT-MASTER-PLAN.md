@@ -92,6 +92,24 @@ are retained in each batch document.
 - Web and native share the game and content. Publishing remains a separate
   explicit decision. The disjoint-colliders reference project stays read-only.
 
+## Current owner follow-up — challenge clarity and replay proposals
+
+The 2026-09-21 playtest prioritized a side-view cinematic for every singing
+challenge, held through the shatter and smoothly restored afterward, plus a
+Conservatory beginner sway completion investigation. These fixes precede the
+next landscape batch. Implementation/verification is tracked in
+[CHALLENGE-CAMERA-AND-SWAY-POLISH.md](./CHALLENGE-CAMERA-AND-SWAY-POLISH.md).
+
+Two new ideas are **planning only**:
+
+- [Replay difficulty and level stars](./REPLAY-DIFFICULTY-AND-LEVEL-STARS.md): first
+  clear on easy, selected harder replays for higher level stars, possible separate
+  Legend crest; preserve coins/portraits and distinguish the existing final-portrait
+  accuracy pilot. Its migration and candidate durations need explicit later review.
+- [Cloudway platform trials](./CLOUDWAY-PLATFORM-TRIALS.md): optional ice/moving/
+  cracking-platform journeys, with [three imagegen auditions](../platform-trials/v1/README.md).
+  Mechanics and visual approval precede new Meshy production and runtime work.
+
 ## Next executable milestones
 
 ### N2 finish — close the current visual polish
