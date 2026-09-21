@@ -69,6 +69,7 @@ export interface MuseumJourneyDefinition {
   id: string
   modelAssetId: string
   sculpturalAssetId?: string
+  architecturalAssetId?: string
   landmasses: readonly MuseumJourneyLandmass[]
   stages: readonly MuseumJourneyStage[]
   bridges: readonly MuseumJourneyBridge[]
@@ -79,6 +80,7 @@ export const FLOATING_MUSEUM_JOURNEY: MuseumJourneyDefinition = {
   id: 'floating-museum-v1',
   modelAssetId: 'floating-museum-map-kit-v1',
   sculpturalAssetId: 'floating-museum-twin-finish-kit-v4',
+  architecturalAssetId: 'floating-museum-architecture-kit-v6',
   landmasses: [
     {
       id: 'first-light-landmass',

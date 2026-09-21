@@ -1,12 +1,16 @@
 // Journey model tests — partial loads retire resources and bridge transforms meet endpoints.
 
-import { AnimationClip, BufferGeometry, Group, Material, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, Vector3, } from 'three'
+import type { MeshStandardMaterial } from 'three'
+import { AnimationClip, BoxGeometry, BufferGeometry, Group, Material, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import { journeyBridgeTransform, loadJourneyMapModels } from './models'
 import type { JourneyGltfDocument } from './resources'
 
-function createKitScene(includePortraitInset = true): Group {
+function createKitScene(
+  includePortraitInset = true,
+  includePlatformFinish = false,
+): Group {
   const scene = new Group()
   for (const name of [
     'map_canopy',
@@ -24,7 +28,29 @@ function createKitScene(includePortraitInset = true): Group {
       material.name = 'map_frame_atlas_00'
       node.add(new Mesh(new PlaneGeometry(0.79, 1.5), material))
     }
+    if (name === 'map_platform' && includePlatformFinish) {
+      const marble = new MeshBasicMaterial()
+      marble.name = 'map_ivory_marble'
+      const gold = new MeshBasicMaterial()
+      gold.name = 'map_champagne_gold'
+      const finish = new Mesh(new BoxGeometry(1, 0.1, 1), [marble, gold])
+      finish.name = 'platform-finish-fixture'
+      node.add(finish)
+    }
     scene.add(node)
+  }
+  return scene
+}
+
+function createArchitectureScene(includeConservatory = true): Group {
+  const scene = new Group()
+  const connector = new Group()
+  connector.name = 'map_twin_connector'
+  scene.add(connector)
+  if (includeConservatory) {
+    const conservatory = new Group()
+    conservatory.name = 'map_conservatory'
+    scene.add(conservatory)
   }
   return scene
 }
@@ -159,6 +185,70 @@ describe('journey map model loading', () => {
     expect(mercDispose).toHaveBeenCalledOnce()
   })
 
+  it('retires every loaded model when the architecture polish kit fails', async () => {
+    const map = { scene: new Group(), animations: [], dispose: vi.fn() }
+    const merc = { scene: new Group(), animations: [], dispose: vi.fn() }
+    const sculpture = { scene: new Group(), animations: [], dispose: vi.fn() }
+    const failure = new Error('architecture unavailable')
+    const loadGltf = vi
+      .fn()
+      .mockResolvedValueOnce(map)
+      .mockResolvedValueOnce(merc)
+      .mockResolvedValueOnce(sculpture)
+      .mockRejectedValueOnce(failure)
+
+    await expect(
+      loadJourneyMapModels(
+        FLOATING_MUSEUM_JOURNEY,
+        '/map.glb',
+        '/merc.glb',
+        new AbortController().signal,
+        {
+          loadGltf,
+          sculptureUrl: '/sculpture.glb',
+          architectureUrl: '/architecture.glb',
+        },
+      ),
+    ).rejects.toBe(failure)
+    expect(map.dispose).toHaveBeenCalledOnce()
+    expect(merc.dispose).toHaveBeenCalledOnce()
+    expect(sculpture.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('validates polish nodes before allocating assembly resources', async () => {
+    const map = {
+      scene: createKitScene(),
+      animations: [],
+      dispose: vi.fn(),
+    }
+    const merc = { scene: new Group(), animations: [], dispose: vi.fn() }
+    const architecture = {
+      scene: createArchitectureScene(false),
+      animations: [],
+      dispose: vi.fn(),
+    }
+
+    await expect(
+      loadJourneyMapModels(
+        FLOATING_MUSEUM_JOURNEY,
+        '/map.glb',
+        '/merc.glb',
+        new AbortController().signal,
+        {
+          loadGltf: vi
+            .fn()
+            .mockResolvedValueOnce(map)
+            .mockResolvedValueOnce(merc)
+            .mockResolvedValueOnce(architecture),
+          architectureUrl: '/architecture.glb',
+        },
+      ),
+    ).rejects.toThrow('Journey map kit is missing map_conservatory.')
+    expect(map.dispose).toHaveBeenCalledOnce()
+    expect(merc.dispose).toHaveBeenCalledOnce()
+    expect(architecture.dispose).toHaveBeenCalledOnce()
+  })
+
   it('retires decoded mystery art when a sibling model fails', async () => {
     const bitmap = { close: vi.fn() }
     const texture = new Texture(bitmap)
@@ -245,6 +335,65 @@ describe('journey map model loading', () => {
     expect(bitmap.close).toHaveBeenCalledOnce()
     expect(kit.dispose).toHaveBeenCalledOnce()
     expect(merc.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('installs the polish kit and Carrara maps, then retires each owner once', async () => {
+    const kit = {
+      scene: createKitScene(true, true),
+      animations: [],
+      dispose: vi.fn(),
+    }
+    const mercScene = new Group()
+    mercScene.add(new Mesh(new PlaneGeometry(1, 1), new MeshBasicMaterial()))
+    const merc = { scene: mercScene, animations: [], dispose: vi.fn() }
+    const architecture = {
+      scene: createArchitectureScene(),
+      animations: [],
+      dispose: vi.fn(),
+    }
+    const marbleTextures = {
+      map: new Texture(),
+      normalMap: new Texture(),
+      roughnessMap: new Texture(),
+      dispose: vi.fn(),
+    }
+    const models = await loadJourneyMapModels(
+      FLOATING_MUSEUM_JOURNEY,
+      '/map.glb',
+      '/merc.glb',
+      new AbortController().signal,
+      {
+        loadGltf: vi
+          .fn()
+          .mockResolvedValueOnce(kit)
+          .mockResolvedValueOnce(merc)
+          .mockResolvedValueOnce(architecture),
+        architectureUrl: '/architecture.glb',
+        marbleTextureUrls: {
+          basecolor: '/base.webp',
+          normal: '/normal.webp',
+          roughness: '/roughness.webp',
+        },
+        loadMarbleTextures: vi.fn().mockResolvedValue(marbleTextures),
+      },
+    )
+
+    const finish = models.root.getObjectByName(
+      'platform-finish-fixture',
+    ) as Mesh<BufferGeometry, Material[]>
+    const ivory = finish.material[0] as MeshStandardMaterial
+    expect(ivory.map).toBe(marbleTextures.map)
+    expect(ivory.normalMap).toBe(marbleTextures.normalMap)
+    expect(ivory.roughnessMap).toBe(marbleTextures.roughnessMap)
+    expect(models.root.getObjectByName('map_twin_connector')).toBeDefined()
+    expect(models.root.getObjectByName('map_conservatory')).toBeDefined()
+
+    models.dispose()
+    models.dispose()
+    expect(kit.dispose).toHaveBeenCalledOnce()
+    expect(merc.dispose).toHaveBeenCalledOnce()
+    expect(architecture.dispose).toHaveBeenCalledOnce()
+    expect(marbleTextures.dispose).toHaveBeenCalledOnce()
   })
 
   it('maps the final bridge dimensions onto both authored endpoints', () => {

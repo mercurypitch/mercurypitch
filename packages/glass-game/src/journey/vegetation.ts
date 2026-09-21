@@ -2,7 +2,7 @@
 
 import type { BufferGeometry, Material, Mesh } from 'three'
 import { ConeGeometry, CylinderGeometry, Group, IcosahedronGeometry, InstancedMesh, Matrix4, Quaternion, SphereGeometry, Vector3, } from 'three'
-import type { MuseumJourneyDefinition, MuseumJourneyLandmass, MuseumJourneySpillway, } from '../content/museum-journey'
+import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyLandmass, MuseumJourneySpillway, } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
 
 export interface JourneyVegetationMaterials {
@@ -34,13 +34,72 @@ function rimPoint(
   )
 }
 
+function distanceToSegment(
+  px: number,
+  pz: number,
+  ax: number,
+  az: number,
+  bx: number,
+  bz: number,
+): number {
+  const dx = bx - ax
+  const dz = bz - az
+  const lengthSquared = dx * dx + dz * dz
+  const t =
+    lengthSquared <= Number.EPSILON
+      ? 0
+      : Math.max(
+          0,
+          Math.min(1, ((px - ax) * dx + (pz - az) * dz) / lengthSquared),
+        )
+  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t))
+}
+
+/** Horizontal clearance from a point to the same bowed path used by the deck. */
+export function journeyBridgeDistanceXZ(
+  bridge: MuseumJourneyBridge,
+  point: Pick<Vector3, 'x' | 'z'>,
+): number {
+  const dx = bridge.to[0] - bridge.from[0]
+  const dz = bridge.to[2] - bridge.from[2]
+  const length = Math.max(0.001, Math.hypot(dx, dz))
+  const midpointX =
+    (bridge.from[0] + bridge.to[0]) / 2 + (-dz / length) * bridge.curve
+  const midpointZ =
+    (bridge.from[2] + bridge.to[2]) / 2 + (dx / length) * bridge.curve
+  let previousX = bridge.from[0]
+  let previousZ = bridge.from[2]
+  let distance = Number.POSITIVE_INFINITY
+  for (let step = 1; step <= 32; step++) {
+    const t = step / 32
+    const inverse = 1 - t
+    const x =
+      inverse * inverse * bridge.from[0] +
+      2 * inverse * t * midpointX +
+      t * t * bridge.to[0]
+    const z =
+      inverse * inverse * bridge.from[2] +
+      2 * inverse * t * midpointZ +
+      t * t * bridge.to[2]
+    distance = Math.min(
+      distance,
+      distanceToSegment(point.x, point.z, previousX, previousZ, x, z),
+    )
+    previousX = x
+    previousZ = z
+  }
+  return distance
+}
+
 function clearsJourneyLandmarks(
   definition: MuseumJourneyDefinition,
   point: Vector3,
+  footprintRadius = 0,
 ): boolean {
   for (const stage of definition.stages) {
     if (
-      Math.hypot(point.x - stage.position[0], point.z - stage.position[2]) < 0.8
+      Math.hypot(point.x - stage.position[0], point.z - stage.position[2]) <
+      0.8 + footprintRadius
     )
       return false
     if (
@@ -48,7 +107,8 @@ function clearsJourneyLandmarks(
       Math.hypot(
         point.x - stage.portrait.position[0],
         point.z - stage.portrait.position[2],
-      ) < 0.65
+      ) <
+        0.65 + footprintRadius
     )
       return false
   }
@@ -61,8 +121,8 @@ function clearsJourneyLandmarks(
     const cosine = Math.cos(spillway.yaw)
     const localX = cosine * dx - sine * dz
     const localZ = sine * dx + cosine * dz
-    const clearanceX = source.width * 0.5 + 0.055
-    const clearanceZ = source.length * 0.5 + 0.055
+    const clearanceX = source.width * 0.5 + 0.055 + footprintRadius
+    const clearanceZ = source.length * 0.5 + 0.055 + footprintRadius
     if (
       (localX * localX) / (clearanceX * clearanceX) +
         (localZ * localZ) / (clearanceZ * clearanceZ) <
@@ -70,6 +130,12 @@ function clearsJourneyLandmarks(
     )
       return false
   }
+  for (const bridge of definition.bridges)
+    if (
+      journeyBridgeDistanceXZ(bridge, point) <
+      bridge.width * 0.5 + 0.08 + footprintRadius
+    )
+      return false
   return true
 }
 
@@ -169,7 +235,7 @@ export function createJourneyVegetation(
     for (let index = 0; index < 10; index++) {
       const angle = (index / 10) * Math.PI * 2 + islandIndex * 0.43
       const point = rimPoint(island, angle, index % 2 === 0 ? 0.88 : 0.98)
-      if (!clearsJourneyLandmarks(definition, point)) continue
+      if (!clearsJourneyLandmarks(definition, point, 0.2)) continue
       const height = 0.82 + ((index * 7 + islandIndex * 3) % 5) * 0.1
       cypressTransforms.push(
         new Matrix4().compose(
@@ -207,18 +273,20 @@ export function createJourneyVegetation(
               Math.sin(angle + turn) * 0.22,
             ),
           )
-        if (!clearsJourneyLandmarks(definition, flowerPoint)) continue
+        if (!clearsJourneyLandmarks(definition, flowerPoint, 0.08)) continue
         matrix.compose(flowerPoint, rotation, new Vector3(1.15, 0.72, 1.15))
         flowers.setMatrixAt(flowerIndex++, matrix)
       }
     }
 
-    for (let bed = 0; bed < 6; bed++) {
-      const angle = ((bed + 0.2) / 6) * Math.PI * 2 + islandIndex * 0.37
-      const center = rimPoint(island, angle, bed % 2 === 0 ? 0.64 : 0.7)
-      for (let blossom = 0; blossom < 5; blossom++) {
-        const turn = blossom * 2.399 + bed * 0.41
-        const radius = 0.07 + (blossom % 3) * 0.035
+    let pocket = 0
+    for (let candidate = 0; candidate < 10 && pocket < 3; candidate++) {
+      const angle = ((candidate + 0.25) / 10) * Math.PI * 2 + islandIndex * 0.37
+      const center = rimPoint(island, angle, candidate % 2 === 0 ? 0.67 : 0.74)
+      if (!clearsJourneyLandmarks(definition, center, 0.3)) continue
+      for (let blossom = 0; blossom < 10; blossom++) {
+        const turn = blossom * 2.399 + pocket * 0.41
+        const radius = 0.11 + (blossom % 4) * 0.045
         const point = center
           .clone()
           .add(
@@ -228,24 +296,23 @@ export function createJourneyVegetation(
               Math.sin(turn) * radius,
             ),
           )
-        if (!clearsJourneyLandmarks(definition, point)) continue
-        const size = 0.78 + ((bed + blossom) % 3) * 0.13
-        matrix.compose(point, rotation, new Vector3(size, size * 0.72, size))
+        const size = 0.86 + ((pocket + blossom) % 3) * 0.16
+        matrix.compose(point, rotation, new Vector3(size, size * 0.76, size))
         flowers.setMatrixAt(flowerIndex++, matrix)
       }
-      for (let leaf = 0; leaf < 3; leaf++) {
-        const turn = leaf * ((Math.PI * 2) / 3) + bed * 0.31
+      for (let leaf = 0; leaf < 5; leaf++) {
+        const turn = leaf * ((Math.PI * 2) / 5) + pocket * 0.31
         const point = center
           .clone()
-          .add(new Vector3(Math.cos(turn) * 0.13, 0.035, Math.sin(turn) * 0.13))
-        if (!clearsJourneyLandmarks(definition, point)) continue
+          .add(new Vector3(Math.cos(turn) * 0.2, 0.035, Math.sin(turn) * 0.2))
         matrix.compose(
           point,
           new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -turn),
-          new Vector3(0.92, 0.42, 1.42),
+          new Vector3(1.08, 0.48, 1.7),
         )
         bedLeaves.setMatrixAt(leafIndex++, matrix)
       }
+      pocket++
     }
 
     const islandStageIds = new Set(
@@ -261,12 +328,12 @@ export function createJourneyVegetation(
     for (const spillway of islandSources) {
       if (authoredFlowerCount === 2) break
       for (const [across, downstream] of [
-        [0, -1.25],
-        [-1.05, -0.55],
-        [1.05, -0.55],
+        [-1.55, -0.75],
+        [1.55, -0.75],
+        [0, -2],
       ] as const) {
         const point = sourceFloraPoint(spillway, across, downstream)
-        if (!clearsJourneyLandmarks(definition, point)) continue
+        if (!clearsJourneyLandmarks(definition, point, 0.4)) continue
         authoredSourceFlowerTransforms.push(
           new Matrix4().compose(
             point,
@@ -274,7 +341,7 @@ export function createJourneyVegetation(
               new Vector3(0, 1, 0),
               spillway.yaw + across * 0.22,
             ),
-            new Vector3(0.72, 0.72, 0.72),
+            new Vector3(0.82, 0.82, 0.82),
           ),
         )
         authoredFlowerCount++
@@ -285,7 +352,7 @@ export function createJourneyVegetation(
       if (authoredFlowerCount === 2) break
       const angle = ((candidate + 0.55) / 10) * Math.PI * 2 + islandIndex * 0.53
       const point = rimPoint(island, angle, candidate % 2 === 0 ? 0.7 : 0.76)
-      if (!clearsJourneyLandmarks(definition, point)) continue
+      if (!clearsJourneyLandmarks(definition, point, 0.46)) continue
       authoredRimFlowerTransforms.push(
         new Matrix4().compose(
           point,
@@ -293,7 +360,7 @@ export function createJourneyVegetation(
             new Vector3(0, 1, 0),
             -angle + Math.PI / 2,
           ),
-          new Vector3(0.85, 0.85, 0.85),
+          new Vector3(0.95, 0.95, 0.95),
         ),
       )
       authoredFlowerCount++
@@ -365,7 +432,7 @@ export function createJourneyVegetation(
     for (let index = 0; index < 3; index++) {
       const angle = Math.PI * (0.16 + index * 0.34) + island.yaw
       const point = rimPoint(island, angle, 0.72)
-      if (!clearsJourneyLandmarks(definition, point)) continue
+      if (!clearsJourneyLandmarks(definition, point, 0.2)) continue
       const planter = authoredUnit('map_planter')
       planter.position.copy(point)
       planter.rotation.y = -angle + Math.PI / 2

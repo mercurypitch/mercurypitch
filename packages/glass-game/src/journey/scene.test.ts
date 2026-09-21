@@ -478,6 +478,8 @@ it('retires active gestures and ignores selection mutations after context loss',
       throw new Error('Missing scene frame callback')
     renderFrame(0, 0)
     await scene.ready
+    const modelSignal = state.loadModels.mock.calls[0]?.[3] as AbortSignal
+    expect(modelSignal.aborted).toBe(false)
     const selectionsBeforeLoss = model.setSelected.mock.calls.length
 
     dispatchCanvasEvent('pointerdown', {
@@ -507,6 +509,7 @@ it('retires active gestures and ignores selection mutations after context loss',
     scene.setSelected('stage')
 
     expect(preventDefault).toHaveBeenCalledOnce()
+    expect(modelSignal.aborted).toBe(true)
     expect(onFailure).toHaveBeenCalledOnce()
     expect(onSelect).not.toHaveBeenCalled()
     expect(intersect).not.toHaveBeenCalled()

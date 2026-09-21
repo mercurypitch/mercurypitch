@@ -8,7 +8,11 @@ import type { JourneyArchitectureMaterials } from './architecture'
 import { createJourneyArchitecture, JOURNEY_PORTRAIT_INSET_MATERIAL, } from './architecture'
 import { JOURNEY_MEDALLION_FACE_Y, JOURNEY_MEDALLION_SURFACE_Y, } from './landmarks'
 
-function createFixture(sculptural = false, includePortraitInset = true) {
+function createFixture(
+  sculptural = false,
+  includePortraitInset = true,
+  architectural = false,
+) {
   const material = new MeshBasicMaterial({ side: DoubleSide })
   const frameMaterial = new MeshBasicMaterial({ side: DoubleSide })
   frameMaterial.name = JOURNEY_PORTRAIT_INSET_MATERIAL
@@ -40,6 +44,7 @@ function createFixture(sculptural = false, includePortraitInset = true) {
   }
   const ownedGeometries = new Set<BufferGeometry>()
   const requestedSculptures: string[] = []
+  const requestedArchitecture: string[] = []
   const portraitInsets: Mesh[] = []
   const disposeResources = (): void => {
     for (const geometry of ownedGeometries) geometry.dispose()
@@ -76,6 +81,16 @@ function createFixture(sculptural = false, includePortraitInset = true) {
             return unit
           }
         : undefined,
+      architectural
+        ? (name) => {
+            requestedArchitecture.push(name)
+            if (name !== 'map_twin_connector' && name !== 'map_conservatory')
+              throw new Error(`Missing ${name}`)
+            const unit = new Group()
+            unit.name = name
+            return unit
+          }
+        : undefined,
       materials,
       ownedGeometries,
     )
@@ -90,6 +105,7 @@ function createFixture(sculptural = false, includePortraitInset = true) {
     material,
     portraitInsets,
     requestedSculptures,
+    requestedArchitecture,
     dispose: disposeResources,
   }
 }
@@ -112,6 +128,9 @@ describe('journey architecture', () => {
         expect(
           marker?.getObjectByName(`${stage.id}-medallion-ring`)?.position.y,
         ).toBe(JOURNEY_MEDALLION_SURFACE_Y)
+        const pedestal = marker?.getObjectByName(`${stage.id}-path-medallion`)
+        expect(pedestal?.position.y).toBe(0.11)
+        expect(pedestal?.scale.y).toBe(1)
         expect(
           marker?.getObjectByName(`${stage.id}-engraved-inner-rim`),
         ).toBeDefined()
@@ -243,6 +262,31 @@ describe('journey architecture', () => {
             `${bridge.id}-gilded-rail-finials`,
           ),
         ).toBeInstanceOf(InstancedMesh)
+    } finally {
+      fixture.dispose()
+    }
+  })
+
+  it('replaces only the twin connector and conservatory with polish donors', () => {
+    const fixture = createFixture(true, true, true)
+    try {
+      expect(fixture.requestedArchitecture).toEqual([
+        'map_twin_connector',
+        'map_conservatory',
+      ])
+      const connector =
+        fixture.assembly.root.getObjectByName('map_twin_connector')
+      expect(connector?.position.toArray()).toEqual([0, 0.02, 0.44])
+      expect(connector?.scale.toArray()).toEqual([0.78, 0.78, 0.78])
+      expect(
+        fixture.assembly.root.getObjectByName('twin-gallery-canopy-arch'),
+      ).toBeUndefined()
+      expect(
+        fixture.assembly.root.getObjectByName('map_conservatory'),
+      ).toBeDefined()
+      expect(
+        fixture.assembly.root.getObjectByName('full-glass-dome'),
+      ).toBeUndefined()
     } finally {
       fixture.dispose()
     }

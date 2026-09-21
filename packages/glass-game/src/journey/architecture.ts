@@ -8,6 +8,7 @@ import { JOURNEY_MEDALLION_FACE_Y, JOURNEY_MEDALLION_SURFACE_Y, } from './landma
 export interface JourneyArchitectureMaterials {
   gold: Material
   jade: Material
+  medallionGlass?: Material
   ivory: Material
   amber: Material
   celadon: Material
@@ -376,6 +377,7 @@ function addTwinGalleries(
   root: Group,
   authoredUnit: JourneyAuthoredUnit,
   sculpturalUnit: JourneyAuthoredUnit | undefined,
+  architecturalUnit: JourneyAuthoredUnit | undefined,
   geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
 ): void {
@@ -410,22 +412,41 @@ function addTwinGalleries(
     }
   }
 
-  const arch = new Mesh(geometry.connectorArch, materials.gold)
-  arch.name = 'twin-gallery-canopy-arch'
-  arch.position.set(0, 1.46, 0.02)
-  arch.scale.set(0.44, 0.34, 1)
-  arch.castShadow = true
-  root.add(arch)
+  const connector = architecturalUnit?.('map_twin_connector')
+  if (connector === undefined) {
+    const arch = new Mesh(geometry.connectorArch, materials.gold)
+    arch.name = 'twin-gallery-canopy-arch'
+    arch.position.set(0, 1.46, 0.02)
+    arch.scale.set(0.44, 0.34, 1)
+    arch.castShadow = true
+    root.add(arch)
+  } else {
+    // The halls nearly meet at their native placement. Set the open connector
+    // forward so its piers layer in front of the facades instead of clipping.
+    connector.position.set(0, 0.02, 0.44)
+    connector.scale.setScalar(0.78)
+    root.add(connector)
+  }
   addStairway(root, geometry, materials.ivory, 2.25, 1.45)
-  addCrystalCluster(root, geometry, materials.crystal, 0, 0.9)
+  if (connector === undefined)
+    addCrystalCluster(root, geometry, materials.crystal, 0, 0.9)
 }
 
 function addConservatory(
   root: Group,
   authoredUnit: JourneyAuthoredUnit,
+  architecturalUnit: JourneyAuthoredUnit | undefined,
   geometry: ArchitectureGeometry,
   materials: JourneyArchitectureMaterials,
 ): void {
+  const conservatory = architecturalUnit?.('map_conservatory')
+  if (conservatory !== undefined) {
+    conservatory.position.y = 0.02
+    root.add(conservatory)
+    addStairway(root, geometry, materials.ivory, 2.05, 1.68)
+    addCrystalCluster(root, geometry, materials.crystal, -1.24, 0.88)
+    return
+  }
   addGlazedHall(root, authoredUnit, geometry, materials, {
     radius: 1.12,
     height: 1.72,
@@ -467,11 +488,14 @@ function addMedallion(
   medallion.name = `${stage.id}-path-medallion`
   // The authored stairs and promenade sit above the terrace surface. Sink the
   // pedestal into that surface and lift its face clear of those ribbons.
-  medallion.position.y = 0.05
-  medallion.scale.set(0.5, 2.6, 0.5)
+  medallion.position.y = 0.11
+  medallion.scale.set(0.46, 1, 0.46)
   medallion.castShadow = true
   medallion.receiveShadow = true
-  const face = new Mesh(geometry.medallion, materials.jade)
+  const face = new Mesh(
+    geometry.medallion,
+    materials.medallionGlass ?? materials.jade,
+  )
   face.name = `${stage.id}-medallion-face`
   face.position.y = JOURNEY_MEDALLION_FACE_Y
   face.scale.set(0.36, 0.14, 0.36)
@@ -719,6 +743,7 @@ export function createJourneyArchitecture(
   definition: MuseumJourneyDefinition,
   authoredUnit: JourneyAuthoredUnit,
   sculpturalUnit: JourneyAuthoredUnit | undefined,
+  architecturalUnit: JourneyAuthoredUnit | undefined,
   materials: JourneyArchitectureMaterials,
   ownedGeometries: Set<BufferGeometry>,
 ): JourneyArchitectureAssembly {
@@ -749,10 +774,18 @@ export function createJourneyArchitecture(
         building,
         authoredUnit,
         sculpturalUnit,
+        architecturalUnit,
         geometry,
         materials,
       )
-    else addConservatory(building, authoredUnit, geometry, materials)
+    else
+      addConservatory(
+        building,
+        authoredUnit,
+        architecturalUnit,
+        geometry,
+        materials,
+      )
     stageRoot.add(building)
     addMedallion(stageRoot, stage, stageIndex, geometry, materials, starMarkers)
     if (stage.portrait !== undefined)

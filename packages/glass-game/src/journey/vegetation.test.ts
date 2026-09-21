@@ -4,24 +4,24 @@ import type { BufferGeometry, Object3D } from 'three'
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
-import { createJourneyVegetation } from './vegetation'
+import { createJourneyVegetation, journeyBridgeDistanceXZ } from './vegetation'
 
-function expectClearOfLandmarks(point: Vector3): void {
+function expectClearOfLandmarks(point: Vector3, radius = 0): void {
   for (const stage of FLOATING_MUSEUM_JOURNEY.stages) {
     expect(
       Math.hypot(point.x - stage.position[0], point.z - stage.position[2]),
-    ).toBeGreaterThanOrEqual(0.8)
+    ).toBeGreaterThanOrEqual(0.8 + radius)
     if (stage.portrait !== undefined)
       expect(
         Math.hypot(
           point.x - stage.portrait.position[0],
           point.z - stage.portrait.position[2],
         ),
-      ).toBeGreaterThanOrEqual(0.65)
+      ).toBeGreaterThanOrEqual(0.65 + radius)
   }
 }
 
-function expectClearOfSourcePonds(point: Vector3): void {
+function expectClearOfSourcePonds(point: Vector3, radius = 0): void {
   for (const spillway of FLOATING_MUSEUM_JOURNEY.spillways) {
     const source = spillway.source
     if (source === undefined) continue
@@ -31,13 +31,20 @@ function expectClearOfSourcePonds(point: Vector3): void {
     const cosine = Math.cos(spillway.yaw)
     const localX = cosine * dx - sine * dz
     const localZ = sine * dx + cosine * dz
-    const clearanceX = source.width * 0.5 + 0.055
-    const clearanceZ = source.length * 0.5 + 0.055
+    const clearanceX = source.width * 0.5 + 0.055 + radius
+    const clearanceZ = source.length * 0.5 + 0.055 + radius
     expect(
       (localX * localX) / (clearanceX * clearanceX) +
         (localZ * localZ) / (clearanceZ * clearanceZ),
     ).toBeGreaterThanOrEqual(1)
   }
+}
+
+function expectClearOfPaths(point: Vector3, radius = 0): void {
+  for (const bridge of FLOATING_MUSEUM_JOURNEY.bridges)
+    expect(journeyBridgeDistanceXZ(bridge, point)).toBeGreaterThanOrEqual(
+      bridge.width * 0.5 + 0.08 + radius,
+    )
 }
 
 describe('journey vegetation', () => {
@@ -79,14 +86,27 @@ describe('journey vegetation', () => {
         for (let index = 0; index < object.count; index++) {
           object.getMatrixAt(index, matrix)
           point.setFromMatrixPosition(matrix)
-          expectClearOfLandmarks(point)
-          expectClearOfSourcePonds(point)
+          const footprint = object.name.startsWith(
+            'instanced-authored-cypresses-',
+          )
+            ? 0.2
+            : object.name.startsWith('instanced-authored-flower-clusters-')
+              ? Math.max(
+                  ...new Vector3().setFromMatrixScale(matrix).toArray(),
+                ) * 0.48
+              : 0
+          expectClearOfLandmarks(point, footprint)
+          expectClearOfSourcePonds(point, footprint)
+          expectClearOfPaths(point, footprint)
         }
       })
       for (const planter of root.children.filter(
         (child) => child.name === 'map_planter',
-      ))
-        expectClearOfLandmarks(planter.position)
+      )) {
+        expectClearOfLandmarks(planter.position, 0.2)
+        expectClearOfSourcePonds(planter.position, 0.2)
+        expectClearOfPaths(planter.position, 0.2)
+      }
 
       const flowerDonor = root.getObjectByName(
         'instanced-authored-flower-clusters-0',
@@ -106,13 +126,18 @@ describe('journey vegetation', () => {
       for (let index = 0; index < sourceFlowerCount; index++) {
         flowerDonor.getMatrixAt(index, matrix)
         point.setFromMatrixPosition(matrix)
+        const scale = new Vector3().setFromMatrixScale(matrix)
+        const footprint = Math.max(scale.x, scale.z) * 0.48
+        expectClearOfLandmarks(point, footprint)
+        expectClearOfSourcePonds(point, footprint)
+        expectClearOfPaths(point, footprint)
         expect(
           Math.min(
             ...sourceCenters.map((center) =>
               Math.hypot(point.x - center.x, point.z - center.z),
             ),
           ),
-        ).toBeLessThan(1)
+        ).toBeLessThan(1.5)
       }
     } finally {
       for (const geometry of ownedGeometries) geometry.dispose()

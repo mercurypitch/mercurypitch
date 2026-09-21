@@ -149,6 +149,15 @@ function buildMuseumJourneyScene(
     definition.sculpturalAssetId === undefined
       ? undefined
       : assetUrl(definition.sculpturalAssetId)
+  const architectureUrl =
+    definition.architecturalAssetId === undefined
+      ? undefined
+      : assetUrl(definition.architecturalAssetId)
+  const marbleTextureUrls = {
+    basecolor: assetUrl('warm-carrara-basecolor'),
+    normal: assetUrl('warm-carrara-normal'),
+    roughness: assetUrl('warm-carrara-roughness'),
+  }
   const mysteryPortraitUrl = assetUrl('floating-museum-mystery-portrait-v5')
   const cloudscapeUrl = assetUrl('floating-museum-cloudscape-v3')
   const environmentUrl = assetUrl('museum-environment-v2')
@@ -523,6 +532,7 @@ function buildMuseumJourneyScene(
     event.preventDefault()
     if (disposed || contextLost) return
     contextLost = true
+    abort.abort()
     loop.setForeground(false)
     gestures.reset()
     setViewChanged(false)
@@ -547,7 +557,12 @@ function buildMuseumJourneyScene(
     mapUrl,
     mercUrl,
     abort.signal,
-    { sculptureUrl, mysteryPortraitUrl },
+    {
+      sculptureUrl,
+      architectureUrl,
+      mysteryPortraitUrl,
+      marbleTextureUrls,
+    },
   )
   const environmentReady = environment
     .load(environmentUrl, () => disposed || contextLost)

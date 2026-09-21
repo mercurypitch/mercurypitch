@@ -1,7 +1,7 @@
 // Journey models — assemble three authored landmasses with four stable chapter medallions.
 
 import type { BufferGeometry, Material, Mesh, Object3D, Texture } from 'three'
-import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector3, } from 'three'
+import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector2, Vector3, } from 'three'
 import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
 import { createJourneyArchitecture, findJourneyPortraitInset, } from './architecture'
@@ -9,6 +9,8 @@ import { createJourneyMerc } from './merc'
 import { disposeJourneyPortraitTexture, fitJourneyPortraitTexture, loadJourneyPortraitTexture, } from './portrait-texture'
 import type { JourneyGltfDocument } from './resources'
 import { loadJourneyGltf } from './resources'
+import type { JourneyMarbleTextures, JourneyMarbleTextureUrls, } from './surface-textures'
+import { loadJourneyMarbleTextures } from './surface-textures'
 import { createJourneyVegetation } from './vegetation'
 
 const REQUIRED_NODES = [
@@ -28,6 +30,12 @@ const MAP_BRIDGE_LENGTH = 3.323364
 const SCULPTED_CLIFF_SCALE_X = 2.621731 / 4.5
 const SCULPTED_CLIFF_SCALE_Z = 2.602302 / 2.464056
 const SCULPTED_CLIFF_SCALE_Y = 2.25
+interface JourneyTerraceMaterials {
+  ivory: Material
+  terraceMarble: Material
+  gold: Material
+  jade: Material
+}
 
 export interface JourneyMapModels {
   root: Group
@@ -93,6 +101,7 @@ function createLandmasses(
   definition: MuseumJourneyDefinition,
   authored: JourneyAuthoredUnit,
   sculptural: JourneyAuthoredUnit | undefined,
+  materials: JourneyTerraceMaterials,
 ): Group {
   const root = new Group()
   root.name = 'floating-museum-three-landmasses'
@@ -134,6 +143,25 @@ function createLandmasses(
 
     const terrace = authored('map_platform')
     terrace.name = `${island.id}-ivory-terrace`
+    terrace.traverse((object) => {
+      const mesh = object as Mesh
+      if (!mesh.isMesh) return
+      const finish = (material: Material): Material => {
+        if (material.name === 'map_ivory_marble') return materials.ivory
+        if (material.name === 'map_archival_marble')
+          return materials.terraceMarble
+        if (material.name === 'map_champagne_gold') return materials.gold
+        if (
+          material.name === 'map_celadon_inlay' ||
+          material.name === 'map_dark_jade'
+        )
+          return materials.jade
+        return material
+      }
+      mesh.material = Array.isArray(mesh.material)
+        ? mesh.material.map(finish)
+        : finish(mesh.material)
+    })
     terrace.position.fromArray(island.position)
     terrace.position.y += 0.035
     terrace.rotation.y = island.yaw
@@ -188,7 +216,9 @@ function createAssembly(
   definition: MuseumJourneyDefinition,
   document: JourneyGltfDocument,
   sculptureDocument: JourneyGltfDocument | undefined,
+  architectureDocument: JourneyGltfDocument | undefined,
   mysteryTexture: Texture | undefined,
+  marbleTextures: JourneyMarbleTextures | undefined,
 ) {
   for (const name of REQUIRED_NODES) {
     const unit = authoredUnit(document, name)
@@ -200,6 +230,10 @@ function createAssembly(
     authoredUnit(sculptureDocument, 'map_cliff')
     authoredUnit(sculptureDocument, 'map_cypress')
     authoredUnit(sculptureDocument, 'map_flower_cluster')
+  }
+  if (architectureDocument !== undefined) {
+    authoredUnit(architectureDocument, 'map_twin_connector')
+    authoredUnit(architectureDocument, 'map_conservatory')
   }
   const root = new Group()
   root.name = 'floating-museum-architecture'
@@ -224,10 +258,30 @@ function createAssembly(
       roughness: 0.42,
       side: DoubleSide,
     }),
+    medallionGlass: new MeshStandardMaterial({
+      color: 0x2d756d,
+      emissive: 0x0b403b,
+      emissiveIntensity: 0.34,
+      metalness: 0.08,
+      roughness: 0.2,
+    }),
     ivory: new MeshStandardMaterial({
-      color: 0xeee3cf,
+      color: 0xf5eee2,
+      map: marbleTextures?.map ?? null,
+      normalMap: marbleTextures?.normalMap ?? null,
+      normalScale: new Vector2(0.18, 0.18),
+      roughnessMap: marbleTextures?.roughnessMap ?? null,
       metalness: 0.02,
-      roughness: 0.36,
+      roughness: 0.68,
+    }),
+    terraceMarble: new MeshStandardMaterial({
+      color: 0xf2ebda,
+      map: marbleTextures?.map ?? null,
+      normalMap: marbleTextures?.normalMap ?? null,
+      normalScale: new Vector2(0.14, 0.14),
+      roughnessMap: marbleTextures?.roughnessMap ?? null,
+      metalness: 0.01,
+      roughness: 0.76,
     }),
     amber: new MeshPhysicalMaterial({
       color: 0xf2bd6d,
@@ -300,11 +354,16 @@ function createAssembly(
     sculptureDocument === undefined
       ? undefined
       : (name) => authoredUnit(sculptureDocument, name)
-  root.add(createLandmasses(definition, authored, sculptural))
+  const architectural: JourneyAuthoredUnit | undefined =
+    architectureDocument === undefined
+      ? undefined
+      : (name) => authoredUnit(architectureDocument, name)
+  root.add(createLandmasses(definition, authored, sculptural, materials))
   const architecture = createJourneyArchitecture(
     definition,
     authored,
     sculptural,
+    architectural,
     materials,
     ownedGeometries,
   )
@@ -352,14 +411,24 @@ export async function loadJourneyMapModels(
   options: {
     loadGltf?: typeof loadJourneyGltf
     sculptureUrl?: string
+    architectureUrl?: string
     mysteryPortraitUrl?: string
     loadTexture?: typeof loadJourneyPortraitTexture
+    marbleTextureUrls?: JourneyMarbleTextureUrls
+    loadMarbleTextures?: typeof loadJourneyMarbleTextures
   } = {},
 ): Promise<JourneyMapModels> {
   const loadGltf = options.loadGltf ?? loadJourneyGltf
-  const requests = [loadGltf(mapUrl, signal), loadGltf(mercUrl, signal)]
-  if (options.sculptureUrl !== undefined)
-    requests.push(loadGltf(options.sculptureUrl, signal))
+  const mapRequest = loadGltf(mapUrl, signal)
+  const mercRequest = loadGltf(mercUrl, signal)
+  const sculptureRequest =
+    options.sculptureUrl === undefined
+      ? Promise.resolve(undefined)
+      : loadGltf(options.sculptureUrl, signal)
+  const architectureRequest =
+    options.architectureUrl === undefined
+      ? Promise.resolve(undefined)
+      : loadGltf(options.architectureUrl, signal)
   const portraitRequest =
     options.mysteryPortraitUrl === undefined
       ? Promise.resolve(undefined)
@@ -370,7 +439,21 @@ export async function loadJourneyMapModels(
           texture,
           dispose: () => disposeJourneyPortraitTexture(texture),
         }))
-  const loaded = await Promise.allSettled([...requests, portraitRequest])
+  const marbleRequest =
+    options.marbleTextureUrls === undefined
+      ? Promise.resolve(undefined)
+      : (options.loadMarbleTextures ?? loadJourneyMarbleTextures)(
+          options.marbleTextureUrls,
+          signal,
+        )
+  const loaded = await Promise.allSettled([
+    mapRequest,
+    mercRequest,
+    sculptureRequest,
+    architectureRequest,
+    portraitRequest,
+    marbleRequest,
+  ] as const)
   const rejected = loaded.find(
     (result): result is PromiseRejectedResult => result.status === 'rejected',
   )
@@ -379,22 +462,35 @@ export async function loadJourneyMapModels(
       if (result.status === 'fulfilled') result.value?.dispose()
     throw rejected.reason
   }
-  const documents = loaded
-    .slice(0, requests.length)
-    .map(
-      (result) => (result as PromiseFulfilledResult<JourneyGltfDocument>).value,
-    )
+  const kitDocument = (loaded[0] as PromiseFulfilledResult<JourneyGltfDocument>)
+    .value
+  const mercDocument = (
+    loaded[1] as PromiseFulfilledResult<JourneyGltfDocument>
+  ).value
+  const sculptureDocument = (
+    loaded[2] as PromiseFulfilledResult<JourneyGltfDocument | undefined>
+  ).value
+  const architectureDocument = (
+    loaded[3] as PromiseFulfilledResult<JourneyGltfDocument | undefined>
+  ).value
   const portrait = (
-    loaded[requests.length] as PromiseFulfilledResult<
+    loaded[4] as PromiseFulfilledResult<
       { texture: Texture; dispose(): void } | undefined
     >
   ).value
-  const kitDocument = documents[0]!
-  const mercDocument = documents[1]!
-  const sculptureDocument = documents[2]
-  if (signal.aborted) {
-    for (const document of documents) document.dispose()
+  const marbleTextures = (
+    loaded[5] as PromiseFulfilledResult<JourneyMarbleTextures | undefined>
+  ).value
+  const retireLoaded = (): void => {
+    kitDocument.dispose()
+    mercDocument.dispose()
+    sculptureDocument?.dispose()
+    architectureDocument?.dispose()
     portrait?.dispose()
+    marbleTextures?.dispose()
+  }
+  if (signal.aborted) {
+    retireLoaded()
     throw new DOMException('Journey asset load cancelled.', 'AbortError')
   }
   let assembly: ReturnType<typeof createAssembly>
@@ -403,11 +499,12 @@ export async function loadJourneyMapModels(
       definition,
       kitDocument,
       sculptureDocument,
+      architectureDocument,
       portrait?.texture,
+      marbleTextures,
     )
   } catch (error) {
-    for (const document of documents) document.dispose()
-    portrait?.dispose()
+    retireLoaded()
     throw error
   }
   let merc: ReturnType<typeof createJourneyMerc>
@@ -415,8 +512,7 @@ export async function loadJourneyMapModels(
     merc = createJourneyMerc(mercDocument, definition.stages[0]!)
   } catch (error) {
     disposeAssembly(assembly)
-    for (const document of documents) document.dispose()
-    portrait?.dispose()
+    retireLoaded()
     throw error
   }
   assembly.root.add(merc.root)
@@ -440,7 +536,9 @@ export async function loadJourneyMapModels(
       merc.dispose()
       kitDocument.dispose()
       sculptureDocument?.dispose()
+      architectureDocument?.dispose()
       portrait?.dispose()
+      marbleTextures?.dispose()
     },
   }
 }
