@@ -7,9 +7,11 @@
  */
 
 import type { LrcLine } from '@/lib/lyrics-service'
-import type { MergedNote } from '@/lib/midi-generator'
+import type { MergedNote, PitchDetection } from '@/lib/midi-generator'
+import { mergeConsecutiveNotes } from '@/lib/midi-generator'
 import type { AlignmentResult, LrcWordEntry } from '@/lib/pitch-word-alignment'
 import { alignPitchToWords, filterWordSegments, isValidSegmentTimestamp, lrcEntriesToSegments, lrcLinesToSegments, splitMultiWordSegments, } from '@/lib/pitch-word-alignment'
+import { freqToMidi } from '@/lib/scale-data'
 import type { WhisperSegment } from '@/lib/whisper-service'
 
 // ── Whisper Chunking ───────────────────────────────────────────
@@ -378,5 +380,85 @@ export function logAlignmentComparison(
     console.log(
       `[${tag}] DENOISED alignment: skipped (${denoisedNotes.length} notes, ${split.length} words)`,
     )
+  }
+}
+
+// ── Note-source selection ──────────────────────────────────────
+
+/**
+ * A realtime pitch reading, shaped structurally rather than imported: the
+ * feature layer's `PitchNote` carries an `octave` this does not need, and
+ * `src/lib` may not import from `src/features` (`lib-no-features`).
+ */
+export interface AlignmentPitchPoint {
+  frequency: number
+  noteName: string
+  time: number
+}
+
+export type AlignmentNoteSource =
+  | 'none'
+  | 'denoised'
+  | 'raw-offline'
+  | 'raw-realtime'
+
+export interface AlignmentNoteSelection {
+  notes: MergedNote[]
+  noteSource: AlignmentNoteSource
+}
+
+export interface AlignmentNoteInput {
+  /** Whether the denoised (segmented) series is preferred when it has notes. */
+  preferDenoised: boolean
+  segmentedNotes: MergedNote[]
+  mergedNotes: MergedNote[]
+  /** Realtime detections, used only when neither offline series has notes. */
+  realtimePitchHistory: AlignmentPitchPoint[]
+}
+
+/**
+ * Pick which note series a word alignment should run against.
+ *
+ * A strict ladder, best evidence first: the denoised offline series when it is
+ * preferred and non-empty, else the raw offline series, else notes merged out
+ * of the realtime pitch history so that alignment still has something to work
+ * with before any offline analysis has run.
+ *
+ * The realtime rung is last for a reason and the ordering is load-bearing:
+ * merging the history allocates, so it must stay behind the two cheap reads
+ * rather than being computed and thrown away on every recompute.
+ */
+export function selectAlignmentNotes(
+  input: AlignmentNoteInput,
+): AlignmentNoteSelection {
+  if (input.preferDenoised && input.segmentedNotes.length > 0) {
+    return { notes: input.segmentedNotes, noteSource: 'denoised' }
+  }
+  if (input.mergedNotes.length > 0) {
+    return { notes: input.mergedNotes, noteSource: 'raw-offline' }
+  }
+  if (input.realtimePitchHistory.length > 0) {
+    const detections: PitchDetection[] = input.realtimePitchHistory.map(
+      (p) => ({
+        midi: freqToMidi(p.frequency),
+        noteName: p.noteName,
+        timeSec: p.time,
+      }),
+    )
+    const merged = mergeConsecutiveNotes(detections)
+    if (merged.length > 0) return { notes: merged, noteSource: 'raw-realtime' }
+  }
+  return { notes: [], noteSource: 'none' }
+}
+
+/** The shape returned when there is nothing to align. */
+export function emptyAlignmentResult(): AlignmentResult {
+  return {
+    alignedWords: [],
+    totalWords: 0,
+    mappedWords: 0,
+    unmappedWords: 0,
+    accuracy: 0,
+    debugEntries: [],
   }
 }
