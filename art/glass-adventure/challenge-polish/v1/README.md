@@ -5,6 +5,9 @@ review `2fe9f8f5`, initial camera `1bf1c952` and sway fix `ba1e1dcb`.
 The final-copy production bundle hashes for both hosts are in `proofs/build-receipt.json`;
 `proofs/shatter/build-receipt.json` identifies the earlier runtime used for the desktop
 shard capture. The final copy changes do not alter camera or shatter behavior.
+`proofs/rebase-receipt.json` maps those source revisions after the subsequent
+main rebase and verifies unchanged game, BesideCue and art trees. Only the CI
+dependency list required a manual conflict resolution; both requirements remain.
 This batch belongs to draft PR #807. No merge or release. The source plan is
 [`CHALLENGE-CAMERA-AND-SWAY-POLISH.md`](../../plans/CHALLENGE-CAMERA-AND-SWAY-POLISH.md).
 
