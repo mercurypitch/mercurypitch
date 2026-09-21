@@ -636,6 +636,12 @@ if (checkMode) {
   const current = currentRatchet()
   const regressions = []
   const improvements = []
+  // A tracked key absent from `current` means the collector behind it did not
+  // run: `currentRatchet()` keeps numbers only, and a skipped section leaves
+  // `undefined`. The comparison below walks `current`, so an absent metric is
+  // not a pass — it is invisible, and the ratchet would quietly stop covering
+  // complexity or cycles the day eslint or dependency-cruiser goes astray.
+  const missing = Object.keys(baseline).filter((key) => !(key in current))
   for (const [key, value] of Object.entries(current)) {
     const was = baseline[key]
     if (was == null) continue
@@ -645,6 +651,15 @@ if (checkMode) {
       improvements.push(`${key}: ${was} -> ${value} (-${was - value})`)
   }
   for (const line of improvements) console.info(`improved  ${line}`)
+  if (missing.length > 0) {
+    console.error('\nThe baseline tracks metrics this run did not measure:\n')
+    for (const key of missing) console.error(`  ${key}`)
+    console.error(
+      '\nRun with --json and read the `skipped` reason on that section. The ' +
+        'ratchet cannot vouch for a number it never collected, so a missing ' +
+        'metric fails rather than passes.',
+    )
+  }
   if (regressions.length > 0) {
     console.error('\nCode health regressed against the baseline:\n')
     for (const line of regressions) console.error(`  ${line}`)
@@ -652,8 +667,8 @@ if (checkMode) {
       '\nFix the regression, or if the growth is deliberate and justified, ' +
         'run `node scripts/code-metrics.mjs --update` and explain it in the commit message.',
     )
-    process.exit(1)
   }
+  if (missing.length > 0 || regressions.length > 0) process.exit(1)
   console.info(`\nNo regressions against ${relative(ROOT, BASELINE_PATH)}.`)
   if (improvements.length > 0) {
     console.info('Run --update to lock in the improvements above.')
