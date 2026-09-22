@@ -17,6 +17,15 @@
    row budgets for -- at 820px that wrapped the header onto a second line
    and grew it from 84px to 100px. A control that changes the layout
    around it is not a drop-in replacement. */
+/* OFF is hollow, ON is filled.
+
+   This began as a tinted background plus an accent border, and it was not
+   readable: 0.16 alpha of accent over a photo backdrop is a hint, and
+   "am I on air" is not a hint. Filled against hollow carries across a
+   room at a glance and survives any backdrop under it, which a border
+   colour does not. The struck-through icon stays as the second signal --
+   two independent cues, because this is the control people check when
+   somebody says they can hear the room. */
 .send {
   display: inline-flex;
   align-items: center;
@@ -25,10 +34,10 @@
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid transparent;
+  border: 1.5px solid var(--text-muted, #7d8590);
   border-radius: 50%;
-  background: var(--jam-control, rgba(13, 17, 23, 0.55));
-  color: var(--text-secondary);
+  background: transparent;
+  color: var(--text-muted, #7d8590);
   cursor: pointer;
 }
 
@@ -37,21 +46,20 @@
   height: 18px;
 }
 
-/* On, and audible to the room. The one state worth seeing across a
-   room-sized layout without reading anything. */
+/* On, and audible to the room. Solid, not tinted. */
 .sendOn {
   border-color: var(--accent);
-  background: var(--accent-dim, rgba(88, 166, 255, 0.16));
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-primary, #0d1117);
 }
 
-/* Sending an unprocessed default input: microphone, no echo cancellation,
-   speakers. Red rather than amber because by the time you hear it you are
-   already the problem. */
+/* Sending an unprocessed default input: a microphone, no echo
+   cancellation, speakers. Solid red, because by the time you hear it you
+   are already the problem. */
 .risky {
   border-color: var(--red, #f85149);
-  background: rgba(248, 81, 73, 0.14);
-  color: var(--red, #f85149);
+  background: var(--red, #f85149);
+  color: var(--bg-primary, #0d1117);
 }
 
 /* The struck-through look for "not sending", drawn rather than swapped for
@@ -59,9 +67,9 @@
    to carry on/off as well. */
 .offBar {
   position: absolute;
-  left: 6px;
-  right: 6px;
-  height: 1.5px;
+  left: 5px;
+  right: 5px;
+  height: 2px;
   background: currentColor;
   transform: rotate(-45deg);
   border-radius: 1px;
@@ -83,7 +91,7 @@
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 50%;
-  background: var(--bg-secondary, #16181d);
+  background: var(--jam-menu, #161b22);
   color: var(--text-secondary);
   cursor: pointer;
 }
@@ -110,8 +118,13 @@
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--bg-secondary, #16181d);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  /* --jam-menu, not --bg-secondary: inside a room the latter is
+     rgba(22, 27, 34, var(--jam-alpha)) and follows the transparency
+     slider, so the backdrop bled through the menu and the options became
+     hard to read. The room staying translucent is the point; a popover
+     over it is not. */
+  background: var(--jam-menu, #161b22);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
   font-size: 0.75rem;
 }
 
@@ -200,20 +213,21 @@
 /* Pointer-only: a tablet keeps `:hover` on the last thing tapped, and this
    control's job is to say what is live right now. */
 @media (hover: hover) {
-  .send:hover,
   .caret:hover {
     border-color: var(--text-secondary);
     color: var(--text-primary);
   }
 
-  .sendOn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+  .send:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
   }
 
+  /* Filled already: brighten rather than invert, or the hover reads as a
+     state change on the one control whose state matters. */
+  .sendOn:hover,
   .risky:hover {
-    border-color: var(--red, #f85149);
-    color: var(--red, #f85149);
+    filter: brightness(1.12);
   }
 
   .option:hover {

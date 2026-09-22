@@ -14,9 +14,11 @@ const room = vi.hoisted(() => ({
   profile: 'voice' as JamAudioProfile,
   muted: true,
   deviceId: null as string | null,
+  label: null as string | null,
   devices: [] as { deviceId: string; label: string; isLoopback: boolean }[],
   toggled: 0,
   switched: 0,
+  confirmed: true,
 }))
 
 vi.mock('@/stores/jam-store', () => ({
@@ -30,13 +32,19 @@ vi.mock('@/stores/jam-store', () => ({
   setJamInputDeviceId: (id: string | null) => {
     room.deviceId = id
   },
-  setJamInputDeviceLabel: () => {},
+  setJamInputDeviceLabel: (l: string | null) => {
+    room.label = l
+  },
   refreshJamInputDevices: async () => {},
   switchJamAudioSource: async () => {
     room.switched += 1
   },
   toggleJamMute: async () => {
     room.toggled += 1
+  },
+  jamSourceConfirmed: () => room.confirmed,
+  setJamSourceConfirmed: (v: boolean) => {
+    room.confirmed = v
   },
 }))
 
@@ -48,9 +56,11 @@ afterEach(() => {
   room.profile = 'voice'
   room.muted = true
   room.deviceId = null
+  room.label = null
   room.devices = []
   room.toggled = 0
   room.switched = 0
+  room.confirmed = true
 })
 
 const openMenu = () => {
@@ -189,6 +199,158 @@ describe('the combination that howls', () => {
   })
 })
 
+describe('the first press asks before it puts you on air', () => {
+  it('opens the chooser instead of transmitting', () => {
+    // Sending the wrong source is not a small mistake: `instrument` has
+    // no echo cancellation, so a wrong first press with speakers on is a
+    // feedback loop in a room with other people in it.
+    room.confirmed = false
+    render(() => <JamInputControl />)
+    fireEvent.click(screen.getByRole('button', { name: /start sending/i }))
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+    expect(room.toggled).toBe(0)
+  })
+
+  it('goes live once the source is chosen, honouring the press', () => {
+    room.confirmed = false
+    render(() => <JamInputControl />)
+    fireEvent.click(screen.getByRole('button', { name: /start sending/i }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Instrument/i }))
+    expect(room.profile).toBe('instrument')
+    expect(room.toggled).toBe(1)
+    expect(room.confirmed).toBe(true)
+  })
+
+  it('does not ask twice', () => {
+    room.confirmed = true
+    render(() => <JamInputControl />)
+    fireEvent.click(screen.getByRole('button', { name: /start sending/i }))
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(room.toggled).toBe(1)
+  })
+
+  it('does not go live when the menu was opened just to look', () => {
+    // Opened from the badge, not from the send button: choosing here is
+    // changing a setting, not asking to be heard.
+    room.confirmed = false
+    render(() => <JamInputControl />)
+    openMenu()
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Instrument/i }))
+    expect(room.profile).toBe('instrument')
+    expect(room.toggled).toBe(0)
+  })
+
+  it('drops the pending send when the chooser is dismissed', () => {
+    // Pressing send, thinking better of it, and pressing Escape must not
+    // leave an intent that fires on the next unrelated choice.
+    room.confirmed = false
+    render(() => <JamInputControl />)
+    fireEvent.click(screen.getByRole('button', { name: /start sending/i }))
+    fireEvent.keyDown(document, { key: 'Escape' })
+    openMenu()
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Instrument/i }))
+    expect(room.toggled).toBe(0)
+  })
+
+  it('stops asking after a choice, even one that changed nothing', () => {
+    room.confirmed = false
+    room.profile = 'voice'
+    render(() => <JamInputControl />)
+    fireEvent.click(screen.getByRole('button', { name: /start sending/i }))
+    // Picking the profile already selected is still a deliberate answer.
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Voice/i }))
+    expect(room.confirmed).toBe(true)
+    expect(room.switched).toBe(0)
+    expect(room.toggled).toBe(1)
+  })
+})
+
+describe('choosing the device', () => {
+  it('remembers the id and the label, and re-captures', () => {
+    // The label is the fallback key: a deviceId carries the PipeWire
+    // profile suffix, so switching a Scarlett to Pro Audio changes it.
+    room.devices = [
+      { deviceId: 'scarlett', label: 'Scarlett 4i4', isLoopback: false },
+    ]
+    render(() => <JamInputControl />)
+    openMenu()
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'scarlett' } })
+    expect(room.deviceId).toBe('scarlett')
+    expect(room.label).toBe('Scarlett 4i4')
+    expect(room.switched).toBe(1)
+  })
+
+  it('goes back to the default input, clearing the remembered label', () => {
+    room.devices = [
+      { deviceId: 'scarlett', label: 'Scarlett 4i4', isLoopback: false },
+    ]
+    room.deviceId = 'scarlett'
+    room.label = 'Scarlett 4i4'
+    render(() => <JamInputControl />)
+    openMenu()
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } })
+    expect(room.deviceId).toBeNull()
+    // A stale label would resolve back to the device just abandoned.
+    expect(room.label).toBeNull()
+    expect(room.switched).toBe(1)
+  })
+
+  it('marks a loopback as playback, because picking one feeds the room back', () => {
+    // PipeWire lists one capture device per OUTPUT. Sending it puts the
+    // room's own sound back into the room.
+    room.devices = [
+      { deviceId: 'mon', label: 'Monitor of Built-in', isLoopback: true },
+    ]
+    render(() => <JamInputControl />)
+    openMenu()
+    expect(screen.getByRole('combobox').textContent).toContain('(playback)')
+  })
+})
+
+describe('reaching the menu without a mouse', () => {
+  it('opens on a long press, and does not transmit', () => {
+    // Touch has no right click, and the caret badge is 15px. Holding is
+    // the gesture people already know.
+    vi.useFakeTimers()
+    render(() => <JamInputControl />)
+    const send = screen.getByRole('button', { name: /start sending/i })
+    fireEvent.pointerDown(send)
+    vi.advanceTimersByTime(500)
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+    // The click that follows a long press must not also toggle sending.
+    fireEvent.click(send)
+    expect(room.toggled).toBe(0)
+    vi.useRealTimers()
+  })
+
+  it('leaves a short press alone', () => {
+    vi.useFakeTimers()
+    render(() => <JamInputControl />)
+    const send = screen.getByRole('button', { name: /start sending/i })
+    fireEvent.pointerDown(send)
+    vi.advanceTimersByTime(120)
+    fireEvent.pointerUp(send)
+    vi.advanceTimersByTime(600)
+    expect(screen.queryByRole('menu')).toBeNull()
+    fireEvent.click(send)
+    expect(room.toggled).toBe(1)
+    vi.useRealTimers()
+  })
+
+  it('cancels when the finger slides off', () => {
+    vi.useFakeTimers()
+    render(() => <JamInputControl />)
+    const send = screen.getByRole('button', { name: /start sending/i })
+    fireEvent.pointerDown(send)
+    vi.advanceTimersByTime(200)
+    fireEvent.pointerLeave(send)
+    vi.advanceTimersByTime(600)
+    expect(screen.queryByRole('menu')).toBeNull()
+    vi.useRealTimers()
+  })
+})
+
 describe('the menu closes', () => {
   it('on Escape, without transmitting anything', () => {
     render(() => <JamInputControl />)
@@ -202,6 +364,21 @@ describe('the menu closes', () => {
     render(() => <JamInputControl />)
     openMenu()
     fireEvent.pointerDown(document.body)
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('on a second right click', () => {
+    render(() => <JamInputControl />)
+    const send = screen.getByRole('button', { name: /start sending/i })
+    fireEvent.contextMenu(send)
+    fireEvent.contextMenu(send)
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('on a second press of the caret', () => {
+    render(() => <JamInputControl />)
+    openMenu()
+    openMenu()
     expect(screen.queryByRole('menu')).toBeNull()
   })
 

@@ -50,6 +50,17 @@
      a control you cannot find is not a style choice. */
   --jam-control: rgba(13, 17, 23, min(1, calc(var(--jam-alpha) * 0.7 + 0.3)));
 
+  /* Menus and popovers: OPAQUE, whatever the slider says.
+     Everything above is a surface of the room, and the slider is how
+     somebody chooses how much room to see. A popover is not a surface of
+     the room -- it is transient, it appears over whatever happens to be
+     behind it at that moment, and it carries choices being read right
+     now. At a low alpha the backdrop bled straight through the source
+     menu and the options became hard to read, which is a bug wearing a
+     style's clothes. Same colour as --bg-secondary at full strength, so
+     it still belongs to the room it opened from. */
+  --jam-menu: #161b22;
+
   /* Blur rides the same slider.
      Fading a surface out while it still blurs what is behind it is the
      worst of both: the backdrop is visible and smeared, so the room looks

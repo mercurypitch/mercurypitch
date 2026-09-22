@@ -30,7 +30,7 @@ import { createMemo, createSignal, For, onCleanup, Show } from 'solid-js'
 import { ChevronDown, Guitar, Mic } from '@/components/icons'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import { PROFILE_COPY } from '@/lib/jam/jam-audio-source'
-import { jamAudioProfile, jamInputDeviceId, jamInputDevices, jamIsMuted, refreshJamInputDevices, setJamAudioProfile, setJamInputDeviceId, setJamInputDeviceLabel, switchJamAudioSource, toggleJamMute, } from '@/stores/jam-store'
+import { jamAudioProfile, jamInputDeviceId, jamInputDevices, jamIsMuted, jamSourceConfirmed, refreshJamInputDevices, setJamAudioProfile, setJamInputDeviceId, setJamInputDeviceLabel, setJamSourceConfirmed, switchJamAudioSource, toggleJamMute, } from '@/stores/jam-store'
 import styles from './JamInputControl.module.css'
 
 const PROFILES: readonly JamAudioProfile[] = ['voice', 'instrument']
@@ -92,10 +92,24 @@ export function menuPosition(
   return { top, left }
 }
 
+/** A press held this long opens the menu instead of transmitting. */
+const LONG_PRESS_MS = 450
+
 export const JamInputControl: Component = () => {
   const [open, setOpen] = createSignal(false)
   const [at, setAt] = createSignal<{ top: number; left: number } | null>(null)
+  /**
+   * The menu was opened BY the send button, before a first transmission.
+   *
+   * Choosing then means "send this", because that is what the press was
+   * for. Opening the same menu from the badge is just looking, and must
+   * not put anybody on air.
+   */
+  const [armed, setArmed] = createSignal(false)
   let root: HTMLDivElement | undefined
+  let longPress: ReturnType<typeof setTimeout> | undefined
+  // A long press must not also fire the click that follows it.
+  let swallowClick = false
 
   /** Measure, then ask menuPosition where it fits. */
   const place = (): void => {
@@ -130,16 +144,23 @@ export const JamInputControl: Component = () => {
    */
   const onDocumentPointer = (e: PointerEvent): void => {
     if (root === undefined) return
-    if (!root.contains(e.target as Node)) setOpen(false)
+    if (!root.contains(e.target as Node)) {
+      setOpen(false)
+      setArmed(false)
+    }
   }
   const onKey = (e: KeyboardEvent): void => {
-    if (e.key === 'Escape') setOpen(false)
+    if (e.key === 'Escape') {
+      setOpen(false)
+      setArmed(false)
+    }
   }
   document.addEventListener('pointerdown', onDocumentPointer)
   document.addEventListener('keydown', onKey)
   onCleanup(() => {
     document.removeEventListener('pointerdown', onDocumentPointer)
     document.removeEventListener('keydown', onKey)
+    clearTimeout(longPress)
   })
 
   const profile = () => jamAudioProfile()
@@ -160,9 +181,19 @@ export const JamInputControl: Component = () => {
 
   const choose = (next: JamAudioProfile): void => {
     setOpen(false)
-    if (next === profile()) return
-    setJamAudioProfile(next)
-    void switchJamAudioSource()
+    // A deliberate pick is the confirmation; it never asks again.
+    setJamSourceConfirmed(true)
+    const changed = next !== profile()
+    if (changed) {
+      setJamAudioProfile(next)
+      void switchJamAudioSource()
+    }
+    // The press that opened this was "start sending", so honour it now
+    // that the source is settled.
+    if (armed()) {
+      setArmed(false)
+      void toggleJamMute()
+    }
   }
 
   return (
@@ -187,7 +218,37 @@ export const JamInputControl: Component = () => {
             ? `Stop sending. Currently sending ${PROFILE_COPY[profile()].label.toLowerCase()}.`
             : `Start sending ${PROFILE_COPY[profile()].label.toLowerCase()}.`
         }
-        onClick={() => void toggleJamMute()}
+        onClick={() => {
+          if (swallowClick) {
+            swallowClick = false
+            return
+          }
+          // First time on this device, a press asks what it is about to
+          // put on air rather than putting it there. Sending the wrong
+          // source is not a small mistake: `instrument` has no echo
+          // cancellation, so a wrong first press with speakers on is a
+          // feedback loop in a room with other people in it.
+          if (!jamSourceConfirmed() && !sending()) {
+            setArmed(true)
+            void refreshJamInputDevices()
+            show()
+            return
+          }
+          void toggleJamMute()
+        }}
+        onPointerDown={() => {
+          // Touch has no right click. Holding is the same gesture.
+          longPress = setTimeout(() => {
+            swallowClick = true
+            if (!open()) {
+              void refreshJamInputDevices()
+              show()
+            }
+          }, LONG_PRESS_MS)
+        }}
+        onPointerUp={() => clearTimeout(longPress)}
+        onPointerLeave={() => clearTimeout(longPress)}
+        onPointerCancel={() => clearTimeout(longPress)}
         // "Right or left click" -- the source menu is reachable from the
         // main button too, because that is the one people aim at.
         onContextMenu={(e) => {
