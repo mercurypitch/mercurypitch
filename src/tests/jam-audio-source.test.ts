@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
-import { constraintsFor, describeCapture, PROFILE_COPY, } from '@/lib/jam/jam-audio-source'
+import { constraintsFor, describeCapture, isLoopbackLabel, PROFILE_COPY, } from '@/lib/jam/jam-audio-source'
 
 /** The DOM typings have no `voiceIsolation` yet; read it through a cast. */
 const ext = (c: MediaTrackConstraints): Record<string, unknown> =>
@@ -135,6 +135,28 @@ describe('describeCapture', () => {
       channelCount: undefined,
     } as MediaTrackSettings)
     expect(r.channelCount).toBeNull()
+  })
+})
+
+describe('isLoopbackLabel', () => {
+  it('spots the PipeWire and PulseAudio monitor sources', () => {
+    // These enumerate as ordinary capture devices on Linux. Picking one in
+    // a jam room captures the room's own output and sends it back -- a
+    // feedback loop with a network round trip in the middle.
+    expect(isLoopbackLabel('Monitor of Built-in Audio Analog Stereo')).toBe(
+      true,
+    )
+    expect(isLoopbackLabel('monitor of Scarlett 4i4 USB')).toBe(true)
+    expect(isLoopbackLabel('Loopback Capture')).toBe(true)
+  })
+
+  it('leaves real inputs alone, including ones with monitor in the name', () => {
+    // "Monitor" on its own is a legitimate word for studio hardware, so
+    // the match is on the full "monitor of" phrase rather than the word.
+    expect(isLoopbackLabel('Scarlett 4i4 USB Analogue 1 + 2')).toBe(false)
+    expect(isLoopbackLabel('Studio Monitor Input')).toBe(false)
+    expect(isLoopbackLabel('Default')).toBe(false)
+    expect(isLoopbackLabel('')).toBe(false)
   })
 })
 
