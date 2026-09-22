@@ -128,7 +128,18 @@ export function shapeOpusSdp(
   // parsers are strict about it; splitting on /\r?\n/ and rejoining with
   // '\n' has broken interop before.
   const eol = sdp.includes('\r\n') ? '\r\n' : '\n'
+
+  // An SDP ENDS with a line terminator, so splitting leaves a trailing
+  // empty element -- and that element is not harmless. Anything appended
+  // after it lands below a BLANK LINE, and libwebrtc's line reader stops
+  // at the first empty line, so the ptime and maxptime written at the end
+  // of the last media section were being parsed as though they were never
+  // sent. That is why a request that verified fine in isolation never
+  // moved the frame size in the app. Rejoining also has to put the
+  // terminator back, or the description arrives without its final CRLF.
+  const terminated = /\r?\n$/.test(sdp)
   const lines = sdp.split(/\r?\n/)
+  while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
   const out: string[] = []
 
   let inAudio = false
@@ -139,7 +150,7 @@ export function shapeOpusSdp(
       // Leaving an audio section without having written ptime: add it now,
       // before the next m-line, or it lands in the wrong media section.
       if (inAudio && !audioDone) {
-        out.push(...timingLines(params, eol))
+        out.push(...timingLines(params))
         audioDone = true
       }
       inAudio = line.startsWith('m=audio')
@@ -164,12 +175,12 @@ export function shapeOpusSdp(
     }
   }
 
-  if (inAudio && !audioDone) out.push(...timingLines(params, eol))
+  if (inAudio && !audioDone) out.push(...timingLines(params))
 
-  return out.join(eol)
+  return out.join(eol) + (terminated ? eol : '')
 }
 
-function timingLines(params: JamOpusParams, _eol: string): string[] {
+function timingLines(params: JamOpusParams): string[] {
   return [`a=ptime:${params.ptimeMs}`, `a=maxptime:${params.maxptimeMs}`]
 }
 

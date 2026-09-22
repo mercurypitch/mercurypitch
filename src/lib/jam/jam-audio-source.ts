@@ -35,7 +35,7 @@ export type JamAudioProfile = 'voice' | 'instrument'
  * `voiceIsolation` is newer, already shipping, and platform-gated today --
  * which means it is the one that will quietly start mangling a guitar as
  * Chrome extends support. It is not in the DOM typings yet, hence the cast
- * at the end of `constraintsFor`.
+ * at the end of `captureConstraints`.
  */
 interface ExtendedAudioConstraints extends MediaTrackConstraints {
   voiceIsolation?: boolean
@@ -44,15 +44,34 @@ interface ExtendedAudioConstraints extends MediaTrackConstraints {
 /** Mono. A DI is one signal, and Safari captures one channel regardless. */
 const CAPTURE_CHANNELS = 1
 
-export function constraintsFor(
-  profile: JamAudioProfile,
+/**
+ * The capture is ALWAYS raw, whatever the profile.
+ *
+ * This took a review to get right and the mistake is worth recording.
+ * Making the constraints profile-dependent -- processed for `voice`, raw
+ * for `instrument` -- looks obvious and is wrong twice over, because the
+ * captured track is not the track the peers hear:
+ *
+ *  - the raw capture feeds the PITCH DETECTOR, and gating a sustained
+ *    quiet note or pumping its level corrupts the trail and the scoring;
+ *  - `makeTransmitTrack` checks `raw.getSettings().echoCancellation` to
+ *    detect a device that applied the clone's constraints to the shared
+ *    source. Capture with cancellation already on and that guard fires on
+ *    every voice capture, stops the clone, and leaves the room sending an
+ *    uncancelled track -- reinstating the feedback bug it exists to
+ *    prevent.
+ *
+ * So: capture raw, and let the profile decide whether a PROCESSED CLONE
+ * is made for transmission. That is exactly what the room did before this
+ * file existed; all that is added here is choosing the device.
+ */
+export function captureConstraints(
   deviceId: string | null,
 ): MediaTrackConstraints {
-  const processed = profile === 'voice'
   const base: ExtendedAudioConstraints = {
-    echoCancellation: processed,
-    noiseSuppression: processed,
-    autoGainControl: processed,
+    echoCancellation: false,
+    noiseSuppression: false,
+    autoGainControl: false,
     voiceIsolation: false,
     channelCount: { ideal: CAPTURE_CHANNELS },
     sampleRate: { ideal: 48000 },

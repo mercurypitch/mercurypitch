@@ -12,8 +12,8 @@
 import type { MelodyData } from '@/types'
 import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
-import type { JamAudioProfile, JamCaptureReport } from './jam-audio-source'
-import { constraintsFor, describeCapture } from './jam-audio-source'
+import type { JamAudioProfile } from './jam-audio-source'
+import { captureConstraints, describeCapture } from './jam-audio-source'
 import { readNetSample } from './jam-net-stats'
 import { capSendBitrate, requestLowPlayout, shapeOpusSdp } from './jam-sdp'
 import { micErrorMessage, micPermissionState } from './media-errors'
@@ -171,6 +171,13 @@ export function createJamService(callbacks: JamCallbacks) {
     // ("the next room captures its own microphone on its own first unmute").
     stopLocalStream()
     clearAllIceRecovery()
+    // Same reason as stopLocalStream above: the poll is armed from the
+    // first `connected` and only dispose() ever disarmed it, so after
+    // Leave it went on firing every 3 s over an emptied map for as long as
+    // the tab stayed open -- waking a phone's main thread indefinitely
+    // after a session ended.
+    stopLatencyPolling()
+    pingWaiting.clear()
     signaling.leaveRoom()
   }
 
@@ -223,7 +230,7 @@ export function createJamService(callbacks: JamCallbacks) {
           '[jam:mic] constraining the clone reconfigured the shared source — backing out to keep pitch analysis honest',
         )
         clone.stop()
-        await raw.applyConstraints(constraintsFor('instrument', null))
+        await raw.applyConstraints(captureConstraints(null))
         return null
       }
       console.info('[jam:mic] transmitting with echo cancellation on')
@@ -275,15 +282,12 @@ export function createJamService(callbacks: JamCallbacks) {
   }
 
   /**
-   * Capture the microphone and give it to everyone already connected.
-   *
-   * Adding a track to a live RTCPeerConnection fires negotiationneeded, and
-   * the handler set up in setupPeerHandlers turns that into an offer -- the
-   * same path enabling the camera mid-call has always used. Returns whether
-   * there is now a microphone.
-   */
-  /**
    * Open the microphone -- or the interface -- and give it to the room.
+   *
+   * Adding a track to a live RTCPeerConnection fires negotiationneeded,
+   * and the handler in setupPeerHandlers turns that into an offer -- the
+   * same path enabling the camera mid-call has always used. Returns
+   * whether there is now a microphone.
    *
    * `profile` decides what the peers hear. `voice` is the room's original
    * behaviour to the letter: a raw capture for the pitch detector and a
@@ -291,20 +295,33 @@ export function createJamService(callbacks: JamCallbacks) {
    * because the clone exists to apply echo cancellation and an instrument
    * wants nothing applied to it.
    *
+   * `replace` is for a CHANGE OF INPUT rather than a first unmute. Without
+   * it there is no way to act on one: muting only sets `track.enabled`
+   * false, so the capture is still open, this returns early, and picking
+   * another device does nothing at all -- not even after a mute/unmute
+   * round trip. Chrome also ignores `applyConstraints` for audio
+   * processing on a live track, so re-pointing in place is not an option
+   * either. A fresh capture is the only thing that works.
+   *
    * The capture is reported back through `onCaptureReport` rather than
    * assumed: a constraint is a request, and the only honest account of
    * what happened is `getSettings()` afterwards.
    */
   async function startLocalAudio(
-    options: { deviceId?: string | null; profile?: JamAudioProfile } = {},
+    options: {
+      deviceId?: string | null
+      profile?: JamAudioProfile
+      replace?: boolean
+    } = {},
   ): Promise<boolean> {
     openLocalStream()
-    if (localStream!.getAudioTracks().length > 0) return true
+    const previous = localStream!.getAudioTracks()
+    if (previous.length > 0 && options.replace !== true) return true
     const profile = options.profile ?? 'voice'
     const deviceId = options.deviceId ?? null
     let captured: MediaStream
     try {
-      captured = await getCapture(profile, deviceId)
+      captured = await getCapture(deviceId)
     } catch (err) {
       // Ask the browser what it already decided, so a site-level Block --
       // which never shows a prompt -- is named as such instead of looking
@@ -315,6 +332,22 @@ export function createJamService(callbacks: JamCallbacks) {
     }
     const rawAudio = captured.getAudioTracks()[0]
     if (rawAudio === undefined) return false
+
+    // Only now that a replacement exists. Stopping first would mean a
+    // failed capture -- an interface unplugged between the click and the
+    // prompt -- left the room with no microphone at all, having taken away
+    // one that was working.
+    //
+    // Mute lives on the tracks, so a switch made while muted has to carry
+    // that across or it unmutes somebody who never asked to be heard.
+    const wasMuted = previous[0]?.enabled === false
+    for (const track of previous) {
+      localStream!.removeTrack(track)
+      track.stop()
+    }
+    transmitAudio?.stop()
+    transmitAudio = null
+
     localStream!.addTrack(rawAudio)
     // An instrument is sent exactly as captured. The processed clone is a
     // voice-room device; running a guitar through it gates sustain, eats
@@ -322,16 +355,22 @@ export function createJamService(callbacks: JamCallbacks) {
     transmitAudio =
       profile === 'instrument' ? null : await makeTransmitTrack(rawAudio)
     const outgoing = transmitAudio ?? rawAudio
-    lastCapture = describeCapture(
+    if (wasMuted) setMuted(true)
+    // Reported, not stored. The store keeps this in `jamCaptureReport`;
+    // a second copy on the service would be one more thing to keep in step
+    // and nothing reads it.
+    const report = describeCapture(
       profile,
       outgoing.getSettings(),
       rawAudio.label,
     )
-    console.info('[jam:mic] capture', lastCapture)
-    callbacks.onCaptureReport?.(lastCapture)
+    console.info('[jam:mic] capture', report)
+    callbacks.onCaptureReport?.(report)
     for (const [, pc] of peerConnections) {
       // Only if this connection has no audio yet. A second sender would
-      // have the room hearing two copies of one voice.
+      // have the room hearing two copies of one voice. `replaceTrack` is
+      // what makes a switch cheap: it swaps the source on a live sender
+      // without renegotiating, so nobody hears a reconnect.
       const existing = pc.getSenders().find((s) => s.track?.kind === 'audio')
       if (existing === undefined) pc.addTrack(outgoing, localStream!)
       else void existing.replaceTrack(outgoing)
@@ -483,30 +522,38 @@ export function createJamService(callbacks: JamCallbacks) {
    * room. So: ask for the named device, and if only that is unsatisfiable,
    * take whatever the browser offers and let the report say so.
    */
-  async function getCapture(
-    profile: JamAudioProfile,
-    deviceId: string | null,
-  ): Promise<MediaStream> {
+  async function getCapture(deviceId: string | null): Promise<MediaStream> {
     try {
       return await navigator.mediaDevices.getUserMedia({
-        audio: constraintsFor(profile, deviceId),
+        audio: captureConstraints(deviceId),
         video: false,
       })
     } catch (err) {
       if (deviceId === null || deviceId === '') throw err
+      // ONLY when the pin itself is what could not be satisfied. Retrying
+      // on any error at all is worse than not retrying: a dismissed
+      // permission prompt raises NotAllowedError, and Firefox re-prompts
+      // on a dismissed request -- so the retry put a second prompt in
+      // front of somebody who had just declined the first. A
+      // NotReadableError (the interface held by a DAW) would likewise fall
+      // through to the laptop microphone instead of saying so, which is
+      // the "the room hears my laptop fan" outcome the `exact` pin exists
+      // to prevent. Both also replace the original error, so the message
+      // the user finally sees names the wrong cause.
+      if (!isUnsatisfiableDevice(err)) throw err
       console.info('[jam:mic] named input unavailable, falling back', err)
       return await navigator.mediaDevices.getUserMedia({
-        audio: constraintsFor(profile, null),
+        audio: captureConstraints(null),
         video: false,
       })
     }
   }
 
-  /** The last capture's actual settings, for the diagnostics panel. */
-  let lastCapture: JamCaptureReport | null = null
-
-  function getCaptureReport(): JamCaptureReport | null {
-    return lastCapture
+  /** The two rejections that mean "that device, specifically, is gone". */
+  function isUnsatisfiableDevice(err: unknown): boolean {
+    const name =
+      err instanceof DOMException || err instanceof Error ? err.name : ''
+    return name === 'OverconstrainedError' || name === 'NotFoundError'
   }
 
   // ── Peer connection management ──────────────────────────────────
@@ -735,9 +782,26 @@ export function createJamService(callbacks: JamCallbacks) {
     )
 
     // Handle renegotiation for dynamic tracks (e.g. enabling video)
-    pc.onnegotiationneeded = async () => {
+    //
+    // DEFERRED, NEVER DROPPED. `negotiationneeded` fires once per need: the
+    // browser clears the flag before running this handler, so returning
+    // because the connection is mid-negotiation throws the need away and
+    // nothing ever fires it again. That is not a rare race -- the room
+    // enters with an empty stream and captures the microphone on the first
+    // unmute, so `addTrack` lands on a connection that may still be
+    // settling its opening offer. The audio then flows (the track is on a
+    // sender) while the m-section carrying our Opus parameters was never
+    // negotiated, which is a symptom with no error anywhere to explain it.
+    let renegotiationPending = false
+
+    const renegotiate = async (): Promise<void> => {
+      if (disposed) return
+      if (pc.signalingState !== 'stable') {
+        renegotiationPending = true
+        return
+      }
+      renegotiationPending = false
       try {
-        if (pc.signalingState !== 'stable') return
         console.info('[jam:service] negotiation needed for', peerId)
         const offer = await pc.createOffer()
         const sentOffer = await setShapedLocalDescription(pc, offer)
@@ -746,6 +810,19 @@ export function createJamService(callbacks: JamCallbacks) {
         console.error('[jam:service] negotiation error for', peerId, err)
       }
     }
+
+    pc.onnegotiationneeded = () => {
+      void renegotiate()
+    }
+
+    // The one moment a deferred need can be served. Also covers the polite
+    // side of a glare rollback, whose own offer is discarded by the
+    // rollback and would otherwise be lost the same way.
+    pc.addEventListener('signalingstatechange', () => {
+      if (pc.signalingState === 'stable' && renegotiationPending) {
+        void renegotiate()
+      }
+    })
   }
 
   // ── DataChannel dispatch ─────────────────────────────────────────
@@ -1144,8 +1221,20 @@ export function createJamService(callbacks: JamCallbacks) {
     const dc = dataChannels.get(peerId)
     if (dc === undefined || dc.readyState !== 'open') return
     const t = performance.now()
+    try {
+      dc.send(JSON.stringify({ type: 'ping', t }))
+    } catch (err) {
+      // `send` throws OperationError once bufferedAmount would pass the
+      // implementation limit -- reachable while a stem transfer saturates
+      // the same channel, which is exactly when somebody has the panel
+      // open. The caller is inside a sampling round over every peer, and
+      // letting this escape would cost every peer after this one their
+      // sample and freeze the panel on the previous tick with nothing
+      // said. A missed ping is a gap in one row.
+      console.info('[jam:ping] could not send', err)
+      return
+    }
     pingWaiting.set(peerId, t)
-    dc.send(JSON.stringify({ type: 'ping', t }))
   }
 
   // ── Cleanup ─────────────────────────────────────────────────────
@@ -1199,7 +1288,6 @@ export function createJamService(callbacks: JamCallbacks) {
     sendSong,
     channelTo,
     connectionTo,
-    getCaptureReport,
     sendPing,
     sendSongFileMessage,
     sendSongHave,

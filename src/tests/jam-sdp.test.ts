@@ -161,6 +161,55 @@ describe('shapeOpusSdp', () => {
   it('is idempotent, because renegotiation runs it again', () => {
     expect(shapeOpusSdp(shaped)).toBe(shaped)
   })
+
+  // ── The trailing CRLF ──────────────────────────────────────────────
+  // A real description ends with a line terminator. This fixture did not,
+  // which is how a bug that made the whole module a no-op in the app sat
+  // under a green suite: splitting a terminated SDP leaves an empty last
+  // element, the timing lines were appended AFTER it, and libwebrtc stops
+  // reading a message at the first blank line. The panel went on saying
+  // 20 ms frames and nothing explained why.
+
+  const TERMINATED = `${OFFER}\r\n`
+
+  it('never writes a blank line into the middle of a description', () => {
+    const out = shapeOpusSdp(TERMINATED)
+    const body = out.replace(/\r\n$/, '')
+    expect(body.split('\r\n').includes('')).toBe(false)
+  })
+
+  it('puts the timing lines above the terminator, not below it', () => {
+    const lines = shapeOpusSdp(TERMINATED).split('\r\n')
+    const ptimeAt = lines.findIndex((l) => l.startsWith('a=ptime:'))
+    const blankAt = lines.findIndex((l) => l === '')
+    expect(ptimeAt).toBeGreaterThan(-1)
+    // The only empty element is the one the final CRLF produces, and it
+    // is last -- so nothing we wrote is below it.
+    expect(blankAt).toBe(lines.length - 1)
+    expect(ptimeAt).toBeLessThan(blankAt)
+  })
+
+  it('gives back a terminated SDP when it was given one', () => {
+    // Every SDP line ends with CRLF by spec, the last one included.
+    expect(shapeOpusSdp(TERMINATED).endsWith('\r\n')).toBe(true)
+    expect(shapeOpusSdp(TERMINATED).endsWith('\r\n\r\n')).toBe(false)
+  })
+
+  it('does not invent a terminator that was not there', () => {
+    expect(shapeOpusSdp(OFFER).endsWith('\r\n')).toBe(false)
+  })
+
+  it('is idempotent on a terminated SDP too', () => {
+    const once = shapeOpusSdp(TERMINATED)
+    expect(shapeOpusSdp(once)).toBe(once)
+  })
+
+  it('handles a terminated bare-LF description', () => {
+    const lf = shapeOpusSdp(`${OFFER.replace(/\r\n/g, '\n')}\n`)
+    expect(lf).not.toContain('\r')
+    expect(lf.endsWith('\n')).toBe(true)
+    expect(lf.replace(/\n$/, '').split('\n').includes('')).toBe(false)
+  })
 })
 
 describe('requestLowPlayout', () => {
