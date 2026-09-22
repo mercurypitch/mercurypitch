@@ -20,6 +20,7 @@ import { JamPeerList } from '@/components/jam/JamPeerList'
 import { JamPickerList } from '@/components/jam/JamPickerList'
 import { JamPitchDisplay } from '@/components/jam/JamPitchDisplay'
 import { JamRoomCode } from '@/components/jam/JamRoomCode'
+import { JamSourcePicker } from '@/components/jam/JamSourcePicker'
 import { isNarrow } from '@/lib/use-viewport'
 import { jamConnectedPeers, jamExerciseMelody, jamIsHost, jamIsMuted, jamPeers, jamRoomId, jamSong, jamState, } from '@/stores/jam-store'
 import { setSidebarOpen, sidebarOpen } from '@/stores/ui-store'
@@ -71,6 +72,12 @@ const JamRoomPanel: Component = () => {
             <JamPeerList peers={jamPeers()} />
             <JamPitchDisplay />
           </div>
+        </CollapsibleSection>
+        <CollapsibleSection
+          title="Your sound"
+          storageKey="sidebar-jam-source-open"
+        >
+          <JamSourcePicker />
         </CollapsibleSection>
         {/* Diagnostics sit under the roster, not over the stage: they are
             read between takes, and a panel this dense in the main area

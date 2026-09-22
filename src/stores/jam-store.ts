@@ -10,6 +10,8 @@ import { BackgroundRequestError, mintJamBackgroundCapability, } from '@/lib/back
 import { runtimeBackgroundById } from '@/lib/backgrounds/background-surface'
 import { applyNewerJamBackground, classifyJamBackgroundCapability, isCurrentJamBackgroundCapability, jamBackgroundCapabilityNeedsRefresh, jamCapabilityExpiryMs, } from '@/lib/jam/background-session'
 import { ARRIVAL_PHRASES, DEPARTURE_PHRASES, fillPhrase, HOST_RETURNED, makePhrasePicker, } from '@/lib/jam/jam-arrivals'
+import type { JamAudioProfile, JamCaptureReport, } from '@/lib/jam/jam-audio-source'
+import { listJamAudioInputs } from '@/lib/jam/jam-audio-source'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { overallLineScore, scoreableLineIndices, } from '@/lib/jam/jam-line-scoring'
@@ -31,6 +33,7 @@ import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { JamBackgroundCapabilityMessage, JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, JamRoomBackgroundState, JamSongNote, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
 import { StemEncodeAbortedError } from '@/lib/portable/portable-audio'
+import { createPersistedSignal } from '@/lib/storage'
 import { invalidatePremiumBackgroundAccess, premiumBackgroundCatalogState, refreshPremiumBackgroundCatalog, } from '@/stores/background-store'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import type { JamDiagnosticsSources } from '@/stores/jam-diagnostics-store'
@@ -115,6 +118,49 @@ export const jamSelectedBackgroundId = createRoot(() => {
  * until this goes false -- see toggleJamMute.
  */
 export const [jamIsMuted, setJamIsMuted] = createSignal(true)
+
+/**
+ * What this person is sending: a voice, or an instrument.
+ *
+ * Persisted, because it is a property of somebody's rig rather than of a
+ * session -- a guitarist with an interface is a guitarist with an
+ * interface next Tuesday too, and re-picking it every time is the kind of
+ * friction that ends with them sending their laptop microphone by
+ * accident.
+ *
+ * Changing it mid-room does nothing until the next unmute; the capture is
+ * already open and Chrome ignores applyConstraints on a live track.
+ */
+export const [jamAudioProfile, setJamAudioProfile] =
+  createPersistedSignal<JamAudioProfile>('mp_jam_audio_profile', 'voice', {
+    validator: (v): v is JamAudioProfile => v === 'voice' || v === 'instrument',
+  })
+
+/** The chosen input, or null for whatever the browser calls default. */
+export const [jamInputDeviceId, setJamInputDeviceId] = createPersistedSignal<
+  string | null
+>('mp_jam_input_device', null, {
+  validator: (v): v is string | null => v === null || typeof v === 'string',
+})
+
+export const [jamInputDevices, setJamInputDevices] = createSignal<
+  readonly { deviceId: string; label: string }[]
+>([])
+
+/** What the capture actually turned out to be. Null until the first unmute. */
+export const [jamCaptureReport, setJamCaptureReport] =
+  createSignal<JamCaptureReport | null>(null)
+
+/**
+ * Refresh the input list.
+ *
+ * Labels are empty until a capture has been permitted at least once, so
+ * calling this before the first unmute lists devices with no names. The
+ * picker calls it again after a successful capture for that reason.
+ */
+export async function refreshJamInputDevices(): Promise<void> {
+  setJamInputDevices(await listJamAudioInputs())
+}
 
 /**
  * How loud the original singer is, in YOUR ears only.
@@ -1902,6 +1948,12 @@ export function initJam() {
     onChannelPing: (peerId, rttMs) => {
       recordChannelPing(peerId, rttMs)
     },
+    onCaptureReport: (report) => {
+      setJamCaptureReport(report)
+      // Labels only exist once a capture has been permitted, so this is
+      // the first moment the picker can show real device names.
+      void refreshJamInputDevices()
+    },
     onPitchMessage: (msg: JamPitchMessage) => {
       // Belt to the transport's braces. service.ts now stamps the real
       // sender, so this only fires on a peer that has already left, but the
@@ -2226,7 +2278,10 @@ export async function toggleJamMute(): Promise<void> {
     const roomAtStart = jamRoomId()
     let got: boolean
     try {
-      got = await serviceAtStart.startLocalAudio()
+      got = await serviceAtStart.startLocalAudio({
+        deviceId: jamInputDeviceId(),
+        profile: jamAudioProfile(),
+      })
     } finally {
       jamUnmuteInFlight = false
     }

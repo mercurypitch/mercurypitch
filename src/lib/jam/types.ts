@@ -1,5 +1,6 @@
 // ── Jam session type definitions ────────────────────────────────────
 
+import type { JamCaptureReport } from '@/lib/jam/jam-audio-source'
 import type { JamRoomMode } from '@/lib/jam/jam-modes'
 import type { MelodyData } from '@/types'
 
@@ -361,6 +362,14 @@ export interface JamCallbacks {
    * nothing at all. Optional -- only the diagnostics panel asks for it.
    */
   onChannelPing?: (peerId: string, rttMs: number) => void
+  /**
+   * What the local capture actually turned out to be.
+   *
+   * Not what was asked for. A constraint is a request and `getSettings()`
+   * is the answer, and the gap between them is the difference between a
+   * guitar that sounds like a guitar and one the browser has gated.
+   */
+  onCaptureReport?: (report: JamCaptureReport) => void
   onChatMessage: (message: JamChatMessage) => void
   onRoomClosed: () => void
   onHostStatus?: (isHost: boolean) => void
