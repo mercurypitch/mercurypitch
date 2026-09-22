@@ -1,7 +1,7 @@
 // Backdrop fog regression — distant geometry resolves into the rendered sky in every physical target.
 
-import type { Vector2,WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three'
-import { BufferGeometry, Mesh, MeshBasicMaterial, Object3D, Scene, Texture } from 'three'
+import type { Vector2, WebGLProgramParametersWithUniforms, WebGLRenderer, } from 'three'
+import { BufferGeometry, Mesh, MeshBasicMaterial, Object3D, Scene, Texture, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { installBackdropFog, transformBackdropFogFragmentShader, } from './backdrop-fog'
 
