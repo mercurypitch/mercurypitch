@@ -114,6 +114,19 @@ export interface JamNetReading {
   concealedFraction: number | null
   /** Buffer growth over the interval, in samples. Negative means shrinking. */
   netBufferAdjustmentSamples: number | null
+  /** Inbound audio packets per second over the interval. */
+  packetsPerSecond: number | null
+  /**
+   * The frame size actually in use, in ms, derived from the packet rate.
+   *
+   * The only honest way to see this. `packetizationMs` is absent in every
+   * browser that matters and the codec stat's `ptime` is usually absent
+   * too, so a panel that wants to show whether an SDP request for 10 ms
+   * frames was HONOURED has to count packets: 50/s is 20 ms, 100/s is
+   * 10 ms. Rounded to the frame sizes Opus actually has, because a rate
+   * measured over one second is never exactly 100.
+   */
+  frameMs: number | null
 }
 
 interface StatsLike {
@@ -280,6 +293,11 @@ export function deriveReading(
 ): JamNetReading {
   const dt = previous === null ? 0 : (latest.at - previous.at) / 1000
 
+  const pps = rateOver(
+    delta(latest.packetsReceived, previous?.packetsReceived),
+    dt,
+  )
+
   const emittedDelta = delta(
     latest.jitterBufferEmittedCount,
     previous?.jitterBufferEmittedCount,
@@ -324,6 +342,8 @@ export function deriveReading(
             emittedDelta,
           )
         : null,
+    packetsPerSecond: pps,
+    frameMs: nearestOpusFrameMs(pps),
     netBufferAdjustmentSamples: sumOrNull(
       delta(
         latest.insertedSamplesForDeceleration,
@@ -361,6 +381,31 @@ function sumOrNull(a: number | null, b: number | null): number | null {
 
 function nullableDiv(a: number | null, b: number): number | null {
   return a === null ? null : a / b
+}
+
+function rateOver(count: number | null, seconds: number): number | null {
+  if (count === null || seconds <= 0) return null
+  return count / seconds
+}
+
+/**
+ * Snap a measured packet rate to the frame size that produced it.
+ *
+ * Opus has 2.5, 5, 10, 20, 40 and 60 ms frames and nothing between, so the
+ * nearest of those to 1000/pps is the answer. Null below a floor: a stream
+ * that has just started, or one being throttled, produces a rate that means
+ * nothing and would render as a confident wrong number.
+ */
+export function nearestOpusFrameMs(pps: number | null): number | null {
+  if (pps === null || pps < 5) return null
+  const measured = 1000 / pps
+  const sizes = [2.5, 5, 10, 20, 40, 60]
+  let best = sizes[0]!
+  for (const size of sizes) {
+    if (Math.abs(size - measured) < Math.abs(best - measured)) best = size
+  }
+  // Beyond Opus's own range the rate is not a frame size at all.
+  return measured > 90 ? null : best
 }
 
 function rateKbps(bytes: number | null, seconds: number): number | null {

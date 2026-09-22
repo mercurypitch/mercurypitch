@@ -98,6 +98,39 @@ describe('buildLatencyBudget', () => {
   })
 })
 
+describe('the Opus term', () => {
+  it('charges the measured frame size when the packet rate gave one', () => {
+    // A constant here cannot show whether asking for 10 ms frames worked,
+    // which is the one thing this term most needs to show.
+    const at20 = buildLatencyBudget({
+      rttMs: 20,
+      jitterBufferMs: 30,
+      deviceRoundTripMs: 10,
+      frameMs: 20,
+    })
+    const at10 = buildLatencyBudget({
+      rttMs: 20,
+      jitterBufferMs: 30,
+      deviceRoundTripMs: 10,
+      frameMs: 10,
+    })
+    expect(termFor(at20, 'encode')!.ms).toBe(22.5)
+    expect(termFor(at10, 'encode')!.ms).toBe(12.5)
+    expect(termFor(at10, 'encode')!.source).toBe('measured')
+    expect(at20.totalMs - at10.totalMs).toBe(10)
+  })
+
+  it('falls back to the 20 ms default and says it is a platform guess', () => {
+    const b = buildLatencyBudget({
+      rttMs: 20,
+      jitterBufferMs: 30,
+      deviceRoundTripMs: 10,
+    })
+    expect(termFor(b, 'encode')!.ms).toBe(22.5)
+    expect(termFor(b, 'encode')!.source).toBe('platform')
+  })
+})
+
 describe('verdictFor', () => {
   it('draws the line where players actually stop noticing', () => {
     expect(verdictFor(8)).toBe('transparent')

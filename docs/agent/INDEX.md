@@ -133,7 +133,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
-| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 9.1k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
+| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 9.5k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |

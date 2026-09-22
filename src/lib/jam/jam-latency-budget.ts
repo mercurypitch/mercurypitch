@@ -131,6 +131,14 @@ export interface JamBudgetInput {
   deviceRoundTripMs: number | null
   /** Set when the listener is on Bluetooth, which no API reliably reports. */
   bluetoothOutput?: boolean
+  /**
+   * The Opus frame size actually negotiated, in ms, where it is known.
+   *
+   * Derived from the measured packet rate rather than assumed. Without it
+   * this term is a constant, and a constant cannot show whether asking for
+   * 10 ms frames worked -- which is the one thing it most needs to show.
+   */
+  frameMs?: number | null
 }
 
 /**
@@ -169,12 +177,16 @@ export function buildLatencyBudget(input: JamBudgetInput): JamLatencyBudget {
     })
   }
 
+  const frameMs = input.frameMs ?? null
   terms.push({
     id: 'encode',
     label: 'Opus frame + lookahead',
-    ms: OPUS_DEFAULT_FRAME_MS + OPUS_LOOKAHEAD_MS,
-    source: 'platform',
-    note: 'A 20 ms frame cannot be sent until 20 ms of audio exists. This is the single biggest term the app itself controls, and today it does not control it.',
+    ms: (frameMs ?? OPUS_DEFAULT_FRAME_MS) + OPUS_LOOKAHEAD_MS,
+    source: frameMs === null ? 'platform' : 'measured',
+    note:
+      frameMs === null
+        ? 'Assuming the 20 ms default, because the packet rate has not been measured yet. A frame cannot be sent until that much audio exists.'
+        : `Measured from the packet rate: ${frameMs} ms frames plus Opus's fixed 2.5 ms lookahead. A frame cannot be sent until that much audio exists.`,
   })
 
   terms.push({

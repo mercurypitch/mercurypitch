@@ -1,12 +1,19 @@
 // ── Jam service ─────────────────────────────────────────────────────
 // Manages WebRTC peer connections for P2P audio + video streaming.
-// Handles RTCPeerConnection lifecycle, Opus codec configuration,
-// camera/mic capture, and track management.
+// Handles RTCPeerConnection lifecycle, camera/mic capture, and track
+// management.
+//
+// The Opus configuration this header used to claim lives in jam-sdp.ts,
+// which is where it became real: until then there was no SDP handling in
+// this file at all, and the room negotiated whatever the browser felt
+// like -- 20 ms hybrid frames, 26.5 ms of codec delay, and stereo for a
+// mono microphone.
 
 import type { MelodyData } from '@/types'
 import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
 import { readNetSample } from './jam-net-stats'
+import { capSendBitrate, requestLowPlayout, shapeOpusSdp } from './jam-sdp'
 import { micErrorMessage, micPermissionState } from './media-errors'
 import { createSignalingClient, jamSignalingIsMocked } from './signaling'
 import type { JamBackgroundCapabilityMessage, JamCallbacks, JamPeer, } from './types'
@@ -388,6 +395,67 @@ export function createJamService(callbacks: JamCallbacks) {
     })
   }
 
+  /**
+   * Set a local description, shaped for low latency, and never fail on it.
+   *
+   * Chrome rejects modifications it considers structural with
+   * InvalidModificationError, and the set of edits it tolerates has moved
+   * more than once. Adding fmtp parameters to an existing Opus line is the
+   * conservative end of that, but "conservative" is not "guaranteed" -- so
+   * a refusal falls back to the untouched description. A room at 20 ms
+   * frames is enormously better than a room that will not connect.
+   */
+  async function setShapedLocalDescription(
+    pc: RTCPeerConnection,
+    desc: RTCSessionDescriptionInit,
+  ): Promise<RTCSessionDescriptionInit> {
+    if (typeof desc.sdp !== 'string' || desc.sdp === '') {
+      await pc.setLocalDescription(desc)
+      return desc
+    }
+    const shaped = { ...desc, sdp: shapeOpusSdp(desc.sdp) }
+    try {
+      await pc.setLocalDescription(shaped)
+      return shaped
+    } catch (err) {
+      console.warn('[jam:service] SDP shaping refused, using the original', err)
+      await pc.setLocalDescription(desc)
+      return desc
+    }
+  }
+
+  /**
+   * Set a remote description, shaped, and never fail on it.
+   *
+   * The other half of the pair, and it turned out to be the half that
+   * matters. The room's FIRST negotiation is datachannel-only -- the mic
+   * is not captured until somebody unmutes -- so the audio m-section
+   * arrives in a later offer from whichever peer unmuted first. Shaping
+   * only our own local description therefore never touched an audio
+   * section at all: the logs read `m=application` and nothing else, and
+   * the measured frame size stayed at 20 ms.
+   *
+   * Munging the remote description is the same grade of supported-but-
+   * grudging as munging our own, so it carries the same fallback.
+   */
+  async function setShapedRemoteDescription(
+    pc: RTCPeerConnection,
+    desc: RTCSessionDescriptionInit,
+  ): Promise<void> {
+    if (typeof desc.sdp !== 'string' || desc.sdp === '') {
+      await pc.setRemoteDescription(new RTCSessionDescription(desc))
+      return
+    }
+    try {
+      await pc.setRemoteDescription(
+        new RTCSessionDescription({ ...desc, sdp: shapeOpusSdp(desc.sdp) }),
+      )
+    } catch (err) {
+      console.warn('[jam:service] remote SDP shaping refused', err)
+      await pc.setRemoteDescription(new RTCSessionDescription(desc))
+    }
+  }
+
   // ── Peer connection management ──────────────────────────────────
 
   async function initiateNewPeer(peer: JamPeer): Promise<void> {
@@ -440,7 +508,7 @@ export function createJamService(callbacks: JamCallbacks) {
       }
     }
 
-    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
+    await setShapedRemoteDescription(pc, JSON.parse(sdp))
 
     // Process any buffered ICE candidates
     const pending = pendingCandidates.get(from)
@@ -456,15 +524,15 @@ export function createJamService(callbacks: JamCallbacks) {
     }
 
     const answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
-    signaling.sendAnswer(from, JSON.stringify(answer))
+    const sentAnswer = await setShapedLocalDescription(pc, answer)
+    signaling.sendAnswer(from, JSON.stringify(sentAnswer))
   }
 
   async function handleAnswer(from: string, sdp: string): Promise<void> {
     const pc = peerConnections.get(from)
     if (!pc || disposed) return
     console.info('[jam:service] received answer from', from)
-    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdp)))
+    await setShapedRemoteDescription(pc, JSON.parse(sdp))
 
     // Process any buffered ICE candidates
     const pending = pendingCandidates.get(from)
@@ -536,6 +604,10 @@ export function createJamService(callbacks: JamCallbacks) {
         'streams:',
         event.streams.length,
       )
+      // Ask for a shorter playout buffer the moment there is a receiver to
+      // ask. NetEq measured 30 ms on a loopback pair with nothing to
+      // absorb, and this is the only lever the built-in path exposes.
+      if (event.track.kind === 'audio') requestLowPlayout(event.receiver)
       const remoteStream = event.streams[0]
       if (remoteStream !== undefined) {
         callbacks.onPeerStream(peerId, remoteStream)
@@ -564,6 +636,12 @@ export function createJamService(callbacks: JamCallbacks) {
           clearIceRecovery(peerId)
           void measureLatency(peerId, pc)
           startLatencyPolling()
+          // Only once the pair is up: setParameters needs a negotiated
+          // sender, and an encodings array that does not exist yet cannot
+          // be created here.
+          for (const sender of pc.getSenders()) {
+            if (sender.track?.kind === 'audio') void capSendBitrate(sender)
+          }
           return
         }
         // A connection that fails stays failed. Switching WiFi to cellular,
@@ -609,8 +687,8 @@ export function createJamService(callbacks: JamCallbacks) {
         if (pc.signalingState !== 'stable') return
         console.info('[jam:service] negotiation needed for', peerId)
         const offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
-        signaling.sendOffer(peerId, JSON.stringify(offer))
+        const sentOffer = await setShapedLocalDescription(pc, offer)
+        signaling.sendOffer(peerId, JSON.stringify(sentOffer))
       } catch (err) {
         console.error('[jam:service] negotiation error for', peerId, err)
       }

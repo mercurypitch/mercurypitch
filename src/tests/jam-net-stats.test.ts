@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamNetSample } from '@/lib/jam/jam-net-stats'
-import { classifyIcePath, createRingBuffer, deriveReading, readNetSample, rollingStats, } from '@/lib/jam/jam-net-stats'
+import { classifyIcePath, createRingBuffer, deriveReading, nearestOpusFrameMs, readNetSample, rollingStats, } from '@/lib/jam/jam-net-stats'
 
 /** A getStats()-shaped object over a plain array of reports. */
 const report = (rows: Array<Record<string, unknown>>) => ({
@@ -281,6 +281,60 @@ describe('deriveReading', () => {
     )
     // +480 inserted, -120 removed: the buffer opened up by 360 samples.
     expect(deriveReading(later, base).netBufferAdjustmentSamples).toBe(360)
+  })
+})
+
+describe('nearestOpusFrameMs', () => {
+  it('snaps a measured rate to the frame size that produced it', () => {
+    // Opus has 2.5/5/10/20/40/60 and nothing between, and a rate counted
+    // over one second is never exactly 100.
+    expect(nearestOpusFrameMs(50)).toBe(20)
+    expect(nearestOpusFrameMs(98)).toBe(10)
+    expect(nearestOpusFrameMs(103)).toBe(10)
+    expect(nearestOpusFrameMs(200)).toBe(5)
+    expect(nearestOpusFrameMs(400)).toBe(2.5)
+  })
+
+  it('separates 10 ms from 20 ms, which is the whole point', () => {
+    // This is how the panel shows whether asking for 10 ms frames in the
+    // SDP was actually honoured by the far end.
+    expect(nearestOpusFrameMs(51)).toBe(20)
+    expect(nearestOpusFrameMs(95)).toBe(10)
+  })
+
+  it('refuses a rate that is not a frame size', () => {
+    // A stream that has just started, or one being throttled, produces a
+    // rate that means nothing and would render as a confident wrong number.
+    expect(nearestOpusFrameMs(null)).toBeNull()
+    expect(nearestOpusFrameMs(0)).toBeNull()
+    expect(nearestOpusFrameMs(2)).toBeNull()
+  })
+})
+
+describe('frame size from the packet rate', () => {
+  it('reads 20 ms frames as 20 ms', () => {
+    const base = readNetSample(report([pair(), inbound()]), 1000)
+    const later = readNetSample(
+      report([pair(), inbound({ packetsReceived: 1050 })]),
+      2000,
+    )
+    const r = deriveReading(later, base)
+    expect(r.packetsPerSecond).toBeCloseTo(50, 5)
+    expect(r.frameMs).toBe(20)
+  })
+
+  it('reads 10 ms frames as 10 ms', () => {
+    const base = readNetSample(report([pair(), inbound()]), 1000)
+    const later = readNetSample(
+      report([pair(), inbound({ packetsReceived: 1100 })]),
+      2000,
+    )
+    expect(deriveReading(later, base).frameMs).toBe(10)
+  })
+
+  it('has no frame size on the first sample', () => {
+    const base = readNetSample(report([pair(), inbound()]), 1000)
+    expect(deriveReading(base, null).frameMs).toBeNull()
   })
 })
 
