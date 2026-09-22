@@ -43,7 +43,7 @@ and never blocks later galleries. A development-only `?layout=cloudway` route
 allows testing without fabricating earned stars. Normal campaign entry must
 enforce the unlock, including when an entry callback is invoked directly.
 
-## Variants after the pilot
+## Variants deferred until current visual acceptance
 
 | Variant                            | Route emphasis                                    | Voice placement                              |
 | ---------------------------------- | ------------------------------------------------- | -------------------------------------------- |
@@ -51,7 +51,7 @@ enforce the unlock, including when an entry callback is invoked directly.
 | The Opaline Ferry (follow-up)      | Two staggered rafts and broad docking terraces    | Low/high pairs on docks                      |
 | The Frost Conservatory (follow-up) | Curved icy approach and optional crackle shortcut | Familiar gentle-wave lesson on solid islands |
 
-Only the first route ships in this batch. Variants reuse authored behavior and
+Owner feedback on 22 September freezes all new levels until the current trial is pristine. See `CLOUDWAY-POLISH-2026-09-22.md`. Only the first route ships in this batch. Variants reuse authored behavior and
 asset recipes; they do not fork the simulation. Timed singing, rival characters,
 combat, new judges and legend difficulty remain separately planned.
 
@@ -84,7 +84,7 @@ combat, new judges and legend difficulty remain separately planned.
 - [x] Verify trial entry/leave preserves gallery saves in the browser.
 - [x] Inspect compiled phone/tablet/desktop entry and playable scene.
 - [x] Commit separate runtime, content/renderer and concise-copy stages.
-- [ ] Confirm final-head CI on PR #807; live delivery status is in the PR and dotfiles TASKS.
+- [x] Pilot head `816bcd02`: all 40 non-production checks passed. New polish-head CI is tracked separately.
 - [x] Preserve production and test receipts; provide a stable HTTPS LAN test host.
 - [ ] Owner acceptance of tablet pacing, jumps, voice sessions and sustained performance.
 

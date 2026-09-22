@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-twin-connector-v7-candidate",
+  "operation": "remesh",
+  "parentTaskId": "01a0c42f-a362-7199-a2f8-50dc99efb112",
+  "sourceVariant": "pre_remeshed_glb",
+  "source": {
+    "file": "meshy/raw/twin-connector-pre-remesh-v6.glb",
+    "bytes": 20461604,
+    "sha256": "77bbff7370682ed153e290af7c267e2bbf49ad87dfa63fe20dba32b5e2828e4d",
+    "providerTaskType": "image-to-3d"
+  },
+  "request": {
+    "topology": "triangle",
+    "target_polycount": 100000,
+    "target_formats": [
+      "glb"
+    ],
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "authorization": "Owner authorized unrestricted Meshy use for Glassworks asset production; this is the first bounded one-connector quality candidate.",
+  "estimatedCredits": 5,
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "archived",
+  "balanceBefore": 3895,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0c42f-a362-7199-a2f8-50dc99efb112",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 30
+  },
+  "submittedAtUtc": "2026-09-22T13:11:07.802161+00:00",
+  "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+  "balanceAfterSubmit": 3890,
+  "observedBalanceDeltaAtSubmit": 5,
+  "lastStatus": {
+    "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "lastCheckedAtUtc": "2026-09-22T13:13:00.724097+00:00",
+  "finalStatus": {
+    "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "balanceAfterArchiveCheck": 3890,
+  "observedBalanceDeltaFinal": 5,
+  "archivedAtUtc": "2026-09-22T13:13:01.811825+00:00",
+  "file": {
+    "path": "meshy/twin-connector-remesh-100k.glb",
+    "bytes": 7046796,
+    "sha256": "862ff6575fdd69bf2da46f65f51b85519b6d65304eaaaf2e2f2990161f468f91"
+  },
+  "readiness": "Review-only untextured geometry candidate. Inspect silhouette, rail alignment, foliage separation, and primary openings before authorizing the retexture stage."
+}

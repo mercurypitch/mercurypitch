@@ -1,0 +1,286 @@
+{
+  "version": 3,
+  "assetId": "cloudway-platform-kit-v1",
+  "status": "validated runtime export; scene appearance awaiting owner playtest",
+  "description": "Higher-detail Meshy Cloudway platforms with exposed marble and crystal surfaces.",
+  "coordinates": "glTF +Y up; metres; top-centre roots at landing plane y=0",
+  "landingEdgeSemantics": "Gold boundary marks the unchanged 1.70m x 1.30m collider. The donor surface is selectively flattened within 1cm of the landing plane; outer ornament is decorative.",
+  "bundle": {
+    "id": "cloudway-platform-kit-v1",
+    "file": "cloudway-platform-kit-v3.glb",
+    "source": "art/glass-adventure/platform-trials/v3/exports/cloudway-platform-kit-v3-runtime.glb",
+    "bytes": 10338088,
+    "sha256": "e96bb26369cb037dffcfab3d0c71911dc7e872c2b8f766db8cb73599a6d51c62"
+  },
+  "preview": {
+    "id": "cloudway-ribbon-preview",
+    "file": "cloudway-ribbon-preview.webp",
+    "kind": "approved concept-art derivative; not an in-game screenshot",
+    "source": "art/glass-adventure/platform-trials/v1/concepts/02-cloudway-route.png",
+    "dimensions": [1280, 640],
+    "bytes": 206692,
+    "sha256": "fa6fd98368f5f602521ce6349c70af1bfce8f7766e6a33942e0ae51bcaa4e660"
+  },
+  "nodes": [
+    {
+      "name": "Cloudway_Marble",
+      "descendantMeshes": [
+        "Cloudway_Marble__DonorShell",
+        "Cloudway_Marble__LandingBoundary"
+      ],
+      "triangles": 40032,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [-0.85, 0.0, -0.65],
+        "max": [0.85, 0.0, 0.65]
+      },
+      "collider_json": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [0.0, -0.12, 0.0]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [-0.899768, -0.425646, -0.699575],
+        "max": [0.9019, 0.146525, 0.700478]
+      },
+      "geometrySha256": "a79280e133b59adc9fb255b7c130bdd37d86d941bc71fadcea22604dcf812819",
+      "materials": [
+        "Cloudway_Marble__DonorAtlas_01_2K",
+        "Cloudway_Shared_Gold"
+      ],
+      "exposedDonorLanding": {
+        "donorShell": "Cloudway_Marble__DonorShell",
+        "boundary": "Cloudway_Marble__LandingBoundary",
+        "boundaryDimensionsMetres": [1.7, 1.3, 0.01],
+        "flattenedVertexCount": 8860,
+        "contactMeasurements": {
+          "all": {
+            "sampleCount": 14970,
+            "upwardAreaSquareMetres": 2.122149,
+            "heightRangeMetres": [-0.009887, 0.009264],
+            "maxAbsoluteErrorMetres": 0.009887
+          },
+          "center": {
+            "sampleCount": 2586,
+            "upwardAreaSquareMetres": 0.810266,
+            "heightRangeMetres": [-0.004665, 0.00292],
+            "maxAbsoluteErrorMetres": 0.004665
+          },
+          "edge": {
+            "sampleCount": 9612,
+            "upwardAreaSquareMetres": 0.761099,
+            "heightRangeMetres": [-0.009887, 0.009219],
+            "maxAbsoluteErrorMetres": 0.009887
+          }
+        },
+        "opaqueReplacementSkinPresent": false
+      }
+    },
+    {
+      "name": "Cloudway_Frost",
+      "descendantMeshes": [
+        "Cloudway_Frost__DonorShell",
+        "Cloudway_Frost__LandingBoundary"
+      ],
+      "triangles": 35032,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [-0.85, 0.0, -0.65],
+        "max": [0.85, 0.0, 0.65]
+      },
+      "collider_json": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [0.0, -0.12, 0.0]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [-0.900337, -0.516823, -0.700117],
+        "max": [0.90016, 0.02095, 0.699847]
+      },
+      "geometrySha256": "fc469bf4768475498764416ef56762b73d79fdb9117ce89d8b6833a61480c5d4",
+      "materials": ["Cloudway_Frost__DonorAtlas_01_2K", "Cloudway_Shared_Gold"],
+      "exposedDonorLanding": {
+        "donorShell": "Cloudway_Frost__DonorShell",
+        "boundary": "Cloudway_Frost__LandingBoundary",
+        "boundaryDimensionsMetres": [1.7, 1.3, 0.01],
+        "flattenedVertexCount": 1163,
+        "contactMeasurements": {
+          "all": {
+            "sampleCount": 2022,
+            "upwardAreaSquareMetres": 2.179126,
+            "heightRangeMetres": [-0.000516, 0.008736],
+            "maxAbsoluteErrorMetres": 0.008736
+          },
+          "center": {
+            "sampleCount": 51,
+            "upwardAreaSquareMetres": 1.035734,
+            "heightRangeMetres": [0.0, 0.0],
+            "maxAbsoluteErrorMetres": 0.0
+          },
+          "edge": {
+            "sampleCount": 1746,
+            "upwardAreaSquareMetres": 0.657461,
+            "heightRangeMetres": [-0.000516, 0.008736],
+            "maxAbsoluteErrorMetres": 0.008736
+          }
+        },
+        "opaqueReplacementSkinPresent": false
+      }
+    },
+    {
+      "name": "Cloudway_Glide",
+      "descendantMeshes": [
+        "Cloudway_Glide__DonorShell",
+        "Cloudway_Glide__LandingBoundary"
+      ],
+      "triangles": 35032,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [-0.85, 0.0, -0.65],
+        "max": [0.85, 0.0, 0.65]
+      },
+      "collider_json": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [0.0, -0.12, 0.0]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [-0.900152, -0.270982, -0.700665],
+        "max": [0.900049, 0.020154, 0.700306]
+      },
+      "geometrySha256": "1e6fcadf25122144a0205b737bed253a57325b3f9f2c303b411ea3f3975b7764",
+      "materials": ["Cloudway_Glide__DonorAtlas_01_2K", "Cloudway_Shared_Gold"],
+      "exposedDonorLanding": {
+        "donorShell": "Cloudway_Glide__DonorShell",
+        "boundary": "Cloudway_Glide__LandingBoundary",
+        "boundaryDimensionsMetres": [1.7, 1.3, 0.01],
+        "flattenedVertexCount": 9015,
+        "contactMeasurements": {
+          "all": {
+            "sampleCount": 19950,
+            "upwardAreaSquareMetres": 2.186645,
+            "heightRangeMetres": [-0.005026, 0.009601],
+            "maxAbsoluteErrorMetres": 0.009601
+          },
+          "center": {
+            "sampleCount": 9192,
+            "upwardAreaSquareMetres": 0.947644,
+            "heightRangeMetres": [-0.004577, 0.000423],
+            "maxAbsoluteErrorMetres": 0.004577
+          },
+          "edge": {
+            "sampleCount": 8943,
+            "upwardAreaSquareMetres": 0.660918,
+            "heightRangeMetres": [-0.005026, 0.009601],
+            "maxAbsoluteErrorMetres": 0.009601
+          }
+        },
+        "opaqueReplacementSkinPresent": false
+      }
+    },
+    {
+      "name": "Cloudway_Crackle_Intact",
+      "descendantMeshes": [
+        "Cloudway_Crackle_Intact__FrameGold",
+        "Cloudway_Crackle_Intact__Slab"
+      ],
+      "triangles": 2472,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [-0.85, 0.0, -0.65],
+        "max": [0.85, 0.0, 0.65]
+      },
+      "collider_json": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [0.0, -0.12, 0.0]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [-0.9, -0.095, -0.7],
+        "max": [0.9, 0.026, 0.7]
+      },
+      "geometrySha256": "642978893afa10a129fffb70401ade80b72b2fe54ecf53f54b3df0bb48c8bc12",
+      "materials": ["Cloudway_Shared_Gold", "Cloudway_Shared_RoseCrystal"]
+    },
+    {
+      "name": "Cloudway_Crackle_Warning",
+      "descendantMeshes": [
+        "Cloudway_Crackle_Warning__CrackGlow",
+        "Cloudway_Crackle_Warning__FrameGold",
+        "Cloudway_Crackle_Warning__Slab"
+      ],
+      "triangles": 2616,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [-0.85, 0.0, -0.65],
+        "max": [0.85, 0.0, 0.65]
+      },
+      "collider_json": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [0.0, -0.12, 0.0]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [-0.9, -0.095, -0.7],
+        "max": [0.9, 0.026, 0.7]
+      },
+      "geometrySha256": "4da9b66fb1372dc9aaa668eb1f1ca9cc85ba6ed2a28390e5c79a103ce7e04c9e",
+      "materials": [
+        "Cloudway_Crackle_Glow",
+        "Cloudway_Shared_Gold",
+        "Cloudway_Shared_RoseCrystal"
+      ]
+    },
+    {
+      "name": "Cloudway_Crackle_Release",
+      "descendantMeshes": [
+        "Cloudway_Crackle_Release__FrameGold",
+        "Cloudway_Crackle_Release__Shard_01",
+        "Cloudway_Crackle_Release__Shard_02",
+        "Cloudway_Crackle_Release__Shard_03",
+        "Cloudway_Crackle_Release__Shard_04",
+        "Cloudway_Crackle_Release__Shard_05",
+        "Cloudway_Crackle_Release__Shard_06"
+      ],
+      "triangles": 308,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [-0.85, 0.0, -0.65],
+        "max": [0.85, 0.0, 0.65]
+      },
+      "collider_json": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [0.0, -0.12, 0.0]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [-0.9, -0.095, -0.7],
+        "max": [0.9, 0.026, 0.7]
+      },
+      "geometrySha256": "876ebc0bbe6dd31130075e1e13ccd962363a203d6767001f27f50290f44c58b9",
+      "materials": ["Cloudway_Shared_Gold", "Cloudway_Shared_RoseCrystal"]
+    }
+  ],
+  "materialContract": "2K base color, 1K normal and metallic-roughness WebP maps; source-quality GLB and packed Blender project are preserved separately.",
+  "validation": {
+    "sourceReport": "art/glass-adventure/platform-trials/v3/proofs/cloudway-platform-kit-v3-validation.json",
+    "freshGlbReimport": true,
+    "runtimeGeometryMatchesSource": true,
+    "maximumWalkableContactErrorMetres": 0.01,
+    "sixNamedRoots": true,
+    "noMeshCompressionDecoderRequired": true,
+    "crackleGeometryUnchanged": true
+  }
+}

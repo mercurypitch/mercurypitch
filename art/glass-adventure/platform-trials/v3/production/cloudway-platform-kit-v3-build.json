@@ -1,0 +1,927 @@
+{
+  "schema": 1,
+  "assetId": "cloudway-platform-kit-v3-review",
+  "status": "source-quality and runtime review candidates validated; public integration pending visual review",
+  "coordinates": "Blender Z-up authoring; glTF +Y up; metres",
+  "landingEdgeSemantics": "The sampled original donor landing is at y=0 and remains exposed. A narrow exact 1.70 x 1.30 metre gold boundary marks the authoritative gameplay collider without replacing the donor marble, celadon, inlay, foliage, or crystalline surface.",
+  "donors": {
+    "marble": {
+      "source": "art/glass-adventure/platform-trials/v2/meshy/marble/donor.glb",
+      "sourceSha256": "b415c9287dff10444ebe7ba55935163fa7632ba60e8ad7babd30528565b6c3db",
+      "sourceBytes": 44985716,
+      "sourceTriangles": 90378,
+      "targetTriangles": 40000,
+      "reducedTriangles": 40000,
+      "retainedPercent": 44.259,
+      "rawLandingPlaneBlenderZ": 0.14495646357536313,
+      "normalization": {
+        "shellWidth": 1.801668,
+        "shellDepth": 1.400089,
+        "donorLandingBlenderZ": -9.4e-05,
+        "method": "donor landing sampled before reduction, translated to z=0, nonuniform XY fit with X scale retained vertically"
+      },
+      "landingFlatten": {
+        "method": "flatten vertices on broad upward-facing donor polygons within 3.5cm of the sampled landing datum; preserve UV/PBR and all silhouette geometry",
+        "flattenedVertices": 8860,
+        "selectedHeightRangeBeforeMetres": [
+          -0.040981,
+          0.044669
+        ],
+        "targetBlenderZ": 0.0,
+        "measurementsAfter": {
+          "all": {
+            "sampleCount": 14970,
+            "upwardAreaSquareMetres": 2.122149,
+            "heightRangeMetres": [
+              -0.009887,
+              0.009264
+            ],
+            "maxAbsoluteErrorMetres": 0.009887
+          },
+          "center": {
+            "sampleCount": 2586,
+            "upwardAreaSquareMetres": 0.810266,
+            "heightRangeMetres": [
+              -0.004665,
+              0.00292
+            ],
+            "maxAbsoluteErrorMetres": 0.004665
+          },
+          "edge": {
+            "sampleCount": 9612,
+            "upwardAreaSquareMetres": 0.761099,
+            "heightRangeMetres": [
+              -0.009887,
+              0.009219
+            ],
+            "maxAbsoluteErrorMetres": 0.009887
+          }
+        }
+      },
+      "runtimeTextures": [
+        {
+          "image": "Cloudway_Marble__Atlas_01_2K",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_marble-atlas-01-2k.png",
+          "runtimeBytes": 7911374,
+          "runtimeSha256": "68a60b3ee0d9745f7f4805959afb43ffbd1cdd75f59a31313ea01b912f63e0f5",
+          "packed": true
+        },
+        {
+          "image": "Cloudway_Marble__Atlas_02_2K",
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_marble-atlas-02-2k.png",
+          "runtimeBytes": 5133977,
+          "runtimeSha256": "ba4e45f42cdae8301e8464070c10b39ace69269ef3f6f806814d65868b7ed8d2",
+          "packed": true
+        },
+        {
+          "image": "Cloudway_Marble__Atlas_03_2K",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_marble-atlas-03-2k.png",
+          "runtimeBytes": 7905092,
+          "runtimeSha256": "2e76b1ee5ab65086c9dd1620c0e260840e5927a793982f5ddccc88a26a8c2d45",
+          "packed": true
+        }
+      ]
+    },
+    "frost": {
+      "source": "art/glass-adventure/platform-trials/v2/meshy/frost/donor.glb",
+      "sourceSha256": "a7a1ca61f5f927ce4d96a758947ce914cc5fe66e3c5efef6a6a05a86a95863b8",
+      "sourceBytes": 40814788,
+      "sourceTriangles": 79445,
+      "targetTriangles": 35000,
+      "reducedTriangles": 35000,
+      "retainedPercent": 44.056,
+      "rawLandingPlaneBlenderZ": 0.26326442956924445,
+      "normalization": {
+        "shellWidth": 1.800497,
+        "shellDepth": 1.399964,
+        "donorLandingBlenderZ": 0.000784,
+        "method": "donor landing sampled before reduction, translated to z=0, nonuniform XY fit with X scale retained vertically"
+      },
+      "landingFlatten": {
+        "method": "flatten vertices on broad upward-facing donor polygons within 3.5cm of the sampled landing datum; preserve UV/PBR and all silhouette geometry",
+        "flattenedVertices": 1163,
+        "selectedHeightRangeBeforeMetres": [
+          -0.039489,
+          0.020786
+        ],
+        "targetBlenderZ": 0.0,
+        "measurementsAfter": {
+          "all": {
+            "sampleCount": 2022,
+            "upwardAreaSquareMetres": 2.179126,
+            "heightRangeMetres": [
+              -0.000516,
+              0.008736
+            ],
+            "maxAbsoluteErrorMetres": 0.008736
+          },
+          "center": {
+            "sampleCount": 51,
+            "upwardAreaSquareMetres": 1.035734,
+            "heightRangeMetres": [
+              0.0,
+              0.0
+            ],
+            "maxAbsoluteErrorMetres": 0.0
+          },
+          "edge": {
+            "sampleCount": 1746,
+            "upwardAreaSquareMetres": 0.657461,
+            "heightRangeMetres": [
+              -0.000516,
+              0.008736
+            ],
+            "maxAbsoluteErrorMetres": 0.008736
+          }
+        }
+      },
+      "runtimeTextures": [
+        {
+          "image": "Cloudway_Frost__Atlas_01_2K",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_frost-atlas-01-2k.png",
+          "runtimeBytes": 7818173,
+          "runtimeSha256": "aa4dce965a317b1cd1dfbcb07ac1310aba8377fce266b23443e826ff4b5a388b",
+          "packed": true
+        },
+        {
+          "image": "Cloudway_Frost__Atlas_02_2K",
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_frost-atlas-02-2k.png",
+          "runtimeBytes": 4977820,
+          "runtimeSha256": "c5d8df72ceb0fdfb5e845364a321098ab89cbbd52c051838e2fff0cd2c152046",
+          "packed": true
+        },
+        {
+          "image": "Cloudway_Frost__Atlas_03_2K",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_frost-atlas-03-2k.png",
+          "runtimeBytes": 6794381,
+          "runtimeSha256": "b21d3f2a17b889ae78f2b3696942ab8e57ca6d7df332482e71484b8b844894ce",
+          "packed": true
+        }
+      ]
+    },
+    "glide": {
+      "source": "art/glass-adventure/platform-trials/v2/meshy/glide/donor.glb",
+      "sourceSha256": "87c555d358064841b09b38e8f671c18c37eb97ae2c2130f4cd0da50894a5acb9",
+      "sourceBytes": 38636140,
+      "sourceTriangles": 83606,
+      "targetTriangles": 35000,
+      "reducedTriangles": 35000,
+      "retainedPercent": 41.863,
+      "rawLandingPlaneBlenderZ": 0.14093507453799248,
+      "normalization": {
+        "shellWidth": 1.800201,
+        "shellDepth": 1.40097,
+        "donorLandingBlenderZ": 0.000139,
+        "method": "donor landing sampled before reduction, translated to z=0, nonuniform XY fit with X scale retained vertically"
+      },
+      "landingFlatten": {
+        "method": "flatten vertices on broad upward-facing donor polygons within 3.5cm of the sampled landing datum; preserve UV/PBR and all silhouette geometry",
+        "flattenedVertices": 9015,
+        "selectedHeightRangeBeforeMetres": [
+          -0.012176,
+          0.019864
+        ],
+        "targetBlenderZ": 0.0,
+        "measurementsAfter": {
+          "all": {
+            "sampleCount": 19950,
+            "upwardAreaSquareMetres": 2.186645,
+            "heightRangeMetres": [
+              -0.005026,
+              0.009601
+            ],
+            "maxAbsoluteErrorMetres": 0.009601
+          },
+          "center": {
+            "sampleCount": 9192,
+            "upwardAreaSquareMetres": 0.947644,
+            "heightRangeMetres": [
+              -0.004577,
+              0.000423
+            ],
+            "maxAbsoluteErrorMetres": 0.004577
+          },
+          "edge": {
+            "sampleCount": 8943,
+            "upwardAreaSquareMetres": 0.660918,
+            "heightRangeMetres": [
+              -0.005026,
+              0.009601
+            ],
+            "maxAbsoluteErrorMetres": 0.009601
+          }
+        }
+      },
+      "runtimeTextures": [
+        {
+          "image": "Cloudway_Glide__Atlas_01_2K",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_glide-atlas-01-2k.png",
+          "runtimeBytes": 7555859,
+          "runtimeSha256": "ad5707fe9ed32f5378dea38cc80c639fd92733618e340cc24d6c539cd28d6bb6",
+          "packed": true
+        },
+        {
+          "image": "Cloudway_Glide__Atlas_02_2K",
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_glide-atlas-02-2k.png",
+          "runtimeBytes": 5286180,
+          "runtimeSha256": "610a62072913efbd471cce3deed02cb967ec293abe82f3ba051083692591ced3",
+          "packed": true
+        },
+        {
+          "image": "Cloudway_Glide__Atlas_03_2K",
+          "sourceDimensions": [
+            4096,
+            4096
+          ],
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeFile": "sources/runtime-textures/cloudway_glide-atlas-03-2k.png",
+          "runtimeBytes": 6426918,
+          "runtimeSha256": "47604de8364778469d7f26a9065e121614c0a8304f760f5dbf501dc23f0eac7b",
+          "packed": true
+        }
+      ]
+    }
+  },
+  "nodes": {
+    "Cloudway_Marble": {
+      "descendantMeshes": [
+        "Cloudway_Marble__DonorShell",
+        "Cloudway_Marble__LandingBoundary"
+      ],
+      "triangles": 40032,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [
+          -0.85,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.85,
+          0.0,
+          0.65
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [
+          0.0,
+          -0.12,
+          0.0
+        ]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [
+          -0.8997676372528076,
+          -0.4256463646888733,
+          -0.6996113061904907
+        ],
+        "max": [
+          0.9019001722335815,
+          0.14652453362941742,
+          0.7004778385162354
+        ]
+      },
+      "materials": [
+        "Cloudway_Marble__DonorAtlas_01_2K",
+        "Cloudway_Shared_Gold"
+      ]
+    },
+    "Cloudway_Frost": {
+      "descendantMeshes": [
+        "Cloudway_Frost__DonorShell",
+        "Cloudway_Frost__LandingBoundary"
+      ],
+      "triangles": 35032,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [
+          -0.85,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.85,
+          0.0,
+          0.65
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [
+          0.0,
+          -0.12,
+          0.0
+        ]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [
+          -0.9003368020057678,
+          -0.516823410987854,
+          -0.7001165151596069
+        ],
+        "max": [
+          0.9001604914665222,
+          0.02095031552016735,
+          0.6998473405838013
+        ]
+      },
+      "materials": [
+        "Cloudway_Frost__DonorAtlas_01_2K",
+        "Cloudway_Shared_Gold"
+      ]
+    },
+    "Cloudway_Glide": {
+      "descendantMeshes": [
+        "Cloudway_Glide__DonorShell",
+        "Cloudway_Glide__LandingBoundary"
+      ],
+      "triangles": 35032,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [
+          -0.85,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.85,
+          0.0,
+          0.65
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [
+          0.0,
+          -0.12,
+          0.0
+        ]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [
+          -0.9001520872116089,
+          -0.27098172903060913,
+          -0.7006646394729614
+        ],
+        "max": [
+          0.9000492691993713,
+          0.020154086872935295,
+          0.7003058195114136
+        ]
+      },
+      "materials": [
+        "Cloudway_Glide__DonorAtlas_01_2K",
+        "Cloudway_Shared_Gold"
+      ]
+    },
+    "Cloudway_Crackle_Intact": {
+      "descendantMeshes": [
+        "Cloudway_Crackle_Intact__FrameGold",
+        "Cloudway_Crackle_Intact__Slab"
+      ],
+      "triangles": 2472,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [
+          -0.85,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.85,
+          0.0,
+          0.65
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [
+          0.0,
+          -0.12,
+          0.0
+        ]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [
+          -0.8999999761581421,
+          -0.0949999988079071,
+          -0.699999988079071
+        ],
+        "max": [
+          0.8999999761581421,
+          0.026000000536441803,
+          0.699999988079071
+        ]
+      },
+      "materials": [
+        "Cloudway_Shared_Gold",
+        "Cloudway_Shared_RoseCrystal"
+      ]
+    },
+    "Cloudway_Crackle_Warning": {
+      "descendantMeshes": [
+        "Cloudway_Crackle_Warning__CrackGlow",
+        "Cloudway_Crackle_Warning__FrameGold",
+        "Cloudway_Crackle_Warning__Slab"
+      ],
+      "triangles": 2616,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [
+          -0.85,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.85,
+          0.0,
+          0.65
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [
+          0.0,
+          -0.12,
+          0.0
+        ]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [
+          -0.8999999761581421,
+          -0.0949999988079071,
+          -0.699999988079071
+        ],
+        "max": [
+          0.8999999761581421,
+          0.026000000536441803,
+          0.699999988079071
+        ]
+      },
+      "materials": [
+        "Cloudway_Crackle_Glow",
+        "Cloudway_Shared_Gold",
+        "Cloudway_Shared_RoseCrystal"
+      ]
+    },
+    "Cloudway_Crackle_Release": {
+      "descendantMeshes": [
+        "Cloudway_Crackle_Release__FrameGold",
+        "Cloudway_Crackle_Release__Shard_01",
+        "Cloudway_Crackle_Release__Shard_02",
+        "Cloudway_Crackle_Release__Shard_03",
+        "Cloudway_Crackle_Release__Shard_04",
+        "Cloudway_Crackle_Release__Shard_05",
+        "Cloudway_Crackle_Release__Shard_06"
+      ],
+      "triangles": 308,
+      "landingBoundsGlTfYUpMetres": {
+        "min": [
+          -0.85,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.85,
+          0.0,
+          0.65
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0.0,
+        "center": [
+          0.0,
+          -0.12,
+          0.0
+        ]
+      },
+      "visualBoundsGlTfYUpMetres": {
+        "min": [
+          -0.8999999761581421,
+          -0.0949999988079071,
+          -0.699999988079071
+        ],
+        "max": [
+          0.8999999761581421,
+          0.026000000536441803,
+          0.699999988079071
+        ]
+      },
+      "materials": [
+        "Cloudway_Shared_Gold",
+        "Cloudway_Shared_RoseCrystal"
+      ]
+    }
+  },
+  "packedBlend": {
+    "file": "sources/cloudway-platform-kit-v3.blend",
+    "bytes": 66795847,
+    "sha256": "ec40b5f7ae6eaf17b4023eebb7cf3a8c3797d96c0f803aa583daed9e3e028412",
+    "missingExternalImages": []
+  },
+  "blenderExport": {
+    "file": "exports/cloudway-platform-kit-v3-blender.glb",
+    "bytes": 68723820,
+    "sha256": "fa64f54349e26e8d05872fdd5cc78275b677e11cba25ebc484d578ed68c59751"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v3/production/build_platform_kit_v3.py",
+    "blender": "5.2.2 LTS"
+  },
+  "sourceQualityExport": {
+    "file": "cloudway-platform-kit-v3.glb",
+    "bytes": 42929408,
+    "sha256": "5daf655fd51f8c4ac93342c20024d3df803ecef0cbc6d2a4c48bcb85bedf25fe",
+    "generator": "glTF-Transform v4.4.2",
+    "extensionsUsed": [
+      "EXT_texture_webp",
+      "KHR_materials_emissive_strength"
+    ],
+    "embeddedImages": [
+      {
+        "index": 0,
+        "name": "cloudway_frost-atlas-03-2k",
+        "role": "normal",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 3793560,
+        "sha256": "1301e795725e52fa96fe41f187ed7f15662438fb8f100e08b9b26599fa445b67"
+      },
+      {
+        "index": 1,
+        "name": "cloudway_frost-atlas-01-2k",
+        "role": "baseColor",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 4239830,
+        "sha256": "d59f7b4ceddb520d6d54ae63b7ee0e35e9816ba89831b0e02a9687700aa350b0"
+      },
+      {
+        "index": 2,
+        "name": "cloudway_frost-atlas-02-2k",
+        "role": "metallicRoughness",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2679952,
+        "sha256": "5921ba473cd541d323d6e0f4b6d4c1813d90ed96bd484e0d722f1e656b4b67bd"
+      },
+      {
+        "index": 3,
+        "name": "cloudway_glide-atlas-03-2k",
+        "role": "normal",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 3658912,
+        "sha256": "2613378e27a8ee7fae9271d44f5a92a7e70eb56cad874dd384f5bc041af0d7e3"
+      },
+      {
+        "index": 4,
+        "name": "cloudway_glide-atlas-01-2k",
+        "role": "baseColor",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 4168536,
+        "sha256": "4f14761bcbc215ace0ddd9e86f4390525f75b0587e12f6361bac6d099e2b8d7a"
+      },
+      {
+        "index": 5,
+        "name": "cloudway_glide-atlas-02-2k",
+        "role": "metallicRoughness",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2896040,
+        "sha256": "5b9054eacc99ca03eca7c3089064ab6535ac404a606edfc35f9c0874844db99d"
+      },
+      {
+        "index": 6,
+        "name": "cloudway_marble-atlas-03-2k",
+        "role": "normal",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 5102574,
+        "sha256": "42ada2b6c8cc28e5849b2a83588edabb081a0fe04a14404fbdaf3d22c97e5326"
+      },
+      {
+        "index": 7,
+        "name": "cloudway_marble-atlas-01-2k",
+        "role": "baseColor",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 4579242,
+        "sha256": "44a52cac1bb67d497bb0bdb43133a4cc291138b28349c1c5309a691a91a12832"
+      },
+      {
+        "index": 8,
+        "name": "cloudway_marble-atlas-02-2k",
+        "role": "metallicRoughness",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2905416,
+        "sha256": "9a64a83f728eb438e01e46d5093a758d19df181f841fc840aa15569e7097ede4"
+      }
+    ],
+    "byteBreakdown": {
+      "fileBytes": 42929408,
+      "bufferBytes": 42909592,
+      "embeddedImageBytes": 34024062,
+      "geometryAndAttributeBytes": 8885530,
+      "containerAndJsonBytes": 19816
+    },
+    "tangents": {
+      "primitives": 3,
+      "logicalBytes": 2638064
+    },
+    "unsupportedMeshCompression": []
+  },
+  "runtimeExport": {
+    "file": "cloudway-platform-kit-v3-runtime.glb",
+    "bytes": 10338088,
+    "sha256": "e96bb26369cb037dffcfab3d0c71911dc7e872c2b8f766db8cb73599a6d51c62",
+    "generator": "glTF-Transform v4.4.2",
+    "extensionsUsed": [
+      "EXT_texture_webp",
+      "KHR_materials_emissive_strength"
+    ],
+    "embeddedImages": [
+      {
+        "index": 0,
+        "name": "cloudway_frost-atlas-03-1k",
+        "role": "normal",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 194286,
+        "sha256": "b5c628c12cf265bd1dc618d85dc64178ab1218f3a3ea6eda789cd05ca2688bc3"
+      },
+      {
+        "index": 1,
+        "name": "cloudway_frost-atlas-01-2k",
+        "role": "baseColor",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 1044306,
+        "sha256": "ba581fcf9fbb993a2658b5b08e83e3209a9d1e37b4d4b8329071cf0c855cce42"
+      },
+      {
+        "index": 2,
+        "name": "cloudway_frost-atlas-02-1k",
+        "role": "metallicRoughness",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 106078,
+        "sha256": "304240348f28a16b4ab7dfc28239609534abb91bd033c7e0c928b4daec218117"
+      },
+      {
+        "index": 3,
+        "name": "cloudway_glide-atlas-03-1k",
+        "role": "normal",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 214762,
+        "sha256": "06eb3a6f86421779bc860add695d9c44991644829db6ab02015d4535dcc8ede5"
+      },
+      {
+        "index": 4,
+        "name": "cloudway_glide-atlas-01-2k",
+        "role": "baseColor",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 978034,
+        "sha256": "f7d598d5ebcffaf9a0cfe93b68a4bcafb57ecd627ce44e40697f15f577ea3092"
+      },
+      {
+        "index": 5,
+        "name": "cloudway_glide-atlas-02-1k",
+        "role": "metallicRoughness",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 124386,
+        "sha256": "b1fe836073c6d362b7387853ac99389f8d3a27805263125cc1c220cf69e5a936"
+      },
+      {
+        "index": 6,
+        "name": "cloudway_marble-atlas-03-1k",
+        "role": "normal",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 374620,
+        "sha256": "12f2a0aeba0aa6a6234d931a0e8a9a2e7e67944b7f5c29588225298c422db758"
+      },
+      {
+        "index": 7,
+        "name": "cloudway_marble-atlas-01-2k",
+        "role": "baseColor",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 1166378,
+        "sha256": "0b2ced36585f7d3bf2e3ef1f65ab50eed15222ec08c44a70cc330a02fdf17002"
+      },
+      {
+        "index": 8,
+        "name": "cloudway_marble-atlas-02-1k",
+        "role": "metallicRoughness",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 96484,
+        "sha256": "d0ed47b2087fc0a9734206f48d1ef5ed0100c2a943ccb1bf05f3e256a2b79a6c"
+      }
+    ],
+    "byteBreakdown": {
+      "fileBytes": 10338088,
+      "bufferBytes": 10318576,
+      "embeddedImageBytes": 4299334,
+      "geometryAndAttributeBytes": 6019242,
+      "containerAndJsonBytes": 19512
+    },
+    "tangents": {
+      "primitives": 0,
+      "logicalBytes": 0
+    },
+    "unsupportedMeshCompression": []
+  },
+  "runtimeSavings": {
+    "bytes": 32591320,
+    "percent": 75.918,
+    "sourceBytes": 42929408,
+    "runtimeBytes": 10338088,
+    "geometryUnchanged": true
+  },
+  "validationReport": "proofs/cloudway-platform-kit-v3-validation.json",
+  "manifest": "exports/manifest.json",
+  "publicAssetTouched": false,
+  "optimization": {
+    "sourceQualityCommand": "rtk bash art/glass-adventure/platform-trials/v3/production/optimize_platform_kit_v3.sh",
+    "runtimeCommand": "rtk bash art/glass-adventure/platform-trials/v3/production/optimize_platform_kit_v3_runtime.sh",
+    "geometryPasses": [
+      "dedup",
+      "prune",
+      "weld"
+    ],
+    "sourceTangentPass": "MikkTSpace overwrite plus deterministic zero-tangent repair from vertex normals",
+    "runtimeTangentPass": "remove unused tangent attribute",
+    "sourceTexturePass": {
+      "format": "WebP",
+      "quality": 88,
+      "nearLossless": true,
+      "effort": 80
+    },
+    "runtimeTexturePass": {
+      "format": "WebP",
+      "baseColor": {
+        "dimensions": 2048,
+        "quality": 86
+      },
+      "normal": {
+        "dimensions": 1024,
+        "quality": 88
+      },
+      "metallicRoughness": {
+        "dimensions": 1024,
+        "quality": 82
+      },
+      "nearLossless": false,
+      "effort": 80
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "purpose": "Same-scale, same-lighting provider-texture comparison; review-only.",
+  "order": [
+    "V6 18k textured final",
+    "V7 102.6k Meshy 6 PBR candidate"
+  ],
+  "assets": [
+    {
+      "name": "v6-textured-final",
+      "file": "glass-adventure/journey-map/v6/meshy/twin-connector-final.glb",
+      "bytes": 17720364,
+      "sha256": "e889e129074dafc7e31723005399e14c23cedbbb33394be2fa5986ec90b8d221",
+      "triangles": 18259,
+      "displayHeightMetres": 2.8,
+      "displayX": -1.18
+    },
+    {
+      "name": "v7-100k-pbr",
+      "file": "glass-adventure/journey-map/v7/meshy/twin-connector-remesh-100k-retexture-pbr.glb",
+      "bytes": 18749744,
+      "sha256": "3e3011719a7b5599f2dde35a4f5685cbc1cc68c136509a0ba498409c1689f459",
+      "triangles": 102607,
+      "displayHeightMetres": 2.8,
+      "displayX": 1.18
+    }
+  ],
+  "proofs": [
+    {
+      "file": "proofs/twin-connector-textured-comparison-front-v7.png",
+      "bytes": 2124229,
+      "sha256": "33b354b8689d87c3a9aa236947ae81a483efb5f4a677ad2ddd9cce7d9ae64297"
+    },
+    {
+      "file": "proofs/twin-connector-textured-comparison-angle-v7.png",
+      "bytes": 2134539,
+      "sha256": "88bcc2b0dbf24ed7950b45403ebcfac88d8ae698591195832d375f4145585335"
+    },
+    {
+      "file": "proofs/twin-connector-textured-comparison-close-v7.png",
+      "bytes": 2386482,
+      "sha256": "4ef3c50eaa9a3af5b1b38cd14120abfcf52cf4ceabf7245606441493c502e9ff"
+    }
+  ],
+  "renderEngine": "CYCLES CPU",
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v7/production/render_textured_comparison.py"
+}

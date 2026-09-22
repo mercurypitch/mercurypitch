@@ -1430,3 +1430,11 @@ authored as `Claude <noreply@anthropic.com>` — verify `%an|%ae` before merging
 
 **Rule:** local or dev only (`api-dev`, localhost workers). Prod deploys go
 through `/prod-upd`.
+
+### Review asset reduction at the closest gameplay view
+
+**Symptom:** validated GLBs rendered melted plants and plain slabs instead of the approved art.
+**Cause:** 91–98% mesh reduction destroyed silhouettes; opaque landing covers hid donor PBR detail.
+**Rule:** compare donor and runtime at identical close-up camera/light before accepting a budget.
+Collision proxies do not need opaque decorative covers. Passing GLB validation is not art approval.
+**See:** `art/glass-adventure/plans/CLOUDWAY-VISUAL-QUALITY-REVIEW.md`.

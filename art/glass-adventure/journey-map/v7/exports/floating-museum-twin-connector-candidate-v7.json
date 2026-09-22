@@ -1,0 +1,263 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-twin-connector-candidate-v7",
+  "status": "review-only provider PBR connector; visual approval and runtime integration pending",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "root": "map_museum_polish_kit_root",
+  "node": "map_twin_connector",
+  "source": {
+    "file": "meshy/twin-connector-remesh-100k-retexture-pbr.glb",
+    "bytes": 18749744,
+    "sha256": "3e3011719a7b5599f2dde35a4f5685cbc1cc68c136509a0ba498409c1689f459",
+    "receipt": "meshy/twin-connector-remesh-100k-retexture-pbr-receipt.json",
+    "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+    "consumedCredits": 10,
+    "rawTopology": {
+      "Mesh_0": {
+        "vertices": 181702,
+        "triangles": 102607,
+        "boundaryEdges": 180197,
+        "nonManifoldEdges": 180197,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      }
+    },
+    "providerTextureImages": [
+      {
+        "name": "map_twin_connector_texture_00",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "map_twin_connector_texture_01",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_twin_connector_texture_02",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_twin_connector_texture_03",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      }
+    ]
+  },
+  "normalization": {
+    "scaleBlenderXYZ": [
+      1.367566466331482,
+      1.1081483364105225,
+      1.4006421566009521
+    ],
+    "sourceDimensionsGlTfYUp": [
+      1.2430839538574219,
+      1.9990830421447754,
+      0.7219250202178955
+    ],
+    "dimensionsGlTfYUpMetres": [
+      1.7000000476837158,
+      2.799999952316284,
+      0.800000011920929
+    ],
+    "anchor": "ground/bottom Y=0",
+    "anchorErrorMetres": 0.0
+  },
+  "apertureCorrection": {
+    "method": "Same bounded lower-arch widening used by the V6 connector build",
+    "verticesShifted": 57218,
+    "maximumShiftMetres": 0.04057649875388426,
+    "exteriorBoundsPreserved": true
+  },
+  "authoringAperture": {
+    "method": "Front-to-back ray grid through the central opening",
+    "samplesAcrossWidth": 401,
+    "rows": [
+      {
+        "heightFraction": 0.16,
+        "heightMetres": 0.4479999923706055,
+        "clearWidthMetres": 0.8160000228881836
+      },
+      {
+        "heightFraction": 0.28,
+        "heightMetres": 0.7839999866485596,
+        "clearWidthMetres": 0.8415000236034393
+      },
+      {
+        "heightFraction": 0.4,
+        "heightMetres": 1.1199999809265138,
+        "clearWidthMetres": 0.8160000228881836
+      }
+    ],
+    "minimumSampledClearWidthMetres": 0.8160000228881836
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-twin-connector-candidate-v7.blend",
+    "bytes": 17777677,
+    "sha256": "415c7e8406429769a512c872198f98d5b9f0f238606d9b92fa5dbd9f8a376d33",
+    "imagesPacked": true
+  },
+  "glb": {
+    "file": "exports/floating-museum-twin-connector-candidate-v7.glb",
+    "bytes": 18750424,
+    "sha256": "2553d7d038a1da33e050f75c0f959548c919d957936be315c75e4e6a99fcc0b0",
+    "nodes": 3,
+    "meshes": 1,
+    "materials": 1,
+    "images": 4,
+    "textures": 4,
+    "extensionsUsed": [],
+    "requiredNamedNodesPresent": true
+  },
+  "freshReimport": {
+    "triangles": 102607,
+    "vertices": 181728,
+    "dimensionsGlTfYUpMetres": [
+      1.7000000476837158,
+      2.799999952316284,
+      0.800000011920929
+    ],
+    "anchorErrorMetres": 0.0,
+    "aperture": {
+      "method": "Front-to-back ray grid through the central opening",
+      "samplesAcrossWidth": 401,
+      "rows": [
+        {
+          "heightFraction": 0.16,
+          "heightMetres": 0.4479999923706055,
+          "clearWidthMetres": 0.8160000228881836
+        },
+        {
+          "heightFraction": 0.28,
+          "heightMetres": 0.7839999866485596,
+          "clearWidthMetres": 0.8415000236034393
+        },
+        {
+          "heightFraction": 0.4,
+          "heightMetres": 1.1199999809265138,
+          "clearWidthMetres": 0.8160000228881836
+        }
+      ],
+      "minimumSampledClearWidthMetres": 0.8160000228881836
+    },
+    "uvLayers": {
+      "map_twin_connector_geometry": [
+        "UVMap"
+      ]
+    },
+    "topology": {
+      "map_twin_connector_geometry": {
+        "vertices": 181728,
+        "triangles": 102607,
+        "boundaryEdges": 180197,
+        "nonManifoldEdges": 180197,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      }
+    },
+    "materials": [
+      "map_twin_connector_atlas"
+    ],
+    "images": [
+      {
+        "name": "map_twin_connector_texture_00",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "map_twin_connector_texture_01",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_twin_connector_texture_02",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_twin_connector_texture_03",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      }
+    ]
+  },
+  "validation": {
+    "providerReceiptMatched": true,
+    "packedEditableSource": true,
+    "requiredNamedHierarchy": true,
+    "freshGlbReimport": true,
+    "triangleCountPreserved": true,
+    "four2kProviderMapsPreserved": true,
+    "uv0Present": true,
+    "dimensionsAndAnchorPassed": true,
+    "connectorAperturePassed": true,
+    "visualApproval": "pending",
+    "runtimeIntegration": "not performed"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v7/production/build_connector_candidate.py",
+    "blender": "5.2.2 LTS"
+  },
+  "proofs": [
+    {
+      "file": "proofs/floating-museum-twin-connector-front-v7.png",
+      "bytes": 1678879,
+      "sha256": "d169504e2d5a85892aa7d4c7bd59599189656ebb3b49eee8f9ee203d631f9a91",
+      "sourceGlbSha256": "2553d7d038a1da33e050f75c0f959548c919d957936be315c75e4e6a99fcc0b0"
+    },
+    {
+      "file": "proofs/floating-museum-twin-connector-angle-v7.png",
+      "bytes": 1654711,
+      "sha256": "bc546eb21b4f36d22ead5bcbed042222746ecdecbed7290cf32be9cf8f8d3fd6",
+      "sourceGlbSha256": "2553d7d038a1da33e050f75c0f959548c919d957936be315c75e4e6a99fcc0b0"
+    },
+    {
+      "file": "proofs/floating-museum-twin-connector-close-v7.png",
+      "bytes": 1940130,
+      "sha256": "c6b59ceb4e45fceeff60548b9b70e5da751f44ce5e4c52b7268339870488f152",
+      "sourceGlbSha256": "2553d7d038a1da33e050f75c0f959548c919d957936be315c75e4e6a99fcc0b0"
+    }
+  ],
+  "proofRender": {
+    "renderEngine": "CYCLES CPU",
+    "samples": 20,
+    "blender": "5.2.2 LTS",
+    "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v7/production/render_connector_candidate.py"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "version": 7,
+  "description": "Higher-detail Twin Galleries connector with the existing Conservatory preserved.",
+  "assets": [
+    {
+      "id": "floating-museum-architecture-kit-v6",
+      "file": "floating-museum-architecture-kit-v7.glb",
+      "source": "art/glass-adventure/journey-map/v7/exports/floating-museum-architecture-kit-v7.glb",
+      "sourceReceipt": "art/glass-adventure/journey-map/v7/exports/floating-museum-architecture-kit-v7.json",
+      "sha256": "b427dd61cd5da0c68cd9831d2524e6d7452888d21bcb3219c0671182b1002cd4",
+      "bytes": 12263920,
+      "root": "map_museum_polish_kit_root",
+      "nodes": ["map_twin_connector", "map_conservatory"]
+    }
+  ],
+  "validation": {
+    "freshGlbReimport": true,
+    "packedEditableRuntimeSource": true,
+    "requiredNamedHierarchy": true,
+    "exactTriangleCounts": true,
+    "dimensionsAndGroundAnchorsPassed": true,
+    "connectorAperturePassed": true,
+    "uv0Present": true,
+    "v6ConservatoryGeometryMaterialAndImagesExact": true,
+    "noDracoOrMeshopt": true,
+    "runtimeIntegration": "staged for browser review"
+  }
+}
