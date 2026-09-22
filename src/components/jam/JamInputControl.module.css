@@ -1,27 +1,33 @@
 /* The transmit control, and what it is transmitting.
 
-   A split button: the big half is the thing people already aim at, the
-   small half opens the choice. They read as one control because they are
-   one decision -- "send" is meaningless until you know what. */
+   One 36px round button, the size and shape of the .iconBtn controls
+   either side of it, with a small caret badge on its corner for the
+   source menu. It was briefly a 52px split pill, which read well and cost
+   the tablet header a second line -- "send" and "what" are one decision,
+   but the row they live in has no horizontal room to spare. */
 
 .control {
   position: relative;
   display: inline-flex;
-  align-items: stretch;
+  align-items: center;
 }
 
+/* 36x36 and round, exactly like the .iconBtn buttons either side of it.
+   The first version was a 52px split pill, which is 16px more than the
+   row budgets for -- at 820px that wrapped the header onto a second line
+   and grew it from 84px to 100px. A control that changes the layout
+   around it is not a drop-in replacement. */
 .send {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  width: 34px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid var(--border);
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: var(--jam-control, rgba(13, 17, 23, 0.55));
   color: var(--text-secondary);
   cursor: pointer;
 }
@@ -61,49 +67,52 @@
   border-radius: 1px;
 }
 
+/* A badge on the button rather than a second button beside it: the row
+   has no horizontal room to give, and this still reads as "there is more
+   here" and is its own hit target. Long-press and right-click reach the
+   same menu for anyone who does not aim at it. */
 .caret {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 32px;
+  width: 15px;
+  height: 15px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 0 8px 8px 0;
-  background: transparent;
-  color: var(--text-muted);
+  border-radius: 50%;
+  background: var(--bg-secondary, #16181d);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 
 .caret svg {
-  width: 12px;
-  height: 12px;
+  width: 9px;
+  height: 9px;
 }
 
+/* Placed from script, not from CSS: see JamInputControl's `place`. It
+   opened upward on a rule copied from a bottom toolbar and went off the
+   top of the page. `fixed` also takes it out of the control row's
+   overflow, which would clip it whichever way it opened. Top and left are
+   set inline; everything else is here. */
 .menu {
-  position: absolute;
-  z-index: 40;
-  bottom: calc(100% + 6px);
-  left: 0;
+  position: fixed;
+  z-index: 60;
   display: flex;
   flex-direction: column;
   gap: 6px;
   width: 248px;
+  max-height: 300px;
+  overflow-y: auto;
   padding: 8px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-secondary, #16181d);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   font-size: 0.75rem;
-}
-
-/* Opens upward by default because this control sits in a bottom toolbar.
-   On a short viewport that would leave it off-screen, so it flips. */
-@media (max-height: 520px) {
-  .menu {
-    bottom: auto;
-    top: calc(100% + 6px);
-  }
 }
 
 .menuTitle {
