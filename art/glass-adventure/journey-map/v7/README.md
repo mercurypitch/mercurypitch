@@ -1,7 +1,9 @@
-# Floating Museum twin connector V7 review candidate
+# Floating Museum twin connector V7
 
-Status: approved incremental candidate packaged as a review-only runtime kit.
-No public asset, catalog, renderer, or placement has been changed.
+Status: approved incremental runtime replacement, integrated through the
+versioned public asset path and browser-reviewed in the Twin Galleries map.
+The final public GLB is
+`apps/beside-cue/public/games/journey-map-v7/floating-museum-architecture-kit-v7.glb`.
 
 This candidate tests the narrow repair recommended by the museum quality audit:
 remesh the preserved 1,137,356-triangle Meshy source at approximately 100k,
@@ -61,7 +63,7 @@ The public V6 file is a separately optimized 5,628,320-byte combined connector
 and conservatory kit with smaller runtime maps, so it is not an apples-to-apples
 file-size comparison. Runtime packing was performed only after visual approval.
 
-## Review-only runtime kit
+## Runtime kit
 
 `exports/floating-museum-architecture-kit-v7.glb` is the versioned combined
 candidate. It is 12,263,920 bytes with SHA-256

@@ -1,5 +1,12 @@
 {
   "schema": 1,
+  "receiptContext": {
+    "scope": "historical pre-integration source-export receipt",
+    "note": "The status and validation payload below preserve the state recorded when this connector candidate was exported. Final runtime packaging and public integration are recorded separately.",
+    "runtimeReceipt": "art/glass-adventure/journey-map/v7/exports/floating-museum-architecture-kit-v7.json",
+    "publicManifest": "apps/beside-cue/public/games/journey-map-v7/manifest.json",
+    "liveProof": "art/glass-adventure/journey-map/v7/proofs/floating-museum-architecture-kit-v7-live-map-close.json"
+  },
   "assetId": "floating-museum-twin-connector-candidate-v7",
   "status": "review-only provider PBR connector; visual approval and runtime integration pending",
   "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",

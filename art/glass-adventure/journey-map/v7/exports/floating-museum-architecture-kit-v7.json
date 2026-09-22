@@ -1,5 +1,11 @@
 {
   "schema": 1,
+  "receiptContext": {
+    "scope": "historical pre-integration build receipt",
+    "note": "The status and validation payload below preserve the state recorded when this export was built. Final public integration is recorded separately.",
+    "publicManifest": "apps/beside-cue/public/games/journey-map-v7/manifest.json",
+    "liveProof": "art/glass-adventure/journey-map/v7/proofs/floating-museum-architecture-kit-v7-live-map-close.json"
+  },
   "assetId": "floating-museum-architecture-kit-v7",
   "status": "review-only runtime derivative; public integration not performed",
   "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",

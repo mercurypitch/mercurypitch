@@ -7,8 +7,11 @@
   "assetBaseline": {
     "platformKit": {
       "assetId": "cloudway-platform-kit-v1",
-      "file": "apps/beside-cue/public/games/cloudway-v1/cloudway-platform-kit-v1.glb",
-      "manifestPath": "apps/beside-cue/public/games/cloudway-v1/manifest.json",
+      "historicalServedFile": "apps/beside-cue/public/games/cloudway-v1/cloudway-platform-kit-v1.glb",
+      "historicalServedManifest": "apps/beside-cue/public/games/cloudway-v1/manifest.json",
+      "historicalServedPathStatus": "Removed after byte-identical archival; paths record what the capture served.",
+      "archiveFile": "art/glass-adventure/platform-trials/v2/exports/cloudway-platform-kit-v1.glb",
+      "archiveManifest": "art/glass-adventure/platform-trials/v2/exports/manifest.json",
       "manifestVersion": 1,
       "sha256": "05deefa049031550b3aa7897a6d7a3345718b2e10a7595a272ea513195bb9e3e"
     },

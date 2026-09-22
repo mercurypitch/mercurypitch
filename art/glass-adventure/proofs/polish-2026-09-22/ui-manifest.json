@@ -1,6 +1,8 @@
 {
   "sourceTest": "apps/beside-cue/e2e/glass-adventure-voice.e2e.ts: Twin high-note calibration rejects an overlapping range and recovers safely",
-  "sourceArtifact": "apps/beside-cue/test-results/glass-adventure-voice.e2e.-d4b10-g-range-and-recovers-safely-chromium-adventure/target-disc-phone.png",
+  "historicalSourceArtifact": "apps/beside-cue/test-results/glass-adventure-voice.e2e.-d4b10-g-range-and-recovers-safely-chromium-adventure/target-disc-phone.png",
+  "historicalSourceArtifactStatus": "Ephemeral test-run output; not retained after the proof was copied.",
+  "retainedProof": "art/glass-adventure/proofs/polish-2026-09-22/target-disc-phone.png",
   "file": "target-disc-phone.png",
   "sha256": "385f3a61a23d26c7b1bae1cdbbadc37dda243256aeebb8afaafdc5e911fa5e72",
   "viewport": {

@@ -1,5 +1,6 @@
 {
   "version": 7,
+  "status": "validated runtime export; browser reviewed in the integrated Twin Galleries map",
   "description": "Higher-detail Twin Galleries connector with the existing Conservatory preserved.",
   "assets": [
     {
@@ -23,6 +24,11 @@
     "uv0Present": true,
     "v6ConservatoryGeometryMaterialAndImagesExact": true,
     "noDracoOrMeshopt": true,
-    "runtimeIntegration": "staged for browser review"
+    "runtimeIntegration": "browser reviewed; zero page or console errors"
+  },
+  "liveProof": {
+    "receipt": "art/glass-adventure/journey-map/v7/proofs/floating-museum-architecture-kit-v7-live-map-close.json",
+    "screenshot": "art/glass-adventure/journey-map/v7/proofs/floating-museum-architecture-kit-v7-live-map-close.png",
+    "assetSha256": "b427dd61cd5da0c68cd9831d2524e6d7452888d21bcb3219c0671182b1002cd4"
   }
 }
