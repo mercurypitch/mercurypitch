@@ -14,6 +14,8 @@ import type { JamAudioProfile, JamCaptureReport, } from '@/lib/jam/jam-audio-sou
 import type { JamAudioInput } from '@/lib/jam/jam-audio-source'
 import { listJamAudioInputs, resolveDeviceId } from '@/lib/jam/jam-audio-source'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
+import type { JamInputMonitor } from '@/lib/jam/jam-input-monitor'
+import { createJamInputMonitor } from '@/lib/jam/jam-input-monitor'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { overallLineScore, scoreableLineIndices, } from '@/lib/jam/jam-line-scoring'
 import { sessionIdOfSong } from '@/lib/jam/jam-lyrics-attach'
@@ -2373,6 +2375,107 @@ export async function switchJamAudioSource(): Promise<void> {
   // a detector exists, which is why this is not just a second call.
   stopJamPitchDetection()
   startJamPitchDetection()
+  // The monitor holds a MediaStreamAudioSourceNode on the old track, which
+  // does not follow a replacement either. Rebuilt only if it was running,
+  // and it comes back metering but silent: a switch is not consent to
+  // start playing your own signal out loud.
+  if (jamInputChecking()) {
+    const wasAudible = jamInputAudible()
+    stopJamInputCheck()
+    startJamInputCheck()
+    if (wasAudible) setJamHearYourself(true)
+  }
+}
+
+// ── Checking your own input ──────────────────────────────────────────
+// Answering "is the guitar reaching the browser, and on which channel"
+// before anybody else has to tell you it is not. Off until asked for: it
+// builds an AudioContext and a per-channel analyser graph, which is not
+// something a room should do to every visitor on the chance they are a
+// guitarist.
+
+let inputMonitor: JamInputMonitor | null = null
+let inputLevelTimer: ReturnType<typeof setInterval> | null = null
+
+/** Per-channel RMS of the live capture. Empty when not checking. */
+export const [jamInputLevels, setJamInputLevels] = createSignal<
+  readonly number[]
+>([])
+
+/** Whether the input check is running at all -- the meter, not the sound. */
+export const [jamInputChecking, setJamInputChecking] = createSignal(false)
+
+/** Whether you can HEAR yourself. Separate, because of feedback. */
+export const [jamInputAudible, setJamInputAudible] = createSignal(false)
+
+/**
+ * Which channel is monitored and metered.
+ *
+ * Persisted because an interface's wiring is a property of somebody's rig,
+ * not of a session. It governs monitoring only: the room hears the raw
+ * capture track, with no graph in the way -- see jam-input-monitor.ts.
+ */
+export const [jamMonitorChannel, setJamMonitorChannel] =
+  createPersistedSignal<number>('mp_jam_monitor_channel', 0, {
+    validator: (v): v is number => typeof v === 'number' && v >= 0 && v < 32,
+  })
+
+/** How many channels the live capture exposes. 0 when not checking. */
+export const [jamInputChannelCount, setJamInputChannelCount] = createSignal(0)
+
+/** What the monitor graph measures its own capture latency to be, in ms. */
+export const [jamInputBaseLatencyMs, setJamInputBaseLatencyMs] = createSignal<
+  number | null
+>(null)
+
+/** Start metering the live capture. Silent until jamInputAudible is set. */
+export function startJamInputCheck(): void {
+  if (inputMonitor !== null) return
+  const stream = jamService?.getLocalStream() ?? null
+  if (stream === null || stream.getAudioTracks().length === 0) return
+
+  inputMonitor = createJamInputMonitor({
+    stream,
+    channel: jamMonitorChannel(),
+  })
+  if (inputMonitor === null) return
+
+  setJamInputChannelCount(inputMonitor.channelCount)
+  setJamInputBaseLatencyMs(inputMonitor.baseLatencyMs())
+  inputMonitor.setEnabled(jamInputAudible())
+  setJamInputChecking(true)
+  // 15 Hz. Fast enough that a strummed chord visibly moves the meter,
+  // slow enough that it is not competing with the pitch detector's own
+  // loop on the phone this is meant to be read on.
+  inputLevelTimer = setInterval(() => {
+    setJamInputLevels(inputMonitor?.channelLevels() ?? [])
+  }, 66)
+}
+
+export function stopJamInputCheck(): void {
+  if (inputLevelTimer !== null) {
+    clearInterval(inputLevelTimer)
+    inputLevelTimer = null
+  }
+  inputMonitor?.dispose()
+  inputMonitor = null
+  setJamInputChecking(false)
+  setJamInputAudible(false)
+  setJamInputLevels([])
+  setJamInputChannelCount(0)
+  setJamInputBaseLatencyMs(null)
+}
+
+/** Hear yourself, or stop. A no-op while the check is not running. */
+export function setJamHearYourself(on: boolean): void {
+  setJamInputAudible(on)
+  inputMonitor?.setEnabled(on)
+}
+
+/** Monitor another channel of the same interface. */
+export function selectJamMonitorChannel(channel: number): void {
+  setJamMonitorChannel(channel)
+  inputMonitor?.setChannel(channel)
 }
 
 export async function toggleJamVideo(): Promise<void> {
@@ -2961,6 +3064,10 @@ export function disposeJam(): void {
 
 function cleanupJam(): void {
   stopJamPitchDetection()
+  // Holds an AudioContext and an interval on a capture that is about to be
+  // stopped. Leaving a room used to be the moment these things quietly
+  // outlived their reason to exist.
+  stopJamInputCheck()
   clearPendingDepartures()
   unwatchVisibility()
   stopPlaybackTimer()

@@ -18,9 +18,11 @@
 
 import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
+import { jamNetworkPanelAvailable } from '@/components/jam/JamNetworkPanel'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import { PROFILE_COPY } from '@/lib/jam/jam-audio-source'
-import { jamAudioProfile, jamCaptureReport, jamInputDeviceId, jamInputDevices, refreshJamInputDevices, setJamAudioProfile, setJamInputDeviceId, setJamInputDeviceLabel, switchJamAudioSource, } from '@/stores/jam-store'
+import { loudestChannel } from '@/lib/jam/jam-input-monitor'
+import { jamAudioProfile, jamCaptureReport, jamInputAudible, jamInputBaseLatencyMs, jamInputChannelCount, jamInputChecking, jamInputDeviceId, jamInputDevices, jamInputLevels, jamMonitorChannel, refreshJamInputDevices, selectJamMonitorChannel, setJamAudioProfile, setJamHearYourself, setJamInputDeviceId, setJamInputDeviceLabel, startJamInputCheck, stopJamInputCheck, switchJamAudioSource, } from '@/stores/jam-store'
 import styles from './JamSourcePicker.module.css'
 
 const PROFILES: readonly JamAudioProfile[] = ['voice', 'instrument']
@@ -127,6 +129,108 @@ export const JamSourcePicker: Component = () => {
           That input is a loopback of what this machine is playing, not what it
           is hearing. Sending it puts the room's own sound back into the room.
         </p>
+      </Show>
+
+      <Show when={jamNetworkPanelAvailable()}>
+        <div class={styles.check}>
+          <div class={styles.checkHead}>
+            <button
+              type="button"
+              class={styles.checkToggle}
+              classList={{ [styles.checkOn!]: jamInputChecking() }}
+              aria-pressed={jamInputChecking()}
+              onClick={() =>
+                jamInputChecking() ? stopJamInputCheck() : startJamInputCheck()
+              }
+            >
+              {jamInputChecking() ? 'Stop check' : 'Check input'}
+            </button>
+            <Show when={jamInputChecking()}>
+              <label class={styles.hear}>
+                <input
+                  type="checkbox"
+                  checked={jamInputAudible()}
+                  onChange={(e) => setJamHearYourself(e.currentTarget.checked)}
+                />
+                <span>Hear yourself</span>
+              </label>
+            </Show>
+          </div>
+
+          <Show
+            when={jamInputChecking()}
+            fallback={
+              <p class={styles.hint}>
+                Meters this device's inputs so you can see the signal before
+                anyone is listening. Unmute first — there is nothing to meter
+                until the microphone is captured.
+              </p>
+            }
+          >
+            <Show
+              when={jamInputLevels().length > 0}
+              fallback={
+                <p class={styles.hint}>Waiting for the first reading…</p>
+              }
+            >
+              <ul class={styles.meters}>
+                <For each={jamInputLevels()}>
+                  {(level, index) => (
+                    <li class={styles.meter}>
+                      <button
+                        type="button"
+                        class={styles.meterLabel}
+                        classList={{
+                          [styles.meterOn!]: jamMonitorChannel() === index(),
+                        }}
+                        aria-pressed={jamMonitorChannel() === index()}
+                        disabled={jamInputChannelCount() <= 1}
+                        onClick={() => selectJamMonitorChannel(index())}
+                      >
+                        Input {index() + 1}
+                      </button>
+                      <span class={styles.bar} aria-hidden="true">
+                        <span
+                          class={styles.barFill}
+                          style={{
+                            width: `${Math.min(100, Math.round(level * 400))}%`,
+                          }}
+                        />
+                      </span>
+                    </li>
+                  )}
+                </For>
+              </ul>
+            </Show>
+
+            <Show when={loudestChannel(jamInputLevels()) !== null}>
+              <p class={styles.found} role="status">
+                Signal on input {(loudestChannel(jamInputLevels()) ?? 0) + 1}.
+              </p>
+            </Show>
+
+            <Show when={jamInputAudible()}>
+              <p class={styles.warning} role="status">
+                You are hearing your own input. On speakers this is a feedback
+                loop — use headphones.
+              </p>
+            </Show>
+
+            {/* The line that stops this being a lie. The channel buttons
+                move the meter and what you hear; the room is sent the raw
+                capture track with no graph in the way, because putting one
+                there would cost the send path a buffer. */}
+            <p class={styles.hint}>
+              Monitoring only. Choosing a channel changes what you hear and
+              meter, not what the room is sent.
+              <Show when={jamInputBaseLatencyMs() !== null}>
+                {' '}
+                This monitor adds {jamInputBaseLatencyMs()?.toFixed(1)} ms of
+                its own.
+              </Show>
+            </p>
+          </Show>
+        </div>
       </Show>
 
       <Show when={jamCaptureReport()}>

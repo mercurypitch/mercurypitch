@@ -4,10 +4,10 @@
 // where the two disagree -- a browser that kept the processing on, a
 // browser that will not say, and a profile whose intent did not survive.
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import type { JamAudioInput } from '@/lib/jam/jam-audio-source'
-import { captureConstraints, describeCapture, isLoopbackLabel, PROFILE_COPY, resolveDeviceId, } from '@/lib/jam/jam-audio-source'
+import { captureConstraints, describeCapture, isLoopbackLabel, listJamAudioInputs, PROFILE_COPY, resolveDeviceId, } from '@/lib/jam/jam-audio-source'
 
 /** The DOM typings have no `voiceIsolation` yet; read it through a cast. */
 const ext = (c: MediaTrackConstraints): Record<string, unknown> =>
@@ -46,10 +46,16 @@ describe('captureConstraints', () => {
     expect(captureConstraints('').deviceId).toBeUndefined()
   })
 
-  it('asks for mono at 48 kHz', () => {
-    const c = captureConstraints(null)
-    expect(c.channelCount).toEqual({ ideal: 1 })
-    expect(c.sampleRate).toEqual({ ideal: 48000 })
+  it('leaves the channel count to the device, so its inputs stay separable', () => {
+    // Asking for one channel is what left a 4-in interface with no
+    // channels to choose between: a guitar on input 1 and a mic on input 2
+    // arrived already summed. Guitar Night takes the native count on the
+    // same hardware, which is why it can offer "Input 1 / Input 2".
+    expect(captureConstraints(null).channelCount).toBeUndefined()
+  })
+
+  it('still asks for 48 kHz, which costs nothing and avoids a resample', () => {
+    expect(captureConstraints(null).sampleRate).toEqual({ ideal: 48000 })
   })
 })
 
@@ -147,6 +153,23 @@ describe('isLoopbackLabel', () => {
     )
     expect(isLoopbackLabel('monitor of Scarlett 4i4 USB')).toBe(true)
     expect(isLoopbackLabel('Loopback Capture')).toBe(true)
+  })
+
+  it('names an unlabelled device as a device, not as a channel', async () => {
+    // "Input 1" is what Guitar Night calls a CHANNEL, so using it here for
+    // a device the browser has not named yet sent a guitarist looking for
+    // their interface into the wrong kind of list.
+    const devices = [
+      { kind: 'audioinput', deviceId: 'a', label: '' },
+      { kind: 'audioinput', deviceId: 'b', label: '' },
+    ]
+    vi.stubGlobal('navigator', {
+      mediaDevices: { enumerateDevices: async () => devices },
+    })
+    const listed = await listJamAudioInputs()
+    expect(listed.map((d) => d.label)).toEqual(['Device 1', 'Device 2'])
+    expect(listed.some((d) => d.label.startsWith('Input'))).toBe(false)
+    vi.unstubAllGlobals()
   })
 
   it('leaves real inputs alone, including ones with monitor in the name', () => {
