@@ -133,7 +133,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
-| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.2k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
+| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.4k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
@@ -192,7 +192,7 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
-| [jam-store.ts](../../src/stores/jam-store.ts) | 3.1k | ── Jam store Reactive state management for P2P jam sessions. |
+| [jam-store.ts](../../src/stores/jam-store.ts) | 3.2k | ── Jam store Reactive state management for P2P jam sessions. |
 | [app-store.ts](../../src/stores/app-store.ts) | 2.3k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.7k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
@@ -356,7 +356,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/App.tsx](../../src/App.tsx) | 4.7k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 3.7k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.1k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.2k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |

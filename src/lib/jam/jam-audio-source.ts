@@ -41,8 +41,26 @@ interface ExtendedAudioConstraints extends MediaTrackConstraints {
   voiceIsolation?: boolean
 }
 
-/** Mono. A DI is one signal, and Safari captures one channel regardless. */
-const CAPTURE_CHANNELS = 1
+/**
+ * NO channel constraint, deliberately.
+ *
+ * This asked for `channelCount: { ideal: 1 }` and that was the reason a
+ * 4-in interface had no channels to choose between: the browser was told
+ * to hand back one, so a guitar on input 1 and a microphone on input 2
+ * arrived already summed and nothing downstream could separate them.
+ *
+ * Guitar Night has never had that problem because `ANALYSIS_CONSTRAINTS`
+ * in mic-manager.ts asks for no channel count at all and takes the
+ * device's native one, which is how it offers "Input 1 / Input 2" on the
+ * same hardware. Matching it is what lets the monitor show which input the
+ * signal is really on.
+ *
+ * What the ROOM hears is unchanged: the transmitted track is still the raw
+ * capture with no graph in the way, and the browser downmixes it for Opus
+ * exactly as it did before. Choosing a channel governs monitoring and the
+ * meter, not transmission -- see jam-input-monitor.ts for why that line is
+ * drawn where it is.
+ */
 
 /**
  * The capture is ALWAYS raw, whatever the profile.
@@ -73,7 +91,6 @@ export function captureConstraints(
     noiseSuppression: false,
     autoGainControl: false,
     voiceIsolation: false,
-    channelCount: { ideal: CAPTURE_CHANNELS },
     sampleRate: { ideal: 48000 },
   }
   // `exact`, so a stale id fails loudly instead of silently handing back
@@ -254,7 +271,12 @@ export async function listJamAudioInputs(): Promise<JamAudioInput[]> {
     const inputs = devices
       .filter((d) => d.kind === 'audioinput')
       .map((d, index) => {
-        const label = d.label !== '' ? d.label : `Input ${index + 1}`
+        // NOT "Input N". Guitar Night names CHANNELS that way -- its
+        // picker renders "Input 1 · Mono" -- so using the same words for
+        // a device the browser has not named yet reads as a channel list
+        // to anyone who has used both. It was, and the guitarist looking
+        // for their interface picked from the wrong kind of thing.
+        const label = d.label !== '' ? d.label : `Device ${index + 1}`
         return {
           deviceId: d.deviceId,
           label,
