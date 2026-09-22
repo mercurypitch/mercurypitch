@@ -6,7 +6,7 @@
 // an unprocessed default input, which is a built-in microphone, while
 // speakers are playing the room back.
 
-import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 
@@ -252,6 +252,20 @@ describe('the first press asks before it puts you on air', () => {
     expect(room.toggled).toBe(0)
   })
 
+  it('drops the pending send when the chooser is shut from the badge', () => {
+    // Every way out must disarm, not just Escape and a press elsewhere:
+    // shut from the badge, the send press was left waiting and fired on
+    // the next choice made just to look.
+    room.confirmed = false
+    render(() => <JamInputControl />)
+    fireEvent.click(screen.getByRole('button', { name: /start sending/i }))
+    openMenu() // the badge again: shuts it
+    openMenu() // and opens it, just looking
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Instrument/i }))
+    expect(room.profile).toBe('instrument')
+    expect(room.toggled).toBe(0)
+  })
+
   it('stops asking after a choice, even one that changed nothing', () => {
     room.confirmed = false
     room.profile = 'voice'
@@ -358,6 +372,34 @@ describe('reaching the menu without a mouse', () => {
     vi.useRealTimers()
   })
 
+  it('keeps the menu a long press opened when a context menu follows it', () => {
+    // Android sends a context menu after a long press; with a longer hold
+    // delay set it lands after the timer has opened the menu, and toggled
+    // it shut again.
+    vi.useFakeTimers()
+    render(() => <JamInputControl />)
+    const send = screen.getByRole('button', { name: /start sending/i })
+    fireEvent.pointerDown(send)
+    vi.advanceTimersByTime(500)
+    fireEvent.contextMenu(send)
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+    vi.useRealTimers()
+  })
+
+  it('opens once on a held right button, not open and then shut', () => {
+    // Windows fires the context menu on release, so a held right button
+    // opened the menu on the long-press timer and then shut it.
+    vi.useFakeTimers()
+    render(() => <JamInputControl />)
+    const send = screen.getByRole('button', { name: /start sending/i })
+    fireEvent.pointerDown(send, { button: 2 })
+    vi.advanceTimersByTime(600)
+    fireEvent.pointerUp(send, { button: 2 })
+    fireEvent.contextMenu(send)
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+    vi.useRealTimers()
+  })
+
   it('cancels when the finger slides off', () => {
     vi.useFakeTimers()
     render(() => <JamInputControl />)
@@ -409,6 +451,114 @@ describe('the menu closes', () => {
     fireEvent.pointerDown(screen.getByRole('menu'))
     expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
   })
+
+  it('when the keyboard tabs out of it', () => {
+    render(() => (
+      <>
+        <JamInputControl />
+        <button type="button">Elsewhere</button>
+      </>
+    ))
+    openMenu()
+    fireEvent.focusOut(screen.getByRole('menuitemradio', { name: /Voice/ }), {
+      relatedTarget: screen.getByRole('button', { name: 'Elsewhere' }),
+    })
+    expect(screen.queryAllByRole('menu')).toHaveLength(0)
+  })
+
+  it('but not when focus moves to its own send button', () => {
+    // The portal put the menu somewhere else in the page; the button it
+    // belongs to still counts as inside.
+    render(() => <JamInputControl />)
+    openMenu()
+    fireEvent.focusOut(screen.getByRole('menuitemradio', { name: /Voice/ }), {
+      relatedTarget: screen.getByTestId('jam-send'),
+    })
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+  })
+
+  it('when the control goes, rather than hanging over the next screen', () => {
+    const { unmount } = render(() => <JamInputControl />)
+    openMenu()
+    unmount()
+    expect(document.querySelectorAll('[role="menu"]')).toHaveLength(0)
+  })
+})
+
+// ── Drawn from the page root ─────────────────────────────────────────
+// Inside the room, the phone tab bar was drawn over the menu whatever its
+// z-index: the jam page is one stacking context and the bar is outside it.
+// So the menu is portalled, and these are the things a portal takes away
+// that have to be put back -- the room's theme, and a keyboard path in.
+
+describe('the menu, drawn from the page root', () => {
+  it('is not inside the room it was opened from', () => {
+    render(() => (
+      <div data-testid="room">
+        <JamInputControl />
+      </div>
+    ))
+    openMenu()
+    const menu = screen.getByRole('menu', { name: 'What you are sending' })
+    expect(screen.getByTestId('room').contains(menu)).toBe(false)
+  })
+
+  it("carries the room's theme with it", async () => {
+    // The jam page sets its own --bg-secondary; out of the room the menu
+    // would otherwise take the page's.
+    render(() => (
+      <div style={{ '--bg-secondary': 'rgb(1, 2, 3)' }}>
+        <JamInputControl />
+      </div>
+    ))
+    openMenu()
+    await waitFor(() => {
+      const menu = screen.getByRole('menu', { name: 'What you are sending' })
+      expect(menu.style.getPropertyValue('--bg-secondary')).toBe('rgb(1, 2, 3)')
+    })
+  })
+
+  it('takes focus to the current choice when it opens', () => {
+    // No longer next to the caret in the tab order, so a keyboard user
+    // would otherwise have no way in.
+    room.profile = 'instrument'
+    render(() => <JamInputControl />)
+    openMenu()
+    expect(document.activeElement).toBe(
+      screen.getByRole('menuitemradio', { name: /Instrument/ }),
+    )
+  })
+
+  it('hands focus back to the caret on Escape', () => {
+    render(() => <JamInputControl />)
+    openMenu()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(document.activeElement).toBe(
+      screen.getByLabelText('Choose what you are sending'),
+    )
+  })
+
+  it('hands focus back to the caret after a choice', () => {
+    render(() => <JamInputControl />)
+    openMenu()
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Instrument/ }))
+    expect(document.activeElement).toBe(
+      screen.getByLabelText('Choose what you are sending'),
+    )
+  })
+
+  it('moves between the choices with the arrow keys, wrapping', () => {
+    render(() => <JamInputControl />)
+    openMenu()
+    const voice = screen.getByRole('menuitemradio', { name: /Voice/ })
+    const instrument = screen.getByRole('menuitemradio', { name: /Instrument/ })
+    fireEvent.keyDown(document, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(instrument)
+    fireEvent.keyDown(document, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(voice)
+    fireEvent.keyDown(document, { key: 'ArrowUp' })
+    expect(document.activeElement).toBe(instrument)
+  })
 })
 
 // ── Where the menu opens ─────────────────────────────────────────────
@@ -420,38 +570,124 @@ describe('the menu closes', () => {
 describe('menuPosition', () => {
   const VW = 1280
   const VH = 800
+  /** The menu's real height with both options and the input row. */
+  const MENU = 231
 
   it('opens downward when there is room, which is the usual case here', () => {
     // The control sits in a header, not a footer.
-    const at = menuPosition({ top: 60, bottom: 96, left: 400 }, VW, VH)
-    expect(at.top).toBe(102)
+    const at = menuPosition({ top: 60, bottom: 96, left: 400 }, MENU, VW, VH)
+    expect(at).toEqual({ side: 'below', top: 102, left: 400, maxHeight: 300 })
+  })
+
+  it('opens downward whenever the menu fits there, even with more room above', () => {
+    // Judged on the 300px cap rather than the menu's real height, a 231px
+    // menu was sent upward from a button with 250px free beneath it.
+    const at = menuPosition({ top: 414, bottom: 450, left: 400 }, MENU, VW, 714)
+    expect(at).toEqual({ side: 'below', top: 456, left: 400, maxHeight: 250 })
   })
 
   it('opens upward when the button is near the bottom', () => {
     // Guitar Night's case, and still the right answer there.
-    const at = menuPosition({ top: 740, bottom: 776, left: 400 }, VW, VH)
-    expect(at.top).toBeLessThan(740)
+    const at = menuPosition({ top: 740, bottom: 776, left: 400 }, MENU, VW, VH)
+    expect(at).toEqual({ side: 'above', bottom: 66, left: 400, maxHeight: 300 })
+  })
+
+  it('meets the button when it opens upward, however short it is', () => {
+    // Placed by its top edge from the cap, a shorter menu stopped short of
+    // the button and floated in the space above it. Anchored by its lower
+    // edge it cannot: 800 - 66 = 734, the gap above the button's 740.
+    const at = menuPosition({ top: 740, bottom: 776, left: 400 }, 120, VW, VH)
+    expect(at).toMatchObject({ side: 'above', bottom: 66 })
+  })
+
+  it('never runs off the bottom of a short landscape screen', () => {
+    // Measured on the PR preview at 667x320: the menu ended at 329, past
+    // the edge -- and with the feedback warning showing, the part past the
+    // edge is the warning. Capped to the room below, it ends at
+    // 96 + 216 = 312 and scrolls.
+    const at = menuPosition(
+      { top: 54, bottom: 90, left: 401 },
+      MENU + 50,
+      667,
+      320,
+    )
+    expect(at).toEqual({ side: 'below', top: 96, left: 401, maxHeight: 216 })
   })
 
   it('never leaves the menu off the top of the page', () => {
-    // The reported bug: invisible, not merely awkward.
-    const at = menuPosition({ top: 10, bottom: 46, left: 400 }, VW, 200)
-    expect(at.top).toBeGreaterThanOrEqual(8)
+    // The reported bug: invisible, not merely awkward. Squeezed upward it
+    // takes the room there is, so its highest top edge is
+    // 150 - 56 - 86 = 8, the margin.
+    const at = menuPosition({ top: 100, bottom: 136, left: 400 }, MENU, VW, 150)
+    expect(at).toEqual({ side: 'above', bottom: 56, left: 400, maxHeight: 86 })
   })
 
   it('keeps the whole menu on screen near the right edge', () => {
-    const at = menuPosition({ top: 60, bottom: 96, left: 1260 }, VW, VH)
-    expect(at.left + 248).toBeLessThanOrEqual(VW)
+    const at = menuPosition({ top: 60, bottom: 96, left: 1260 }, MENU, VW, VH)
+    // The right margin, less the menu's 248px width.
+    expect(at.left).toBe(VW - 8 - 248)
   })
 
   it('does not go negative on a viewport narrower than the menu', () => {
-    // A phone in portrait is narrower than the menu is wide.
-    const at = menuPosition({ top: 60, bottom: 96, left: 4 }, 320, 640)
-    expect(at.left).toBeGreaterThanOrEqual(0)
+    // A split-screen window can be narrower than the menu is wide; it is
+    // pinned to the left margin rather than pushed off the left edge.
+    const at = menuPosition({ top: 60, bottom: 96, left: 4 }, MENU, 240, 640)
+    expect(at.left).toBe(8)
   })
 
   it('follows the button horizontally when there is room', () => {
-    const at = menuPosition({ top: 60, bottom: 96, left: 500 }, VW, VH)
+    const at = menuPosition({ top: 60, bottom: 96, left: 500 }, MENU, VW, VH)
     expect(at.left).toBe(500)
+  })
+})
+
+// The component half: that the placement reaches the menu, and that it is
+// worked out from the menu as rendered. The jam header only ever opens it
+// downward, so a real layout would never catch the upward branch breaking.
+
+describe('where the menu is put', () => {
+  const at = (top: number): DOMRect =>
+    ({
+      top,
+      bottom: top + 36,
+      left: 400,
+      right: 436,
+      x: 400,
+      y: top,
+      width: 36,
+      height: 36,
+      toJSON: () => ({}),
+    }) as DOMRect
+
+  const openAt = (top: number): HTMLElement => {
+    vi.stubGlobal('innerHeight', 800)
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(
+      at(top),
+    )
+    // What the rendered menu measures in a browser; jsdom lays nothing out.
+    vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(231)
+    render(() => <JamInputControl />)
+    openMenu()
+    return screen.getByRole('menu', { name: 'What you are sending' })
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('measures the menu it is placing', () => {
+    // 250px free below, 486 above: the 231px menu fits below, and only a
+    // placement that measured it knows that -- the 300px cap would not.
+    const menu = openAt(500)
+    expect(menu.style.top).toBe('542px')
+    expect(menu.style.bottom).toBe('')
+  })
+
+  it('hangs from its lower edge when it has to open upward', () => {
+    const menu = openAt(740)
+    expect(menu.style.bottom).toBe('66px')
+    expect(menu.style.top).toBe('')
+    expect(menu.style.maxHeight).toBe('300px')
   })
 })
