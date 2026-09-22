@@ -237,6 +237,12 @@ export const JamInputControl: Component = () => {
           void toggleJamMute()
         }}
         onPointerDown={() => {
+          // Clear it here, not only where it is consumed: a long press
+          // whose finger lifts somewhere else never produces the click
+          // that would have reset it, and the flag would then swallow the
+          // next real press instead -- a button that ignores every other
+          // tap.
+          swallowClick = false
           // Touch has no right click. Holding is the same gesture.
           longPress = setTimeout(() => {
             swallowClick = true

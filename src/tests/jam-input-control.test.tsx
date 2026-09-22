@@ -338,6 +338,26 @@ describe('reaching the menu without a mouse', () => {
     vi.useRealTimers()
   })
 
+  it('does not swallow the next press after a long press that ended elsewhere', () => {
+    // A long press whose finger lifts off the button never produces the
+    // click that consumes the suppression flag. Left set, it ate the next
+    // real press -- a button that ignores every other tap.
+    vi.useFakeTimers()
+    render(() => <JamInputControl />)
+    const send = screen.getByRole('button', { name: /start sending/i })
+    fireEvent.pointerDown(send)
+    vi.advanceTimersByTime(500)
+    fireEvent.pointerLeave(send)
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    fireEvent.pointerDown(send)
+    vi.advanceTimersByTime(50)
+    fireEvent.pointerUp(send)
+    fireEvent.click(send)
+    expect(room.toggled).toBe(1)
+    vi.useRealTimers()
+  })
+
   it('cancels when the finger slides off', () => {
     vi.useFakeTimers()
     render(() => <JamInputControl />)

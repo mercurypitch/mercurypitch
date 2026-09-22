@@ -46,11 +46,17 @@
   height: 18px;
 }
 
-/* On, and audible to the room. Solid, not tinted. */
+/* On, and audible to the room. Solid, not tinted.
+
+   The ink is a literal, NOT var(--bg-primary): inside a room that token
+   is rgba(13, 17, 23, var(--jam-alpha)) and follows the transparency
+   slider, so the icon on this disc would fade out exactly as somebody
+   turned the room down -- on the one control that has to stay readable.
+   Same trap as the menu background. */
 .sendOn {
   border-color: var(--accent);
   background: var(--accent);
-  color: var(--bg-primary, #0d1117);
+  color: #0d1117;
 }
 
 /* Sending an unprocessed default input: a microphone, no echo
@@ -59,7 +65,7 @@
 .risky {
   border-color: var(--red, #f85149);
   background: var(--red, #f85149);
-  color: var(--bg-primary, #0d1117);
+  color: #0d1117;
 }
 
 /* The struck-through look for "not sending", drawn rather than swapped for
