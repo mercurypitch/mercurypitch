@@ -103,6 +103,23 @@ async function seedSongNotes(page: Page): Promise<void> {
   }, DEMO_SESSION_ID)
 }
 
+/**
+ * Go live.
+ *
+ * The transmit control asks what you are sending the first time it is
+ * pressed on a device: `instrument` transmits with no echo cancellation,
+ * so a wrong first press with speakers on is a feedback loop in a room
+ * with other people in it. Every fresh browser context is a first press,
+ * which makes the chooser part of this flow rather than an edge case --
+ * these specs used to click once and expect to be on air.
+ */
+async function startSending(page: Page): Promise<void> {
+  await page.getByTestId('jam-send').click()
+  const voice = page.getByRole('menuitemradio', { name: /Voice/i })
+  if (await voice.isVisible().catch(() => false)) await voice.click()
+  await expect(page.getByTestId('jam-send')).toHaveAttribute('data-sending', '')
+}
+
 /** Create the preview room and load the bundled song into it. */
 async function openSongRoom(page: Page, options: { seek?: boolean } = {}) {
   await page.goto('/#/jam')
@@ -407,11 +424,7 @@ test.describe('the song stage on a desktop', () => {
     // straight into the room's detector.
     // The transmit control names its source now ("Send voice"), so this
     // targets the control rather than the wording.
-    await page.getByTestId('jam-send').click()
-    await expect(page.getByTestId('jam-send')).toHaveAttribute(
-      'data-sending',
-      '',
-    )
+    await startSending(page)
     await page.waitForTimeout(1200)
 
     const atOne = await laneInk(page)
@@ -817,7 +830,7 @@ test.describe('the song stage on a phone', () => {
   test('zooms the lanes with two fingers @smoke', async ({ page }) => {
     const { zoom } = await openSongRoom(page)
     await expect(zoom).toHaveAttribute('data-zoom', '1.000')
-    await page.getByTestId('jam-send').click()
+    await startSending(page)
     await page.waitForTimeout(1200)
     await page.screenshot({ path: shot('phone-zoom-1x.png') })
     const atOne = await laneInk(page)
