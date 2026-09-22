@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
-import { constraintsFor, describeCapture, isLoopbackLabel, PROFILE_COPY, } from '@/lib/jam/jam-audio-source'
+import type { JamAudioInput } from '@/lib/jam/jam-audio-source'
+import { constraintsFor, describeCapture, isLoopbackLabel, PROFILE_COPY, resolveDeviceId, } from '@/lib/jam/jam-audio-source'
 
 /** The DOM typings have no `voiceIsolation` yet; read it through a cast. */
 const ext = (c: MediaTrackConstraints): Record<string, unknown> =>
@@ -157,6 +158,52 @@ describe('isLoopbackLabel', () => {
     expect(isLoopbackLabel('Studio Monitor Input')).toBe(false)
     expect(isLoopbackLabel('Default')).toBe(false)
     expect(isLoopbackLabel('')).toBe(false)
+  })
+})
+
+describe('resolveDeviceId', () => {
+  const dev = (
+    deviceId: string,
+    label: string,
+    isLoopback = false,
+  ): JamAudioInput => ({ deviceId, label, isLoopback })
+  const devices = [
+    dev('hash-a', 'Scarlett 4i4 USB Pro Audio'),
+    dev('hash-b', 'Built-in Audio'),
+    dev('hash-c', 'Monitor of Built-in Audio', true),
+  ]
+
+  it('takes the saved id when it still names something', () => {
+    expect(
+      resolveDeviceId('hash-a', 'Scarlett 4i4 USB Pro Audio', devices),
+    ).toBe('hash-a')
+  })
+
+  it('falls back to the label when the id has changed underneath', () => {
+    // Switching a Scarlett from Analogue Stereo to Pro Audio changes the
+    // PulseAudio source name, and therefore the hashed deviceId. Without
+    // this the room silently falls back to a laptop microphone.
+    expect(
+      resolveDeviceId('stale-id', 'Scarlett 4i4 USB Pro Audio', devices),
+    ).toBe('hash-a')
+  })
+
+  it('never resolves to a loopback, even on an exact label match', () => {
+    expect(
+      resolveDeviceId('gone', 'Monitor of Built-in Audio', devices),
+    ).toBeNull()
+  })
+
+  it('gives up rather than guessing when nothing matches', () => {
+    // Null means "take the default", which is a recoverable outcome. A
+    // guess would be an unrecoverable one nobody could diagnose.
+    expect(resolveDeviceId('gone', 'Some Old Interface', devices)).toBeNull()
+    expect(resolveDeviceId(null, null, devices)).toBeNull()
+    expect(resolveDeviceId('gone', '', devices)).toBeNull()
+  })
+
+  it('handles an empty device list', () => {
+    expect(resolveDeviceId('hash-a', 'Scarlett', [])).toBeNull()
   })
 })
 

@@ -166,9 +166,14 @@ export interface JamAudioInput {
    * Built-in Audio"), and they enumerate as ordinary capture devices. In a
    * jam room picking one is never right and is actively harmful: you
    * capture the room's own output and send it back, which is a feedback
-   * loop with a network round trip in the middle. Linux users are the ones
-   * who will see these, which makes it exactly the footgun a guitarist on
-   * Arch would find first.
+   * loop with a network round trip in the middle.
+   *
+   * This is a FIREFOX-ON-LINUX problem specifically. Chromium filters
+   * monitors out in its audio manager -- `InputDevicesInfoCallback` skips
+   * any source with `monitor_of_sink != PA_INVALID_INDEX`, and refuses to
+   * open one even if it is the system default -- so they never reach
+   * enumerateDevices() there. Firefox exposes them and will happily
+   * capture one.
    */
   isLoopback: boolean
 }
@@ -177,11 +182,18 @@ export interface JamAudioInput {
  * Spot a monitor source by its name, which is all we have.
  *
  * The device id is hashed per origin, so the `.monitor` suffix PulseAudio
- * uses internally never reaches us -- only the human label does. That
- * label is generated as "Monitor of <sink>" and is not reliably localised,
- * so this is a heuristic and is used to SORT and WARN rather than to hide:
- * a wrong guess that buries a real input would be worse than the footgun
- * it prevents.
+ * uses internally never reaches us, and `PA_PROP_DEVICE_CLASS=monitor`
+ * is not surfaced by the MediaDevices API either. The human label is
+ * genuinely the best available signal.
+ *
+ * It is a better signal than it looks: both servers build the string with
+ * a plain format call and NOT through gettext -- pipewire-pulse does
+ * `snprintf(monitor_desc, size, "Monitor of %s", desc)` and PulseAudio
+ * does the same in `pa_sink_new`. So it is English on every locale.
+ *
+ * Still used to SORT and WARN rather than to hide. "Monitor" alone is an
+ * ordinary word for studio hardware, and burying somebody's real input
+ * would be worse than the footgun this prevents.
  */
 export function isLoopbackLabel(label: string): boolean {
   return /\bmonitor of\b|\bloopback\b/i.test(label)
@@ -222,6 +234,36 @@ export async function listJamAudioInputs(): Promise<JamAudioInput[]> {
     // Enumeration can reject in a cross-origin frame or with media blocked.
     return []
   }
+}
+
+/**
+ * Turn a remembered input into one that exists right now.
+ *
+ * A `deviceId` is not a hardware key. On Linux it is derived from the
+ * PulseAudio source name, which carries the USB serial -- so it survives
+ * reboots and even a different port -- but it also carries the PROFILE
+ * suffix (`.pro-audio`, `.analog-stereo`). Switch a Scarlett from stereo
+ * to Pro Audio and the id changes, the `exact` constraint fails, and the
+ * room silently falls back to a laptop microphone. Clearing site data
+ * does the same, because the per-origin salt resets.
+ *
+ * So the label is remembered alongside the id and used as the second key.
+ * Exact id first; then the same label; then nothing, and let the caller
+ * take the default.
+ */
+export function resolveDeviceId(
+  savedId: string | null,
+  savedLabel: string | null,
+  devices: readonly JamAudioInput[],
+): string | null {
+  if (savedId !== null && devices.some((d) => d.deviceId === savedId)) {
+    return savedId
+  }
+  if (savedLabel !== null && savedLabel !== '') {
+    const byLabel = devices.find((d) => d.label === savedLabel && !d.isLoopback)
+    if (byLabel !== undefined) return byLabel.deviceId
+  }
+  return null
 }
 
 export const PROFILE_COPY: Record<
