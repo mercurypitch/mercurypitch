@@ -7,8 +7,7 @@ import lessonStyles from './VoiceChallengePanel.module.css'
 
 const notes = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B']
 
-function noteName(midi: number | null): string {
-  if (midi === null) return 'Your note'
+function noteName(midi: number): string {
   const rounded = Math.round(midi)
   return `${notes[((rounded % 12) + 12) % 12]}${Math.floor(rounded / 12) - 1}`
 }
@@ -120,8 +119,30 @@ export function VoiceChallengePanel(props: {
         {props.hint}
       </p>
       <div class={styles.voiceMeter}>
-        <div class={styles.noteDisc} style={{ '--charge': `${percent()}%` }}>
-          <span>{noteName(props.target)}</span>
+        <div
+          class={styles.noteDisc}
+          style={{ '--charge': `${percent()}%` }}
+          role="img"
+          aria-label={
+            props.target === null
+              ? 'Find your comfortable note'
+              : `Target note: ${noteName(props.target)}`
+          }
+        >
+          <span aria-hidden="true">
+            <Show
+              when={props.target !== null}
+              fallback={
+                <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                  <circle cx="16" cy="16" r="10" />
+                  <circle cx="16" cy="16" r="4" />
+                  <path d="M16 2v6m0 16v6M2 16h6m16 0h6" />
+                </svg>
+              }
+            >
+              {noteName(props.target!)}
+            </Show>
+          </span>
         </div>
         <div class={styles.voiceReadout}>
           <span>

@@ -14,6 +14,21 @@ const tallExhibit = new Box3(
   new Vector3(1.45, 2.85, 0.36),
 )
 
+// Shipped Cloudway finale placement with the scaled legend-slab frame and its
+// presentation ring. Merc's bounds reflect the 0.55 m runtime rig scale.
+const cloudwayPortrait = new Box3(
+  new Vector3(0.657_778, 0.185, 30.905),
+  new Vector3(1.342_222, 1.124_944, 31.395),
+)
+const cloudwayPortraitFacing = new Vector3(0, 0, -1)
+
+function cloudwayMerc(x: number, z: number): Box3 {
+  return new Box3(
+    new Vector3(x - 0.27, 0.015, z - 0.19),
+    new Vector3(x + 0.27, 0.565, z + 0.19),
+  )
+}
+
 function shot(position: Vector3, target = new Vector3()): ChallengeCameraShot {
   const frame = { minX: -0.5, maxX: 0.5, minY: -0.5, maxY: 0.5 }
   return {
@@ -56,7 +71,8 @@ describe('planChallengeCameraShot', () => {
       expect(result.combinedFrame.minX).toBeGreaterThanOrEqual(-0.881)
       expect(result.combinedFrame.maxX).toBeLessThanOrEqual(0.881)
       expect(result.combinedFrame.maxY).toBeLessThanOrEqual(0.861)
-      expect(result.pose.position.y).toBeLessThan(0.7)
+      expect(result.pose.position.y).toBeGreaterThan(merc.max.y + 0.1)
+      expect(result.pose.position.y).toBeLessThan(tallExhibit.max.y)
       if (aspect < 1) expect(result.pose.fovDegrees).toBeGreaterThan(48)
       else expect(result.pose.fovDegrees).toBe(48)
     },
@@ -100,8 +116,10 @@ describe('planChallengeCameraShot', () => {
     )
     const targetCentre = tallExhibit.getCenter(new Vector3())
     const view = result.pose.position.sub(targetCentre).setY(0).normalize()
+    const targetSide = new Vector3(-targetFacing.z, 0, targetFacing.x)
 
-    expect(Math.abs(view.dot(targetFacing))).toBeGreaterThan(0.65)
+    expect(view.dot(targetFacing)).toBeGreaterThan(0.45)
+    expect(Math.abs(view.dot(targetSide))).toBeGreaterThan(0.55)
     expect(result.combinedFrame.minX).toBeGreaterThanOrEqual(-0.881)
     expect(result.combinedFrame.maxX).toBeLessThanOrEqual(0.881)
   })
@@ -129,6 +147,83 @@ describe('planChallengeCameraShot', () => {
     expect(reframed.combinedFrame.minX).toBeGreaterThanOrEqual(-0.881)
     expect(reframed.combinedFrame.maxX).toBeLessThanOrEqual(0.881)
   })
+
+  it.each([
+    {
+      label: 'centred desktop approach after a far zoom',
+      aspect: 1440 / 900,
+      safeBottomFraction: 0.34,
+      merc: cloudwayMerc(1, 30.4),
+      currentPosition: new Vector3(1, 2.25, 24.4),
+    },
+    {
+      label: 'left tablet approach after a near zoom',
+      aspect: 1024 / 768,
+      safeBottomFraction: 0.38,
+      merc: cloudwayMerc(0.45, 30.3),
+      currentPosition: new Vector3(0.45, 1.45, 28.5),
+    },
+    {
+      label: 'right phone approach',
+      aspect: 390 / 844,
+      safeBottomFraction: 0.48,
+      merc: cloudwayMerc(1.55, 30.3),
+      currentPosition: new Vector3(4.55, 2.1, 30.3),
+    },
+  ])(
+    'keeps the Cloudway portrait front-facing in a raised side composition: $label',
+    ({
+      aspect,
+      safeBottomFraction,
+      merc: cloudwayMercBounds,
+      currentPosition,
+    }) => {
+      const result = planChallengeCameraShot(
+        {
+          encounterId: 'cloudway-finale-portrait',
+          merc: cloudwayMercBounds,
+          target: cloudwayPortrait,
+          targetFacing: cloudwayPortraitFacing,
+        },
+        {
+          aspect,
+          fovDegrees: 48,
+          near: 0.05,
+          far: 180,
+          safeBottomFraction,
+          currentPosition,
+        },
+      )
+      const portraitCentre = cloudwayPortrait.getCenter(new Vector3())
+      const view = result.pose.position.clone().sub(portraitCentre).setY(0)
+      view.normalize()
+      const horizontalOverlap = Math.max(
+        0,
+        Math.min(result.mercFrame.maxX, result.targetFrame.maxX) -
+          Math.max(result.mercFrame.minX, result.targetFrame.minX),
+      )
+      const narrowerSubject = Math.min(
+        result.mercFrame.maxX - result.mercFrame.minX,
+        result.targetFrame.maxX - result.targetFrame.minX,
+      )
+
+      expect(view.dot(cloudwayPortraitFacing)).toBeGreaterThan(0.45)
+      expect(Math.abs(view.x)).toBeGreaterThan(0.68)
+      expect(horizontalOverlap / narrowerSubject).toBeLessThanOrEqual(0.2)
+      expect(result.pose.position.y).toBeGreaterThan(
+        cloudwayMercBounds.max.y + 0.1,
+      )
+      expect(result.mercFrame.minY).toBeGreaterThanOrEqual(
+        result.safeBottomNdc - 0.001,
+      )
+      expect(result.targetFrame.minY).toBeGreaterThanOrEqual(
+        result.safeBottomNdc - 0.001,
+      )
+      expect(result.combinedFrame.minX).toBeGreaterThanOrEqual(-0.881)
+      expect(result.combinedFrame.maxX).toBeLessThanOrEqual(0.881)
+      expect(result.combinedFrame.maxY).toBeLessThanOrEqual(0.861)
+    },
+  )
 
   it('still returns a bounded fallback for an exhibit larger than its search range', () => {
     const hugePortrait = new Box3(

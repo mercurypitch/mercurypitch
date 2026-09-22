@@ -517,6 +517,24 @@ async function expectVoicePanelFits(page: Page): Promise<void> {
   expect(bounds.top).toBeGreaterThanOrEqual(0)
   expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth)
   expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight)
+  const target = page.getByLabel('Voice challenge').getByRole('img')
+  await expect(target).toBeVisible()
+  const targetLayout = await target.evaluate((element) => {
+    const disc = element.getBoundingClientRect()
+    const face = element.firstElementChild!.getBoundingClientRect()
+    const range = document.createRange()
+    range.selectNodeContents(element.firstElementChild!)
+    const ink = range.getBoundingClientRect()
+    return {
+      fits:
+        face.left >= disc.left &&
+        face.right <= disc.right &&
+        face.top >= disc.top &&
+        face.bottom <= disc.bottom,
+      inkFits: ink.width <= face.width && ink.height <= face.height,
+    }
+  })
+  expect(targetLayout).toEqual({ fits: true, inkFits: true })
 }
 
 async function expectVoiceActionsStayOnOneLine(
@@ -934,7 +952,7 @@ test('permission denial returns to a fresh start instead of leaving the encounte
 
 test('Twin high-note calibration rejects an overlapping range and recovers safely', async ({
   page,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 320, height: 640 })
   await omitMuseumRasterOutput(page)
   await openMuseum(page, {
@@ -962,11 +980,17 @@ test('Twin high-note calibration rejects an overlapping range and recovers safel
   const panel = page.getByLabel('Voice challenge')
   await expect(panel).toHaveAttribute('data-voice-mode', 'finding')
   await expect(
+    panel
+      .getByRole('img', { name: 'Find your comfortable note' })
+      .locator('svg'),
+  ).toBeVisible()
+  await expect(
     page.getByRole('heading', {
       name: 'Try a higher note.',
     }),
   ).toBeVisible({ timeout: 10_000 })
   await expectVoicePanelFits(page)
+  await panel.screenshot({ path: testInfo.outputPath('target-disc-phone.png') })
   expect(
     await page.evaluate(() =>
       localStorage.getItem('beside-cue:glass-adventure:comfortable-pair'),

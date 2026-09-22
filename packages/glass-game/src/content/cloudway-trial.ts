@@ -61,18 +61,12 @@ function platform(
   }
 }
 
-function checkpoint(
-  id: string,
-  x: number,
-  z: number,
-  requiresCompleted: readonly string[] = [],
-): CheckpointDefinition {
+function checkpoint(id: string, x: number, z: number): CheckpointDefinition {
   return {
     id,
     position: { x, y: PLATFORM_TOP, z },
     radius: 0.72,
     facingYaw: Math.PI,
-    requiresCompleted,
   }
 }
 
@@ -346,20 +340,14 @@ export const CLOUDWAY_GLASS_RIBBON: LevelDefinition = {
       top: PLATFORM_TOP,
     },
   ],
+  // Static marble landings are movement recovery anchors. Singing order stays
+  // enforced by the encounters and exit, independently of fall recovery.
   checkpoints: [
     checkpoint('cloudway-checkpoint-arrival', 0, 0.8),
-    checkpoint('cloudway-checkpoint-frost-catch', 0.7, 9.5, [
-      CLOUDWAY_ENCOUNTER_IDS.arrival,
-    ]),
-    checkpoint('cloudway-checkpoint-glide-east', 0.7, 18.45, [
-      CLOUDWAY_ENCOUNTER_IDS.arrival,
-    ]),
-    checkpoint('cloudway-checkpoint-crackle-recovery', 0.8, 24.3, [
-      CLOUDWAY_ENCOUNTER_IDS.crossing,
-    ]),
-    checkpoint('cloudway-checkpoint-finale', 1, 29.5, [
-      CLOUDWAY_ENCOUNTER_IDS.crossing,
-    ]),
+    checkpoint('cloudway-checkpoint-frost-catch', 0.7, 9.5),
+    checkpoint('cloudway-checkpoint-glide-east', 0.7, 18.45),
+    checkpoint('cloudway-checkpoint-crackle-recovery', 0.8, 24.3),
+    checkpoint('cloudway-checkpoint-finale', 1, 29.5),
   ],
   breakables: [
     exhibit(

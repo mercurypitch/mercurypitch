@@ -277,6 +277,15 @@
   place-items: center;
   border-radius: 50%;
   font-size: 20px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.noteDisc svg {
+  width: 28px;
+  height: 28px;
+  stroke: #47756e;
+  stroke-width: 1.7;
+  stroke-linecap: round;
 }
 .voiceReadout {
   flex: 1;

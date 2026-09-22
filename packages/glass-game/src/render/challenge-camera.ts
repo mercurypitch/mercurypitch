@@ -85,6 +85,7 @@ const MINIMUM_DISTANCE = 1.45
 const MAXIMUM_DISTANCE = 8.5
 const DISTANCE_STEP = 0.18
 const THREE_QUARTER_BIASES = [0.3, 0.95, 1.25] as const
+const PLANAR_THREE_QUARTER_BIASES = [0.48, 0.62, 0.76] as const
 const ENTRY_SECONDS = 0.82
 const RESTORE_SECONDS = 0.72
 const MAXIMUM_PORTRAIT_FOV_BOOST = 10
@@ -192,6 +193,7 @@ function candidateDirections(
   targetCentre: Vector3,
   focus: Vector3,
   currentPosition: Vector3,
+  targetFacing?: Vector3,
 ): { side: -1 | 1; direction: Vector3 }[] {
   const subjectLine = targetCentre.clone().sub(mercCentre)
   subjectLine.y = 0
@@ -201,9 +203,17 @@ function candidateDirections(
   }
   if (subjectLine.lengthSq() < 0.0001) subjectLine.set(0, 0, -1)
   subjectLine.normalize()
-  const side = new Vector3(-subjectLine.z, 0, subjectLine.x)
+  const planarTarget = targetFacing !== undefined && targetFacing.lengthSq() > 0
+  // A flat exhibit has a real front. Build its shot from that front rather
+  // than from Merc toward the exhibit: the latter places the eye behind the
+  // painting when both subjects stand on the same line, as on Cloudway.
+  const approach = planarTarget ? targetFacing : subjectLine
+  const side = new Vector3(-approach.z, 0, approach.x)
+  const biases = planarTarget
+    ? PLANAR_THREE_QUARTER_BIASES
+    : THREE_QUARTER_BIASES
   return ([-1, 1] as const).flatMap((sign) =>
-    THREE_QUARTER_BIASES.map((bias) => ({
+    biases.map((bias) => ({
       side: sign,
       // Tight portrait rooms need a more oblique three-quarter view to put
       // subject separation into depth. The shallow option remains available
@@ -211,14 +221,14 @@ function candidateDirections(
       direction: side
         .clone()
         .multiplyScalar(sign)
-        .addScaledVector(subjectLine, bias)
+        .addScaledVector(approach, bias)
         .normalize(),
     })),
   )
 }
 
 /**
- * Chooses the clearer three-quarter side, then finds the nearest low centre
+ * Chooses the clearer three-quarter side, then finds the nearest elevated centre
  * that fits Merc and the authored exhibit above the measured singing panel.
  */
 export function planChallengeCameraShot(
@@ -263,7 +273,7 @@ export function planChallengeCameraShot(
     options.far,
   )
   camera.updateProjectionMatrix()
-  const cameraY = merc.min.y + MathUtils.clamp(size.y * 0.2, 0.2, 0.42)
+  const cameraY = merc.max.y + MathUtils.clamp(size.y * 0.15, 0.12, 0.28)
   const subjectSeparation = Math.hypot(
     targetCentre.x - mercCentre.x,
     targetCentre.z - mercCentre.z,
@@ -281,6 +291,7 @@ export function planChallengeCameraShot(
     targetCentre,
     focus,
     options.currentPosition,
+    targetFacing,
   )) {
     let previousActualDistance = -1
     for (
@@ -325,12 +336,12 @@ export function planChallengeCameraShot(
       const faceReadability =
         targetFacing === undefined || targetFacing.lengthSq() === 0
           ? 1
-          : Math.abs(targetView.normalize().dot(targetFacing))
+          : targetView.normalize().dot(targetFacing)
       const fits = overflow <= 0.001
       const readableFaceScore =
         targetFacing === undefined
           ? 0
-          : faceReadability * 26 - Math.max(0, 0.55 - faceReadability) * 50
+          : faceReadability * 26 - Math.max(0, 0.45 - faceReadability) * 80
       const preferredSideScore =
         fits && !occluded && candidate.side === options.preferredSide ? 18 : 0
       const score =
