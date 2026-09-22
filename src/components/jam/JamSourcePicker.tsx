@@ -17,7 +17,7 @@
 // arrive.
 
 import type { Component } from 'solid-js'
-import { createMemo, For, onMount, Show } from 'solid-js'
+import { createMemo, For, onCleanup, onMount, Show } from 'solid-js'
 import { jamNetworkPanelAvailable } from '@/components/jam/JamNetworkPanel'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import { PROFILE_COPY } from '@/lib/jam/jam-audio-source'
@@ -31,6 +31,18 @@ export const JamSourcePicker: Component = () => {
   onMount(() => {
     void refreshJamInputDevices()
   })
+
+  // CollapsibleSection renders its children behind a `Show`, so collapsing
+  // "Your sound" UNMOUNTS this. Without that teardown the input check kept
+  // an AudioContext and a 15 Hz interval running on a panel nobody could
+  // see, until the room was left -- on a phone, which is the device this
+  // exists to be read on.
+  onCleanup(stopJamInputCheck)
+
+  /** Null until a capture has succeeded, which is when there is anything to meter. */
+  const hasCapture = createMemo(() => jamCaptureReport() !== null)
+
+  const signalOn = createMemo(() => loudestChannel(jamInputLevels()))
 
   /**
    * A change cannot be applied in place, so it re-captures.
@@ -139,6 +151,10 @@ export const JamSourcePicker: Component = () => {
               class={styles.checkToggle}
               classList={{ [styles.checkOn!]: jamInputChecking() }}
               aria-pressed={jamInputChecking()}
+              // There is nothing to meter before a capture exists, and a
+              // button that silently does nothing is worse than one that
+              // is plainly unavailable.
+              disabled={!hasCapture() && !jamInputChecking()}
               onClick={() =>
                 jamInputChecking() ? stopJamInputCheck() : startJamInputCheck()
               }
@@ -161,9 +177,9 @@ export const JamSourcePicker: Component = () => {
             when={jamInputChecking()}
             fallback={
               <p class={styles.hint}>
-                Meters this device's inputs so you can see the signal before
-                anyone is listening. Unmute first — there is nothing to meter
-                until the microphone is captured.
+                {hasCapture()
+                  ? "Meters this device's inputs so you can see the signal before anyone is listening."
+                  : 'Unmute first — there is nothing to meter until the microphone is captured.'}
               </p>
             }
           >
@@ -203,9 +219,9 @@ export const JamSourcePicker: Component = () => {
               </ul>
             </Show>
 
-            <Show when={loudestChannel(jamInputLevels()) !== null}>
+            <Show when={signalOn() !== null}>
               <p class={styles.found} role="status">
-                Signal on input {(loudestChannel(jamInputLevels()) ?? 0) + 1}.
+                Signal on input {(signalOn() ?? 0) + 1}.
               </p>
             </Show>
 

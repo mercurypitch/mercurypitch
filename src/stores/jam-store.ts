@@ -3068,6 +3068,10 @@ function cleanupJam(): void {
   // stopped. Leaving a room used to be the moment these things quietly
   // outlived their reason to exist.
   stopJamInputCheck()
+  // The capture is released on leave, so a report describing it is about a
+  // microphone nobody holds any more. Left set, the next room opened
+  // "Sending instrument from Scarlett 4i4" before anything was captured.
+  setJamCaptureReport(null)
   clearPendingDepartures()
   unwatchVisibility()
   stopPlaybackTimer()
