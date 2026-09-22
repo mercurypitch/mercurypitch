@@ -155,29 +155,48 @@ export function shapeOpusSdp(
       }
       inAudio = line.startsWith('m=audio')
     }
-
-    // Drop any ptime the browser already wrote; ours replaces it rather
-    // than appearing twice, which is undefined and parser-dependent.
-    if (inAudio && /^a=(ptime|maxptime):/i.test(line)) continue
-
-    const fmtp = /^a=fmtp:(\d+)\s+(.*)$/.exec(line)
-    if (fmtp !== null && payloads.includes(fmtp[1]!)) {
-      out.push(`a=fmtp:${fmtp[1]} ${mergeFmtp(fmtp[2]!, params)}`)
-      continue
-    }
-
-    out.push(line)
-
-    // An Opus rtpmap with no fmtp of its own still needs our parameters.
-    const rtpmap = /^a=rtpmap:(\d+)\s+opus\//i.exec(line)
-    if (rtpmap !== null && !hasFmtpFor(lines, rtpmap[1]!)) {
-      out.push(`a=fmtp:${rtpmap[1]} ${renderFmtp({}, params)}`)
-    }
+    out.push(...rewriteLine(line, { inAudio, lines, payloads, params }))
   }
 
   if (inAudio && !audioDone) out.push(...timingLines(params))
 
   return out.join(eol) + (terminated ? eol : '')
+}
+
+interface LineContext {
+  inAudio: boolean
+  /** The whole description, for "does this payload already have an fmtp". */
+  lines: readonly string[]
+  payloads: readonly string[]
+  params: JamOpusParams
+}
+
+/**
+ * One input line to nothing, itself, or itself plus an fmtp of our own.
+ *
+ * Returning an array rather than mutating the output is what keeps the
+ * three cases -- drop, replace, keep-and-append -- readable as three
+ * cases. They are easy to get subtly wrong: a dropped line that should
+ * have been kept silently changes a codec list, and an appended fmtp for a
+ * payload that already had one is undefined behaviour in the parser.
+ */
+function rewriteLine(line: string, ctx: LineContext): string[] {
+  // Drop any ptime the browser already wrote; ours replaces it rather
+  // than appearing twice, which is undefined and parser-dependent.
+  if (ctx.inAudio && /^a=(ptime|maxptime):/i.test(line)) return []
+
+  const fmtp = /^a=fmtp:(\d+)\s+(.*)$/.exec(line)
+  if (fmtp !== null && ctx.payloads.includes(fmtp[1]!)) {
+    return [`a=fmtp:${fmtp[1]} ${mergeFmtp(fmtp[2]!, ctx.params)}`]
+  }
+
+  // An Opus rtpmap with no fmtp of its own still needs our parameters.
+  const rtpmap = /^a=rtpmap:(\d+)\s+opus\//i.exec(line)
+  if (rtpmap !== null && !hasFmtpFor(ctx.lines, rtpmap[1]!)) {
+    return [line, `a=fmtp:${rtpmap[1]} ${renderFmtp({}, ctx.params)}`]
+  }
+
+  return [line]
 }
 
 function timingLines(params: JamOpusParams): string[] {

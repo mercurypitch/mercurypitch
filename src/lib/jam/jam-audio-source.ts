@@ -124,35 +124,6 @@ export function describeCapture(
   const agc = bool(s.autoGainControl)
   const channelCount = num(s.channelCount)
   const sampleRate = num(s.sampleRate)
-  const warnings: string[] = []
-
-  if (profile === 'instrument') {
-    const on = [
-      ec === true ? 'echo cancellation' : null,
-      ns === true ? 'noise suppression' : null,
-      agc === true ? 'automatic gain control' : null,
-    ].filter((x): x is string => x !== null)
-    if (on.length > 0) {
-      warnings.push(
-        `This browser kept ${joinWords(on)} on. Sustained notes will be gated and your dynamics squashed.`,
-      )
-    }
-    if (ec === null && ns === null && agc === null) {
-      warnings.push(
-        'This browser does not report whether it is processing the input, so the signal may not be raw.',
-      )
-    }
-    if (sampleRate !== null && sampleRate !== 48000) {
-      warnings.push(
-        `Capturing at ${sampleRate} Hz, so the browser is resampling to 48 kHz. Set the interface to 48 kHz to avoid it.`,
-      )
-    }
-  }
-
-  const asRequested =
-    profile === 'voice'
-      ? ec !== false
-      : ec !== true && ns !== true && agc !== true
 
   return {
     profile,
@@ -162,9 +133,56 @@ export function describeCapture(
     autoGainControl: agc,
     channelCount,
     sampleRate,
-    asRequested,
-    warnings,
+    // A voice wants the processing ON and an instrument wants it off, so
+    // "as requested" is the opposite question for each. Neither treats
+    // `null` as a failure: a browser that will not say has not said no.
+    asRequested:
+      profile === 'voice'
+        ? ec !== false
+        : ec !== true && ns !== true && agc !== true,
+    warnings:
+      profile === 'instrument'
+        ? instrumentWarnings(ec, ns, agc, sampleRate)
+        : [],
   }
+}
+
+/**
+ * What to tell a player whose signal did not arrive the way they asked.
+ *
+ * Instrument only. A voice capture that kept its processing is doing its
+ * job, and the one voice failure worth naming -- cancellation that did not
+ * take -- is carried by `asRequested` rather than by a sentence, because
+ * the room cannot act on it either.
+ */
+function instrumentWarnings(
+  ec: boolean | null,
+  ns: boolean | null,
+  agc: boolean | null,
+  sampleRate: number | null,
+): string[] {
+  const warnings: string[] = []
+  const on = [
+    ec === true ? 'echo cancellation' : null,
+    ns === true ? 'noise suppression' : null,
+    agc === true ? 'automatic gain control' : null,
+  ].filter((x): x is string => x !== null)
+  if (on.length > 0) {
+    warnings.push(
+      `This browser kept ${joinWords(on)} on. Sustained notes will be gated and your dynamics squashed.`,
+    )
+  }
+  if (ec === null && ns === null && agc === null) {
+    warnings.push(
+      'This browser does not report whether it is processing the input, so the signal may not be raw.',
+    )
+  }
+  if (sampleRate !== null && sampleRate !== 48000) {
+    warnings.push(
+      `Capturing at ${sampleRate} Hz, so the browser is resampling to 48 kHz. Set the interface to 48 kHz to avoid it.`,
+    )
+  }
+  return warnings
 }
 
 function joinWords(words: readonly string[]): string {

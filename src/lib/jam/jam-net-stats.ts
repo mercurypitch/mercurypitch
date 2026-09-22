@@ -157,6 +157,83 @@ export function classifyIcePath(
   return 'reflexive'
 }
 
+type Report = Record<string, unknown>
+
+interface IndexedReports {
+  /** Local and remote ICE candidates, by id, for the chosen pair's ends. */
+  candidates: Map<string, Report>
+  codecs: Map<string, Report>
+  pairs: Map<string, Report>
+  /** The pair the browser says is in use, if it said. */
+  selectedPairId: string | null
+  inbound: Report | null
+  outbound: Report | null
+}
+
+/**
+ * One pass over the report, sorted into what the rest of this needs.
+ *
+ * A stats report is a flat bag of objects that reference each other by id,
+ * so nothing can be resolved until the whole thing has been seen -- the
+ * transport naming the live pair may come after the pairs, and a codec
+ * always comes separately from the stream that uses it. Hence index first,
+ * resolve after, rather than deciding anything inside the walk.
+ */
+function indexReports(stats: StatsLike): IndexedReports {
+  const candidates = new Map<string, Report>()
+  const codecs = new Map<string, Report>()
+  const pairs = new Map<string, Report>()
+  let selectedPairId: string | null = null
+  let inbound: Report | null = null
+  let outbound: Report | null = null
+
+  const keyed = (into: Map<string, Report>, report: Report): void => {
+    const id = str(report.id)
+    if (id !== null) into.set(id, report)
+  }
+  const isAudio = (report: Report): boolean =>
+    report.kind === 'audio' || report.mediaType === 'audio'
+
+  stats.forEach((report) => {
+    switch (report.type) {
+      case 'local-candidate':
+      case 'remote-candidate':
+        return keyed(candidates, report)
+      case 'codec':
+        return keyed(codecs, report)
+      case 'transport': {
+        // Chrome and Firefox both publish this; Safari sometimes does not.
+        const sel = str(report.selectedCandidatePairId)
+        if (sel !== null && sel !== '') selectedPairId = sel
+        return
+      }
+      case 'candidate-pair':
+        keyed(pairs, report)
+        // Some browsers mark the live pair on the pair itself instead.
+        if (report.selected === true) selectedPairId ??= str(report.id)
+        return
+      case 'inbound-rtp':
+        if (isAudio(report)) inbound = report
+        return
+      case 'outbound-rtp':
+        if (isAudio(report)) outbound = report
+        return
+      default:
+    }
+  })
+
+  return {
+    candidates,
+    codecs,
+    pairs,
+    selectedPairId,
+    // TypeScript narrows these to `never` through the forEach closure; the
+    // assignments above are real, so re-widen rather than restructure.
+    inbound: inbound as Report | null,
+    outbound: outbound as Report | null,
+  }
+}
+
 /**
  * The best guess at the live pair when the transport did not name one.
  *
@@ -166,10 +243,8 @@ export function classifyIcePath(
  * happened to enumerate first, and after a re-nomination that is typically
  * the superseded one.
  */
-function bestCandidatePair(
-  pairs: ReadonlyMap<string, Record<string, unknown>>,
-): Record<string, unknown> | null {
-  let best: Record<string, unknown> | null = null
+function bestCandidatePair(pairs: ReadonlyMap<string, Report>): Report | null {
+  let best: Report | null = null
   let bestScore = 0
   let bestSeen = -Infinity
   for (const report of pairs.values()) {
@@ -213,67 +288,14 @@ export function readNetSample(
   stats: StatsLike,
   now: number = Date.now(),
 ): JamNetSample {
-  const candidates = new Map<string, Record<string, unknown>>()
-  const codecs = new Map<string, Record<string, unknown>>()
-  const pairs = new Map<string, Record<string, unknown>>()
-  let selectedPairId: string | null = null
-  let pair: Record<string, unknown> | null = null
-  let inbound: Record<string, unknown> | null = null
-  let outbound: Record<string, unknown> | null = null
+  const { candidates, codecs, pairs, selectedPairId, inbound, outbound } =
+    indexReports(stats)
 
-  stats.forEach((report) => {
-    switch (report.type) {
-      case 'local-candidate':
-      case 'remote-candidate': {
-        const id = str(report.id)
-        if (id !== null) candidates.set(id, report)
-        return
-      }
-      case 'codec': {
-        const id = str(report.id)
-        if (id !== null) codecs.set(id, report)
-        return
-      }
-      case 'transport': {
-        // Chrome and Firefox both publish this; Safari sometimes does not.
-        // Kept for the resolution after the walk, because report order is
-        // not specified and the transport can arrive after its pairs.
-        const sel = str(report.selectedCandidatePairId)
-        if (sel !== null && sel !== '') selectedPairId = sel
-        return
-      }
-      case 'candidate-pair': {
-        const id = str(report.id)
-        if (id !== null) pairs.set(id, report)
-        // Some browsers mark the live pair on the pair itself instead.
-        if (report.selected === true) selectedPairId ??= id
-        return
-      }
-      case 'inbound-rtp': {
-        if (report.kind === 'audio' || report.mediaType === 'audio') {
-          inbound = report
-        }
-        return
-      }
-      case 'outbound-rtp': {
-        if (report.kind === 'audio' || report.mediaType === 'audio') {
-          outbound = report
-        }
-        return
-      }
-      default:
-    }
-  })
-
-  pair =
+  const p =
     (selectedPairId === null ? null : (pairs.get(selectedPairId) ?? null)) ??
     bestCandidatePair(pairs)
-
-  // TypeScript narrows these to `never` through the forEach closure; the
-  // assignments above are real, so re-widen rather than restructure.
-  const p = pair as Record<string, unknown> | null
-  const inb = inbound as Record<string, unknown> | null
-  const outb = outbound as Record<string, unknown> | null
+  const inb = inbound
+  const outb = outbound
 
   const localType =
     p === null
@@ -290,31 +312,41 @@ export function readNetSample(
 
   return {
     at: now,
-    rttMs: p === null ? null : msFromSeconds(num(p.currentRoundTripTime)),
+    rttMs: msFromSeconds(field(p, 'currentRoundTripTime')),
     path: classifyIcePath(localType, remoteType),
     localCandidateType: localType,
     remoteCandidateType: remoteType,
-    jitterMs: inb === null ? null : msFromSeconds(num(inb.jitter)),
-    packetsReceived: inb === null ? null : num(inb.packetsReceived),
-    packetsLost: inb === null ? null : num(inb.packetsLost),
-    jitterBufferDelaySec: inb === null ? null : num(inb.jitterBufferDelay),
-    jitterBufferEmittedCount:
-      inb === null ? null : num(inb.jitterBufferEmittedCount),
-    jitterBufferTargetSec:
-      inb === null ? null : num(inb.jitterBufferTargetDelay),
-    concealedSamples: inb === null ? null : num(inb.concealedSamples),
-    concealmentEvents: inb === null ? null : num(inb.concealmentEvents),
-    removedSamplesForAcceleration:
-      inb === null ? null : num(inb.removedSamplesForAcceleration),
-    insertedSamplesForDeceleration:
-      inb === null ? null : num(inb.insertedSamplesForDeceleration),
-    bytesReceived: inb === null ? null : num(inb.bytesReceived),
-    bytesSent: outb === null ? null : num(outb.bytesSent),
+    jitterMs: msFromSeconds(field(inb, 'jitter')),
+    packetsReceived: field(inb, 'packetsReceived'),
+    packetsLost: field(inb, 'packetsLost'),
+    jitterBufferDelaySec: field(inb, 'jitterBufferDelay'),
+    jitterBufferEmittedCount: field(inb, 'jitterBufferEmittedCount'),
+    jitterBufferTargetSec: field(inb, 'jitterBufferTargetDelay'),
+    concealedSamples: field(inb, 'concealedSamples'),
+    concealmentEvents: field(inb, 'concealmentEvents'),
+    removedSamplesForAcceleration: field(inb, 'removedSamplesForAcceleration'),
+    insertedSamplesForDeceleration: field(
+      inb,
+      'insertedSamplesForDeceleration',
+    ),
+    bytesReceived: field(inb, 'bytesReceived'),
+    bytesSent: field(outb, 'bytesSent'),
     codec: mime === null ? null : (mime.split('/')[1] ?? mime),
     codecClockRate: num(codec?.clockRate),
     codecChannels: num(codec?.channels),
     packetizationMs: num(inb?.packetizationMs ?? codec?.ptime),
   }
+}
+
+/**
+ * One numeric field off a report that may not be in this browser's output.
+ *
+ * Absent and unreadable both come back null, and null is a real answer
+ * here -- "the browser did not say" is a different fact from zero, and the
+ * panel renders it differently on purpose.
+ */
+function field(report: Report | null, key: string): number | null {
+  return report === null ? null : num(report[key])
 }
 
 function msFromSeconds(v: number | null): number | null {
