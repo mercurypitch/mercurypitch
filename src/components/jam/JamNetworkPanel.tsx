@@ -205,6 +205,7 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
     buildLatencyBudget({
       rttMs: props.peer.channelPingMs ?? props.peer.reading.latest.rttMs,
       jitterBufferMs: props.peer.reading.jitterBufferMs,
+      frameMs: props.peer.reading.frameMs,
       deviceRoundTripMs: micLatencyMs() > 0 ? micLatencyMs() : null,
     }),
   )
@@ -302,11 +303,24 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
         <Extra label="In" value={fmtKbps(props.peer.reading.inboundKbps)} />
         <Extra label="Out" value={fmtKbps(props.peer.reading.outboundKbps)} />
         <Extra
+          label="Frame size"
+          value={
+            props.peer.reading.frameMs === null
+              ? '—'
+              : `${props.peer.reading.frameMs} ms (${Math.round(props.peer.reading.packetsPerSecond ?? 0)}/s)`
+          }
+        />
+        {/* Channel count is deliberately not shown. RFC 7587 makes the
+            Opus rtpmap declare 2 channels whatever the `stereo` parameter
+            says, so the stat reads 2ch for a mono stream and reading it
+            as evidence of stereo is a wrong conclusion the panel should
+            not invite. */}
+        <Extra
           label="Codec"
           value={
             latest().codec === null
               ? '—'
-              : `${latest().codec} ${latest().codecClockRate ?? '?'} Hz ${latest().codecChannels ?? '?'}ch`
+              : `${latest().codec} ${latest().codecClockRate ?? '?'} Hz`
           }
         />
       </dl>
