@@ -245,6 +245,23 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
 
   const latest = () => props.peer.reading.latest
 
+  /**
+   * Audio arriving, none leaving: the far end cannot hear this device.
+   *
+   * Worth its own line rather than a dash in the Out cell. Every other
+   * number on this card describes the direction that works, so a run in
+   * this state reads as a healthy connection right up until somebody asks
+   * why nobody heard the guitar. `outboundKbps` is null when there are no
+   * outbound audio stats at all -- no sender producing packets, which is
+   * a different thing from a quiet one.
+   */
+  const notSending = createMemo(() => {
+    const inbound = props.peer.reading.inboundKbps
+    if (inbound === null || inbound <= 0) return false
+    const outbound = props.peer.reading.outboundKbps
+    return outbound === null || outbound <= 0
+  })
+
   return (
     <article class={styles.peer}>
       <header class={styles.peerHead}>
@@ -307,6 +324,14 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
         </tbody>
       </table>
 
+      <Show when={notSending()}>
+        <p class={styles.notSending} role="status">
+          Not sending — audio is arriving from this peer but none is leaving
+          your device, so they hear nothing. Check that you are unmuted and that
+          Your sound reports a capture.
+        </p>
+      </Show>
+
       <dl class={styles.extras}>
         <Extra
           label="Buffer target"
@@ -334,7 +359,12 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
           }
         />
         <Extra label="In" value={fmtKbps(props.peer.reading.inboundKbps)} />
-        <Extra label="Out" value={fmtKbps(props.peer.reading.outboundKbps)} />
+        <Extra
+          label="Out"
+          value={
+            notSending() ? 'nothing' : fmtKbps(props.peer.reading.outboundKbps)
+          }
+        />
         <Extra
           label="Frame size"
           value={

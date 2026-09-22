@@ -288,16 +288,48 @@ export function summariseRun(
     `device round trip: ${meta.deviceRoundTripMs === null ? 'not measured' : `${meta.deviceRoundTripMs} ms`}`,
     `ua: ${meta.userAgent}`,
     '',
-    '| peer | path | codec | RTT p50 | RTT p95 | RTT p99 | ping p50 | buffer p50 | buffer p95 | jitter | loss | concealed | kbps in |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| peer | path | codec | frame | RTT p50 | RTT p95 | RTT p99 | ping p50 | buffer p50 | buffer p95 | jitter | loss | concealed | kbps in | kbps out |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   ]
+  const silent: string[] = []
   for (const p of peers) {
     const s = p.reading.latest
+    const frame =
+      p.reading.frameMs === null
+        ? '?'
+        : `${p.reading.frameMs} ms @ ${Math.round(p.reading.packetsPerSecond ?? 0)}/s`
+    if (notSending(p.reading)) silent.push(p.peerId.slice(0, 8))
     lines.push(
-      `| ${p.peerId.slice(0, 8)} | ${s.path} | ${s.codec ?? '?'} | ${ms(p.rttStats?.p50)} | ${ms(p.rttStats?.p95)} | ${ms(p.rttStats?.p99)} | ${ms(p.pingStats?.p50)} | ${ms(p.bufferStats?.p50)} | ${ms(p.bufferStats?.p95)} | ${ms(s.jitterMs)} | ${pct(p.reading.lossFraction)} | ${pct(p.reading.concealedFraction)} | ${ms(p.reading.inboundKbps)} |`,
+      `| ${p.peerId.slice(0, 8)} | ${s.path} | ${s.codec ?? '?'} | ${frame} | ${ms(p.rttStats?.p50)} | ${ms(p.rttStats?.p95)} | ${ms(p.rttStats?.p99)} | ${ms(p.pingStats?.p50)} | ${ms(p.bufferStats?.p50)} | ${ms(p.bufferStats?.p95)} | ${ms(s.jitterMs)} | ${pct(p.reading.lossFraction)} | ${pct(p.reading.concealedFraction)} | ${ms(p.reading.inboundKbps)} | ${ms(p.reading.outboundKbps)} |`,
+    )
+  }
+
+  // Said in words, not left as an empty cell. A run where audio is
+  // arriving and none is leaving is the one failure that looks like a
+  // latency problem and is not one -- the far end simply cannot hear you,
+  // and every other number on the row is about the direction that works.
+  if (silent.length > 0) {
+    lines.push(
+      '',
+      `NOT SENDING to ${silent.join(', ')}: audio is arriving but none is leaving this device, so the far end hears nothing. Check that the microphone is unmuted and that "Your sound" reports a capture.`,
     )
   }
   return lines.join('\n')
+}
+
+/**
+ * Receiving but not transmitting.
+ *
+ * `outboundKbps` is null when the connection has no outbound audio stats
+ * at all, which means no sender is producing packets -- not a quiet one.
+ * Paired with inbound audio actually arriving, that is unambiguous: the
+ * link is up and this end is mute to it.
+ */
+function notSending(reading: JamNetReading): boolean {
+  const inbound = reading.inboundKbps
+  if (inbound === null || inbound <= 0) return false
+  const outbound = reading.outboundKbps
+  return outbound === null || outbound <= 0
 }
 
 const CSV_COLUMNS = [
@@ -312,6 +344,13 @@ const CSV_COLUMNS = [
   'concealedFraction',
   'inboundKbps',
   'outboundKbps',
+  // The frame size is the whole point of asking for 10 ms packets, and it
+  // was on screen but in neither export -- so a run pasted to somebody
+  // else could not answer the question the run was taken to answer. The
+  // packet rate rides along because it is the evidence the frame size is
+  // derived from: 50/s is 20 ms, 100/s is 10 ms.
+  'packetsPerSecond',
+  'frameMs',
   'codec',
 ] as const
 
@@ -335,6 +374,8 @@ export function exportCsv(peers: readonly JamPeerDiagnostics[]): string {
           fixed(r.concealedFraction, 5),
           fixed(r.inboundKbps),
           fixed(r.outboundKbps),
+          fixed(r.packetsPerSecond),
+          fixed(r.frameMs),
           s.codec ?? '',
         ].join(','),
       )
