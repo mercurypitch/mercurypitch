@@ -39,6 +39,8 @@ import { disposeJam, initJam, jamIsMuted, toggleJamMute, } from '@/stores/jam-st
 function createServiceDouble() {
   let localAudio = false
   const pending: Array<(v: boolean) => void> = []
+  // Tests that are waiting for the prompt to actually open.
+  const waiting: Array<() => void> = []
   // One audio track the moment capture succeeds: enough for the store's
   // startJamPitchDetection to accept the stream on the granted path.
   const localStream = {
@@ -58,6 +60,7 @@ function createServiceDouble() {
       api.startLocalAudioCalls += 1
       return await new Promise<boolean>((resolve) => {
         pending.push(resolve)
+        while (waiting.length > 0) waiting.shift()!()
       })
     }),
     hasLocalAudio: () => localAudio,
@@ -75,6 +78,24 @@ function createServiceDouble() {
     /** Answer every permission prompt currently open. */
     grantPermission: () => settle(true),
     denyPermission: () => settle(false),
+
+    /**
+     * Resolves once a prompt is actually open.
+     *
+     * toggleJamMute re-enumerates the input devices before it captures, so
+     * the prompt no longer opens in the same microtask as the tap.
+     * Answering blind used to work by accident and now settles nothing --
+     * the capture opens afterwards and never resolves, which reads as a
+     * 5 s timeout rather than as anything about mute. Waiting on the real
+     * event is what makes these tests independent of how many awaits sit
+     * in front of the capture.
+     */
+    promptOpen: async (): Promise<void> => {
+      if (pending.length > 0) return
+      await new Promise<void>((resolve) => {
+        waiting.push(resolve)
+      })
+    },
   }
   return api
 }
@@ -117,6 +138,9 @@ describe('toggleJamMute — a second action during the permission prompt', () =>
     // in-flight guard set. Answer the prompt on the ending test's own double
     // and give the store's finally a turn to clear the guard, then tear the
     // room down so the next test starts on a silent, service-less store.
+    // A macrotask first, so a capture still queued behind the device
+    // enumeration has opened its prompt and can be answered.
+    await new Promise((resolve) => setTimeout(resolve, 0))
     service.denyPermission()
     await new Promise((resolve) => setTimeout(resolve, 0))
     disposeJam()
@@ -130,6 +154,7 @@ describe('toggleJamMute — a second action during the permission prompt', () =>
     const first = toggleJamMute()
     const second = toggleJamMute()
 
+    await svc.promptOpen()
     svc.grantPermission()
     await Promise.all([first, second])
 
@@ -142,6 +167,7 @@ describe('toggleJamMute — a second action during the permission prompt', () =>
     const svc = service
 
     const pending = toggleJamMute()
+    await svc.promptOpen()
     svc.denyPermission()
     await pending
 
@@ -155,12 +181,14 @@ describe('toggleJamMute — a second action during the permission prompt', () =>
     const svc = service
 
     const refused = toggleJamMute()
+    await svc.promptOpen()
     svc.denyPermission()
     await refused
 
     // The in-flight guard must clear on the failure path too, or one refusal
     // would disable the mic button for the rest of the session.
     const retried = toggleJamMute()
+    await svc.promptOpen()
     svc.grantPermission()
     await retried
 

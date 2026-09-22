@@ -20,7 +20,7 @@ import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import { PROFILE_COPY } from '@/lib/jam/jam-audio-source'
-import { jamAudioProfile, jamCaptureReport, jamInputDeviceId, jamInputDevices, jamIsMuted, refreshJamInputDevices, setJamAudioProfile, setJamInputDeviceId, setJamInputDeviceLabel, } from '@/stores/jam-store'
+import { jamAudioProfile, jamCaptureReport, jamInputDeviceId, jamInputDevices, refreshJamInputDevices, setJamAudioProfile, setJamInputDeviceId, setJamInputDeviceLabel, switchJamAudioSource, } from '@/stores/jam-store'
 import styles from './JamSourcePicker.module.css'
 
 const PROFILES: readonly JamAudioProfile[] = ['voice', 'instrument']
@@ -31,15 +31,18 @@ export const JamSourcePicker: Component = () => {
   })
 
   /**
-   * A change only takes effect on the next capture.
+   * A change cannot be applied in place, so it re-captures.
    *
    * Chrome ignores `applyConstraints` for audio processing on a live
-   * track, so re-pointing a running room at another device would appear
-   * to work and change nothing. Saying so is better than pretending.
+   * track, and mute only sets `track.enabled` false -- the device stays
+   * held either way. So the old capture is stopped and a new one opened,
+   * and the peers get it through `replaceTrack` without renegotiating. A
+   * no-op while the mic has never been captured: the choice is remembered
+   * and used at the first unmute.
    */
-  const needsRemute = createMemo(
-    () => !jamIsMuted() && jamCaptureReport() !== null,
-  )
+  const applyChange = () => {
+    void switchJamAudioSource()
+  }
 
   /**
    * PipeWire and PulseAudio list one capture device per OUTPUT, so a Linux
@@ -70,7 +73,14 @@ export const JamSourcePicker: Component = () => {
               classList={{
                 [styles.profileOn!]: jamAudioProfile() === profile,
               }}
-              onClick={() => setJamAudioProfile(profile)}
+              onClick={() => {
+                // Re-picking what is already selected must not re-capture:
+                // a switch tears the capture down and opens a new one, so
+                // a no-op click would cost an audible gap for nothing.
+                if (jamAudioProfile() === profile) return
+                setJamAudioProfile(profile)
+                applyChange()
+              }}
             >
               {PROFILE_COPY[profile].label}
             </button>
@@ -96,6 +106,7 @@ export const JamSourcePicker: Component = () => {
                 : (jamInputDevices().find((d) => d.deviceId === id)?.label ??
                     null),
             )
+            applyChange()
           }}
         >
           <option value="">Default input</option>
@@ -115,12 +126,6 @@ export const JamSourcePicker: Component = () => {
         <p class={styles.warning} role="status">
           That input is a loopback of what this machine is playing, not what it
           is hearing. Sending it puts the room's own sound back into the room.
-        </p>
-      </Show>
-
-      <Show when={needsRemute()}>
-        <p class={styles.note}>
-          Mute and unmute to switch — a running capture cannot be re-pointed.
         </p>
       </Show>
 

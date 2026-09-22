@@ -129,8 +129,9 @@ export const [jamIsMuted, setJamIsMuted] = createSignal(true)
  * friction that ends with them sending their laptop microphone by
  * accident.
  *
- * Changing it mid-room does nothing until the next unmute; the capture is
- * already open and Chrome ignores applyConstraints on a live track.
+ * Changing it mid-room re-captures; see switchJamAudioSource. It cannot be
+ * applied in place -- Chrome ignores applyConstraints for audio processing
+ * on a live track -- so the old capture is torn down and a new one opened.
  */
 export const [jamAudioProfile, setJamAudioProfile] =
   createPersistedSignal<JamAudioProfile>('mp_jam_audio_profile', 'voice', {
@@ -2324,6 +2325,56 @@ export async function toggleJamMute(): Promise<void> {
   jamService?.setMuted(muted)
 }
 
+/**
+ * Re-capture, because the input or the profile changed.
+ *
+ * Only meaningful while a capture is already open -- before the first
+ * unmute the choice is simply remembered and used when the mic is
+ * captured. Once it IS open, nothing short of a new capture can act on it:
+ * mute sets `track.enabled` false and leaves the device held, and Chrome
+ * ignores `applyConstraints` for audio processing on a live track. So the
+ * room used to remember a change it could never apply.
+ *
+ * Shares the unmute guard, because both paths call getUserMedia and two
+ * captures in flight is how a room ends up holding a device it cannot
+ * reach to stop.
+ */
+export async function switchJamAudioSource(): Promise<void> {
+  const service = jamService
+  if (service === null || !service.hasLocalAudio()) return
+  if (jamUnmuteInFlight) return
+  jamUnmuteInFlight = true
+  const roomAtStart = jamRoomId()
+  try {
+    await refreshJamInputDevices()
+    await service.startLocalAudio({
+      deviceId: resolveDeviceId(
+        jamInputDeviceId(),
+        jamInputDeviceLabel(),
+        jamInputDevices(),
+      ),
+      profile: jamAudioProfile(),
+      replace: true,
+    })
+  } finally {
+    jamUnmuteInFlight = false
+  }
+  // Leaving mid-switch disposes the service. Re-publishing here would hand
+  // the local video chip a stream from a room we are no longer in.
+  if (jamService !== service || jamRoomId() !== roomAtStart) return
+  // The stream object is the same one; its track list is not.
+  setJamLocalStream(null)
+  setJamLocalStream(service.getLocalStream())
+  // STOP first. A MediaStreamAudioSourceNode binds to the track that was
+  // in the stream when it was created and does not follow a replacement,
+  // so the detector would go on analysing a track that has been stopped --
+  // a pitch trail that simply stops drawing, with a live microphone and no
+  // error anywhere to explain it. startJamPitchDetection is a no-op while
+  // a detector exists, which is why this is not just a second call.
+  stopJamPitchDetection()
+  startJamPitchDetection()
+}
+
 export async function toggleJamVideo(): Promise<void> {
   const enabled = !jamVideoEnabled()
   setJamVideoEnabled(enabled)
@@ -2429,10 +2480,11 @@ export function startJamPitchDetection(): void {
  * row of dashes that looks like a broken panel.
  */
 export const jamDiagnosticsSources: JamDiagnosticsSources = {
-  peerIds: () =>
-    jamPeers()
-      .filter((p) => p.connectionState === 'connected')
-      .map((p) => p.id),
+  // jamConnectedPeers, not a second copy of its filter: "what counts as
+  // connected" living in two places is one more thing to miss when
+  // JamPeer['connectionState'] gains a value, and the memo means a
+  // sampler tick reads a cached list instead of re-filtering the roster.
+  peerIds: () => jamConnectedPeers().map((p) => p.id),
   statsFor: async (peerId) => {
     const pc = jamService?.connectionTo(peerId) ?? null
     return pc === null ? null : await pc.getStats()

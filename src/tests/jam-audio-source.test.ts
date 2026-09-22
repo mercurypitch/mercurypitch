@@ -7,15 +7,21 @@
 import { describe, expect, it } from 'vitest'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import type { JamAudioInput } from '@/lib/jam/jam-audio-source'
-import { constraintsFor, describeCapture, isLoopbackLabel, PROFILE_COPY, resolveDeviceId, } from '@/lib/jam/jam-audio-source'
+import { captureConstraints, describeCapture, isLoopbackLabel, PROFILE_COPY, resolveDeviceId, } from '@/lib/jam/jam-audio-source'
 
 /** The DOM typings have no `voiceIsolation` yet; read it through a cast. */
 const ext = (c: MediaTrackConstraints): Record<string, unknown> =>
   c as unknown as Record<string, unknown>
 
-describe('constraintsFor', () => {
-  it('asks for nothing to be done to an instrument', () => {
-    const c = constraintsFor('instrument', null)
+describe('captureConstraints', () => {
+  it('asks for nothing to be done to the capture, whatever is being played', () => {
+    // Raw for BOTH profiles, and the reason is not tone. The capture feeds
+    // the pitch detector, and `makeTransmitTrack` reads
+    // `echoCancellation` back off it to spot a device that applied the
+    // clone's constraints to the shared source. Capturing a voice already
+    // cancelled trips that guard, stops the clone, and puts the mic
+    // feedback bug back. The PROCESSED CLONE is what the peers hear.
+    const c = captureConstraints(null)
     expect(c.echoCancellation).toBe(false)
     expect(c.noiseSuppression).toBe(false)
     expect(c.autoGainControl).toBe(false)
@@ -24,32 +30,24 @@ describe('constraintsFor', () => {
   it('sets voiceIsolation false, which will matter later', () => {
     // Already shipping and platform-gated today, so it is the one that
     // will quietly start mangling a guitar as Chrome extends support.
-    expect(ext(constraintsFor('instrument', null)).voiceIsolation).toBe(false)
-    expect(ext(constraintsFor('voice', null)).voiceIsolation).toBe(false)
-  })
-
-  it('keeps the voice profile exactly as the room behaves today', () => {
-    const c = constraintsFor('voice', null)
-    expect(c.echoCancellation).toBe(true)
-    expect(c.noiseSuppression).toBe(true)
-    expect(c.autoGainControl).toBe(true)
+    expect(ext(captureConstraints(null)).voiceIsolation).toBe(false)
   })
 
   it('pins a chosen device EXACTLY, so a stale id fails loudly', () => {
     // The alternative is silently falling back to the built-in mic, which
     // for a guitarist is the difference between "no sound" and "the room
     // can hear my laptop fan".
-    const c = constraintsFor('instrument', 'focusrite-1')
+    const c = captureConstraints('focusrite-1')
     expect(c.deviceId).toEqual({ exact: 'focusrite-1' })
   })
 
   it('omits deviceId entirely when none is chosen', () => {
-    expect(constraintsFor('voice', null).deviceId).toBeUndefined()
-    expect(constraintsFor('voice', '').deviceId).toBeUndefined()
+    expect(captureConstraints(null).deviceId).toBeUndefined()
+    expect(captureConstraints('').deviceId).toBeUndefined()
   })
 
   it('asks for mono at 48 kHz', () => {
-    const c = constraintsFor('instrument', null)
+    const c = captureConstraints(null)
     expect(c.channelCount).toEqual({ ideal: 1 })
     expect(c.sampleRate).toEqual({ ideal: 48000 })
   })
