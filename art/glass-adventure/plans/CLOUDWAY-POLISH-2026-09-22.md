@@ -31,7 +31,8 @@ The full diagnosis is in [the visual audit](CLOUDWAY-VISUAL-QUALITY-REVIEW.md).
 - [x] Review final sky and asset raster proofs, including the actual V7 map
       close-up and V3 tablet portrait challenge; both loaded the exact new hashes.
 - [x] Leave a stable no-HMR HTTPS playtest server at port 5300 (HTTP 200 verified).
-- [ ] Push the reviewed remaining polish and inspect the resulting CI checks.
+- [x] Commit reviewed sky/proofs as `220980df` and repaired art as `56df2c1f`.
+- [ ] Verify remote publication and inspect the resulting CI checks.
 
 Checkpoint saves remain per browser origin. Switching HTTP/HTTPS, host name or
 port opens another local save; MercuryPitch and Beside Cue also intentionally
