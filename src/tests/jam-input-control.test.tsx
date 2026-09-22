@@ -72,9 +72,9 @@ describe('what the button says it will send', () => {
     room.profile = 'voice'
     room.muted = false
     render(() => <JamInputControl />)
-    expect(
-      screen.getByRole('button', { name: /currently sending voice/i }),
-    ).toBeTruthy()
+    expect(screen.getByTestId('jam-send').getAttribute('aria-label')).toContain(
+      'Currently sending voice',
+    )
   })
 
   it('still transmits on the press people already aim at', () => {
@@ -88,9 +88,14 @@ describe('choosing the source', () => {
   it('offers both, with the sentence that makes them choosable', () => {
     render(() => <JamInputControl />)
     openMenu()
-    // "Voice" and "Instrument" alone do not tell you which one feeds back.
-    expect(screen.getByText(/Echo cancellation on/i)).toBeTruthy()
-    expect(screen.getByText(/No echo cancellation/i)).toBeTruthy()
+    // "Voice" and "Instrument" alone do not tell you which one feeds back,
+    // and the sentences are only useful attached to the right option.
+    expect(
+      screen.getByRole('menuitemradio', { name: /Voice/i }).textContent,
+    ).toContain('Safe with speakers')
+    expect(
+      screen.getByRole('menuitemradio', { name: /Instrument/i }).textContent,
+    ).toContain('the room hears itself')
   })
 
   it('switches the live capture when the choice changes', () => {
@@ -116,7 +121,7 @@ describe('choosing the source', () => {
     fireEvent.contextMenu(
       screen.getByRole('button', { name: /start sending/i }),
     )
-    expect(screen.getByRole('menu')).toBeTruthy()
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
   })
 
   it('marks which one is live', () => {
@@ -147,7 +152,9 @@ describe('the combination that howls', () => {
     room.deviceId = null
     render(() => <JamInputControl />)
     openMenu()
-    expect(screen.getByText(/will\s+feed\s+back/i)).toBeTruthy()
+    expect(screen.getByText(/will\s+feed\s+back/i).textContent).toContain(
+      'built-in microphone',
+    )
   })
 
   it('stays quiet once a real interface is chosen', () => {
@@ -202,6 +209,6 @@ describe('the menu closes', () => {
     render(() => <JamInputControl />)
     openMenu()
     fireEvent.pointerDown(screen.getByRole('menu'))
-    expect(screen.queryByRole('menu')).toBeTruthy()
+    expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
   })
 })
