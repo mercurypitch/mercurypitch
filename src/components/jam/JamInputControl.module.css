@@ -1,0 +1,221 @@
+/* The transmit control, and what it is transmitting.
+
+   A split button: the big half is the thing people already aim at, the
+   small half opens the choice. They read as one control because they are
+   one decision -- "send" is meaningless until you know what. */
+
+.control {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.send svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* On, and audible to the room. The one state worth seeing across a
+   room-sized layout without reading anything. */
+.sendOn {
+  border-color: var(--accent);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.16));
+  color: var(--accent);
+}
+
+/* Sending an unprocessed default input: microphone, no echo cancellation,
+   speakers. Red rather than amber because by the time you hear it you are
+   already the problem. */
+.risky {
+  border-color: var(--red, #f85149);
+  background: rgba(248, 81, 73, 0.14);
+  color: var(--red, #f85149);
+}
+
+/* The struck-through look for "not sending", drawn rather than swapped for
+   a second icon: the icon is carrying WHICH source, and it should not have
+   to carry on/off as well. */
+.offBar {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 1.5px;
+  background: currentColor;
+  transform: rotate(-45deg);
+  border-radius: 1px;
+}
+
+.caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.caret svg {
+  width: 12px;
+  height: 12px;
+}
+
+.menu {
+  position: absolute;
+  z-index: 40;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 248px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary, #16181d);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  font-size: 0.75rem;
+}
+
+/* Opens upward by default because this control sits in a bottom toolbar.
+   On a short viewport that would leave it off-screen, so it flips. */
+@media (max-height: 520px) {
+  .menu {
+    bottom: auto;
+    top: calc(100% + 6px);
+  }
+}
+
+.menuTitle {
+  margin: 0;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.optionOn {
+  border-color: var(--accent);
+  background: var(--accent-dim, rgba(88, 166, 255, 0.16));
+}
+
+.optionHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.optionHead svg {
+  width: 14px;
+  height: 14px;
+}
+
+.optionLabel {
+  font-weight: 600;
+}
+
+/* The sentence that makes the option choosable. "Voice" and "Instrument"
+   on their own do not tell you which one feeds back. */
+.optionDetail {
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.deviceRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.deviceLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-primary, transparent);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+}
+
+.warn {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--red, #f85149);
+  border-radius: 6px;
+  line-height: 1.4;
+  color: var(--red, #f85149);
+}
+
+/* Pointer-only: a tablet keeps `:hover` on the last thing tapped, and this
+   control's job is to say what is live right now. */
+@media (hover: hover) {
+  .send:hover,
+  .caret:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+  }
+
+  .sendOn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .risky:hover {
+    border-color: var(--red, #f85149);
+    color: var(--red, #f85149);
+  }
+
+  .option:hover {
+    border-color: var(--text-secondary);
+  }
+}
+
+.send:focus-visible,
+.caret:focus-visible,
+.option:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
