@@ -109,17 +109,22 @@
 
 /* Placed from script, not from CSS: see JamInputControl's `place`. It
    opened upward on a rule copied from a bottom toolbar and went off the
-   top of the page. `fixed` also takes it out of the control row's
-   overflow, which would clip it whichever way it opened. Top and left are
-   set inline; everything else is here. */
+   top of the page. The edge it hangs from, `left` and `max-height` are
+   set inline, along with the room's theme tokens the portal would
+   otherwise leave behind; everything else is here. */
 .menu {
   position: fixed;
-  z-index: 60;
+  /* Portalled to the page root, so this is ordered against the app, not
+     the room: over the phone tab bar (380), the sidebar (200) and the
+     room's own floating controls -- the camera tray (999) and chat bubble
+     (1000), which covered it at 60 on an 844x390 landscape phone -- and
+     under a dialog (10000+). The room-code toast's layer, and the one
+     MISTAKES.md gives popovers. */
+  z-index: 9000;
   display: flex;
   flex-direction: column;
   gap: 6px;
   width: 248px;
-  max-height: 300px;
   overflow-y: auto;
   padding: 8px;
   border: 1px solid var(--border);
