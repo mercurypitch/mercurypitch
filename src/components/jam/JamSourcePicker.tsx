@@ -20,7 +20,7 @@ import type { Component } from 'solid-js'
 import { createMemo, For, onMount, Show } from 'solid-js'
 import type { JamAudioProfile } from '@/lib/jam/jam-audio-source'
 import { PROFILE_COPY } from '@/lib/jam/jam-audio-source'
-import { jamAudioProfile, jamCaptureReport, jamInputDeviceId, jamInputDevices, jamIsMuted, refreshJamInputDevices, setJamAudioProfile, setJamInputDeviceId, } from '@/stores/jam-store'
+import { jamAudioProfile, jamCaptureReport, jamInputDeviceId, jamInputDevices, jamIsMuted, refreshJamInputDevices, setJamAudioProfile, setJamInputDeviceId, setJamInputDeviceLabel, } from '@/stores/jam-store'
 import styles from './JamSourcePicker.module.css'
 
 const PROFILES: readonly JamAudioProfile[] = ['voice', 'instrument']
@@ -85,11 +85,18 @@ export const JamSourcePicker: Component = () => {
         <select
           class={styles.select}
           value={jamInputDeviceId() ?? ''}
-          onChange={(e) =>
-            setJamInputDeviceId(
-              e.currentTarget.value === '' ? null : e.currentTarget.value,
+          onChange={(e) => {
+            const id =
+              e.currentTarget.value === '' ? null : e.currentTarget.value
+            setJamInputDeviceId(id)
+            // Remembered as the fallback key; see resolveDeviceId.
+            setJamInputDeviceLabel(
+              id === null
+                ? null
+                : (jamInputDevices().find((d) => d.deviceId === id)?.label ??
+                    null),
             )
-          }
+          }}
         >
           <option value="">Default input</option>
           <For each={jamInputDevices()}>

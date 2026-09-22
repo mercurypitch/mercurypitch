@@ -12,7 +12,7 @@ import { applyNewerJamBackground, classifyJamBackgroundCapability, isCurrentJamB
 import { ARRIVAL_PHRASES, DEPARTURE_PHRASES, fillPhrase, HOST_RETURNED, makePhrasePicker, } from '@/lib/jam/jam-arrivals'
 import type { JamAudioProfile, JamCaptureReport, } from '@/lib/jam/jam-audio-source'
 import type { JamAudioInput } from '@/lib/jam/jam-audio-source'
-import { listJamAudioInputs } from '@/lib/jam/jam-audio-source'
+import { listJamAudioInputs, resolveDeviceId } from '@/lib/jam/jam-audio-source'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
 import { overallLineScore, scoreableLineIndices, } from '@/lib/jam/jam-line-scoring'
@@ -143,6 +143,19 @@ export const [jamInputDeviceId, setJamInputDeviceId] = createPersistedSignal<
 >('mp_jam_input_device', null, {
   validator: (v): v is string | null => v === null || typeof v === 'string',
 })
+
+/**
+ * The label of the chosen input, remembered as a second key.
+ *
+ * A deviceId is not a hardware key: on Linux it carries the PipeWire
+ * profile suffix, so switching a Scarlett to Pro Audio changes it and the
+ * `exact` constraint stops matching. Without this the room would quietly
+ * fall back to a laptop microphone.
+ */
+export const [jamInputDeviceLabel, setJamInputDeviceLabel] =
+  createPersistedSignal<string | null>('mp_jam_input_label', null, {
+    validator: (v): v is string | null => v === null || typeof v === 'string',
+  })
 
 export const [jamInputDevices, setJamInputDevices] = createSignal<
   readonly JamAudioInput[]
@@ -2279,8 +2292,15 @@ export async function toggleJamMute(): Promise<void> {
     const roomAtStart = jamRoomId()
     let got: boolean
     try {
+      // Re-resolve first: the saved id may name a device that no longer
+      // exists under that id, and the label is the fallback key.
+      await refreshJamInputDevices()
       got = await serviceAtStart.startLocalAudio({
-        deviceId: jamInputDeviceId(),
+        deviceId: resolveDeviceId(
+          jamInputDeviceId(),
+          jamInputDeviceLabel(),
+          jamInputDevices(),
+        ),
         profile: jamAudioProfile(),
       })
     } finally {
