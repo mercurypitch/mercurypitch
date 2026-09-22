@@ -41,6 +41,18 @@ export const JamSourcePicker: Component = () => {
     () => !jamIsMuted() && jamCaptureReport() !== null,
   )
 
+  /**
+   * PipeWire and PulseAudio list one capture device per OUTPUT, so a Linux
+   * user picking by name can land on their own speakers. Worth saying out
+   * loud rather than leaving them to work out why the room is howling.
+   */
+  const loopbackChosen = createMemo(() => {
+    const id = jamInputDeviceId()
+    if (id === null) return false
+    const chosen = jamInputDevices().find((d) => d.deviceId === id)
+    return chosen !== undefined && chosen.isLoopback
+  })
+
   return (
     <div class={styles.picker}>
       <div
@@ -82,11 +94,22 @@ export const JamSourcePicker: Component = () => {
           <option value="">Default input</option>
           <For each={jamInputDevices()}>
             {(device) => (
-              <option value={device.deviceId}>{device.label}</option>
+              <option value={device.deviceId}>
+                {device.isLoopback
+                  ? `${device.label} (playback)`
+                  : device.label}
+              </option>
             )}
           </For>
         </select>
       </label>
+
+      <Show when={loopbackChosen()}>
+        <p class={styles.warning} role="status">
+          That input is a loopback of what this machine is playing, not what it
+          is hearing. Sending it puts the room's own sound back into the room.
+        </p>
+      </Show>
 
       <Show when={needsRemute()}>
         <p class={styles.note}>

@@ -158,6 +158,33 @@ function joinWords(words: readonly string[]): string {
 export interface JamAudioInput {
   deviceId: string
   label: string
+  /**
+   * A loopback of something this machine is PLAYING, not something it is
+   * hearing.
+   *
+   * PipeWire and PulseAudio expose one of these per output ("Monitor of
+   * Built-in Audio"), and they enumerate as ordinary capture devices. In a
+   * jam room picking one is never right and is actively harmful: you
+   * capture the room's own output and send it back, which is a feedback
+   * loop with a network round trip in the middle. Linux users are the ones
+   * who will see these, which makes it exactly the footgun a guitarist on
+   * Arch would find first.
+   */
+  isLoopback: boolean
+}
+
+/**
+ * Spot a monitor source by its name, which is all we have.
+ *
+ * The device id is hashed per origin, so the `.monitor` suffix PulseAudio
+ * uses internally never reaches us -- only the human label does. That
+ * label is generated as "Monitor of <sink>" and is not reliably localised,
+ * so this is a heuristic and is used to SORT and WARN rather than to hide:
+ * a wrong guess that buries a real input would be worse than the footgun
+ * it prevents.
+ */
+export function isLoopbackLabel(label: string): boolean {
+  return /\bmonitor of\b|\bloopback\b/i.test(label)
 }
 
 /**
@@ -175,12 +202,22 @@ export async function listJamAudioInputs(): Promise<JamAudioInput[]> {
   if (typeof navigator.mediaDevices?.enumerateDevices !== 'function') return []
   try {
     const devices = await navigator.mediaDevices.enumerateDevices()
-    return devices
+    const inputs = devices
       .filter((d) => d.kind === 'audioinput')
-      .map((d, index) => ({
-        deviceId: d.deviceId,
-        label: d.label !== '' ? d.label : `Input ${index + 1}`,
-      }))
+      .map((d, index) => {
+        const label = d.label !== '' ? d.label : `Input ${index + 1}`
+        return {
+          deviceId: d.deviceId,
+          label,
+          isLoopback: isLoopbackLabel(label),
+        }
+      })
+    // Real inputs first, monitors last, each group in the order the
+    // browser gave them -- which on every platform puts the default first.
+    return [
+      ...inputs.filter((d) => !d.isLoopback),
+      ...inputs.filter((d) => d.isLoopback),
+    ]
   } catch {
     // Enumeration can reject in a cross-origin frame or with media blocked.
     return []

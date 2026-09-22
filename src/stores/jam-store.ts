@@ -11,6 +11,7 @@ import { runtimeBackgroundById } from '@/lib/backgrounds/background-surface'
 import { applyNewerJamBackground, classifyJamBackgroundCapability, isCurrentJamBackgroundCapability, jamBackgroundCapabilityNeedsRefresh, jamCapabilityExpiryMs, } from '@/lib/jam/background-session'
 import { ARRIVAL_PHRASES, DEPARTURE_PHRASES, fillPhrase, HOST_RETURNED, makePhrasePicker, } from '@/lib/jam/jam-arrivals'
 import type { JamAudioProfile, JamCaptureReport, } from '@/lib/jam/jam-audio-source'
+import type { JamAudioInput } from '@/lib/jam/jam-audio-source'
 import { listJamAudioInputs } from '@/lib/jam/jam-audio-source'
 import { jamRunSource } from '@/lib/jam/jam-catalog'
 import type { JamLineScore } from '@/lib/jam/jam-line-scoring'
@@ -144,7 +145,7 @@ export const [jamInputDeviceId, setJamInputDeviceId] = createPersistedSignal<
 })
 
 export const [jamInputDevices, setJamInputDevices] = createSignal<
-  readonly { deviceId: string; label: string }[]
+  readonly JamAudioInput[]
 >([])
 
 /** What the capture actually turned out to be. Null until the first unmute. */
