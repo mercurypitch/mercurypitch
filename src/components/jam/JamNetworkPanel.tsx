@@ -19,6 +19,12 @@
 // that only exists under `pnpm dev` is the one build that cannot be run
 // on the device worth measuring.
 //
+// `?jamdiag=1` is a second door, ADDED to that rather than replacing it:
+// the build gate is unchanged, so dev and local behave exactly as before.
+// What the flag buys is turning the panel off and on again without a
+// rebuild, and remembering the answer across the reloads a test session
+// involves. `?jamdiag=0` closes it. See lib/jam/jam-diagnostics-access.ts.
+//
 // The sampler only runs while the panel is expanded. getStats() walks
 // every stats object on every peer connection, and a diagnostics surface
 // that slows down the thing it measures is worse than none.
@@ -27,6 +33,7 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, onCleanup, onMount, Show, } from 'solid-js'
 import { Copy, RotateCcw } from '@/components/icons'
 import { IS_DIAGNOSTIC_BUILD } from '@/lib/defaults'
+import { resolveDiagnosticsUnlock } from '@/lib/jam/jam-diagnostics-access'
 import type { JamBudgetTerm } from '@/lib/jam/jam-latency-budget'
 import { buildLatencyBudget, VERDICT_COPY } from '@/lib/jam/jam-latency-budget'
 import type { JamRollingStats } from '@/lib/jam/jam-net-stats'
@@ -36,9 +43,30 @@ import { jamDiagnosticsSources, jamPeers, jamRoomId } from '@/stores/jam-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import styles from './JamNetworkPanel.module.css'
 
-/** Whether this build may show the panel at all. */
+/**
+ * Resolved once, at module load.
+ *
+ * Reading the URL on every render would re-write storage on every render,
+ * and the query string cannot change without a navigation anyway.
+ */
+const unlockedByFlag = resolveDiagnosticsUnlock(
+  globalThis.location?.search ?? '',
+  safeLocalStorage(),
+)
+
+function safeLocalStorage(): Storage | null {
+  // Touching localStorage throws outright in some locked-down contexts,
+  // and this runs at import time -- a throw here takes the Jam tab down.
+  try {
+    return globalThis.localStorage ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Whether this build, or this browser, may show the panel at all. */
 export function jamNetworkPanelAvailable(): boolean {
-  return IS_DIAGNOSTIC_BUILD
+  return IS_DIAGNOSTIC_BUILD || unlockedByFlag
 }
 
 export const JamNetworkPanel: Component = () => {
