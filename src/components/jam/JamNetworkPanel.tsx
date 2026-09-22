@@ -221,22 +221,27 @@ const PeerCard: Component<{ peer: JamPeerDiagnostics }> = (props) => {
   )
 
   /**
-   * The budget is built from the DataChannel ping where there is one.
+   * The budget is built from the DataChannel ping where there is one, and
+   * says which it used.
    *
    * ICE's `currentRoundTripTime` measures the STUN leg of the candidate
    * pair; on a relayed path that is the leg to the TURN server, not the
    * route. The application ping crosses everything a real message
    * crosses, so it is the better input where it exists -- and where it
-   * does not (a channel still opening), the ICE figure is right enough.
+   * does not (a channel still opening, or one that stopped answering),
+   * the ICE figure is right enough. They are different quantities, so the
+   * source is passed through rather than left for the tooltip to guess.
    */
-  const budget = createMemo(() =>
-    buildLatencyBudget({
-      rttMs: props.peer.channelPingMs ?? props.peer.reading.latest.rttMs,
+  const budget = createMemo(() => {
+    const ping = props.peer.channelPingMs
+    return buildLatencyBudget({
+      rttMs: ping ?? props.peer.reading.latest.rttMs,
+      rttSource: ping === null ? 'ice' : 'channel',
       jitterBufferMs: props.peer.reading.jitterBufferMs,
       frameMs: props.peer.reading.frameMs,
       deviceRoundTripMs: micLatencyMs() > 0 ? micLatencyMs() : null,
-    }),
-  )
+    })
+  })
 
   const latest = () => props.peer.reading.latest
 

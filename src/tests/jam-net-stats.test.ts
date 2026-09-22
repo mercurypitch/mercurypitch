@@ -89,6 +89,85 @@ describe('readNetSample', () => {
     expect(s.rttMs).toBeCloseTo(18, 5)
   })
 
+  it('takes the pair the transport names, over one that merely says nominated', () => {
+    // After an ICE restart the superseded pair can still carry
+    // `nominated` alongside the new one. Believing the flag means a room
+    // that just failed over to TURN reports the old pair's round trip and
+    // a "direct" path for the rest of the session -- and jam-store halves
+    // that number to place every peer's playhead.
+    const sample = readNetSample(
+      report([
+        pair({
+          id: 'old',
+          nominated: true,
+          currentRoundTripTime: 0.02,
+          localCandidateId: 'lc-host',
+          remoteCandidateId: 'rc-host',
+        }),
+        pair({
+          id: 'new',
+          nominated: true,
+          currentRoundTripTime: 0.31,
+          localCandidateId: 'lc-relay',
+          remoteCandidateId: 'rc-relay',
+        }),
+        { type: 'transport', id: 't', selectedCandidatePairId: 'new' },
+        { type: 'local-candidate', id: 'lc-host', candidateType: 'host' },
+        { type: 'remote-candidate', id: 'rc-host', candidateType: 'host' },
+        { type: 'local-candidate', id: 'lc-relay', candidateType: 'relay' },
+        { type: 'remote-candidate', id: 'rc-relay', candidateType: 'relay' },
+      ]),
+    )
+    expect(sample.rttMs).toBeCloseTo(310, 5)
+    expect(sample.path).toBe('relay')
+  })
+
+  it('finds the transport even when it is reported after its pairs', () => {
+    // Report order is not specified, and Chrome does not always put the
+    // transport first.
+    const sample = readNetSample(
+      report([
+        { type: 'transport', id: 't', selectedCandidatePairId: 'new' },
+        pair({ id: 'old', nominated: true, currentRoundTripTime: 0.02 }),
+        pair({ id: 'new', nominated: true, currentRoundTripTime: 0.31 }),
+      ]),
+    )
+    expect(sample.rttMs).toBeCloseTo(310, 5)
+  })
+
+  it('breaks a tie on the freshest pair rather than on report order', () => {
+    // Safari does not always publish selectedCandidatePairId, so equal
+    // scores still have to resolve to something better than "whichever the
+    // browser listed first".
+    const sample = readNetSample(
+      report([
+        pair({
+          id: 'stale',
+          nominated: true,
+          currentRoundTripTime: 0.02,
+          lastPacketReceivedTimestamp: 1000,
+        }),
+        pair({
+          id: 'fresh',
+          nominated: true,
+          currentRoundTripTime: 0.31,
+          lastPacketReceivedTimestamp: 9000,
+        }),
+      ]),
+    )
+    expect(sample.rttMs).toBeCloseTo(310, 5)
+  })
+
+  it('ignores a selected id that names no pair in this report', () => {
+    const sample = readNetSample(
+      report([
+        { type: 'transport', id: 't', selectedCandidatePairId: 'ghost' },
+        pair({ id: 'live', nominated: true, currentRoundTripTime: 0.018 }),
+      ]),
+    )
+    expect(sample.rttMs).toBeCloseTo(18, 5)
+  })
+
   it('converts every second-valued stat to milliseconds', () => {
     const s = readNetSample(report([pair(), inbound()]))
     expect(s.rttMs).toBeCloseTo(24, 5)
@@ -384,6 +463,31 @@ describe('createRingBuffer', () => {
     const ring = createRingBuffer(10)
     ring.push(Number.NaN)
     expect(ring.values()).toHaveLength(0)
+  })
+
+  it('answers with the window as it is now, not as it was', () => {
+    // stats() is cached, because the sampler asks three of these per peer
+    // per second and each answer sorts the whole window. A cache that
+    // outlives its window is a panel reporting a distribution that has
+    // moved on, which is worse than the cost it saves.
+    const ring = createRingBuffer(10)
+    ring.push(10)
+    expect(ring.stats()!.max).toBe(10)
+    ring.push(50)
+    expect(ring.stats()!.max).toBe(50)
+    expect(ring.stats()!.count).toBe(2)
+    ring.clear()
+    expect(ring.stats()).toBeNull()
+    ring.push(7)
+    expect(ring.stats()!.max).toBe(7)
+  })
+
+  it('does not let a rejected push serve a stale answer', () => {
+    const ring = createRingBuffer(10)
+    ring.push(4)
+    expect(ring.stats()!.count).toBe(1)
+    ring.push(Number.NaN)
+    expect(ring.stats()!.count).toBe(1)
   })
 })
 

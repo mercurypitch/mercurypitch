@@ -24,6 +24,20 @@ import { createPersistedSignal } from '@/lib/storage'
 
 /** How often a sample is taken while the panel is open. */
 export const SAMPLE_INTERVAL_MS = 1000
+
+/**
+ * How long a DataChannel ping stays worth believing.
+ *
+ * A ping goes out every round, so an answer older than a few rounds means
+ * the channel stopped answering -- closed, or its pongs dropped. Reporting
+ * the last successful value forever is the worst shape of wrong for a
+ * diagnostics panel: the budget prefers the ping over the ICE round trip,
+ * so a pair whose path degraded from 20 ms to 300 ms would keep showing
+ * the old number and a green verdict, with the truth visible in the RTT
+ * row directly below it.
+ */
+export const PING_STALE_MS = 5 * SAMPLE_INTERVAL_MS
+
 /**
  * ~10 minutes of history at one sample a second.
  *
@@ -82,6 +96,8 @@ interface PeerWindow {
   buffer: ReturnType<typeof createRingBuffer>
   ping: ReturnType<typeof createRingBuffer>
   lastPingMs: number | null
+  /** When that ping came back, so a dead channel stops reporting it. */
+  lastPingAt: number
 }
 
 const windows = new Map<string, PeerWindow>()
@@ -97,6 +113,7 @@ function windowFor(peerId: string): PeerWindow {
       buffer: createRingBuffer(HISTORY_CAPACITY),
       ping: createRingBuffer(HISTORY_CAPACITY),
       lastPingMs: null,
+      lastPingAt: 0,
     }
     windows.set(peerId, w)
   }
@@ -104,9 +121,14 @@ function windowFor(peerId: string): PeerWindow {
 }
 
 /** Record one DataChannel ping result. Called from the service callback. */
-export function recordChannelPing(peerId: string, rttMs: number): void {
+export function recordChannelPing(
+  peerId: string,
+  rttMs: number,
+  now: number = Date.now(),
+): void {
   const w = windowFor(peerId)
   w.lastPingMs = rttMs
+  w.lastPingAt = now
   w.ping.push(rttMs)
 }
 
@@ -137,17 +159,30 @@ export async function sampleOnce(
     if (!ids.includes(id)) windows.delete(id)
   }
 
+  // Concurrently, and the ping outside the try that covers getStats but
+  // inside one that covers itself: `RTCDataChannel.send` throws once the
+  // buffer is full, and a throw here used to escape the loop -- costing
+  // every peer after this one their sample and freezing the panel on the
+  // previous tick with nothing said.
+  const rounds = await Promise.all(
+    ids.map(async (peerId) => {
+      try {
+        sources.ping(peerId)
+      } catch {
+        // A gap in one row, not a lost round.
+      }
+      try {
+        return { peerId, stats: await sources.statsFor(peerId) }
+      } catch {
+        // A connection closing mid-sample. Not an error worth surfacing:
+        // the peer will be gone from peerIds() on the next tick.
+        return { peerId, stats: null }
+      }
+    }),
+  )
+
   const next: JamPeerDiagnostics[] = []
-  for (const peerId of ids) {
-    sources.ping(peerId)
-    let stats: unknown | null = null
-    try {
-      stats = await sources.statsFor(peerId)
-    } catch {
-      // A connection closing mid-sample. Not an error worth surfacing:
-      // the peer will be gone from peerIds() on the next tick.
-      stats = null
-    }
+  for (const { peerId, stats } of rounds) {
     if (stats === null || stats === undefined) continue
 
     const w = windowFor(peerId)
@@ -167,7 +202,13 @@ export async function sampleOnce(
     next.push({
       peerId,
       reading,
-      channelPingMs: w.lastPingMs,
+      // Null rather than stale. See PING_STALE_MS: the budget prefers this
+      // over the ICE round trip, so a value that outlives the channel it
+      // came from would hold a green verdict over a dead path.
+      channelPingMs:
+        w.lastPingMs !== null && now - w.lastPingAt <= PING_STALE_MS
+          ? w.lastPingMs
+          : null,
       rttStats: w.rtt.stats(),
       bufferStats: w.buffer.stats(),
       pingStats: w.ping.stats(),
@@ -177,12 +218,33 @@ export async function sampleOnce(
   setJamDiagnostics(next)
 }
 
+/**
+ * Guards against a round that outlives its interval.
+ *
+ * On a phone, or a large mesh, a round can take longer than a tick. Two
+ * rounds in flight both write `w.previous` for the same peer, and one of
+ * them then derives its deltas against a sample taken milliseconds
+ * earlier -- which is a jitter-buffer depth of some absurd number, pushed
+ * into the rolling window and the exported CSV as though it were real.
+ */
+let sampleInFlight = false
+
 export function startJamDiagnostics(sources: JamDiagnosticsSources): void {
   if (sampler !== null) return
-  void sampleOnce(sources)
+  void runSample(sources)
   sampler = setInterval(() => {
-    void sampleOnce(sources)
+    void runSample(sources)
   }, SAMPLE_INTERVAL_MS)
+}
+
+async function runSample(sources: JamDiagnosticsSources): Promise<void> {
+  if (sampleInFlight) return
+  sampleInFlight = true
+  try {
+    await sampleOnce(sources)
+  } finally {
+    sampleInFlight = false
+  }
 }
 
 export function stopJamDiagnostics(): void {
