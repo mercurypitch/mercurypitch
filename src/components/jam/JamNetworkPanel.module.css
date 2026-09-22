@@ -314,3 +314,16 @@
 .action:active {
   background: rgba(255, 255, 255, 0.12);
 }
+
+/* Receiving but not transmitting. Red rather than amber: every other
+   number on the card describes the direction that works, so without this
+   the run reads as a healthy connection right up until somebody asks why
+   nobody heard the guitar. */
+.notSending {
+  margin: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--red, #f85149);
+  border-radius: 6px;
+  line-height: 1.4;
+  color: var(--red, #f85149);
+}

@@ -14,6 +14,10 @@ const statsAt = (opts: {
   delaySec?: number
   emitted?: number
   bytes?: number
+  /** Cumulative inbound packets; the frame size is derived from its rate. */
+  packets?: number
+  /** Cumulative bytes sent. Omitted means no outbound audio stats at all. */
+  sent?: number
 }) => {
   const rows: Array<Record<string, unknown>> = [
     {
@@ -32,7 +36,7 @@ const statsAt = (opts: {
       kind: 'audio',
       codecId: 'c',
       jitter: 0.003,
-      packetsReceived: 100,
+      packetsReceived: opts.packets ?? 100,
       packetsLost: 0,
       jitterBufferDelay: opts.delaySec ?? 3840,
       jitterBufferEmittedCount: opts.emitted ?? 48_000,
@@ -46,6 +50,12 @@ const statsAt = (opts: {
       channels: 1,
     },
   ]
+  // No outbound-rtp at all unless asked for: that is what a connection
+  // with nothing being sent on it actually looks like, and it is the
+  // case the "not sending" warning exists for.
+  if (opts.sent !== undefined) {
+    rows.push({ type: 'outbound-rtp', kind: 'audio', bytesSent: opts.sent })
+  }
   return {
     forEach(cb: (r: Record<string, unknown>) => void) {
       rows.forEach(cb)
@@ -271,6 +281,81 @@ describe('summariseRun', () => {
     // The first sample has no delta-derived figures yet; they must show
     // as a dash, not as 0.0.
     expect(out).toContain('—')
+  })
+})
+
+describe('the run is only as good as what it exports', () => {
+  beforeEach(() => resetJamDiagnostics())
+
+  const meta = () => ({
+    label: 'test run',
+    roomId: 'ROOM1',
+    userAgent: 'ua',
+    deviceRoundTripMs: null,
+  })
+
+  it('carries the frame size, which is the question the run is taken to answer', async () => {
+    // This was on screen and in neither export, so a run pasted to
+    // somebody else could not say whether the 10 ms request landed.
+    let received = 1000
+    const s = sourcesFor(['a'], () => statsAt({ packets: received }))
+    await sampleOnce(s, 1000)
+    received += 100
+    await sampleOnce(s, 2000)
+
+    const csv = exportCsv(jamDiagnostics())
+    const header = csv.split('\n')[0]!
+    expect(header).toContain('frameMs')
+    expect(header).toContain('packetsPerSecond')
+
+    const summary = summariseRun(jamDiagnostics(), meta())
+    // 100 packets in a second is 10 ms frames.
+    expect(summary).toContain('10 ms')
+  })
+
+  it('says out loud that nothing is being sent', async () => {
+    // The failure that looks like a healthy connection: audio arriving,
+    // none leaving, every other number describing the direction that
+    // works. An empty cell is not enough -- it was missed on a real run.
+    let bytes = 10_000
+    const s = sourcesFor(['a'], () => statsAt({ bytes }))
+    await sampleOnce(s, 1000)
+    bytes += 4300 // ~34 kbps arriving, as the real run measured
+    await sampleOnce(s, 2000)
+
+    const summary = summariseRun(jamDiagnostics(), meta())
+    expect(summary).toContain('NOT SENDING')
+  })
+
+  it('stays quiet when audio is flowing both ways', async () => {
+    let bytes = 10_000
+    let sent = 10_000
+    const s = sourcesFor(['a'], () => statsAt({ bytes, sent }))
+    await sampleOnce(s, 1000)
+    bytes += 4300
+    sent += 4300
+    await sampleOnce(s, 2000)
+    expect(summariseRun(jamDiagnostics(), meta())).not.toContain('NOT SENDING')
+  })
+
+  it('does not cry wolf before any audio has arrived', async () => {
+    // A room that has only just connected is not a room that is failing:
+    // nothing in either direction is silence, not a fault.
+    const s = sourcesFor(['a'], () => statsAt({ bytes: 0 }))
+    await sampleOnce(s, 1000)
+    await sampleOnce(s, 2000)
+    expect(summariseRun(jamDiagnostics(), meta())).not.toContain('NOT SENDING')
+  })
+
+  it('flags a sender that stopped, not just one that never started', async () => {
+    // outboundKbps 0 with a live outbound-rtp is the same outcome for the
+    // person on the other end as no sender at all.
+    let bytes = 10_000
+    const s = sourcesFor(['a'], () => statsAt({ bytes, sent: 5_000 }))
+    await sampleOnce(s, 1000)
+    bytes += 4300
+    await sampleOnce(s, 2000)
+    expect(summariseRun(jamDiagnostics(), meta())).toContain('NOT SENDING')
   })
 })
 
