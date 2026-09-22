@@ -12,20 +12,13 @@
 import type { MelodyData } from '@/types'
 import { decideIceRestart, DISCONNECTED_GRACE_MS } from './ice-recovery'
 import { FALLBACK_ICE_SERVERS, getIceServers, resetIceServers, } from './ice-servers'
+import type { JamAudioProfile, JamCaptureReport } from './jam-audio-source'
+import { constraintsFor, describeCapture } from './jam-audio-source'
 import { readNetSample } from './jam-net-stats'
 import { capSendBitrate, requestLowPlayout, shapeOpusSdp } from './jam-sdp'
 import { micErrorMessage, micPermissionState } from './media-errors'
 import { createSignalingClient, jamSignalingIsMocked } from './signaling'
 import type { JamBackgroundCapabilityMessage, JamCallbacks, JamPeer, } from './types'
-
-// Audio constraints optimized for music — disable all processing
-const AUDIO_CONSTRAINTS: MediaTrackConstraints = {
-  echoCancellation: false,
-  noiseSuppression: false,
-  autoGainControl: false,
-  channelCount: { ideal: 1 },
-  sampleRate: { ideal: 48000 },
-}
 
 /**
  * What the peers get: the same microphone, processed for human ears.
@@ -230,7 +223,7 @@ export function createJamService(callbacks: JamCallbacks) {
           '[jam:mic] constraining the clone reconfigured the shared source — backing out to keep pitch analysis honest',
         )
         clone.stop()
-        await raw.applyConstraints(AUDIO_CONSTRAINTS)
+        await raw.applyConstraints(constraintsFor('instrument', null))
         return null
       }
       console.info('[jam:mic] transmitting with echo cancellation on')
@@ -289,15 +282,29 @@ export function createJamService(callbacks: JamCallbacks) {
    * same path enabling the camera mid-call has always used. Returns whether
    * there is now a microphone.
    */
-  async function startLocalAudio(): Promise<boolean> {
+  /**
+   * Open the microphone -- or the interface -- and give it to the room.
+   *
+   * `profile` decides what the peers hear. `voice` is the room's original
+   * behaviour to the letter: a raw capture for the pitch detector and a
+   * processed clone for the peers. `instrument` skips the clone entirely,
+   * because the clone exists to apply echo cancellation and an instrument
+   * wants nothing applied to it.
+   *
+   * The capture is reported back through `onCaptureReport` rather than
+   * assumed: a constraint is a request, and the only honest account of
+   * what happened is `getSettings()` afterwards.
+   */
+  async function startLocalAudio(
+    options: { deviceId?: string | null; profile?: JamAudioProfile } = {},
+  ): Promise<boolean> {
     openLocalStream()
     if (localStream!.getAudioTracks().length > 0) return true
+    const profile = options.profile ?? 'voice'
+    const deviceId = options.deviceId ?? null
     let captured: MediaStream
     try {
-      captured = await navigator.mediaDevices.getUserMedia({
-        audio: AUDIO_CONSTRAINTS,
-        video: false,
-      })
+      captured = await getCapture(profile, deviceId)
     } catch (err) {
       // Ask the browser what it already decided, so a site-level Block --
       // which never shows a prompt -- is named as such instead of looking
@@ -309,8 +316,19 @@ export function createJamService(callbacks: JamCallbacks) {
     const rawAudio = captured.getAudioTracks()[0]
     if (rawAudio === undefined) return false
     localStream!.addTrack(rawAudio)
-    transmitAudio = await makeTransmitTrack(rawAudio)
+    // An instrument is sent exactly as captured. The processed clone is a
+    // voice-room device; running a guitar through it gates sustain, eats
+    // pick attack and pumps every dynamic the player put in.
+    transmitAudio =
+      profile === 'instrument' ? null : await makeTransmitTrack(rawAudio)
     const outgoing = transmitAudio ?? rawAudio
+    lastCapture = describeCapture(
+      profile,
+      outgoing.getSettings(),
+      rawAudio.label,
+    )
+    console.info('[jam:mic] capture', lastCapture)
+    callbacks.onCaptureReport?.(lastCapture)
     for (const [, pc] of peerConnections) {
       // Only if this connection has no audio yet. A second sender would
       // have the room hearing two copies of one voice.
@@ -454,6 +472,41 @@ export function createJamService(callbacks: JamCallbacks) {
       console.warn('[jam:service] remote SDP shaping refused', err)
       await pc.setRemoteDescription(new RTCSessionDescription(desc))
     }
+  }
+
+  /**
+   * Capture, retrying without the device pin if that is what failed.
+   *
+   * `deviceId: { exact }` is deliberate -- a stale id should fail rather
+   * than silently hand back the built-in microphone -- but a device that
+   * was unplugged between sessions must not lock somebody out of their own
+   * room. So: ask for the named device, and if only that is unsatisfiable,
+   * take whatever the browser offers and let the report say so.
+   */
+  async function getCapture(
+    profile: JamAudioProfile,
+    deviceId: string | null,
+  ): Promise<MediaStream> {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: constraintsFor(profile, deviceId),
+        video: false,
+      })
+    } catch (err) {
+      if (deviceId === null || deviceId === '') throw err
+      console.info('[jam:mic] named input unavailable, falling back', err)
+      return await navigator.mediaDevices.getUserMedia({
+        audio: constraintsFor(profile, null),
+        video: false,
+      })
+    }
+  }
+
+  /** The last capture's actual settings, for the diagnostics panel. */
+  let lastCapture: JamCaptureReport | null = null
+
+  function getCaptureReport(): JamCaptureReport | null {
+    return lastCapture
   }
 
   // ── Peer connection management ──────────────────────────────────
@@ -1146,6 +1199,7 @@ export function createJamService(callbacks: JamCallbacks) {
     sendSong,
     channelTo,
     connectionTo,
+    getCaptureReport,
     sendPing,
     sendSongFileMessage,
     sendSongHave,

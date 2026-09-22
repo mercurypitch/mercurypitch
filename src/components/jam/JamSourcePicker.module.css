@@ -1,0 +1,85 @@
+/* What this person is sending. Lives in the rail, above the roster, and
+   is read once at the start of a session rather than watched — so it is
+   compact and quiet rather than prominent. */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.profiles {
+  display: flex;
+  gap: 6px;
+}
+
+.profile {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.profileOn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hint {
+  margin: 0;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.deviceRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deviceLabel {
+  color: var(--text-muted);
+}
+
+.select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary, transparent);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+}
+
+.note {
+  margin: 0;
+  line-height: 1.45;
+  color: var(--amber, #d29922);
+}
+
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.reportLine {
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* A warning here is not decoration: it is the difference between a guitar
+   that sounds like a guitar and one the browser has quietly gated. */
+.warning {
+  margin: 0;
+  line-height: 1.45;
+  color: var(--amber, #d29922);
+}
