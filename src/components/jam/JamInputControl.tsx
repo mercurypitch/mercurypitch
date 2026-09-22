@@ -46,9 +46,80 @@ const CONSEQUENCE: Record<JamAudioProfile, string> = {
   instrument: 'No echo cancellation. Headphones, or the room hears itself.',
 }
 
+/** Enough room for the menu, measured once rather than guessed at twice. */
+const MENU_WIDTH = 248
+const MENU_MAX_HEIGHT = 300
+const GAP = 6
+const EDGE = 8
+
+export interface MenuBox {
+  top: number
+  bottom: number
+  left: number
+}
+
+/**
+ * Where the menu goes, given where the button is.
+ *
+ * Pure, because the bug this fixes was geometry and geometry is testable:
+ * the first version opened upward on a CSS rule borrowed from a bottom
+ * toolbar, and this control is not in one -- so the menu opened off the
+ * top of the page and could not be seen at all.
+ *
+ * Below when below fits, above when it does not and above is roomier, and
+ * clamped on both axes so a button near any edge still shows a whole menu.
+ */
+export function menuPosition(
+  button: MenuBox,
+  viewportWidth: number,
+  viewportHeight: number,
+): { top: number; left: number } {
+  const below = viewportHeight - button.bottom - GAP - EDGE
+  const above = button.top - GAP - EDGE
+  // Prefer below. Go above only when below cannot hold the menu and above
+  // can hold more of it; on a viewport too short for either, take the
+  // roomier side and let the menu scroll rather than leave it off-screen.
+  const openDown = below >= MENU_MAX_HEIGHT || below >= above
+  const top = openDown
+    ? button.bottom + GAP
+    : Math.max(EDGE, button.top - GAP - Math.min(MENU_MAX_HEIGHT, above))
+  const left = Math.min(
+    Math.max(EDGE, button.left),
+    // Never past the right edge, and never negative on a viewport narrower
+    // than the menu itself.
+    Math.max(EDGE, viewportWidth - MENU_WIDTH - EDGE),
+  )
+  return { top, left }
+}
+
 export const JamInputControl: Component = () => {
   const [open, setOpen] = createSignal(false)
+  const [at, setAt] = createSignal<{ top: number; left: number } | null>(null)
   let root: HTMLDivElement | undefined
+
+  /** Measure, then ask menuPosition where it fits. */
+  const place = (): void => {
+    if (root === undefined) return
+    const r = root.getBoundingClientRect()
+    setAt(menuPosition(r, window.innerWidth, window.innerHeight))
+  }
+
+  const show = (): void => {
+    place()
+    setOpen(true)
+  }
+
+  // A toolbar that scrolls, a rotated tablet, a resized window: the menu
+  // must not stay pinned to where the button used to be.
+  const replace = (): void => {
+    if (open()) place()
+  }
+  window.addEventListener('resize', replace)
+  window.addEventListener('scroll', replace, true)
+  onCleanup(() => {
+    window.removeEventListener('resize', replace)
+    window.removeEventListener('scroll', replace, true)
+  })
 
   /**
    * Close on anything that is not this control.
@@ -121,7 +192,8 @@ export const JamInputControl: Component = () => {
         // main button too, because that is the one people aim at.
         onContextMenu={(e) => {
           e.preventDefault()
-          setOpen((v) => !v)
+          if (open()) setOpen(false)
+          else show()
         }}
       >
         <Show when={profile() === 'instrument'} fallback={<Mic />}>
@@ -140,15 +212,27 @@ export const JamInputControl: Component = () => {
         aria-label="Choose what you are sending"
         title="Choose what you are sending"
         onClick={() => {
-          if (!open()) void refreshJamInputDevices()
-          setOpen((v) => !v)
+          if (open()) {
+            setOpen(false)
+            return
+          }
+          void refreshJamInputDevices()
+          show()
         }}
       >
         <ChevronDown />
       </button>
 
       <Show when={open()}>
-        <div class={styles.menu} role="menu" aria-label="What you are sending">
+        <div
+          class={styles.menu}
+          role="menu"
+          aria-label="What you are sending"
+          style={{
+            top: `${at()?.top ?? 0}px`,
+            left: `${at()?.left ?? 0}px`,
+          }}
+        >
           <p class={styles.menuTitle}>What you are sending</p>
           <For each={PROFILES}>
             {(item) => (

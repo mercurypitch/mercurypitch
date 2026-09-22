@@ -40,7 +40,8 @@ vi.mock('@/stores/jam-store', () => ({
   },
 }))
 
-const { JamInputControl } = await import('@/components/jam/JamInputControl')
+const { JamInputControl, menuPosition } =
+  await import('@/components/jam/JamInputControl')
 
 afterEach(() => {
   cleanup()
@@ -210,5 +211,50 @@ describe('the menu closes', () => {
     openMenu()
     fireEvent.pointerDown(screen.getByRole('menu'))
     expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
+  })
+})
+
+// ── Where the menu opens ─────────────────────────────────────────────
+// The first version opened upward, on a rule borrowed from Guitar Night's
+// bottom toolbar. This control is not in one, so the menu opened off the
+// top of the page and could not be seen at all -- the control worked and
+// looked broken. Geometry is testable, so it is tested.
+
+describe('menuPosition', () => {
+  const VW = 1280
+  const VH = 800
+
+  it('opens downward when there is room, which is the usual case here', () => {
+    // The control sits in a header, not a footer.
+    const at = menuPosition({ top: 60, bottom: 96, left: 400 }, VW, VH)
+    expect(at.top).toBe(102)
+  })
+
+  it('opens upward when the button is near the bottom', () => {
+    // Guitar Night's case, and still the right answer there.
+    const at = menuPosition({ top: 740, bottom: 776, left: 400 }, VW, VH)
+    expect(at.top).toBeLessThan(740)
+  })
+
+  it('never leaves the menu off the top of the page', () => {
+    // The reported bug: invisible, not merely awkward.
+    const at = menuPosition({ top: 10, bottom: 46, left: 400 }, VW, 200)
+    expect(at.top).toBeGreaterThanOrEqual(8)
+  })
+
+  it('keeps the whole menu on screen near the right edge', () => {
+    const at = menuPosition({ top: 60, bottom: 96, left: 1260 }, VW, VH)
+    expect(at.left + 248).toBeLessThanOrEqual(VW)
+  })
+
+  it('does not go negative on a viewport narrower than the menu', () => {
+    // A phone in portrait is narrower than the menu is wide.
+    const at = menuPosition({ top: 60, bottom: 96, left: 4 }, 320, 640)
+    expect(at.left).toBeGreaterThanOrEqual(0)
+  })
+
+  it('follows the button horizontally when there is room', () => {
+    const at = menuPosition({ top: 60, bottom: 96, left: 500 }, VW, VH)
+    expect(at.left).toBe(500)
   })
 })
