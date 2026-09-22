@@ -645,8 +645,8 @@ try {
         animation-play-state: paused !important;
         caret-color: transparent !important;
       }
-      [data-testid="consent-banner"],
-      [data-tour-popover],
+      #mp-consent-root,
+      [class*="walkthroughOverlay"],
       [aria-label="Notifications"],
       div:has(> [title="Drag to reposition"]) { display: none !important; }
     `,
