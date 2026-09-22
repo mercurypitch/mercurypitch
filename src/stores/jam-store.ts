@@ -2420,6 +2420,21 @@ export const [jamMonitorChannel, setJamMonitorChannel] =
     validator: (v): v is number => typeof v === 'number' && v >= 0 && v < 32,
   })
 
+/**
+ * Whether this person has ever deliberately chosen what they send.
+ *
+ * Until they have, the first press of the send button opens the chooser
+ * instead of going live. Sending the wrong source is not a small mistake:
+ * `instrument` transmits with no echo cancellation, so a wrong first
+ * press with speakers on is a feedback loop in a room with other people
+ * in it. Persisted, because asking somebody who has already answered is
+ * how a safeguard becomes a thing people click past without reading.
+ */
+export const [jamSourceConfirmed, setJamSourceConfirmed] =
+  createPersistedSignal<boolean>('mp_jam_source_confirmed', false, {
+    validator: (v): v is boolean => typeof v === 'boolean',
+  })
+
 /** How many channels the live capture exposes. 0 when not checking. */
 export const [jamInputChannelCount, setJamInputChannelCount] = createSignal(0)
 
