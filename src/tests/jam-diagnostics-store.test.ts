@@ -6,7 +6,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { JamDiagnosticsSources } from '@/stores/jam-diagnostics-store'
-import { exportCsv, HISTORY_CAPACITY, jamDiagnostics, recordChannelPing, resetJamDiagnostics, sampleOnce, summariseRun, } from '@/stores/jam-diagnostics-store'
+import { exportCsv, HISTORY_CAPACITY, jamDiagnostics, PING_STALE_MS, recordChannelPing, resetJamDiagnostics, sampleOnce, summariseRun, } from '@/stores/jam-diagnostics-store'
 
 /** A getStats()-shaped report for one peer at a given buffer depth. */
 const statsAt = (opts: {
@@ -178,12 +178,63 @@ describe('recordChannelPing', () => {
   beforeEach(() => resetJamDiagnostics())
 
   it('carries the ping distribution into the peer row', async () => {
-    recordChannelPing('a', 22)
-    recordChannelPing('a', 26)
-    await sampleOnce(sourcesFor(['a'], () => statsAt({})))
+    recordChannelPing('a', 22, 1000)
+    recordChannelPing('a', 26, 1000)
+    await sampleOnce(
+      sourcesFor(['a'], () => statsAt({})),
+      1000,
+    )
     const row = jamDiagnostics()[0]!
     expect(row.channelPingMs).toBe(26)
     expect(row.pingStats!.count).toBe(2)
+  })
+
+  it('stops reporting a ping the channel has stopped answering', async () => {
+    // The budget prefers this over the ICE round trip, so a value that
+    // outlives the channel it came from holds a green verdict over a path
+    // that has degraded -- with the truth visible one row below it.
+    recordChannelPing('a', 26, 1000)
+    const s = sourcesFor(['a'], () => statsAt({}))
+
+    await sampleOnce(s, 1000 + PING_STALE_MS)
+    expect(jamDiagnostics()[0]!.channelPingMs).toBe(26)
+
+    await sampleOnce(s, 1000 + PING_STALE_MS + 1)
+    expect(jamDiagnostics()[0]!.channelPingMs).toBeNull()
+    // The history it contributed to is not a lie and stays.
+    expect(jamDiagnostics()[0]!.pingStats!.count).toBe(1)
+  })
+
+  it('reports it again the moment the channel answers', async () => {
+    recordChannelPing('a', 26, 1000)
+    const s = sourcesFor(['a'], () => statsAt({}))
+    await sampleOnce(s, 99_000)
+    expect(jamDiagnostics()[0]!.channelPingMs).toBeNull()
+
+    recordChannelPing('a', 31, 99_500)
+    await sampleOnce(s, 99_600)
+    expect(jamDiagnostics()[0]!.channelPingMs).toBe(31)
+  })
+})
+
+describe('a round that goes wrong', () => {
+  beforeEach(() => resetJamDiagnostics())
+
+  it('keeps sampling the other peers when one ping throws', async () => {
+    // `RTCDataChannel.send` throws once its buffer is full -- reachable
+    // while a stem transfer saturates the same channel, which is exactly
+    // when somebody has the panel open. This used to abort the round:
+    // every peer after the throwing one lost their sample and the panel
+    // froze on the previous tick with nothing said.
+    const s = sourcesFor(['a', 'b'], () => statsAt({}))
+    const base = s.ping
+    s.ping = (peerId) => {
+      if (peerId === 'a') throw new Error('send queue full')
+      base(peerId)
+    }
+
+    await sampleOnce(s)
+    expect(jamDiagnostics().map((r) => r.peerId)).toEqual(['a', 'b'])
   })
 })
 

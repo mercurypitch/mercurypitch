@@ -81,9 +81,11 @@ const JamRoomPanel: Component = () => {
         </CollapsibleSection>
         {/* Diagnostics sit under the roster, not over the stage: they are
             read between takes, and a panel this dense in the main area
-            would be the loudest thing in the room. Absent entirely in a
-            production build -- the gate is inside the component so the
-            rail never has to know the rule. */}
+            would be the loudest thing in the room. The gate lives inside
+            the component so the rail never has to know the rule.
+            NOT tree-shaken: it is a runtime check on the hostname and the
+            URL, not a build constant, so the panel and its stylesheet are
+            in every bundle and only the RENDER is withheld. */}
         <Show when={jamNetworkPanelAvailable()}>
           <CollapsibleSection
             title="Network diagnostics"

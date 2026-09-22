@@ -116,8 +116,21 @@ export const BROWSER_PLAYOUT_MS = 10
 export const BLUETOOTH_PLAYOUT_MS = 120
 
 export interface JamBudgetInput {
-  /** ICE round trip in ms. One way is half of it. */
+  /** Round trip in ms. One way is half of it. */
   rttMs: number | null
+  /**
+   * Which round trip that is, because they are not the same quantity.
+   *
+   * `ice` is the STUN leg of the candidate pair -- on a relayed path the
+   * leg to the TURN server rather than the route. `channel` is a message
+   * over the DataChannel, which crosses everything a real message crosses
+   * AND both peers' event loops. On a busy phone that turnaround can be
+   * tens of ms, and half of it would be charged to the network here on top
+   * of the capture and playout terms that already account for local
+   * scheduling. Saying which one it is keeps the tooltip honest and stops
+   * the total being read as more precise than it is.
+   */
+  rttSource?: 'ice' | 'channel'
   /** Receiver-side jitter buffer depth, from jam-net-stats. */
   jitterBufferMs: number | null
   /**
@@ -194,7 +207,12 @@ export function buildLatencyBudget(input: JamBudgetInput): JamLatencyBudget {
     label: 'Network, one way',
     ms: input.rttMs === null ? null : input.rttMs / 2,
     source: input.rttMs === null ? 'unknown' : 'measured',
-    note: 'Half the measured ICE round trip. Assumes a symmetric path, which is usually close enough and occasionally very wrong.',
+    note:
+      input.rttMs === null
+        ? 'No round trip measured yet.'
+        : input.rttSource === 'channel'
+          ? "Half the measured DataChannel round trip. That crosses the whole route, unlike ICE on a relayed path -- but it also includes both peers' event-loop turnaround, so on a busy device it reads high. Assumes a symmetric path."
+          : 'Half the measured ICE round trip. On a relayed path this is the leg to the TURN server rather than the whole route, so it reads low. Assumes a symmetric path.',
   })
 
   terms.push({

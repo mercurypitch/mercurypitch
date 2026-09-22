@@ -158,13 +158,56 @@ export function classifyIcePath(
 }
 
 /**
+ * The best guess at the live pair when the transport did not name one.
+ *
+ * Scored nominated > succeeded > "has a round trip at all", and ties
+ * broken on the most recently received packet. The tie-break is the point:
+ * a strict `>` over the first match keeps whichever pair the browser
+ * happened to enumerate first, and after a re-nomination that is typically
+ * the superseded one.
+ */
+function bestCandidatePair(
+  pairs: ReadonlyMap<string, Record<string, unknown>>,
+): Record<string, unknown> | null {
+  let best: Record<string, unknown> | null = null
+  let bestScore = 0
+  let bestSeen = -Infinity
+  for (const report of pairs.values()) {
+    const score =
+      report.nominated === true || report.selected === true
+        ? 3
+        : report.state === 'succeeded'
+          ? 2
+          : num(report.currentRoundTripTime) !== null
+            ? 1
+            : 0
+    if (score === 0) continue
+    const seen = num(report.lastPacketReceivedTimestamp) ?? -Infinity
+    if (score > bestScore || (score === bestScore && seen > bestSeen)) {
+      best = report
+      bestScore = score
+      bestSeen = seen
+    }
+  }
+  return best
+}
+
+/**
  * Reduce a live report to one sample.
  *
- * The candidate pair is chosen by `nominated`/`selected` where the browser
- * says so, and otherwise by "the one with a round trip time on it". Taking
- * the last pair in iteration order -- which is what the old one-shot
- * measurement did -- picks an arbitrary member of a set that includes
- * every pair ICE ever tried, most of them dead.
+ * Picking the pair is the whole job. Taking the last one in iteration
+ * order -- which is what the old one-shot measurement did -- picks an
+ * arbitrary member of a set that includes every pair ICE ever tried, most
+ * of them dead.
+ *
+ * `transport.selectedCandidatePairId` is the browser naming the pair in
+ * use, and it is the only unambiguous answer available. `nominated` is
+ * not: after an ICE restart the superseded pair can still carry the flag
+ * alongside the new one, so a room that just failed over to TURN would go
+ * on reporting the old pair's round trip and a "direct" path for the rest
+ * of the session -- and jam-store halves that number to place every
+ * peer's playhead. Where the transport does not say, the scoring below
+ * falls back to freshness rather than to iteration order.
  */
 export function readNetSample(
   stats: StatsLike,
@@ -172,6 +215,8 @@ export function readNetSample(
 ): JamNetSample {
   const candidates = new Map<string, Record<string, unknown>>()
   const codecs = new Map<string, Record<string, unknown>>()
+  const pairs = new Map<string, Record<string, unknown>>()
+  let selectedPairId: string | null = null
   let pair: Record<string, unknown> | null = null
   let inbound: Record<string, unknown> | null = null
   let outbound: Record<string, unknown> | null = null
@@ -189,27 +234,19 @@ export function readNetSample(
         if (id !== null) codecs.set(id, report)
         return
       }
+      case 'transport': {
+        // Chrome and Firefox both publish this; Safari sometimes does not.
+        // Kept for the resolution after the walk, because report order is
+        // not specified and the transport can arrive after its pairs.
+        const sel = str(report.selectedCandidatePairId)
+        if (sel !== null && sel !== '') selectedPairId = sel
+        return
+      }
       case 'candidate-pair': {
-        // Prefer the pair the browser says is in use. Fall back to any
-        // pair carrying an RTT, and prefer a succeeded one over that.
-        const chosen =
-          report.nominated === true || report.selected === true
-            ? 3
-            : report.state === 'succeeded'
-              ? 2
-              : num(report.currentRoundTripTime) !== null
-                ? 1
-                : 0
-        if (chosen === 0) return
-        const incumbent =
-          pair === null
-            ? -1
-            : pair.nominated === true || pair.selected === true
-              ? 3
-              : pair.state === 'succeeded'
-                ? 2
-                : 1
-        if (chosen > incumbent) pair = report
+        const id = str(report.id)
+        if (id !== null) pairs.set(id, report)
+        // Some browsers mark the live pair on the pair itself instead.
+        if (report.selected === true) selectedPairId ??= id
         return
       }
       case 'inbound-rtp': {
@@ -227,6 +264,10 @@ export function readNetSample(
       default:
     }
   })
+
+  pair =
+    (selectedPairId === null ? null : (pairs.get(selectedPairId) ?? null)) ??
+    bestCandidatePair(pairs)
 
   // TypeScript narrows these to `never` through the forEach closure; the
   // assignments above are real, so re-widen rather than restructure.
@@ -485,20 +526,34 @@ function nearestRank(sorted: readonly number[], q: number): number {
  */
 export function createRingBuffer(capacity: number) {
   const values: number[] = []
+  // `stats()` sorts the whole window and walks it three more times, and
+  // the sampler asks three buffers per peer per second. At a 600-sample
+  // window on a mesh that is tens of sorts a second on the same main
+  // thread as the pitch detector -- on the phone under test, which is the
+  // device the panel exists to measure. The window only changes on push,
+  // so the answer only has to be computed then.
+  let cached: JamRollingStats | null = null
+  let fresh = false
   return {
     push(v: number): void {
       if (!Number.isFinite(v)) return
       values.push(v)
       if (values.length > capacity) values.splice(0, values.length - capacity)
+      fresh = false
     },
     values(): readonly number[] {
       return values
     },
     stats(): JamRollingStats | null {
-      return rollingStats(values)
+      if (!fresh) {
+        cached = rollingStats(values)
+        fresh = true
+      }
+      return cached
     },
     clear(): void {
       values.length = 0
+      fresh = false
     },
   }
 }
