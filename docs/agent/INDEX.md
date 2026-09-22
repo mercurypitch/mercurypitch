@@ -133,7 +133,7 @@ These are the rules that break things when ignored.
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
-| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 9.9k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
+| `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.1k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.3k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.2k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
@@ -192,7 +192,7 @@ These are the rules that break things when ignored.
 
 | File | LOC | What it is |
 |---|---|---|
-| [jam-store.ts](../../src/stores/jam-store.ts) | 3.0k | ── Jam store Reactive state management for P2P jam sessions. |
+| [jam-store.ts](../../src/stores/jam-store.ts) | 3.1k | ── Jam store Reactive state management for P2P jam sessions. |
 | [app-store.ts](../../src/stores/app-store.ts) | 2.3k | App Store — audio-engine singleton, key/scale, and ALL guided-tour content Two unrelated things share this file for historical reasons: 1. |
 | [melody-store.ts](../../src/stores/melody-store.ts) | 1.7k | Melody Store — Melody items and scale data (in-memory) |
 | [uvr-store.ts](../../src/stores/uvr-store.ts) | 1.7k | UVR Store — stem separation: settings, job status, and session records Covers both processing modes: `local` (ONNX in-browser, WebGPU whe... |
@@ -203,8 +203,8 @@ These are the rules that break things when ignored.
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [session-store.ts](../../src/stores/session-store.ts) | 500 | Session Store — Unified session management with localStorage |
 | [ui-store.ts](../../src/stores/ui-store.ts) | 500 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
+| [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 350 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 350 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
-| [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 300 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 300 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
 | [theme-store.ts](../../src/stores/theme-store.ts) | 300 | Theme Store — the nine colour presets and how one gets picked Adding a preset means keeping `THEME_PRESETS`, `THEME_INFO`, `THEME_CHROME_... |
@@ -356,7 +356,7 @@ Grep for the symbol and read the surrounding range instead.
 | [src/App.tsx](../../src/App.tsx) | 4.7k |
 | [workers/db-worker/src/auth.ts](../../workers/db-worker/src/auth.ts) | 3.7k |
 | [src/components/UvrPanel.tsx](../../src/components/UvrPanel.tsx) | 3.4k |
-| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.0k |
+| [src/stores/jam-store.ts](../../src/stores/jam-store.ts) | 3.1k |
 | [src/features/voice-history/VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 2.9k |
 | [src/components/PitchTestingTab.tsx](../../src/components/PitchTestingTab.tsx) | 2.8k |
 | [src/features/guitar-night/GuitarNightApp.tsx](../../src/features/guitar-night/GuitarNightApp.tsx) | 2.8k |
@@ -408,11 +408,11 @@ Grep for the symbol and read the surrounding range instead.
 | [src/features/guitar-night/GuitarNightScoreDebug.tsx](../../src/features/guitar-night/GuitarNightScoreDebug.tsx) | 1.3k |
 | [src/features/guitar-practice/useGuitarPracticeController.ts](../../src/features/guitar-practice/useGuitarPracticeController.ts) | 1.3k |
 | [src/features/progress/model.ts](../../src/features/progress/model.ts) | 1.3k |
+| [src/lib/jam/service.ts](../../src/lib/jam/service.ts) | 1.3k |
 | [src/pages/GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k |
 | [workers/db-worker/src/billing.ts](../../workers/db-worker/src/billing.ts) | 1.3k |
 | [src/components/KaraokeMobileStage.tsx](../../src/components/KaraokeMobileStage.tsx) | 1.2k |
 | [src/components/ShazamListen.tsx](../../src/components/ShazamListen.tsx) | 1.2k |
-| [src/lib/jam/service.ts](../../src/lib/jam/service.ts) | 1.2k |
 <!-- END:GENERATED heavy-files -->
 
 CSS is the other trap: `src/styles/uvr.css`, `vocal-analysis.css`,
