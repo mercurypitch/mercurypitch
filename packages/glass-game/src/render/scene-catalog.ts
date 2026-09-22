@@ -5,6 +5,8 @@ import { CLOUDWAY_SKY_ASSET_ID, isCloudwayLevel } from './cloudway-scene'
 
 export interface MuseumSceneRecipe {
   skyTexture?: string
+  /** Illustration plates must not wrap across a sphere's longitude seam. */
+  skyProjection?: 'backdrop'
   environment?: string
   reflectionProbe?: Vec3
   atmosphereOrigin?: Vec3
@@ -237,6 +239,7 @@ export function getMuseumSceneRecipe(
   const origin = centre(presentation.worldBounds)
   return {
     skyTexture: isCloudwayLevel(level) ? CLOUDWAY_SKY_ASSET_ID : 'museum-sky',
+    skyProjection: isCloudwayLevel(level) ? 'backdrop' : undefined,
     environment: 'museum-environment-v2',
     reflectionProbe: {
       x: level.spawn.position.x,

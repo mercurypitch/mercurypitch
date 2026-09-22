@@ -137,6 +137,9 @@ export function createAtmosphere(
       sky.material.map?.dispose()
       sky.material.map = texture
       sky.material.needsUpdate = true
+      // Keep ownership on the mesh for disposal even when the scene displays
+      // this illustration as a seamless, aspect-correct screen backdrop.
+      sky.visible = recipe.skyProjection !== 'backdrop'
     },
   }
 }

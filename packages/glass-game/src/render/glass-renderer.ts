@@ -2,18 +2,19 @@
 // Glass adventure renderer — a disposable, host-neutral Three.js museum scene.
 // ============================================================
 
-import type { Material } from 'three'
-import { ACESFilmicToneMapping, Box3, DirectionalLight, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
+import type { Material, Texture } from 'three'
+import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition, Vec3 } from '../contracts'
 import type { LoadingProgress } from '../loading-progress'
 import { createLoadingProgressLedger } from '../loading-progress'
 import { loadMuseumAssets } from './asset-kit'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { createAtmosphere } from './atmosphere'
+import { installBackdropFog } from './backdrop-fog'
 import type { ChallengeCameraMetrics } from './camera'
 import { createAdventureCamera } from './camera'
 import { getBreakableRenderRecipe, getPlatformRenderRecipe } from './catalog'
-import { CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_DENSITY, isCloudwayLevel, } from './cloudway-scene'
+import { CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_FAR, CLOUDWAY_FOG_NEAR, isCloudwayLevel, } from './cloudway-scene'
 import { createContactShadow } from './contact-shadow'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
@@ -23,6 +24,7 @@ import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
 import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
+import { fitSkyBackdrop } from './sky-backdrop'
 import { createVessel } from './vessels'
 
 export interface GlassRendererOptions {
@@ -159,7 +161,7 @@ function createGlassRendererInstance(
   })
   const scene = new Scene()
   scene.fog = isCloudwayLevel(level)
-    ? new FogExp2(CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_DENSITY)
+    ? new Fog(CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_NEAR, CLOUDWAY_FOG_FAR)
     : new FogExp2(0x59899e, 0.009)
   const camera = createAdventureCamera(level, {
     reducedMotion: options.reducedMotion,
@@ -260,11 +262,13 @@ function createGlassRendererInstance(
     renderer.domElement.removeEventListener('webglcontextlost', onContextLost),
   )
   let latest: GameSnapshot | undefined
+  let skyBackdrop: Texture | undefined
   const resize = () => {
     if (disposed) return
     const width = Math.max(1, container.clientWidth)
     const height = Math.max(1, container.clientHeight)
     renderer.setSize(width, height, false)
+    if (skyBackdrop) fitSkyBackdrop(skyBackdrop, width, height)
     camera.camera.aspect = width / height
     camera.camera.updateProjectionMatrix()
   }
@@ -299,7 +303,14 @@ function createGlassRendererInstance(
     vessels,
     museum,
     materials,
-    atmosphere.setSky,
+    (texture) => {
+      atmosphere.setSky(texture)
+      if (sceneRecipe.skyProjection === 'backdrop') {
+        skyBackdrop = texture
+        fitSkyBackdrop(texture, container.clientWidth, container.clientHeight)
+        scene.background = texture
+      }
+    },
     () => disposed,
     options.onAssetError,
     (taskId) => loading.complete(taskId),
@@ -324,7 +335,10 @@ function createGlassRendererInstance(
   })
   const ready = Promise.all([mercReady, assetsReady, environmentReady])
     .then(() => {
-      if (disposed || contextLost || !sceneRecipe.reflectionProbe) return
+      if (disposed || contextLost) return
+      if (isCloudwayLevel(level) && skyBackdrop !== undefined)
+        installBackdropFog(scene, skyBackdrop)
+      if (!sceneRecipe.reflectionProbe) return
       const position = new Vector3().copy(sceneRecipe.reflectionProbe)
       try {
         environment.capture(
