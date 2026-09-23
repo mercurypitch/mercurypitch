@@ -356,7 +356,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // The run is over by a decision, so nothing about it can "run out" any
     // more — and the next run has to be seen running again before it can.
     // Without this the latch survived a Stop, and the first frames of the
-    // run after it read (live, stopped) with the latch already set.
+    // run after it read (live, stopped) with the latch already set — which
+    // ends the next take the moment it starts. Load-bearing, not a belt over
+    // the settle: `SingRoomStage.test.tsx` ("Stop, then the next melody run")
+    // goes red without this line (review N1).
     runOut.cancel()
     dispatchSingRoom({ type: 'stop', hasTake: endTake() })
   }

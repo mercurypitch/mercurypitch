@@ -18,6 +18,7 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
+import { nativeRunControls } from '@/stores/native-shell-store'
 import type { MelodyItem, NoteName } from '@/types'
 import { dispatchSingRoom, singRoomContext } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
@@ -242,6 +243,34 @@ describe('the room when the melody runs out', () => {
 
     expect(room.picker.trackModalSong()).toBeNull()
     expect(room.picker.isModalOpen()).toBe(false)
+  })
+})
+
+describe('Stop, then the next melody run', () => {
+  it('lets the next run start before its transport reports', async () => {
+    // Review N1: `handleStop` cancels the run-out watch, and deleting that
+    // line left the whole suite green. This is the sequence it is for. The
+    // first run is seen running, so the watch is latched; Stop ends it; the
+    // next `melody-play` puts the room in `live` a frame before the app's
+    // transport says anything, which is the (live, stopped) pair a finished
+    // melody also reads as. With the latch left set, that frame ends the new
+    // take the moment it was asked for.
+    const room = mountRoom()
+    startMelodyRun(room)
+    const controls = nativeRunControls()
+    if (controls === null) throw new Error('the room registered no controls')
+    controls.stop()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(singRoomContext().state).not.toBe('live')
+
+    // The next run, as the song sheet starts one — minus the transport,
+    // which has not reported yet.
+    dispatchSingRoom({ type: 'melody-play' })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(singRoomContext().state).toBe('live')
   })
 })
 
