@@ -43,7 +43,7 @@ import { dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rect
 import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
 import type { DoorKey } from './alley-plate'
-import { ALLEY_PLATE, DOORS, doorSpec, isEnterable } from './alley-plate'
+import { ALLEY_PLATE, DOORS, doorSpec, isEnterable, plateSourceFor, } from './alley-plate'
 import { markWelcomeSeen, welcomeSeen } from './alley-welcome'
 
 /** The ambient's fades (S4 §2): in over 600 ms, out over 520 from the open. */
@@ -122,13 +122,6 @@ function ambient(): AlleyAmbient {
   return ambientInstance
 }
 
-/** The 2x plate from DPR 1.5 up: the rule `publicBackgroundUrl` uses. */
-function plateSource(): string {
-  return (window.devicePixelRatio || 1) >= 1.5
-    ? ALLEY_PLATE.hi
-    : ALLEY_PLATE.src
-}
-
 export const RoomsAlley: Component = () => {
   let root: HTMLDivElement | undefined
   let panel: HTMLDivElement | undefined
@@ -152,7 +145,10 @@ export const RoomsAlley: Component = () => {
   )
   const layoutOf = (key: DoorKey): DoorLayout =>
     doors().find((door) => door.key === key) ?? doors()[0]
-  const plate = plateSource()
+  // The 1x file unless it would be upscaled on this screen.
+  const plate = createMemo(() =>
+    plateSourceFor(size().w, size().h, window.devicePixelRatio || 1),
+  )
 
   const reduced = (): boolean =>
     root?.closest('.mp-shell')?.getAttribute('data-reduced') === 'on' ||
@@ -253,7 +249,7 @@ export const RoomsAlley: Component = () => {
       height: size().h,
       reduced: reduced(),
       video: clip,
-      plateSrc: plate,
+      plateSrc: plate(),
       platePosition: ALLEY_PLATE.position,
       roomBackground: ROOM_BACKGROUND[key] ?? '[data-room-background]',
       ambientSilent,
@@ -407,7 +403,7 @@ export const RoomsAlley: Component = () => {
     >
       <div class="mp-alley__plate" aria-hidden="true">
         <img
-          src={plate}
+          src={plate()}
           alt=""
           decoding="async"
           style={{ 'object-position': ALLEY_PLATE.position }}
@@ -484,7 +480,7 @@ export const RoomsAlley: Component = () => {
                   style={{ 'clip-path': quadCss(door()) }}
                 >
                   <img
-                    src={plate}
+                    src={plate()}
                     alt=""
                     style={{ 'object-position': ALLEY_PLATE.position }}
                   />

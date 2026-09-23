@@ -50,12 +50,28 @@ export interface DoorSpec {
 export const ALLEY_PLATE = {
   /** 1707 x 2560 — enough for a 393 pt screen at DPR 3's visible window. */
   src: '/rooms/alley/night-rooms-hero.webp',
-  /** 2560 x 3840, from DPR 1.5 up: the rule `publicBackgroundUrl` uses. */
+  /** 2560 x 3840, only where the 1x file would be upscaled (`plateSourceFor`). */
   hi: '/rooms/alley/night-rooms-hero-2x.webp',
   width: 1024,
   height: 1536,
   position: '72% center',
 } as const
+
+/** Device pixels per layout unit the 1x file carries: 1707 / 1024. */
+export const PLATE_1X_DENSITY = 1.667
+
+/**
+ * The plate file for a screen. The layout is 1024 x 1536 units, cover-fit, so
+ * a unit is drawn at `max(w / 1024, h / 1536)` CSS px and that times the DPR
+ * device px. The 1x file has 1.667 px per unit: past that it would be
+ * upscaled and the 2x is worth its 1.3 MB; at or under it, the 2x only costs
+ * decode time and memory. A 393 x 852 phone at DPR 3 lands at 1.664 and
+ * keeps the 1x; a 430 x 932 at DPR 3 is at 1.82 and takes the 2x.
+ */
+export function plateSourceFor(w: number, h: number, dpr: number): string {
+  const scale = Math.max(w / ALLEY_PLATE.width, h / ALLEY_PLATE.height)
+  return scale * dpr > PLATE_1X_DENSITY ? ALLEY_PLATE.hi : ALLEY_PLATE.src
+}
 
 export const DOOR_CLIP_SING =
   '/rooms/alley/retro-analog-studio-portrait-loop.mp4'

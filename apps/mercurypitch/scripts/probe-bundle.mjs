@@ -2673,6 +2673,33 @@ async function waitPhase(page, phase, door, what) {
     })
 }
 
+/**
+ * At rest the alley composites one picture: no door carries a transform, the
+ * dim is not visible, and the plate is the 1x file at DPR 2 (S4 fix F5).
+ * Null when all of that holds, otherwise what did not.
+ */
+async function restLayers(page) {
+  return page.evaluate(() => {
+    const doors = [...document.querySelectorAll('.mp-alley__door')]
+    const moved = doors
+      .filter((d) => getComputedStyle(d).transform !== 'none')
+      .map((d) => d.dataset.door)
+    const dim = getComputedStyle(
+      document.querySelector('.mp-alley__dim'),
+    ).visibility
+    const plate = document
+      .querySelector('[data-testid="alley-plate"]')
+      .getAttribute('src')
+    const problems = []
+    if (doors.length !== 6) problems.push(`${doors.length} doors`)
+    if (moved.length > 0) problems.push(`transformed at rest: ${moved}`)
+    if (dim !== 'hidden') problems.push(`dim is ${dim}`)
+    if (!plate.endsWith('/night-rooms-hero.webp'))
+      problems.push(`plate ${plate}`)
+    return problems.length === 0 ? null : problems.join(', ')
+  })
+}
+
 /** Nothing on the page is making a sound or moving a picture. */
 async function mediaPlaying(page) {
   return page.evaluate(
@@ -2789,9 +2816,11 @@ async function walkAlley(browser, args, frame) {
     if (quiet.sources !== 0 || (await mediaPlaying(page)) !== 0) {
       throw new Error('first run: something is playing on arrival')
     }
+    const atRest = await restLayers(page)
+    if (atRest !== null) throw new Error(`first run: ${atRest}`)
     await shoot(page, ctx, 'alley-first-run')
     steps.push(
-      `alley first run: headline, six labelled doors, plate at 72%, silent; ${note}`,
+      `alley first run: headline, six labelled doors, plate at 72%, silent, 1x plate, no door transformed, dim hidden; ${note}`,
     )
 
     // ── Select Sing ───────────────────────────────────────────
@@ -2930,8 +2959,13 @@ async function walkAlley(browser, args, frame) {
       ],
       kept: ['[data-testid="alley-title"]', ...doorKeys],
     })
+    await page.waitForTimeout(500)
+    const settled = await restLayers(page)
+    if (settled !== null) throw new Error(`back: ${settled}`)
     await shoot(page, ctx, 'alley-return')
-    steps.push(`alley back: the alley at rest, no headline, flag set; ${note}`)
+    steps.push(
+      `alley back: the alley at rest, no headline, flag set, doors untransformed once settled; ${note}`,
+    )
 
     // ── Ear Lab at x = 8 ──────────────────────────────────────
     await tapDoor(page, 'ear', 8)

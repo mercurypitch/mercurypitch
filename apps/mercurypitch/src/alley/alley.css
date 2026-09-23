@@ -178,7 +178,10 @@
   inset: 0;
   z-index: 1;
   transform-origin: var(--cx) var(--cy);
-  transform: perspective(var(--alley-persp)) translateZ(0px);
+  /* None at rest, not a zero lift: six full-screen layers each promoted to
+     the compositor for a transform that does nothing. The lift interpolates
+     from none as it does from zero. */
+  transform: none;
   transition: transform var(--alley-sel) var(--alley-ease);
 }
 
@@ -333,13 +336,22 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  transition: opacity var(--alley-sel) var(--alley-ease);
+  /* Hidden at rest, so a full-screen layer is not composited at opacity 0;
+     it goes hidden only once its fade out has finished. */
+  visibility: hidden;
+  transition:
+    opacity var(--alley-sel) var(--alley-ease),
+    visibility 0s linear var(--alley-sel);
 }
 
 .mp-alley[data-phase='selected'] .mp-alley__dim,
 .mp-alley[data-phase='alive'] .mp-alley__dim,
 .mp-alley[data-phase='opening'] .mp-alley__dim {
   opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--alley-sel) var(--alley-ease),
+    visibility 0s linear 0s;
 }
 
 /* ---------- the tap surface, and the doors a keyboard reaches ---------- */
