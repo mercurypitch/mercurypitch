@@ -268,7 +268,8 @@ export const RoomsAlley: Component = () => {
       if (root === undefined) return
       const w = root.clientWidth
       const h = root.clientHeight
-      if (w > 0 && h > 0) setSize({ w, h })
+      const now = untrack(size)
+      if (w > 0 && h > 0 && (w !== now.w || h !== now.h)) setSize({ w, h })
     }
     measure()
     // iPad and Android rotate; the doors are recomputed, not assumed.
@@ -382,38 +383,40 @@ export const RoomsAlley: Component = () => {
       </div>
 
       <div class="mp-alley__stage" aria-hidden="true">
-        <For each={doors()}>
-          {(door) => {
-            const spec = doorSpec(door.key)
+        {/* Over the static specs, not the layout: a resize must move the
+            doors, not rebuild them — a rebuilt Sing door is a new <video>. */}
+        <For each={DOORS}>
+          {(spec) => {
+            const door = (): DoorLayout => layoutOf(spec.key)
             const artW = (): number =>
-              Math.max(1, Math.round(door.x1 - door.x0))
+              Math.max(1, Math.round(door().x1 - door().x0))
             const artH = (): number =>
-              Math.max(1, Math.round(door.y1 - door.y0))
+              Math.max(1, Math.round(door().y1 - door().y0))
             return (
               <div
                 class="mp-alley__door"
-                data-door={door.key}
+                data-door={spec.key}
                 data-locked={spec.tab === null ? 'yes' : 'no'}
                 classList={{
-                  'is-lifted': isLifted(alley(), door.key),
-                  'is-selected': selected() === door.key,
-                  'is-alive': aliveDoor() === door.key,
+                  'is-lifted': isLifted(alley(), spec.key),
+                  'is-selected': selected() === spec.key,
+                  'is-alive': aliveDoor() === spec.key,
                   'is-settling':
-                    alley().phase === 'settling' && alley().door === door.key,
+                    alley().phase === 'settling' && alley().door === spec.key,
                   'is-drifting': spec.drift,
                 }}
                 style={{
-                  '--cx': `${door.cx}px`,
-                  '--cy': `${door.cy}px`,
-                  '--sx': `${Math.round((door.quad[2][0] + door.quad[3][0]) / 2)}px`,
-                  '--sy': `${Math.round((door.quad[2][1] + door.quad[3][1]) / 2)}px`,
-                  '--sw': `${Math.round((door.x1 - door.x0) * 2.4)}px`,
+                  '--cx': `${door().cx}px`,
+                  '--cy': `${door().cy}px`,
+                  '--sx': `${Math.round((door().quad[2][0] + door().quad[3][0]) / 2)}px`,
+                  '--sy': `${Math.round((door().quad[2][1] + door().quad[3][1]) / 2)}px`,
+                  '--sw': `${Math.round((door().x1 - door().x0) * 2.4)}px`,
                   '--spill': spec.spill,
                 }}
               >
                 <div
                   class="mp-alley__paint"
-                  style={{ 'clip-path': quadCss(door) }}
+                  style={{ 'clip-path': quadCss(door()) }}
                 >
                   <img
                     src={plate}
@@ -429,7 +432,7 @@ export const RoomsAlley: Component = () => {
                         width: `${artW()}px`,
                         height: `${artH()}px`,
                         transform: matrix3d(
-                          rectToQuad(artW(), artH(), door.quad),
+                          rectToQuad(artW(), artH(), door().quad),
                         ),
                       }}
                     >
@@ -456,8 +459,8 @@ export const RoomsAlley: Component = () => {
                   class="mp-alley__rim"
                   viewBox={`0 0 ${size().w} ${size().h}`}
                 >
-                  <polygon class="mp-alley__rim-halo" points={door.points} />
-                  <polygon class="mp-alley__rim-line" points={door.points} />
+                  <polygon class="mp-alley__rim-halo" points={door().points} />
+                  <polygon class="mp-alley__rim-line" points={door().points} />
                 </svg>
                 <div class="mp-alley__spill" />
               </div>
@@ -496,28 +499,31 @@ export const RoomsAlley: Component = () => {
         role="group"
         aria-label={ALLEY_COPY.doorsLabel}
       >
-        <For each={doors()}>
-          {(door) => (
-            <button
-              type="button"
-              class="mp-alley__key"
-              data-testid={`alley-door-${door.key}`}
-              data-door={door.key}
-              aria-label={doorLabel(
-                door.key,
-                roomName(doorSpec(door.key).roomId),
-                isEnterable(door.key),
-              )}
-              aria-pressed={selected() === door.key}
-              style={{
-                left: `${door.x0}px`,
-                top: `${door.y0}px`,
-                width: `${Math.round((door.x1 - door.x0) * 10) / 10}px`,
-                height: `${Math.round((door.y1 - door.y0) * 10) / 10}px`,
-              }}
-              onClick={() => tapDoor(door.key)}
-            />
-          )}
+        <For each={DOORS}>
+          {(spec) => {
+            const door = (): DoorLayout => layoutOf(spec.key)
+            return (
+              <button
+                type="button"
+                class="mp-alley__key"
+                data-testid={`alley-door-${spec.key}`}
+                data-door={spec.key}
+                aria-label={doorLabel(
+                  spec.key,
+                  roomName(doorSpec(spec.key).roomId),
+                  isEnterable(spec.key),
+                )}
+                aria-pressed={selected() === spec.key}
+                style={{
+                  left: `${door().x0}px`,
+                  top: `${door().y0}px`,
+                  width: `${Math.round((door().x1 - door().x0) * 10) / 10}px`,
+                  height: `${Math.round((door().y1 - door().y0) * 10) / 10}px`,
+                }}
+                onClick={() => tapDoor(spec.key)}
+              />
+            )
+          }}
         </For>
       </div>
 

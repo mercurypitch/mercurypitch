@@ -2638,10 +2638,16 @@ async function goneKept(page, where, { gone = [], kept = [] }) {
 
 /** The middle of a door, from its key button (sized to the quad's box). */
 async function doorCentre(page, key) {
-  const box = await page
-    .locator(`[data-testid="alley-door-${key}"]`)
-    .boundingBox()
-  if (box === null) throw new Error(`door ${key} has no box`)
+  const door = page.locator(`[data-testid="alley-door-${key}"]`)
+  await door.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  const box = await door.boundingBox()
+  if (box === null) {
+    const where = await page.evaluate(() => ({
+      hash: window.location.hash,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    throw new Error(`door ${key} has no box (${JSON.stringify(where)})`)
+  }
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
 
