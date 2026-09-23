@@ -239,6 +239,47 @@ export const SPEED_SPOKEN_PHRASES = [
   'speed <n>',
 ]
 
+// The karaoke key, in semitones. Two words at least: voice control listens
+// while the song plays, and a bare "higher" is in half the choruses ever
+// written. "keys up" stays the piano's.
+export const KEY_UP_PHRASES = [
+  'key up',
+  'raise the key',
+  'raise key',
+  'turn the key up',
+  'key higher',
+  'higher key',
+  'transpose up',
+  'up a semitone',
+  'semitone up',
+]
+
+export const KEY_DOWN_PHRASES = [
+  'key down',
+  'lower the key',
+  'lower key',
+  'turn the key down',
+  'key lower',
+  'transpose down',
+  'down a semitone',
+  'semitone down',
+]
+
+export const KEY_ORIGINAL_PHRASES = [
+  'original key',
+  'back to the original key',
+  'the original key',
+  'reset the key',
+  'reset key',
+  'normal key',
+]
+
+export const FIND_MY_KEY_PHRASES = [
+  'find my key',
+  'find the key',
+  'fit my voice',
+]
+
 // ── Stem naming ────────────────────────────────────────────────
 // Shared by every surface that mixes stems (karaoke mixer, guitar night):
 // one spoken vocabulary per stem, homophones included.

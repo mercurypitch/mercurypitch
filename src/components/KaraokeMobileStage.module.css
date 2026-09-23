@@ -700,6 +700,70 @@
   --pill-base-color: rgba(244, 236, 255, 0.72);
 }
 
+/* The singer's key: the right slot's one control, the same glass circle as
+   the mic opposite. It opens the key sheet; the stepper lives there. */
+.keyBtn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: rgba(244, 236, 255, 0.7);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.keyBtn:active {
+  transform: scale(0.92);
+}
+
+/* Moved off the song's own key: lit, like the mic when it is live. */
+.keyBtnOn {
+  background: rgba(201, 162, 255, 0.92);
+  color: #1c0f2e;
+}
+
+.keyBtnCaption {
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.keyBtnValue {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.keySheetBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 4px 12px;
+  color: #f4ecff;
+}
+
+.keySheetNote {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(244, 236, 255, 0.7);
+}
+
 /* Below about 560px the mirrored layout stops being possible: two 44px
    controls on each side plus the 226px transport needs 498px of the bar's
    354px. So the pair keeps its natural width, the empty slot absorbs what is
@@ -722,6 +786,27 @@
   .transportSpacer {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  /* The key's slot mirrors the pair as far as the bar allows, so play stays
+     near centre (8px off on a 390px phone); on the narrowest phone the slot
+     gives way, down to the key itself. */
+  .transportKeySlot {
+    flex: 0 1 98px;
+    min-width: 44px;
+  }
+}
+
+/* With the key in the right slot there is no empty slot left to absorb the
+   difference, so a phone's bar buys it back from the gaps: the pair, the
+   transport and the key then take 320px of the 324px a 360px phone has. */
+@media (max-width: 400px) {
+  .transportWithKey .transportSide {
+    gap: 6px;
+  }
+
+  .transportWithKey .transportMain {
+    gap: 10px;
   }
 }
 
