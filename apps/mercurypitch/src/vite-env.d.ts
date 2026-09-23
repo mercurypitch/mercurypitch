@@ -31,4 +31,7 @@ interface ImportMetaEnv {
   /** Web OAuth client id — Android's Credential Manager, and the audience
    *  the db-worker verifies every Google token against. */
   readonly VITE_GOOGLE_WEB_CLIENT_ID?: string
+  /** The db-worker, resolved by api-base.mjs: the dev one unless the build
+   *  was switched to production on purpose. Empty in a local-only build. */
+  readonly VITE_API_BASE_URL?: string
 }

@@ -145,6 +145,16 @@ on:
         required: false
         type: string
         default: 'release-testing'
+      web-build-env:
+        description: >-
+          Extra NAME=value lines, one per line, exported to every later step
+          of each job that builds the web bundle -- the build, and the
+          verify-assets check that has to agree with it. For a switch one app
+          needs and the others do not (Mercury Pitch: which db-worker it
+          compiles in). Empty means nothing is exported and no step runs.
+        required: false
+        type: string
+        default: ''
       verify-assets:
         description: >-
           Optional shell run after each web build to assert the bundle carries
@@ -411,6 +421,26 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # The caller's own build switches (the web-build-env input), into
+      # $GITHUB_ENV so the build AND the check that reads the build see the
+      # same values. Nothing runs for a caller that passes none.
+      - name: Export the caller's build environment
+        if: inputs.web-build-env != ''
+        shell: bash
+        env:
+          WEB_BUILD_ENV: ${{ inputs.web-build-env }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r line; do
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+            if [[ ! "$line" =~ ^[A-Z][A-Z0-9_]*=[^[:cntrl:]]*$ ]]; then
+              echo "web-build-env: not a NAME=value line: $line" >&2
+              exit 1
+            fi
+            echo "$line" >> "$GITHUB_ENV"
+            echo "build env: $line"
+          done <<< "$WEB_BUILD_ENV"
 
       - name: Resolve release version
         id: version
@@ -729,6 +759,26 @@ jobs:
         if: env.HAS_ASC == 'true'
         run: pnpm install --frozen-lockfile
 
+      # The caller's own build switches (the web-build-env input), into
+      # $GITHUB_ENV so the build AND the check that reads the build see the
+      # same values. Nothing runs for a caller that passes none.
+      - name: Export the caller's build environment
+        if: inputs.web-build-env != '' && env.HAS_ASC == 'true'
+        shell: bash
+        env:
+          WEB_BUILD_ENV: ${{ inputs.web-build-env }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r line; do
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+            if [[ ! "$line" =~ ^[A-Z][A-Z0-9_]*=[^[:cntrl:]]*$ ]]; then
+              echo "web-build-env: not a NAME=value line: $line" >&2
+              exit 1
+            fi
+            echo "$line" >> "$GITHUB_ENV"
+            echo "build env: $line"
+          done <<< "$WEB_BUILD_ENV"
+
       # Main/PR builds default to a clearly labelled, internal-only app mock.
       # Select `store` for real Apple sandbox testing; release tags force it.
       - name: Build web assets
@@ -993,6 +1043,26 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # The caller's own build switches (the web-build-env input), into
+      # $GITHUB_ENV so the build AND the check that reads the build see the
+      # same values. Nothing runs for a caller that passes none.
+      - name: Export the caller's build environment
+        if: inputs.web-build-env != ''
+        shell: bash
+        env:
+          WEB_BUILD_ENV: ${{ inputs.web-build-env }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r line; do
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+            if [[ ! "$line" =~ ^[A-Z][A-Z0-9_]*=[^[:cntrl:]]*$ ]]; then
+              echo "web-build-env: not a NAME=value line: $line" >&2
+              exit 1
+            fi
+            echo "$line" >> "$GITHUB_ENV"
+            echo "build env: $line"
+          done <<< "$WEB_BUILD_ENV"
 
       # Same reasoning as the Android job: the simulator build is for testing,
       # so non-tag builds get Test Store. Tags use the real key throughout.

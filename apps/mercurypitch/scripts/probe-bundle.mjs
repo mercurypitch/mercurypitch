@@ -54,7 +54,8 @@ const ROOM_NAMES = (() => {
     'utf8',
   )
   const block = source.match(/ROOM_NAMES[^=]*=\s*\{([^}]*)\}/u)
-  if (block === null) throw new Error('probe-bundle: no ROOM_NAMES in room-names.ts')
+  if (block === null)
+    throw new Error('probe-bundle: no ROOM_NAMES in room-names.ts')
   const names = {}
   for (const [, id, name] of block[1].matchAll(
     /^\s*'?([\w-]+)'?:\s*'([^']+)',?\s*$/gmu,
@@ -158,6 +159,22 @@ async function repaintRate(page, ms = 1000) {
   await page.waitForTimeout(ms)
   const after = await page.evaluate(() => window.__mpClears ?? 0)
   return ((after - before) * 1000) / ms
+}
+
+/**
+ * The db-worker is not part of what this walks, so no request reaches one.
+ *
+ * The bundle compiles the dev worker in (apps/mercurypitch/api-base.mjs), and
+ * a walk that keeps takes would otherwise provision an anonymous identity on
+ * it every run and leave rows behind. Refused at the network, so the app sees
+ * what it sees offline — which is also the state a first run on a phone with
+ * no signal has to survive.
+ */
+const API_HOSTS = /^https:\/\/api(?:-dev)?\.mercurypitch\.com\//u
+
+async function isolate(context) {
+  await context.route(API_HOSTS, (route) => route.abort('internetdisconnected'))
+  return context
 }
 
 const RAIL_ITEMS = ['rooms', 'stage', 'ear', 'progress']
@@ -1798,7 +1815,8 @@ async function walkRound2(page, ctx, steps) {
       }
     })
   })
-  if (reach === null) throw new Error('no sheet panel to measure the grabber in')
+  if (reach === null)
+    throw new Error('no sheet panel to measure the grabber in')
   const missed = reach.filter((point) => !point.grabber)
   if (missed.length > 0) {
     throw new Error(
@@ -2206,7 +2224,9 @@ async function walkRound2(page, ctx, steps) {
     )
   }
   if (real.nameClipped) {
-    throw new Error(`the room's real name "${real.name}" is clipped in the pill`)
+    throw new Error(
+      `the room's real name "${real.name}" is clipped in the pill`,
+    )
   }
   if (real.stateClipped) throw new Error('the state word is clipped')
   if (real.control.width < 44 || real.control.height < 44) {
@@ -2240,7 +2260,8 @@ async function walkRound2(page, ctx, steps) {
       const clipped = []
       for (const [id, name] of list) {
         node.textContent = name
-        if (node.scrollWidth > node.clientWidth + 1) clipped.push(`${id} "${name}"`)
+        if (node.scrollWidth > node.clientWidth + 1)
+          clipped.push(`${id} "${name}"`)
       }
       node.textContent = original
       return clipped
@@ -2282,7 +2303,9 @@ async function walkRound2(page, ctx, steps) {
       return out
     }, Object.values(ROOM_NAMES).join(' '))
   if (!squeezed.nameClipped) {
-    throw new Error('stylesheet: an over-long name did not overflow, so nothing was tested')
+    throw new Error(
+      'stylesheet: an over-long name did not overflow, so nothing was tested',
+    )
   }
   if (squeezed.stateClipped) {
     throw new Error('stylesheet: an over-long name clips the state word')
@@ -2330,14 +2353,16 @@ async function walkRound2(page, ctx, steps) {
  */
 async function walkDenied(browser, args, frame) {
   const ctx = { ...args, frame }
-  const context = await browser.newContext({
-    viewport: frame,
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-    colorScheme: args.theme,
-    permissions: [],
-  })
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+      permissions: [],
+    }),
+  )
   const page = await context.newPage()
   await page.addInitScript(seed, args.theme)
   await page.addInitScript(() => {
@@ -2426,14 +2451,16 @@ async function walkSuspended(args, frame) {
   const ctx = { ...args, frame }
   const steps = []
   try {
-    const context = await browser.newContext({
-      viewport: frame,
-      deviceScaleFactor: 2,
-      isMobile: true,
-      hasTouch: true,
-      colorScheme: args.theme,
-      permissions: ['microphone'],
-    })
+    const context = await isolate(
+      await browser.newContext({
+        viewport: frame,
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
+        colorScheme: args.theme,
+        permissions: ['microphone'],
+      }),
+    )
     const page = await context.newPage()
     await page.addInitScript(seed, args.theme)
     await page.addInitScript(() => {
@@ -2613,14 +2640,16 @@ async function walkBackRoot(page) {
 /** One frame's whole walk, in its own context so nothing carries over. */
 async function walkFrame(browser, args, frame) {
   const ctx = { ...args, frame }
-  const context = await browser.newContext({
-    viewport: frame,
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-    colorScheme: args.theme,
-    permissions: ['microphone'],
-  })
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+      permissions: ['microphone'],
+    }),
+  )
 
   const failures = []
   context.on('page', (page) => {

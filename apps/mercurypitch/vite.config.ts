@@ -4,6 +4,9 @@ import { assertPurchaseBuildSafe } from '@irchiinnuss/purchase-kit'
 // @ts-expect-error -- a plain .mjs helper with no types, on purpose: it runs
 // under bare node for a one-off sync as well as inside this config.
 import { NATIVE_PUBLIC_DIR, syncNativeAssets, } from './scripts/sync-native-assets.mjs'
+// @ts-expect-error -- the same kind of plain .mjs helper, shared with
+// scripts/assert-bundle.mjs, which must stay dependency-free.
+import { readEnvFiles, resolveApiBase } from './api-base.mjs'
 import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
 
@@ -71,6 +74,20 @@ export default defineConfig(({ mode, command }) => {
         ...process.env,
       },
       (process.env.GITHUB_REF ?? '').startsWith('refs/tags/mp-v'),
+    )
+  }
+
+  // Which db-worker the bundle talks to: the dev one unless the process says
+  // MERCURYPITCH_API_TARGET=production on purpose (api-base.mjs says why).
+  // Compiled in through `define` so the switch wins over the env files, and
+  // printed on every build so a log answers the question without the binary.
+  const api = resolveApiBase(
+    readEnvFiles(fileURLToPath(new URL('.', import.meta.url)), mode),
+    process.env,
+  ) as { base: string; target: string; source: string }
+  if (command === 'build') {
+    console.log(
+      `[mercurypitch] API base compiled in: ${api.base === '' ? '(none: a local-only build, sign-in is off)' : api.base} [${api.target}; ${api.source}]`,
     )
   }
 
@@ -152,6 +169,10 @@ export default defineConfig(({ mode, command }) => {
       // that must not run inside a WebView keys off this rather than
       // sniffing the user agent.
       __NATIVE_BUILD__: JSON.stringify(true),
+
+      // The resolved worker, over whatever the env files said: this is how
+      // the production switch outranks the dev default in `.env`.
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(api.base),
       __APP_CHANNEL__: JSON.stringify(
         (process.env.GITHUB_REF ?? '').startsWith('refs/tags/')
           ? 'release'

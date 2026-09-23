@@ -69,6 +69,19 @@ on:
     branches: [main]
     tags: ['mp-v*']
   workflow_dispatch:
+    inputs:
+      # Which db-worker the build compiles in (apps/mercurypitch/api-base.mjs).
+      # `dev` for everything that is tested -- and every push, pull request
+      # and tag builds `dev`, because only a dispatch has inputs. `production`
+      # is picked by hand, for the build that goes to a store, and nothing
+      # else in this repository can set it.
+      api-target:
+        description: 'db-worker to compile in: dev for every test build, production only for a store submission'
+        type: choice
+        options:
+          - dev
+          - production
+        default: dev
 
 permissions:
   contents: read
@@ -93,6 +106,11 @@ jobs:
       profile-build-setting: MERCURYPITCH_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
       changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|home|legends|onboarding|opening)/|public/exercises/examples/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/regulator-room-landscape|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|public/sing/retro-analog-studio[^/]*\.webp$|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
+      # Exported to the build and to assert-bundle alike, so the check reads
+      # the same answer the build compiled in. `inputs` is empty outside a
+      # dispatch, which is what makes every other trigger a dev build.
+      web-build-env: |
+        MERCURYPITCH_API_TARGET=${{ inputs.api-target || 'dev' }}
       distribution-env-name: VITE_MERCURYPITCH_DISTRIBUTION
       platform-env-name: VITE_MERCURYPITCH_NATIVE_PLATFORM
       testflight-upload-from: tags
