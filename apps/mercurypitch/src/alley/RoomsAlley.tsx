@@ -360,6 +360,7 @@ export const RoomsAlley: Component = () => {
       reduced: reduced(),
       openMs: OPEN_MS,
       held: roomArrivalHeld(),
+      silentAt: ambientInstance?.stoppedAt() ?? null,
     }))
   })
 

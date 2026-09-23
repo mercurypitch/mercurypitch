@@ -62,6 +62,11 @@ export interface AlleyAmbient {
   level: () => number
   /** Sources started since this ambient was made. For the walk and tests. */
   sourcesStarted: () => number
+  /**
+   * `performance.now()` when a source was last stopped, or null. The walk
+   * orders a room's microphone after it.
+   */
+  stoppedAt: () => number | null
 }
 
 interface Voice {
@@ -81,6 +86,7 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
   let audible: Voice | null = null
   let token = 0
   let started = 0
+  let lastStop: number | null = null
   const buffers = new Map<AmbientKind, Promise<AudioBuffer>>()
   const releases = new Set<Promise<void>>()
 
@@ -119,6 +125,7 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
         } catch {
           /* never started, or already stopped */
         }
+        if (voice.source !== null) lastStop = globalThis.performance.now()
         voice.source?.disconnect()
         voice.gain.disconnect()
         voice.source = null
@@ -207,5 +214,6 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     sounding: () => (current?.releasing === false ? current.kind : null),
     level: () => (audible?.source ? audible.gain.gain.value : 0),
     sourcesStarted: () => started,
+    stoppedAt: () => lastStop,
   }
 }

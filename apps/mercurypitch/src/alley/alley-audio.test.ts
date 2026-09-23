@@ -150,6 +150,7 @@ describe('the alley ambient', () => {
     // A time constant of a fifth of the release: 99.3% of the way down by 520 ms.
     expect(target?.[3]).toBeCloseTo(0.104, 9)
     expect(log.some((c) => c[0] === 'source1.stop')).toBe(false)
+    expect(ambient.stoppedAt()).toBeNull()
 
     vi.advanceTimersByTime(520 + RELEASE_SLACK_MS - 1)
     await settle()
@@ -158,6 +159,8 @@ describe('the alley ambient', () => {
     vi.advanceTimersByTime(1)
     await done
     expect(silent).toBe(true)
+    // When, for the walk that orders the room's microphone after it.
+    expect(ambient.stoppedAt()).toEqual(expect.any(Number))
     const order = log.map((c) => c[0])
     expect(order.indexOf('source1.stop')).toBeGreaterThan(
       order.indexOf('gain.target'),

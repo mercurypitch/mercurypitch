@@ -2844,6 +2844,54 @@ async function walkAlley(browser, args, frame) {
       `alley select Sing: clip playing, ambient rising to ${top.toFixed(2)}, Enter; ${note}`,
     )
 
+    // ── A resize while Sing is alive ──────────────────────────
+    // The doors move; the Sing door's <video> is the same node and keeps
+    // playing. A rebuilt door is a new, paused, unloaded clip.
+    await page.evaluate(() => {
+      const clip = document.querySelector('[data-testid="alley-clip"]')
+      window.__mpClip = clip
+      window.__mpClipAt = clip.currentTime
+    })
+    const grown = { width: frame.width + 19, height: frame.height + 63 }
+    await page.setViewportSize(grown)
+    await page.waitForTimeout(700)
+    const resized = await page.evaluate(() => {
+      const clip = document.querySelector('[data-testid="alley-clip"]')
+      return {
+        same: clip === window.__mpClip,
+        connected: window.__mpClip.isConnected,
+        paused: clip?.paused ?? null,
+        advanced: (clip?.currentTime ?? 0) > window.__mpClipAt,
+        width: document.querySelector('[data-testid="rooms-alley"]')
+          ?.clientWidth,
+        phase:
+          typeof window.mpAlley === 'function' ? window.mpAlley().phase : null,
+      }
+    })
+    await page.setViewportSize(frame)
+    await page.waitForTimeout(400)
+    const restored = await page.evaluate(
+      () =>
+        document.querySelector('[data-testid="alley-clip"]') ===
+          window.__mpClip && !window.__mpClip.paused,
+    )
+    if (
+      !resized.same ||
+      !resized.connected ||
+      resized.paused !== false ||
+      !resized.advanced ||
+      resized.width !== grown.width ||
+      resized.phase !== 'alive' ||
+      !restored
+    ) {
+      throw new Error(
+        `resize while alive: ${JSON.stringify({ ...resized, restored })}`,
+      )
+    }
+    steps.push(
+      `alley resize to ${grown.width}x${grown.height} and back while Sing is alive: the same <video>, still playing, still alive`,
+    )
+
     // ── Open ──────────────────────────────────────────────────
     const mid = await walkOpen(page, ctx, 'alley-open')
     if (mid.motion !== 'grow' || mid.content !== 'clip') {
@@ -3080,6 +3128,97 @@ async function walkAlley(browser, args, frame) {
   if (failures.length > 0) throw new Error(failures.join('; '))
   const at = `${frame.width}x${frame.height}`
   return steps.map((step) => `[${at}] ${step}`)
+}
+
+// ── The room's microphone waits for the hand-over ───────────
+//
+// A context that has granted the microphone, and a device that remembers it
+// did, so the Sing room starts listening on arrival by itself. Its
+// getUserMedia must come after the door's clone is gone AND after the
+// alley's ambient stopped its source: the arrival hold is what orders them,
+// and a hold that did nothing would open the microphone under the clone.
+async function walkAlleyMic(browser, args, frame) {
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+      permissions: ['microphone'],
+    }),
+  )
+  const failures = []
+  let step = null
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.addInitScript(() => {
+      localStorage.setItem('pitchperfect_sing_mic_granted', 'true')
+      const times = { gumAt: null, clonedAt: null, cloneGoneAt: null }
+      window.__mpMic = times
+      const devices = navigator.mediaDevices
+      const real = devices.getUserMedia.bind(devices)
+      devices.getUserMedia = (constraints) => {
+        times.gumAt ??= performance.now()
+        return real(constraints)
+      }
+      new MutationObserver(() => {
+        const clone = document.querySelector('[data-testid="alley-morph"]')
+        if (clone !== null) times.clonedAt ??= performance.now()
+        else if (times.clonedAt !== null)
+          times.cloneGoneAt ??= performance.now()
+      }).observe(document, { childList: true, subtree: true })
+    })
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="rooms-alley"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.waitForTimeout(400)
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'mic: select Sing')
+    await page.waitForTimeout(700)
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page
+      .waitForFunction(() => window.__mpMic.gumAt !== null, null, {
+        timeout: 10_000,
+      })
+      .catch(() => {
+        throw new Error('mic: the Sing room never asked for the microphone')
+      })
+    const t = await page.evaluate(() => ({
+      ...window.__mpMic,
+      silentAt: window.mpAlley().silentAt,
+      held: window.mpAlley().held,
+      room: document.querySelector('[data-testid="sing-room"]') !== null,
+    }))
+    const ms = (v) => (v === null ? 'null' : `${Math.round(v)}`)
+    if (
+      t.clonedAt === null ||
+      t.cloneGoneAt === null ||
+      t.silentAt === null ||
+      t.gumAt < t.cloneGoneAt ||
+      t.gumAt < t.silentAt ||
+      t.held ||
+      !t.room
+    ) {
+      throw new Error(`mic: out of order ${JSON.stringify(t)}`)
+    }
+    step = `alley mic on arrival: clone up ${ms(t.clonedAt)} ms, ambient source stopped ${ms(t.silentAt)}, clone gone ${ms(t.cloneGoneAt)}, getUserMedia ${ms(t.gumAt)} (after both)`
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  return [`[${frame.width}x${frame.height}] ${step}`]
 }
 
 async function pressBack(page) {
@@ -3415,6 +3554,13 @@ async function main() {
       } catch (error) {
         failures.push(
           `[${frame.width}x${frame.height}] alley: ${error.message}`,
+        )
+      }
+      try {
+        steps.push(...(await walkAlleyMic(browser, args, frame)))
+      } catch (error) {
+        failures.push(
+          `[${frame.width}x${frame.height}] alley mic: ${error.message}`,
         )
       }
     }

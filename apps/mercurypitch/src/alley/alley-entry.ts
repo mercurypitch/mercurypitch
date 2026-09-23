@@ -82,10 +82,15 @@ async function roomDrawn(selector: string): Promise<void> {
   if (url === null) return
   const image = new Image()
   image.src = url
-  await Promise.race([
-    image.decode().catch(() => undefined),
-    wait(Math.max(0, deadline - performance.now())),
-  ])
+  // Not every engine has decode() (jsdom has none); load is the fallback.
+  const decoded =
+    typeof image.decode === 'function'
+      ? image.decode().catch(() => undefined)
+      : new Promise<void>((resolve) => {
+          image.onload = () => resolve()
+          image.onerror = () => resolve()
+        })
+  await Promise.race([decoded, wait(Math.max(0, deadline - performance.now()))])
 }
 
 function buildClone(plan: DoorOpenPlan): HTMLDivElement {
