@@ -128,7 +128,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
     ],
     noscript:
-      'Voice Mirror needs JavaScript — your voice is analyzed right here in your browser, and never uploaded.',
+      'Voice Mirror needs JavaScript — your voice is analyzed right here in your browser.',
   },
   {
     slug: 'vocal-range-test',
@@ -170,7 +170,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
     ],
     noscript:
-      'The vocal range test needs JavaScript — your voice is analyzed here in your browser and never uploaded.',
+      'The vocal range test needs JavaScript — your voice is analyzed here in your browser.',
   },
   {
     slug: 'karaoke',
@@ -292,7 +292,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
     ],
     noscript:
-      'Glass needs JavaScript — your voice is analyzed right here in your browser, and never uploaded.',
+      'Glass needs JavaScript — your voice is analyzed right here in your browser.',
   },
   {
     slug: 'piano-night',
@@ -517,7 +517,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
     ],
     noscript:
-      'Pitch training needs JavaScript — your voice is analyzed here in your browser and never uploaded.',
+      'Pitch training needs JavaScript — your voice is analyzed here in your browser.',
   },
   {
     slug: 'voice-type-test',
@@ -566,7 +566,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
     ],
     noscript:
-      'The voice type test needs JavaScript — your voice is analyzed here in your browser and never uploaded.',
+      'The voice type test needs JavaScript — your voice is analyzed here in your browser.',
   },
   {
     slug: 'vocal-remover',
@@ -663,7 +663,7 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       },
     ],
     noscript:
-      'The singer match needs JavaScript — your voice is analyzed here in your browser and never uploaded.',
+      'The singer match needs JavaScript — your voice is analyzed here in your browser.',
   },
 ]
 
