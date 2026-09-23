@@ -414,6 +414,7 @@
   "src/tests/zen-model.test.ts",
   "src/tests/zen-navigation.test.ts",
   "src/tests/zen-note-playback.test.ts",
+  "src/workers/pitch-shift.worklet.test.ts",
   "tools/css-legacy-fallbacks.test.ts",
   "workers/db-worker/node-tests/apple-signin-integration.test.ts",
   "workers/db-worker/node-tests/auth-sessions-integration.test.ts",
