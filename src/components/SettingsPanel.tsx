@@ -38,7 +38,7 @@ import { adsr, gridLinesVisible, playbackSpeed, reverbConfig, setAttack, setBand
 import { deleteAllSessionGroups, deleteAllUvrSessions, showNotification, startVoiceTour, } from '@/stores'
 import { showConsoleLog, toggleConsoleLog } from '@/stores/console-store'
 import { deleteAllPlaylists } from '@/stores/karaoke-playlist-store'
-import { karaokeAutoIndexShazam, karaokeStemDenoise, setKaraokeAutoIndexShazam, setKaraokeStemDenoise, } from '@/stores/karaoke-settings-store'
+import { karaokeAutoIndexShazam, karaokeKeyKeepDrums, karaokeStemDenoise, setKaraokeAutoIndexShazam, setKaraokeKeyKeepDrums, setKaraokeStemDenoise, } from '@/stores/karaoke-settings-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import { BREAK_MIN_RANGE, breakIntervalMin, PRACTICE_MIN_RANGE, practiceIntervalMin, practiceTimerEnabled, setBreakIntervalMin, setPracticeIntervalMin, setPracticeTimerEnabled, } from '@/stores/practice-timer-store'
 import type { FontFamily, PitchAlgorithm } from '@/stores/settings-store'
@@ -1315,6 +1315,38 @@ export const SettingsPanel: Component = () => {
               <small>
                 Clean the vocal stem before fingerprinting it. Helps on noisy
                 separations; turn it off if clean stems are matching poorly.
+              </small>
+            </div>
+          </div>
+
+          {/* Key change */}
+          <div class={styles.settingsSection} data-tour="settings.karaoke-key">
+            <h3 class={styles.settingsSectionTitle}>Key Change</h3>
+            <div class={styles.settingsDivider} />
+
+            <p class={styles.settingsDesc}>
+              The key control beside the playback speed moves a song up or down
+              to suit your voice. The song keeps its speed.
+            </p>
+
+            <div class={styles.settingsRow}>
+              <label for="karaoke-key-keep-drums">Leave drums unshifted</label>
+              <label class={styles.settingsToggle}>
+                <input
+                  type="checkbox"
+                  id="karaoke-key-keep-drums"
+                  checked={karaokeKeyKeepDrums()}
+                  onChange={(e) => {
+                    setKaraokeKeyKeepDrums(e.currentTarget.checked)
+                  }}
+                  data-testid="karaoke-key-keep-drums-toggle"
+                />
+                <span class={styles.settingsSlider} />
+              </label>
+              <small>
+                Drums have no key, and shifting them softens their attack. On
+                keeps them crisp and in time; off shifts them with everything
+                else.
               </small>
             </div>
           </div>

@@ -15,13 +15,14 @@ import { shouldPreloadWhisper } from '@/features/stem-mixer/eager-whisper'
 import { consumeKaraokeAutoplayIntent, isStandaloneKaraokeSurface, } from '@/features/stem-mixer/karaoke-launch-intent'
 import { clampOverviewWindow } from '@/features/stem-mixer/overview-mapping'
 import type { PlayAlongPreset, PlayAlongStemKey, } from '@/features/stem-mixer/play-along'
-import { setStemVolume, stemMixHasSolo, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
+import { setStemVolume, stemMixHasSolo, stemTrackIsAudible, stemTrackOutputLevel, toggleStemMute, toggleStemSolo, } from '@/features/stem-mixer/stem-mix-state'
 import { createStemMixerVoiceCommands } from '@/features/stem-mixer/stem-mixer-voice-commands'
 import { analysableBuffer } from '@/features/stem-mixer/stem-peak-envelope'
 import type { StemStream } from '@/features/stem-mixer/stem-stream-source'
 import type { StemLoadPhase } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerAudioController } from '@/features/stem-mixer/useStemMixerAudioController'
 import { useStemMixerCanvasController } from '@/features/stem-mixer/useStemMixerCanvasController'
+import { songMelody, useStemMixerKeyController, useStemMixerKeyView, } from '@/features/stem-mixer/useStemMixerKeyController'
 import { useStemMixerLayoutController } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { useStemMixerLyricsController } from '@/features/stem-mixer/useStemMixerLyricsController'
 import { useStemMixerMelodyAuditionController } from '@/features/stem-mixer/useStemMixerMelodyAuditionController'
@@ -37,6 +38,7 @@ import { IS_DIAGNOSTIC_BUILD, PREMIUM_FEATURES } from '@/lib/defaults'
 import { deviceClass } from '@/lib/device-tier'
 import { eventBus } from '@/lib/event-bus'
 import { formatBytes } from '@/lib/fetch-progress'
+import { transposePitchReadings } from '@/lib/key-shift/key-shift'
 import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { extractTitle } from '@/lib/lyrics-service'
 import { rmsOfAnalyser } from '@/lib/mic-level'
@@ -55,6 +57,7 @@ import { isStemSplitActive, PART_STEM_DISPLAY } from '@/lib/uvr-stem-split'
 import { detectVocalOnsets } from '@/lib/vocal-onsets'
 import { sliderToGain } from '@/lib/volume-curve'
 import * as playlist from '@/stores/karaoke-playlist-store'
+import { karaokeKeyKeepDrums } from '@/stores/karaoke-settings-store'
 import { showNotification } from '@/stores/notifications-store'
 import { activeTab, karaokeFocus, karaokeZen, setKaraokeFocus, setKaraokeZen, } from '@/stores/ui-store'
 import { recordActivity } from '@/stores/usage-store'
@@ -66,6 +69,7 @@ import { KaraokePlaylistOverlay } from './KaraokePlaylistOverlay'
 import type { KaraokeLibrarySong } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSidebar } from './KaraokePlaylistSidebar'
 import { KaraokePlaylistSummary } from './KaraokePlaylistSummary'
+import { VoiceTypePicker } from './key-shift/VoiceTypePicker'
 import { StemMixerFixedWorkspace } from './StemMixerFixedWorkspace'
 import { StemMixerGridWorkspace } from './StemMixerGridWorkspace'
 import { StemMixerPerformanceWorkspace } from './StemMixerPerformanceWorkspace'
@@ -458,6 +462,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   const mic = useStemMixerMicController({
     getAudioCtx: () => audioCtxForMic.getAudioCtx(),
     ensureAudioCtx: () => audioCtxForMic.ensureAudioCtx(),
+    // The key shifter delays what the singer hears; judge them against it.
+    outputDelaySec: () => audio.keyShiftLatencySec(),
   })
   const scoreModalOpen = (): boolean => mic.showScore() && mic.score() !== null
 
@@ -527,6 +533,27 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   let setUserScrolledForAudio = (_v: boolean) => {}
   let lyricsMappingActiveForAudio = false
 
+  // ── Key controller ───────────────────────────────────────────
+  // The singer's key: this playlist entry's, else the song's own remembered
+  // one. The melody and the detection are Pitch Studio's, built further
+  // down: the melody is first read once the singer's range has been read,
+  // which is never before this component has finished setting up.
+  const key = useStemMixerKeyController({
+    sessionId: () => props.sessionId,
+    queueEntry: () => {
+      const entry = playlist.isPlaylistActive() ? playlist.currentSong() : null
+      return entry?.sessionId === props.sessionId ? entry : null
+    },
+    playlistId: () =>
+      playlist.isPlaylistActive() ? playlist.activePlaylistId() : null,
+    melody: () => songMelody(pitchAnalysis.editableNotes(), midiNotes()),
+    detectMelody: () =>
+      vocalIsStreamed() || analysableVocal() === null
+        ? null
+        : pitchAnalysis.runAnalysis(),
+    notify: showNotification,
+  })
+
   // ── Audio controller ─────────────────────────────────────────
   const audio = useStemMixerAudioController({
     vocal,
@@ -576,6 +603,17 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     onPlaybackStopped: karaokeVoiceCapture.finishScoredPlayback,
     onPlaybackDiscarded: karaokeVoiceCapture.dismiss,
     onMicFrame: karaokeVoiceCapture.pushMicFrame,
+    keyShift: key.keyShift,
+    keepDrums: karaokeKeyKeepDrums,
+    // A muted guide vocal leaves its shifter disconnected, and costs nothing.
+    vocalAudible: () => {
+      const vocalTrack = tracks().find((track) => track.label === 'Vocal')
+      return (
+        vocalTrack !== undefined && stemTrackIsAudible(vocalTrack, anySoloed())
+      )
+    },
+    // Pitch Studio edits the song's own notes, so it plays the song's key.
+    keyShiftSuspended: () => pitchAnalysis.editMode(),
     showNotification,
   })
 
@@ -1226,11 +1264,34 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     sessionId: props.sessionId,
     vocalBuffer: () => analysableVocal(),
     sampleRate: () => audio.getAudioCtx()?.sampleRate ?? 44100,
+    // The realtime history is kept as heard, so this joins it in that key.
+    // Untracked: a key change must not re-send it over a running history.
     setPitchHistory: (h) => {
-      audio.setPitchHistory(h)
+      audio.setPitchHistory(
+        transposePitchReadings(h, untrack(audio.effectiveShift)),
+      )
     },
     showNotification,
   })
+
+  // ── What the singer sees follows what they hear ────────────────
+  const keyView = useStemMixerKeyView({
+    key,
+    heardShift: audio.effectiveShift,
+    engineAvailable: audio.keyShiftAvailable,
+    editMode: pitchAnalysis.editMode,
+    detectedKey: pitchAnalysis.detectedKey,
+    notify: showNotification,
+  })
+  const displayNotes = keyView.createShownNotes(pitchAnalysis.editableNotes)
+  const displayBaseNotes = keyView.createShownNotes(pitchAnalysis.baseNotes)
+  const displayMidiNotes = keyView.createShownNotes(midiNotes)
+  const displaySegmentedNotes = keyView.createShownNotes(
+    pitchAnalysis.offlineSegmentedNotes,
+  )
+  const displayOfflineHistory = keyView.createShownReadings(
+    pitchAnalysis.offlinePitchHistory,
+  )
 
   const closePitchTools = (): void => {
     pitchAnalysis.setPanelOpen(false)
@@ -1345,7 +1406,12 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
       preferDenoised: useDenoised(),
       segmentedNotes,
       mergedNotes,
-      realtimePitchHistory: audio.getPitchHistory(),
+      // Kept as heard; the alignment works in the song's own key, and the
+      // glyphs are moved back for display.
+      realtimePitchHistory: transposePitchReadings(
+        audio.getPitchHistory(),
+        -untrack(audio.effectiveShift),
+      ),
     })
 
     if (merged.length === 0) {
@@ -1373,6 +1439,9 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     )
     return computeAlignment(merged, segments)
   })
+  const displayAlignedWords = keyView.createShownWords(
+    () => alignmentResult().alignedWords,
+  )
 
   const canvas = useStemMixerCanvasController({
     duration: audio.duration,
@@ -1383,18 +1452,18 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     vocal,
     getPitchHistory: () =>
       pitchAnalysis.pitchSourceMode() === 'offline'
-        ? pitchAnalysis.offlinePitchHistory()
+        ? displayOfflineHistory()
         : audio.getPitchHistory(),
     getMicPitchHistory: mic.getMicPitchHistory,
     micActive: mic.micActive,
     currentPitch: audio.currentPitch,
-    midiNotes,
+    midiNotes: displayMidiNotes,
     showNoteLabels,
     showLyricLabels,
     showMicLine,
     showUserNoteLabels,
     showScoreDiffBars,
-    alignedWords: () => alignmentResult().alignedWords,
+    alignedWords: displayAlignedWords,
     seekTo: audio.seekTo,
     setWindowStart: audio.setWindowStart,
     setWindowDuration: audio.setWindowDuration,
@@ -1415,8 +1484,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     },
     // Pitch edit mode
     editMode: pitchAnalysis.editMode,
-    editableNotes: pitchAnalysis.editableNotes,
-    baseNotes: pitchAnalysis.baseNotes,
+    editableNotes: displayNotes,
+    baseNotes: displayBaseNotes,
     pitchView: pitchAnalysis.pitchView,
     selectedNoteId: pitchAnalysis.selectedNoteId,
     onSelectNote: pitchAnalysis.setSelectedNoteId,
@@ -1518,7 +1587,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
   // ── Melody audition synth ──────────────────────────────────────
   const melodyAudition = useStemMixerMelodyAuditionController({
     audio,
-    pitchAnalysis,
+    pitchAnalysis: { offlineSegmentedNotes: displaySegmentedNotes },
   })
   updateCurrentLineForAudio = updateCurrentLine
   setCurrentLineIdxForAudio = setCurrentLineIdx
@@ -1838,6 +1907,10 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
         activeTab() === TAB_KARAOKE || isStandaloneKaraokeSurface(),
       speed: audio.speed,
       setSpeed: audio.setSpeed,
+      keyShift: key.keyShift,
+      setKeyShift: key.setKeyShift,
+      findMyKey: key.findMyKey,
+      keyShiftDisabledReason: keyView.binding.disabledReason,
       loop: {
         enabled: audio.loopEnabled,
         setEnabled: audio.setLoopEnabled,
@@ -2245,6 +2318,15 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
     }
   }
 
+  // "Find my key" opens it from either stage.
+  const voiceTypePicker = () => (
+    <VoiceTypePicker
+      open={key.voiceTypePickerOpen()}
+      onPick={keyView.pickVoiceType}
+      onCancel={key.closeVoiceTypePicker}
+    />
+  )
+
   // ── Render ───────────────────────────────────────────────────
   return (
     <Show
@@ -2307,7 +2389,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onSongPickerQuery={setSongPickerQuery}
             onSongPickerRefine={() => void handleSongPickerRefine()}
             onSongPick={(m) => void handleSongPick(m)}
-            alignedWords={() => alignmentResult().alignedWords}
+            alignedWords={displayAlignedWords}
             onEnsureNotes={ensureZenNotes}
             notesAnalyzing={pitchAnalysis.isAnalyzing}
             notesProgress={pitchAnalysis.progress}
@@ -2321,7 +2403,8 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onMusicLevel={audio.setMusicLevel}
             musicLevelRange={audio.musicLevelRange}
             micPitch={mic.micPitch}
-            ribbonNotes={pitchAnalysis.editableNotes}
+            ribbonNotes={displayNotes}
+            keyControl={keyView.binding}
           />
           <StemMixerScoreModal
             showScore={mic.showScore}
@@ -2332,6 +2415,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             onKeepVoiceTake={handleKeepKaraokeVoiceTake}
             onClose={handleScoreClose}
           />
+          {voiceTypePicker()}
         </>
       }
     >
@@ -2724,6 +2808,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             formatTime={canvas.formatTime}
             speed={audio.speed}
             onSpeedChange={audio.setSpeed}
+            keyControl={keyView.binding}
             karaokeFocus={karaokeFocus}
             setKaraokeFocus={setKaraokeFocus}
             toolbarPosition={karaokeToolbarPosition}
@@ -3122,6 +3207,7 @@ export const StemMixer: Component<StemMixerProps> = (props) => {
             </>
           )}
         </Show>
+        {voiceTypePicker()}
       </div>
     </Show>
   )

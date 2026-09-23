@@ -5,6 +5,8 @@
 import type { Component } from 'solid-js'
 import type { Accessor, Setter } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
+import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
+import { KeyShiftControl } from '@/components/key-shift/KeyShiftControl'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
 import { formatPlaybackSpeed, STEM_MIXER_PLAYBACK_SPEEDS, } from '@/lib/playback-speed-options'
 
@@ -49,6 +51,9 @@ export interface StemMixerTransportProps {
   // Playback speed
   speed: Accessor<number>
   onSpeedChange: (speed: number) => void
+
+  /** The singer's key; the control sits beside the speed it is kept apart from. */
+  keyControl?: KeyShiftBinding
 
   // Karaoke focus mode
   karaokeFocus: Accessor<boolean>
@@ -586,6 +591,20 @@ export const StemMixerTransport: Component<StemMixerTransportProps> = (
               )}
             </For>
           </select>
+
+          {/* ── Key (the singer's; speed no longer moves it) ── */}
+          <Show when={props.keyControl}>
+            {(key) => (
+              <KeyShiftControl
+                value={key().value()}
+                onChange={key().onChange}
+                keyLabel={key().keyLabel()}
+                suggestion={key().suggestion()}
+                onFindKey={key().onFindKey}
+                disabledReason={key().disabledReason()}
+              />
+            )}
+          </Show>
 
           {/* ── Sidebar toggle (visible in fixed-2col, both modes) ── */}
           <Show when={props.workspaceLayout() === 'fixed-2col'}>
