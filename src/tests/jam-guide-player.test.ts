@@ -13,6 +13,7 @@ interface FakeGain {
   value: number
   connected: boolean
   ramps: { to: number; at: number }[]
+  connectedTo: unknown[]
 }
 
 interface FakeSource {
@@ -36,7 +37,12 @@ function makeFakeContext(opts: { decodedDuration?: number } = {}) {
       async (_bytes: ArrayBuffer) => ({ duration }) as AudioBuffer,
     ),
     createGain() {
-      const state: FakeGain = { value: 1, connected: false, ramps: [] }
+      const state: FakeGain = {
+        value: 1,
+        connected: false,
+        ramps: [],
+        connectedTo: [],
+      }
       gains.push(state)
       // A ramp leaves `value` at its destination: enough for these tests,
       // which care that the fade was SCHEDULED and where it was headed.
@@ -62,8 +68,9 @@ function makeFakeContext(opts: { decodedDuration?: number } = {}) {
             state.value = v
           },
         },
-        connect: () => {
+        connect: (target: unknown) => {
           state.connected = true
+          state.connectedTo.push(target)
         },
         disconnect: () => {
           state.connected = false
@@ -132,6 +139,47 @@ function makePlayer(fake: ReturnType<typeof makeFakeContext>) {
 }
 
 describe('jam guide player', () => {
+  it('plays through the room’s key graph when it has one', async () => {
+    const fake = makeFakeContext()
+    const keyGraphInput = { kind: 'key graph' }
+    const player = createJamGuidePlayer({
+      context: () => fake.ctx,
+      fetchArrayBuffer: async () => bytes(),
+      output: () => keyGraphInput as unknown as AudioNode,
+    })
+    await player.load('blob:song-a')
+
+    player.start(0, 0.5)
+
+    expect(fake.gains[0]!.connectedTo).toEqual([keyGraphInput])
+  })
+
+  it('plays straight to the speakers without one', async () => {
+    const fake = makeFakeContext()
+    const { player } = makePlayer(fake)
+    await player.load('blob:song-a')
+
+    player.start(0, 0.5)
+
+    expect(fake.gains[0]!.connectedTo).toEqual([fake.raw.destination])
+  })
+
+  it('plays straight to the speakers when the key graph cannot be had', async () => {
+    const fake = makeFakeContext()
+    const player = createJamGuidePlayer({
+      context: () => fake.ctx,
+      fetchArrayBuffer: async () => bytes(),
+      output: () => {
+        throw new Error('worklet node refused')
+      },
+    })
+    await player.load('blob:song-a')
+
+    expect(player.start(0, 0.5)).toBe(true)
+
+    expect(fake.gains[0]!.connectedTo).toEqual([fake.raw.destination])
+  })
+
   it('decodes once per url and reuses the cache', async () => {
     const fake = makeFakeContext()
     const { player, fetches } = makePlayer(fake)
