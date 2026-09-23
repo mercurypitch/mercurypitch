@@ -1437,4 +1437,9 @@ through `/prod-upd`.
 **Cause:** 91–98% mesh reduction destroyed silhouettes; opaque landing covers hid donor PBR detail.
 **Rule:** compare donor and runtime at identical close-up camera/light before accepting a budget.
 Collision proxies do not need opaque decorative covers. Passing GLB validation is not art approval.
-**See:** `art/glass-adventure/plans/CLOUDWAY-VISUAL-QUALITY-REVIEW.md`.
+Include the preserved pre-remesh source: a textured provider donor can already have lost 99% of
+its triangles before local reduction. Compare file hashes and triangle positions before blaming
+a later normals pass. When splitting a mesh for colour variants, preserve its split normals;
+recomputing each side independently can introduce a seam without changing the silhouette.
+**See:** `art/glass-adventure/plans/CLOUDWAY-VISUAL-QUALITY-REVIEW.md`,
+`art/glass-adventure/plans/MUSEUM-SHAPE-AUDIT-2026-09-23.md`.

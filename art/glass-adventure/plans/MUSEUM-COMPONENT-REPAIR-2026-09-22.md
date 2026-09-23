@@ -55,7 +55,9 @@ can continue.
 
 ## Work checklist
 
-- [ ] Tighten Cloudway fog using arrival, midroute and orbit/zoom screenshots.
+- [x] Tighten Cloudway fog from 16–31m to 9–14m. Arrival, raft approach,
+      midroute and both zoom extremes have actual WebGL screenshots under
+      `art/glass-adventure/proofs/polish-2026-09-22/fog-tightened/`.
 - [x] Complete the component-level source/normal/history comparison; see
       `MUSEUM-SHAPE-AUDIT-2026-09-23.md`.
 - [ ] Inspect the dense Conservatory source, then produce one V8 candidate if
@@ -68,6 +70,15 @@ can continue.
 - [ ] Verify actual desktop/tablet views and record load bytes, draw calls and
       triangles. Owner tablet frame rate and heat remain separate acceptance checks.
 - [ ] Publish the accepted stage to PR #807 and refresh the stable HTTPS preview.
+
+The shorter-fog HTTPS preview was restarted on 23 September and verified HTTP
+200 at `https://192.168.178.33:5300/glass-game/?layout=cloudway`. Hot reload and
+file watching are disabled. The server expires after three hours; stop with
+Ctrl-C. Restart from any directory using:
+
+```sh
+rtk proxy timeout 10800 /home/maff/.nvm/versions/node/v22.22.2/bin/node /home/maff/.codex/worktrees/00ad/mercurypitch-agent/apps/beside-cue/scripts/glass-playtest.ts --https --host 0.0.0.0 --port 5300
+```
 
 One prior CI failure was formatting in `backdrop-fog.test.ts`, not a gameplay or
 asset-loader error. The targeted correction is committed as `213a7672`; its
