@@ -34,6 +34,8 @@ import { buildSoftClipCurve, loadMusicLevel, MUSIC_LEVEL, persistMusicLevel, } f
 import type { StemMixerPerformanceSnapshot } from './performance-diagnostics'
 import { createStemMixerPerformanceDiagnostics, hasStemMixerPerformanceActivity, selectLatestActivePerformanceSnapshot, } from './performance-diagnostics'
 import { watchPlaybackReturn } from './playback-return-watch'
+import { createStemKeyControl } from './stem-key-control'
+import { audibleSongTime, shiftDetectedPitch } from './stem-key-timing'
 import type { SongPathLog } from './stem-load-path'
 import { createSongPathLog, PATH_SOURCE } from './stem-load-path'
 import { decodedBudgetBytes, decodedStemBytes, fitStems, HOSTED_WHOLE_DECODE_MAX_BYTES, mb, needsStreamingMessage, stemLoadConcurrency, streamedStemBytes, } from './stem-memory'
@@ -187,6 +189,15 @@ export interface StemMixerAudioDeps {
   onPlaybackDiscarded?: () => void
   onMicFrame?: (frame: { f0: number; conf: number; rms: number }) => void
 
+  /** Karaoke key, −6..+6 semitones; speed never changes it. */
+  keyShift?: Accessor<number>
+  /** Drums skip the shifter (delayed to stay in time). Default true. */
+  keepDrums?: Accessor<boolean>
+  /** The guide vocal reaches the speakers; a silent guide is not shifted. */
+  vocalAudible?: Accessor<boolean>
+  /** Pitch Studio edits the song's own notes: play the original key. */
+  keyShiftSuspended?: Accessor<boolean>
+
   showNotification: (
     msg: string,
     type?: 'info' | 'success' | 'warning' | 'error',
@@ -278,6 +289,14 @@ export interface StemMixerAudioController {
   seekTo: (time: number) => void
   speed: Accessor<number>
   setSpeed: (speed: number) => void
+
+  // Key shift
+  /** Extra delay the key shifter adds on the way to the speakers; 0 unshifted. */
+  keyShiftLatencySec: () => number
+  /** False without AudioWorklet, or once the engine failed to load. */
+  keyShiftAvailable: Accessor<boolean>
+  /** The key the listener hears: 0 in Pitch Studio or without the engine. */
+  effectiveShift: Accessor<number>
 
   // Loop
   loopEnabled: Accessor<boolean>
@@ -395,6 +414,27 @@ export const useStemMixerAudioController = (
   const [windowStart, setWindowStart] = createSignal(0)
   const [windowDuration, setWindowDuration] = createSignal(30)
   const [speed, setSpeedLocal] = createSignal(1.0)
+
+  // ── Key shift ─────────────────────────────────────────────────
+  // Stems reach the master through the key graph's buses; at key 0 and
+  // speed 1 those buses go straight through. See stem-key-control.ts.
+  const keyControl = createStemKeyControl({
+    keyShift: () => deps.keyShift?.() ?? 0,
+    suspended: () => deps.keyShiftSuspended?.() ?? false,
+    vocalAudible: () => deps.vocalAudible?.() ?? true,
+    speed,
+    playing: () => playing(),
+    keepDrums: () => deps.keepDrums?.() ?? true,
+    // Phones and televisions take the lighter engine setting.
+    preset: sessionDeviceClass() === 'desktop' ? 'default' : 'cheaper',
+    onUnavailable: (error) => {
+      console.warn('[StemMixer] key change unavailable:', error)
+      deps.showNotification(
+        'Changing the key is not available right now, so the song plays in its original key.',
+        'warning',
+      )
+    },
+  })
 
   // ── Music level ─────────────────────────────────────────────
   // The master used to be a hardcoded 0.7 with no way to reach it. On iOS a
@@ -651,6 +691,7 @@ export const useStemMixerAudioController = (
       mainGain.connect(softClip)
       softClip.connect(audioCtx.destination)
       softClipNode = softClip
+      keyControl.attach(audioCtx, mainGain)
       vocalAnalyser = audioCtx.createAnalyser()
       vocalAnalyser.fftSize = PITCH_FFT_SIZE
       vocalAnalyser.smoothingTimeConstant = 0.3
@@ -1335,7 +1376,7 @@ export const useStemMixerAudioController = (
       analyser.smoothingTimeConstant = 0.8
 
       gain.connect(analyser)
-      analyser.connect(mainGain!)
+      analyser.connect(keyControl.busFor(track.label) ?? mainGain!)
 
       // A streamed stem has no whole buffer to hand a source node. Its voice
       // schedules windows against this same `ctx.currentTime`, which is what
@@ -1725,9 +1766,14 @@ export const useStemMixerAudioController = (
         } catch {
           audibleContextTime = now - Math.max(0, audioCtx.outputLatency ?? 0)
         }
-        const audibleTime =
-          bufferPlayStart +
-          Math.max(0, audibleContextTime - wallPlayStart) * playbackSpeed
+        // The key shifter delays everything it touches by its latency.
+        const audibleTime = audibleSongTime(
+          bufferPlayStart,
+          audibleContextTime,
+          wallPlayStart,
+          playbackSpeed,
+          keyControl.latencySec(),
+        )
         setAudibleElapsed(Math.min(audibleTime, duration()))
 
         const mappingActive = deps.lyricsMappingActive?.() === true
@@ -1761,7 +1807,11 @@ export const useStemMixerAudioController = (
             if (!mappingActive && vocalAnalyser && deps.vocal().buffer) {
               vocalAnalyser.getFloatTimeDomainData(vocalTimeData)
               const raw = pitchDetector!.detect(vocalTimeData)
-              const pitch = smoothPitch(stemSmoother, raw, elapsedTime)
+              const smoothed = smoothPitch(stemSmoother, raw, elapsedTime)
+              // Tapped before the shifter: the reference is what is heard.
+              const pitch =
+                smoothed &&
+                shiftDetectedPitch(smoothed, keyControl.shiftSemitones())
               setCurrentPitch(pitch)
 
               if (pitch) {
@@ -2057,6 +2107,9 @@ export const useStemMixerAudioController = (
     handleDownload,
     speed,
     setSpeed,
+    keyShiftLatencySec: keyControl.latencySec,
+    keyShiftAvailable: keyControl.available,
+    effectiveShift: keyControl.appliedKey,
     // Loop
     loopEnabled,
     setLoopEnabled,
