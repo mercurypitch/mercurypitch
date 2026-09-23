@@ -31,6 +31,7 @@ import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
+import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLight'
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
 import { SingRoomStage } from '@/features/sing-room/SingRoomStage'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -87,9 +88,7 @@ const ChallengeResultCard = lazy(async () =>
 // first run is the alley (S4), and a `lazy()` call is a side effect Rollup
 // keeps, chunk and all, whether or not anything mounts it — so the constant
 // picks a stub before the call is ever written.
-type LazyFirstLight = ReturnType<
-  typeof lazy<typeof import('@/features/onboarding/FirstLight').FirstLight>
->
+type LazyFirstLight = ReturnType<typeof lazy<typeof FirstLightFlow>>
 const FirstLight: LazyFirstLight = IS_NATIVE_BUILD
   ? (Object.assign(() => null, {
       preload: async () => ({ default: () => null }),
