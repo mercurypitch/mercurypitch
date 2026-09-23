@@ -69,7 +69,14 @@ can continue.
       Blender projects separately.
 - [ ] Verify actual desktop/tablet views and record load bytes, draw calls and
       triangles. Owner tablet frame rate and heat remain separate acceptance checks.
-- [ ] Publish the accepted stage to PR #807 and refresh the stable HTTPS preview.
+- [x] Publish the shorter fog and source-review stages to PR #807; stable HTTPS
+      preview refreshed. No replacement museum model has been installed yet.
+
+Published stages: `c20538d2` (Conservatory source and live museum baseline),
+`d6b70614` (shorter fog, seven passing tests and five rendered views), and
+`e2045a1c` (temple/cypress source comparisons and geometry lineage). Independent
+review found no correctness issues in the fog or capture harness. The latest
+cloud CI is pending; the previously completed head is recorded below.
 
 The shorter-fog HTTPS preview was restarted on 23 September and verified HTTP
 200 at `https://192.168.178.33:5300/glass-game/?layout=cloudway`. Hot reload and
@@ -81,8 +88,8 @@ rtk proxy timeout 10800 /home/maff/.nvm/versions/node/v22.22.2/bin/node /home/ma
 ```
 
 One prior CI failure was formatting in `backdrop-fog.test.ts`, not a gameplay or
-asset-loader error. The targeted correction is committed as `213a7672`; its
-current PR checks are all green (40 passed, one production-only check skipped).
+asset-loader error. The targeted correction is committed as `213a7672`; that
+prior head passed all checks (40 passed, one production-only check skipped).
 
 ## Quality decisions
 
