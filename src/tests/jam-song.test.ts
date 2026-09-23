@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { lineAt, lineIndexAt, lyricLineProgress, notesInWindow, restAt, restsBetween, sameSongUpdated, secondsInFlight, songFromWire, songPlayableInRoom, } from '@/lib/jam/jam-song'
+import { lineAt, lineIndexAt, lyricLineProgress, notesInWindow, onlyKeyChanged, restAt, restsBetween, sameSongUpdated, secondsInFlight, songFromWire, songManifest, songPlayableInRoom, } from '@/lib/jam/jam-song'
 import type { LyricsLineTiming } from '@/lib/jam/types'
 
 const lines: LyricsLineTiming[] = [
@@ -324,6 +324,66 @@ describe('a song crossing the wire', () => {
   it('keeps what it has when the re-send leaves a field out', () => {
     const loaded = song({ notes: [NOTE] })
     expect(sameSongUpdated(loaded, undefined).notes).toEqual([NOTE])
+  })
+
+  it('arrives in the key the host set', () => {
+    expect(songFromWire(wire({ keyShift: -3 })).keyShift).toBe(-3)
+    expect(songFromWire(wire())).not.toHaveProperty('keyShift')
+  })
+
+  it('takes only a key the shifter can reach', () => {
+    // A manifest is a peer's word: 40 semitones, or a word, is not a key.
+    expect(songFromWire(wire({ keyShift: 40 })).keyShift).toBe(6)
+    expect(songFromWire(wire({ keyShift: 'up' }))).not.toHaveProperty(
+      'keyShift',
+    )
+    expect(songFromWire(wire({ keyShift: 0 }))).not.toHaveProperty('keyShift')
+  })
+
+  it('changes key without becoming a new song', () => {
+    const loaded = song({ id: 'session:abc', origin: 'url', notes: [NOTE] })
+    const next = sameSongUpdated(loaded, wire({ notes: [NOTE], keyShift: 2 }))
+    expect(next.keyShift).toBe(2)
+    expect(next.stems).toBe(loaded.stems)
+    expect(next.notes).toEqual([NOTE])
+  })
+
+  it('goes back to the original key when a re-send carries none', () => {
+    const shifted = song({ keyShift: 2 })
+    expect(sameSongUpdated(shifted, wire())).not.toHaveProperty('keyShift')
+    expect(sameSongUpdated(shifted, undefined).keyShift).toBe(2)
+  })
+
+  it('goes out in the key the host set, and arrives in it', () => {
+    const manifest = songManifest(song({ keyShift: -2 }), { 0: 'ada' })
+    expect(manifest.keyShift).toBe(-2)
+    expect(manifest.parts).toEqual({ 0: 'ada' })
+    expect(songFromWire(manifest).keyShift).toBe(-2)
+    expect(songManifest(song(), {})).not.toHaveProperty('keyShift')
+  })
+
+  it('tells a key change from new words, notes or parts', () => {
+    // Only a key change leaves the lines already sung standing: they were
+    // scored against the same notes, in the key they were sung in.
+    const loaded = song({ notes: [NOTE], keyShift: 1 })
+    const parts = { 0: 'ada' }
+    const resent = (over: object) =>
+      wire({ lines, notes: [NOTE], parts, keyShift: 1, ...over })
+
+    expect(onlyKeyChanged(loaded, parts, resent({ keyShift: 3 }))).toBe(true)
+    expect(onlyKeyChanged(loaded, parts, resent({ keyShift: undefined }))).toBe(
+      true,
+    )
+    expect(onlyKeyChanged(loaded, parts, resent({}))).toBe(false)
+    expect(
+      onlyKeyChanged(loaded, parts, resent({ keyShift: 3, notes: [] })),
+    ).toBe(false)
+    expect(
+      onlyKeyChanged(loaded, parts, resent({ keyShift: 3, lines: [] })),
+    ).toBe(false)
+    expect(
+      onlyKeyChanged(loaded, parts, resent({ keyShift: 3, parts: {} })),
+    ).toBe(false)
   })
 
   it('takes "no pitch guide" back off the screen when a retry worked', () => {

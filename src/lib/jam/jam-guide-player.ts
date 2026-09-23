@@ -36,6 +36,8 @@ const LEVEL_RAMP_SEC = 0.02
 export interface JamGuidePlayerDeps {
   /** The shared engine's context; null until the engine has initialised. */
   context: () => AudioContext | null
+  /** Where the guide goes: the room's key graph, else the speakers. */
+  output?: (ctx: AudioContext) => AudioNode
   /** Seam for tests. Defaults to fetch(url) → arrayBuffer. */
   fetchArrayBuffer?: (url: string) => Promise<ArrayBuffer>
 }
@@ -89,11 +91,21 @@ export function createJamGuidePlayer(deps: JamGuidePlayerDeps): JamGuidePlayer {
   let startedAtCtxTime = 0
   let startOffsetSec = 0
 
+  /** The room's key graph, or the speakers when it cannot be had: the
+   *  guide is better heard in the original key than not at all. */
+  const outputFor = (ctx: AudioContext): AudioNode => {
+    try {
+      return deps.output?.(ctx) ?? ctx.destination
+    } catch {
+      return ctx.destination
+    }
+  }
+
   const ensureMaster = (ctx: AudioContext): GainNode => {
     if (master === null) {
       master = ctx.createGain()
       master.gain.value = volume
-      master.connect(ctx.destination)
+      master.connect(outputFor(ctx))
     }
     return master
   }
