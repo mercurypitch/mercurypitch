@@ -27,7 +27,7 @@ import { ownerTokenFor } from '@/lib/jam/jam-rooms'
 import type { JamRunScore } from '@/lib/jam/jam-scoring'
 import { scoreOwnJamRun } from '@/lib/jam/jam-scoring'
 import type { JamSong } from '@/lib/jam/jam-song'
-import { sameSongUpdated, secondsInFlight, songFromWire, songPlayableInRoom, } from '@/lib/jam/jam-song'
+import { onlyKeyChanged, sameSongUpdated, secondsInFlight, songFromWire, songManifest, songPlayableInRoom, } from '@/lib/jam/jam-song'
 import { SongFileInbox } from '@/lib/jam/jam-song-inbox'
 import type { JamSongParts } from '@/lib/jam/jam-song-parts'
 import { assignRange, isMyLine, rehomeDeparted } from '@/lib/jam/jam-song-parts'
@@ -35,6 +35,7 @@ import { encodeStemsForShare, forgetPackedStems, getPackedStems, shareStemsWithP
 import { createJamService } from '@/lib/jam/service'
 import { jamSignalingIsMocked } from '@/lib/jam/signaling'
 import type { JamBackgroundCapabilityMessage, JamChatMessage, JamMelodyMessage, JamPeer, JamPitchMessage, JamPlaybackMessage, JamRoomBackgroundState, JamSongNote, LyricsLineTiming, TimeStampedPitchSample, } from '@/lib/jam/types'
+import { clampKeyShift } from '@/lib/key-shift/key-shift'
 import { StemEncodeAbortedError } from '@/lib/portable/portable-audio'
 import { createPersistedSignal } from '@/lib/storage'
 import { invalidatePremiumBackgroundAccess, premiumBackgroundCatalogState, refreshPremiumBackgroundCatalog, } from '@/stores/background-store'
@@ -655,17 +656,37 @@ export function assignJamSongLines(
 function broadcastSongWithParts(): void {
   const song = jamSong()
   if (song === null) return
-  jamService?.sendSong({
-    id: song.id,
-    title: song.title,
-    artist: song.artist,
-    stems: song.stems,
-    lines: song.lines,
-    notes: song.notes,
-    durationSec: song.durationSec,
-    ...(song.pitchGuide === undefined ? {} : { pitchGuide: song.pitchGuide }),
-    parts: jamSongParts(),
-  })
+  jamService?.sendSong(songManifest(song, jamSongParts()))
+}
+
+/** The room's key, in semitones from the song's own. */
+export const jamRoomKeyShift = (): number => jamSong()?.keyShift ?? 0
+
+/**
+ * Whether THIS device can shift its audio. Not room state: a peer whose
+ * engine cannot run plays the original key, and its key control says why.
+ */
+export const [jamKeyShiftAvailable, setJamKeyShiftAvailable] = createSignal(
+  typeof AudioWorkletNode !== 'undefined',
+)
+
+/**
+ * Move the room's key.
+ *
+ * The host's alone, like the transport. It travels with the manifest and
+ * every peer shifts its own audio to it, the guide vocal included. The
+ * take survives it (see onlyKeyChanged): the lines already sung were sung
+ * against the same notes.
+ */
+export function setJamRoomKeyShift(semitones: number): void {
+  if (!jamIsHost()) return
+  const song = jamSong()
+  if (song === null) return
+  const next = clampKeyShift(semitones)
+  if (next === (song.keyShift ?? 0)) return
+  const { keyShift: _previous, ...rest } = song
+  setJamSong(next === 0 ? rest : { ...rest, keyShift: next })
+  broadcastSongWithParts()
 }
 
 /**
@@ -2054,14 +2075,14 @@ export function initJam() {
       // transport. Treating it as one stopped the music mid-verse for
       // everybody except the person who made the change, which looks
       // exactly like the room breaking by itself.
-      const same = jamSong()?.id === msg.song.id
-      if (same) {
-        setJamSong((prev) =>
-          prev === null ? prev : sameSongUpdated(prev, msg.song),
-        )
+      const loaded = jamSong()
+      if (loaded?.id === msg.song.id) {
+        const keyOnly = onlyKeyChanged(loaded, jamSongParts(), msg.song)
+        setJamSong(sameSongUpdated(loaded, msg.song))
         setJamSongParts(msg.song.parts ?? {})
         // The words or the parts moved under the scores, so they are stale.
-        resetJamLineScores()
+        // A new key moves neither, and the lines already sung stand.
+        if (!keyOnly) resetJamLineScores()
         return
       }
       // Peers trust the host's manifest but still resolve the audio
