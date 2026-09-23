@@ -156,6 +156,26 @@ export const NATIVE_ASSETS = [
     reason:
       "The Retro Analog Studio cover in all four variants — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one.",
   },
+
+  // ── The alley: the Rooms tab and the welcome (S4) ───────────
+  //
+  // Bundled at full quality on purpose (owner, 23 Sep 2026): the alley is the
+  // first thing a fresh install draws, so it cannot wait on a network.
+  {
+    glob: 'rooms/alley/night-rooms-hero*.webp',
+    reason:
+      'The night alley plate at 1x and 2x — the Rooms tab and the first-run welcome ARE this picture, and every door quad is measured on it (apps/mercurypitch/src/alley/alley-plate.ts).',
+  },
+  {
+    glob: 'rooms/alley/retro-analog-studio-portrait-loop.mp4',
+    reason:
+      "The tape-reel loop the Sing door plays inside its doorway when it is selected, and carries into the room on Enter (apps/mercurypitch/src/alley/RoomsAlley.tsx).",
+  },
+  {
+    glob: 'rooms/alley/*-ambient-take2-loop.m4a',
+    reason:
+      'The two room ambients a selected Sing or Ear Lab door fades in, decoded into a looping buffer (apps/mercurypitch/src/alley/alley-audio.ts).',
+  },
 ]
 
 /** Characters a glob segment may contain that a RegExp would read as syntax. */
