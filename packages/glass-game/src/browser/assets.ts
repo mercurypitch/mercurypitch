@@ -61,9 +61,9 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'floating-museum-mystery-portrait-v5': 'journey-map-v5/mystery-muse.webp',
   'floating-museum-cloudscape-v3': 'journey-map-v3/cloudscape.webp',
   'floating-museum-twin-finish-kit-v4':
-    'journey-map-v4/floating-museum-twin-finish-kit-v4.glb',
+    'journey-map-v9/floating-museum-twin-finish-kit-v9.glb',
   'floating-museum-architecture-kit-v6':
-    'journey-map-v7/floating-museum-architecture-kit-v7.glb',
+    'journey-map-v8/floating-museum-architecture-kit-v8.glb',
   'floating-museum-map-kit-v1': 'journey-map-v1/floating-museum-map-kit-v1.glb',
   // Authored IDs stay stable while runtime paths invalidate older cached art.
   'cloudway-platform-kit-v1': 'cloudway-v3/cloudway-platform-kit-v3.glb',
@@ -101,8 +101,8 @@ const MANIFEST_FILES = [
   'adventure-v7/manifest.json',
   'journey-map-v1/manifest.json',
   'journey-map-v3/manifest.json',
-  'journey-map-v4/manifest.json',
-  'journey-map-v7/manifest.json',
+  'journey-map-v9/manifest.json',
+  'journey-map-v8/manifest.json',
   'cloudway-v3/manifest.json',
   'adventure-voice-v1/manifest.json',
   'adventure-voice-v2/manifest.json',

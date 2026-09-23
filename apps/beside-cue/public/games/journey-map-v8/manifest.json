@@ -1,0 +1,39 @@
+{
+  "version": 8,
+  "status": "integrated and actual-browser reviewed; physical-device acceptance pending",
+  "description": "Higher-detail Conservatory with the accepted V7 Twin Galleries connector preserved exactly.",
+  "assets": [
+    {
+      "id": "floating-museum-architecture-kit-v6",
+      "file": "floating-museum-architecture-kit-v8.glb",
+      "source": "art/glass-adventure/journey-map/v8/exports/floating-museum-architecture-kit-v8.glb",
+      "sourceReceipt": "art/glass-adventure/journey-map/v8/exports/floating-museum-architecture-kit-v8.json",
+      "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615",
+      "bytes": 25448308,
+      "root": "map_museum_polish_kit_root",
+      "nodes": ["map_twin_connector", "map_conservatory"]
+    }
+  ],
+  "validation": {
+    "explicitReviewedNormalSelection": true,
+    "candidateManifestAndSelectionHashesMatched": true,
+    "freshGlbReimport": true,
+    "packedEditableRuntimeSource": true,
+    "requiredNamedHierarchy": true,
+    "reviewedConservatoryTriangleCountExact": true,
+    "noSecondGeometryReduction": true,
+    "dimensionsAndGroundAnchorsPassed": true,
+    "connectorAperturePassed": true,
+    "uv0Present": true,
+    "v7ConnectorLogicalRecordsAndPayloadsExact": true,
+    "noDracoOrMeshopt": true,
+    "runtimeIntegration": "Actual WebGL desktop and tablet-sized desktop review passed; exact loaded model hashes verified.",
+    "gltfErrors": 0,
+    "reviewedTangentRepair": "Three degenerate tangent rows repaired from UV derivatives in the source export; all positions, normals, UVs, indices and maps preserved.",
+    "physicalDevicePerformance": "not measured"
+  },
+  "liveProof": {
+    "desktop": "art/glass-adventure/proofs/museum-components-2026-09-23/final-desktop/manifest.json",
+    "tabletSizedDesktop": "art/glass-adventure/proofs/museum-components-2026-09-23/final-tablet/manifest.json"
+  }
+}

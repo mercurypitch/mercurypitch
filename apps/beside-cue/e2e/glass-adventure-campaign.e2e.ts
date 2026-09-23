@@ -58,8 +58,8 @@ test('phone, tablet and desktop map load only lobby models before gallery entry 
     [
       '/games/glass3d/merc.glb',
       '/games/journey-map-v1/floating-museum-map-kit-v1.glb',
-      '/games/journey-map-v4/floating-museum-twin-finish-kit-v4.glb',
-      '/games/journey-map-v7/floating-museum-architecture-kit-v7.glb',
+      '/games/journey-map-v9/floating-museum-twin-finish-kit-v9.glb',
+      '/games/journey-map-v8/floating-museum-architecture-kit-v8.glb',
     ].sort(),
   )
   expect(models.some((url) => /\/games\/adventure-v\d+\//u.test(url))).toBe(

@@ -37,9 +37,15 @@ describe('Glassworks asset contract', () => {
     )
     expect(required.has('journey-map-v1/manifest.json')).toBe(true)
     expect(
-      required.has('journey-map-v7/floating-museum-architecture-kit-v7.glb'),
+      required.has('journey-map-v8/floating-museum-architecture-kit-v8.glb'),
     ).toBe(true)
-    expect(required.has('journey-map-v7/manifest.json')).toBe(true)
+    expect(required.has('journey-map-v8/manifest.json')).toBe(true)
+    expect(
+      required.has('journey-map-v9/floating-museum-twin-finish-kit-v9.glb'),
+    ).toBe(true)
+    expect(required.has('journey-map-v9/manifest.json')).toBe(true)
+    expect(required.has('journey-map-v4/manifest.json')).toBe(false)
+    expect(required.has('journey-map-v7/manifest.json')).toBe(false)
     expect(required.has('cloudway-v3/cloudway-platform-kit-v3.glb')).toBe(true)
     expect(required.has('cloudway-v3/cloudway-ribbon-preview.webp')).toBe(true)
     expect(required.has('cloudway-v3/manifest.json')).toBe(true)

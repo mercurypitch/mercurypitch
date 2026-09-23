@@ -4,8 +4,8 @@
   "purpose": "Same-geometry, same-camera comparison of the provider normal and dense-donor normal bake. Review-only; no automatic normal selection or runtime export.",
   "candidateManifest": {
     "file": "exports/floating-museum-temple-candidate-v9.json",
-    "bytes": 15740,
-    "sha256": "698f9f4f2b9dac10488ccf8929ff68907d08fbbf185301a3401539e001ed000d"
+    "bytes": 15802,
+    "sha256": "192bbca55271f3bc85df594f547590298bd7f3e219b938f8e70956ba7efcf440"
   },
   "order": [
     "Meshy normal",
@@ -72,5 +72,38 @@
     "blender": "5.2.2 LTS"
   },
   "requiredReview": "Inspect dome ribs and panels, finial, entablature, capitals, column fluting, stairs, statue, banners and carved trim at equal zoom.",
-  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/render_museum_finish_comparison.py -- --asset temple"
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/render_museum_finish_comparison.py -- --asset temple",
+  "candidateManifestRevision": {
+    "scope": "Runtime dome base-color variants only; selected geometry, UVs, normals, tangents, ORM and candidate GLBs are unchanged.",
+    "reason": "Replace the rejected hard hue thresholds with continuous neutral coverage validated against the accepted dome UV subset; saturated accents remain protected.",
+    "maskContract": {
+      "fullTintThroughChroma": 0.24,
+      "smoothFadeToZeroTintAtChroma": 0.42,
+      "absoluteBrightnessGate": false,
+      "hardHueBoolean": false
+    },
+    "normalComparisonProofImagesUnchanged": true,
+    "runtimeDomeBaseVariants": {
+      "amber": {
+        "file": "sources/temple-bake-v9/temple-dome-amber-base.png",
+        "bytes": 3651003,
+        "sha256": "d12adb6c614ee0fb3821cf7845e24bc2c2383a8fc34a4a2bb1fe0b8d61e7fe03",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      },
+      "teal": {
+        "file": "sources/temple-bake-v9/temple-dome-teal-base.png",
+        "bytes": 4103517,
+        "sha256": "d305559cfbe9be04cabe0799964e724b994d43b47a5334277681cf973afa2168",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      }
+    }
+  }
 }

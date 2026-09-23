@@ -227,29 +227,28 @@ def make_temple_variants(
     maximum = source.max(axis=2)
     minimum = source.min(axis=2)
     chroma = maximum - minimum
-    bright = np.clip((maximum - 0.42) / 0.42, 0.0, 1.0)
-    pale = np.clip((0.22 - chroma) / 0.17, 0.0, 1.0)
-    gold = (red > green * 1.04) & (green > blue * 1.10) & (chroma > 0.07)
-    emerald = (green > red * 1.12) & (green > blue * 0.88) & (chroma > 0.08)
-    mask = bright * pale * (~gold) * (~emerald)
+    accent_transition = np.clip((chroma - 0.24) / (0.42 - 0.24), 0.0, 1.0)
+    accent_protection = accent_transition**2 * (3.0 - 2.0 * accent_transition)
+    mask = 1.0 - accent_protection
     luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722
     targets = {
-        "amber": np.array([1.0, 0.57, 0.20], dtype=np.float32),
-        "teal": np.array([0.10, 0.68, 0.64], dtype=np.float32),
+        "amber": np.array([1.0, 0.66, 0.18], dtype=np.float32),
+        "teal": np.array([0.08, 0.72, 0.72], dtype=np.float32),
     }
     rows = {}
     for variant, target in targets.items():
-        target_luminance = float(target @ np.array([0.2126, 0.7152, 0.0722]))
-        tinted = target[None, None, :] * (luminance[..., None] / target_luminance)
-        blend = (mask * 0.78)[..., None]
-        result = np.clip(source * (1.0 - blend) + np.clip(tinted, 0.0, 1.0) * blend, 0.0, 1.0)
+        shade = np.clip(0.58 + 0.52 * luminance, 0.48, 1.08)
+        tinted = np.clip(target[None, None, :] * shade[..., None], 0.0, 1.0)
+        blend = (mask * 0.94)[..., None]
+        result = np.clip(source * (1.0 - blend) + tinted * blend, 0.0, 1.0)
         image = PILImage.fromarray(np.round(result * 255).astype(np.uint8), "RGB")
         row = FINISH.save_png(
             image, asset.texture_dir / f"temple-dome-{variant}-base.png"
         )
         row["method"] = (
-            "Brightness-preserving tint of pale low-chroma dome texels; warm gold and emerald "
-            "texels are protected. Apply only to the dome face partition."
+            "Shade-preserving tint with full neutral coverage through chroma 0.24 and a "
+            "smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the "
+            "dome face partition."
         )
         rows[variant] = row
     return rows

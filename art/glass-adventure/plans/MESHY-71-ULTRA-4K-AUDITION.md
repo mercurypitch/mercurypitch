@@ -83,7 +83,7 @@ resume an existing task instead of resubmitting it.
    shipping derivative. Preserve existing platform simulation and saves.
 
 - [x] Verify official API and installed MCP capabilities.
-- [ ] Finish current museum asset repair and browser review.
+- [x] Finish current museum asset repair and browser review. Physical-device performance remains separate acceptance.
 - [x] Generate and archive the single-platform 7.1 Ultra 4K audition.
 - [x] Review equal-scale source clay and PBR comparisons against current V3.
 - [ ] Prepare a fitted runtime mesh, Blender bake and actual game comparisons before replacement.

@@ -1443,3 +1443,10 @@ a later normals pass. When splitting a mesh for colour variants, preserve its sp
 recomputing each side independently can introduce a seam without changing the silhouette.
 **See:** `art/glass-adventure/plans/CLOUDWAY-VISUAL-QUALITY-REVIEW.md`,
 `art/glass-adventure/plans/MUSEUM-SHAPE-AUDIT-2026-09-23.md`.
+
+### Review silhouettes before reducing generated museum assets
+
+**Symptom:** museum domes, statues and cypresses looked jagged despite valid glTF and texture maps.
+**Cause:** provider remeshing followed by local decimation discarded useful shapes; normal maps could not restore outlines. Dense normal bakes also introduced projection halos on some surfaces.
+**Rule:** preserve dense donors, accept remeshes in clay, compare baked/provider normals under identical lighting, then inspect exact runtime exports. Keep instancing and measure total scene cost; successful validators alone do not establish visual quality. Review material recolouring on the actual surface UV footprint: a whole-atlas colour average missed a mask that treated warm neutral dome stone as gold and left 80.5% of the dome untinted.
+**See:** `art/glass-adventure/plans/MUSEUM-COMPONENT-REPAIR-2026-09-22.md`.

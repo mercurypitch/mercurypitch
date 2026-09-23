@@ -7,8 +7,8 @@
   "selectedNormalSource": "meshy",
   "candidateManifest": {
     "file": "exports/floating-museum-temple-candidate-v9.json",
-    "bytes": 15740,
-    "sha256": "698f9f4f2b9dac10488ccf8929ff68907d08fbbf185301a3401539e001ed000d"
+    "bytes": 15802,
+    "sha256": "192bbca55271f3bc85df594f547590298bd7f3e219b938f8e70956ba7efcf440"
   },
   "selectedCandidate": {
     "file": "exports/floating-museum-temple-candidate-v9-meshy-normal.glb",
@@ -31,8 +31,8 @@
   "proofs": [
     {
       "file": "proofs/temple-normal-comparison-v9.json",
-      "bytes": 2560,
-      "sha256": "3c75edf54f0694282518673e4eebcab1fb4afb0a5e17e89386ec7926b40bc81b"
+      "bytes": 4105,
+      "sha256": "635ece6a7ab4339af08a791eb04fd79944e96e4ff96f5dce3234a029a79c7202"
     },
     {
       "file": "proofs/temple-normal-comparison-front-v9.png",
@@ -62,11 +62,44 @@
   },
   "exportValidation": {
     "finiteUnitNormals": true,
-    "maximumNormalUnitError": 1.5096508310108447e-7,
+    "maximumNormalUnitError": 1.5096508310108447e-07,
     "finiteUnitTangents": true,
-    "maximumTangentUnitError": 0.00008062679687648178,
+    "maximumTangentUnitError": 8.062679687648178e-05,
     "tangentHandednessPlusOrMinusOne": true,
     "uv0AndPbrBindingsPresent": true
   },
-  "runtimeIntegration": "authorized by this receipt but not performed by the candidate finisher"
+  "runtimeIntegration": "authorized by this receipt but not performed by the candidate finisher",
+  "runtimeDomeTintRevision": {
+    "scope": "Runtime dome base-color variants only; selected geometry, UVs, normals, tangents, ORM and candidate GLBs are unchanged.",
+    "reason": "Replace the rejected hard hue thresholds with continuous neutral coverage validated against the accepted dome UV subset; saturated accents remain protected.",
+    "maskContract": {
+      "fullTintThroughChroma": 0.24,
+      "smoothFadeToZeroTintAtChroma": 0.42,
+      "absoluteBrightnessGate": false,
+      "hardHueBoolean": false
+    },
+    "normalComparisonProofImagesUnchanged": true,
+    "runtimeDomeBaseVariants": {
+      "amber": {
+        "file": "sources/temple-bake-v9/temple-dome-amber-base.png",
+        "bytes": 3651003,
+        "sha256": "d12adb6c614ee0fb3821cf7845e24bc2c2383a8fc34a4a2bb1fe0b8d61e7fe03",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      },
+      "teal": {
+        "file": "sources/temple-bake-v9/temple-dome-teal-base.png",
+        "bytes": 4103517,
+        "sha256": "d305559cfbe9be04cabe0799964e724b994d43b47a5334277681cf973afa2168",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      }
+    }
+  }
 }

@@ -197,6 +197,22 @@ Do not publish a replacement on polygon count or provider success alone.
 
 ## Research to complete before formalizing the skill
 
+### Exercised example: Conservatory V8, 23 September
+
+The 109,636-triangle remesh retained useful shape from the 1,201,474-triangle
+donor. A real Blender selected-to-active 2K normal/AO bake was produced with a
+12 mm cage offset and 45 mm ray distance. A 12,000-point surface audit found
+0.5833% approximate cage-ray misses; this samples geometry, not every UV texel.
+Equal-camera close and angled renders then exposed dark halos below the roof
+panels and harsh column patches in the baked normal variant. The cleaner Meshy
+normal was selected. Both raw normal maps, the rejected candidate, projection
+audit, comparison images and packed source remain archived in `journey-map/v8/`.
+
+This is a practical rejection example: a nonblank bake and closely aligned
+bounding boxes do not establish a good bake. Review the actual shaded result
+before packaging. Source foliage still contains fused clusters; a successful
+remesh does not turn them into individually modeled leaves.
+
 Use official Blender/glTF/Three.js documentation for operational claims; check
 the project's installed versions. Supplement with attributed production articles,
 public talks and legally accessible book excerpts for artistic judgment. Community

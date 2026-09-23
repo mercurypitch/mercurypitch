@@ -1,0 +1,10 @@
+{
+  "decision": "rejected-color-treatment",
+  "reason": "Temple silhouette improves, but dome texture tint clips toward ivory and loses accepted amber/teal landmark identity. Geometry, loader, framing and capture hashes remain valid; recapture after dome material correction.",
+  "replacement": "final-desktop and final-tablet after source-side tint correction",
+  "rejectedModel": {
+    "file": "rejected-kit.glb",
+    "bytes": 20664328,
+    "sha256": "9db2a7173801d618abdc74741b822951967e94876fba27e6f0f7485a39b77925"
+  }
+}

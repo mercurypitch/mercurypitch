@@ -1,0 +1,15 @@
+{
+  "decision": "accepted-for-owner-device-review",
+  "modelHashes": {
+    "apps/beside-cue/public/games/glass3d/merc.glb": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16",
+    "apps/beside-cue/public/games/journey-map-v1/floating-museum-map-kit-v1.glb": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709",
+    "apps/beside-cue/public/games/journey-map-v9/floating-museum-twin-finish-kit-v9.glb": "04da964628212b243ca5b4afd327a1e52d43388929de2057be02bec44a495d74",
+    "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615"
+  },
+  "visualReview": "Root reviewed actual WebGL output: higher-detail temple/statues, cypresses and Conservatory; restored continuous amber/teal identity without the rejected pale or speckled masks. Connector preserved.",
+  "knownLimits": [
+    "Some original source garlands remain fused; separate foliage replacement is still planned.",
+    "Tablet-sized desktop view is not a physical-device performance result."
+  ],
+  "scope": "Asset detail/material replacement only; approved fog, movement, camera, route, progress and collision configuration unchanged."
+}

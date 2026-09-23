@@ -1,0 +1,97 @@
+{
+  "url": "http://127.0.0.1:5341/glass-game/?campaign=1",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "deviceScope": "Desktop browser on local hardware",
+  "renderer": "ANGLE (AMD, Vulkan 1.4.359 (AMD Radeon RX 9070 XT (RADV GFX1201) (0x00007550)), radv)",
+  "rasterization": "actual WebGL drawing; no suppressed calls",
+  "assets": [
+    {
+      "url": "http://127.0.0.1:5341/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+      "file": "apps/beside-cue/public/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+      "status": 200,
+      "capture": "CDP response body from the actual application request",
+      "bytes": 6831200,
+      "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709"
+    },
+    {
+      "url": "http://127.0.0.1:5341/games/glass3d/merc.glb",
+      "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+      "status": 200,
+      "capture": "CDP response body from the actual application request",
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16"
+    },
+    {
+      "url": "http://127.0.0.1:5341/games/journey-map-v9/floating-museum-twin-finish-kit-v9.glb",
+      "file": "apps/beside-cue/public/games/journey-map-v9/floating-museum-twin-finish-kit-v9.glb",
+      "status": 200,
+      "capture": "CDP response body from the actual application request",
+      "bytes": 19481064,
+      "sha256": "04da964628212b243ca5b4afd327a1e52d43388929de2057be02bec44a495d74"
+    },
+    {
+      "url": "http://127.0.0.1:5341/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+      "file": "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+      "status": 200,
+      "capture": "CDP response body from the actual application request",
+      "bytes": 25448308,
+      "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "twin-galleries-isle.png",
+      "stage": "twin-galleries-isle",
+      "camera": {
+        "yaw": "-0.140",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "b44f3253ca6bcf56cad26d416c6f7a5d2e69264cda601385e5b1a6708dc6b0a1",
+      "rendererMetrics": {
+        "drawCalls": 265,
+        "triangles": 2597333,
+        "geometries": 49,
+        "textures": 47,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "frameCadence": {
+        "method": "120 requestAnimationFrame intervals; desktop browser cadence, not GPU timings or tablet performance",
+        "medianMs": 16.699999999999818,
+        "p95Ms": 16.799999999999272,
+        "maximumMs": 16.800000000000182
+      }
+    },
+    {
+      "file": "resonance-conservatory-isle.png",
+      "stage": "resonance-conservatory-isle",
+      "camera": {
+        "yaw": "-0.140",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "af820fb3c7c1d6164071269dc0eb4f3442977bc4d06642e0c7d6eeb53b31d7df",
+      "rendererMetrics": {
+        "drawCalls": 265,
+        "triangles": 2597333,
+        "geometries": 49,
+        "textures": 47,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "frameCadence": {
+        "method": "120 requestAnimationFrame intervals; desktop browser cadence, not GPU timings or tablet performance",
+        "medianMs": 16.69999999999891,
+        "p95Ms": 16.700000000000728,
+        "maximumMs": 16.80000000000109
+      }
+    }
+  ],
+  "errors": []
+}

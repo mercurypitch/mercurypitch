@@ -485,23 +485,23 @@
     "materialVariants": {
       "amber": {
         "file": "sources/temple-bake-v9/temple-dome-amber-base.png",
-        "bytes": 5940437,
-        "sha256": "fdd9f06b81a8dfa3c77031976508f3f84cdb1e9491d5552fca043abcb7ecc117",
+        "bytes": 3651003,
+        "sha256": "d12adb6c614ee0fb3821cf7845e24bc2c2383a8fc34a4a2bb1fe0b8d61e7fe03",
         "dimensions": [
           2048,
           2048
         ],
-        "method": "Brightness-preserving tint of pale low-chroma dome texels; warm gold and emerald texels are protected. Apply only to the dome face partition."
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
       },
       "teal": {
         "file": "sources/temple-bake-v9/temple-dome-teal-base.png",
-        "bytes": 6053554,
-        "sha256": "9428c283c473b4d0b77b2d78653a1321b2b9380ebf8f91392fb85fcdfdd05c17",
+        "bytes": 4103517,
+        "sha256": "d305559cfbe9be04cabe0799964e724b994d43b47a5334277681cf973afa2168",
         "dimensions": [
           2048,
           2048
         ],
-        "method": "Brightness-preserving tint of pale low-chroma dome texels; warm gold and emerald texels are protected. Apply only to the dome face partition."
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
       }
     },
     "normalPartitionRule": "Partition by face-centre Z without moving vertices or recalculating loop normals/tangents; both colour variants share the same structure/dome geometry."

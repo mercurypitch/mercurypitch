@@ -8,15 +8,25 @@ Code and production sources are preserved in draft PR #807 on
 
 ## Where we are
 
-The current priority is the [museum component repair](./MUSEUM-COMPONENT-REPAIR-2026-09-22.md)
-and close-up quality of the existing Cloudway trial. The tighter 9–14m fog is
-owner accepted. V7 repaired the central balcony; the older temple/cypress and
-Conservatory still need replacement. Source audits identify excessive geometry
-reduction as the cause of the coarse silhouettes; an older dome material split
-also changed some corner normals and needs seam review in the replacement.
-The owner explicitly approved all three source transfers on 23 September; Meshy
-replacement production is running. No new levels until this route is pristine. PR checks passed on `ff36e14f`
-(40 passed, one production-only skip).
+The [museum component repair](./MUSEUM-COMPONENT-REPAIR-2026-09-22.md)
+is integrated and has passed source, Blender and actual-browser review. V8
+preserves the accepted balcony and replaces the Conservatory; V9 restores the
+temple/statues and cypress. The original coarse silhouettes came from source
+remeshing followed by excessive local reduction, not dotfiles cleanup or the
+recent runtime normals pass. All six Meshy jobs completed for 45 credits.
+Original donors, PBR sources, dense normal/AO bakes, packed Blender files and
+rejected alternatives are archived. The cleaner provider normal was selected
+for each asset, retaining dense AO. Dome colour uses a continuous neutral mask;
+the split preserves exact geometry and normals.
+
+The [actual-browser proof](../proofs/museum-components-2026-09-23/README.md)
+records final loaded hashes and desktop/tablet-sized views, with no browser
+errors. Nine focused unit tests and the responsive lobby-loading browser test
+pass. Draw calls stay at 265; pass-inclusive triangles rise from 867,371 to
+2,597,333 and the four lobby GLBs from 25.17 MB to 52.19 MB. Physical-tablet load,
+frame rate and heat remain unmeasured. The tighter 9–14m fog is owner accepted
+and unchanged. Remaining source foliage and existing Cloudway scenery need
+further work; no new levels until this route is pristine.
 
 The owner's new [camera and route follow-ups](./CAMERA-AND-ROUTE-FOLLOWUPS-2026-09-23.md)
 are saved as backlog: gentler left/right turns, distinct look-sensitivity and
@@ -24,9 +34,13 @@ follow-smoothness tuning, then crescent/S-bend/offset/curved route auditions usi
 the same platform family. These settings and route variants are not implemented.
 
 The owner also requested a [Meshy 7.1 / Ultra 4K platform audition](./MESHY-71-ULTRA-4K-AUDITION.md).
-API support is verified; the installed MCP 0.4.0 lacks explicit 7.1/4K geometry
-parameters. Finish the current museum batch, then compare one higher-detail
-platform donor and runtime textures without adding a new level.
+API support is verified; both installed MCP 0.4.0 and latest published 0.5.2 lack
+explicit 7.1/4K geometry parameters. The API was used for the trial; MCP `latest` may resolve to 7.1 but cannot pin
+all these controls. The independent explicit
+7.1/Ultra 4K source trial succeeded for 35 credits; its dense model and actual
+4K base/normal maps are archived in platform-trials/v4. Source comparison accepts it as a cleaner high-detail donor; it needs fitting
+to the current landing envelope before a runtime bake. No platform runtime
+replacement or new level has been added.
 
 The shared campaign contains First Light, Glassworks Journey, Twin Galleries
 and Resonance Conservatory, with separate progress and the Journey rewards
@@ -164,8 +178,9 @@ checklist/skill built from verified guidance and our own production lessons.
 The Cloudway family passed its scoped structural production audit, including
 landing proxies, outward fracture winding, hashes and instanced parts. That did
 not establish visual quality: the owner's close-up report exposed excessive
-shape reduction. V3 platform replacements and V7 balcony repair are integrated;
-the wider museum inventory and current-route scenery are still under review.
+shape reduction. V3 platforms and V8/V9 museum replacements are integrated and
+visually reviewed. Fused source foliage, remaining cliff/flower detail and
+current-route scenery are still open; physical-device cost needs acceptance.
 
 ### N2 finish — close the current visual polish
 
