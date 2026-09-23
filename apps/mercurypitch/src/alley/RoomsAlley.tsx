@@ -235,7 +235,6 @@ export const RoomsAlley: Component = () => {
     const spec = doorSpec(key)
     if (spec.tab === null) return
     const tab = spec.tab
-    const release = holdRoomArrival()
     const ambientSilent = ambient().stop(reduced() ? REDUCED_MS : FADE_OUT_MS)
     const clip =
       spec.clip !== null && singVideo !== undefined && !singVideo.paused
@@ -259,7 +258,7 @@ export const RoomsAlley: Component = () => {
         markWelcomeSeen()
         goToTab(tab)
       },
-      releaseArrival: release,
+      holdArrival: holdRoomArrival,
     })
     const unregister = registerDoorOpen(cancelOpen)
     document.addEventListener('pointerdown', onPressOutside, true)

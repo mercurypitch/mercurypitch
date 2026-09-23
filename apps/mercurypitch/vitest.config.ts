@@ -12,15 +12,20 @@ const ROOT_SRC = resolve(
   '../../src',
 )
 
-// The shell's own suites, and the only ones that need a document. Everything
-// else this package tests — the bundle manifest, the storage port, the back
+// The shell's own suites and the alley's `*.dom.test.*` files: the only ones
+// that need a document. Everything else this package tests — the bundle manifest, the storage port, the back
 // button, define parity — is plumbing with no DOM in it, and every jsdom
 // instance costs real time (the root config's split is measured: more than
 // half its CPU was spent building documents for suites that never used one).
 //
 // The two projects below are exact complements, so no file runs twice and
 // none is dropped.
-const SHELL_TESTS = ['src/shell/**/*.test.ts', 'src/shell/**/*.test.tsx']
+const DOM_TESTS = [
+  'src/shell/**/*.test.ts',
+  'src/shell/**/*.test.tsx',
+  'src/alley/**/*.dom.test.ts',
+  'src/alley/**/*.dom.test.tsx',
+]
 const ALL_TESTS = ['src/**/*.test.ts', 'src/**/*.test.tsx']
 const SHARED_EXCLUDE = ['**/node_modules/**', '**/dist/**']
 
@@ -46,7 +51,7 @@ export default defineConfig({
           name: 'node',
           environment: 'node',
           include: ALL_TESTS,
-          exclude: [...SHARED_EXCLUDE, ...SHELL_TESTS],
+          exclude: [...SHARED_EXCLUDE, ...DOM_TESTS],
         },
       },
       {
@@ -54,7 +59,7 @@ export default defineConfig({
         test: {
           name: 'jsdom',
           environment: 'jsdom',
-          include: SHELL_TESTS,
+          include: DOM_TESTS,
           exclude: SHARED_EXCLUDE,
         },
       },

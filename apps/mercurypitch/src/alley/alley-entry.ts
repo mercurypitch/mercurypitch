@@ -15,10 +15,11 @@
 // own background to be decoded, and only then fades. Between the rail
 // (`--z-rail`, 470) and a stage (`--z-stage`, 450), so the rail stays put.
 //
-// The room's arrival (the Sing room's automatic microphone) is held by the
-// caller for the whole hand-over and released here once the clone is gone AND
-// the ambient is silent — whichever is last, with a failsafe so a lost frame
-// or a room that never draws cannot leave a room waiting forever.
+// The room's arrival (the Sing room's automatic microphone) is held here for
+// the whole hand-over and released once the clone is gone AND the ambient is
+// silent — whichever is last. The hold and its failsafe are taken on the same
+// line, so a lost frame, a room that never draws, or a throw while the clone
+// is being built cannot leave a room waiting forever.
 
 import type { DoorLayout } from './alley-geometry'
 import { easeOut, fullQuad, invert, lerpQuad, matrix3d, rectToQuad, } from './alley-geometry'
@@ -49,8 +50,8 @@ export interface DoorOpenPlan {
   readonly ambientSilent: Promise<void>
   /** The clone covers the screen: mount the room under it. */
   readonly onCovered: () => void
-  /** Let the room start its own arrival. */
-  readonly releaseArrival: () => void
+  /** Hold the room's own arrival; the returned function lets it start. */
+  readonly holdArrival: () => () => void
 }
 
 /** The first url() in a computed background-image, or null. */
@@ -139,6 +140,34 @@ export interface DoorOpen {
  * in the document before the handler returns.
  */
 export function openDoor(plan: DoorOpenPlan): DoorOpen {
+  // The hold and its failsafe, together: nothing can run between them.
+  const releaseArrival = plan.holdArrival()
+  let released = false
+  const release = (): void => {
+    if (released) return
+    released = true
+    releaseArrival()
+  }
+  const failsafe = window.setTimeout(release, ARRIVAL_FAILSAFE_MS)
+  let started = false
+  try {
+    const open = startOpen(plan, release, failsafe)
+    started = true
+    return open
+  } finally {
+    // A throw before the open was under way: nothing else will release it.
+    if (!started) {
+      window.clearTimeout(failsafe)
+      release()
+    }
+  }
+}
+
+function startOpen(
+  plan: DoorOpenPlan,
+  release: () => void,
+  failsafe: number,
+): DoorOpen {
   // Where the clip lived, so a cancelled open can put it back.
   const home = plan.video?.parentNode ?? null
   const homeNext = plan.video?.nextSibling ?? null
@@ -148,14 +177,6 @@ export function openDoor(plan: DoorOpenPlan): DoorOpen {
     matrix3d(
       rectToQuad(plan.width, plan.height, lerpQuad(plan.door.quad, full, t)),
     )
-
-  let released = false
-  const release = (): void => {
-    if (released) return
-    released = true
-    plan.releaseArrival()
-  }
-  const failsafe = window.setTimeout(release, ARRIVAL_FAILSAFE_MS)
 
   if (plan.reduced) {
     // No transform on the clone at all: it sits over the screen and fades in.
