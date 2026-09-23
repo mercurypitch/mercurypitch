@@ -1215,7 +1215,7 @@ test('Conservatory accepts two deliberate whole-tone waves, a brief dropout, and
     name: /singing instructions/i,
   })
   const detailedGesture = panel.getByText(
-    'Up, down, up, down, then back to the middle. A semitone is enough; keep it comfortable.',
+    'Make 2 gentle waves above and below your note, then return to the middle. A semitone is enough; keep it comfortable.',
     { exact: true },
   )
   await expect(instructions).toHaveAttribute('aria-expanded', 'false')

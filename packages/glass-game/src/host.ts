@@ -1,7 +1,11 @@
 // Glass adventure host — platform services stay outside simulation and rendering.
 import type { PitchObservation, SavedProgress } from './contracts'
+import type { CompiledMelody } from './core/melody-contour'
+import type { MelodyReferencePlayer } from './core/melody-reference'
+import type { MusicalMemoryPlayback, MusicalMemoryStore, } from './core/musical-memory'
 
 export interface GlassVoiceTake {
+  isRecording?(): boolean
   /** Finalize this explicitly requested take. Null means interrupted or empty. */
   finish(): Promise<Blob | null>
   discard(): void
@@ -86,6 +90,9 @@ export interface GlassGameHost {
   createSound(): GlassSound
   createMusic?(): GlassMuseumAudio
   createNarration?(): GlassMercNarration
+  createMelodyReference?(melody: CompiledMelody): MelodyReferencePlayer
+  memories?: MusicalMemoryStore
+  createMemoryPlayback?(): MusicalMemoryPlayback
   loadProgress(levelId: string): unknown
   saveProgress(progress: SavedProgress): void
   readPreference(key: string): string | null

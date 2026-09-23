@@ -1,0 +1,127 @@
+{
+  "capturedAt": "2026-09-23T23:32:28.294Z",
+  "server": "http://127.0.0.1:5357",
+  "viewport": {
+    "width": 1024,
+    "height": 768,
+    "deviceScaleFactor": 1
+  },
+  "rasterization": "Actual Three/WebGL2 drawing in the shipped game; no draw methods replaced.",
+  "scope": "Visual proof of the intact final portrait prefab at its authored checkpoint; not a performance benchmark.",
+  "proofs": [
+    {
+      "id": "awakened-muse",
+      "title": "Glassworks Journey",
+      "url": "http://127.0.0.1:5357/glass-game/?layout=journey",
+      "screenshot": "awakened-muse.png",
+      "screenshotSha256": "d8662bb188cbd460db654afaa32be81732517adb73ecd647b96b23a791fe91a6",
+      "levelId": "glassworks-journey/journey",
+      "checkpointId": "glassworks-journey/journey/portrait/checkpoint/entry",
+      "completedMainExhibits": 3,
+      "player": {
+        "x": 21.345872707366944,
+        "y": 0,
+        "z": 48.92673133184045
+      },
+      "cameraYaw": 3.141592653589793,
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "width": 1024,
+        "height": 768
+      },
+      "assets": [
+        {
+          "path": "/games/adventure/legend-slab.glb",
+          "status": 200,
+          "bytes": 709632,
+          "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+          "matchesLocal": true
+        },
+        {
+          "path": "/games/adventure-v5/painting-portrait.webp",
+          "status": 200,
+          "bytes": 251160,
+          "sha256": "914051374a8521f9397f6c4a1b90d878cb5d4b9d6f55f7bf2e1835cd84ec5b8d",
+          "matchesLocal": true
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "interval",
+      "title": "Twin Galleries",
+      "url": "http://127.0.0.1:5357/glass-game/?layout=twin-galleries",
+      "screenshot": "interval.png",
+      "screenshotSha256": "ca231d61da2a93682e5dd1e35c4b7cb566e66fe85fbc407997b61d5db2eb5076",
+      "levelId": "glassworks-twin-galleries/twin-galleries",
+      "checkpointId": "glassworks-twin-galleries/twin-galleries/portrait/checkpoint/entry",
+      "completedMainExhibits": 3,
+      "player": {
+        "x": 14.425491876904907,
+        "y": 0,
+        "z": 36.288112535476685
+      },
+      "cameraYaw": 1.5707963267948966,
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "width": 1024,
+        "height": 768
+      },
+      "assets": [
+        {
+          "path": "/games/adventure/legend-slab.glb",
+          "status": 200,
+          "bytes": 709632,
+          "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+          "matchesLocal": true
+        },
+        {
+          "path": "/games/adventure-v6/interval-between.webp",
+          "status": 200,
+          "bytes": 479278,
+          "sha256": "7810c0cfbf8456785bc44f06fa03d3c2de668e4d9aec3e903f2160c3f112802a",
+          "matchesLocal": true
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "wave-keeper",
+      "title": "Resonance Conservatory",
+      "url": "http://127.0.0.1:5357/glass-game/?layout=conservatory",
+      "screenshot": "wave-keeper.png",
+      "screenshotSha256": "6012bb1dfd7906967684c737d9e9983d1de0a766b54d8a62a736968ac433a282",
+      "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+      "checkpointId": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+      "completedMainExhibits": 3,
+      "player": {
+        "x": 14.520343067381107,
+        "y": 0,
+        "z": 51.230352363586434
+      },
+      "cameraYaw": 1.5707963267948966,
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "width": 1024,
+        "height": 768
+      },
+      "assets": [
+        {
+          "path": "/games/adventure/legend-slab.glb",
+          "status": 200,
+          "bytes": 709632,
+          "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+          "matchesLocal": true
+        },
+        {
+          "path": "/games/adventure-v7/wave-keeper.webp",
+          "status": 200,
+          "bytes": 500112,
+          "sha256": "2412dea62981a20f2549c426937d55ba0fec3be908d5aeb65cc95d2d4da58e3b",
+          "matchesLocal": true
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

@@ -33,6 +33,7 @@ export function useAdventure(
   host: GlassGameHost,
   level: LevelDefinition,
   mount: () => HTMLElement,
+  presentationCovered: () => boolean = () => false,
 ) {
   const game = createGlassGame(level, host.loadProgress(level.id))
   const input = createAdventureInput()
@@ -471,7 +472,10 @@ export function useAdventure(
       if (!alive) return
       const elapsed = lastTime === 0 ? 0 : (now - lastTime) / 1000
       lastTime = now
-      if (ready() && !paused() && !tutorial()) {
+      // An opaque encore covers a completed world. Keep its frame, freeing
+      // the main thread for pitch capture and the visible melody ribbon.
+      const covered = presentationCovered()
+      if (!covered && ready() && !paused() && !tutorial()) {
         const movementActive = input.hasMovementIntent()
         const movementReferenceChanged = input.consumeMovementReferenceChange()
         renderer?.setMovementActive(movementActive)
@@ -486,7 +490,11 @@ export function useAdventure(
       const activeRenderer = renderer
       const phase = loadingPhase()
       const needsStableFrame = phase === 'awaiting-first-frame'
-      if (activeRenderer !== null && (phase === 'ready' || needsStableFrame))
+      if (
+        !covered &&
+        activeRenderer !== null &&
+        (phase === 'ready' || needsStableFrame)
+      )
         try {
           activeRenderer.render(game.snapshot(), Math.min(0.05, elapsed), {
             challengeEncounterId: voiceState()?.encounterId ?? null,
@@ -644,6 +652,21 @@ export function useAdventure(
     cameraComfort,
     changeCameraComfort,
     gameplayGesture,
+    silenceForEncore: () => {
+      clearNarrationCaption()
+      return Promise.all([
+        soundscape.silenceForVoice(),
+        narration.silenceForVoice(),
+      ]).then(() => undefined)
+    },
+    releaseEncore: () => {
+      narration.releaseVoice()
+      soundscape.releaseVoice()
+    },
+    celebrateEncore: () => {
+      const reaction = narration.breakCompleted(false)
+      showNarrationCaption(reaction.caption)
+    },
     challengeCamera,
     cameraYaw: () => {
       snapshot()

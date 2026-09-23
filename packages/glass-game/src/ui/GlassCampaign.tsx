@@ -3,6 +3,7 @@ import { createMemo, createSignal, Show } from 'solid-js'
 import type { GalleryChapter } from '../content/campaign'
 import { MUSEUM_CAMPAIGN } from '../content/campaign'
 import { islandChapterIds, MUSEUM_TRIALS } from '../content/campaign-trials'
+import { GALLERY_ENCORES } from '../content/encores'
 import { galleryArtworkForAsset } from '../content/gallery-artworks'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import { replayProfilesForLevel } from '../content/replay-profiles'
@@ -14,6 +15,7 @@ import { evaluateTrialUnlock } from '../core/trial-unlock'
 import type { GlassGameHost } from '../host'
 import { GlassAdventure } from './GlassAdventure'
 import { MuseumCollection } from './MuseumCollection'
+import type { MuseumJourneyAudio } from './MuseumJourney'
 import { MuseumJourney } from './MuseumJourney'
 import { projectMuseumJourneyChapter } from './MuseumJourneyProgress'
 import { createReplayVisitHost, loadPreReplayProgress, loadReplayProgress, } from './replay-visit-host'
@@ -34,6 +36,7 @@ export function GlassCampaign(props: {
   const [replayChapterId, setReplayChapterId] = createSignal<string>()
   const [collectionOpen, setCollectionOpen] = createSignal(false)
   let visitSequence = 0
+  let mapAudio: MuseumJourneyAudio | undefined
   const [selectedStageId, setSelectedStageId] = createSignal(
     FLOATING_MUSEUM_JOURNEY.stages[0]!.id,
   )
@@ -129,6 +132,10 @@ export function GlassCampaign(props: {
         : [
             {
               ...entry,
+              encore:
+                GALLERY_ENCORES[
+                  chapter.level.authored?.levelId ?? chapter.level.id
+                ],
               artwork: galleryArtworkForAsset(
                 entry.summary.portrait!.imageAssetId,
               ),
@@ -286,6 +293,10 @@ export function GlassCampaign(props: {
               }}
               onExit={() => props.host.onExit()}
               onOpenCollection={() => setCollectionOpen(true)}
+              covered={collectionOpen() || replayChoice() !== undefined}
+              onAudioReady={(audio) => {
+                mapAudio = audio
+              }}
             />
           </div>
           <Show when={replayChoice()} keyed>
@@ -303,6 +314,11 @@ export function GlassCampaign(props: {
           <Show when={collectionOpen()}>
             <MuseumCollection
               entries={collection()}
+              host={props.host}
+              beforeCapture={() =>
+                mapAudio?.silenceForVoice() ?? Promise.resolve()
+              }
+              onReleaseVoice={() => mapAudio?.releaseVoice()}
               assetUrl={props.host.assetUrl}
               onClose={() => setCollectionOpen(false)}
               onVisit={(levelId) => {

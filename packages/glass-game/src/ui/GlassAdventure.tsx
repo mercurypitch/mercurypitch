@@ -1,5 +1,6 @@
 // Glass adventure — the same playable museum surface in web and native hosts.
 import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { GALLERY_ENCORES } from '../content/encores'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
@@ -17,6 +18,9 @@ import { VoiceChallengePanel } from './VoiceChallengePanel'
 
 const CameraTuningPanel = lazy(async () => ({
   default: (await import('./CameraTuningPanel')).CameraTuningPanel,
+}))
+const EncoreDialog = lazy(async () => ({
+  default: (await import('./EncoreDialog')).EncoreDialog,
 }))
 
 export interface GlassAdventureProps {
@@ -71,12 +75,20 @@ export function GlassAdventure(props: GlassAdventureProps) {
 function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
   let canvas!: HTMLDivElement
   const level = untrack(() => props.level) ?? GLASSWORKS
+  const encore = GALLERY_ENCORES[level.authored?.levelId ?? level.id]
+  const [encoreOpen, setEncoreOpen] = createSignal(false)
+  let encoreOpener: HTMLButtonElement | undefined
+  const closeEncore = () => {
+    setEncoreOpen(false)
+    queueMicrotask(() => encoreOpener?.focus({ preventScroll: true }))
+  }
   const mercLoadingArt = untrack(() => props.host.assetUrl('merc-loading'))
   const mercModel = untrack(() => props.host.assetUrl('merc'))
   const adventure = useAdventure(
     untrack(() => props.host),
     level,
     () => canvas,
+    encoreOpen,
   )
   const loadingPresentationPhase = createMemo<LoadingScreenPhase>(() => {
     const phase = adventure.loadingPhase()
@@ -653,6 +665,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               role="dialog"
               aria-modal="true"
               aria-labelledby="glass-complete-title"
+              inert={encoreOpen()}
             >
               <div class={styles.completionMark} aria-hidden="true">
                 <svg viewBox="0 0 24 24">
@@ -687,6 +700,18 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                 {level.guidance?.completionNext ??
                   'The next gallery will teach notes that rise and fall.'}
               </p>
+              <Show when={encore && props.host.createMelodyReference}>
+                <button
+                  class={styles.textButton}
+                  type="button"
+                  onClick={(event) => {
+                    encoreOpener = event.currentTarget
+                    setEncoreOpen(true)
+                  }}
+                >
+                  Sing an optional encore
+                </button>
+              </Show>
               <Show when={props.onContinue}>
                 <button
                   class={styles.primary}
@@ -711,6 +736,19 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                 Play this gallery again
               </button>
             </section>
+            <Show when={encoreOpen() && encore}>
+              {(definition) => (
+                <EncoreDialog
+                  host={props.host}
+                  levelId={level.id}
+                  encore={definition()}
+                  beforeCapture={adventure.silenceForEncore}
+                  onReleaseVoice={adventure.releaseEncore}
+                  onComplete={adventure.celebrateEncore}
+                  onClose={closeEncore}
+                />
+              )}
+            </Show>
           </div>
         </Show>
       </Show>

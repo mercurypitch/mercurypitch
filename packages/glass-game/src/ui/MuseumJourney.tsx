@@ -26,6 +26,11 @@ export interface MuseumJourneyChapterView {
   portrait?: { title: string; imageUrl: string }
 }
 
+export interface MuseumJourneyAudio {
+  silenceForVoice(): Promise<void>
+  releaseVoice(): void
+}
+
 function sceneProgress(
   chapters: readonly MuseumJourneyChapterView[],
 ): readonly MuseumJourneyStageProgress[] {
@@ -51,6 +56,8 @@ export function MuseumJourney(props: {
   onEnter(chapterId: string): void
   onExit(): void
   onOpenCollection?(): void
+  covered?: boolean
+  onAudioReady?(audio: MuseumJourneyAudio | undefined): void
 }) {
   let mapContainer: HTMLDivElement | undefined
   const stageLabels = new Map<string, HTMLButtonElement>()
@@ -63,6 +70,7 @@ export function MuseumJourney(props: {
   let latestSelectedStageId = untrack(() => props.selectedStageId)
   let latestProgress = untrack(() => sceneProgress(props.chapters))
   let foreground = true
+  let covered = untrack(() => props.covered === true)
   let reducedMotion = false
   const [mapState, setMapState] = createSignal<'loading' | 'ready' | 'failed'>(
     'loading',
@@ -198,7 +206,7 @@ export function MuseumJourney(props: {
             assetUrl,
             {
               selectedStageId: latestSelectedStageId,
-              foreground,
+              foreground: foreground && !covered,
               reducedMotion,
               onSelect: select,
               onViewChange(changed) {
@@ -272,13 +280,27 @@ export function MuseumJourney(props: {
     scene?.setProgress(latestProgress)
   })
 
+  createEffect(() => {
+    covered = props.covered === true
+    scene?.setForeground(foreground && !covered)
+  })
+
   onMount(() => {
     lifetime++
     music = props.createMusic?.()
+    props.onAudioReady?.(
+      music === undefined
+        ? undefined
+        : {
+            silenceForVoice: () =>
+              music?.silenceForVoice() ?? Promise.resolve(),
+            releaseVoice: activateMusic,
+          },
+    )
     setMuted(music?.preferences().muted ?? false)
     unsubscribeForeground = props.subscribeForeground((next) => {
       foreground = next
-      scene?.setForeground(next)
+      scene?.setForeground(next && !covered)
       if (!next) music?.pause()
     })
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -302,6 +324,7 @@ export function MuseumJourney(props: {
     scene = undefined
     updateProjectedStageLabels([])
     stageLabels.clear()
+    props.onAudioReady?.(undefined)
     music?.dispose()
     music = undefined
   })

@@ -3,7 +3,8 @@ import { acquireSharedAudioContext } from '@irchiinnuss/audio-io'
 import type { CapturedPitchFrame, F0Stream } from '@irchiinnuss/pitch-engine'
 import { createF0Stream, micManager } from '@irchiinnuss/pitch-engine'
 import type { PitchObservation } from '../contracts'
-import type { GlassVoiceSession } from '../host'
+import type { GlassVoiceSession, GlassVoiceTake } from '../host'
+import { createBrowserVoiceTake } from './voice-take'
 
 let nextSession = 0
 export function createBrowserVoice(): GlassVoiceSession {
@@ -13,6 +14,8 @@ export function createBrowserVoice(): GlassVoiceSession {
   let holding = false
   let stopped = false
   let starting: Promise<void> | null = null
+  let microphoneStream: MediaStream | null = null
+  let take: GlassVoiceTake | null = null
   const stoppedListeners = new Set<() => void>()
   const releaseMic = (): void => {
     if (holding) micManager.release(id)
@@ -21,6 +24,9 @@ export function createBrowserVoice(): GlassVoiceSession {
   const stop = (): void => {
     if (stopped) return
     stopped = true
+    take?.discard()
+    take = null
+    microphoneStream = null
     lease.peek()?.removeEventListener('statechange', changed)
     stream?.dispose()
     stream = null
@@ -101,6 +107,7 @@ export function createBrowserVoice(): GlassVoiceSession {
           if (ctx.state !== 'running')
             throw new Error('Audio was interrupted. Tap Start to try again.')
           stream = createF0Stream(ctx, acquired)
+          microphoneStream = acquired
           stream.startTask()
           ctx.addEventListener('statechange', changed)
         } catch (error) {
@@ -128,5 +135,23 @@ export function createBrowserVoice(): GlassVoiceSession {
       }
     },
     stop,
+    startRecording() {
+      if (stopped || microphoneStream === null || stream === null)
+        throw new Error('Open the microphone before recording a musical take.')
+      take?.discard()
+      const recording = createBrowserVoiceTake(microphoneStream)
+      take = recording
+      return {
+        isRecording: () => recording.isRecording?.() ?? false,
+        finish() {
+          if (take === recording) take = null
+          return recording.finish()
+        },
+        discard() {
+          if (take === recording) take = null
+          recording.discard()
+        },
+      }
+    },
   }
 }

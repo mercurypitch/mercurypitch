@@ -1,14 +1,21 @@
 // Museum collection album — inspect earned original portraits, discoveries and challenge stars.
-import { createSignal, For, onCleanup, Show } from 'solid-js'
+import { createSignal, For, lazy, onCleanup, Show } from 'solid-js'
+import type { GalleryEncore } from '../content/encores'
 import type { GalleryArtwork } from '../content/gallery-artworks'
 import type { CollectionEntry } from '../core/collection'
 import { collectionBadges } from '../core/collection'
+import type { GlassGameHost } from '../host'
 import { ArtworkInspection } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import styles from './MuseumCollection.module.css'
 
+const EncoreDialog = lazy(async () => ({
+  default: (await import('./EncoreDialog')).EncoreDialog,
+}))
+
 export interface CollectionViewEntry extends CollectionEntry {
   artwork?: GalleryArtwork
+  encore?: GalleryEncore
 }
 
 export function MuseumCollection(props: {
@@ -16,8 +23,17 @@ export function MuseumCollection(props: {
   assetUrl(id: string): string
   onClose(): void
   onVisit(levelId: string): void
+  host?: GlassGameHost
+  beforeCapture?(): Promise<void>
+  onReleaseVoice?(): void
 }) {
   const [inspecting, setInspecting] = createSignal<CollectionViewEntry>()
+  const [encoreEntry, setEncoreEntry] = createSignal<CollectionViewEntry>()
+  let encoreOpener: HTMLButtonElement | undefined
+  const closeEncore = () => {
+    setEncoreEntry(undefined)
+    queueMicrotask(() => encoreOpener?.focus({ preventScroll: true }))
+  }
   const previousFocus = document.activeElement as HTMLElement | null
   let openedFrom: HTMLElement | undefined
   const badges = () => collectionBadges(props.entries)
@@ -26,7 +42,7 @@ export function MuseumCollection(props: {
     queueMicrotask(() => openedFrom?.focus({ preventScroll: true }))
   }
   const keydown = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape') return
+    if (event.key !== 'Escape' || encoreEntry()) return
     event.preventDefault()
     if (inspecting() !== undefined) closeArtwork()
     else props.onClose()
@@ -44,7 +60,7 @@ export function MuseumCollection(props: {
     <>
       <div
         class={styles.scrim}
-        inert={inspecting() !== undefined}
+        inert={inspecting() !== undefined || encoreEntry() !== undefined}
         onClick={(event) => {
           if (event.target === event.currentTarget) props.onClose()
         }}
@@ -158,6 +174,24 @@ export function MuseumCollection(props: {
                         </p>
                       )}
                     </Show>
+                    <Show
+                      when={
+                        entry.summary.portrait?.collected === true &&
+                        entry.encore &&
+                        props.host?.createMelodyReference
+                      }
+                    >
+                      <button
+                        class={styles.visit}
+                        type="button"
+                        onClick={(event) => {
+                          encoreOpener = event.currentTarget
+                          setEncoreEntry(entry)
+                        }}
+                      >
+                        Sing or hear your encore
+                      </button>
+                    </Show>
                     <button
                       class={styles.visit}
                       type="button"
@@ -201,6 +235,19 @@ export function MuseumCollection(props: {
           </p>
         </section>
       </div>
+      <Show when={encoreEntry()} keyed>
+        {(entry) => (
+          <EncoreDialog
+            host={props.host!}
+            levelId={entry.levelId}
+            encore={entry.encore!}
+            beforeCapture={() => props.beforeCapture?.() ?? Promise.resolve()}
+            onReleaseVoice={() => props.onReleaseVoice?.()}
+            onClose={closeEncore}
+            returnLabel="Back to collection"
+          />
+        )}
+      </Show>
       <Show when={inspecting()} keyed>
         {(entry) => (
           <Show when={entry.artwork}>

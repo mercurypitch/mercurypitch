@@ -477,6 +477,7 @@ jobs:
             cloudway,
             collection,
             controls,
+            encore,
             journey,
             loading,
             music,

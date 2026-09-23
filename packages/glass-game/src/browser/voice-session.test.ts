@@ -8,7 +8,9 @@ const mocks = vi.hoisted(() => ({
   release: vi.fn(),
   create: vi.fn(),
   audio: vi.fn(),
+  recordTake: vi.fn(),
 }))
+vi.mock('./voice-take', () => ({ createBrowserVoiceTake: mocks.recordTake }))
 vi.mock('@irchiinnuss/audio-io', () => ({
   acquireSharedAudioContext: mocks.audio,
 }))
@@ -69,6 +71,36 @@ beforeEach(() => {
 })
 
 describe('browser voice ownership', () => {
+  it('records only by explicit request and reuses the one already-open capture stream', async () => {
+    const acquired = {} as MediaStream
+    mocks.acquire.mockResolvedValue(acquired)
+    const discard = vi.fn()
+    const finish = vi.fn().mockResolvedValue(new Blob(['take']))
+    mocks.recordTake.mockReturnValue({ discard, finish })
+    const voice = createBrowserVoice()
+    expect(() => voice.startRecording?.()).toThrow('Open the microphone')
+    await voice.start()
+    expect(mocks.recordTake).not.toHaveBeenCalled()
+    const take = voice.startRecording!()
+    expect(mocks.recordTake).toHaveBeenCalledWith(acquired)
+    expect(mocks.acquire).toHaveBeenCalledOnce()
+    const saved = take.finish()
+    voice.stop()
+    expect(discard).not.toHaveBeenCalled()
+    expect(await (await saved)?.text()).toBe('take')
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  it('discards an active take when its microphone session is interrupted', async () => {
+    const discard = vi.fn()
+    mocks.recordTake.mockReturnValue({ discard, finish: vi.fn() })
+    const voice = createBrowserVoice()
+    await voice.start()
+    voice.startRecording!()
+    voice.stop()
+    expect(discard).toHaveBeenCalledOnce()
+  })
+
   it('acquires permission in the gesture but waits for soundtrack silence before detecting pitch', async () => {
     const quiet = deferred<undefined>()
     const voice = createBrowserVoice()
