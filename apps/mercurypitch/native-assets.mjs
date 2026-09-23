@@ -52,21 +52,15 @@ import { join } from 'node:path'
 
 /** @type {readonly NativeAssetEntry[]} */
 export const NATIVE_ASSETS = [
-  // ── Boot and onboarding ──────────────────────────────────────
-  {
-    glob: 'opening/first-light-*.webp',
-    reason:
-      'The cold-start plate behind the boot screen, wide and tall (src/App.tsx) — the first frame the app draws.',
-  },
+  // ── Boot ─────────────────────────────────────────────────────
+  //
+  // The app has no opening curtain and no First Light (S4): it launches on
+  // its own ground with the mark, and the alley is the welcome. The curtain's
+  // first-light plates and First Light's sky are therefore not listed.
   {
     glob: 'brand-mark.svg',
     reason:
-      'The Meniscus mark in the boot lockup (src/App.tsx); the shipped master, never an inlined copy.',
-  },
-  {
-    glob: 'onboarding/sky-*.webp',
-    reason:
-      "First Light's sky, wide and tall (src/features/onboarding/onboarding.module.css) — the backdrop every beat sits on.",
+      'The Meniscus mark in the boot lockup (src/App.tsx) and the alley top (apps/mercurypitch/src/alley/RoomsAlley.tsx); the shipped master, never an inlined copy.',
   },
 
   // ── The twin, and the voiceprint art that carries it ─────────
@@ -119,11 +113,6 @@ export const NATIVE_ASSETS = [
     glob: 'jam/room-stage.webp',
     reason:
       'Home rail and the onboarding Map: the Jam cover (src/features/home/DestinationGallery.module.css).',
-  },
-  {
-    glob: 'home/hear-yourself-tease.webp',
-    reason:
-      'Home rail: the veiled Hear Yourself cover (src/features/home/DestinationGallery.module.css).',
   },
   {
     glob: 'piano-night/afterglow-studio-landscape.webp',
