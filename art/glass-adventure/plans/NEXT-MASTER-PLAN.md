@@ -6,6 +6,14 @@ Detailed research and chapter plans remain in
 Code and production sources are preserved in draft PR #807 on
 `feat/glass-museum-level-one`. No merge or release is authorized for this pass.
 
+## Approved delivery through item 8
+
+The owner authorized the complete polish/progression batch, including configurable
+melody judging, and a stop before map/level expansion for testing. The current
+execution checklist is [APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md](./APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md).
+It supersedes older proposal-only labels for its explicit scope. Original ideas
+beyond that boundary remain planned.
+
 ## Where we are
 
 The [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md)
