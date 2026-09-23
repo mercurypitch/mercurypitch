@@ -12,6 +12,7 @@ import type { KaraokePlaylistItem, KaraokePlaylistRecord } from '@/db'
 import { getDb } from '@/db'
 import { recordActivity } from '@/db/services/user-activity-service'
 import { IS_DEV } from '@/lib/defaults'
+import { clampKeyShift } from '@/lib/key-shift/key-shift'
 import { getAllUvrSessions, getGroupsReactive, getUvrSession, } from '@/stores/uvr-store'
 
 // ── Types ──────────────────────────────────────────────────────
@@ -24,6 +25,11 @@ export interface QueueEntry {
   singerName?: string
   /** The entry's preferred vocal-stem level (0–1), applied at song start. */
   vocalVolume?: number
+  /** The entry's key in semitones; unset = the song's own remembered key. */
+  keyShift?: number
+  /** The playlist entry this song came from, so a key change can go back to it. */
+  itemId: string
+  itemKind: KaraokePlaylistItem['kind']
 }
 
 export type KaraokePhase =
@@ -77,6 +83,9 @@ function expandItem(
         songTitle: deps.sessionTitle(item.refId) ?? 'Unknown',
         singerName: item.singerName,
         vocalVolume: item.vocalVolume,
+        keyShift: item.keyShift,
+        itemId: item.id,
+        itemKind: item.kind,
       },
     ]
   }
@@ -91,6 +100,9 @@ function expandItem(
     groupName,
     singerName: item.singerName,
     vocalVolume: item.vocalVolume,
+    keyShift: item.keyShift,
+    itemId: item.id,
+    itemKind: item.kind,
   }))
 }
 
@@ -330,6 +342,37 @@ export async function setItemVocalVolume(
     items.map((it) =>
       it.id === itemId ? { ...it, vocalVolume: clamped } : it,
     ),
+  )
+}
+
+/**
+ * Set (or clear, with undefined) an entry's key. The songs of that entry
+ * already in the running queue move with it, so the next song of a group
+ * plays in the key the singer just picked.
+ */
+export async function setItemKeyShift(
+  playlistId: string,
+  itemId: string,
+  keyShift: number | undefined,
+): Promise<void> {
+  const clamped = keyShift === undefined ? undefined : clampKeyShift(keyShift)
+  // The queue first and synchronously: the stage reads the key from it, and
+  // two quick presses must not bounce back while the first write lands.
+  if (activePlaylistId() === playlistId) {
+    setQueue((entries) =>
+      entries.map((entry) =>
+        entry.itemId === itemId ? { ...entry, keyShift: clamped } : entry,
+      ),
+    )
+  }
+  await mutateItems(playlistId, (items) =>
+    items.map((it) => {
+      if (it.id !== itemId) return it
+      const next = { ...it, keyShift: clamped }
+      // Cleared means gone from the record, not stored as undefined.
+      if (clamped === undefined) delete next.keyShift
+      return next
+    }),
   )
 }
 

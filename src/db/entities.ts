@@ -731,6 +731,11 @@ export interface KaraokePlaylistItem {
    * of this entry before it starts. Unset = the stage's default vocal mix.
    */
   vocalVolume?: number
+  /**
+   * This singer's key for every song of this entry, in semitones (−6..+6).
+   * Unset = each song's own remembered key. Overrides it when set, 0 included.
+   */
+  keyShift?: number
 }
 
 /** A saved, reusable karaoke set list built from sessions and/or groups. */

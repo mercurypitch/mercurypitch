@@ -1175,6 +1175,7 @@ async function importKaraokeManifest(
           ...(it.vocalVolume !== undefined
             ? { vocalVolume: it.vocalVolume }
             : {}),
+          ...(it.keyShift !== undefined ? { keyShift: it.keyShift } : {}),
         })
       }
       const playlist = await createPlaylistWithItems(pl.name, items, {
