@@ -2572,9 +2572,14 @@ async function walkFrame(browser, args, frame) {
  * check named four dead sentences instead, which is how R6 shipped with
  * "Nothing is uploaded." still in the onboarding sky beat and the karaoke
  * rail: a tripwire scoped to the directory the author was editing.
+ *
+ * "is not uploaded", "do not upload" and a bare "No uploads." are in the
+ * alternation as well (review N5): none of them is in the repository today,
+ * and inside the allowlisted app chunk the word rule below would not see
+ * them either.
  */
 const UPLOAD_DENIAL =
-  /\b(?:nothing|no audio|no recording|none of it)\b[^<>{};]{0,40}?\bupload(?:ed|s|ing)?\b|\bnever\s+upload(?:ed|s)?\b/giu
+  /\b(?:nothing|no audio|no recording|none of it)\b[^<>{};]{0,40}?\bupload(?:ed|s|ing)?\b|\bnever\s+upload(?:ed|s)?\b|\bnot\s+upload|\bno\s+uploads?\b/giu
 
 /**
  * Chunks that may contain the WORD at all, and why.
