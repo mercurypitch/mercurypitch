@@ -201,9 +201,9 @@ These are the rules that break things when ignored.
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 850 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 850 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 600 | Ear Lab store — readings, ratings and calibration history. |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 550 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 500 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [session-store.ts](../../src/stores/session-store.ts) | 500 | Session Store — Unified session management with localStorage |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 500 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [jam-diagnostics-store.ts](../../src/stores/jam-diagnostics-store.ts) | 400 | ── Jam diagnostics store The numbers behind the Jam network panel, and the loop that collects them. |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 350 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
 | [jam-pitch-provision-store.ts](../../src/stores/jam-pitch-provision-store.ts) | 300 | ── Working out a room song's pitch line A song that has never been opened in the stem mixer has no stored analysis, so `sessionSongNotes`... |
