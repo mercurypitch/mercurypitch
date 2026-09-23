@@ -83,12 +83,22 @@ const ChallengeResultCard = lazy(async () =>
   })),
 )
 // First Light onboarding — lazy so a returning visitor pays nothing for a
-// flow they have already walked.
-const FirstLight = lazy(async () =>
-  import('@/features/onboarding/FirstLight').then((m) => ({
-    default: m.FirstLight,
-  })),
-)
+// flow they have already walked. Not in the native bundle at all: the app's
+// first run is the alley (S4), and a `lazy()` call is a side effect Rollup
+// keeps, chunk and all, whether or not anything mounts it — so the constant
+// picks a stub before the call is ever written.
+type LazyFirstLight = ReturnType<
+  typeof lazy<typeof import('@/features/onboarding/FirstLight').FirstLight>
+>
+const FirstLight: LazyFirstLight = IS_NATIVE_BUILD
+  ? (Object.assign(() => null, {
+      preload: async () => ({ default: () => null }),
+    }) as unknown as LazyFirstLight)
+  : lazy(async () =>
+      import('@/features/onboarding/FirstLight').then((m) => ({
+        default: m.FirstLight,
+      })),
+    )
 const VoiceConstellationSurface = lazy(async () =>
   import('@/features/voice-constellation/VoiceConstellationSurface').then(
     (m) => ({ default: m.VoiceConstellationSurface }),
