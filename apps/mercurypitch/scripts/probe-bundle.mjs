@@ -28,7 +28,8 @@
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
 
 /** Every frame the walk is repeated at. The lab's, and the owner's phone. */
@@ -37,6 +38,34 @@ const FRAMES = [
   { width: 390, height: 844 },
 ]
 const BOOT_TIMEOUT_MS = 15_000
+
+/**
+ * The names the app gives its rooms, read from the module that owns them
+ * (`src/features/rooms/room-names.ts`) rather than copied here, so the walk
+ * measures the strings that ship. A leaf module of string literals, parsed
+ * rather than imported because this script runs under bare node.
+ */
+const ROOM_NAMES = (() => {
+  const source = readFileSync(
+    resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      '../../../src/features/rooms/room-names.ts',
+    ),
+    'utf8',
+  )
+  const block = source.match(/ROOM_NAMES[^=]*=\s*\{([^}]*)\}/u)
+  if (block === null) throw new Error('probe-bundle: no ROOM_NAMES in room-names.ts')
+  const names = {}
+  for (const [, id, name] of block[1].matchAll(
+    /^\s*'?([\w-]+)'?:\s*'([^']+)',?\s*$/gmu,
+  )) {
+    names[id] = name
+  }
+  if (names.sing === undefined || Object.keys(names).length < 6) {
+    throw new Error('probe-bundle: could not read the room names')
+  }
+  return names
+})()
 const STEP_TIMEOUT_MS = 10_000
 
 /** Console noise a browser cannot avoid, and that says nothing about the shell. */
@@ -2130,56 +2159,144 @@ async function walkRound2(page, ctx, steps) {
     page.locator('[data-testid="shell-session-pill"]'),
     'the session pill',
   )
-  // A name long enough to overflow, written into the element the layout is
-  // meant to protect. The rooms this shell will hold are not all called
-  // "Retro Analog Studio", and the squeeze the owner reported needs a name
-  // that does not fit.
-  await page
-    .locator('[data-testid="shell-session-pill-name"]')
-    .evaluate((node) => {
-      node.textContent = 'The Very Long Retro Analog Studio Room Name'
-    })
-  const pillMetrics = await page.evaluate(() => {
+  // ── The pill as the room writes it (review F13) ──
+  //
+  // This step used to write "The Very Long Retro Analog Studio Room Name"
+  // into the pill and then assert it ellipsized: a test of the stylesheet
+  // against a string the walk made up, blind to the production path and to
+  // any real name that does not fit. It now measures the parked pill exactly
+  // as the room left it, with the name the room registered, and then asks
+  // the same question of every name the app can put there — so a future room
+  // whose name overflows fails here, instead of shipping as "Retro Analog…".
+  const readPill = () => {
     const round = (n) => Math.round(n * 100) / 100
     const at = (sel) => document.querySelector(sel)
     const button = at('[data-testid="shell-session-pill"]')
     const name = at('[data-testid="shell-session-pill-name"]')
     const state = at('[data-testid="shell-session-pill-state"]')
     const control = at('.mp-pill__btn')
+    const rail = at('[data-testid="shell-rail"]')
     const box = (el) => {
       const rect = el.getBoundingClientRect()
       return {
+        left: round(rect.left),
+        top: round(rect.top),
         width: round(rect.width),
         height: round(rect.height),
         right: round(rect.right),
+        bottom: round(rect.bottom),
       }
     }
     return {
       pill: box(button),
       control: box(control),
+      railTop: rail === null ? null : round(rail.getBoundingClientRect().top),
+      name: name.textContent,
       nameClipped: name.scrollWidth > name.clientWidth + 1,
       stateClipped: state.scrollWidth > state.clientWidth + 1,
       stateText: state.textContent,
       viewport: window.innerWidth,
     }
-  })
-  await shoot(page, ctx, 'r2-session-pill-long-name')
-  if (pillMetrics.control.width < 44 || pillMetrics.control.height < 44) {
+  }
+  const real = await page.evaluate(readPill)
+  await shoot(page, ctx, 'r2-session-pill')
+  if (real.name !== ROOM_NAMES.sing) {
     throw new Error(
-      `the return control is ${pillMetrics.control.width}x${pillMetrics.control.height} under a long name`,
+      `the pill names "${real.name}", not the room's own "${ROOM_NAMES.sing}"`,
     )
   }
-  if (pillMetrics.stateClipped) {
-    throw new Error('the state word is clipped under a long name')
+  if (real.nameClipped) {
+    throw new Error(`the room's real name "${real.name}" is clipped in the pill`)
   }
-  if (!pillMetrics.nameClipped) {
-    throw new Error('the long name was not ellipsized — it did not overflow')
+  if (real.stateClipped) throw new Error('the state word is clipped')
+  if (real.control.width < 44 || real.control.height < 44) {
+    throw new Error(
+      `the return control is ${real.control.width}x${real.control.height}`,
+    )
   }
-  if (pillMetrics.pill.right > pillMetrics.viewport) {
+  if (
+    real.control.left < real.pill.left - 0.5 ||
+    real.control.right > real.pill.right + 0.5 ||
+    real.control.top < real.pill.top - 0.5 ||
+    real.control.bottom > real.pill.bottom + 0.5
+  ) {
+    throw new Error('the return control is not inside the pill')
+  }
+  if (real.pill.left < 0 || real.pill.right > real.viewport) {
     throw new Error('the pill runs off the side of the screen')
   }
+  if (real.railTop !== null && real.pill.bottom > real.railTop) {
+    throw new Error(
+      `the pill's bottom (${real.pill.bottom}) runs into the rail (${real.railTop})`,
+    )
+  }
+
+  // Every name the app can put in the pill, measured in the pill.
+  const names = Object.entries(ROOM_NAMES)
+  const fits = await page
+    .locator('[data-testid="shell-session-pill-name"]')
+    .evaluate((node, list) => {
+      const original = node.textContent
+      const clipped = []
+      for (const [id, name] of list) {
+        node.textContent = name
+        if (node.scrollWidth > node.clientWidth + 1) clipped.push(`${id} "${name}"`)
+      }
+      node.textContent = original
+      return clipped
+    }, names)
+  if (fits.length > 0) {
+    throw new Error(
+      `room name(s) that do not fit the session pill at ${real.viewport}: ${fits.join(', ')}`,
+    )
+  }
   steps.push(
-    `pill: a long name ellipsizes, "${pillMetrics.stateText.trim()}" stays whole, and the control keeps ${pillMetrics.control.width}x${pillMetrics.control.height}`,
+    `pill: the real "${real.name} ·${real.stateText.replace(/^\s*·/u, '')}" at ${real.pill.width}x${real.pill.height}, the control ${real.control.width}x${real.control.height} inside it, ${real.railTop === null ? '' : `${Math.round((real.railTop - real.pill.bottom) * 10) / 10} px clear of the rail, `}and all ${names.length} room names fit whole`,
+  )
+
+  // And the stylesheet's own promise, labelled as exactly that: a name longer
+  // than any room has today still leaves the state word whole and the control
+  // at 44. Written by the walk, so it proves the CSS and nothing about names —
+  // the check above is the one about names.
+  const squeezed = await page
+    .locator('[data-testid="shell-session-pill-name"]')
+    .evaluate((node, longest) => {
+      const original = node.textContent
+      node.textContent = longest
+      const state = document.querySelector(
+        '[data-testid="shell-session-pill-state"]',
+      )
+      const control = document
+        .querySelector('.mp-pill__btn')
+        .getBoundingClientRect()
+      const pill = document
+        .querySelector('[data-testid="shell-session-pill"]')
+        .getBoundingClientRect()
+      const out = {
+        nameClipped: node.scrollWidth > node.clientWidth + 1,
+        stateClipped: state.scrollWidth > state.clientWidth + 1,
+        control: { width: control.width, height: control.height },
+        pillRight: pill.right,
+      }
+      node.textContent = original
+      return out
+    }, Object.values(ROOM_NAMES).join(' '))
+  if (!squeezed.nameClipped) {
+    throw new Error('stylesheet: an over-long name did not overflow, so nothing was tested')
+  }
+  if (squeezed.stateClipped) {
+    throw new Error('stylesheet: an over-long name clips the state word')
+  }
+  if (squeezed.control.width < 44 || squeezed.control.height < 44) {
+    throw new Error(
+      `stylesheet: an over-long name squeezes the control to ${squeezed.control.width}x${squeezed.control.height}`,
+    )
+  }
+  if (squeezed.pillRight > real.viewport) {
+    throw new Error('stylesheet: an over-long name pushes the pill off screen')
+  }
+  steps.push(
+    'pill (stylesheet, a name the walk wrote): an over-long name ellipsizes, the state word and the 44 pt control stay whole',
   )
 
   // Put the room back the way the rest of the walk expects it.
