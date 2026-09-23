@@ -1,11 +1,11 @@
 // Resonance Conservatory — a handcrafted botanical walk from stillness into gentle pitch waves.
 
 import { composeLevel } from '../authoring/compose-level'
-import { CONSERVATORY_REWARDS } from './gallery-rewards'
 import type { AuthoredLevelSource, RoomPlacement } from '../authoring/contracts'
 import type { ChallengeDefinition, HoldDefinition } from '../contracts'
 import { CONSERVATORY_AUTHORING_CATALOG } from './conservatory-kit'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CORRIDOR_HALF_LENGTH, ENCLOSED_CORRIDOR_HALF_WIDTH, } from './enclosed-museum-kit'
+import { CONSERVATORY_REWARDS } from './gallery-rewards'
 
 const HALL_STEP = ENCLOSED_CHAMBER_HALF + ENCLOSED_CORRIDOR_HALF_LENGTH
 const TURN_STEP = ENCLOSED_CORRIDOR_HALF_WIDTH + ENCLOSED_CORRIDOR_HALF_LENGTH

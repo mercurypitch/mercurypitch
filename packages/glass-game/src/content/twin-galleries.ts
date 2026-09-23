@@ -4,8 +4,8 @@ import { composeLevel } from '../authoring/compose-level'
 import type { AuthoredLevelSource } from '../authoring/contracts'
 import type { ChallengeDefinition, HoldDefinition } from '../contracts'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CORRIDOR_HALF_LENGTH, ENCLOSED_CORRIDOR_HALF_WIDTH, ENCLOSED_PANORAMA_CAMERA_NORTH, ENCLOSED_TERRACE_NORTH, } from './enclosed-museum-kit'
-import { TWIN_GALLERIES_AUTHORING_CATALOG } from './twin-galleries-kit'
 import { TWIN_GALLERY_REWARDS } from './gallery-rewards'
+import { TWIN_GALLERIES_AUTHORING_CATALOG } from './twin-galleries-kit'
 
 const GALLERY_TO_PASSAGE = ENCLOSED_CHAMBER_HALF + ENCLOSED_CORRIDOR_HALF_LENGTH
 const PASSAGE_TO_TURN =

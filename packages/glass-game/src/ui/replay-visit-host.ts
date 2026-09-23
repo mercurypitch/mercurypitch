@@ -8,6 +8,13 @@ import type { ReplayProgress } from '../core/replay-progress'
 import { beginReplayAttempt, readReplayProgress, saveReplayAttempt, } from '../core/replay-progress'
 import type { GlassGameHost } from '../host'
 
+// Preference readers remain stable through host wrappers. Keep a local lease
+// too, so unavailable storage cannot authorize a retired visit's cleanup.
+const localLeases = new WeakMap<
+  GlassGameHost['readPreference'],
+  Map<string, string>
+>()
+
 function preferenceKey(levelId: string): string {
   return `replays:v1:${levelId}`
 }
@@ -57,6 +64,13 @@ export function createReplayVisitHost(
     host.writePreference(`${key}:legacy-backup`, JSON.stringify(legacy ?? null))
   host.writePreference(key, JSON.stringify(state))
   host.writePreference(leaseKey, options.leaseId)
+  const persistedLease = host.readPreference(leaseKey) === options.leaseId
+  let leases = localLeases.get(host.readPreference)
+  if (!leases) {
+    leases = new Map()
+    localLeases.set(host.readPreference, leases)
+  }
+  leases.set(leaseKey, options.leaseId)
   return {
     progress: () => state,
     host: {
@@ -70,7 +84,11 @@ export function createReplayVisitHost(
         }
         const lease = host.readPreference(leaseKey)
         // An old visit's cleanup must never overwrite the newly mounted replay.
-        if (lease !== null && lease !== options.leaseId) return
+        if (
+          leases.get(leaseKey) !== options.leaseId ||
+          (persistedLease && lease !== options.leaseId)
+        )
+          return
         let latest = loadReplayProgress(host, source, profiles)
         if (
           !latest.attempts.some((item) =>

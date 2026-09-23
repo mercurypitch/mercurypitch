@@ -112,4 +112,35 @@ describe('replay visit host', () => {
     visit.host.saveProgress(complete())
     expect(highestReplayTier(visit.progress())).toBe(1)
   })
+
+  it('rejects retired writes when preference storage never persisted either lease', () => {
+    const { host } = fixture()
+    host.readPreference = () => null
+    host.writePreference = () => {}
+    const old = createReplayVisitHost(host, level, easy, profiles, {
+      fresh: true,
+      leaseId: 'old',
+    })
+    const current = createReplayVisitHost({ ...host }, level, easy, profiles, {
+      fresh: true,
+      leaseId: 'current',
+    })
+    old.host.saveProgress(complete())
+    expect(host.loadProgress(level.id)).toBeNull()
+    expect(highestReplayTier(old.progress())).toBe(0)
+    current.host.saveProgress(complete())
+    expect(highestReplayTier(current.progress())).toBe(1)
+  })
+
+  it('does not resurrect an attempt after the owner clears a persisted lease', () => {
+    const { host, preferences } = fixture()
+    const visit = createReplayVisitHost(host, level, easy, profiles, {
+      fresh: true,
+      leaseId: 'cleared',
+    })
+    preferences.clear()
+    visit.host.saveProgress(complete())
+    expect(host.loadProgress(level.id)).toBeNull()
+    expect(preferences.size).toBe(0)
+  })
 })
