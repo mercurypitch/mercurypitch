@@ -3468,7 +3468,9 @@ const AppShell: Component<AppProps> = (props) => {
               <VerifyEmailBanner placement="inline" />
               <Show when={activeTab() === TAB_HOME}>
                 <TabErrorBoundary tabName={tabLabel(TAB_HOME)}>
-                  <HomePage />
+                  {/* The app draws the alley here instead, from its own
+                      shell (apps/mercurypitch/src/alley, S4). */}
+                  {IS_NATIVE_BUILD ? null : <HomePage />}
                 </TabErrorBoundary>
               </Show>
 
