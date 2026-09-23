@@ -1,0 +1,496 @@
+{
+  "schema": 1,
+  "asset": "cloudway-glide-platform-source-audition-v5",
+  "purpose": "Source-only same-scale comparison of the current V3 glide platform and the archived Meshy 7.1 Ultra 4K dense donor. No remesh, bake, runtime export or public integration is performed.",
+  "decision": {
+    "state": "pending-source-review",
+    "candidate": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+    "runtimeIntegrationAuthorized": false,
+    "requiredReview": [
+      "Compare silhouette, top-plane safety, corners, underside forms and motif coherence in neutral clay.",
+      "Compare PBR region separation, baked-light contamination, seams and guide fidelity.",
+      "Reject or accept only as a dense high-detail donor for a later professional high-to-low workflow."
+    ]
+  },
+  "normalization": {
+    "method": "Uniformly scale each source to the current V3 glide visual X width, preserve aspect ratio, center in X/Y, then ground minimum Blender Z at zero.",
+    "targetWidthMetres": 1.800201,
+    "axisWiseStretching": false
+  },
+  "shapeFitAudit": {
+    "v3DisplayDimensionsBlenderZUpMetres": [
+      1.800201,
+      1.40097,
+      0.291136
+    ],
+    "ultraDisplayDimensionsBlenderZUpMetres": [
+      1.800201,
+      0.837659,
+      0.323374
+    ],
+    "ultraDepthDeltaPercent": -40.21,
+    "ultraHeightDeltaPercent": 11.07,
+    "gameplayColliderMetres": [
+      1.7,
+      1.3,
+      0.24
+    ],
+    "interpretation": "Matched width exposes depth and height drift. Landing contact and collider fit remain later authored low-mesh gates and are not inferred from equal width."
+  },
+  "order": [
+    "Current V3 glide source",
+    "Meshy 7.1 Ultra 4K dense donor"
+  ],
+  "sourceMeasurements": [
+    {
+      "label": "Current V3 glide source",
+      "file": "art/glass-adventure/platform-trials/v3/exports/cloudway-platform-kit-v3.glb",
+      "selectedRoot": "Cloudway_Glide",
+      "meshObjects": 2,
+      "verticesAfterImport": 48863,
+      "trianglesAfterImport": 35032,
+      "rawBoundsBlenderZUpMetres": {
+        "min": [
+          -0.900152,
+          -0.700306,
+          -0.270982
+        ],
+        "max": [
+          0.900049,
+          0.700665,
+          0.020154
+        ]
+      },
+      "rawDimensionsBlenderZUpMetres": [
+        1.800201,
+        1.40097,
+        0.291136
+      ],
+      "rawDimensionsGlTfYUpMetres": [
+        1.800201,
+        0.291136,
+        1.40097
+      ],
+      "uniformDisplayScale": 0.999999769,
+      "displayWidthAuthority": "Current V3 source visual X width",
+      "displayCentreXMetres": -1.12,
+      "displayGroundAnchorZMetres": 0.0,
+      "displayDimensionsBlenderZUpMetres": [
+        1.800201,
+        1.40097,
+        0.291136
+      ]
+    },
+    {
+      "label": "Meshy 7.1 Ultra 4K dense donor",
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+      "selectedRoot": null,
+      "meshObjects": 1,
+      "verticesAfterImport": 82069,
+      "trianglesAfterImport": 145370,
+      "rawBoundsBlenderZUpMetres": {
+        "min": [
+          -0.950619,
+          -0.441209,
+          -0.159891
+        ],
+        "max": [
+          0.948642,
+          0.442544,
+          0.181277
+        ]
+      },
+      "rawDimensionsBlenderZUpMetres": [
+        1.899261,
+        0.883753,
+        0.341168
+      ],
+      "rawDimensionsGlTfYUpMetres": [
+        1.899261,
+        0.341168,
+        0.883753
+      ],
+      "uniformDisplayScale": 0.947842873,
+      "displayWidthAuthority": "Current V3 source visual X width",
+      "displayCentreXMetres": 1.12,
+      "displayGroundAnchorZMetres": 0.0,
+      "displayDimensionsBlenderZUpMetres": [
+        1.800201,
+        0.837659,
+        0.323374
+      ]
+    }
+  ],
+  "sourceArchives": {
+    "v3Manifest": {
+      "file": "art/glass-adventure/platform-trials/v3/exports/manifest.json",
+      "bytes": 12517,
+      "sha256": "d3f5c1c136c4964f2cc8b3e1d7ed34a3664c861fd7c8d0b831e0c193894d76f0"
+    },
+    "ultraReceipt": {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/receipt.json",
+      "bytes": 9119,
+      "sha256": "b77320f9b3c6e4ba65c69d8785db0e45b88391cde6e8cb3f8c04c5c35f36f6a3",
+      "taskId": "01a0d009-7173-7142-8f57-0c4c8be24adf",
+      "credits": 35,
+      "providerConfirmation": {
+        "requestedAiModel": "meshy-7.1",
+        "returnedAiModel": null,
+        "requestedGeometryResolution": "4k",
+        "returnedGeometryResolution": "4k",
+        "explicitRequestRecorded": true
+      }
+    }
+  },
+  "packedSourceReviewScene": {
+    "file": "art/glass-adventure/platform-trials/v5/sources/glide-ultra4k-source-review.blend",
+    "bytes": 68632991,
+    "sha256": "a7dba5d6f68118130de3992c2b0b5aa79c603eb5749409176fec6aed34671fc0",
+    "purpose": "Packed comparison scene with unchanged source topology and uniformly matched display width; not a runtime export."
+  },
+  "glbInventories": {
+    "currentV3": {
+      "file": "art/glass-adventure/platform-trials/v3/exports/cloudway-platform-kit-v3.glb",
+      "bytes": 42929408,
+      "sha256": "5daf655fd51f8c4ac93342c20024d3df803ecef0cbc6d2a4c48bcb85bedf25fe",
+      "selectedRoot": "Cloudway_Glide",
+      "selectedNodeCount": 3,
+      "meshIndices": [
+        10,
+        11
+      ],
+      "materialIndices": [
+        0,
+        4
+      ],
+      "referencedVertices": 48863,
+      "triangles": 35032,
+      "textureBindings": [
+        {
+          "role": "baseColor",
+          "channels": "RGB color; A alpha when present",
+          "materialIndex": 4,
+          "materialName": "Cloudway_Glide__DonorAtlas_01_2K",
+          "textureIndex": 3,
+          "texCoord": 0,
+          "imageIndex": 4,
+          "sourceContract": "EXT_texture_webp"
+        },
+        {
+          "role": "metallicRoughness",
+          "channels": "B metallic; G roughness",
+          "materialIndex": 4,
+          "materialName": "Cloudway_Glide__DonorAtlas_01_2K",
+          "textureIndex": 5,
+          "texCoord": 0,
+          "imageIndex": 5,
+          "sourceContract": "EXT_texture_webp"
+        },
+        {
+          "role": "normal",
+          "channels": "RGB tangent-space normal",
+          "materialIndex": 4,
+          "materialName": "Cloudway_Glide__DonorAtlas_01_2K",
+          "textureIndex": 4,
+          "texCoord": 0,
+          "imageIndex": 3,
+          "sourceContract": "EXT_texture_webp"
+        }
+      ],
+      "embeddedImages": [
+        {
+          "imageIndex": 3,
+          "name": "cloudway_glide-atlas-03-2k",
+          "mimeType": "image/webp",
+          "bytes": 3658912,
+          "sha256": "2613378e27a8ee7fae9271d44f5a92a7e70eb56cad874dd384f5bc041af0d7e3",
+          "format": "WEBP",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 4,
+          "name": "cloudway_glide-atlas-01-2k",
+          "mimeType": "image/webp",
+          "bytes": 4168536,
+          "sha256": "4f14761bcbc215ace0ddd9e86f4390525f75b0587e12f6361bac6d099e2b8d7a",
+          "format": "WEBP",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 5,
+          "name": "cloudway_glide-atlas-02-2k",
+          "mimeType": "image/webp",
+          "bytes": 2896040,
+          "sha256": "5b9054eacc99ca03eca7c3089064ab6535ac404a606edfc35f9c0874844db99d",
+          "format": "WEBP",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        }
+      ]
+    },
+    "ultra4kDense": {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+      "bytes": 30284496,
+      "sha256": "394507ad969b53c88bf007edca9d4cc013adf3bab377c10dc3867a606276e36f",
+      "selectedRoot": null,
+      "selectedNodeCount": 1,
+      "meshIndices": [
+        0
+      ],
+      "materialIndices": [
+        0
+      ],
+      "referencedVertices": 82069,
+      "triangles": 145370,
+      "textureBindings": [
+        {
+          "role": "baseColor",
+          "channels": "RGB color; A alpha when present",
+          "materialIndex": 0,
+          "materialName": null,
+          "textureIndex": 0,
+          "texCoord": 0,
+          "imageIndex": 0,
+          "sourceContract": "core"
+        },
+        {
+          "role": "metallicRoughness",
+          "channels": "B metallic; G roughness",
+          "materialIndex": 0,
+          "materialName": null,
+          "textureIndex": 1,
+          "texCoord": 0,
+          "imageIndex": 1,
+          "sourceContract": "core"
+        },
+        {
+          "role": "normal",
+          "channels": "RGB tangent-space normal",
+          "materialIndex": 0,
+          "materialName": null,
+          "textureIndex": 2,
+          "texCoord": 0,
+          "imageIndex": 2,
+          "sourceContract": "core"
+        }
+      ],
+      "embeddedImages": [
+        {
+          "imageIndex": 0,
+          "name": null,
+          "mimeType": "image/jpeg",
+          "bytes": 13957009,
+          "sha256": "1cbcd6e4a5330005a909dc93ae6ef9a77a4d5f385002b51cf04f2c2ca328f618",
+          "format": "JPEG",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 1,
+          "name": null,
+          "mimeType": "image/jpeg",
+          "bytes": 2325195,
+          "sha256": "a4d5dd8bc5a138b4afc2869aa1e0b52a83953592e75de0a10541d05eb43bd6c6",
+          "format": "JPEG",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 2,
+          "name": null,
+          "mimeType": "image/jpeg",
+          "bytes": 9629376,
+          "sha256": "1d4def36699a4f902d14fc67d734a55525cfd76a7bb587560a04070d7d9ee537",
+          "format": "JPEG",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "mode": "RGB"
+        }
+      ]
+    }
+  },
+  "ultraExternalPbrMaps": [
+    {
+      "role": "base_color",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-base_color.png",
+      "bytes": 24047218,
+      "sha256": "a8db4ac044c85030b633053f8520497c5f5d730b3f951f19bc61465ec6d2e14d",
+      "format": "PNG",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "role": "metallic",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-metallic.png",
+      "bytes": 1031749,
+      "sha256": "70c0f773e280188fa93148a900ddf3b536eaea6989837758dcc54ee7ce0f6923",
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "role": "normal",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-normal.png",
+      "bytes": 20142133,
+      "sha256": "eae4cdf11fc56b6d52a045f7511b0152812c525085f196c0642c2b690771ef4a",
+      "format": "PNG",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "role": "roughness",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-roughness.png",
+      "bytes": 1427366,
+      "sha256": "297fd50e7322bd7faaa631520e1b64ac7b99f64941b9a21bb2149477bfa119b3",
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    }
+  ],
+  "groups": [
+    {
+      "mode": "clay",
+      "order": [
+        "Current V3 glide source",
+        "Meshy 7.1 Ultra 4K dense donor"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-clay-front.png",
+          "bytes": 1777324,
+          "sha256": "45e4de1e5a4d4ee36a0e1768822d8c3dfec396e409021290711f3c3b117aa3d7",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-clay-three-quarter.png",
+          "bytes": 1787750,
+          "sha256": "fe25c66eb1bacb47a00d1280dc71c8cd6b061fe1452ab35cb579d053638873c7",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "textured",
+      "order": [
+        "Current V3 glide source",
+        "Meshy 7.1 Ultra 4K dense donor"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-textured-front.png",
+          "bytes": 1999487,
+          "sha256": "ad2cae1794539b1a5f855172a0db2c3d822808a7f3569cfa4218dd0fae360216",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-textured-three-quarter.png",
+          "bytes": 2032263,
+          "sha256": "b52d6717cc473239cab001ffa546baa9d5dbbdd8852b0d797e21c2a1b7cdd367",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    }
+  ],
+  "proofFiles": [
+    {
+      "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-clay-front.png",
+      "bytes": 1777324,
+      "sha256": "45e4de1e5a4d4ee36a0e1768822d8c3dfec396e409021290711f3c3b117aa3d7",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-clay-three-quarter.png",
+      "bytes": 1787750,
+      "sha256": "fe25c66eb1bacb47a00d1280dc71c8cd6b061fe1452ab35cb579d053638873c7",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-textured-front.png",
+      "bytes": 1999487,
+      "sha256": "ad2cae1794539b1a5f855172a0db2c3d822808a7f3569cfa4218dd0fae360216",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-textured-three-quarter.png",
+      "bytes": 2032263,
+      "sha256": "b52d6717cc473239cab001ffa546baa9d5dbbdd8852b0d797e21c2a1b7cdd367",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    }
+  ],
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 16,
+    "seed": 23,
+    "cpuThreads": 8,
+    "resolution": [
+      1800,
+      1000
+    ],
+    "camera": "orthographic",
+    "blender": "5.2.2 LTS"
+  },
+  "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v5/production/render_ultra4k_v3_comparison.py -- --asset glide"
+}

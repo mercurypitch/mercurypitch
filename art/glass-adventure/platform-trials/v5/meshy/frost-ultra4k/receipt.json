@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "cloudway-frost-platform-meshy71-ultra4k-v5",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "archived",
   "source": {
     "file": "art/glass-adventure/platform-trials/v2/guides/frost-platform-guide.png",
     "bytes": 1126005,
@@ -56,9 +56,187 @@
       "--submit",
       "--authorized-source-transfer"
     ],
-    "asserted": false
+    "asserted": true,
+    "assertedAtUtc": "2026-09-23T20:50:39.913650+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Dense source archive only. Clay comparison, contact-surface review, Blender normal/AO bake, runtime LOD, texture-memory audition and integration remain pending.",
+  "providerReconciliation": {
+    "checkedAtUtc": "2026-09-23T20:50:39.349472+00:00",
+    "purpose": "Prevent an unreceipted or duplicate image-to-3D submission before frost V5.",
+    "baselineTaskId": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+    "tasksAtOrAfterBaseline": [
+      {
+        "id": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+        "type": "image-to-3d",
+        "status": "SUCCEEDED",
+        "progress": 100,
+        "created_at": 1790178430560,
+        "started_at": 1790178430576,
+        "finished_at": 1790178665987,
+        "expires_at": 1790437865987,
+        "consumed_credits": 35,
+        "geometry_resolution": "4k"
+      }
+    ],
+    "conclusion": "Every image-to-3D task newer than the V4 baseline has a local receipt."
+  },
+  "balanceBefore": 3795,
+  "submissionStartedAtUtc": "2026-09-23T20:50:39.913661+00:00",
+  "taskId": "01a0d008-eb11-7661-bca6-4fb4f1986fff",
+  "submittedAtUtc": "2026-09-23T20:50:43.966772+00:00",
+  "balanceAfterSubmit": 3760,
+  "observedBalanceDeltaAtSubmit": 35,
+  "lastStatus": {
+    "id": "01a0d008-eb11-7661-bca6-4fb4f1986fff",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790196643794,
+    "started_at": 1790196643808,
+    "finished_at": 1790196839130,
+    "expires_at": 1790456039130,
+    "consumed_credits": 35,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-23T21:09:34.920746+00:00",
+  "archiveDownloadTaskId": "01a0d008-eb11-7661-bca6-4fb4f1986fff",
+  "archiveDownloadStartedAtUtc": "2026-09-23T21:09:34.923493+00:00",
+  "rejectedDownloads": [
+    {
+      "schema": 1,
+      "kind": "quarantined-existing-invalid-archive",
+      "recordedAtUtc": "2026-09-23T21:09:34.922811+00:00",
+      "taskId": "01a0d008-eb11-7661-bca6-4fb4f1986fff",
+      "sourceHost": "assets.meshy.ai",
+      "signedUrlPersisted": false,
+      "originalFile": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/dense-donor.glb",
+      "quarantinedFile": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/rejected-downloads/dense-donor-existing-d8b54f9baab6.glb",
+      "metadataFile": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/rejected-downloads/dense-donor-existing-d8b54f9baab6.glb.json",
+      "bytesPersisted": true,
+      "reasonCode": "format-validation-failed",
+      "reason": "Archived GLB header or declared length is invalid",
+      "bytes": 1092944,
+      "sha256": "d8b54f9baab6e3f03d620ad36957e65a7002d30d3bcf5c8b748dae97c5adfef6",
+      "glbHeader": {
+        "magicHex": "676c5446",
+        "version": 2,
+        "declaredLength": 46738536
+      }
+    },
+    {
+      "schema": 1,
+      "kind": "rejected-download-attempt",
+      "recordedAtUtc": "2026-09-23T21:09:49.006252+00:00",
+      "artifact": "set-0-normal",
+      "attempt": 1,
+      "maximumAttempts": 3,
+      "sourceHost": "assets.meshy.ai",
+      "signedUrlPersisted": false,
+      "partialBytesPersisted": false,
+      "httpStatus": 200,
+      "contentType": "image/png",
+      "contentLength": "22643007",
+      "expectedBytes": 22643007,
+      "receivedBytes": 1090248,
+      "reasonCode": "content-length-mismatch",
+      "reason": "Artifact stream length did not match Content-Length",
+      "bytes": 1090248,
+      "sha256": "20c991e1951808cf0cd00142b7f8a46167a651ae100da2f817d6ab781d94ef3e",
+      "metadataFile": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/rejected-downloads/set-0-normal-attempt-1-20c991e19518.json"
+    }
+  ],
+  "finalStatus": {
+    "id": "01a0d008-eb11-7661-bca6-4fb4f1986fff",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790196643794,
+    "started_at": 1790196643808,
+    "finished_at": 1790196839130,
+    "expires_at": 1790456039130,
+    "consumed_credits": 35,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/dense-donor.glb",
+      "bytes": 46738536,
+      "sha256": "5f1c6fe3ebafc293283841527392ffe0972b28b50bdaaba293bfaaeaa0bec67c",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 339884,
+      "triangles": 632256
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-base_color.png",
+        "bytes": 26526561,
+        "sha256": "59be1a4ece7ad4a9ae04aef836facf28b176686017d9fdb1e3c09718acd09ca3",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-metallic.png",
+        "bytes": 970239,
+        "sha256": "307f2634681b3d9fe8ca0ad35bc66df1edff5045eeeb6cfd910fffbc2ba3f7fa",
+        "format": "PNG",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "mode": "L"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-normal.png",
+        "bytes": 22643007,
+        "sha256": "03db4c421f5dc6e623b8e19c68b4ce6ccbd62010e9d8bfa318bedc53b1cd2a80",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-roughness.png",
+        "bytes": 1839044,
+        "sha256": "02bdf2d4b28a260836eca38a9b817dc8d252ee6e7c0e66601f6efb75d3c42ecd",
+        "format": "PNG",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "mode": "L"
+      }
+    ],
+    "missingRequestedPbrMaps": []
+  },
+  "archivedAtUtc": "2026-09-23T21:09:50.808861+00:00",
+  "balanceAfterArchive": 3725,
+  "observedBalanceDeltaFinal": 70
 }

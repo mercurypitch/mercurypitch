@@ -52,15 +52,20 @@ the route or add a new released level during this pass. Fog is owner accepted.
 - [x] Capture the existing V3 arrival and close-up views in the actual game.
 - [x] Prepare two fitted V4 derivative approaches and review 2K/4K raw exports.
       Both fail visual review; neither is approved for runtime integration.
-- [ ] Generate V5 frost and moving-platform source auditions (two 35-credit
-      estimates). Review before deciding their runtime integration.
+- [x] Generate and archive both V5 sources for 70 credits total; render all eight
+      matched clay/PBR comparisons and preserve packed Blender review scenes.
+      Independent source acceptance is recorded under V5; no runtime derivative yet.
 - [x] Independently review export geometry, collision alignment and art; reject
       the 90k bake path and direct 238k path despite structural validation.
-- [ ] Isolate the first destructive production step, then prove one slab/arch
-      region before producing another whole-platform derivative.
+- [x] Isolate the first destructive operation with exact fit/flatten/collapse stages
+      and a geometry-identical normal control. Whole-shell collapse after flattening
+      damages topology; resetting normals does not repair it. Flattening separately
+      erases top relief and clips foliage.
+- [ ] Prove one clean left-front arch/fascia component before another whole-platform
+      derivative. Preserve the visible surface; keep collision contact separate.
 - [ ] Integrate a future accepted derivative, verify actual browser assets and
       run focused asset/loader checks. Deferred: this batch has no accepted low mesh.
-- [x] Fix the root-browser cover decode check at `4c0ef3c3`; both affected tests pass concurrently locally and all four root-browser CI shards now pass. All 40 PR checks pass on that revision.
+- [x] Fix the root-browser cover decode check at `4c0ef3c3`; both affected tests pass concurrently locally and all four root-browser CI shards pass. All 40 PR checks also passed at `f3899370`; inspect CI again after this evidence update.
 - [x] Finalize production evidence and plans for the PR. The stable preview retains V3;
       no rejected candidate should be installed merely to finish this checklist.
 - [x] Specify the melody-contour learning follow-up and make a listening/visual
@@ -117,31 +122,58 @@ Measure a future visually accepted candidate with the same view. Review distance
 LOD or instance visibility against physical-tablet evidence before extending
 geometry density across the main galleries.
 
-### Next bounded production experiment
+### Isolated cause and next production step
 
-1. Preserve the rejected outputs. In a separate reproduction directory, capture
-   matched clay snapshots after fit only, contact flattening, simplification and
-   split-normal finalization. Compare the exact same region after every step.
-2. Keep the first failing step isolated. Validate the landing surface separately
-   from layered trim, arches and foliage; a bulk projection through all nearby
-   sheets already failed. Do not use another arbitrary polygon budget as a fix.
-3. Prove one slab/arch component using the Meshy source detail, a deliberate
-   lower-resolution surface and isolated high-to-low bake where necessary.
-   Require clean clay before normals/textures, then clean grazing PBR views.
-4. Only extend the successful component method to the full asset. Recheck the
-   exact glTF in Cloudway, then compare 2K/4K and measure performance. Keep this
-   on the existing mini-game route until the owner accepts the visual result.
+The [dated causal report](../platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/final-conclusion.json)
+rebuilds exact production stages from the untouched dense donor. Fit-only keeps
+straight fascia and smooth arches. Contact flattening moves 134,483 visible
+vertices, erases relief and clips foliage, although the broad front remains clean.
+The subsequent weighted whole-shell collapse is the first stage that reproduces
+the broad triangular damage. Its silhouette can remain almost identical while
+interior surface quality fails; silhouette metrics alone are insufficient.
 
-## External request checkpoint
+A control keeps collapsed positions, triangle indices, UVs and material indices
+byte-identical, removes custom normals and calculates smooth normals with a
+30-degree hard-edge threshold. It eliminates 40,142 non-positive corner normals,
+but the top fractures and long-triangle fascia/arch defects remain. Correcting
+normals improves contrast slightly; it does not repair the damaged topology.
+No later bake or normal-finalization loop was run.
 
-The marble remesh was submitted and completed for 5 credits. The two new V5
-source auditions were prepared but automatic approval review rejected the
-first upload before process start: it requires specific approval for the Frost
-and Glide guide PNGs and their two 35-credit jobs. An async owner question names
-both exact V2 guide files, destination `api.meshy.ai`, and 70-credit total.
-Neither V5 job has a task ID or spent credits. Do not retry or work around this
-rejection without the answer. All local preparation and the existing marble
-work can continue.
+Next, extract the measured left-front arch bay and adjacent fascia from the
+fit-only source. Preserve sculpted ornaments as source components and author a
+clean lower-resolution surface with deliberate straight edges/radial arch loops.
+Any projection must be restricted to that component pair. Keep visual detail
+separate from the invisible landing/collision surface. Accept matched clay first,
+then normal/PBR proofs, before extending the method or installing anything.
+
+### V5 Frost and Glide source results
+
+Both explicitly requested Meshy 7.1 / Ultra 4K tasks completed:
+
+| Source | Task ID                                | Triangles |  GLB bytes | Credits |
+| ------ | -------------------------------------- | --------: | ---------: | ------: |
+| Frost  | `01a0d008-eb11-7661-bca6-4fb4f1986fff` |   632,256 | 46,738,536 |      35 |
+| Glide  | `01a0d009-7173-7142-8f57-0c4c8be24adf` |   145,370 | 30,284,496 |      35 |
+
+Actual base-colour/normal maps are 4K; metallic/roughness maps are 2K. The provider
+confirms Ultra geometry resolution but does not echo the requested model version.
+The original GLBs, separate maps, receipts, eight matched proofs and packed Blender
+review projects are saved under [V5](../platform-trials/v5/README.md).
+
+The original transfers stopped near 1 MB. Complete-length and format checks now
+precede archive promotion, and bounded retries recover from the same task ID.
+Rejected original partial GLBs are quarantined; two later short normal-map
+transfers were caught too. Six network-free regressions pass. No duplicate jobs
+were created. New-source total: 70 credits; previous marble source/remesh: 40.
+
+Independent review accepts both only as dense source donors with limitations.
+The new source surfaces and corners are cleaner, but fit/material work remains.
+At matched width, Frost is 30.60% shallower than V3 and Glide 40.21% shallower.
+Frost has a few raised bubble-like bumps; Glide's motif is mainly texture. Both
+use opaque PBR rather than actual transmission, so glass shading needs deliberate
+finishing, with masks/partitions separating glass from the shared gold material.
+Neither is a runtime-approved replacement yet. Retain V3 in the owner
+playtest while preparing and validating those derivatives.
 
 ## Next learning follow-up: melody ribbon
 

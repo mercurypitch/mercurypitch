@@ -333,6 +333,11 @@ def main() -> None:
 
     if authoritative_rows is None:
         raise ValueError("Comparison produced no source measurements")
+    source_scene = V5 / "sources" / f"{asset.name}-ultra4k-source-review.blend"
+    source_scene.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.file.pack_all()
+    bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.wm.save_as_mainfile(filepath=str(source_scene), check_existing=False)
     v3_dimensions = authoritative_rows[0]["displayDimensionsBlenderZUpMetres"]
     ultra_dimensions = authoritative_rows[1]["displayDimensionsBlenderZUpMetres"]
     depth_delta_percent = (float(ultra_dimensions[1]) / float(v3_dimensions[1]) - 1.0) * 100.0
@@ -380,6 +385,12 @@ def main() -> None:
         "sourceArchives": {
             "v3Manifest": source["v3Manifest"],
             "ultraReceipt": source["ultraReceipt"],
+        },
+        "packedSourceReviewScene": {
+            "file": relative(source_scene),
+            "bytes": source_scene.stat().st_size,
+            "sha256": digest(source_scene),
+            "purpose": "Packed comparison scene with unchanged source topology and uniformly matched display width; not a runtime export.",
         },
         "glbInventories": {
             "currentV3": source["v3"],

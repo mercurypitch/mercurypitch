@@ -8,13 +8,23 @@ Code and production sources are preserved in draft PR #807 on
 
 ## Where we are
 
-The bounded [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md)
-has a clear outcome: the dense marble source is useful, but neither the 90k
-remesh/bake nor the direct 238k derivative passes visual review. Both are
-archived, and public Cloudway platforms remain V3. Next, isolate the first
-destructive production step and prove one slab/arch region before another
-whole-platform build. Two new frost/moving source auditions are prepared but
-await specific external-upload approval; no V5 task or charge exists.
+The [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md)
+has preserved two new Frost/Glide sources and isolated the marble conversion
+failure. The 90k bake and direct 238k marble derivatives remain rejected; public
+Cloudway platforms remain V3. Exact intermediate renders show whole-shell
+collapse damaging the surface topology after flattening; a geometry-identical
+normal reset does not repair it. Flattening separately erases top relief and
+clips foliage. The next repair proves one arch/fascia component while keeping
+visual detail separate from collision contact.
+
+Both approved V5 Meshy jobs completed for 70 credits total: Frost has 632,256
+triangles and Glide 145,370, each with actual 4K colour/normal and 2K metallic/
+roughness maps. Complete originals, receipts, matched clay/PBR comparisons and
+packed Blender projects are saved under [V5](../platform-trials/v5/README.md).
+Their cleaner forms still need deliberate fitting and glass material work;
+neither is installed. The download producer now catches truncated GLB/image
+transfers before promotion, with six passing network-free regressions and no
+duplicate generation jobs.
 
 The [melody-ribbon learning specification](./MELODY-RIBBON-LEARNING-SPEC.md) and
 [listening visualizer](../melody-ribbon/v1/index.html) are saved at `5db8a2f9`.

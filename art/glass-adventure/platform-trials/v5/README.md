@@ -1,15 +1,62 @@
 # Cloudway Frost and Glide Meshy 7.1 Ultra 4K source auditions
 
-Status: **NOT SUBMITTED**. No Frost or Glide V5 provider task exists, no guide
-was transferred, and no credits were charged.
+Status: **ACCEPTED AS DENSE SOURCE DONORS WITH LIMITATIONS; NOT INTEGRATED**.
+The owner explicitly confirmed both guide uploads. Both 35-credit jobs succeeded,
+and their complete original GLBs, PBR maps and packed Blender review scenes are
+preserved here. No replacement has been installed in the game.
 
-The first Frost submission command was rejected before process creation by the
-external-egress approval gate. The gate requires approval that explicitly names
-both source files, the Meshy API destination, and the two 35-credit jobs.
-Do not retry either submission until that specific approval is present.
+| Source | Task ID                                | Triangles |     Original GLB |     Charge |
+| ------ | -------------------------------------- | --------: | ---------------: | ---------: |
+| Frost  | `01a0d008-eb11-7661-bca6-4fb4f1986fff` |   632,256 | 46,738,536 bytes | 35 credits |
+| Glide  | `01a0d009-7173-7142-8f57-0c4c8be24adf` |   145,370 | 30,284,496 bytes | 35 credits |
+
+Both requests explicitly pin Meshy 7.1 and Ultra 4K geometry. The provider confirms
+`geometry_resolution: 4k` but does not echo the model version. Actual base-colour
+and normal maps are 4096 square; metallic and roughness maps are 2048 square.
+Total charge is 70 credits; balance after archiving is 3,725. Download retries
+did not create additional generation jobs.
+
+The first GLB downloads stopped near 1 MB. Their exact rejected bytes are kept
+under each source's `rejected-downloads/`. The producer now requires complete
+HTTP Content-Length and GLB/image format validation before promoting a `.part`.
+One truncated normal-map transfer per source was also caught and retried. Six
+network-free regression tests cover truncated/corrupt transfers, bounded retries,
+same-task archive recovery and refusal to submit an existing task again.
+
+These are completed tasks; never submit them again. Their archived receipts are
+bound into the comparison reports. Unnecessarily resuming a completed archive
+would update receipt timestamps and invalidate those comparison hashes.
 
 This directory is an isolated source audition. It does not change V4, the V3
 family, public assets, gameplay code, colliders, or runtime integration.
+
+## Matched source review
+
+In every comparison, **left is current V3; right is the new Ultra 4K source**.
+Both have the same displayed width and share camera and lighting. Their original
+aspect ratios are preserved: Frost is 30.60% shallower and Glide 40.21% shallower
+than the current platforms. They still require a deliberate collider-fit pass.
+
+| Source | Clay                                                                                                     | Textured                                                                                                         | Packed editable scene                                |
+| ------ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Frost  | [Front](proofs/frost-ultra4k-v3-clay-front.png), [angle](proofs/frost-ultra4k-v3-clay-three-quarter.png) | [Front](proofs/frost-ultra4k-v3-textured-front.png), [angle](proofs/frost-ultra4k-v3-textured-three-quarter.png) | [Blender](sources/frost-ultra4k-source-review.blend) |
+| Glide  | [Front](proofs/glide-ultra4k-v3-clay-front.png), [angle](proofs/glide-ultra4k-v3-clay-three-quarter.png) | [Front](proofs/glide-ultra4k-v3-textured-front.png), [angle](proofs/glide-ultra4k-v3-textured-three-quarter.png) | [Blender](sources/glide-ultra4k-source-review.blend) |
+
+The [independent source review](proofs/source-review.json) accepts both as dense
+source donors with limitations. All eight proofs, original guides, GLBs, maps
+and packed scenes are hash-bound in that review. It does not accept a runtime
+replacement.
+
+The new sources have cleaner broad faces and corner details. Frost avoids the
+old V3 black triangular top defect but retains small raised bubble-like bumps.
+Glide's moon/orbit motif is principally texture detail. Both original materials
+are opaque PBR, without glTF transmission or volume: their painted glass
+appearance is not evidence of physical translucency. Material finishing remains
+separate from source geometry acceptance. The single material also contains the
+gold hardware, so glass and metal need deliberate material masks/partitions;
+turning on transmission across the entire mesh would be incorrect. Frost's
+underside has more/sharper crystals than requested, and Glide has pointed facets
+that still need controlled finishing.
 
 ## Exact approved-source candidates
 
@@ -65,10 +112,10 @@ signed artifact URLs. It accepts downloads only from `assets.meshy.ai`.
    and observed credit delta.
 8. Stops without resubmission if a successful task omits any requested map.
 
-Current preflight receipts:
+Current task receipts:
 
-- `meshy/frost-ultra4k/receipt.json`: `not-submitted`, no task ID.
-- `meshy/glide-ultra4k/receipt.json`: `not-submitted`, no task ID.
+- `meshy/frost-ultra4k/receipt.json`: complete archive, maps, hashes and 35-credit provider result.
+- `meshy/glide-ultra4k/receipt.json`: complete archive, maps, hashes and 35-credit provider result.
 
 All future GLB, Blend, PNG, JPEG, and WebP outputs under V5 are covered by the
 local Git LFS attributes.
@@ -82,19 +129,18 @@ rtk python3 art/glass-adventure/platform-trials/v5/production/run_meshy71_ultra4
 rtk python3 art/glass-adventure/platform-trials/v5/production/run_meshy71_ultra4k_audition.py --asset glide
 ```
 
-Only after the specific external-transfer approval is granted:
-
-```sh
-rtk proxy timeout 3600 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/platform-trials/v5/production/run_meshy71_ultra4k_audition.py --asset frost --submit --authorized-source-transfer
-rtk proxy timeout 3600 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/platform-trials/v5/production/run_meshy71_ultra4k_audition.py --asset glide --submit --authorized-source-transfer
-```
-
-If a command ends after its receipt contains a task ID, use the matching
-resume command and never submit again:
+For these completed jobs, do not use `--submit`. If an archive is genuinely
+incomplete, resume its recorded task ID without another charge:
 
 ```sh
 rtk proxy timeout 3600 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/platform-trials/v5/production/run_meshy71_ultra4k_audition.py --asset frost --resume
 rtk proxy timeout 3600 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/platform-trials/v5/production/run_meshy71_ultra4k_audition.py --asset glide --resume
+```
+
+Download regression check:
+
+```sh
+rtk proxy python3 art/glass-adventure/platform-trials/v5/production/test_run_meshy71_ultra4k_audition.py
 ```
 
 After an archive is complete, render its matched source audition on CPU:

@@ -1,0 +1,364 @@
+{
+  "schema": 1,
+  "review": "cloudway-frost-and-glide-meshy71-ultra4k-source-review-v5",
+  "date": "2026-09-23",
+  "purpose": "Independent guide-bound review of the archived Frost and Glide Meshy 7.1 Ultra 4K outputs as dense source donors. Acceptance here does not select a runtime mesh, collider fit, material implementation or public asset.",
+  "guides": {
+    "frost": {
+      "file": "art/glass-adventure/platform-trials/v2/guides/frost-platform-guide.png",
+      "bytes": 1126005,
+      "sha256": "f79a6e0de0bf2fe87c66443aa7abd87911d0377b59e872ff4fd91c9c3c525f45",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "requiredIdentity": "Pale aquamarine ice-glass slab; broad flat safe top; frosted bevels and subtle internal bubbles; restrained crystalline flower; four compact aged-gold corner clasps; a small number of blunt underside crystal facets."
+    },
+    "glide": {
+      "file": "art/glass-adventure/platform-trials/v2/guides/glide-platform-guide.png",
+      "bytes": 1269012,
+      "sha256": "70acf421f63536dc18ca09f507fcf22b736647c7d92878bd3130b8b567f830c4",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "requiredIdentity": "Teal-celadon opaline raft; broad flat safe top; narrow aged-gold trim; four compact corner caps; moon-and-orbit inlay; shallow carved glass underside; no route rails, endpoint posts, wheels or machinery."
+    }
+  },
+  "decisions": {
+    "frost": {
+      "state": "accepted-as-high-detail-source-donor-with-limitations",
+      "scope": "dense source donor for a later authored high-to-low workflow only",
+      "runtimeIntegrationAuthorized": false,
+      "selectedSource": {
+        "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/dense-donor.glb",
+        "bytes": 46738536,
+        "sha256": "5f1c6fe3ebafc293283841527392ffe0972b28b50bdaaba293bfaaeaa0bec67c",
+        "triangles": 632256,
+        "referencedVertices": 339884
+      },
+      "comparisonReport": {
+        "file": "art/glass-adventure/platform-trials/v5/proofs/frost-ultra4k-v3-source-comparison.json",
+        "bytes": 14774,
+        "sha256": "60dfccb11462b67998aa6f9c2b761341dcceb8e32fa59db0f5ad6b0943b24e38"
+      },
+      "packedSourceReviewScene": {
+        "file": "art/glass-adventure/platform-trials/v5/sources/frost-ultra4k-source-review.blend",
+        "bytes": 93642364,
+        "sha256": "c7da9627f2a7f9bd2aa44ad296be0b684f514e8c919035169bbd82056be529a5",
+        "purpose": "Packed comparison scene with unchanged source topology and uniformly matched display width; not a runtime export."
+      },
+      "reviewEvidence": [
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/frost-ultra4k-v3-clay-front.png",
+          "bytes": 1825107,
+          "sha256": "c24a78c06d034e7a0e07e015e9b63370d06055319f77a71d971858817be6492f",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/frost-ultra4k-v3-clay-three-quarter.png",
+          "bytes": 1849738,
+          "sha256": "23da0f462b9b9d77c5d719698d98bb34cfbe862361450c4a39f0d2274a7ff9f4",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/frost-ultra4k-v3-textured-front.png",
+          "bytes": 1985470,
+          "sha256": "319f4c37c311b91f9c608e8f6c695b2e938ca189bd8e664e7a269dc2a6b968c0",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/frost-ultra4k-v3-textured-three-quarter.png",
+          "bytes": 2016511,
+          "sha256": "b65ea4e56c7f1fd8888ee0eda84043871d064c8cc0e2e9943a557fb1964e941d",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ],
+      "visibleStrengths": [
+        "Neutral clay shows a continuous broad landing, clean rectangular slab, coherent four-corner hardware, and a symmetric crystalline underside without the current V3 black top triangle.",
+        "The central crystal cluster, secondary underside facets, corner clasps and beveled shell are substantially cleaner donor forms than the current V3 source.",
+        "Textured views keep pale aquamarine ice, white etched-flower identity, thin gold perimeter accents and gold/crystal corner regions readable without severe seams or dark baked shadows."
+      ],
+      "visibleDeficits": [
+        "At matched width the donor is 0.971593 m deep versus the V3 source at 1.399964 m, a 30.60% depth shortfall; it is not a collider- or runtime-fit mesh.",
+        "Several circular bubble-like forms are raised on the front wall and landing surface. The guide calls for subtle internal bubbles, so these surface bumps must be removed or flattened when authoring the safe landing.",
+        "The underside contains more and sharper crystal points than the prompt\u2019s small number of blunt facets; retain selectively rather than copying the whole underside unchanged.",
+        "The etched flower is clearly readable in PBR but contributes little to the neutral-clay surface, so its identity depends mainly on the texture/normal treatment."
+      ],
+      "fitRiskAtMatchedWidth": {
+        "v3DimensionsMetres": [
+          1.800497,
+          1.399964,
+          0.537774
+        ],
+        "donorDimensionsMetres": [
+          1.800497,
+          0.971593,
+          0.502526
+        ],
+        "depthDeltaPercent": -30.6,
+        "heightDeltaPercent": -6.55
+      },
+      "originalPbrMaterialSemantics": {
+        "materialCount": 1,
+        "alphaMode": "OPAQUE",
+        "doubleSided": true,
+        "extensionsUsed": [],
+        "khrMaterialsTransmissionPresent": false,
+        "khrMaterialsVolumePresent": false,
+        "khrMaterialsIorPresent": false,
+        "baseColorFactorAlpha": 1.0,
+        "embeddedTextureContract": {
+          "baseColor": "4096 x 4096 RGB JPEG; no alpha",
+          "metallicRoughness": "2048 x 2048 RGB JPEG; no alpha",
+          "normal": "4096 x 4096 RGB JPEG; no alpha",
+          "occlusion": "absent",
+          "emissive": "absent"
+        },
+        "externalArchivedMaps": [
+          {
+            "role": "baseColor",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-base_color.png",
+            "bytes": 26526561,
+            "sha256": "59be1a4ece7ad4a9ae04aef836facf28b176686017d9fdb1e3c09718acd09ca3",
+            "dimensions": [
+              4096,
+              4096
+            ],
+            "mode": "RGB",
+            "alphaChannelPresent": false
+          },
+          {
+            "role": "normal",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-normal.png",
+            "bytes": 22643007,
+            "sha256": "03db4c421f5dc6e623b8e19c68b4ce6ccbd62010e9d8bfa318bedc53b1cd2a80",
+            "dimensions": [
+              4096,
+              4096
+            ],
+            "mode": "RGB",
+            "alphaChannelPresent": false
+          },
+          {
+            "role": "metallic",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-metallic.png",
+            "bytes": 970239,
+            "sha256": "307f2634681b3d9fe8ca0ad35bc66df1edff5045eeeb6cfd910fffbc2ba3f7fa",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "mode": "L",
+            "alphaChannelPresent": false
+          },
+          {
+            "role": "roughness",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-roughness.png",
+            "bytes": 1839044,
+            "sha256": "02bdf2d4b28a260836eca38a9b817dc8d252ee6e7c0e66601f6efb75d3c42ecd",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "mode": "L",
+            "alphaChannelPresent": false
+          }
+        ],
+        "finding": "The source is fully opaque and has no optical transmission, volume or IOR extension. Its glass depth and caustic appearance are painted into one material shared by glass and gold regions. A later asset must partition or mask those regions before any deliberate transmissive glass shader is authored."
+      },
+      "remainingAssetSpecificGates": [
+        "Restore the authored 1.30 m landing depth without stretching the crystal and clasp details.",
+        "Flatten the playable top and remove raised bubble geometry while preserving the etched-flower texture identity.",
+        "Choose a restrained subset of blunt underside facets for the low mesh."
+      ]
+    },
+    "glide": {
+      "state": "accepted-as-high-detail-source-donor-with-limitations",
+      "scope": "dense source donor for a later authored high-to-low workflow only",
+      "runtimeIntegrationAuthorized": false,
+      "selectedSource": {
+        "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+        "bytes": 30284496,
+        "sha256": "394507ad969b53c88bf007edca9d4cc013adf3bab377c10dc3867a606276e36f",
+        "triangles": 145370,
+        "referencedVertices": 82069
+      },
+      "comparisonReport": {
+        "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-source-comparison.json",
+        "bytes": 14773,
+        "sha256": "2324aff54c2044e045e7b337796f779ca381140984c0280b3a82ae0b801ebf6b"
+      },
+      "packedSourceReviewScene": {
+        "file": "art/glass-adventure/platform-trials/v5/sources/glide-ultra4k-source-review.blend",
+        "bytes": 68632991,
+        "sha256": "a7dba5d6f68118130de3992c2b0b5aa79c603eb5749409176fec6aed34671fc0",
+        "purpose": "Packed comparison scene with unchanged source topology and uniformly matched display width; not a runtime export."
+      },
+      "reviewEvidence": [
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-clay-front.png",
+          "bytes": 1777324,
+          "sha256": "45e4de1e5a4d4ee36a0e1768822d8c3dfec396e409021290711f3c3b117aa3d7",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-clay-three-quarter.png",
+          "bytes": 1787750,
+          "sha256": "fe25c66eb1bacb47a00d1280dc71c8cd6b061fe1452ab35cb579d053638873c7",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-textured-front.png",
+          "bytes": 1999487,
+          "sha256": "ad2cae1794539b1a5f855172a0db2c3d822808a7f3569cfa4218dd0fae360216",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v5/proofs/glide-ultra4k-v3-textured-three-quarter.png",
+          "bytes": 2032263,
+          "sha256": "b52d6717cc473239cab001ffa546baa9d5dbbdd8852b0d797e21c2a1b7cdd367",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ],
+      "visibleStrengths": [
+        "Neutral clay shows a clean continuous landing, crisp shallow slab, compact four-corner caps with readable star relief, and a coherent faceted underside.",
+        "The donor contains no forbidden route rails, large endpoint posts, wheels, machinery, glow or scene debris.",
+        "Textured views preserve a strong teal-celadon field, narrow gold trim, clean gold/glass region separation, and a centered crisp moon-and-orbit motif."
+      ],
+      "visibleDeficits": [
+        "At matched width the donor is 0.837659 m deep versus the V3 source at 1.400970 m, a 40.21% depth shortfall; its 0.323374 m height is 11.07% above V3. It is not a collider- or runtime-fit mesh.",
+        "The moon-and-orbit identity is almost entirely texture/normal information and is absent from the neutral-clay top; any new UV layout or bake must prove that it preserves the inlay.",
+        "The underside uses pointed diamond facets rather than only shallow carved relief; later authoring must keep the landing shallow and avoid increasing gameplay obstruction."
+      ],
+      "fitRiskAtMatchedWidth": {
+        "v3DimensionsMetres": [
+          1.800201,
+          1.40097,
+          0.291136
+        ],
+        "donorDimensionsMetres": [
+          1.800201,
+          0.837659,
+          0.323374
+        ],
+        "depthDeltaPercent": -40.21,
+        "heightDeltaPercent": 11.07
+      },
+      "originalPbrMaterialSemantics": {
+        "materialCount": 1,
+        "alphaMode": "OPAQUE",
+        "doubleSided": true,
+        "extensionsUsed": [],
+        "khrMaterialsTransmissionPresent": false,
+        "khrMaterialsVolumePresent": false,
+        "khrMaterialsIorPresent": false,
+        "baseColorFactorAlpha": 1.0,
+        "embeddedTextureContract": {
+          "baseColor": "4096 x 4096 RGB JPEG; no alpha",
+          "metallicRoughness": "2048 x 2048 RGB JPEG; no alpha",
+          "normal": "4096 x 4096 RGB JPEG; no alpha",
+          "occlusion": "absent",
+          "emissive": "absent"
+        },
+        "externalArchivedMaps": [
+          {
+            "role": "baseColor",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-base_color.png",
+            "bytes": 24047218,
+            "sha256": "a8db4ac044c85030b633053f8520497c5f5d730b3f951f19bc61465ec6d2e14d",
+            "dimensions": [
+              4096,
+              4096
+            ],
+            "mode": "RGB",
+            "alphaChannelPresent": false
+          },
+          {
+            "role": "normal",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-normal.png",
+            "bytes": 20142133,
+            "sha256": "eae4cdf11fc56b6d52a045f7511b0152812c525085f196c0642c2b690771ef4a",
+            "dimensions": [
+              4096,
+              4096
+            ],
+            "mode": "RGB",
+            "alphaChannelPresent": false
+          },
+          {
+            "role": "metallic",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-metallic.png",
+            "bytes": 1031749,
+            "sha256": "70c0f773e280188fa93148a900ddf3b536eaea6989837758dcc54ee7ce0f6923",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "mode": "L",
+            "alphaChannelPresent": false
+          },
+          {
+            "role": "roughness",
+            "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-roughness.png",
+            "bytes": 1427366,
+            "sha256": "297fd50e7322bd7faaa631520e1b64ac7b99f64941b9a21bb2149477bfa119b3",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "mode": "L",
+            "alphaChannelPresent": false
+          }
+        ],
+        "finding": "The source is fully opaque and has no optical transmission, volume or IOR extension. Its glass depth and caustic appearance are painted into one material shared by glass and gold regions. A later asset must partition or mask those regions before any deliberate transmissive glass shader is authored."
+      },
+      "remainingAssetSpecificGates": [
+        "Author a 1.30 m-deep landing while preserving the compact corner caps and shallow silhouette without non-uniformly stretching detail.",
+        "Preserve and prove the moon-and-orbit inlay through the final UV and high-to-low bake.",
+        "Simplify the pointed underside into deliberate shallow decorative geometry outside the collider."
+      ]
+    }
+  },
+  "sharedRemainingGates": [
+    "Author low meshes against the existing 1.70 x 1.30 x 0.24 metre gameplay collider; do not infer fit from matched display width.",
+    "Retopologize and unwrap with a continuous flat landing, deliberate hard edges, finite UVs, and separate glass/gold material control.",
+    "Bake normal and AO from the accepted dense donor per component, then compare full-strength maps against neutral clay and provider-normal alternatives.",
+    "Validate finite unit normals and tangents, UV orientation, texture memory, collider contact, and actual-game performance before integration.",
+    "Reauthor glass intentionally: the original donors are opaque and contain painted glass/caustic appearance rather than actual transmission."
+  ],
+  "globalDecision": {
+    "acceptedDenseSourceDonors": [
+      "frost",
+      "glide"
+    ],
+    "acceptedAsPristineOrRuntimeReady": false,
+    "runtimeIntegrationAuthorized": false,
+    "publicIntegrationPerformed": false,
+    "providerCallsPerformedByThisReview": 0
+  }
+}
