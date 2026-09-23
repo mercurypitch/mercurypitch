@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launch frame (S4, owner decision 8): the app's own ground, #0b0d12,
+     the same colour capacitor.config.ts gives the web view, so a cold start
+     goes from the icon to the ground to the alley without a white frame. -->
+<resources>
+    <color name="mp_launch_ground">#FF0B0D12</color>
+</resources>
