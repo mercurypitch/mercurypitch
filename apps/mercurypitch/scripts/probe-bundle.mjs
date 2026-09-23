@@ -3174,6 +3174,62 @@ async function walkAlley(browser, args, frame) {
     steps.push(
       `alley Developer "Replay the welcome": flag cleared, headline back; ${note}`,
     )
+
+    // ── The keyboard ──────────────────────────────────────────
+    // The skip link lands on the alley (<main> is empty on this tab), a door
+    // picked from the keyboard shows its card with a ring, and Escape puts
+    // it back with its sound (S4 fix F8).
+    const hashBefore = await page.evaluate(() => window.location.hash)
+    await page.locator('.skip-link').focus()
+    await page.keyboard.press('Enter')
+    const skipped = await page.evaluate(() => ({
+      focus: document.activeElement?.dataset?.testid ?? null,
+      hash: window.location.hash,
+    }))
+    if (skipped.focus !== 'rooms-alley' || skipped.hash !== hashBefore) {
+      throw new Error(`skip link: ${JSON.stringify(skipped)}`)
+    }
+    await page.keyboard.press('Tab')
+    const firstKey = await page.evaluate(
+      () => document.activeElement?.dataset?.testid ?? null,
+    )
+    if (firstKey !== 'alley-door-ear') {
+      throw new Error(`skip link, then Tab: focus on ${firstKey}`)
+    }
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
+    await page.keyboard.press('Enter')
+    await waitPhase(page, 'alive', 'sing', 'keyboard: Sing')
+    await page.waitForTimeout(500)
+    const ring = await page.evaluate(() => {
+      const card = document.querySelector('[data-testid="alley-card"]')
+      const style = getComputedStyle(card)
+      return {
+        focused: document.activeElement === card,
+        outline: `${style.outlineStyle} ${style.outlineWidth}`,
+      }
+    })
+    if (!ring.focused || !ring.outline.startsWith('solid')) {
+      throw new Error(
+        `keyboard: the card shows no focus ${JSON.stringify(ring)}`,
+      )
+    }
+    const keyLevel = (await alleyNow(page)).level
+    await page.keyboard.press('Escape')
+    await waitPhase(page, 'rest', null, 'keyboard: Escape')
+    await page.waitForTimeout(700)
+    const hushed = await alleyNow(page)
+    if (hushed.level !== 0 || hushed.sounding !== null) {
+      throw new Error(
+        `Escape: the ambient is still up ${JSON.stringify(hushed)}`,
+      )
+    }
+    note = await goneKept(page, 'Escape', {
+      gone: ['.mp-alley__panel.is-shown', '.mp-alley__door.is-alive'],
+      kept: doorKeys,
+    })
+    steps.push(
+      `alley keyboard: skip link focuses the alley (hash kept), Tab reaches the Ear Lab, Enter on Sing shows the card with a ${ring.outline} ring, Escape puts it back (ambient ${keyLevel.toFixed(2)} to 0); ${note}`,
+    )
   } catch (error) {
     failures.push(error.message)
   } finally {

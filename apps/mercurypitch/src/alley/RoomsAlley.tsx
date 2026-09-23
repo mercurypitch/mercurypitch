@@ -32,7 +32,7 @@ import './alley.css'
 import { roomName } from '@/features/rooms/room-names'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { exposeForE2E } from '@/lib/test-utils'
-import { holdRoomArrival, roomArrivalHeld } from '@/stores/native-shell-store'
+import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { goToTab, registerDoorOpen } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
@@ -369,6 +369,21 @@ export const RoomsAlley: Component = () => {
       onCleanup(() => window.clearTimeout(timer))
     }
 
+    // "Skip to main content" lands here: <main> is empty on this tab.
+    if (root !== undefined) onCleanup(registerSkipTarget(root))
+
+    // Escape puts a door back, as a tap on the plate does: the card goes and
+    // the ambient fades out.
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      const phase = alley().phase
+      if (phase !== 'selected' && phase !== 'alive') return
+      event.preventDefault()
+      clear()
+    }
+    window.addEventListener('keydown', onKey)
+    onCleanup(() => window.removeEventListener('keydown', onKey))
+
     // The app going to the background takes the door's sound with it.
     const onVisibility = (): void => {
       if (document.visibilityState !== 'hidden') return
@@ -433,6 +448,8 @@ export const RoomsAlley: Component = () => {
     <div
       ref={root}
       class="mp-alley"
+      id="rooms-alley"
+      tabIndex={-1}
       data-testid="rooms-alley"
       data-phase={alley().phase}
       data-door={alley().door ?? ''}
@@ -451,9 +468,11 @@ export const RoomsAlley: Component = () => {
       </div>
 
       {/* The top: the mark, and the headline on a first run or the compact
-          title after. First in the document, so a screen reader starts
-          there (S4 §2). A div, not a <header>: app.css styles every
-          header as the web's top bar. */}
+          title after. First in the alley, so a screen reader entering it
+          starts here (S4 §2) — but not first in the document: the shell is
+          portalled after the app, so the app's skip link is what brings a
+          reader here (`registerSkipTarget` above). A div, not a <header>:
+          app.css styles every header as the web's top bar. */}
       <div ref={top} class="mp-alley__top" data-testid="alley-top">
         <img
           class="mp-alley__mark"

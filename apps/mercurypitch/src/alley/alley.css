@@ -443,6 +443,17 @@
   outline: none;
 }
 
+/* A keyboard that picked a door lands on its card, and must see it did. */
+.mp-alley__card:focus-visible {
+  outline: 2px solid var(--alley-blue);
+  outline-offset: 2px;
+}
+
+/* The skip link's landing: the alley itself, which needs no ring. */
+.mp-alley:focus {
+  outline: none;
+}
+
 .mp-alley__eyebrow {
   margin-bottom: 4px;
   font: 500 11px/14px var(--font-body, 'Inter', sans-serif);

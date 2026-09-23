@@ -35,7 +35,7 @@ import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLi
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
 import { SingRoomStage } from '@/features/sing-room/SingRoomStage'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { consumeRunParked } from '@/stores/native-shell-store'
+import { consumeRunParked, nativeSkipTarget } from '@/stores/native-shell-store'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -3126,7 +3126,18 @@ const AppShell: Component<AppProps> = (props) => {
       loadAndPlayMelodyForSession={loadAndPlayMelodyForSession}
     >
       <div id="app" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        <a class="skip-link" href="#main-content">
+        <a
+          class="skip-link"
+          href="#main-content"
+          onClick={(event) => {
+            // Under the native build the Rooms tab is the alley, which the
+            // shell draws outside <main>: the link goes there instead.
+            const target = IS_NATIVE_BUILD ? nativeSkipTarget() : null
+            if (target === null) return
+            event.preventDefault()
+            target.focus()
+          }}
+        >
           Skip to main content
         </a>
         {/* The opening — MercuryPitch's curtain-up. Sits above the flow

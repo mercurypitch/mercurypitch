@@ -195,3 +195,41 @@ describe('the Sing door clip', () => {
     expect(clip.getAttribute('src')).not.toBeNull()
   })
 })
+
+describe('the keyboard', () => {
+  it('Escape puts a picked door back and fades its sound out', async () => {
+    const { el } = await mountAlley()
+    el('alley-door-sing').click()
+    expect(el('rooms-alley').dataset.phase).toBe('alive')
+
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true,
+    })
+    window.dispatchEvent(escape)
+
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(escape.defaultPrevented).toBe(true)
+  })
+
+  it('Escape at rest is left to whoever else wants it', async () => {
+    const { el } = await mountAlley()
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true,
+    })
+    window.dispatchEvent(escape)
+    expect(escape.defaultPrevented).toBe(false)
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+  })
+
+  it('is where the skip link goes while it is mounted', async () => {
+    const { el, store } = await mountAlley()
+    expect(store.nativeSkipTarget()).toBe(el('rooms-alley'))
+    expect(el('rooms-alley').tabIndex).toBe(-1)
+
+    view?.unmount()
+    view = null
+    expect(store.nativeSkipTarget()).toBeNull()
+  })
+})

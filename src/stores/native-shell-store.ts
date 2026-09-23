@@ -205,3 +205,25 @@ export function holdRoomArrival(): () => void {
     setArrivalHolds((count) => Math.max(0, count - 1))
   }
 }
+
+// ── Where "Skip to main content" goes ────────────────────────
+//
+// The app's skip link points at `#main-content`, which under the native
+// build is empty on the Rooms tab: the alley is drawn by the shell, portalled
+// after the app. So a surface the shell draws in place of the page registers
+// itself here, and the link moves focus to it instead.
+
+let skipTarget: HTMLElement | null = null
+
+/** The element the skip link should focus, for as long as it is mounted. */
+export function registerSkipTarget(element: HTMLElement): () => void {
+  skipTarget = element
+  return () => {
+    if (skipTarget === element) skipTarget = null
+  }
+}
+
+/** Where the skip link goes under the native build, or null for `#main-content`. */
+export function nativeSkipTarget(): HTMLElement | null {
+  return skipTarget !== null && skipTarget.isConnected ? skipTarget : null
+}
