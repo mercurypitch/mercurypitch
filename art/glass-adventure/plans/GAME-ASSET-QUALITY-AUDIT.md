@@ -197,7 +197,12 @@ mesh data can support instance export, but does not alone prove runtime batching
 - Review clay immediately after each destructive geometry operation. The V4
   platform passed numerical export/tangent gates yet failed visually after a
   combined fit, contact flatten, collapse and normal-finalization pipeline.
-  Preserve intermediate stages to isolate the first regression. Do not spend
+  The exact stage replay isolates broad surface damage at whole-shell collapse;
+  clearing custom normals on geometry-identical output does not repair it.
+  Contact flattening separately destroys relief and foliage. Keep visible
+  ornament separate from collision contact, and prove one semantic component
+  with deliberate topology before extending reduction. Preserve intermediate
+  stages to isolate the first regression. Do not spend
   another full bake/export cycle repairing a few tangents while broad surfaces
   and arches already fail the clay comparison.
 - If a few exported tangents are singular despite nondegenerate geometry and UVs,

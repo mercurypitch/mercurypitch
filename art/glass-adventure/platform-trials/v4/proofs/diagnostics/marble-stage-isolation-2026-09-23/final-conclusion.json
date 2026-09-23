@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "status": "causal boundary proven; no repair attempted",
+  "decision": "The exact weighted whole-shell Collapse operation is the first cause boundary for the rejected broad fascia and arch defects. A geometry-identical 30-degree smooth-normal control removes the invalid carried normals but retains the long-triangle faceting and fractured top. Collapsed topology is therefore the dominant cause; carried custom-normal interpolation amplifies some front-view contrast but is not sufficient to explain or repair the failure.",
+  "stageFindings": [
+    {
+      "stage": "fit only",
+      "finding": "The exact production nonlinear envelope fit changes the intended proportions but retains clean straight fascia and smooth arches in matched neutral clay."
+    },
+    {
+      "stage": "contact flatten",
+      "finding": "Broad fascia and arches remain clean, but the current visible-shell flatten is independently destructive: 134483 vertices spanning -0.040258 to +0.041594 metres move to the datum, erasing raised top relief and chopping foliage into vertical slivers."
+    },
+    {
+      "stage": "weighted whole-shell collapse",
+      "finding": "This is the first stage with the rejected broad triangular fascia/arch shading and fractured top geometry. It retains the broad silhouette while badly degrading interior surfaces."
+    },
+    {
+      "stage": "geometry-identical smooth-normal control",
+      "finding": "Clearing custom split normals and calculating smooth normals with a 30-degree hard-edge threshold removes 40142 non-positive corner normals, but the broad defects remain clearly visible."
+    },
+    {
+      "stage": "production normal finalization",
+      "finding": "Not rerun. The first failing operation and its dominant geometry contribution were already isolated, and the archived rejected final candidate proves the later stage does not recover acceptable quality."
+    }
+  ],
+  "evidence": {
+    "preControlConclusion": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/conclusion-before-normal-control.json",
+      "sha256": "495ce0f29de4e3884670331e10b1069cb76e99acb167eb4ba68efaf93494a915"
+    },
+    "stageReport": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/report.json",
+      "sha256": "2c3e02ffc577c71ff4a2d7afa4aa056665fbbdfda85a8293d8a12e7cd5f7b619"
+    },
+    "normalControlReport": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/report.json",
+      "sha256": "059e424603a658737aa56b08d7b78947928147633fd531344105b7af1933972e"
+    },
+    "matchedStageFront": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/matched-front-stages.png",
+      "sha256": "f0a94dda72b2e898e2fda8e0c8412b8da11e8edef9d2fea6108beef109e9639a"
+    },
+    "matchedStageThreeQuarter": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/matched-three-quarter-stages.png",
+      "sha256": "dd4690f0d64de232617dc3518eb4b2b829f2920e6545a86217dec4c790b03081"
+    },
+    "matchedNormalControlFront": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/matched-front-normal-control.png",
+      "sha256": "6c72b0f9a17f980e87ac91e3de5aa5b7a55a480bba9bc64ab691c4b57a8bbec5"
+    },
+    "matchedNormalControlThreeQuarter": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/matched-three-quarter-normal-control.png",
+      "sha256": "d61772915ca09e73003facc34b0d86b19d0e919ca17c2377eab60fb15867859c"
+    }
+  },
+  "normalControl": {
+    "protectedPayloadExactlyEqual": true,
+    "positionsFloat32Sha256": "0aee52f6d06d303418d4eb740cb6ddbd12b7c63652bcd5ca32d7ae8bde85fe66",
+    "triangleIndicesUint32Sha256": "a5535bf34c4d52cd64d883f467352ca117247761fadb942f7f91c49f92b5fa06",
+    "uv0Float32Sha256": "ea320c309d4998d57aa2b41c2fe91afc686176cbafae46fc5fb471555a153e92",
+    "polygonMaterialIndicesUint32Sha256": "45ba3cea4c5a36a8357d6e765383b7161f60b5ad3ba08192db22954066722785",
+    "before": {
+      "nonPositiveCornerNormals": 40142,
+      "p01CornerNormalDotFace": -0.7510800070036203
+    },
+    "smooth30": {
+      "nonPositiveCornerNormals": 0,
+      "p01CornerNormalDotFace": 0.8859449729033259,
+      "sharpEdges": 160537
+    },
+    "remainingDifferenceFromCleanFlattenClay": {
+      "front": {
+        "meanAbsoluteLumaDeltaCarried": 0.03702718764543533,
+        "meanAbsoluteLumaDeltaSmooth30": 0.032386668026447296,
+        "relativeReduction": 0.12532735846493906,
+        "fractionPixelsAbove0_08Carried": 0.12147333915242942,
+        "fractionPixelsAbove0_08Smooth30": 0.09959925203041556,
+        "relativeReductionAbove0_08": 0.18007315246817585
+      },
+      "threeQuarter": {
+        "meanAbsoluteLumaDeltaCarried": 0.028264181688427925,
+        "meanAbsoluteLumaDeltaSmooth30": 0.027399810031056404,
+        "relativeReduction": 0.030581874504628476,
+        "fractionPixelsAbove0_08Carried": 0.09751872934726859,
+        "fractionPixelsAbove0_08Smooth30": 0.09342223642279977,
+        "relativeReductionAbove0_08": 0.042007242628039364
+      }
+    }
+  },
+  "recommendedSingleComponentPilot": {
+    "component": "left front arch bay plus its adjacent straight fascia",
+    "measuredBoundsBlenderZUpMetres": {
+      "x": [
+        -0.78,
+        -0.05
+      ],
+      "yMaximum": -0.46,
+      "z": [
+        -0.34,
+        0.06
+      ]
+    },
+    "measuredFitSource": {
+      "triangles": 100618,
+      "surfaceAreaSquareMetres": 0.6241860346517161,
+      "p95TriangleAreaSquareMetres": 0.000009247413800039794,
+      "p95AspectLongestEdgeOverAltitude": 7.8626019650080465,
+      "p99AspectLongestEdgeOverAltitude": 19.16107479318446
+    },
+    "measuredRejectedCollapse": {
+      "triangles": 17533,
+      "retainedTriangleFraction": 0.17425311574469776,
+      "surfaceAreaSquareMetres": 0.6389251285406323,
+      "p95TriangleAreaIncrease": 15.18236908293066,
+      "p95AspectIncrease": 4.495280679484779,
+      "p99AspectIncrease": 4.435882007996852
+    },
+    "method": [
+      "Keep the fit-only dense visible surface unchanged and provide collision contact with a separate invisible 1.70 by 1.30 metre landing/collider mesh; do not flatten visible relief or foliage.",
+      "Extract only this semantic donor component. Author deliberate lower-resolution topology with straight fascia edges and radial arch loops instead of applying whole-shell Collapse.",
+      "If a normal transfer is needed, project only between this component pair so top, foliage, underside and neighboring-sheet hits are impossible by construction.",
+      "Require clean matched clay at front and three-quarter grazing views before making a normal or PBR proof. Let that clean component establish its required triangle count; do not begin with another arbitrary global budget."
+    ],
+    "stopCondition": "If the isolated component cannot retain straight fascia and smooth arch curvature in clay, reject the method without extending it to the full platform."
+  },
+  "workNotPerformed": [
+    "No topology repair or component pilot was built.",
+    "No normal or texture bake was run.",
+    "No provider call, optimization, runtime assembly, public installation, commit, or push was performed."
+  ]
+}

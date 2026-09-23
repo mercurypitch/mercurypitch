@@ -1,0 +1,165 @@
+{
+  "schema": 1,
+  "purpose": "Distinguish topology damage from carried custom-normal interpolation on an exact copy of the first failing collapsed geometry. No geometry, UV, material, bake, provider, runtime, or public change.",
+  "status": "diagnostic control; visual conclusion recorded separately",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/marble-stage-isolation.blend",
+    "sha256": "64b53250c34ddbd7cbf526c5f4ec1ae63435e95433d6f235993eb8bb4d50c34a",
+    "object": "V4_Stage_collapse"
+  },
+  "control": {
+    "method": "Clear the collapsed mesh custom split-normal layer, mark every polygon smooth, clear pre-existing sharp-edge flags, then run Blender shade_smooth_by_angle with a 30-degree hard-edge threshold.",
+    "angleDegrees": 30.0,
+    "keepExistingSharpEdges": false,
+    "customNormalsExistedBeforeClear": true,
+    "positionsIndicesUvAndMaterialsIntentionallyChanged": false
+  },
+  "protectedPayload": {
+    "before": {
+      "positionsFloat32Sha256": "0aee52f6d06d303418d4eb740cb6ddbd12b7c63652bcd5ca32d7ae8bde85fe66",
+      "triangleIndicesUint32Sha256": "a5535bf34c4d52cd64d883f467352ca117247761fadb942f7f91c49f92b5fa06",
+      "uv0Float32Sha256": "ea320c309d4998d57aa2b41c2fe91afc686176cbafae46fc5fb471555a153e92",
+      "polygonMaterialIndicesUint32Sha256": "45ba3cea4c5a36a8357d6e765383b7161f60b5ad3ba08192db22954066722785",
+      "vertices": 152295,
+      "triangles": 238000,
+      "loops": 714000,
+      "uvCorners": 714000,
+      "materialSlots": [
+        "V4 stage isolation neutral clay"
+      ]
+    },
+    "after": {
+      "positionsFloat32Sha256": "0aee52f6d06d303418d4eb740cb6ddbd12b7c63652bcd5ca32d7ae8bde85fe66",
+      "triangleIndicesUint32Sha256": "a5535bf34c4d52cd64d883f467352ca117247761fadb942f7f91c49f92b5fa06",
+      "uv0Float32Sha256": "ea320c309d4998d57aa2b41c2fe91afc686176cbafae46fc5fb471555a153e92",
+      "polygonMaterialIndicesUint32Sha256": "45ba3cea4c5a36a8357d6e765383b7161f60b5ad3ba08192db22954066722785",
+      "vertices": 152295,
+      "triangles": 238000,
+      "loops": 714000,
+      "uvCorners": 714000,
+      "materialSlots": [
+        "V4 stage isolation neutral clay"
+      ]
+    },
+    "exactlyEqual": true
+  },
+  "normalBasis": {
+    "before": {
+      "cornerNormalsFloat32Sha256": "2884d0b0ec5eab7408223c7994e76ab1ffb0624afb1dd44e67a66f5fc113166e",
+      "hasCustomNormals": true,
+      "sharpEdges": 0,
+      "minimumCornerNormalDotFace": -0.999998152256012,
+      "p01CornerNormalDotFace": -0.7510800070036203,
+      "p05CornerNormalDotFace": -0.037954127951525134,
+      "medianCornerNormalDotFace": 0.8011993259424344,
+      "nonPositiveCornerNormals": 40142
+    },
+    "after": {
+      "cornerNormalsFloat32Sha256": "9f905aefaf22e7b3c570704ee8e7db8d09ebef13fb4a053067bec73fb842ee5e",
+      "hasCustomNormals": false,
+      "sharpEdges": 160537,
+      "minimumCornerNormalDotFace": 0.04820995032787323,
+      "p01CornerNormalDotFace": 0.8859449729033259,
+      "p05CornerNormalDotFace": 0.94562303328712,
+      "medianCornerNormalDotFace": 0.9998962660320103,
+      "nonPositiveCornerNormals": 0
+    }
+  },
+  "matchedClay": {
+    "materialUnchanged": [
+      "V4 stage isolation neutral clay"
+    ],
+    "views": {
+      "front": {
+        "proofs": [
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/collapse-carried-normals-front.png",
+            "bytes": 1143376,
+            "sha256": "8039c9135c493989299b100c4985274551a51cd695365c83877f3e7f0e4eb9cb",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/collapse-smooth30-front.png",
+            "bytes": 1125915,
+            "sha256": "f56d61c63b67fcc8fe97d91bb4a24c95f07ba9145465ee1737a8d3eb940ec042",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          }
+        ],
+        "contactSheet": {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/matched-front-normal-control.png",
+          "bytes": 373159,
+          "sha256": "6c72b0f9a17f980e87ac91e3de5aa5b7a55a480bba9bc64ab691c4b57a8bbec5",
+          "dimensions": [
+            1600,
+            560
+          ]
+        },
+        "pixelDelta": {
+          "interiorOverlapPixels": 572161,
+          "silhouetteIntersectionOverUnion": 1.0,
+          "meanAbsoluteLumaDelta": 0.02414851449429989,
+          "p95AbsoluteLumaDelta": 0.11461085081100464,
+          "fractionInteriorPixelsAbove0_08": 0.077217776115464
+        }
+      },
+      "three-quarter": {
+        "proofs": [
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/collapse-carried-normals-three-quarter.png",
+            "bytes": 1316679,
+            "sha256": "c051375cb4852a4808fbcc5d09af9491e1d07fc8b442c13b429deff3d30fd7c5",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/collapse-smooth30-three-quarter.png",
+            "bytes": 1262645,
+            "sha256": "aa56744fb874032a28ddc029ec6ae2d79e4dfe8390885f040a7ee36164d8d331",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          }
+        ],
+        "contactSheet": {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/matched-three-quarter-normal-control.png",
+          "bytes": 437635,
+          "sha256": "d61772915ca09e73003facc34b0d86b19d0e919ca17c2377eab60fb15867859c",
+          "dimensions": [
+            1600,
+            560
+          ]
+        },
+        "pixelDelta": {
+          "interiorOverlapPixels": 595367,
+          "silhouetteIntersectionOverUnion": 1.0,
+          "meanAbsoluteLumaDelta": 0.013564453460276127,
+          "p95AbsoluteLumaDelta": 0.06468009948730469,
+          "fractionInteriorPixelsAbove0_08": 0.03794130343132891
+        }
+      }
+    },
+    "render": {
+      "engine": "BLENDER_EEVEE",
+      "resolution": [
+        1600,
+        1000
+      ],
+      "blender": "5.2.2 LTS"
+    }
+  },
+  "editableSource": {
+    "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/03-collapse-normal-control/collapse-normal-control.blend",
+    "bytes": 232208970,
+    "sha256": "77e21aa1be08dfa839b9271e1195e482ca1dfbc3401b06368114c2dfc9643e18"
+  },
+  "rebuild": "rtk proxy timeout 300 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/diagnose_marble_collapse_normal_control.py"
+}

@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "status": "first destructive operation isolated; internal collapse topology-versus-normal contribution pending one bounded control",
+  "decision": "The exact weighted whole-shell Collapse operation is the first stage that reproduces the rejected broad fascia and arch defects. Fit-only and contact-flattened clay do not show those triangular front defects. Normal finalization was not run because the requested first failing operation was already isolated.",
+  "importantSeparateRegression": "Contact flattening is not globally clean: it moves 134483 visible-shell vertices spanning -0.040258 to +0.041594 metres, erases raised top relief, and chops foliage into short vertical slivers. It leaves the broad front fascia and arches visually clean, so it is not the source of their later triangular damage. A future build should keep the visible fitted surface separate from the collision landing instead of flattening all visible vertices selected by the current broad rule.",
+  "causalScope": {
+    "proven": "The first broad slab/arch failure occurs between the contact-flattened dense stage and the exact weighted 238000-triangle Collapse result.",
+    "notYetProven": "This evidence alone does not apportion the failure between destructive collapsed topology and stale/custom split-normal interpolation carried through the modifier.",
+    "nextDiagnostic": "On a copy of the exact collapsed mesh, preserve POSITION, indices, UV0 and materials byte-for-byte, clear imported custom split normals, and render calculated smooth normals with one documented hard-edge angle. Stop after this control."
+  },
+  "evidence": {
+    "generatedReport": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/report.json",
+      "sha256": "2c3e02ffc577c71ff4a2d7afa4aa056665fbbdfda85a8293d8a12e7cd5f7b619"
+    },
+    "matchedFrontSheet": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/matched-front-stages.png",
+      "sha256": "f0a94dda72b2e898e2fda8e0c8412b8da11e8edef9d2fea6108beef109e9639a"
+    },
+    "matchedThreeQuarterSheet": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/matched-three-quarter-stages.png",
+      "sha256": "dd4690f0d64de232617dc3518eb4b2b829f2920e6545a86217dec4c790b03081"
+    },
+    "editableStages": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/marble-stage-isolation.blend",
+      "sha256": "64b53250c34ddbd7cbf526c5f4ec1ae63435e95433d6f235993eb8bb4d50c34a"
+    }
+  },
+  "measurements": {
+    "matchedFrontPixels": {
+      "fitToFlatten": {
+        "meanAbsoluteLumaDelta": 0.006040272302925587,
+        "p95AbsoluteLumaDelta": 0.015969395637512207,
+        "fractionInteriorPixelsAbove0_08": 0.009576859686506541
+      },
+      "flattenToCollapse": {
+        "silhouetteIntersectionOverUnion": 0.9931614600133992,
+        "meanAbsoluteLumaDelta": 0.03702718764543533,
+        "p95AbsoluteLumaDelta": 0.18195605278015137,
+        "fractionInteriorPixelsAbove0_08": 0.12147333915242942
+      }
+    },
+    "matchedThreeQuarterPixels": {
+      "fitToFlattenFractionInteriorPixelsAbove0_08": 0.018878681047927344,
+      "flattenToCollapseFractionInteriorPixelsAbove0_08": 0.09751872934726859
+    },
+    "frontSlabAndArches": {
+      "trianglesBefore": 301504,
+      "trianglesAfter": 54153,
+      "retainedFraction": 0.17960955741880705,
+      "p95TriangleAreaIncrease": 11.956132717867648,
+      "p95AspectIncrease": 3.87455862823675,
+      "p99AspectIncrease": 3.1112225242061706,
+      "cornerNormalDotFaceP01Before": 0.16556291289627553,
+      "cornerNormalDotFaceP01After": -0.6555904401093722
+    },
+    "broadLanding": {
+      "trianglesBefore": 77584,
+      "trianglesAfter": 7108,
+      "retainedFraction": 0.09161682821200247,
+      "p95TriangleAreaIncrease": 12.378950425458072,
+      "p95AspectIncrease": 3.58028999496005,
+      "p99AspectIncrease": 6.952389402912603
+    },
+    "repeatability": "The independently repeated source, fit and flatten renders have byte-identical decoded RGBA pixels in both views; PNG file hashes differ only because Blender rewrote metadata."
+  },
+  "provisionalComponentPilot": "After the one normal-control render, use one front arch bay plus its adjacent straight fascia as the semantic pilot. Keep the fitted dense visible shell unchanged, use a separate invisible collision landing, author deliberate component topology around arch rings and fascia edges, and perform any high-to-low projection only against this isolated donor component so nearby top, foliage and underside sheets cannot be hit. Require clean clay before a normal or PBR proof. Do not assign a polygon target before the clean component establishes its measured requirement."
+}
