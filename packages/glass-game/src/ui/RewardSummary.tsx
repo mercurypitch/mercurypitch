@@ -9,6 +9,7 @@ export interface RewardSummaryProps {
   level: LevelDefinition
   summary: LevelRewardSummary
   assetUrl(id: string): string
+  replayGoal?: { title: string; tier: 1 | 2 | 3 }
 }
 
 function numericGrade(grade: SingingQualityGrade | undefined): number {
@@ -29,7 +30,11 @@ export function RewardSummary(props: RewardSummaryProps) {
   }
   const grade = () => numericGrade(result()?.grade)
   const qualityLabel = () =>
-    grade() > 0 ? `${grade()} of 3 stars` : 'Not graded'
+    grade() > 0
+      ? props.replayGoal
+        ? `Accuracy ${['C', 'B', 'A'][grade() - 1]}`
+        : `${grade()} of 3 stars`
+      : 'Not graded'
   const evidenceDetail = () => {
     const attempt = result()
     const minimum = policy()?.minimumReliableSeconds
@@ -50,47 +55,58 @@ export function RewardSummary(props: RewardSummaryProps) {
     if (grading === undefined) return ''
     if (result() !== undefined && !resultIsCurrent())
       return 'This saved result used an earlier challenge or grading policy. Replay the final portrait to record a result under the current policy. Volume, response time and callback count do not affect either result.'
-    return `Fresh, confident voiced pitch only. 3 stars at ${grading.threeStarMaxMeanCents} cents mean error or less; 2 stars at ${grading.twoStarMaxMeanCents} or less; ${grading.minimumReliableSeconds.toFixed(1)} reliable seconds required. Volume, response time and callback count do not affect the result.`
+    return `Fresh, confident voiced pitch only. ${props.replayGoal ? 'A' : '3 stars'} at ${grading.threeStarMaxMeanCents} cents mean error or less; ${props.replayGoal ? 'B' : '2 stars'} at ${grading.twoStarMaxMeanCents} or less; ${grading.minimumReliableSeconds.toFixed(1)} reliable seconds required. Volume, response time and callback count do not affect the result.`
   }
 
   return (
     <section class={styles.summary} aria-label="Journey rewards">
-      <div class={styles.row} data-testid="singing-quality-summary">
-        <div class={styles.icon} aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M9 18V5l9-2v13" />
-            <circle cx="6" cy="18" r="3" />
-            <circle cx="15" cy="16" r="3" />
-          </svg>
-        </div>
-        <div class={styles.copy}>
-          <span class={styles.eyebrow}>Final portrait singing</span>
-          <div class={styles.stars} aria-label={qualityLabel()}>
-            <For each={[1, 2, 3]}>
-              {(star) => (
-                <svg
-                  viewBox="0 0 24 24"
-                  classList={{ [styles.earned]: star <= grade() }}
-                  aria-hidden="true"
-                >
-                  <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
-                </svg>
-              )}
-            </For>
-            <strong>{qualityLabel()}</strong>
+      <Show when={(props.level.rewards?.grading.length ?? 0) > 0}>
+        <div class={styles.row} data-testid="singing-quality-summary">
+          <div class={styles.icon} aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M9 18V5l9-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="15" cy="16" r="3" />
+            </svg>
           </div>
-          <p>{evidenceDetail()}</p>
-          <p>Only the final portrait exhibit contributes to this score.</p>
-          <Show when={thresholdDetail()}>
-            <details class={styles.details}>
-              <summary>How stars are measured</summary>
-              <p>{thresholdDetail()}</p>
-              <p>Gallery completion does not depend on stars.</p>
-            </details>
-          </Show>
+          <div class={styles.copy}>
+            <span class={styles.eyebrow}>Final portrait singing</span>
+            <div class={styles.stars} aria-label={qualityLabel()}>
+              <For each={props.replayGoal ? [] : [1, 2, 3]}>
+                {(star) => (
+                  <svg
+                    viewBox="0 0 24 24"
+                    classList={{ [styles.earned]: star <= grade() }}
+                    aria-hidden="true"
+                  >
+                    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+                  </svg>
+                )}
+              </For>
+              <strong>{qualityLabel()}</strong>
+            </div>
+            <Show when={thresholdDetail()}>
+              <details class={styles.details}>
+                <summary>
+                  {props.replayGoal
+                    ? 'How accuracy is measured'
+                    : 'How stars are measured'}
+                </summary>
+                <p>{evidenceDetail()}</p>
+                <p>
+                  Only the final portrait exhibit contributes to this score.
+                </p>
+                <p>{thresholdDetail()}</p>
+                <p>
+                  {props.replayGoal
+                    ? 'Portrait accuracy is separate from your gallery challenge stars.'
+                    : 'Gallery completion does not depend on stars.'}
+                </p>
+              </details>
+            </Show>
+          </div>
         </div>
-      </div>
-
+      </Show>
       <div class={styles.row} data-testid="discovery-summary">
         <div class={styles.icon} aria-hidden="true">
           <svg viewBox="0 0 24 24">
@@ -106,7 +122,7 @@ export function RewardSummary(props: RewardSummaryProps) {
           </strong>
           <p>
             {props.summary.coinsFound} of {props.summary.coinsTotal} one-time
-            museum discovery tokens found. They stay collected across visits.
+            discovery tokens. Yours across every visit.
           </p>
         </div>
       </div>
@@ -141,6 +157,40 @@ export function RewardSummary(props: RewardSummaryProps) {
           </div>
         )}
       </Show>
+    </section>
+  )
+}
+
+/** Completion stars certify the whole authored visit, independently of portrait accuracy. */
+export function ReplayCompletion(props: { title: string; tier: 1 | 2 | 3 }) {
+  return (
+    <section class={styles.summary} aria-label="Gallery challenge stars">
+      <div class={styles.row} data-testid="level-star-summary">
+        <div class={styles.icon} aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+          </svg>
+        </div>
+        <div class={styles.copy}>
+          <span class={styles.eyebrow}>Gallery challenge complete</span>
+          <div class={styles.stars} aria-hidden="true">
+            <For each={[1, 2, 3]}>
+              {(star) => (
+                <svg
+                  viewBox="0 0 24 24"
+                  classList={{ [styles.earned]: star <= props.tier }}
+                >
+                  <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+                </svg>
+              )}
+            </For>
+          </div>
+          <strong>
+            {props.tier} {props.tier === 1 ? 'star' : 'stars'} · {props.title}
+          </strong>
+          <p>Every main exhibit opened, and your journey completed.</p>
+        </div>
+      </div>
     </section>
   )
 }

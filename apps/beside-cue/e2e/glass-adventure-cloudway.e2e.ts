@@ -66,14 +66,14 @@ async function prepare(page: Page, stars: 2 | 3) {
   )
 }
 
-test('trial requirements fit phone/tablet/desktop without unlocking at two stars @smoke', async ({
+test('trial requirements fit phone/tablet/desktop without converting old accuracy into difficulty stars @smoke', async ({
   page,
 }, testInfo) => {
   await prepare(page, 2)
   await page.goto('/glass-game/?campaign=1')
   const trial = page.locator('[data-trial-id="first-island-cloudway"]')
   await expect(trial).toHaveAttribute('data-unlocked', 'false')
-  await expect(trial.getByText('2/3 stars', { exact: true })).toBeVisible()
+  await expect(trial.getByText('0/3 stars', { exact: true })).toBeVisible()
   const button = trial.getByRole('button', {
     name: 'Trial locked: The Glass Ribbon',
   })

@@ -15,6 +15,7 @@ export interface TrialChapterUnlock {
   graded: boolean
   earnedStars: 0 | 1 | 2 | 3
   ready: boolean
+  previouslyUnlocked?: boolean
 }
 
 export interface TrialUnlock {
@@ -27,6 +28,9 @@ export function evaluateTrialUnlock(
   requiredChapterIds: readonly string[],
   chapters: readonly TrialChapterRequirement[],
   loadProgress: (levelId: string) => unknown,
+  replayEligibility?: (
+    levelId: string,
+  ) => { stars: 0 | 1 | 2 | 3; previouslyUnlocked: boolean } | undefined,
 ): TrialUnlock {
   const requirements = [...new Set(requiredChapterIds)].map((chapterId) => {
     const chapter = chapters.find((item) => item.chapterId === chapterId)
@@ -42,7 +46,8 @@ export function evaluateTrialUnlock(
     const progress = readProgress(chapter.level, loadProgress(chapter.level.id))
     const policies = chapter.level.rewards?.grading ?? []
     const completed = progress.finished === true
-    const graded = policies.length > 0
+    const replay = replayEligibility?.(chapter.level.id)
+    const graded = replay !== undefined || policies.length > 0
     const grades = policies.map((policy) => {
       const result = progress.rewards?.qualityResults.find(
         (item) => item.encounterId === policy.encounterId,
@@ -58,14 +63,21 @@ export function evaluateTrialUnlock(
         return 0
       return result.grade
     })
-    const earnedStars = (graded ? Math.min(...grades) : 0) as 0 | 1 | 2 | 3
+    const earnedStars = (
+      replay !== undefined ? replay.stars : graded ? Math.min(...grades) : 0
+    ) as 0 | 1 | 2 | 3
     return {
       chapterId,
       title: chapter.title,
       completed,
       graded,
       earnedStars,
-      ready: completed && (!graded || earnedStars === 3),
+      ready:
+        completed &&
+        (!graded || earnedStars === 3 || replay?.previouslyUnlocked === true),
+      ...(replay?.previouslyUnlocked === true
+        ? { previouslyUnlocked: true }
+        : {}),
     } satisfies TrialChapterUnlock
   })
   return {

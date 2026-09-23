@@ -20,6 +20,7 @@ export interface MuseumJourneyChapterView {
   action: 'Enter' | 'Continue' | 'Replay'
   progressLabel: string
   stars?: 1 | 2 | 3
+  starKind?: 'level'
   historicalGrade: boolean
   notGraded: boolean
   portrait?: { title: string; imageUrl: string }
@@ -49,6 +50,7 @@ export function MuseumJourney(props: {
   onSelect(stageId: string): void
   onEnter(chapterId: string): void
   onExit(): void
+  onOpenCollection?(): void
 }) {
   let mapContainer: HTMLDivElement | undefined
   const stageLabels = new Map<string, HTMLButtonElement>()
@@ -343,6 +345,19 @@ export function MuseumJourney(props: {
               </p>
             </div>
             <div class={styles.headerActions}>
+              <Show when={props.onOpenCollection}>
+                <button
+                  type="button"
+                  class={styles.roundAction}
+                  aria-label="Open museum collection"
+                  onClick={() => props.onOpenCollection?.()}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="4" y="3" width="16" height="18" rx="1" />
+                    <path d="M7 16l3-4 3 3 3-5 2 6M8 7h3" />
+                  </svg>
+                </button>
+              </Show>
               <button
                 type="button"
                 class={styles.roundAction}
@@ -477,7 +492,7 @@ export function MuseumJourney(props: {
                     <Show when={chapter.stars !== undefined}>
                       <span
                         class={styles.stars}
-                        aria-label={`${chapter.stars} saved pitch ${chapter.stars === 1 ? 'star' : 'stars'}${chapter.historicalGrade ? ', from an earlier challenge edition' : ''}`}
+                        aria-label={`${chapter.stars} saved ${chapter.starKind === 'level' ? 'level' : 'pitch'} ${chapter.stars === 1 ? 'star' : 'stars'}${chapter.historicalGrade ? ', from an earlier challenge edition' : ''}`}
                       >
                         <For each={[1, 2, 3]}>
                           {(star) => (

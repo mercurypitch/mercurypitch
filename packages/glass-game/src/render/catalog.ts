@@ -40,9 +40,30 @@ const CLEAR_GLASS = {
   fragmentBudget: 20,
 }
 
+function collectedPortrait(portraitTexture: string): BreakableRenderRecipe {
+  return {
+    ...CLEAR_GLASS,
+    bundle: 'legend-slab',
+    intactNode: 'legend_cash_intact',
+    shardPrefix: 'legend_cash_shard_',
+    shardCount: 16,
+    persistentPrefix: 'legend_cash_frame_',
+    displayHeight: 0.84,
+    fallbackShape: 'slab',
+    portraitTexture,
+    portraitMaterial: 'legend_portrait',
+    persistentPortrait: { width: 0.58, height: 0.78, centerY: 0.42, z: 0.032 },
+    faceAnchor: true,
+    fragmentBudget: 18,
+  }
+}
+
 export const BREAKABLE_RENDER_CATALOG: Readonly<
   Record<string, BreakableRenderRecipe>
 > = {
+  'portrait-awakened-muse': collectedPortrait('painting-portrait-v5'),
+  'portrait-interval': collectedPortrait('painting-interval-v6'),
+  'portrait-wave-keeper': collectedPortrait('painting-wave-keeper-v7'),
   goblet: {
     ...CLEAR_GLASS,
     bundle: 'vessels',

@@ -92,6 +92,44 @@ describe('Cloudway island unlock', () => {
     })
   })
 
+  it('uses replay tiers independently of portrait accuracy after migration', () => {
+    const load = (id: string) =>
+      completed(chapters.find((chapter) => chapter.level.id === id)!.level)
+    const replay = (stars: 0 | 1 | 2 | 3) => (id: string) =>
+      id === chapters[1]!.level.id
+        ? { stars, previouslyUnlocked: false }
+        : undefined
+    expect(
+      evaluateTrialUnlock(island, chapters, load, replay(2)),
+    ).toMatchObject({
+      unlocked: false,
+      chapters: [expect.anything(), { earnedStars: 2, ready: false }],
+    })
+    expect(
+      evaluateTrialUnlock(island, chapters, load, replay(3)).unlocked,
+    ).toBe(true)
+  })
+
+  it('retains earlier trial access without inventing a new difficulty clear', () => {
+    const load = (id: string) =>
+      completed(chapters.find((chapter) => chapter.level.id === id)!.level)
+    const replay = (id: string) =>
+      id === chapters[1]!.level.id
+        ? { stars: 0 as const, previouslyUnlocked: true }
+        : undefined
+    expect(evaluateTrialUnlock(island, chapters, load, replay)).toMatchObject({
+      unlocked: true,
+      chapters: [
+        expect.anything(),
+        { earnedStars: 0, previouslyUnlocked: true, ready: true },
+      ],
+    })
+    const unfinished = (id: string) => ({ ...load(id), finished: false })
+    expect(
+      evaluateTrialUnlock(island, chapters, unfinished, replay).unlocked,
+    ).toBe(false)
+  })
+
   it('fails closed for missing/empty chapter membership and malformed or mismatched saves', () => {
     expect(evaluateTrialUnlock([], chapters, () => null).unlocked).toBe(false)
     expect(

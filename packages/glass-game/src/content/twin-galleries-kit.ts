@@ -249,6 +249,13 @@ export const TWIN_GALLERIES_AUTHORING_CATALOG: LevelAuthoringCatalog = {
   },
   exhibits: {
     ...GLASSWORKS_JOURNEY_AUTHORING_CATALOG.exhibits,
+    'twin-galleries-portrait-exhibit': {
+      ...GLASSWORKS_JOURNEY_AUTHORING_CATALOG.exhibits[
+        'glassworks-journey-portrait'
+      ]!,
+      id: 'twin-galleries-portrait-exhibit',
+      variant: 'portrait-interval',
+    },
     [TWIN_GALLERIES_OPALINE_ECHO.id]: TWIN_GALLERIES_OPALINE_ECHO,
     [TWIN_GALLERIES_AMBER_URN.id]: TWIN_GALLERIES_AMBER_URN,
   },
@@ -260,5 +267,6 @@ export const TWIN_GALLERIES_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     'twin-tone-harp-v6',
     'opaline-v6',
     'amber-v6',
+    'portrait-interval',
   ],
 }

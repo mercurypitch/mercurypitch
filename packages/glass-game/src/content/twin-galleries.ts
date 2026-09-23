@@ -5,6 +5,7 @@ import type { AuthoredLevelSource } from '../authoring/contracts'
 import type { ChallengeDefinition, HoldDefinition } from '../contracts'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CORRIDOR_HALF_LENGTH, ENCLOSED_CORRIDOR_HALF_WIDTH, ENCLOSED_PANORAMA_CAMERA_NORTH, ENCLOSED_TERRACE_NORTH, } from './enclosed-museum-kit'
 import { TWIN_GALLERIES_AUTHORING_CATALOG } from './twin-galleries-kit'
+import { TWIN_GALLERY_REWARDS } from './gallery-rewards'
 
 const GALLERY_TO_PASSAGE = ENCLOSED_CHAMBER_HALF + ENCLOSED_CORRIDOR_HALF_LENGTH
 const PASSAGE_TO_TURN =
@@ -87,6 +88,7 @@ export const TWIN_GALLERIES_SOURCE: AuthoredLevelSource = {
   layoutId: 'twin-galleries',
   contentRevision: 1,
   title: 'Twin Galleries',
+  rewards: TWIN_GALLERY_REWARDS,
   movement: {
     walkSpeed: 1.55,
     runSpeed: 2.7,
@@ -351,7 +353,7 @@ export const TWIN_GALLERIES_SOURCE: AuthoredLevelSource = {
       id: 'portrait-pair',
       roomId: 'portrait',
       mountId: 'required-display',
-      prefabId: 'glassworks-journey-portrait',
+      prefabId: 'twin-galleries-portrait-exhibit',
       label: 'Portrait of two voices',
       optional: false,
       requiresCompleted: ['bridge-pair'],

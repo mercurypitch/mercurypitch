@@ -475,11 +475,13 @@ jobs:
             campaign,
             chamber,
             cloudway,
+            collection,
             controls,
             journey,
             loading,
             music,
             narration,
+            replay,
             solids,
             voice,
           ]

@@ -71,6 +71,28 @@ afterEach(() => {
 })
 
 describe('museum audio release', () => {
+  it('demonstrates all three authored replay waves before capture can score', async () => {
+    const sound = createBrowserGlassSound()
+    let done = false
+    const played = sound.reference(57, 'gentle-wave', 3).then(() => {
+      done = true
+    })
+    await flush()
+    const [curve, , duration] =
+      context.sources[0].frequency.setValueCurveAtTime.mock.calls[0]
+    expect(duration).toBe(4)
+    expect(curve[305]).toBeCloseTo(220 * 2 ** (70 / 1200))
+    expect(curve[355]).toBeCloseTo(220 * 2 ** (-70 / 1200))
+    expect(curve[400]).toBeCloseTo(220)
+    context.currentTime = 4.3
+    await vi.advanceTimersByTimeAsync(4300)
+    expect(done).toBe(false)
+    context.currentTime = 4.55
+    await vi.advanceTimersByTimeAsync(25)
+    await played
+    sound.dispose()
+    await vi.advanceTimersByTimeAsync(240)
+  })
   it('plays a settled note and two continuous waves, then waits for the full quiet gap', async () => {
     const sound = createBrowserGlassSound()
     let done = false

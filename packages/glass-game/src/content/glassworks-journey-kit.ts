@@ -395,7 +395,7 @@ export const GLASSWORKS_JOURNEY_FLUTED = exhibit(
 )
 export const GLASSWORKS_JOURNEY_PORTRAIT = exhibit(
   'glassworks-journey-portrait',
-  'portrait',
+  'portrait-awakened-muse',
 )
 export const GLASSWORKS_JOURNEY_ARCHIVE_GLAZING = exhibit(
   'glassworks-journey-archive-glazing',
@@ -425,6 +425,7 @@ export const GLASSWORKS_JOURNEY_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     ...ENCLOSED_MUSEUM_AUTHORING_CATALOG.availableAssetRecipeIds,
     'fluted',
     'portrait',
+    'portrait-awakened-muse',
     'archive-glazing-v5',
     'amphora',
   ],

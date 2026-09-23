@@ -58,11 +58,13 @@ export function IslandTrials(props: {
                         </svg>
                         <span>{chapter.title}</span>
                         <strong>
-                          {chapter.graded
-                            ? `${chapter.earnedStars}/3 stars${chapter.completed ? '' : ' · finish gallery'}`
-                            : chapter.completed
-                              ? 'Complete'
-                              : 'Finish tutorial'}
+                          {chapter.previouslyUnlocked === true
+                            ? 'Earlier access kept'
+                            : chapter.graded
+                              ? `${chapter.earnedStars}/3 stars${chapter.completed ? '' : ' · finish gallery'}`
+                              : chapter.completed
+                                ? 'Complete'
+                                : 'Finish tutorial'}
                         </strong>
                       </li>
                     )}

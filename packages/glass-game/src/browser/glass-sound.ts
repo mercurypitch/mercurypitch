@@ -112,7 +112,9 @@ export function createBrowserGlassSound(): GlassSound {
 
   function waitForReference(until: number): Promise<void> {
     return new Promise((resolve, reject) => {
-      const deadline = Date.now() + 4000
+      const deadline =
+        Date.now() +
+        Math.max(4000, (until - (context?.currentTime ?? until) + 1) * 1000)
       let timer: ReturnType<typeof setTimeout> | undefined
       const fail = (error: Error): void => {
         clearTimeout(timer)
@@ -167,7 +169,7 @@ export function createBrowserGlassSound(): GlassSound {
     })
   }
   return {
-    async reference(midi, pattern) {
+    async reference(midi, pattern, waveCycles = 2) {
       if (
         !context ||
         disposed ||
@@ -183,14 +185,21 @@ export function createBrowserGlassSound(): GlassSound {
       if (pattern === 'gentle-wave') {
         const oscillator = context.createOscillator()
         const envelope = context.createGain()
-        const duration = 3
+        const cycles =
+          Number.isSafeInteger(waveCycles) && waveCycles >= 1 && waveCycles <= 4
+            ? waveCycles
+            : 2
+        const duration = cycles + 1
         const frequency = 440 * 2 ** ((midi - 69) / 12)
-        const curve = Float32Array.from({ length: 301 }, (_, index) => {
-          const waveTime = Math.min(2, Math.max(0, index / 100 - 0.8))
-          return (
-            frequency * 2 ** ((70 * Math.sin(2 * Math.PI * waveTime)) / 1200)
-          )
-        })
+        const curve = Float32Array.from(
+          { length: duration * 100 + 1 },
+          (_, index) => {
+            const waveTime = Math.min(cycles, Math.max(0, index / 100 - 0.8))
+            return (
+              frequency * 2 ** ((70 * Math.sin(2 * Math.PI * waveTime)) / 1200)
+            )
+          },
+        )
         oscillator.frequency.setValueCurveAtTime(curve, at, duration)
         envelope.gain.setValueAtTime(FLOOR, at)
         envelope.gain.exponentialRampToValueAtTime(0.13, at + 0.018)

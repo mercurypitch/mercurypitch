@@ -63,10 +63,20 @@ export const CONSERVATORY_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     ...TWIN_GALLERIES_AUTHORING_CATALOG.rooms,
     ...Object.fromEntries(ROOMS.map((room) => [room.id, room])),
   },
-  exhibits: TWIN_GALLERIES_AUTHORING_CATALOG.exhibits,
+  exhibits: {
+    ...TWIN_GALLERIES_AUTHORING_CATALOG.exhibits,
+    'conservatory-portrait-exhibit': {
+      ...TWIN_GALLERIES_AUTHORING_CATALOG.exhibits[
+        'glassworks-journey-portrait'
+      ]!,
+      id: 'conservatory-portrait-exhibit',
+      variant: 'portrait-wave-keeper',
+    },
+  },
   availableAssetRecipeIds: [
     ...TWIN_GALLERIES_AUTHORING_CATALOG.availableAssetRecipeIds,
     'listening-garden-painting-v7',
     'wave-keeper-painting-v7',
+    'portrait-wave-keeper',
   ],
 }

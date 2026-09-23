@@ -63,7 +63,9 @@ export function readProgress(
       level,
       data.rewards,
       completed,
-      data.version === 1,
+      // A validated final exhibit is sufficient evidence of portrait ownership,
+      // including v2 visits made before that gallery gained its collection card.
+      true,
     ),
   }
 }

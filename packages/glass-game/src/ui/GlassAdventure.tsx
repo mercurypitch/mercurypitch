@@ -9,7 +9,7 @@ import { createFreshVisitHost } from './fresh-visit-host'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
-import { RewardSummary } from './RewardSummary'
+import { ReplayCompletion, RewardSummary } from './RewardSummary'
 import { TouchControls } from './TouchControls'
 import { Tutorial } from './Tutorial'
 import { useAdventure } from './useAdventure'
@@ -329,7 +329,11 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           </button>
           <div class={styles.identity}>
             <h1>{level.title}</h1>
-            <p>{level.guidance?.subtitle ?? 'The floating museum'}</p>
+            <p>
+              {props.replayGoal?.title ??
+                level.guidance?.subtitle ??
+                'The floating museum'}
+            </p>
           </div>
           <Show when={showArtworkOffer()}>
             <ArtworkOffer onOpen={adventure.inspectNearbyArtwork} />
@@ -664,12 +668,18 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                   ? ` And ${optionalCount()} extra ${optionalCount() === 1 ? 'treasure' : 'treasures'} along the way.`
                   : ''}
               </p>
+              <Show when={props.replayGoal}>
+                {(goal) => (
+                  <ReplayCompletion title={goal().title} tier={goal().tier} />
+                )}
+              </Show>
               <Show when={adventure.snapshot().rewardSummary}>
                 {(summary) => (
                   <RewardSummary
                     level={level}
                     summary={summary()}
                     assetUrl={(id) => props.host.assetUrl(id)}
+                    replayGoal={props.replayGoal}
                   />
                 )}
               </Show>

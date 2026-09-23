@@ -1,6 +1,12 @@
 // Glass adventure host — platform services stay outside simulation and rendering.
 import type { PitchObservation, SavedProgress } from './contracts'
 
+export interface GlassVoiceTake {
+  /** Finalize this explicitly requested take. Null means interrupted or empty. */
+  finish(): Promise<Blob | null>
+  discard(): void
+}
+
 export interface GlassVoiceSession {
   /** Called synchronously from the player's Start gesture. */
   start(beforeCapture?: Promise<void>): Promise<void>
@@ -11,10 +17,16 @@ export interface GlassVoiceSession {
     onStopped?: () => void,
   ): () => void
   stop(): void
+  /** Optional, explicit recording of the already-open input; never acquires another mic. */
+  startRecording?(): GlassVoiceTake
 }
 
 export interface GlassSound {
-  reference(midi: number, pattern?: 'gentle-wave'): Promise<void>
+  reference(
+    midi: number,
+    pattern?: 'gentle-wave',
+    waveCycles?: number,
+  ): Promise<void>
   shatter(): void
   dispose(): void
 }

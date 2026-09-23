@@ -193,7 +193,7 @@ function referenceCopy(definition: ChallengeDefinition): {
   if (definition.kind === 'settle-wave')
     return {
       message: 'Listen first.',
-      hint: 'It goes above, below, above, below, then returns to the middle. Your turn begins after it is quiet.',
+      hint: `Hear ${definition.wave.requiredCycles} gentle waves above and below the note, then a return to the middle. Your turn begins after it is quiet.`,
     }
   return definition.kind === 'ordered-pair'
     ? {
@@ -384,7 +384,11 @@ export function createVoiceChallenge(
           throw new Error('The calibrated note is unavailable.')
         emit({ target: midi })
         if (definition.kind === 'settle-wave')
-          await sound.reference(midi, 'gentle-wave')
+          await sound.reference(
+            midi,
+            'gentle-wave',
+            definition.wave.requiredCycles,
+          )
         else await sound.reference(midi)
         if (disposed || run !== generation) return
       }
@@ -572,11 +576,11 @@ export function createVoiceChallenge(
       emit({
         message:
           current.challenge.kind === 'settle-wave'
-            ? 'Sway twice, then return.'
+            ? `Sway ${current.challenge.wave.requiredCycles === 2 ? 'twice' : `${current.challenge.wave.requiredCycles} times`}, then return.`
             : `Sing ${targetCopy(options.game.snapshot().activeEncounter!.target)}.`,
         hint:
           current.challenge.kind === 'settle-wave'
-            ? 'Up, down, up, down, then back to the middle. A semitone is enough; keep it comfortable.'
+            ? `Make ${current.challenge.wave.requiredCycles} gentle waves above and below your note, then return to the middle. A semitone is enough; keep it comfortable.`
             : 'Settle the second note gently.',
       })
     }

@@ -89,3 +89,11 @@ const ARTWORKS: Readonly<Record<string, GalleryArtwork>> = {
 export function galleryArtwork(recipeId: string | null): GalleryArtwork | null {
   return recipeId === null ? null : (ARTWORKS[recipeId] ?? null)
 }
+
+export function galleryArtworkForAsset(
+  imageAsset: string,
+): GalleryArtwork | undefined {
+  return Object.values(ARTWORKS).find(
+    (artwork) => artwork.imageAsset === imageAsset,
+  )
+}

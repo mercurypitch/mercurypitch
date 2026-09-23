@@ -210,6 +210,7 @@ test('a failed replay keeps the completed gallery save and can return to the cho
   )
   await page.goto('/glass-game/?campaign=1')
   await page.getByRole('button', { name: 'Replay Twin Galleries' }).tap()
+  await page.getByRole('button', { name: 'Begin this challenge' }).tap()
   const loader = page.getByTestId('glass-loading-screen')
   await expect(loader.getByRole('button', { name: 'Retry' })).toBeVisible({
     timeout: 60_000,

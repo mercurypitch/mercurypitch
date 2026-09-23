@@ -272,7 +272,7 @@ export function readRewardProgress(
   level: LevelDefinition,
   raw: unknown,
   completed: ReadonlySet<string>,
-  migrateLegacyCompletion = false,
+  recoverCompletedPortrait = false,
 ): SavedRewardProgress {
   const rewards = level.rewards
   if (rewards === undefined) return emptyRewardProgress()
@@ -321,7 +321,7 @@ export function readRewardProgress(
   )
     collectedPortraitIds.add(portrait.portraitId)
   if (
-    migrateLegacyCompletion &&
+    recoverCompletedPortrait &&
     portrait !== undefined &&
     completed.has(portrait.awardAfterEncounterId)
   )

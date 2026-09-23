@@ -1,6 +1,7 @@
 // Resonance Conservatory — a handcrafted botanical walk from stillness into gentle pitch waves.
 
 import { composeLevel } from '../authoring/compose-level'
+import { CONSERVATORY_REWARDS } from './gallery-rewards'
 import type { AuthoredLevelSource, RoomPlacement } from '../authoring/contracts'
 import type { ChallengeDefinition, HoldDefinition } from '../contracts'
 import { CONSERVATORY_AUTHORING_CATALOG } from './conservatory-kit'
@@ -86,6 +87,7 @@ export const CONSERVATORY_SOURCE: AuthoredLevelSource = {
   layoutId: 'resonance-conservatory',
   contentRevision: 2,
   title: 'Resonance Conservatory',
+  rewards: CONSERVATORY_REWARDS,
   movement: {
     walkSpeed: 1.55,
     runSpeed: 2.9,
@@ -268,7 +270,7 @@ export const CONSERVATORY_SOURCE: AuthoredLevelSource = {
       id: 'keeper-finale',
       roomId: 'wave-salon',
       mountId: 'required-display',
-      prefabId: 'glassworks-journey-portrait',
+      prefabId: 'conservatory-portrait-exhibit',
       label: 'The keeper of gentle waves',
       optional: false,
       requiresCompleted: ['orchid-wave'],
