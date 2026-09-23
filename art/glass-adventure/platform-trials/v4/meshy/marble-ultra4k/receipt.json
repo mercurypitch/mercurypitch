@@ -1,0 +1,175 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "cloudway-marble-platform-meshy71-ultra4k-v4",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v2/guides/marble-platform-guide.png",
+    "bytes": 1399723,
+    "sha256": "75af2163d0387f36f4d2a0b1dbb79e4428c2311dc8f3429a72a2490b109b4d33",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mimeType": "image/png",
+    "authorityReceipt": {
+      "file": "art/glass-adventure/platform-trials/v2/meshy/marble/receipt.json",
+      "sha256": "ed4b229d296d7729c4eb68f600ac454a025af8d5fba01f68751e503d3578bbbc"
+    }
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "4k",
+    "enable_pbr": true,
+    "texture_prompt": "Warm ivory Carrara marble shell with subtle grey veining, matte teal stone inlay, restrained aged gold trim and corner caps. Preserve the broad clean landing top, shallow arched underside, square caps, sun emblems and tiny rear-left botanical sprig as distinct forms. No baked lighting, dirt, cracks, extra ornaments, fused leaves, floating parts, text or background.",
+    "image_enhancement": true,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-23",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWithPbr4k": 30,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 35,
+    "actualSourceOfTruth": "provider consumed_credits and balance delta"
+  },
+  "authorization": {
+    "requiredFlags": [
+      "--submit",
+      "--authorized-source-transfer"
+    ],
+    "asserted": true,
+    "assertedAtUtc": "2026-09-23T15:47:06.272100+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source archive only. Clay comparison, contact-surface review, Blender normal/AO bake, runtime LOD, texture-memory audition and integration remain pending.",
+  "balanceBefore": 3835,
+  "submissionStartedAtUtc": "2026-09-23T15:47:06.272112+00:00",
+  "taskId": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+  "submittedAtUtc": "2026-09-23T15:47:10.788812+00:00",
+  "balanceAfterSubmit": 3800,
+  "observedBalanceDeltaAtSubmit": 35,
+  "lastStatus": {
+    "id": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790178430560,
+    "started_at": 1790178430576,
+    "finished_at": 1790178665987,
+    "expires_at": 1790437865987,
+    "consumed_credits": 35,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-23T15:51:20.371411+00:00",
+  "finalStatus": {
+    "id": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790178430560,
+    "started_at": 1790178430576,
+    "finished_at": 1790178665987,
+    "expires_at": 1790437865987,
+    "consumed_credits": 35,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+      "bytes": 65096584,
+      "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 702537,
+      "triangles": 1256556
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-base_color.png",
+        "bytes": 24712264,
+        "sha256": "f010c48c9377c99f46ddc89025f7b3e830e53e377b908227575bd79e442e05ba",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-metallic.png",
+        "bytes": 781869,
+        "sha256": "1fbcf8ae5a16f5be6f4c34f5a034c8802fb695f9cae720dadbeba8e267f459d1",
+        "format": "PNG",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "mode": "L"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-normal.png",
+        "bytes": 20798487,
+        "sha256": "56bfd319cca2e1f84e3aa750bb7e21ca49a112766b4962549a1a45f2fe85a64a",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-roughness.png",
+        "bytes": 1761714,
+        "sha256": "446bc4c73aa2b9ebee7e00deaba1c79ea1c13be1b5bc70f6f2fb350dcd9d78dd",
+        "format": "PNG",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "mode": "L"
+      }
+    ],
+    "missingRequestedPbrMaps": []
+  },
+  "archivedAtUtc": "2026-09-23T15:51:27.070437+00:00",
+  "balanceAfterArchive": 3800,
+  "observedBalanceDeltaFinal": 35
+}
