@@ -106,9 +106,7 @@ describe('the sing room picker', () => {
   it('chooses through the surface controller, so the choice persists', () => {
     const select = vi.fn(() => true)
     mount(controller(select))
-    fireEvent.click(
-      screen.getByText('Fixture Second Cover').closest('button')!,
-    )
+    fireEvent.click(screen.getByText('Fixture Second Cover').closest('button')!)
     expect(select).toHaveBeenCalledWith('sing-fixture-second-cover')
   })
 
@@ -117,9 +115,7 @@ describe('the sing room picker', () => {
     // reader was told nothing at all. Piano Night's picker has announced its
     // covers since it shipped; this is the same sentence (review F11).
     mount()
-    fireEvent.click(
-      screen.getByText('Fixture Second Cover').closest('button')!,
-    )
+    fireEvent.click(screen.getByText('Fixture Second Cover').closest('button')!)
     const live = screen.getByTestId('sing-room-picker-live')
     expect(live.getAttribute('aria-live')).toBe('polite')
     expect(live.textContent).toBe('Fixture Second Cover selected.')
@@ -130,9 +126,7 @@ describe('the sing room picker', () => {
     // does not change; announcing one that was not applied is worse than
     // announcing nothing.
     mount(controller(vi.fn(() => false)))
-    fireEvent.click(
-      screen.getByText('Fixture Second Cover').closest('button')!,
-    )
+    fireEvent.click(screen.getByText('Fixture Second Cover').closest('button')!)
     expect(screen.getByTestId('sing-room-picker-live').textContent).toBe('')
   })
 
