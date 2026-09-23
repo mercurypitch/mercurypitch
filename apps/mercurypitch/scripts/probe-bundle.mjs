@@ -2559,16 +2559,6 @@ async function walkFrame(browser, args, frame) {
 }
 
 /**
- * The copy R6 took out, checked against the bundle that ships it.
- *
- * NOT a blanket grep for "uploaded": other surfaces in this binary say it
- * legitimately (the onboarding beat, the karaoke rail, the transcription
- * bench), and a check that failed on those would be deleted by the first
- * person it stopped. The four dead sentences are named, and so are the three
- * that replaced them — without the second half this would pass just as
- * happily against a bundle with no Sing room in it at all.
- */
-/**
  * Saying an upload does not happen is the one thing the UI may never do.
  *
  * The owner's rule, twice now (device round 2, R6): never name the thing that
