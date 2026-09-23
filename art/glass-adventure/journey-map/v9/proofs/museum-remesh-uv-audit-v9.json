@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "purpose": "Quantify the remesh UV and tangent starting point before provider PBR and the dense-donor bake. This does not claim non-overlap or final bake quality.",
+  "assets": [
+    {
+      "asset": "temple",
+      "file": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k.glb",
+      "bytes": 4841948,
+      "sha256": "157548ec5501305cb23ac2fce88df22ae6c5127b447c760c93a81bcadab1eb7f",
+      "triangles": 89166,
+      "loops": 267498,
+      "uvLayer": "UVMap",
+      "uvBounds": [
+        0.0,
+        0.0,
+        1.0,
+        0.9999930262565613
+      ],
+      "nonfiniteUvTriangles": 0,
+      "degenerateUvTrianglesAt1e12": 0,
+      "minimumPositiveUvArea": 7.048757133532035e-10,
+      "maximumUvArea": 0.0006059616643607768,
+      "zeroLengthTangentCorners": 1,
+      "tangentCoverage": 0.9999962616542928
+    },
+    {
+      "asset": "cypress",
+      "file": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k.glb",
+      "bytes": 1134492,
+      "sha256": "45b23c602602c8e491ede05c5b42c7aaca08b7d82851b3e53a7b713b6b6d4627",
+      "triangles": 20605,
+      "loops": 61815,
+      "uvLayer": "UVMap",
+      "uvBounds": [
+        3.000000106112566e-06,
+        3.993511199951172e-06,
+        0.9999970197677612,
+        0.9999979734420776
+      ],
+      "nonfiniteUvTriangles": 0,
+      "degenerateUvTrianglesAt1e12": 0,
+      "minimumPositiveUvArea": 1.447472883775447e-07,
+      "maximumUvArea": 0.0026967686587830997,
+      "zeroLengthTangentCorners": 1,
+      "tangentCoverage": 0.9999838226967565
+    }
+  ],
+  "conclusion": "Both candidates have finite in-range UVs and no zero-area UV triangle at the 1e-12 threshold. Each has one zero-length tangent corner; the final Blender finish must repair or exclude that corner and prove full tangent coverage after fresh export/reimport.",
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy timeout 300 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/audit_museum_remesh_uv.py"
+}

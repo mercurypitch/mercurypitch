@@ -41,7 +41,26 @@ according to the current API docs; that is not evidence that any archived donor
 was generated with 7.1. Current repairs remesh preserved donors and use explicit
 Meshy 6 retexturing, whose lighting-removal control is useful for runtime art.
 
-Use a verified newer MCP or a small direct-API producer with the existing
+The current published official MCP package, **0.5.2**, was also inspected directly
+from the npm registry without installing it. It adds `meshy-7` and explicit
+`texture_resolution`, but its model enum still lacks `meshy-7.1`, and its
+generation schema still lacks `geometry_resolution`. Updating to that version
+alone therefore does not expose the new Ultra 4K geometry control. Its endpoint
+descriptions date from 11 August and should not override the newer API contract.
+Package tarball SHA-256:
+`4a6762c8670b4ddcc6a688f1c17c7d322b182db39a09dbe889687f8035bd881f`.
+[Official MCP source](https://github.com/meshy-dev/meshy-mcp-server),
+[published package](https://www.npmjs.com/package/@meshy-ai/meshy-mcp-server).
+
+The September 21 platform receipts already request `latest` and `hd_texture:
+true`; the marble archive contains a real 4096 x 4096 base-color map. Their
+`resolvedSchemaAtSubmission: "Meshy 6"` records the old MCP description, not a
+server-confirmed resolved model. Keep those historical receipts unchanged and
+do not treat that field as proof of the actual backend model. None records an
+Ultra 4K geometry request. Future receipts must distinguish requested model,
+documented alias behavior, and a provider-confirmed resolved model if returned.
+
+Use a small direct-API producer with the existing
 Proton-injected credential for the trial. Never log credentials, inline image
 payloads, or signed output URLs; persist task ID before subsequent calls and
 resume an existing task instead of resubmitting it.
