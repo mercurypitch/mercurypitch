@@ -8,7 +8,7 @@ Code and production sources are preserved in draft PR #807 on
 
 ## Where we are
 
-Current work is the owner-approved [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md): fit the accepted marble source for Cloudway, audition new frost/moving sources, and judge the benefit in the existing mini-game before applying it to the main galleries. A melody-ribbon learning specification and listening visualizer follow this asset stage.
+Current work is the owner-approved [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md): fit the accepted marble source for Cloudway, audition new frost/moving sources, and judge the benefit in the existing mini-game before applying it to the main galleries. The [melody-ribbon learning specification](./MELODY-RIBBON-LEARNING-SPEC.md) and [listening visualizer](../melody-ribbon/v1/index.html) are saved at `5db8a2f9`. Four original three-to-ten-note phrases share one curve for reference audio and the animated ribbon. Responsive mouse/keyboard/touch review passes. This audition does not record or judge a microphone; those stages remain explicitly sequenced in the specification.
 
 The [museum component repair](./MUSEUM-COMPONENT-REPAIR-2026-09-22.md)
 is integrated and has passed source, Blender and actual-browser review. V8

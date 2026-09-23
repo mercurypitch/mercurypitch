@@ -141,6 +141,11 @@ Our implementation gates:
 - Keep high and low candidates in the same coordinate system. Freeze final
   triangulation, UVs and intended corner normals before baking. Record hashes
   so later geometry/material edits cannot silently invalidate the transfer.
+- Validate transferred corner normals before baking: nearest-polygon transfer
+  can select an adjacent leaf or carving wall. Compare raw geometry, transferred
+  normals without a normal map, and the final bake. Reject orientation-incompatible
+  samples instead of hiding black grazing triangles by weakening the texture.
+  Re-bake whenever the low-mesh normal/tangent basis changes.
 - Review a UV checker at actual game scale. Protect visible faces and narrow
   trim from low texel density. Deliberate shared/mirrored UVs need a documented
   reason; unique statue/portrait surfaces must not pick up unrelated details.

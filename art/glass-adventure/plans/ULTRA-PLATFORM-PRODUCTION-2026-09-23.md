@@ -62,6 +62,29 @@ the route or add a new released level during this pass. Fog is owner accepted.
       audition while the asset bake runs. Desktop, tablet and phone reviews pass.
       This is reference playback; microphone judging remains a later stage.
 
+## Marble review checkpoint
+
+The 5-credit provider remesh retains 89,984 shell triangles (90,016 with the
+landing boundary). Fitted contact error is below 9 mm, but this candidate is
+rejected for runtime appearance. It remains archived as production evidence.
+
+Neutral-clay review exposed incompatible nearest-polygon normal transfer and
+provider corner normals opposed to their own geometric faces. Geometric-face
+gating corrects that basis; it does not fix the separate whole-shell projection
+problem. An 18 mm bake cage hit opposite nearby sheets. A bounded 4 mm trial
+reduced wrong-facing samples but lost coverage and retained black artifacts.
+Simply disabling the normal map leaves lumpy broad faces and arches, so that
+fallback is also rejected. No weakened normal strength or clamped normal map
+is accepted as a repair.
+
+The next bounded comparison derives a roughly 240k shell directly from the
+preserved dense donor, protecting ornament and retaining its UVs and provider
+normal map. This avoids the faulty projection onto the provider remesh. It
+must pass clay, PBR, contact, tangent and real-game 2K/4K review; the higher scene
+cost must be reported. The bundle assembler independently verifies exact
+preservation of all five non-marble V3 roots and shared resources. Public
+platforms remain V3 until a replacement passes these gates.
+
 ## External request checkpoint
 
 The marble remesh was submitted and completed for 5 credits. The two new V5

@@ -1450,3 +1450,10 @@ recomputing each side independently can introduce a seam without changing the si
 **Cause:** provider remeshing followed by local decimation discarded useful shapes; normal maps could not restore outlines. Dense normal bakes also introduced projection halos on some surfaces.
 **Rule:** preserve dense donors, accept remeshes in clay, compare baked/provider normals under identical lighting, then inspect exact runtime exports. Keep instancing and measure total scene cost; successful validators alone do not establish visual quality. Review material recolouring on the actual surface UV footprint: a whole-atlas colour average missed a mask that treated warm neutral dome stone as gold and left 80.5% of the dome untinted.
 **See:** `art/glass-adventure/plans/MUSEUM-COMPONENT-REPAIR-2026-09-22.md`.
+
+### Validate transferred normals before judging the texture bake
+
+**Symptom:** a remeshed platform had isolated black landing triangles even in a neutral clay view.
+**Cause:** nearest-polygon normal transfer selected nearby leaf or carving faces; some provider split normals already opposed their geometric faces. Comparing two supplied normals could preserve two agreeing but jointly invalid directions. The defect remained with the normal texture disconnected, and invalid ray directions also contaminated the bake.
+**Rule:** compare raw, transferred-without-map and baked-normal views. Check every proposed corner normal against its geometric face, including fallbacks; preserve intended hard edges. Flattened contact polygons need a consistent upward basis. Rebuild tangents and dependent bakes after changing corner normals. Inspect projection hits separately before changing cage distances. Never hide this with stronger lighting or assume a valid GLB is visually correct.
+**See:** `art/glass-adventure/platform-trials/v4/production/build_marble_runtime_v4.py`.
