@@ -194,9 +194,22 @@ const RAIL_ITEMS = ['rooms', 'stage', 'ear', 'progress']
  * matched on them would go green the day the hash changed.
  */
 const WEB_PAGE_HEADER = {
+  // The web's card gallery and its page band are gone under the shell: the
+  // Rooms tab is the alley (S4). What must stay is the alley's own way in —
+  // its tap surface and the six door buttons a screen reader walks.
   rooms: {
-    gone: ['[data-testid="home-learn"]', '[data-testid="home-whats-new"]'],
-    kept: ['[data-testid="home-heading"]'],
+    gone: [
+      '[data-testid="home-learn"]',
+      '[data-testid="home-whats-new"]',
+      '[data-testid="home-heading"]',
+      '[data-destination]',
+    ],
+    kept: [
+      '[data-testid="rooms-alley"]',
+      '[data-testid="alley-hit"]',
+      '[data-testid="alley-door-ear"]',
+      '[data-testid="alley-door-sing"]',
+    ],
   },
   ear: {
     gone: ['[data-testid="ear-session-copy"]'],
@@ -1928,7 +1941,9 @@ async function walkRound2(page, ctx, steps) {
   )
   if (
     coverNow !== coverBefore ||
-    !/\/sing\/retro-analog-studio(?:-portrait(?:-2x)?|-4k)?\.webp/u.test(coverNow)
+    !/\/sing\/retro-analog-studio(?:-portrait(?:-2x)?|-4k)?\.webp/u.test(
+      coverNow,
+    )
   ) {
     throw new Error(`the room's cover is ${coverNow}`)
   }
@@ -2590,6 +2605,400 @@ async function walkSuspended(args, frame) {
  * be asserted by inference, and the bug it hides is exactly that: a press
  * that reports itself handled while doing nothing.
  */
+// ── The alley (S4) ───────────────────────────────────────────
+//
+// The Rooms tab under the native build, walked the way a first-time singer
+// meets it: a fresh context, so the welcome flag is unset and nothing has
+// ever been tapped. Every step asserts what must be GONE and what must be
+// KEPT — a screenshot of an alley whose doors lost their buttons looks
+// exactly like one that kept them.
+
+const ALLEY_DOORS = ['ear', 'piano', 'drums', 'karaoke', 'sing', 'guitar']
+
+async function alleyNow(page) {
+  return page.evaluate(() =>
+    typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+  )
+}
+
+/** Assert both lists; the returned note goes into the step line. */
+async function goneKept(page, where, { gone = [], kept = [] }) {
+  for (const selector of gone) {
+    if ((await page.locator(selector).count()) !== 0) {
+      throw new Error(`${where}: ${selector} should be gone`)
+    }
+  }
+  for (const selector of kept) {
+    if ((await page.locator(selector).count()) === 0) {
+      throw new Error(`${where}: ${selector} should be kept`)
+    }
+  }
+  return `gone [${gone.join(' ')}] kept [${kept.join(' ')}]`
+}
+
+/** The middle of a door, from its key button (sized to the quad's box). */
+async function doorCentre(page, key) {
+  const box = await page
+    .locator(`[data-testid="alley-door-${key}"]`)
+    .boundingBox()
+  if (box === null) throw new Error(`door ${key} has no box`)
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+}
+
+async function tapDoor(page, key, x = null) {
+  const centre = await doorCentre(page, key)
+  await page.touchscreen.tap(x ?? centre.x, centre.y)
+}
+
+async function waitPhase(page, phase, door, what) {
+  await page
+    .waitForFunction(
+      ([p, d]) => {
+        const s = typeof window.mpAlley === 'function' ? window.mpAlley() : null
+        return s !== null && s.phase === p && (d === null || s.door === d)
+      },
+      [phase, door],
+      { timeout: STEP_TIMEOUT_MS },
+    )
+    .catch(async () => {
+      throw new Error(
+        `${what}: expected ${phase}/${door}, alley says ${JSON.stringify(await alleyNow(page))}`,
+      )
+    })
+}
+
+/** Nothing on the page is making a sound or moving a picture. */
+async function mediaPlaying(page) {
+  return page.evaluate(
+    () =>
+      [...document.querySelectorAll('audio, video')].filter((m) => !m.paused)
+        .length,
+  )
+}
+
+/** The door opens: the clone is up, then the room is, and the clone goes. */
+async function walkOpen(page, ctx, name) {
+  await page.locator('[data-testid="alley-enter"]').tap()
+  const mid = await page.evaluate(() => {
+    const clone = document.querySelector('[data-testid="alley-morph"]')
+    if (clone === null) return null
+    return {
+      motion: clone.dataset.motion,
+      content: clone.dataset.content,
+      inline: clone.style.transform,
+      computed: getComputedStyle(clone).transform,
+    }
+  })
+  if (mid === null) throw new Error(`${name}: no clone after Enter`)
+  await shoot(page, ctx, `${name}-mid`)
+  await page
+    .waitForFunction(
+      () =>
+        document.querySelector('[data-testid="alley-morph"]') === null &&
+        document.querySelector('[data-testid="sing-room"]') !== null,
+      null,
+      { timeout: 8000 },
+    )
+    .catch(() => {
+      throw new Error(`${name}: the room never replaced the clone`)
+    })
+  return mid
+}
+
+async function walkAlley(browser, args, frame) {
+  const ctx = { ...args, frame }
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  const steps = []
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    const alleyRoot = page.locator('[data-testid="rooms-alley"]')
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.waitForTimeout(600)
+
+    // ── First run ─────────────────────────────────────────────
+    const doorKeys = ALLEY_DOORS.map((k) => `[data-testid="alley-door-${k}"]`)
+    let note = await goneKept(page, 'first run', {
+      gone: [
+        '[data-testid="alley-title"]',
+        '.mp-alley__panel.is-shown',
+        '[data-onboarding-flow]',
+        '[data-destination]',
+        '[data-testid="home-heading"]',
+      ],
+      kept: [
+        '[data-testid="alley-headline"]',
+        '[data-testid="alley-plate"]',
+        '[data-testid="alley-hit"]',
+        ...doorKeys,
+      ],
+    })
+    const first = await page.evaluate(() => ({
+      headline: document.querySelector('[data-testid="alley-headline"]')
+        ?.textContent,
+      firstHeading: document.querySelector('.mp-alley h1')?.textContent,
+      labels: [...document.querySelectorAll('.mp-alley__key')].map((k) =>
+        k.getAttribute('aria-label'),
+      ),
+      position: getComputedStyle(
+        document.querySelector('[data-testid="alley-plate"]'),
+      ).objectPosition,
+    }))
+    if (first.headline !== 'Pick a room. Make a sound.') {
+      throw new Error(`first run: the headline reads "${first.headline}"`)
+    }
+    if (first.labels.length !== 6 || first.labels.some((l) => !l)) {
+      throw new Error(`first run: door labels ${JSON.stringify(first.labels)}`)
+    }
+    const singLabel = 'Sing, Retro Analog Studio. A live stage for your voice.'
+    const karaokeLabel =
+      'Karaoke, Broadway Theater. Coming soon. Sing your favorite songs.'
+    if (
+      !first.labels.includes(singLabel) ||
+      !first.labels.includes(karaokeLabel)
+    ) {
+      throw new Error(`first run: door labels ${JSON.stringify(first.labels)}`)
+    }
+    if (first.position !== '72% 50%') {
+      throw new Error(`first run: the plate sits at ${first.position}`)
+    }
+    const quiet = await alleyNow(page)
+    if (quiet.sources !== 0 || (await mediaPlaying(page)) !== 0) {
+      throw new Error('first run: something is playing on arrival')
+    }
+    await shoot(page, ctx, 'alley-first-run')
+    steps.push(
+      `alley first run: headline, six labelled doors, plate at 72%, silent; ${note}`,
+    )
+
+    // ── Select Sing ───────────────────────────────────────────
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'select Sing')
+    const levels = []
+    for (let i = 0; i < 24; i++) {
+      levels.push((await alleyNow(page)).level)
+      await page.waitForTimeout(50)
+    }
+    const rising = levels.some(
+      (l, i) => i > 0 && l > levels[i - 1] && l > 0 && l < 0.85,
+    )
+    const top = Math.max(...levels)
+    if (!rising || top < 0.8) {
+      throw new Error(
+        `select Sing: ambient gain did not rise to its level (${levels.map((l) => l.toFixed(3)).join(' ')})`,
+      )
+    }
+    await page
+      .waitForFunction(
+        () => {
+          const v = document.querySelector('[data-testid="alley-clip"]')
+          return v !== null && v.readyState >= 2 && !v.paused
+        },
+        null,
+        { timeout: STEP_TIMEOUT_MS },
+      )
+      .catch(() => {
+        throw new Error('select Sing: the clip is not playing')
+      })
+    note = await goneKept(page, 'select Sing', {
+      gone: ['[data-testid="alley-eyebrow"]'],
+      kept: [
+        '[data-testid="alley-enter"]',
+        '.mp-alley__panel.is-shown',
+        '.mp-alley__door.is-alive[data-door="sing"]',
+        '[data-testid="alley-headline"]',
+      ],
+    })
+    await expectText(
+      page,
+      '[data-testid="alley-name"]',
+      'Sing · Retro Analog Studio',
+      'the Sing card',
+    )
+    await page.waitForTimeout(300)
+    await shoot(page, ctx, 'alley-sing-alive')
+    steps.push(
+      `alley select Sing: clip playing, ambient rising to ${top.toFixed(2)}, Enter; ${note}`,
+    )
+
+    // ── Open ──────────────────────────────────────────────────
+    const mid = await walkOpen(page, ctx, 'alley-open')
+    if (mid.motion !== 'grow' || mid.content !== 'clip') {
+      throw new Error(`open: the clone was ${JSON.stringify(mid)}`)
+    }
+    const afterOpen = await alleyNow(page)
+    if (afterOpen.level !== 0 || afterOpen.sounding !== null) {
+      throw new Error(
+        `open: the ambient is still up ${JSON.stringify(afterOpen)}`,
+      )
+    }
+    note = await goneKept(page, 'open', {
+      gone: ['[data-testid="rooms-alley"]', '[data-testid="alley-morph"]'],
+      kept: ['[data-testid="sing-room"]', '[data-testid="sing-cover"]'],
+    })
+    await page.waitForTimeout(300)
+    await shoot(page, ctx, 'alley-sing-room')
+    steps.push(
+      `alley open: clone grew (${mid.content}), then the Sing room, clone gone, ambient 0; ${note}`,
+    )
+
+    // ── Back ──────────────────────────────────────────────────
+    const outcome = await pressBack(page)
+    if (outcome !== 'history') throw new Error(`Back answered '${outcome}'`)
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await waitPhase(page, 'rest', null, 'back')
+    const flag = await page.evaluate(() =>
+      localStorage.getItem('pitchperfect_native_welcome_seen'),
+    )
+    if (flag !== 'true') throw new Error(`back: the welcome flag is ${flag}`)
+    note = await goneKept(page, 'back', {
+      gone: [
+        '[data-testid="alley-headline"]',
+        '[data-testid="alley-morph"]',
+        '[data-testid="sing-room"]',
+      ],
+      kept: ['[data-testid="alley-title"]', ...doorKeys],
+    })
+    await shoot(page, ctx, 'alley-return')
+    steps.push(`alley back: the alley at rest, no headline, flag set; ${note}`)
+
+    // ── Ear Lab at x = 8 ──────────────────────────────────────
+    await tapDoor(page, 'ear', 8)
+    await waitPhase(page, 'alive', 'ear', 'Ear Lab at x = 8')
+    note = await goneKept(page, 'Ear Lab', {
+      gone: ['[data-testid="alley-eyebrow"]'],
+      kept: [
+        '[data-testid="alley-enter"]',
+        '.mp-alley__door.is-alive[data-door="ear"]',
+      ],
+    })
+    await expectText(
+      page,
+      '[data-testid="alley-name"]',
+      'Ear Lab · Workshop',
+      'the Ear Lab card',
+    )
+    await page.waitForTimeout(400)
+    await shoot(page, ctx, 'alley-ear-alive')
+    steps.push(`alley Ear Lab at x = 8: selected, no eyebrow, Enter; ${note}`)
+
+    // ── Karaoke: locked ───────────────────────────────────────
+    await tapDoor(page, 'karaoke')
+    await waitPhase(page, 'selected', 'karaoke', 'Karaoke')
+    await page.waitForTimeout(600)
+    await expectText(
+      page,
+      '[data-testid="alley-eyebrow"]',
+      'Coming soon',
+      'the Karaoke eyebrow',
+    )
+    await expectText(
+      page,
+      '[data-testid="alley-line"]',
+      'Sing your favorite songs.',
+      'the Karaoke line',
+    )
+    const locked = await alleyNow(page)
+    if (locked.sounding !== null || locked.level !== 0) {
+      throw new Error(`Karaoke: sound is up ${JSON.stringify(locked)}`)
+    }
+    if ((await mediaPlaying(page)) !== 0) {
+      throw new Error('Karaoke: a media element is still playing')
+    }
+    note = await goneKept(page, 'Karaoke', {
+      gone: ['[data-testid="alley-enter"]', '.mp-alley__door.is-alive'],
+      kept: [
+        '[data-testid="alley-eyebrow"]',
+        '.mp-alley__door.is-selected[data-door="karaoke"]',
+      ],
+    })
+    await shoot(page, ctx, 'alley-karaoke-locked')
+    steps.push(
+      `alley Karaoke: Coming soon, its line, no Enter, nothing playing; ${note}`,
+    )
+
+    // ── Reduced motion ────────────────────────────────────────
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page
+      .locator('.mp-shell[data-reduced="on"]')
+      .waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS })
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'reduced: select Sing')
+    await page.waitForTimeout(300)
+    const still = await walkOpen(page, ctx, 'alley-reduced-open')
+    if (
+      still.motion !== 'crossfade' ||
+      still.inline !== '' ||
+      still.computed !== 'none'
+    ) {
+      throw new Error(`reduced: the clone moved ${JSON.stringify(still)}`)
+    }
+    note = await goneKept(page, 'reduced open', {
+      gone: ['[data-testid="alley-morph"]', '[data-testid="rooms-alley"]'],
+      kept: ['[data-testid="sing-room"]'],
+    })
+    steps.push(
+      `alley reduced motion: a crossfade, no transform on the clone; ${note}`,
+    )
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('reduced: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+
+    // ── Developer: Replay the welcome ─────────────────────────
+    await page.locator('[data-rail-item="more"]').click()
+    const developerTile = page.locator('[data-more-item="developer"]')
+    await developerTile.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await developerTile.click()
+    const replay = page.locator('[data-testid="dev-replay-welcome"]')
+    await replay.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await replay.click()
+    await page
+      .locator('[data-testid="alley-headline"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    const cleared = await page.evaluate(() =>
+      localStorage.getItem('pitchperfect_native_welcome_seen'),
+    )
+    if (cleared !== 'false') {
+      throw new Error(`replay: the welcome flag is ${cleared}`)
+    }
+    note = await goneKept(page, 'replay', {
+      gone: ['[data-testid="shell-developer"]', '[data-testid="alley-title"]'],
+      kept: ['[data-testid="alley-headline"]', ...doorKeys],
+    })
+    await page.waitForTimeout(400)
+    await shoot(page, ctx, 'alley-replayed')
+    steps.push(
+      `alley Developer "Replay the welcome": flag cleared, headline back; ${note}`,
+    )
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  const at = `${frame.width}x${frame.height}`
+  return steps.map((step) => `[${at}] ${step}`)
+}
+
 async function pressBack(page) {
   return page.evaluate(() => {
     const back = window.mpShellBack
@@ -2607,21 +3016,25 @@ async function walkBack(page) {
     .waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
   const roomsHash = await page.evaluate(() => window.location.hash)
 
-  // A room cover navigates with `setActiveTab`, whose sync pushes with
-  // `history.pushState` — which fires no hashchange and no popstate. A depth
-  // that only learned from events never moved, so this press minimized the
-  // app instead of returning to the gallery.
-  const cover = page.locator('[data-destination]').first()
-  await cover.waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
-  await cover.click()
+  // A room entered from Rooms must push an entry Back can return to: the web
+  // gallery's covers once pushed with `history.pushState`, which fires no
+  // hashchange, and a depth that only learned from events minimized the app
+  // instead. Rooms is the alley now, and its way into a room is a door.
+  await page
+    .locator('[data-testid="rooms-alley"]')
+    .waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
+  await tapDoor(page, 'sing')
+  const enter = page.locator('[data-testid="alley-enter"]')
+  await enter.waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
+  await enter.tap()
   await page.waitForFunction((was) => window.location.hash !== was, roomsHash, {
     timeout: RUN_TIMEOUT_MS,
   })
-  steps.push('back: a room cover pushed an entry')
+  steps.push('back: a door opened into its room and pushed an entry')
 
   const outcome = await pressBack(page)
   if (outcome !== 'history') {
-    throw new Error(`Back after a room cover answered '${outcome}'`)
+    throw new Error(`Back after a door answered '${outcome}'`)
   }
   await page.waitForFunction((was) => window.location.hash === was, roomsHash, {
     timeout: RUN_TIMEOUT_MS,
@@ -2912,6 +3325,13 @@ async function main() {
       } catch (error) {
         failures.push(
           `[${frame.width}x${frame.height}] suspended: ${error.message}`,
+        )
+      }
+      try {
+        steps.push(...(await walkAlley(browser, args, frame)))
+      } catch (error) {
+        failures.push(
+          `[${frame.width}x${frame.height}] alley: ${error.message}`,
         )
       }
     }
