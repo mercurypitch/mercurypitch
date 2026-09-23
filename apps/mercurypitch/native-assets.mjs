@@ -169,7 +169,7 @@ export const NATIVE_ASSETS = [
   {
     glob: 'rooms/alley/retro-analog-studio-portrait-loop.mp4',
     reason:
-      "The tape-reel loop the Sing door plays inside its doorway when it is selected, and carries into the room on Enter (apps/mercurypitch/src/alley/RoomsAlley.tsx).",
+      'The tape-reel loop the Sing door plays inside its doorway when it is selected, and carries into the room on Enter (apps/mercurypitch/src/alley/RoomsAlley.tsx).',
   },
   {
     glob: 'rooms/alley/*-ambient-take2-loop.m4a',
