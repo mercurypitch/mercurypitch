@@ -46,6 +46,8 @@ MIN_TRIANGLES = 90_000
 MAX_TRIANGLES = 125_000
 BAKE_SIZE = 2048
 BAKE_MARGIN = 24
+BAKE_SAMPLES = 64
+BAKE_THREADS = 8
 CAGE_EXTRUSION = 0.012
 MAX_RAY_DISTANCE = 0.045
 EXPECTED_DENSE_SHA256 = "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4"
@@ -98,6 +100,298 @@ def write_glb(path: Path, document: dict[str, object], binary: bytes) -> None:
     result.extend(payload)
     struct.pack_into("<I", result, 8, len(result))
     path.write_bytes(result)
+
+
+COMPONENT_LAYOUTS = {
+    5120: ("b", 1),
+    5121: ("B", 1),
+    5122: ("h", 2),
+    5123: ("H", 2),
+    5125: ("I", 4),
+    5126: ("f", 4),
+}
+TYPE_COMPONENTS = {
+    "SCALAR": 1,
+    "VEC2": 2,
+    "VEC3": 3,
+    "VEC4": 4,
+}
+
+
+def accessor_layout(document: dict[str, object], index: int) -> dict[str, object]:
+    accessor = document["accessors"][index]
+    if "sparse" in accessor or "bufferView" not in accessor:
+        raise ValueError(f"Accessor {index} uses an unsupported sparse or implicit layout")
+    view = document["bufferViews"][int(accessor["bufferView"])]
+    if int(view.get("buffer", 0)) != 0:
+        raise ValueError(f"Accessor {index} does not use the GLB binary buffer")
+    component_type = int(accessor["componentType"])
+    if component_type not in COMPONENT_LAYOUTS:
+        raise ValueError(f"Accessor {index} has unsupported component type {component_type}")
+    value_type = str(accessor["type"])
+    if value_type not in TYPE_COMPONENTS:
+        raise ValueError(f"Accessor {index} has unsupported value type {value_type}")
+    code, component_size = COMPONENT_LAYOUTS[component_type]
+    components = TYPE_COMPONENTS[value_type]
+    element_size = component_size * components
+    stride = int(view.get("byteStride", element_size))
+    if stride < element_size:
+        raise ValueError(f"Accessor {index} has an invalid byte stride")
+    return {
+        "index": index,
+        "count": int(accessor["count"]),
+        "componentType": component_type,
+        "components": components,
+        "format": "<" + code * components,
+        "offset": int(view.get("byteOffset", 0)) + int(accessor.get("byteOffset", 0)),
+        "stride": stride,
+    }
+
+
+def accessor_value(binary: bytes | bytearray, layout: dict[str, object], index: int) -> tuple[float | int, ...]:
+    if not 0 <= index < int(layout["count"]):
+        raise IndexError(f"Accessor {layout['index']} row {index} is out of range")
+    return struct.unpack_from(
+        str(layout["format"]),
+        binary,
+        int(layout["offset"]) + index * int(layout["stride"]),
+    )
+
+
+def primitive_triangle_indices(
+    document: dict[str, object], binary: bytes, primitive: dict[str, object]
+) -> list[tuple[int, int, int]]:
+    if int(primitive.get("mode", 4)) != 4:
+        raise ValueError("Tangent repair supports triangle primitives only")
+    if "indices" not in primitive:
+        count = int(
+            document["accessors"][int(primitive["attributes"]["POSITION"])]["count"]
+        )
+        if count % 3:
+            raise ValueError("Unindexed triangle primitive has an incomplete triangle")
+        return [(index, index + 1, index + 2) for index in range(0, count, 3)]
+    layout = accessor_layout(document, int(primitive["indices"]))
+    if int(layout["components"]) != 1 or int(layout["componentType"]) not in (5121, 5123, 5125):
+        raise ValueError("Triangle index accessor must use unsigned scalar values")
+    values = [int(accessor_value(binary, layout, index)[0]) for index in range(int(layout["count"]))]
+    if len(values) % 3:
+        raise ValueError("Indexed triangle primitive has an incomplete triangle")
+    return [tuple(values[index : index + 3]) for index in range(0, len(values), 3)]
+
+
+def fallback_tangent_from_triangles(
+    vertex_index: int,
+    triangles: list[tuple[int, int, int]],
+    position_layout: dict[str, object],
+    normal_layout: dict[str, object],
+    uv_layout: dict[str, object],
+    binary: bytes | bytearray,
+) -> tuple[Vector, dict[str, object]]:
+    normal = Vector(accessor_value(binary, normal_layout, vertex_index)[:3])
+    if not all(math.isfinite(value) for value in normal) or normal.length_squared <= 1e-16:
+        raise ValueError(f"Cannot repair tangent {vertex_index}: invalid preserved normal")
+    normal.normalize()
+    candidates: list[Vector] = []
+    handedness_values: list[float] = []
+    determinants: list[float] = []
+    referenced = 0
+    for triangle in triangles:
+        if vertex_index not in triangle:
+            continue
+        referenced += 1
+        p0, p1, p2 = (
+            Vector(accessor_value(binary, position_layout, index)[:3]) for index in triangle
+        )
+        uv0, uv1, uv2 = (
+            Vector(accessor_value(binary, uv_layout, index)[:2]) for index in triangle
+        )
+        edge1 = p1 - p0
+        edge2 = p2 - p0
+        delta1 = uv1 - uv0
+        delta2 = uv2 - uv0
+        determinant = delta1.x * delta2.y - delta1.y * delta2.x
+        if not math.isfinite(determinant) or abs(determinant) <= 1e-12:
+            continue
+        tangent = (edge1 * delta2.y - edge2 * delta1.y) / determinant
+        tangent -= normal * tangent.dot(normal)
+        if all(math.isfinite(value) for value in tangent) and tangent.length_squared > 1e-16:
+            tangent.normalize()
+            bitangent = (edge2 * delta1.x - edge1 * delta2.x) / determinant
+            parity = -1.0 if normal.cross(tangent).dot(bitangent) < 0.0 else 1.0
+            candidates.append(tangent)
+            handedness_values.append(parity)
+            determinants.append(abs(float(determinant)))
+    if referenced == 0:
+        raise ValueError(f"Cannot repair tangent {vertex_index}: vertex is not referenced")
+    method = "triangle-uv-derivative-gram-schmidt"
+    if candidates:
+        if len(set(handedness_values)) != 1:
+            raise ValueError(
+                f"Cannot repair tangent {vertex_index}: incident UV triangles disagree on handedness"
+            )
+        tangent = Vector((0.0, 0.0, 0.0))
+        for candidate in candidates:
+            tangent += candidate
+        tangent -= normal * tangent.dot(normal)
+    else:
+        method = "deterministic-normal-orthogonal-axis"
+        axes = (Vector((1.0, 0.0, 0.0)), Vector((0.0, 1.0, 0.0)), Vector((0.0, 0.0, 1.0)))
+        axis = min(axes, key=lambda candidate: abs(normal.dot(candidate)))
+        tangent = axis - normal * axis.dot(normal)
+    if not all(math.isfinite(value) for value in tangent) or tangent.length_squared <= 1e-16:
+        raise ValueError(f"Cannot repair tangent {vertex_index}: fallback collapsed")
+    tangent.normalize()
+    return tangent, {
+        "vertex": vertex_index,
+        "referencedTriangles": referenced,
+        "usableUvDerivativeTriangles": len(candidates),
+        "minimumAbsoluteUvDeterminant": None if not determinants else min(determinants),
+        "method": method,
+        "uvDerivativeHandedness": None if not handedness_values else handedness_values[0],
+    }
+
+
+def repair_degenerate_tangents(path: Path) -> dict[str, object]:
+    """Replace only invalid tangent XYZ rows after glTF export.
+
+    Blender's MikkTSpace export can emit a zero tangent for a referenced vertex
+    when a tiny UV triangle is treated as degenerate.  Derive the fallback from
+    that triangle's UV gradient, Gram--Schmidt it against the already exported
+    split normal, and retain the original handedness byte-for-byte.
+    """
+
+    document, binary_bytes = read_glb(path)
+    binary = bytearray(binary_bytes)
+    repairs: list[dict[str, object]] = []
+    visited: set[int] = set()
+    for mesh_index, mesh in enumerate(document.get("meshes", [])):
+        for primitive_index, primitive in enumerate(mesh.get("primitives", [])):
+            attributes = primitive.get("attributes", {})
+            required = {"POSITION", "NORMAL", "TANGENT", "TEXCOORD_0"}
+            if missing := sorted(required - set(attributes)):
+                raise ValueError(f"Cannot validate tangent basis; missing {missing}")
+            tangent_index = int(attributes["TANGENT"])
+            if tangent_index in visited:
+                continue
+            visited.add(tangent_index)
+            tangent_layout = accessor_layout(document, tangent_index)
+            normal_layout = accessor_layout(document, int(attributes["NORMAL"]))
+            position_layout = accessor_layout(document, int(attributes["POSITION"]))
+            uv_layout = accessor_layout(document, int(attributes["TEXCOORD_0"]))
+            if (
+                int(tangent_layout["componentType"]) != 5126
+                or int(tangent_layout["components"]) != 4
+                or int(normal_layout["componentType"]) != 5126
+                or int(normal_layout["components"]) != 3
+                or int(position_layout["componentType"]) != 5126
+                or int(position_layout["components"]) != 3
+                or int(uv_layout["componentType"]) != 5126
+                or int(uv_layout["components"]) != 2
+            ):
+                raise ValueError("Tangent repair requires float POSITION/NORMAL/TANGENT/TEXCOORD_0")
+            counts = {
+                int(tangent_layout["count"]),
+                int(normal_layout["count"]),
+                int(position_layout["count"]),
+                int(uv_layout["count"]),
+            }
+            if len(counts) != 1:
+                raise ValueError("Candidate vertex attribute counts differ")
+            invalid: list[tuple[int, tuple[float | int, ...]]] = []
+            for vertex_index in range(int(tangent_layout["count"])):
+                value = accessor_value(binary, tangent_layout, vertex_index)
+                length = math.sqrt(sum(float(component) ** 2 for component in value[:3]))
+                if not math.isfinite(length) or length <= 1e-8:
+                    invalid.append((vertex_index, value))
+                elif abs(length - 1.0) > 1e-4:
+                    raise ValueError(
+                        f"Tangent {vertex_index} has non-unit nonzero length {length}; "
+                        "refusing a broad mutation"
+                    )
+                if not math.isfinite(float(value[3])) or abs(abs(float(value[3])) - 1.0) > 1e-5:
+                    raise ValueError(f"Tangent {vertex_index} has invalid handedness {value[3]}")
+            if not invalid:
+                continue
+            triangles = primitive_triangle_indices(document, binary, primitive)
+            for vertex_index, old in invalid:
+                fallback, row = fallback_tangent_from_triangles(
+                    vertex_index,
+                    triangles,
+                    position_layout,
+                    normal_layout,
+                    uv_layout,
+                    binary,
+                )
+                old_handedness = float(old[3])
+                derived_handedness = row["uvDerivativeHandedness"]
+                handedness = (
+                    old_handedness
+                    if derived_handedness is None
+                    else float(derived_handedness)
+                )
+                struct.pack_into(
+                    "<4f",
+                    binary,
+                    int(tangent_layout["offset"]) + vertex_index * int(tangent_layout["stride"]),
+                    fallback.x,
+                    fallback.y,
+                    fallback.z,
+                    handedness,
+                )
+                repairs.append(
+                    {
+                        **row,
+                        "mesh": mesh_index,
+                        "primitive": primitive_index,
+                        "old": [float(value) for value in old],
+                        "new": [fallback.x, fallback.y, fallback.z, handedness],
+                        "handednessRetained": handedness == old_handedness,
+                        "handednessParityVerified": derived_handedness is not None,
+                    }
+                )
+    if repairs:
+        write_glb(path, document, bytes(binary))
+    return {
+        "method": "post-export per-triangle UV derivative, Gram-Schmidt against exported split normal",
+        "repairedCount": len(repairs),
+        "repairs": repairs,
+        "geometryUvPositionNormalUnchanged": True,
+    }
+
+
+def validate_unit_tangents(document: dict[str, object], binary: bytes) -> dict[str, object]:
+    rows = []
+    seen: set[int] = set()
+    for mesh in document.get("meshes", []):
+        for primitive in mesh.get("primitives", []):
+            attributes = primitive.get("attributes", {})
+            if "TANGENT" not in attributes:
+                raise ValueError("Candidate primitive has no tangent accessor")
+            index = int(attributes["TANGENT"])
+            if index in seen:
+                continue
+            seen.add(index)
+            layout = accessor_layout(document, index)
+            lengths = []
+            for vertex_index in range(int(layout["count"])):
+                value = accessor_value(binary, layout, vertex_index)
+                length = math.sqrt(sum(float(component) ** 2 for component in value[:3]))
+                if not math.isfinite(length) or abs(length - 1.0) > 1e-4:
+                    raise ValueError(f"Tangent {vertex_index} is not unit length: {length}")
+                handedness = float(value[3])
+                if not math.isfinite(handedness) or abs(abs(handedness) - 1.0) > 1e-5:
+                    raise ValueError(f"Tangent {vertex_index} has invalid handedness {handedness}")
+                lengths.append(length)
+            rows.append(
+                {
+                    "accessor": index,
+                    "count": len(lengths),
+                    "minimumLength": min(lengths),
+                    "maximumLength": max(lengths),
+                    "handednessPassed": True,
+                }
+            )
+    return {"accessors": rows, "allFiniteUnitTangents": True}
 
 
 def view_payload(document: dict[str, object], binary: bytes, index: int) -> bytes:
@@ -358,6 +652,9 @@ def bake_image(
     bpy.context.view_layer.objects.active = low
     bpy.context.scene.render.engine = "CYCLES"
     bpy.context.scene.cycles.device = "CPU"
+    bpy.context.scene.cycles.samples = BAKE_SAMPLES
+    bpy.context.scene.render.threads_mode = "FIXED"
+    bpy.context.scene.render.threads = BAKE_THREADS
     settings = bpy.context.scene.render.bake
     settings.use_selected_to_active = True
     settings.use_clear = True
@@ -379,7 +676,8 @@ def bake_image(
         obj.hide_set(True)
     opened = PILImage.open(path).convert("RGB")
     pixels = np.asarray(opened, dtype=np.uint8)
-    if opened.size != (BAKE_SIZE, BAKE_SIZE) or int(pixels.max()) == int(pixels.min()):
+    spatial_variation = float(pixels.reshape(-1, 3).std(axis=0).max())
+    if opened.size != (BAKE_SIZE, BAKE_SIZE) or spatial_variation < 0.5:
         raise ValueError(f"{bake_type} bake is blank or has the wrong size")
     return {
         "file": str(path.relative_to(ART)),
@@ -387,6 +685,7 @@ def bake_image(
         "sha256": digest(path),
         "dimensions": list(opened.size),
         "channelRange": [int(pixels.min()), int(pixels.max())],
+        "maximumChannelStandardDeviation": round(spatial_variation, 4),
     }
 
 
@@ -530,6 +829,7 @@ def patch_occlusion_binding(path: Path) -> None:
 
 def validate_export(path: Path, expected_triangles: int) -> dict[str, object]:
     document, binary = read_glb(path)
+    tangent_validation = validate_unit_tangents(document, binary)
     node_indices = [
         index for index, node in enumerate(document.get("nodes", []))
         if node.get("name") == GEOMETRY_NAME
@@ -593,6 +893,7 @@ def validate_export(path: Path, expected_triangles: int) -> dict[str, object]:
         "images": image_rows,
         "extensionsUsed": document.get("extensionsUsed", []),
         "normalUvTangentPbrPassed": True,
+        "tangentValidation": tangent_validation,
     }
 
 
@@ -624,7 +925,10 @@ def export_variant(normal_source: str, material: bpy.types.Material, expected_tr
         export_tangents=True,
     )
     patch_occlusion_binding(path)
-    return validate_export(path, expected_triangles)
+    tangent_repair = repair_degenerate_tangents(path)
+    result = validate_export(path, expected_triangles)
+    result["tangentRepair"] = tangent_repair
+    return result
 
 
 def main() -> None:
@@ -664,6 +968,7 @@ def main() -> None:
         bpy.data.materials.remove(material, do_unlink=True)
     material = bpy.data.materials.new(MATERIAL_NAME)
     material.use_nodes = True
+    low.data.materials.clear()
     low.data.materials.append(material)
     baked_normal = bake_image(
         low,
@@ -768,6 +1073,8 @@ def main() -> None:
             "engine": "Cycles CPU",
             "resolution": [BAKE_SIZE, BAKE_SIZE],
             "marginPixels": BAKE_MARGIN,
+            "samples": BAKE_SAMPLES,
+            "cpuThreads": BAKE_THREADS,
             "cageExtrusionMetres": CAGE_EXTRUSION,
             "maximumRayDistanceMetres": MAX_RAY_DISTANCE,
             "normal": baked_normal,

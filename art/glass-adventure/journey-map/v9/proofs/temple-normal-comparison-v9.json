@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "asset": "temple",
+  "purpose": "Same-geometry, same-camera comparison of the provider normal and dense-donor normal bake. Review-only; no automatic normal selection or runtime export.",
+  "candidateManifest": {
+    "file": "exports/floating-museum-temple-candidate-v9.json",
+    "bytes": 15740,
+    "sha256": "698f9f4f2b9dac10488ccf8929ff68907d08fbbf185301a3401539e001ed000d"
+  },
+  "order": [
+    "Meshy normal",
+    "dense-donor normal bake"
+  ],
+  "assets": [
+    {
+      "label": "Meshy normal",
+      "file": "exports/floating-museum-temple-candidate-v9-meshy-normal.glb",
+      "bytes": 21601268,
+      "sha256": "b31cdf876f601b510ee8910a144ec9258b592d355f088b0097e5a04fd5770360",
+      "triangles": 89166,
+      "geometrySha256": "ebc5c6d01ff2477967b4f41ae41200bdc174ddfbd8e8db0c3585f97d6d8c34f9",
+      "dimensionsMetres": [
+        2.4,
+        2.662423,
+        2.667687
+      ],
+      "groundAnchorMetres": 0.0,
+      "textureImages": 3,
+      "displayX": -1.725
+    },
+    {
+      "label": "dense-donor normal bake",
+      "file": "exports/floating-museum-temple-candidate-v9-dense-bake-normal.glb",
+      "bytes": 24113216,
+      "sha256": "d17f0ac9c5c66baafc5904cafd430aadd4f5f3ef25f69294ff111ca3b8533194",
+      "triangles": 89166,
+      "geometrySha256": "ebc5c6d01ff2477967b4f41ae41200bdc174ddfbd8e8db0c3585f97d6d8c34f9",
+      "dimensionsMetres": [
+        2.4,
+        2.662423,
+        2.667687
+      ],
+      "groundAnchorMetres": 0.0,
+      "textureImages": 3,
+      "displayX": 1.725
+    }
+  ],
+  "identicalGeometry": true,
+  "proofs": [
+    {
+      "file": "proofs/temple-normal-comparison-front-v9.png",
+      "bytes": 2363286,
+      "sha256": "b438d4efb0528392fe30d55e16b765bf64f32a4df01363ba159ac60abb53c792"
+    },
+    {
+      "file": "proofs/temple-normal-comparison-angle-v9.png",
+      "bytes": 2477706,
+      "sha256": "ab15b3ccccee0b289a76aa3a97ec318fcee3968eff714267de368a3f3166ab32"
+    }
+  ],
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 24,
+    "seed": 23,
+    "cpuThreads": 8,
+    "resolution": [
+      1800,
+      1000
+    ],
+    "camera": "orthographic",
+    "orthoScale": 4.75,
+    "blender": "5.2.2 LTS"
+  },
+  "requiredReview": "Inspect dome ribs and panels, finial, entablature, capitals, column fluting, stairs, statue, banners and carved trim at equal zoom.",
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/render_museum_finish_comparison.py -- --asset temple"
+}

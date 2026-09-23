@@ -1,8 +1,11 @@
 # Floating Museum conservatory V8 source gate
 
-Status: source-prepared only. No V8 Meshy task has been submitted, no credits
-have been charged, and no candidate, PBR pass, Blender candidate source, combined
-runtime export, or public asset has been produced.
+Status: the V8 conservatory geometry and PBR candidate are complete. The
+Meshy-normal candidate is visually accepted for runtime assembly and pinned by
+`proofs/conservatory-candidate-selection-v8.json`. The separate dense-donor
+normal bake was produced and reviewed, but it is retained only as audit source
+because it introduces visible projection artifacts. Combined runtime assembly
+and public installation remain outside this source-and-candidate stage.
 
 This folder isolates the conservatory repair from the approved V7 connector. The
 intended sequence is one receipt-guarded provider remesh, same-camera CPU clay
@@ -44,31 +47,31 @@ Rebuild the read-only source audit from the repository root:
 rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/audit_conservatory_source.py
 ```
 
-## Provider reconciliation and blocked submission
+## Provider production
 
-A read-only provider check on 2026-09-23 listed no remesh or retexture task after
-the archived V7 work. The newest remesh was
-`01a0c93d-d575-745f-9f91-c7206c4bab5d`; the newest retexture was
-`01a0c946-928b-70b7-b8e0-7019de0d936e`; both succeeded and already have V7
-receipts. The observed balance was 3,880 credits. The interrupted V8 attempt
-therefore left no unreceipted provider task.
+The receipt-guarded 110,000-triangle remesh completed as provider task
+`01a0ceb5-4dd4-7530-a1d0-6e920c57b326` and consumed 5 credits. Its archived GLB
+is `meshy/conservatory-remesh-110k.glb`, 8,188,772 bytes, SHA-256
+`f936106d6eed572666b21b511efcbec35c342ae6be0c2402ea94aac6f133febf`,
+with 109,636 triangles. The matching receipt is
+`meshy/conservatory-remesh-110k-receipt.json`.
 
-The prepared V8 request is one triangle remesh at 110,000 target polygons, bottom
-origin, GLB output, expected cost 5 credits. The script re-lists provider tasks and
-saves a safe reconciliation before it can submit. It writes
-`state: submission-unconfirmed` before the charged call, saves the returned task
-ID immediately, and never retries a submission. Signed artifact URLs stay in
-memory; receipts contain only task state, hashes, byte counts, and credit deltas.
+The 2K PBR retexture completed as provider task
+`01a0cebe-365f-7743-8e07-98ea3f53c7b3` and consumed 10 credits. Its archived
+GLB is `meshy/conservatory-remesh-110k-retexture-pbr.glb`, 20,430,664 bytes,
+SHA-256 `e82ced33f896eb4468af828006eaed8231e7bb2a8a9eee19cc0b64013ef9e0f6`.
+The matching receipt is
+`meshy/conservatory-remesh-110k-retexture-pbr-receipt.json`. The PBR source
+retains the remesh geometry exactly.
 
-The external command was rejected by automatic approval review before process
-creation because sending the preserved conservatory source to Meshy needs a
-specific user confirmation. Consequently there is no V8 receipt, task ID, upload,
-or charge. Do not retry until that confirmation is present.
-
-After confirmation, run exactly:
+Both producer scripts reconcile provider tasks before submission, persist the
+returned task ID before a post-submit balance check, never retry a submission,
+and keep signed artifact URLs out of receipts and logs. Rebuild only when a new
+provider task is deliberately required:
 
 ```sh
 rtk proxy timeout 1200 python3 art/glass-adventure/journey-map/v8/production/run_conservatory_remesh.py
+rtk proxy timeout 1200 python3 art/glass-adventure/journey-map/v8/production/run_conservatory_retexture.py
 ```
 
 The remesh script uses the authenticated Meshy MCP launcher already present on the
@@ -76,35 +79,81 @@ machine. It obtains the original task's signed `pre_remeshed_glb` URL in memory,
 requires the `assets.meshy.ai` host, and never reads, prints, changes, or stores a
 credential or signed URL.
 
-Once the archived remesh exists, render the review gate before any retexture:
+## Geometry review
+
+The same-camera clay review compares the preserved donor, the reduced V6 result,
+and the V8 remesh. The V8 candidate improves roof roundness, column fluting, and
+leaf clumps while preserving the openings and platform profile. Its exact GLB
+hash and proof hashes are accepted in
+`proofs/conservatory-remesh-clay-review-v8.json`. Residual rough foliage comes
+from the source and is not described as pristine.
+
+Rebuild the clay gate with:
 
 ```sh
 rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/render_conservatory_geometry_comparison.py
 ```
 
-That comparison script is prepared but has not run because the V8 candidate does
-not exist. No runtime packer has been run or V8 export created. Binary formats in
-this folder are covered by the local `.gitattributes` Git LFS rules.
+## Blender finish and normal selection
 
-## Local finishing preparation — 23 September
+`production/finish_conservatory_candidate.py` normalized both low and dense
+meshes to the 2.30 x 2.65 x 2.30 metre, ground-zero contract, then produced a
+64-sample, eight-thread CPU selected-to-active tangent normal and AO bake. The
+bounding-box normalization is not treated as proof of surface registration.
+`proofs/conservatory-pbr-bake-projection-v8.json` records the independent
+surface audit: nearest dense-surface p50 0.93 mm, p95 3.90 mm, p99 5.59 mm, and
+an approximate cage-ray miss fraction of 0.583%.
 
-`production/finish_conservatory_candidate.py` is a prepared Blender step for a
-future archived `conservatory-remesh-110k-retexture-pbr.glb` plus matching remesh
-and retexture receipts. It is not evidence that a candidate or bake exists.
-It retains the provider normal map and prepares a separate dense-donor normal
-and AO bake for side-by-side review, with UV/PBR/export checks and a packed
-editable source. Surface registration, cage projection and visible bake quality
-must be reviewed on the real inputs before either variant is accepted.
+The packed editable source is
+`sources/floating-museum-conservatory-candidate-v8.blend`, SHA-256
+`bd47184b3c0174e01d721e573d1ec533f4585013e218bda2e03508c821991d6a`.
+It retains the dense donor and packs the 2K provider maps, dense normal, dense AO,
+derived ORM, and transmission mask.
 
-The script parses and Blender 5.2.2 rejects the absent PBR input before producing
-anything. The actual bake/export path remains unverified until a candidate
-exists. Retexture submission, candidate render review, V7-preserving combined
-runtime assembly and public installation are still outstanding.
+Both review GLBs contain 109,636 triangles, UV0, normals, tangents, 2K base color,
+normal and ORM bindings, occlusion, transmission, and the exact normalized bounds:
 
-The remesh producer now writes its returned task ID before checking the new
-balance. An offline fault-injection check confirmed that a balance-read failure
-retains the ID and a rerun polls that task without submitting another one.
-Free-form provider error messages are omitted from archived status fields.
+- accepted: `exports/floating-museum-conservatory-candidate-v8-meshy-normal.glb`,
+  SHA-256 `4295d8a324f86048f9832306b3a1c74e15d601a0ea07dfa1ee33f593b223f697`
+- audit only: `exports/floating-museum-conservatory-candidate-v8-dense-bake-normal.glb`,
+  SHA-256 `8b3465883aea800de84c3d9237d2752af405e049d64a3bece4052f283772530f`
+
+Blender's first glTF export emitted zero tangent XYZ at referenced vertices
+36,434, 143,188, and 150,705. The finisher now repairs only such rows after
+export using the incident triangle's UV derivative, Gram-Schmidt projection
+against the preserved split normal, and derivative-verified handedness. The
+three repaired W values are -1, +1, and -1. POSITION, NORMAL, TEXCOORD_0,
+indices, embedded images, topology, and the packed source compare exactly with
+the reviewed pre-repair candidate. Every exported tangent is finite and unit
+length within glTF float quantization.
+
+The dense bake is real and nonblank, but same-camera front, angle, and close
+renders show dark halos along the lower roof-panel arcs and harsher patches on
+ribs and columns. The Meshy normal retains coherent relief and was selected for
+runtime assembly. The dense bake and comparison remain archived evidence rather
+than being blended into the accepted map. Known source limitations remain fused
+or crumpled foliage and visible variation in the translucent roof surface.
+
+Rebuild and review with:
+
+```sh
+rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/finish_conservatory_candidate.py
+rtk proxy timeout 300 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/repair_conservatory_candidate_tangents.py
+rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/render_conservatory_normal_comparison.py
+```
+
+The generated candidate manifest is
+`exports/floating-museum-conservatory-candidate-v8.json`; the later visual
+decision is authoritative in
+`proofs/conservatory-candidate-selection-v8.json`. Binary assets in this folder
+are covered by the local `.gitattributes` Git LFS rules.
+
+## Remaining scope
+
+The accepted candidate is ready for the V8 architecture-kit assembler. That step
+must preserve the approved V7 connector payload, material, images, node transform,
+and accessor data while replacing only `map_conservatory`. Public installation,
+catalog updates, and browser proof remain separate integration work.
 
 The checked-in normal-transform fixture passes in Blender 5.2.2 for flat and
 custom slanted normals under rotated, nonuniform scale. It compares with

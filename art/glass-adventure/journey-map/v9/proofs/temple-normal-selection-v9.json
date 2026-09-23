@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-temple-candidate-v9",
+  "decision": "accepted-for-runtime-packing",
+  "reviewedAtUtc": "2026-09-23T15:34:00Z",
+  "selectedVariant": "meshy",
+  "selectedNormalSource": "meshy",
+  "candidateManifest": {
+    "file": "exports/floating-museum-temple-candidate-v9.json",
+    "bytes": 15740,
+    "sha256": "698f9f4f2b9dac10488ccf8929ff68907d08fbbf185301a3401539e001ed000d"
+  },
+  "selectedCandidate": {
+    "file": "exports/floating-museum-temple-candidate-v9-meshy-normal.glb",
+    "bytes": 21601268,
+    "sha256": "b31cdf876f601b510ee8910a144ec9258b592d355f088b0097e5a04fd5770360",
+    "triangles": 89166,
+    "dimensionsGlTfYUpMetres": [
+      2.400000214576721,
+      2.667686939239502,
+      2.66242253780365
+    ],
+    "groundAnchorErrorMetres": 0
+  },
+  "rejectedCandidate": {
+    "file": "exports/floating-museum-temple-candidate-v9-dense-bake-normal.glb",
+    "bytes": 24113216,
+    "sha256": "d17f0ac9c5c66baafc5904cafd430aadd4f5f3ef25f69294ff111ca3b8533194",
+    "disposition": "retained as audit source; not approved for runtime packing"
+  },
+  "proofs": [
+    {
+      "file": "proofs/temple-normal-comparison-v9.json",
+      "bytes": 2560,
+      "sha256": "3c75edf54f0694282518673e4eebcab1fb4afb0a5e17e89386ec7926b40bc81b"
+    },
+    {
+      "file": "proofs/temple-normal-comparison-front-v9.png",
+      "bytes": 2363286,
+      "sha256": "b438d4efb0528392fe30d55e16b765bf64f32a4df01363ba159ac60abb53c792"
+    },
+    {
+      "file": "proofs/temple-normal-comparison-angle-v9.png",
+      "bytes": 2477706,
+      "sha256": "ab15b3ccccee0b289a76aa3a97ec318fcee3968eff714267de368a3f3166ab32"
+    }
+  ],
+  "review": {
+    "finding": "Select the Meshy-normal variant. The dense-donor normal makes the dome ribs slightly more pronounced, but introduces narrow dark streaks and uneven accents at inner arch and column edges, cornices and statue folds. The Meshy normal keeps the accepted architecture cleaner and more coherent at runtime scale.",
+    "knownLimitations": [
+      "The temple is an 89,166-triangle review-budget remesh, not hand-authored retopology.",
+      "The selected candidate retains the shared dense-donor ambient-occlusion transfer in its ORM texture; only the dense-donor normal map is rejected.",
+      "The dense-donor normal variant remains archived for audit evidence.",
+      "The repair is accepted as a substantial fidelity improvement, not as pristine source sculpture."
+    ]
+  },
+  "geometryContinuity": {
+    "positionsByteExactToAcceptedRemesh": true,
+    "indexValuesExactToAcceptedRemesh": true,
+    "indexValueCount": 267498,
+    "topologyUnchangedByPbrRetexture": true
+  },
+  "exportValidation": {
+    "finiteUnitNormals": true,
+    "maximumNormalUnitError": 1.5096508310108447e-7,
+    "finiteUnitTangents": true,
+    "maximumTangentUnitError": 0.00008062679687648178,
+    "tangentHandednessPlusOrMinusOne": true,
+    "uv0AndPbrBindingsPresent": true
+  },
+  "runtimeIntegration": "authorized by this receipt but not performed by the candidate finisher"
+}
