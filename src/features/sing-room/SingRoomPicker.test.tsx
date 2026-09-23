@@ -36,16 +36,18 @@ const COVERS: RuntimeBackgroundOption[] = [
     publicUrl: '/sing/retro-analog-studio.webp',
     premiumAsset: null,
   },
+  // A second cover that does not exist anywhere but here. The surface ships
+  // one today; the picker is still a picker, and choosing needs two.
   {
-    id: 'sing-retro-analog-studio-b',
+    id: 'sing-fixture-second-cover' as RuntimeBackgroundOption['id'],
     surface: 'sing',
-    label: 'Retro Analog Studio B',
-    description: 'The same control room, warmer',
+    label: 'Fixture Second Cover',
+    description: 'A cover this test invents',
     edition: 'core',
     focalPoint: { x: 0.5, y: 0.68 },
     treatment: 'dark',
     access: 'free',
-    publicUrl: '/sing/retro-analog-studio-b.webp',
+    publicUrl: '/sing/fixture-second-cover.webp',
     premiumAsset: null,
   },
 ]
@@ -96,7 +98,7 @@ function mount(background = controller()) {
 describe('the sing room picker', () => {
   it('offers every cover the surface has', () => {
     mount()
-    for (const label of ['Retro Analog Studio', 'Retro Analog Studio B']) {
+    for (const label of ['Retro Analog Studio', 'Fixture Second Cover']) {
       expect(screen.getByText(label)).not.toBeNull()
     }
   })
@@ -105,9 +107,9 @@ describe('the sing room picker', () => {
     const select = vi.fn(() => true)
     mount(controller(select))
     fireEvent.click(
-      screen.getByText('Retro Analog Studio B').closest('button')!,
+      screen.getByText('Fixture Second Cover').closest('button')!,
     )
-    expect(select).toHaveBeenCalledWith('sing-retro-analog-studio-b')
+    expect(select).toHaveBeenCalledWith('sing-fixture-second-cover')
   })
 
   it('says which cover was chosen, because nothing else does', () => {
@@ -116,11 +118,11 @@ describe('the sing room picker', () => {
     // covers since it shipped; this is the same sentence (review F11).
     mount()
     fireEvent.click(
-      screen.getByText('Retro Analog Studio B').closest('button')!,
+      screen.getByText('Fixture Second Cover').closest('button')!,
     )
     const live = screen.getByTestId('sing-room-picker-live')
     expect(live.getAttribute('aria-live')).toBe('polite')
-    expect(live.textContent).toBe('Retro Analog Studio B selected.')
+    expect(live.textContent).toBe('Fixture Second Cover selected.')
   })
 
   it('says nothing when the choice was refused', () => {
@@ -129,7 +131,7 @@ describe('the sing room picker', () => {
     // announcing nothing.
     mount(controller(vi.fn(() => false)))
     fireEvent.click(
-      screen.getByText('Retro Analog Studio B').closest('button')!,
+      screen.getByText('Fixture Second Cover').closest('button')!,
     )
     expect(screen.getByTestId('sing-room-picker-live').textContent).toBe('')
   })

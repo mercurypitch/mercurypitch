@@ -1906,28 +1906,35 @@ async function walkRound2(page, ctx, steps) {
     'the room picker',
   )
   await shoot(page, ctx, 'r2-room-picker')
-  await page
-    .locator('[data-testid="sing-room-picker"] button', {
-      hasText: 'Retro Analog Studio B',
-    })
-    .first()
-    .click()
-  await page.waitForFunction(
-    (was) =>
-      getComputedStyle(document.querySelector('[data-testid="sing-cover"]'))
-        .backgroundImage !== was,
-    coverBefore,
-    { timeout: RUN_TIMEOUT_MS },
-  )
-  const coverAfter = await page.evaluate(
+  // One cover since S4: the B and mock takes are gone from the catalogue and
+  // the binary. The picker and its veil slider stay, with the one entry in
+  // them — asserted as a list, because "B is not offered" and "nothing is
+  // offered" read the same to a check that only looks for B.
+  const covers = await page
+    .locator('[data-testid="sing-room-picker"] button[aria-pressed]')
+    .allTextContents()
+  if (covers.length !== 1 || !covers[0].includes('Retro Analog Studio')) {
+    throw new Error(
+      `the picker offers ${covers.length} cover(s): ${covers.map((text) => text.trim().slice(0, 40)).join(' / ')}`,
+    )
+  }
+  if (covers.some((text) => /Studio B|\(mock\)/u.test(text))) {
+    throw new Error('a retired Sing cover is still offered')
+  }
+  const coverNow = await page.evaluate(
     () =>
       getComputedStyle(document.querySelector('[data-testid="sing-cover"]'))
         .backgroundImage,
   )
-  if (!coverAfter.includes('retro-analog-studio-b')) {
-    throw new Error(`choosing B left the cover at ${coverAfter}`)
+  if (
+    coverNow !== coverBefore ||
+    !/\/sing\/retro-analog-studio(?:-portrait(?:-2x)?|-4k)?\.webp/u.test(coverNow)
+  ) {
+    throw new Error(`the room's cover is ${coverNow}`)
   }
-  steps.push('room: the header chip opens the picker, and B changes the cover')
+  steps.push(
+    'room: the header chip opens the picker, which offers the one Retro Analog Studio cover',
+  )
 
   // …and the veil slider moves the scrim it is for.
   const veil = async () =>
