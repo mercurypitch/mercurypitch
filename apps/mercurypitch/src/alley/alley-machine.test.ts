@@ -22,6 +22,18 @@ const tap = (key: 'sing' | 'ear' | 'karaoke' | 'piano'): AlleyEvent => ({
 })
 
 describe('the alley reducer', () => {
+  it('cancels an open that has not covered, and nothing else', () => {
+    const opening = run([tap('sing'), { type: 'wake' }, { type: 'enter' }])[2]
+    expect(opening.phase).toBe('opening')
+    expect(alleyReducer(opening, { type: 'cancel' }, isEnterable)).toBe(
+      ALLEY_REST,
+    )
+    const open = alleyReducer(opening, { type: 'covered' }, isEnterable)
+    expect(alleyReducer(open, { type: 'cancel' }, isEnterable)).toBe(open)
+    const alive = run([tap('sing'), { type: 'wake' }])[1]
+    expect(alleyReducer(alive, { type: 'cancel' }, isEnterable)).toBe(alive)
+  })
+
   it('walks rest, selected, alive, opening, open, back, settled', () => {
     const phases = run([
       tap('sing'),

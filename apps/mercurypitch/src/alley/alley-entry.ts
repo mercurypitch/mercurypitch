@@ -122,11 +122,26 @@ function buildClone(plan: DoorOpenPlan): HTMLDivElement {
   return clone
 }
 
+/** An open under way: the clone, and the way to call it off. */
+export interface DoorOpen {
+  readonly clone: HTMLDivElement
+  /**
+   * Call the open off before it has covered the screen: the clone goes, the
+   * clip goes back into its door (paused), and the arrival is released.
+   * False once the clone has covered — the room is being mounted by then and
+   * the open finishes on its own.
+   */
+  cancel: () => boolean
+}
+
 /**
  * Start the open. Call it inside the tap: the clip is moved and the clone is
  * in the document before the handler returns.
  */
-export function openDoor(plan: DoorOpenPlan): HTMLDivElement {
+export function openDoor(plan: DoorOpenPlan): DoorOpen {
+  // Where the clip lived, so a cancelled open can put it back.
+  const home = plan.video?.parentNode ?? null
+  const homeNext = plan.video?.nextSibling ?? null
   const clone = buildClone(plan)
   const full = fullQuad(plan.width, plan.height)
   const at = (t: number): string =>
@@ -155,9 +170,14 @@ export function openDoor(plan: DoorOpenPlan): HTMLDivElement {
   if (plan.video !== null) void plan.video.play().catch(() => undefined)
 
   let covered = false
+  let cancelled = false
+  const timers: number[] = []
+  let frame = 0
   const cover = (): void => {
-    if (covered) return
+    if (covered || cancelled) return
     covered = true
+    for (const timer of timers) window.clearTimeout(timer)
+    cancelAnimationFrame(frame)
     clone.style.transform = plan.reduced ? '' : at(1)
     clone.style.opacity = '1'
     clone.dataset.phase = 'covered'
@@ -183,25 +203,52 @@ export function openDoor(plan: DoorOpenPlan): HTMLDivElement {
     release()
   }
 
+  const cancel = (): boolean => {
+    if (covered || cancelled) return false
+    cancelled = true
+    for (const timer of timers) window.clearTimeout(timer)
+    cancelAnimationFrame(frame)
+    const video = plan.video
+    if (video !== null) {
+      video.pause()
+      video.classList.remove('mp-alley-morph__clip')
+      if (home !== null && home.isConnected) {
+        // The door is still on screen: its clip goes back where it was.
+        home.insertBefore(
+          video,
+          homeNext !== null && homeNext.parentNode === home ? homeNext : null,
+        )
+      } else {
+        video.removeAttribute('src')
+        video.load()
+      }
+    }
+    clone.remove()
+    window.clearTimeout(failsafe)
+    release()
+    return true
+  }
+
   const duration = plan.reduced ? REDUCED_MS : OPEN_MS
   // A frame loop does not run when the page is not compositing (MISTAKES.md);
   // the timer is what guarantees the room is reached.
-  window.setTimeout(cover, duration + 200)
+  timers.push(window.setTimeout(cover, duration + 200))
   if (plan.reduced) {
-    requestAnimationFrame(() => {
+    frame = requestAnimationFrame(() => {
+      if (cancelled) return
       clone.style.opacity = '1'
-      window.setTimeout(cover, REDUCED_MS)
+      timers.push(window.setTimeout(cover, REDUCED_MS))
     })
   } else {
     const t0 = performance.now()
     const tick = (now: number): void => {
-      if (covered) return
+      if (covered || cancelled) return
       const t = Math.min(1, (now - t0) / duration)
       clone.style.transform = at(easeOut(t))
-      if (t < 1) requestAnimationFrame(tick)
+      if (t < 1) frame = requestAnimationFrame(tick)
       else cover()
     }
-    requestAnimationFrame(tick)
+    frame = requestAnimationFrame(tick)
   }
-  return clone
+  return { clone, cancel }
 }

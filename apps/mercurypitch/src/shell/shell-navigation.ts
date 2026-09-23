@@ -68,12 +68,42 @@ export function selectedRailItem(
   return match?.id ?? 'more'
 }
 
+// ── A door open in flight ────────────────────────────────────
+//
+// The alley's open is a clone growing over the screen for about 420 ms, and
+// at the end of it the door's room is navigated to. Anything the user does
+// in that window wins over the door: Back puts the alley back at rest, a
+// rail tab goes where it was pointed. Both have to call the open off FIRST,
+// or the grow finishes under them and navigates away from where they went.
+
+let doorOpenCancel: (() => boolean) | null = null
+
+/**
+ * Register the open's cancel for as long as it can be called off. The
+ * returned function unregisters it (the open does, once it has covered).
+ */
+export function registerDoorOpen(cancel: () => boolean): () => void {
+  doorOpenCancel = cancel
+  return () => {
+    if (doorOpenCancel === cancel) doorOpenCancel = null
+  }
+}
+
+/** Call off an open in flight. True when there was one and it stopped. */
+export function cancelDoorOpen(): boolean {
+  const cancel = doorOpenCancel
+  doorOpenCancel = null
+  return cancel?.() === true
+}
+
 /**
  * Go to a tab, parking a run on the way out if this is the room it belongs
  * to. Sound stops and the microphone is released on the same frame, with
  * nothing asked (REQ-NHR-017).
  */
 export function goToTab(tab: ActiveTab): void {
+  // A door still growing would otherwise navigate on top of this one.
+  cancelDoorOpen()
   closeColumn()
   closeMore()
   // A pushed screen covers the whole viewport. Leaving it up while the hash
@@ -98,6 +128,7 @@ export function returnToRun(): void {
 }
 
 export type BackOutcome =
+  | 'door-open'
   | 'column'
   | 'sheet'
   | 'alert'
@@ -160,6 +191,10 @@ export function shellBackHost(): BackHost {
 
 /** Performs `resolveBack`'s answer and reports which one it was. */
 export function performBack(host: BackHost): BackOutcome {
+  // A door mid-open is the topmost thing there is: the press calls it off and
+  // the alley stays. Never 'minimize' — the app is not at its root, it is
+  // half-way into a room.
+  if (cancelDoorOpen()) return 'door-open'
   // The room's overlay, between the More sheet and a pushed screen. Asked
   // only once nothing the shell owns wants the press, and asking is closing.
   if (

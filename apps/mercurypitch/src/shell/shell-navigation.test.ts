@@ -9,7 +9,7 @@ import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { canGoBack, installHistoryDepth } from './history-depth'
 import { openColumn, openMore, pushed, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
-import { goToTab, performBack, railItems, resolveBack, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
+import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorOpen, resolveBack, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
 
 // Only for the ORDER of the first four outcomes, which never reach history.
 // Everything about leaving the room is driven through the real host below:
@@ -117,6 +117,49 @@ describe('going somewhere', () => {
     goToTab(TAB_EAR_LAB)
 
     expect(controls.park).not.toHaveBeenCalled()
+  })
+})
+
+describe('a door open in flight', () => {
+  afterEach(() => {
+    cancelDoorOpen()
+  })
+
+  it('Back calls it off and reports the press handled, at the root too', () => {
+    const cancel = vi.fn(() => true)
+    registerDoorOpen(cancel)
+    const back = host(false)
+
+    expect(performBack(back)).toBe('door-open')
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(back.minimize).not.toHaveBeenCalled()
+    expect(back.back).not.toHaveBeenCalled()
+    // Once: the next press is an ordinary one.
+    expect(performBack(back)).toBe('minimize')
+  })
+
+  it('a rail tab calls it off and still goes where it was pointed', () => {
+    const cancel = vi.fn(() => true)
+    registerDoorOpen(cancel)
+
+    goToTab(TAB_PROGRESS)
+
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(window.location.hash).toContain('progress')
+  })
+
+  it('an open that has covered is not in flight any more', () => {
+    const cancel = vi.fn(() => true)
+    const done = registerDoorOpen(cancel)
+    done()
+
+    expect(performBack(host(false))).toBe('minimize')
+    expect(cancel).not.toHaveBeenCalled()
+  })
+
+  it('an open that refuses the cancel is not a handled press', () => {
+    registerDoorOpen(() => false)
+    expect(performBack(host(false))).toBe('minimize')
   })
 })
 

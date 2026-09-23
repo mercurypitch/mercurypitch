@@ -32,8 +32,8 @@ import './alley.css'
 import { roomName } from '@/features/rooms/room-names'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { exposeForE2E } from '@/lib/test-utils'
-import { holdRoomArrival } from '@/stores/native-shell-store'
-import { goToTab } from '../shell/shell-navigation'
+import { holdRoomArrival, roomArrivalHeld } from '@/stores/native-shell-store'
+import { goToTab, registerDoorOpen } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
 import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
@@ -67,6 +67,38 @@ function dispatch(event: AlleyEvent): AlleyState {
   const next = alleyReducer(untrack(alley), event, isEnterable)
   setAlley(next)
   return next
+}
+
+// The open in flight, if any. Back and a rail tab reach it through the
+// shell's registry, a tap anywhere outside the alley (More, the corner chip)
+// through a capture listener, and the alley's own unmount directly. Whichever
+// comes first calls it off and the door goes back to rest.
+interface InFlight {
+  readonly cancel: () => boolean
+  /** Unregister and stop listening; the open is over either way. */
+  readonly done: () => void
+}
+let inFlight: InFlight | null = null
+
+function finishOpen(): void {
+  const open = inFlight
+  inFlight = null
+  open?.done()
+}
+
+function cancelOpen(): boolean {
+  const open = inFlight
+  if (open === null) return false
+  finishOpen()
+  const cancelled = open.cancel()
+  if (cancelled) dispatch({ type: 'cancel' })
+  return cancelled
+}
+
+function onPressOutside(event: Event): void {
+  const target = event.target
+  if (target instanceof Element && target.closest('.mp-alley') !== null) return
+  cancelOpen()
 }
 
 let ambientInstance: AlleyAmbient | null = null
@@ -209,8 +241,7 @@ export const RoomsAlley: Component = () => {
       spec.clip !== null && singVideo !== undefined && !singVideo.paused
         ? singVideo
         : null
-    markWelcomeSeen()
-    openDoor({
+    const handle = openDoor({
       door: layoutOf(key),
       width: size().w,
       height: size().h,
@@ -221,11 +252,24 @@ export const RoomsAlley: Component = () => {
       roomBackground: ROOM_BACKGROUND[key] ?? '[data-room-background]',
       ambientSilent,
       onCovered: () => {
+        finishOpen()
         dispatch({ type: 'covered' })
+        // The welcome is over when a room is reached, not when Enter is
+        // pressed: an open called off leaves it to be seen again.
+        markWelcomeSeen()
         goToTab(tab)
       },
       releaseArrival: release,
     })
+    const unregister = registerDoorOpen(cancelOpen)
+    document.addEventListener('pointerdown', onPressOutside, true)
+    inFlight = {
+      cancel: handle.cancel,
+      done: () => {
+        unregister()
+        document.removeEventListener('pointerdown', onPressOutside, true)
+      },
+    }
   }
 
   const onSurface = (event: MouseEvent): void => {
@@ -316,12 +360,17 @@ export const RoomsAlley: Component = () => {
       sources: ambientInstance?.sourcesStarted() ?? 0,
       reduced: reduced(),
       openMs: OPEN_MS,
+      held: roomArrivalHeld(),
     }))
   })
 
   onCleanup(() => {
+    // Unmounted under an open that has not covered (a deep link, a tab
+    // change nothing here saw coming): the open is called off, not left to
+    // navigate on top of wherever the app went.
+    if (untrack(alley).phase === 'opening') cancelOpen()
     // Leaving mid-selection (the rail, More): no sound left behind. An open
-    // in progress owns its own fade, and the clip has moved into the clone.
+    // that has covered owns its own fade, and the clip has moved into the clone.
     const phase = untrack(alley).phase
     if (phase === 'selected' || phase === 'alive' || phase === 'settling') {
       dispatch({ type: 'leave' })

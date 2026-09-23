@@ -2940,6 +2940,83 @@ async function walkAlley(browser, args, frame) {
       `alley Karaoke: Coming soon, its line, no Enter, nothing playing; ${note}`,
     )
 
+    // ── An open called off: a rail tab at +150 ms ─────────────
+    // The tab the user pointed at wins; the grow does not finish under it
+    // and navigate to Sing (S4 fix F1).
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'rail mid-open: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(150)
+    await page.locator('[data-rail-item="progress"]').click()
+    await page.waitForTimeout(1200)
+    const railMid = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    if (
+      railMid.hash !== '#/progress' ||
+      railMid.clone ||
+      railMid.alley?.held !== false ||
+      railMid.alley?.phase !== 'rest'
+    ) {
+      throw new Error(`rail mid-open: ${JSON.stringify(railMid)}`)
+    }
+    note = await goneKept(page, 'rail mid-open', {
+      gone: [
+        '[data-testid="alley-morph"]',
+        '[data-testid="sing-room"]',
+        '[data-testid="rooms-alley"]',
+      ],
+      kept: ['[data-rail-item="progress"][aria-current="page"]'],
+    })
+    steps.push(
+      `alley Enter then rail Progress at +150 ms: on ${railMid.hash}, no clone, hold ${railMid.alley.held}; ${note}`,
+    )
+    await page.locator('[data-rail-item="rooms"]').click()
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await waitPhase(page, 'rest', null, 'rail mid-open: back to Rooms')
+
+    // ── An open called off: Back ──────────────────────────────
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'Back mid-open: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(150)
+    const midBack = await pressBack(page)
+    if (midBack !== 'door-open') {
+      throw new Error(`Back mid-open answered '${midBack}'`)
+    }
+    await page.waitForTimeout(1200)
+    const backMid = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    if (
+      backMid.clone ||
+      backMid.alley?.held !== false ||
+      backMid.alley?.phase !== 'rest' ||
+      backMid.alley?.sounding !== null ||
+      (await mediaPlaying(page)) !== 0
+    ) {
+      throw new Error(`Back mid-open: ${JSON.stringify(backMid)}`)
+    }
+    note = await goneKept(page, 'Back mid-open', {
+      gone: [
+        '[data-testid="alley-morph"]',
+        '[data-testid="sing-room"]',
+        '.mp-alley__panel.is-shown',
+      ],
+      kept: [
+        '[data-testid="rooms-alley"]',
+        '[data-testid="alley-clip"]',
+        ...doorKeys,
+      ],
+    })
+    steps.push(
+      `alley Enter then Back at +150 ms: '${midBack}', the alley at rest, nothing playing, hold ${backMid.alley.held}; ${note}`,
+    )
+
     // ── Reduced motion ────────────────────────────────────────
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page

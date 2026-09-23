@@ -11,6 +11,7 @@
 //    ▲                   │  ▲                │                                    │
 //    └────tap-plate──────┘  └──tap-door──────┘ (another door)                     │
 //    └──────────settled──── settling ◀───────────────returned─────────────────────┘
+//    └──────────────────────────────────cancel─── opening (Back, a rail tab)
 //
 // A locked door selects and stops there: no wake, no enter. Tapping the
 // selected door again is Enter for a room that is open and nothing for one
@@ -46,6 +47,11 @@ export type AlleyEvent =
   | { type: 'settled' }
   /** The tab changed or the app went to the background mid-selection. */
   | { type: 'leave' }
+  /**
+   * An open called off before it covered the screen: Back, a rail tab, or
+   * the alley unmounted under it. The door goes back into the plate.
+   */
+  | { type: 'cancel' }
 
 export const ALLEY_REST: AlleyState = { phase: 'rest', door: null }
 
@@ -99,6 +105,8 @@ export function alleyReducer(
         state.phase === 'settling'
         ? ALLEY_REST
         : state
+    case 'cancel':
+      return state.phase === 'opening' ? ALLEY_REST : state
   }
 }
 
