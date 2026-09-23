@@ -14,7 +14,7 @@ from pathlib import Path
 import struct
 import sys
 import time
-from typing import Any
+from typing import Any, Callable
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -106,6 +106,16 @@ BALANCE_ENDPOINT = API_ROOT + "/openapi/v1/balance"
 EXPECTED_MINIMUM_BALANCE = 35
 MAX_MODEL_BYTES = 768 * 1024 * 1024
 MAX_TEXTURE_BYTES = 192 * 1024 * 1024
+MAX_DOWNLOAD_ATTEMPTS = 3
+
+
+class RetryableDownloadFailure(RuntimeError):
+    def __init__(
+        self, code: str, message: str, observation: dict[str, Any] | None = None
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.observation = observation or {}
 
 def fixed_request(asset: Asset) -> dict[str, Any]:
     return {
@@ -463,51 +473,241 @@ def artifact_host(url: str) -> None:
         raise ValueError("Refusing an artifact outside assets.meshy.ai")
 
 
-def download(url: str, target: Path, maximum_bytes: int) -> None:
-    artifact_host(url)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_suffix(target.suffix + ".part")
-    request = urllib.request.Request(url, headers={"User-Agent": "MercuryPitch-Meshy71-Audition/1"})
+def unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    for suffix in range(2, 10_000):
+        candidate = path.with_name(f"{path.stem}-{suffix}{path.suffix}")
+        if not candidate.exists():
+            return candidate
+    raise RuntimeError("Rejected-download evidence namespace is exhausted")
+
+
+def file_evidence(path: Path) -> dict[str, Any]:
+    evidence: dict[str, Any] = {
+        "bytes": path.stat().st_size,
+        "sha256": digest(path),
+    }
+    with path.open("rb") as handle:
+        header = handle.read(12)
+    if len(header) == 12:
+        magic, version, declared_length = struct.unpack("<4sII", header)
+        if magic == b"glTF":
+            evidence["glbHeader"] = {
+                "magicHex": magic.hex(),
+                "version": version,
+                "declaredLength": declared_length,
+            }
+    return evidence
+
+
+def record_download_rejection(
+    rejected_directory: Path,
+    label: str,
+    attempt: int,
+    observation: dict[str, Any],
+    temporary: Path,
+) -> dict[str, Any]:
+    evidence = file_evidence(temporary) if temporary.exists() else {"bytes": 0}
+    sha_suffix = str(evidence.get("sha256", "no-bytes"))[:12]
+    report_path = unique_path(
+        rejected_directory / f"{label}-attempt-{attempt}-{sha_suffix}.json"
+    )
+    report = {
+        "schema": 1,
+        "kind": "rejected-download-attempt",
+        "recordedAtUtc": utc_now(),
+        "artifact": label,
+        "attempt": attempt,
+        "maximumAttempts": MAX_DOWNLOAD_ATTEMPTS,
+        "sourceHost": "assets.meshy.ai",
+        "signedUrlPersisted": False,
+        "partialBytesPersisted": False,
+        **observation,
+        **evidence,
+    }
+    report["metadataFile"] = relative(report_path)
+    atomic_json(report_path, report)
+    return report
+
+
+def download_once(
+    url: str,
+    temporary: Path,
+    maximum_bytes: int,
+    validate: Callable[[Path], None],
+) -> dict[str, Any]:
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "MercuryPitch-Meshy71-Audition/1"}
+    )
     try:
-        with urllib.request.urlopen(request, timeout=180) as response, temporary.open("wb") as out:
-            final_url = response.geturl()
-            artifact_host(final_url)
-            total = 0
-            while True:
-                block = response.read(1024 * 1024)
-                if not block:
-                    break
-                total += len(block)
-                if total > maximum_bytes:
-                    raise RuntimeError("Provider artifact exceeded the bounded archive size")
-                out.write(block)
-        if total <= 0:
-            raise RuntimeError("Provider artifact download was empty")
-        os.replace(temporary, target)
+        response = urllib.request.urlopen(request, timeout=180)
     except urllib.error.HTTPError as exc:
-        temporary.unlink(missing_ok=True)
         raise RuntimeError(f"Artifact download failed with HTTP {exc.code}") from None
     except urllib.error.URLError:
-        temporary.unlink(missing_ok=True)
         raise RuntimeError("Artifact download failed before a response") from None
-    except Exception:
+
+    with response:
+        final_url = response.geturl()
+        artifact_host(final_url)
+        headers = response.headers
+        content_length_header = headers.get("Content-Length")
+        observation: dict[str, Any] = {
+            "httpStatus": getattr(response, "status", None),
+            "contentType": headers.get("Content-Type"),
+            "contentLength": content_length_header,
+        }
+        try:
+            expected_bytes = int(content_length_header)
+        except (TypeError, ValueError):
+            observation["reasonCode"] = "missing-content-length"
+            raise RetryableDownloadFailure(
+                "missing-content-length",
+                "Artifact response omitted a valid Content-Length",
+                observation,
+            ) from None
+        if expected_bytes <= 0:
+            observation["reasonCode"] = "invalid-content-length"
+            raise RetryableDownloadFailure(
+                "invalid-content-length",
+                "Artifact response had a nonpositive Content-Length",
+                observation,
+            )
+        if expected_bytes > maximum_bytes:
+            raise RuntimeError("Provider artifact exceeded the bounded archive size")
+        observation["expectedBytes"] = expected_bytes
+        total = 0
+        try:
+            with temporary.open("wb") as out:
+                while True:
+                    block = response.read(1024 * 1024)
+                    if not block:
+                        break
+                    total += len(block)
+                    if total > maximum_bytes:
+                        raise RuntimeError(
+                            "Provider artifact exceeded the bounded archive size"
+                        )
+                    out.write(block)
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            observation["receivedBytes"] = total
+            observation["reasonCode"] = "stream-read-failed"
+            observation["streamErrorType"] = type(exc).__name__
+            raise RetryableDownloadFailure(
+                "stream-read-failed",
+                "Artifact stream ended with a read error",
+                observation,
+            ) from None
+        observation["receivedBytes"] = total
+        if total != expected_bytes:
+            observation["reasonCode"] = "content-length-mismatch"
+            raise RetryableDownloadFailure(
+                "content-length-mismatch",
+                "Artifact stream length did not match Content-Length",
+                observation,
+            )
+        try:
+            validate(temporary)
+        except Exception as exc:
+            observation["reasonCode"] = "format-validation-failed"
+            observation["formatErrorType"] = type(exc).__name__
+            raise RetryableDownloadFailure(
+                "format-validation-failed",
+                "Artifact failed format validation before promotion",
+                observation,
+            ) from None
+        return observation
+
+
+def download(
+    url: str,
+    target: Path,
+    maximum_bytes: int,
+    validate: Callable[[Path], None],
+    rejected_directory: Path,
+    label: str,
+    on_rejection: Callable[[dict[str, Any]], None] | None = None,
+) -> list[dict[str, Any]]:
+    artifact_host(url)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    rejected_directory.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(target.suffix + ".part")
+    rejections: list[dict[str, Any]] = []
+    for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
         temporary.unlink(missing_ok=True)
-        raise
+        try:
+            download_once(url, temporary, maximum_bytes, validate)
+            os.replace(temporary, target)
+            return rejections
+        except RetryableDownloadFailure as exc:
+            observation = {
+                **exc.observation,
+                "reasonCode": exc.code,
+                "reason": str(exc),
+            }
+            if temporary.exists():
+                # Recover the non-sensitive transfer facts that were known inside
+                # download_once without retaining the signed provider URL.
+                observation["receivedBytes"] = temporary.stat().st_size
+            rejection = record_download_rejection(
+                rejected_directory, label, attempt, observation, temporary
+            )
+            rejections.append(rejection)
+            if on_rejection is not None:
+                on_rejection(rejection)
+            temporary.unlink(missing_ok=True)
+            if attempt == MAX_DOWNLOAD_ATTEMPTS:
+                raise RuntimeError(
+                    f"Artifact download failed validation after {MAX_DOWNLOAD_ATTEMPTS} attempts ({exc.code})"
+                ) from None
+        except Exception:
+            temporary.unlink(missing_ok=True)
+            raise
+    raise AssertionError("Download retry loop terminated without a result")
 
 
-def glb_report(path: Path) -> dict[str, Any]:
+def read_glb(path: Path) -> tuple[int, dict[str, Any]]:
+    size = path.stat().st_size
     with path.open("rb") as handle:
         header = handle.read(12)
         if len(header) != 12:
             raise ValueError("Archived GLB has a truncated header")
         magic, version, declared_length = struct.unpack("<4sII", header)
-        if magic != b"glTF" or version != 2 or declared_length != path.stat().st_size:
+        if magic != b"glTF" or version != 2 or declared_length != size:
             raise ValueError("Archived GLB header or declared length is invalid")
-        chunk_header = handle.read(8)
-        json_length, chunk_type = struct.unpack("<II", chunk_header)
-        if chunk_type != 0x4E4F534A:
-            raise ValueError("Archived GLB does not begin with a JSON chunk")
-        document = json.loads(handle.read(json_length).decode("utf-8"))
+        encoded_document: bytes | None = None
+        while handle.tell() < size:
+            chunk_header = handle.read(8)
+            if len(chunk_header) != 8:
+                raise ValueError("Archived GLB has a truncated chunk header")
+            chunk_length, chunk_type = struct.unpack("<II", chunk_header)
+            if chunk_length % 4 != 0 or handle.tell() + chunk_length > size:
+                raise ValueError("Archived GLB chunk length is invalid")
+            if encoded_document is None:
+                if chunk_type != 0x4E4F534A:
+                    raise ValueError("Archived GLB does not begin with a JSON chunk")
+                encoded_document = handle.read(chunk_length)
+            else:
+                handle.seek(chunk_length, os.SEEK_CUR)
+        if encoded_document is None:
+            raise ValueError("Archived GLB omitted its JSON chunk")
+    try:
+        document = json.loads(encoded_document.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ValueError("Archived GLB JSON chunk is invalid") from None
+    if not isinstance(document, dict):
+        raise ValueError("Archived GLB JSON chunk is not an object")
+    return version, document
+
+
+def validate_glb(path: Path) -> None:
+    read_glb(path)
+
+
+def glb_report(path: Path) -> dict[str, Any]:
+    version, document = read_glb(path)
     triangles = 0
     vertices = 0
     for mesh in document.get("meshes", []):
@@ -531,9 +731,18 @@ def glb_report(path: Path) -> dict[str, Any]:
     }
 
 
-def image_report(path: Path, role: str, set_index: int) -> dict[str, Any]:
+def validate_image(path: Path) -> None:
     with Image.open(path) as image:
         image.load()
+        if image.format not in {"PNG", "JPEG", "WEBP"}:
+            raise ValueError("Provider texture has an unsupported image format")
+        if image.width <= 0 or image.height <= 0:
+            raise ValueError("Provider texture has invalid dimensions")
+
+
+def image_report(path: Path, role: str, set_index: int) -> dict[str, Any]:
+    validate_image(path)
+    with Image.open(path) as image:
         return {
             "role": role,
             "setIndex": set_index,
@@ -546,6 +755,37 @@ def image_report(path: Path, role: str, set_index: int) -> dict[str, Any]:
         }
 
 
+def quarantine_invalid_model(
+    asset: Asset, task_id: str, validation_error: Exception
+) -> dict[str, Any]:
+    evidence = file_evidence(asset.model)
+    rejected_directory = asset.archive / "rejected-downloads"
+    rejected_directory.mkdir(parents=True, exist_ok=True)
+    sha_suffix = str(evidence["sha256"])[:12]
+    rejected_model = unique_path(
+        rejected_directory / f"dense-donor-existing-{sha_suffix}.glb"
+    )
+    os.replace(asset.model, rejected_model)
+    metadata_path = rejected_model.with_suffix(rejected_model.suffix + ".json")
+    report = {
+        "schema": 1,
+        "kind": "quarantined-existing-invalid-archive",
+        "recordedAtUtc": utc_now(),
+        "taskId": task_id,
+        "sourceHost": "assets.meshy.ai",
+        "signedUrlPersisted": False,
+        "originalFile": relative(asset.model),
+        "quarantinedFile": relative(rejected_model),
+        "metadataFile": relative(metadata_path),
+        "bytesPersisted": True,
+        "reasonCode": "format-validation-failed",
+        "reason": str(validation_error),
+        **evidence,
+    }
+    atomic_json(metadata_path, report)
+    return report
+
+
 def archive_outputs(
     asset: Asset,
     receipt: dict[str, Any],
@@ -554,18 +794,40 @@ def archive_outputs(
     key: str,
 ) -> dict[str, Any]:
     task_id = str(receipt["taskId"])
+    rejected_directory = asset.archive / "rejected-downloads"
+
+    def preserve_rejection(rejection: dict[str, Any]) -> None:
+        receipt.setdefault("rejectedDownloads", []).append(rejection)
+        atomic_json(asset.receipt, receipt)
+
     model_urls = task.get("model_urls")
     glb_url = model_urls.get("glb") if isinstance(model_urls, dict) else None
     if not isinstance(glb_url, str):
         raise RuntimeError("Successful Meshy task omitted model_urls.glb")
     if asset.model.exists() and receipt.get("archiveDownloadTaskId") != task_id:
         raise RuntimeError("A model already occupies the archive without a matching task receipt")
-    if not asset.model.exists():
+    model_report: dict[str, Any] | None = None
+    if asset.model.exists():
+        try:
+            validate_glb(asset.model)
+        except (OSError, ValueError) as exc:
+            preserve_rejection(quarantine_invalid_model(asset, task_id, exc))
+        else:
+            model_report = glb_report(asset.model)
+    if model_report is None:
         receipt["archiveDownloadTaskId"] = task_id
         receipt["archiveDownloadStartedAtUtc"] = utc_now()
         atomic_json(asset.receipt, receipt)
-        download(glb_url, asset.model, MAX_MODEL_BYTES)
-    model_report = glb_report(asset.model)
+        download(
+            glb_url,
+            asset.model,
+            MAX_MODEL_BYTES,
+            validate_glb,
+            rejected_directory,
+            "dense-donor",
+            preserve_rejection,
+        )
+        model_report = glb_report(asset.model)
 
     texture_reports = []
     required_roles = {"base_color", "normal", "metallic", "roughness"}
@@ -585,7 +847,15 @@ def archive_outputs(
             if suffix not in {".png", ".jpg", ".jpeg", ".webp"}:
                 suffix = ".png"
             target = asset.textures / f"set-{set_index}-{role}{suffix}"
-            download(url, target, MAX_TEXTURE_BYTES)
+            download(
+                url,
+                target,
+                MAX_TEXTURE_BYTES,
+                validate_image,
+                rejected_directory,
+                f"set-{set_index}-{role}",
+                preserve_rejection,
+            )
             texture_reports.append(image_report(target, role, set_index))
 
     provider_confirmation = {
