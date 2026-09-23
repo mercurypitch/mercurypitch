@@ -2790,9 +2790,17 @@ async function walkAlley(browser, args, frame) {
       labels: [...document.querySelectorAll('.mp-alley__key')].map((k) =>
         k.getAttribute('aria-label'),
       ),
-      position: getComputedStyle(
-        document.querySelector('[data-testid="alley-plate"]'),
-      ).objectPosition,
+      plate: (() => {
+        const b = document
+          .querySelector('[data-testid="alley-plate"]')
+          .getBoundingClientRect()
+        return [b.left, b.top, b.right, b.bottom]
+      })(),
+      earLeft: document
+        .querySelector('[data-testid="alley-door-ear"]')
+        .getBoundingClientRect().left,
+      width: window.innerWidth,
+      height: window.innerHeight,
     }))
     if (first.headline !== 'Pick a room. Make a sound.') {
       throw new Error(`first run: the headline reads "${first.headline}"`)
@@ -2809,8 +2817,20 @@ async function walkAlley(browser, args, frame) {
     ) {
       throw new Error(`first run: door labels ${JSON.stringify(first.labels)}`)
     }
-    if (first.position !== '72% 50%') {
-      throw new Error(`first run: the plate sits at ${first.position}`)
+    // Cover-fit in portrait, and the Ear Lab's jamb on screen (S4 fix F6).
+    const [pl, pt, pr, pb] = first.plate
+    if (
+      pl > 0.5 ||
+      pt > 0.5 ||
+      pr < first.width - 0.5 ||
+      pb < first.height - 0.5
+    ) {
+      throw new Error(
+        `first run: the plate does not cover ${JSON.stringify(first)}`,
+      )
+    }
+    if (first.earLeft < 0) {
+      throw new Error(`first run: the Ear Lab jamb is at x ${first.earLeft}`)
     }
     const quiet = await alleyNow(page)
     if (quiet.sources !== 0 || (await mediaPlaying(page)) !== 0) {
@@ -2820,7 +2840,7 @@ async function walkAlley(browser, args, frame) {
     if (atRest !== null) throw new Error(`first run: ${atRest}`)
     await shoot(page, ctx, 'alley-first-run')
     steps.push(
-      `alley first run: headline, six labelled doors, plate at 72%, silent, 1x plate, no door transformed, dim hidden; ${note}`,
+      `alley first run: headline, six labelled doors, plate covers, Ear Lab jamb at x ${first.earLeft.toFixed(1)}, silent, 1x plate, no door transformed, dim hidden; ${note}`,
     )
 
     // ── Select Sing ───────────────────────────────────────────
@@ -3258,6 +3278,133 @@ async function walkAlleySafeTop(browser, args, frame) {
   return [`[${frame.width}x${frame.height}] ${step}`]
 }
 
+// ── The alley on its side ────────────────────────────────────
+//
+// Orientation is unlocked (owner decision Q-4). Turned on its side the plate
+// is sized by the door band, which sits between the headline block and the
+// dock, every door whole; and a rotation in the middle of an open ends with
+// the room on the new screen and no clone left behind.
+const LANDSCAPE_FRAMES = [{ width: 852, height: 393 }]
+
+async function walkAlleyLandscape(browser, args, frame) {
+  const ctx = { ...args, frame }
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  const steps = []
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="alley-headline"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.waitForTimeout(600)
+    const m = await page.evaluate(() => {
+      const rect = (el) => el.getBoundingClientRect()
+      const keys = [...document.querySelectorAll('.mp-alley__key')].map((k) => {
+        const b = rect(k)
+        return {
+          door: k.dataset.door,
+          l: b.left,
+          t: b.top,
+          r: b.right,
+          b: b.bottom,
+        }
+      })
+      return {
+        keys,
+        top: rect(document.querySelector('[data-testid="alley-top"]')).bottom,
+        subline: rect(document.querySelector('[data-testid="alley-subline"]'))
+          .bottom,
+        band: rect(document.querySelector('[data-testid="alley-hit"]')).top,
+        dock: document.querySelector('.mp-dock')
+          ? rect(document.querySelector('.mp-dock')).top
+          : window.innerHeight,
+        width: window.innerWidth,
+      }
+    })
+    const doorTop = Math.min(...m.keys.map((k) => k.t))
+    const doorBottom = Math.max(...m.keys.map((k) => k.b))
+    const cut = m.keys.filter((k) => k.l < -0.5 || k.r > m.width + 0.5)
+    if (
+      m.keys.length !== 6 ||
+      cut.length > 0 ||
+      doorTop < m.top - 0.5 ||
+      m.band < m.top - 0.5 ||
+      doorBottom > m.dock + 0.5
+    ) {
+      throw new Error(`landscape layout: ${JSON.stringify(m)}`)
+    }
+    await shoot(page, ctx, 'alley-landscape')
+    steps.push(
+      `alley landscape: headline block ends ${Math.round(m.top)}, doors ${Math.round(doorTop)} to ${Math.round(doorBottom)}, dock ${Math.round(m.dock)}, all six whole`,
+    )
+
+    // Select Sing on its side, open it, and turn the phone upright mid-grow.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'landscape: select Sing')
+    await shoot(page, ctx, 'alley-landscape-sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(120)
+    const upright = { width: frame.height, height: frame.width }
+    await page.setViewportSize(upright)
+    await page.waitForTimeout(450)
+    const covered = await page.evaluate(() => {
+      const clone = document.querySelector('[data-testid="alley-morph"]')
+      if (clone === null) return null
+      const b = clone.getBoundingClientRect()
+      return {
+        phase: clone.dataset.phase,
+        box: [b.left, b.top, b.width, b.height].map((n) => Math.round(n)),
+      }
+    })
+    await page
+      .waitForFunction(
+        () =>
+          document.querySelector('[data-testid="alley-morph"]') === null &&
+          document.querySelector('[data-testid="sing-room"]') !== null,
+        null,
+        { timeout: 8000 },
+      )
+      .catch(() => {
+        throw new Error('rotation mid-open: the room never replaced the clone')
+      })
+    if (
+      covered !== null &&
+      (covered.box[2] !== upright.width || covered.box[3] !== upright.height)
+    ) {
+      throw new Error(
+        `rotation mid-open: the clone was ${JSON.stringify(covered)}`,
+      )
+    }
+    steps.push(
+      `alley rotation mid-open: clone ${covered === null ? 'already gone' : `${covered.phase} at ${covered.box.join(',')}`} on the ${upright.width}x${upright.height} screen, then the Sing room, no clone left`,
+    )
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  const at = `${frame.width}x${frame.height}`
+  return steps.map((step) => `[${at}] ${step}`)
+}
+
 // ── The room's microphone waits for the hand-over ───────────
 //
 // A context that has granted the microphone, and a device that remembers it
@@ -3693,6 +3840,15 @@ async function main() {
       }
     }
     if (!args.chromeOnly) {
+      for (const frame of LANDSCAPE_FRAMES) {
+        try {
+          steps.push(...(await walkAlleyLandscape(browser, args, frame)))
+        } catch (error) {
+          failures.push(
+            `[${frame.width}x${frame.height}] alley landscape: ${error.message}`,
+          )
+        }
+      }
       for (const frame of SAFE_TOP_FRAMES) {
         try {
           steps.push(...(await walkAlleySafeTop(browser, args, frame)))

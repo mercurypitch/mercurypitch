@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DoorLayout } from './alley-geometry'
-import { coverFit, easeOut, fullQuad, invert, layoutDoors, lerpQuad, matrix3d, parsePosition, pickDoor, placePanel, project, rectToQuad, tapBand, } from './alley-geometry'
+import { alleyFit, coverFit, easeOut, fullQuad, invert, layoutDoors, lerpQuad, matrix3d, parsePosition, pickDoor, placePanel, project, rectToQuad, tapBand, } from './alley-geometry'
 import type { Point, Quad } from './alley-plate'
 import { ALLEY_PLATE, DOORS } from './alley-plate'
 
@@ -327,5 +327,74 @@ describe('the card under a door', () => {
     expect(placePanel(sing, 393, 900, 140).y).toBe(Math.round(sing.y1 + 14))
     // Not enough: lifted until it clears the dock by 12 px.
     expect(placePanel(sing, 393, 746, 140).y).toBe(746 - 12 - 140)
+  })
+})
+
+describe('the crop on every phone', () => {
+  const edges = (w: number, h: number) => {
+    const doors = layoutDoors(ALLEY_PLATE, DOORS, w, h)
+    return {
+      ear: door(doors, 'ear').x0,
+      sing: door(doors, 'sing').x1,
+      guitar: door(doors, 'guitar').x1,
+    }
+  }
+
+  it.each([
+    [412, 915],
+    [384, 854],
+    [360, 800],
+    [393, 852],
+  ])("keeps the Ear Lab's left jamb on a %i x %i screen", (w, h) => {
+    const { ear, sing } = edges(w, h)
+    expect(ear).toBeGreaterThanOrEqual(0)
+    // Every door up to Sing is whole; only the Guitar's far jamb may go.
+    expect(sing).toBeLessThanOrEqual(w)
+  })
+
+  it('leaves the lab framing alone where 72% already fits', () => {
+    expect(edges(393, 852).ear).toBe(0.5)
+    expect(alleyFit(ALLEY_PLATE, DOORS, 393, 852).ox).toBeCloseTo(
+      coverFit(ALLEY_PLATE, 393, 852).ox,
+      9,
+    )
+  })
+
+  it('pulls the anchor left only as far as the jamb needs', () => {
+    // At 412 x 915 the 72% anchor put the jamb at -7 px.
+    expect(door(layoutDoors(ALLEY_PLATE, DOORS, 412, 915), 'ear').x0).toBe(0)
+    expect(coverFit(ALLEY_PLATE, 412, 915).at([228, 724])[0]).toBeLessThan(-6)
+  })
+})
+
+describe('the alley on its side', () => {
+  it.each([
+    [852, 393, 150, 320],
+    [932, 430, 96, 360],
+    [844, 390, 60, 330],
+  ])(
+    'fits the door band between the headline and the dock at %i x %i',
+    (w, h, top, bottom) => {
+      const doors = layoutDoors(ALLEY_PLATE, DOORS, w, h, { top, bottom })
+      const y0 = Math.min(...doors.map((d) => d.y0))
+      const y1 = Math.max(...doors.map((d) => d.y1))
+      const x0 = Math.min(...doors.map((d) => d.x0))
+      const x1 = Math.max(...doors.map((d) => d.x1))
+      expect(y0).toBeGreaterThanOrEqual(top + 5.9)
+      expect(y1).toBeLessThanOrEqual(bottom - 5.9)
+      // Every door whole, and the six centred.
+      expect(x0).toBeGreaterThanOrEqual(0)
+      expect(x1).toBeLessThanOrEqual(w)
+      expect(Math.abs((x0 + x1) / 2 - w / 2)).toBeLessThan(1)
+      expect(Math.abs((y0 + y1) / 2 - (top + bottom) / 2)).toBeLessThan(1)
+      // The headline block is above the band, never inside it.
+      expect(tapBand(doors, w, h, top).y).toBeGreaterThanOrEqual(top)
+    },
+  )
+
+  it('is still cover-fit in portrait, whatever the frame says', () => {
+    expect(
+      layoutDoors(ALLEY_PLATE, DOORS, 393, 852, { top: 300, bottom: 700 }),
+    ).toEqual(at393)
   })
 })

@@ -18,7 +18,7 @@ function plan(over: Partial<DoorOpenPlan> = {}): DoorOpenPlan {
     reduced: false,
     video: null,
     plateSrc: '/rooms/alley/night-rooms-hero.webp',
-    platePosition: ALLEY_PLATE.position,
+    plateBox: { x: -126, y: 0, w: 568, h: 852 },
     roomBackground: '[data-testid="sing-cover"]',
     ambientSilent: Promise.resolve(),
     onCovered: () => undefined,
@@ -125,5 +125,29 @@ describe('an open called off', () => {
     expect(roomArrivalHeld()).toBe(true)
     await vi.advanceTimersByTimeAsync(5000)
     expect(roomArrivalHeld()).toBe(false)
+  })
+})
+
+describe('a rotation mid-open', () => {
+  it('retargets the clone to the new screen', async () => {
+    const open = openDoor(plan())
+    await vi.advanceTimersByTimeAsync(150)
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    window.dispatchEvent(new Event('resize'))
+
+    expect(open.clone.style.width).toBe('852px')
+    expect(open.clone.style.height).toBe('393px')
+    await vi.advanceTimersByTimeAsync(600)
+    // Covered: the clone is the new screen, drawn without a warp.
+    expect(open.clone.dataset.phase).toBe('covered')
+    const values = open.clone.style.transform
+      .replace(/^matrix3d\(|\)$/gu, '')
+      .split(',')
+      .map(Number)
+    const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    expect(values).toHaveLength(16)
+    values.forEach((value, i) => expect(value).toBeCloseTo(identity[i], 6))
+    vi.unstubAllGlobals()
   })
 })

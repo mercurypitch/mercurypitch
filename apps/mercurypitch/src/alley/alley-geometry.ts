@@ -24,6 +24,9 @@ export interface CoverFit {
   readonly scale: number
   readonly ox: number
   readonly oy: number
+  /** The plate as drawn, CSS px: at (-ox, -oy), this wide and this tall. */
+  readonly width: number
+  readonly height: number
   /** A plate pixel to a screen CSS px, rounded as the lab rounds. */
   readonly at: (p: Point) => Point
 }
@@ -58,12 +61,95 @@ export function coverFit(plate: PlateBox, w: number, h: number): CoverFit {
   const [fx, fy] = parsePosition(plate.position)
   const ox = (plate.width * scale - w) * fx
   const oy = (plate.height * scale - h) * fy
+  return fitOf(plate, scale, ox, oy)
+}
+
+function fitOf(
+  plate: PlateBox,
+  scale: number,
+  ox: number,
+  oy: number,
+): CoverFit {
   return {
     scale,
     ox,
     oy,
+    width: plate.width * scale,
+    height: plate.height * scale,
     at: (p) => [r1(p[0] * scale - ox), r1(p[1] * scale - oy)],
   }
+}
+
+/** Where the landscape door band may go: under the headline, over the dock. */
+export interface AlleyFrame {
+  readonly top: number
+  readonly bottom: number
+}
+
+/** The doors' extent in plate pixels. */
+function doorExtent(doors: readonly DoorSpec[]): {
+  x0: number
+  x1: number
+  y0: number
+  y1: number
+} {
+  const xs = doors.flatMap((d) => d.quad.map((p) => p[0]))
+  const ys = doors.flatMap((d) => d.quad.map((p) => p[1]))
+  return {
+    x0: Math.min(...xs),
+    x1: Math.max(...xs),
+    y0: Math.min(...ys),
+    y1: Math.max(...ys),
+  }
+}
+
+/** The band's slack, as `tapBand` adds it. */
+const BAND_SLACK = 6
+
+/**
+ * Where the plate is drawn for the alley.
+ *
+ * PORTRAIT is cover-fit, and the plate's horizontal anchor is a MAXIMUM: 72%
+ * is where the lab framed the six doors at 393 x 852, but on a narrower or
+ * taller screen the same anchor slides the Ear Lab's left jamb off the edge
+ * (-7 px at 412 x 915). The anchor is pulled left just far enough to keep
+ * that jamb at x >= 0, which also shows as much of the Guitar door as the
+ * plate allows.
+ *
+ * LANDSCAPE sizes the plate by the door band instead: the band fits between
+ * `frame.top` (the headline block's bottom) and `frame.bottom` (the dock),
+ * centred in both directions. What the plate does not cover is the alley's
+ * own ground colour. Cover-fit there would put the doors a screen and a half
+ * tall behind a 393 px window.
+ */
+export function alleyFit(
+  plate: PlateBox,
+  doors: readonly DoorSpec[],
+  w: number,
+  h: number,
+  frame: AlleyFrame = { top: 0, bottom: h },
+): CoverFit {
+  const extent = doorExtent(doors)
+  if (w > h) {
+    const cover = Math.max(w / plate.width, h / plate.height)
+    const room = Math.max(1, frame.bottom - frame.top - BAND_SLACK * 2)
+    const scale = Math.min(
+      cover,
+      room / (extent.y1 - extent.y0),
+      Math.max(1, w - BAND_SLACK * 2) / (extent.x1 - extent.x0),
+    )
+    const ox = ((extent.x0 + extent.x1) / 2) * scale - w / 2
+    const oy =
+      ((extent.y0 + extent.y1) / 2) * scale - (frame.top + frame.bottom) / 2
+    return fitOf(plate, scale, ox, oy)
+  }
+  const scale = Math.max(w / plate.width, h / plate.height)
+  const [fx, fy] = parsePosition(plate.position)
+  const spare = plate.width * scale - w
+  // The largest anchor that keeps the leftmost jamb on screen.
+  const most = spare > 0 ? (extent.x0 * scale) / spare : fx
+  const anchor = Math.max(0, Math.min(fx, most))
+  return fitOf(plate, scale, spare * anchor, (plate.height * scale - h) * fy)
 }
 
 /** A 2D homography [[a,b,c],[d,e,f],[g,h,1]] as its eight free entries. */
@@ -267,8 +353,9 @@ export function layoutDoors(
   doors: readonly DoorSpec[],
   w: number,
   h: number,
+  frame?: AlleyFrame,
 ): DoorLayout[] {
-  const fit = coverFit(plate, w, h)
+  const fit = alleyFit(plate, doors, w, h, frame)
   return doors.map((door) => {
     const [a, b, c, d] = door.quad.map(fit.at)
     const quad: Quad = [a, b, c, d]

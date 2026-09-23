@@ -43,7 +43,13 @@ export interface DoorOpenPlan {
   /** The door's clip, if it is playing; it moves into the clone. */
   readonly video: HTMLVideoElement | null
   readonly plateSrc: string
-  readonly platePosition: string
+  /** Where the alley drew the plate, CSS px (`alleyFit`). */
+  readonly plateBox: {
+    readonly x: number
+    readonly y: number
+    readonly w: number
+    readonly h: number
+  }
   /** Where the room draws its background, to be waited on. */
   readonly roomBackground: string
   /** Resolves once the door's ambient has faded out and stopped. */
@@ -121,7 +127,10 @@ function buildClone(plan: DoorOpenPlan): HTMLDivElement {
     const img = document.createElement('img')
     img.alt = ''
     img.src = plan.plateSrc
-    img.style.objectPosition = plan.platePosition
+    img.style.left = `${plan.plateBox.x}px`
+    img.style.top = `${plan.plateBox.y}px`
+    img.style.width = `${plan.plateBox.w}px`
+    img.style.height = `${plan.plateBox.h}px`
     paint.appendChild(img)
     clone.appendChild(paint)
   }
@@ -177,11 +186,25 @@ function startOpen(
   const home = plan.video?.parentNode ?? null
   const homeNext = plan.video?.nextSibling ?? null
   const clone = buildClone(plan)
-  const full = fullQuad(plan.width, plan.height)
+  // The screen the clone grows to. A rotation mid-open retargets it, so the
+  // grow ends covering the new screen rather than the old one on its side.
+  let vw = plan.width
+  let vh = plan.height
+  let full = fullQuad(vw, vh)
   const at = (t: number): string =>
-    matrix3d(
-      rectToQuad(plan.width, plan.height, lerpQuad(plan.door.quad, full, t)),
-    )
+    matrix3d(rectToQuad(vw, vh, lerpQuad(plan.door.quad, full, t)))
+  const retarget = (): void => {
+    const w = window.innerWidth
+    const h = window.innerHeight
+    if (w <= 0 || h <= 0 || (w === vw && h === vh)) return
+    vw = w
+    vh = h
+    full = fullQuad(vw, vh)
+    clone.style.width = `${vw}px`
+    clone.style.height = `${vh}px`
+    if (covered && !plan.reduced) clone.style.transform = at(1)
+  }
+  window.addEventListener('resize', retarget)
 
   if (plan.reduced) {
     // No transform on the clone at all: it sits over the screen and fades in.
@@ -224,6 +247,7 @@ function startOpen(
       plan.video.load()
     }
     clone.remove()
+    window.removeEventListener('resize', retarget)
     await plan.ambientSilent.catch(() => undefined)
     window.clearTimeout(failsafe)
     release()
@@ -250,6 +274,7 @@ function startOpen(
       }
     }
     clone.remove()
+    window.removeEventListener('resize', retarget)
     window.clearTimeout(failsafe)
     release()
     return true

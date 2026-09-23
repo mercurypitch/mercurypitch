@@ -39,7 +39,7 @@ import { createAlleyAmbient } from './alley-audio'
 import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
 import { OPEN_MS, openDoor, REDUCED_MS } from './alley-entry'
 import type { DoorLayout } from './alley-geometry'
-import { dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rectToQuad, tapBand, } from './alley-geometry'
+import { alleyFit, dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rectToQuad, tapBand, } from './alley-geometry'
 import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
 import type { DoorKey } from './alley-plate'
@@ -133,13 +133,32 @@ export const RoomsAlley: Component = () => {
     w: window.innerWidth,
     h: window.innerHeight,
   })
-  const doors = createMemo(() =>
-    layoutDoors(ALLEY_PLATE, DOORS, size().w, size().h),
-  )
   // The headline block's measured bottom: the band starts under it, whatever
   // the safe area and the headline's line count make of it. A tap on the
   // words falls through to the plate and clears a selection.
   const [topBottom, setTopBottom] = createSignal(0)
+  // The dock's top. With the headline's bottom it is the room a landscape
+  // screen gives the doors (`alleyFit`).
+  const [floor, setFloor] = createSignal(window.innerHeight)
+  const fit = createMemo(() =>
+    alleyFit(ALLEY_PLATE, DOORS, size().w, size().h, {
+      top: topBottom(),
+      bottom: floor(),
+    }),
+  )
+  const doors = createMemo(() =>
+    layoutDoors(ALLEY_PLATE, DOORS, size().w, size().h, {
+      top: topBottom(),
+      bottom: floor(),
+    }),
+  )
+  /** The plate as `alleyFit` placed it, for every copy of it drawn. */
+  const plateStyle = (): Record<string, string> => ({
+    left: `${-fit().ox}px`,
+    top: `${-fit().oy}px`,
+    width: `${fit().width}px`,
+    height: `${fit().height}px`,
+  })
   const band = createMemo(() =>
     tapBand(doors(), size().w, size().h, topBottom()),
   )
@@ -250,7 +269,12 @@ export const RoomsAlley: Component = () => {
       reduced: reduced(),
       video: clip,
       plateSrc: plate(),
-      platePosition: ALLEY_PLATE.position,
+      plateBox: {
+        x: -fit().ox,
+        y: -fit().oy,
+        w: fit().width,
+        h: fit().height,
+      },
       roomBackground: ROOM_BACKGROUND[key] ?? '[data-room-background]',
       ambientSilent,
       onCovered: () => {
@@ -320,6 +344,10 @@ export const RoomsAlley: Component = () => {
         const bottom = Math.ceil(top.offsetTop + top.offsetHeight)
         if (bottom !== untrack(topBottom)) setTopBottom(bottom)
       }
+      const dock = document.querySelector('.mp-dock')
+      const dockTop =
+        dock === null ? h : Math.floor(dock.getBoundingClientRect().top)
+      if (dockTop > 0 && dockTop !== untrack(floor)) setFloor(dockTop)
     }
     measure()
     // iPad and Android rotate; the doors are recomputed, not assumed. The
@@ -406,7 +434,7 @@ export const RoomsAlley: Component = () => {
           src={plate()}
           alt=""
           decoding="async"
-          style={{ 'object-position': ALLEY_PLATE.position }}
+          style={plateStyle()}
           data-testid="alley-plate"
         />
         <div class="mp-alley__scrim" />
@@ -479,11 +507,7 @@ export const RoomsAlley: Component = () => {
                   class="mp-alley__paint"
                   style={{ 'clip-path': quadCss(door()) }}
                 >
-                  <img
-                    src={plate()}
-                    alt=""
-                    style={{ 'object-position': ALLEY_PLATE.position }}
-                  />
+                  <img src={plate()} alt="" style={plateStyle()} />
                 </div>
                 <Show when={spec.clip}>
                   {(clip) => (

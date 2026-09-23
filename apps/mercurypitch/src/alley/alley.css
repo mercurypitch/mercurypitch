@@ -72,14 +72,14 @@
   z-index: 0;
 }
 
+/* Placed by `alleyFit` (left, top, width and height inline): cover-fit in
+   portrait, sized by the door band on a screen turned on its side. */
 .mp-alley__plate img,
 .mp-alley__paint img {
   position: absolute;
-  inset: 0;
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: none;
+  max-height: none;
 }
 
 /* The kit's top scrim, so the headline reads over the fog. */
@@ -506,14 +506,21 @@
 }
 
 .mp-alley-morph > .mp-alley-morph__clip,
-.mp-alley-morph__paint,
-.mp-alley-morph__paint img {
+.mp-alley-morph__paint {
   position: absolute;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* The plate where the alley drew it (inline), so the bay does not jump. */
+.mp-alley-morph__paint img {
+  position: absolute;
+  display: block;
+  max-width: none;
+  max-height: none;
 }
 
 .mp-alley-morph__paint {
