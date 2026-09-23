@@ -2654,7 +2654,60 @@ async function doorCentre(page, key) {
 
 async function tapDoor(page, key, x = null) {
   const centre = await doorCentre(page, key)
-  await page.touchscreen.tap(x ?? centre.x, centre.y)
+  const at = { x: x ?? centre.x, y: centre.y }
+  // Where the tap was aimed and where its click landed, for the failure
+  // message: a door that did not answer is otherwise a bare phase mismatch.
+  await page.evaluate(
+    ([door, aim]) => {
+      window.__mpTap = { door, aim, click: null }
+      if (window.__mpTapWatch) return
+      window.__mpTapWatch = true
+      document.addEventListener(
+        'click',
+        (event) => {
+          if (window.__mpTap?.click !== null) return
+          const target = event.target
+          window.__mpTap.click = {
+            x: event.clientX,
+            y: event.clientY,
+            target:
+              target instanceof Element
+                ? (target.dataset.testid ?? target.className)
+                : String(target),
+          }
+        },
+        true,
+      )
+    },
+    [key, at],
+  )
+  await page.touchscreen.tap(at.x, at.y)
+}
+
+/** What a failed door step needs to say: the tap, the doors, the viewport. */
+async function tapReport(page) {
+  return page.evaluate(() => {
+    const box = (selector) => {
+      const element = document.querySelector(selector)
+      if (element === null) return null
+      const b = element.getBoundingClientRect()
+      return [b.left, b.top, b.width, b.height].map(
+        (n) => Math.round(n * 10) / 10,
+      )
+    }
+    const tapped = window.__mpTap ?? null
+    const vv = window.visualViewport
+    return {
+      tap: tapped,
+      door: tapped ? box(`[data-testid="alley-door-${tapped.door}"]`) : null,
+      alley: box('[data-testid="rooms-alley"]'),
+      band: box('[data-testid="alley-hit"]'),
+      viewport: [window.innerWidth, window.innerHeight],
+      scroll: [window.scrollX, window.scrollY],
+      visual: vv ? [vv.offsetLeft, vv.offsetTop, vv.scale] : null,
+      alleys: document.querySelectorAll('[data-testid="rooms-alley"]').length,
+    }
+  })
 }
 
 async function waitPhase(page, phase, door, what) {
@@ -2669,7 +2722,7 @@ async function waitPhase(page, phase, door, what) {
     )
     .catch(async () => {
       throw new Error(
-        `${what}: expected ${phase}/${door}, alley says ${JSON.stringify(await alleyNow(page))}`,
+        `${what}: expected ${phase}/${door}, alley says ${JSON.stringify(await alleyNow(page))}; ${JSON.stringify(await tapReport(page))}`,
       )
     })
 }
