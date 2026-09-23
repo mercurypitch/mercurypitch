@@ -76,6 +76,13 @@ on:
       # and tag builds `dev`, because only a dispatch has inputs. `production`
       # is picked by hand, for the build that goes to a store, and nothing
       # else in this repository can set it.
+      #
+      # A TAG PUSH THEREFORE UPLOADS A DEV BUILD to TestFlight. The store
+      # binary is a dispatch run ON THE TAG REF with api-target=production:
+      # upload needs `github.ref_type == 'tag'` (capacitor-app.yml, UPLOAD),
+      # so a dispatch on a branch builds production and uploads nothing.
+      # See apps/mercurypitch/.env.example, "Which db-worker the build
+      # talks to".
       api-target:
         description: 'db-worker to compile in: dev for every test build, production only for a store submission'
         type: choice
