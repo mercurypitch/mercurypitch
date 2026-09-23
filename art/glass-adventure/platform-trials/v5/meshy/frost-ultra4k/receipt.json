@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "cloudway-frost-platform-meshy71-ultra4k-v5",
+  "operation": "image-to-3d",
+  "state": "not-submitted",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v2/guides/frost-platform-guide.png",
+    "bytes": 1126005,
+    "sha256": "f79a6e0de0bf2fe87c66443aa7abd87911d0377b59e872ff4fd91c9c3c525f45",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mimeType": "image/png",
+    "authorityReceipt": {
+      "file": "art/glass-adventure/platform-trials/v2/meshy/frost/receipt.json",
+      "sha256": "972d32976d002d55d62170092551789c297a714820a751fdc5ef159b13988100"
+    }
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "4k",
+    "enable_pbr": true,
+    "texture_prompt": "Pale aquamarine ice-glass platform with translucent depth, softly frosted bevels, subtle internal bubbles, a restrained etched crystalline flower on the broad clean landing top, four compact aged-gold corner clasps, and a small number of blunt clear crystal facets below. Preserve the flat safe top and shallow 1.5:1 slab proportions. Clean PBR without baked light, snow, cracks, loose shards, extra spikes, text or scene.",
+    "image_enhancement": true,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-23",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d",
+    "officialPricing": "https://docs.meshy.ai/en/api/pricing"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWithPbr4k": 30,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 35,
+    "actualSourceOfTruth": "provider consumed_credits and balance delta"
+  },
+  "authorization": {
+    "requiredFlags": [
+      "--submit",
+      "--authorized-source-transfer"
+    ],
+    "asserted": false
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+}
