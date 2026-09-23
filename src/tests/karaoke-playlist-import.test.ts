@@ -140,6 +140,7 @@ describe('karaoke playlist export → import round-trip', () => {
       singerName: 'Ann',
       shuffleWithinGroup: true,
       vocalVolume: 0.7,
+      keyShift: -2,
     })
     await addItem(pl.id, { kind: 'session', refId: 's3', singerName: 'Bob' })
     await setPlaylistPlayMode(pl.id, 'roundRobin')
@@ -199,6 +200,7 @@ describe('karaoke playlist export → import round-trip', () => {
     expect(groupItem?.singerName).toBe('Ann')
     expect(groupItem?.shuffleWithinGroup).toBe(true)
     expect(groupItem?.vocalVolume).toBe(0.7)
+    expect(groupItem?.keyShift).toBe(-2)
 
     const sessionItem = newPl!.items.find((it) => it.kind === 'session')
     expect(sessionItem?.singerName).toBe('Bob')
