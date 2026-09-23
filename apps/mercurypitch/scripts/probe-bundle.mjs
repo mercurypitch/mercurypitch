@@ -31,6 +31,7 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
 /** Every frame the walk is repeated at. The lab's, and the owner's phone. */
 const FRAMES = [
@@ -3677,28 +3678,8 @@ async function walkFrame(browser, args, frame) {
   }
 }
 
-/**
- * Saying an upload does not happen is the one thing the UI may never do.
- *
- * The owner's rule, twice now (device round 2, R6): never name the thing that
- * does not happen — "Nothing is uploaded" puts the idea of an upload in front
- * of somebody who was not thinking about one. What is banned is the
- * REASSURANCE BY DENIAL, not the word: a feature that really does upload a
- * file the singer chose is allowed to say so, and several do.
- *
- * NO ALLOWLIST. Every `.js` in the bundle is read, including the app chunk
- * everything the singer can reach is compiled into. The first version of this
- * check named four dead sentences instead, which is how R6 shipped with
- * "Nothing is uploaded." still in the onboarding sky beat and the karaoke
- * rail: a tripwire scoped to the directory the author was editing.
- *
- * "is not uploaded", "do not upload" and a bare "No uploads." are in the
- * alternation as well (review N5): none of them is in the repository today,
- * and inside the allowlisted app chunk the word rule below would not see
- * them either.
- */
-const UPLOAD_DENIAL =
-  /\b(?:nothing|no audio|no recording|none of it)\b[^<>{};]{0,40}?\bupload(?:ed|s|ing)?\b|\bnever\s+upload(?:ed|s)?\b|\bnot\s+upload|\bno\s+uploads?\b/giu
+// UPLOAD_DENIAL, and the sentences it must and must not catch, live in
+// ./upload-denial.mjs: the walk runs its self-test before it trusts it.
 
 /**
  * Chunks that may contain the WORD at all, and why.
@@ -3753,6 +3734,9 @@ function chunkName(file) {
 }
 
 function checkNativeCopy(dir) {
+  // A tripwire that has stopped catching is worse than none: it reports
+  // clean. Its own positives and negatives first.
+  const selfTest = selfTestUploadDenial()
   const files = listJs(dir)
   if (files.length === 0) {
     throw new Error(`no .js under ${dir} to read the room's copy out of`)
@@ -3810,7 +3794,7 @@ function checkNativeCopy(dir) {
   }
 
   const words = (source.match(/upload/giu) ?? []).length
-  return `dist: nothing in ${files.length} chunks denies an upload; the word appears ${words} times, all in the ${UPLOAD_CHUNKS.length} chunks that say why`
+  return `${selfTest}; dist: nothing in ${files.length} chunks denies an upload; the word appears ${words} times, all in the ${UPLOAD_CHUNKS.length} chunks that say why`
 }
 
 /** Every .js under `dir`, recursively. */

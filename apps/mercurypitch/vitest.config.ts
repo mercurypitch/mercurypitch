@@ -26,7 +26,12 @@ const DOM_TESTS = [
   'src/alley/**/*.dom.test.ts',
   'src/alley/**/*.dom.test.tsx',
 ]
-const ALL_TESTS = ['src/**/*.test.ts', 'src/**/*.test.tsx']
+// The scripts' own rules (the probe's copy tripwire) are tested as well.
+const ALL_TESTS = [
+  'src/**/*.test.ts',
+  'src/**/*.test.tsx',
+  'scripts/**/*.test.mjs',
+]
 const SHARED_EXCLUDE = ['**/node_modules/**', '**/dist/**']
 
 export default defineConfig({

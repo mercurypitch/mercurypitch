@@ -158,3 +158,44 @@ describe('entry page model', () => {
     }
   })
 })
+
+describe('what a page without JavaScript says about the voice', () => {
+  // The six pages that listen to a voice say WHERE it is analyzed. They used
+  // to say what does not happen to it, which the owner struck: a denial puts
+  // the idea in front of somebody who was not thinking about it.
+  const VOICE_PAGES = [
+    'mirror',
+    'vocal-range-test',
+    'glass',
+    'pitch-training',
+    'voice-type-test',
+    'which-singer-has-my-vocal-range',
+  ]
+
+  it.each(VOICE_PAGES)(
+    '%s says the voice is analyzed in the browser',
+    (slug) => {
+      const page = ENTRY_PAGES.find((entry) => entry.slug === slug)
+      expect(page).toBeDefined()
+      if (page === undefined) return
+      expect(page.noscript).toMatch(
+        /needs JavaScript — your voice is analyzed (?:right )?here in your browser\.$/u,
+      )
+      expect(renderEntryPage(page)).toContain(
+        `<noscript>${page.noscript}</noscript>`,
+      )
+    },
+  )
+
+  it('is said by exactly those six', () => {
+    const saying = ENTRY_PAGES.filter((page) =>
+      page.noscript.includes('your voice is analyzed'),
+    ).map((page) => page.slug)
+    expect(saying.sort()).toEqual([...VOICE_PAGES].sort())
+  })
+
+  it('never mentions an upload, on any page', () => {
+    for (const page of ENTRY_PAGES)
+      expect(page.noscript).not.toMatch(/upload/iu)
+  })
+})
