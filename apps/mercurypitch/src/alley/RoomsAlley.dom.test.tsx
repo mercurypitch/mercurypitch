@@ -146,3 +146,52 @@ describe('a resize', () => {
     expect(el('rooms-alley').dataset.phase).toBe('alive')
   })
 })
+
+describe('the Sing door clip', () => {
+  it('loads only its metadata until Sing is picked', async () => {
+    const { el } = await mountAlley()
+    const clip = el<HTMLVideoElement>('alley-clip')
+    expect(clip.getAttribute('preload')).toBe('metadata')
+
+    el('alley-door-sing').click()
+    expect(clip.getAttribute('preload')).toBe('auto')
+    el('alley-door-karaoke').click()
+    expect(clip.getAttribute('preload')).toBe('metadata')
+  })
+
+  it('lets go of its source when the alley unmounts', async () => {
+    const { el } = await mountAlley()
+    el('alley-door-sing').click()
+    const clip = el<HTMLVideoElement>('alley-clip')
+    expect(clip.getAttribute('src')).not.toBeNull()
+    const pause = vi.mocked(HTMLMediaElement.prototype.pause)
+    const load = vi.mocked(HTMLMediaElement.prototype.load)
+    pause.mockClear()
+    load.mockClear()
+
+    view?.unmount()
+    view = null
+
+    expect(pause.mock.contexts).toContain(clip)
+    expect(clip.getAttribute('src')).toBeNull()
+    expect(load.mock.contexts).toContain(clip)
+  })
+
+  it('is left to the open once the clone has covered', async () => {
+    const { el } = await mountAlley()
+    el('alley-door-sing').click()
+    const clip = el<HTMLVideoElement>('alley-clip')
+    // A clip that is playing is the one the open carries into its clone.
+    Object.defineProperty(clip, 'paused', { value: false })
+    el('alley-enter').click()
+    expect(clip.closest('[data-testid="alley-morph"]')).not.toBeNull()
+    // Covered: the room is navigated to and the alley unmounts under it.
+    await vi.advanceTimersByTimeAsync(700)
+    expect(el('rooms-alley').dataset.phase).toBe('open')
+
+    view?.unmount()
+    view = null
+
+    expect(clip.getAttribute('src')).not.toBeNull()
+  })
+})

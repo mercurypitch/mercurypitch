@@ -414,6 +414,16 @@ export const RoomsAlley: Component = () => {
       dispatch({ type: 'leave' })
       void quiet(REDUCED_MS)
     }
+    // The Sing door's clip lets go of its decoder: an unmounted <video> with
+    // a src keeps its buffer and its hardware decoder until it is collected.
+    // Not while it is in the clone: that one is the open's, and the open
+    // unloads it once the room has drawn.
+    const clip = singVideo
+    if (clip !== undefined && clip.closest('.mp-alley-morph') === null) {
+      clip.pause()
+      clip.removeAttribute('src')
+      clip.load()
+    }
   })
 
   const quadCss = (door: DoorLayout): string =>
@@ -532,7 +542,7 @@ export const RoomsAlley: Component = () => {
                         muted
                         loop
                         playsinline
-                        preload="auto"
+                        preload={selected() === 'sing' ? 'auto' : 'metadata'}
                         disablepictureinpicture
                         tabIndex={-1}
                         data-testid="alley-clip"
