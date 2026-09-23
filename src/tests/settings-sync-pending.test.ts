@@ -254,3 +254,36 @@ describe('the in-app developer console is device-local', () => {
     expect(state.updates).toHaveLength(0)
   })
 })
+
+describe("the native app's install facts are device-local", () => {
+  // A welcome seen on one phone is not seen on the next, and a microphone
+  // granted to one install is not granted to another: synced, the second
+  // phone would skip its welcome and open the microphone on arrival.
+  const KEYS = [
+    'pitchperfect_native_welcome_seen',
+    'pitchperfect_sing_mic_granted',
+  ]
+
+  it.each(KEYS)('%s is not applied from the account', async (key) => {
+    state.rows = [
+      { id: 'r1', userId: 'u', key, value: 'true' },
+      { id: 'r2', userId: 'u', key: THEME, value: '"midnight"' },
+    ]
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(localStorage.getItem(key)).toBeNull()
+    expect(localStorage.getItem(THEME)).toBe('"midnight"')
+  })
+
+  it.each(KEYS)('%s is never uploaded', async (key) => {
+    leaveUnsent('singer-a', { [key]: 'true' })
+
+    await pullCloudSettings()
+    await settle()
+
+    expect(state.creates).toHaveLength(0)
+    expect(state.updates).toHaveLength(0)
+  })
+})

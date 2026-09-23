@@ -45,6 +45,12 @@ const EXCLUDED_KEYS = new Set([
   // plugged in. Syncing it put a debug panel on every other signed-in device
   // and wrote a cloud row for a debugging affordance.
   'pitchperfect_developer_console',
+  // The native app's two first-run facts are about THIS install: that its
+  // welcome has been walked through, and that its operating system granted
+  // the microphone. Synced, a second phone would skip its own welcome and
+  // open the microphone on arrival without ever having been asked.
+  'pitchperfect_native_welcome_seen',
+  'pitchperfect_sing_mic_granted',
 ])
 
 /**
