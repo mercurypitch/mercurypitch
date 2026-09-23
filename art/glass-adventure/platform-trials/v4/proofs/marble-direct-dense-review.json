@@ -1,0 +1,256 @@
+{
+  "schema": 1,
+  "asset": "cloudway-marble-ultra-v4-direct-dense-review",
+  "decision": "rejected at matched clay/PBR visual gate; source-only retention",
+  "sources": {
+    "dense": {
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+      "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb"
+    },
+    "direct4k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-4k-blender.glb",
+      "sha256": "4e2edb1e09b96d9b6eef09a5b0bff79000281212ff7032cebba18da56a5b640a"
+    },
+    "direct2k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-2k-blender.glb",
+      "sha256": "a21f976eea18591bbb25eb26b5b67598584bf47d7e4aa597e347c624030f6646"
+    },
+    "buildReport": {
+      "file": "art/glass-adventure/platform-trials/v4/production/cloudway-marble-runtime-v4-build-rejected-238k-direct-visual.json",
+      "sha256": "eac0443e9c787e9fbda6a89796f9f3899f1b875d10fda17a9122955b611ec53f"
+    }
+  },
+  "clay": {
+    "purpose": "Matched dense-versus-direct geometry and exported split-normal comparison. No texture normal is attached to either neutral-clay material.",
+    "proofs": [
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-dense-clay-front.png",
+        "bytes": 2518054,
+        "sha256": "e349962c1dd3f65d83a5eba783302c9f658ad0dbab89a49edf91e0cbc66e7d42",
+        "dimensions": [
+          2400,
+          900
+        ]
+      },
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-dense-clay-three-quarter.png",
+        "bytes": 2695825,
+        "sha256": "ffb9efe824028caa659d5e1f3a3a50023b0e1acc18c4d0263f12ab0e32633d1a",
+        "dimensions": [
+          2400,
+          900
+        ]
+      }
+    ],
+    "denseFit": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "sourceLandingBlenderZ": 0.139629545,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.951567748,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        },
+        "positiveHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.878735741,
+        "aboveContact": 0.734636201
+      }
+    },
+    "regionRetention": {
+      "method": "Triangles with any vertex inside each fitted coordinate region; regions overlap.",
+      "dense": {
+        "triangles": 1256556,
+        "regions": {
+          "lowerOrnament": {
+            "triangles": 472165,
+            "share": 0.37576120761828363
+          },
+          "frontBackArchitecture": {
+            "triangles": 568144,
+            "share": 0.4521437962175979
+          },
+          "endArchitecture": {
+            "triangles": 810137,
+            "share": 0.6447281299042781
+          },
+          "raisedRimOrFoliage": {
+            "triangles": 280231,
+            "share": 0.22301513024489159
+          },
+          "broadCentralSlab": {
+            "triangles": 115845,
+            "share": 0.09219246893890921
+          }
+        }
+      },
+      "direct": {
+        "triangles": 238000,
+        "regions": {
+          "lowerOrnament": {
+            "triangles": 72140,
+            "share": 0.303109243697479
+          },
+          "frontBackArchitecture": {
+            "triangles": 98696,
+            "share": 0.4146890756302521
+          },
+          "endArchitecture": {
+            "triangles": 166404,
+            "share": 0.6991764705882353
+          },
+          "raisedRimOrFoliage": {
+            "triangles": 35216,
+            "share": 0.14796638655462185
+          },
+          "broadCentralSlab": {
+            "triangles": 20347,
+            "share": 0.08549159663865546
+          }
+        }
+      },
+      "directToDenseTriangleRatio": {
+        "lowerOrnament": 0.15278557284000296,
+        "frontBackArchitecture": 0.1737165225717424,
+        "endArchitecture": 0.2054022961548479,
+        "raisedRimOrFoliage": 0.1256677526754713,
+        "broadCentralSlab": 0.17563986361085934
+      },
+      "directShareToDenseShare": {
+        "lowerOrnament": 0.8066539002753897,
+        "frontBackArchitecture": 0.917161927464951,
+        "endArchitecture": 1.084451628769542,
+        "raisedRimOrFoliage": 0.6634813808020149,
+        "broadCentralSlab": 0.9273164893252394
+      }
+    }
+  },
+  "pbr": {
+    "purpose": "Matched provider dense 4K versus exact direct 4K and 2K raw GLBs. Direct variants retain the provider normal directly; no selected-to-active bake or AO.",
+    "proofs": [
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-pbr-front.png",
+        "bytes": 2507439,
+        "sha256": "9ed93c9085fde6e0f7e01b0e30779cd86b4917a27943603bba65f6fe33ec0d48",
+        "dimensions": [
+          2400,
+          900
+        ]
+      },
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-pbr-three-quarter.png",
+        "bytes": 2791021,
+        "sha256": "d0331e1794d25984e613ea0d516eab11aa8ffd2e4090dc81df3b1d69479d75b1",
+        "dimensions": [
+          2400,
+          900
+        ]
+      },
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-pbr-front-close.png",
+        "bytes": 2613441,
+        "sha256": "030ab8db783c09ef514cb88a51e73e5a8c8124951d5d7d4bda850a4d0727e500",
+        "dimensions": [
+          2400,
+          900
+        ]
+      }
+    ],
+    "textureMemory": {
+      "4k": {
+        "assumption": "RGBA8 GPU allocation for base, normal and ORM; complete mip chain adds 1/3",
+        "textureDimensions": {
+          "baseColor": [
+            4096,
+            4096
+          ],
+          "normal": [
+            4096,
+            4096
+          ],
+          "orm": [
+            2048,
+            2048
+          ]
+        },
+        "decodedBaseLevelBytes": 150994944,
+        "decodedBaseLevelMiB": 144.0,
+        "decodedMipChainBytes": 201326592,
+        "decodedMipChainMiB": 192.0
+      },
+      "2k": {
+        "assumption": "RGBA8 GPU allocation for base, normal and ORM; complete mip chain adds 1/3",
+        "textureDimensions": {
+          "baseColor": [
+            2048,
+            2048
+          ],
+          "normal": [
+            2048,
+            2048
+          ],
+          "orm": [
+            2048,
+            2048
+          ]
+        },
+        "decodedBaseLevelBytes": 50331648,
+        "decodedBaseLevelMiB": 48.0,
+        "decodedMipChainBytes": 67108864,
+        "decodedMipChainMiB": 64.0
+      }
+    }
+  },
+  "render": {
+    "engine": "Blender Eevee",
+    "resolution": [
+      2400,
+      900
+    ],
+    "camera": "matched orthographic",
+    "lighting": "matched warm/cool grazing area lights",
+    "blender": "5.2.2 LTS"
+  },
+  "rebuild": "rtk proxy timeout 900 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/render_marble_dense_direct_review.py"
+}

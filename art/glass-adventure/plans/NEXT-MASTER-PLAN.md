@@ -8,7 +8,20 @@ Code and production sources are preserved in draft PR #807 on
 
 ## Where we are
 
-Current work is the owner-approved [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md): fit the accepted marble source for Cloudway, audition new frost/moving sources, and judge the benefit in the existing mini-game before applying it to the main galleries. The [melody-ribbon learning specification](./MELODY-RIBBON-LEARNING-SPEC.md) and [listening visualizer](../melody-ribbon/v1/index.html) are saved at `5db8a2f9`. Four original three-to-ten-note phrases share one curve for reference audio and the animated ribbon. Responsive mouse/keyboard/touch review passes. This audition does not record or judge a microphone; those stages remain explicitly sequenced in the specification.
+The bounded [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md)
+has a clear outcome: the dense marble source is useful, but neither the 90k
+remesh/bake nor the direct 238k derivative passes visual review. Both are
+archived, and public Cloudway platforms remain V3. Next, isolate the first
+destructive production step and prove one slab/arch region before another
+whole-platform build. Two new frost/moving source auditions are prepared but
+await specific external-upload approval; no V5 task or charge exists.
+
+The [melody-ribbon learning specification](./MELODY-RIBBON-LEARNING-SPEC.md) and
+[listening visualizer](../melody-ribbon/v1/index.html) are saved at `5db8a2f9`.
+Four original three-to-ten-note phrases share one curve for reference audio and
+the animated ribbon. Responsive mouse/keyboard/touch review passes. This
+audition does not record or judge a microphone; those stages remain explicitly
+sequenced in the specification.
 
 The [museum component repair](./MUSEUM-COMPONENT-REPAIR-2026-09-22.md)
 is integrated and has passed source, Blender and actual-browser review. V8
@@ -40,9 +53,15 @@ API support is verified; both installed MCP 0.4.0 and latest published 0.5.2 lac
 explicit 7.1/4K geometry parameters. The API was used for the trial; MCP `latest` may resolve to 7.1 but cannot pin
 all these controls. The independent explicit
 7.1/Ultra 4K source trial succeeded for 35 credits; its dense model and actual
-4K base/normal maps are archived in platform-trials/v4. Source comparison accepts it as a cleaner high-detail donor; it needs fitting
-to the current landing envelope before a runtime bake. No platform runtime
-replacement or new level has been added.
+4K base/normal maps are archived in platform-trials/v4. Source comparison accepts
+it as a cleaner high-detail donor. A further 5-credit provider remesh and a
+local direct simplification were fitted to the landing envelope; both fail
+matched clay/PBR review. The direct derivative passes structural validation,
+which does not establish visual fidelity. Source plus remesh cost 40 credits;
+no platform runtime replacement or new level has been added. The existing
+game baseline is 63 draw calls and 1,125,424 pass-inclusive submitted triangles
+per frame interval; candidate performance is unmeasured because it failed the
+earlier visual gate.
 
 The shared campaign contains First Light, Glassworks Journey, Twin Galleries
 and Resonance Conservatory, with separate progress and the Journey rewards

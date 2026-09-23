@@ -1,0 +1,3518 @@
+{
+  "schema": 1,
+  "asset": "cloudway-marble-ultra-v4",
+  "inputs": {
+    "sourceBlend": {
+      "file": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+      "sha256": "a1b8ff6e2ab588b4b49d84dd5711aa8d7face0454ca88c9d6bb078b7126d20ec"
+    },
+    "normal": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-normal-geometry-only-2k.png",
+      "sha256": "a350d8132a33367d92aa2ea0e0ad1860fb71e160011b28c7b0d2711961002d44"
+    }
+  },
+  "method": "Sample every low polygon at its UV centroid, compare its averaged exported split normal with the nearest dense face, and reproduce the production automatic-cage ray as an 18mm outward origin casting 93mm inward.",
+  "regions": {
+    "negativeTotal": 15209,
+    "negativeGeometricUp": 4235,
+    "negativeExactContact": 3271,
+    "negativeFrontFacing": 2844
+  },
+  "groups": {
+    "negative": {
+      "polygonCount": 15209,
+      "nearestDistanceMetres": {
+        "p0": 0.0,
+        "p25": 0.00014519,
+        "p50": 0.00032121,
+        "p75": 0.00084873,
+        "p90": 0.00332261,
+        "p95": 0.00655914,
+        "p99": 0.01387582,
+        "p100": 0.02779443
+      },
+      "nearestNormalDot": {
+        "p0": -0.99999944,
+        "p25": 0.6736134,
+        "p50": 0.93014991,
+        "p75": 0.98359713,
+        "p90": 0.99705351,
+        "p95": 0.99945318,
+        "p99": 0.99999928,
+        "p100": 1.00000001
+      },
+      "nearestOppositeOrientationCount": 2420,
+      "productionRayMisses": 180,
+      "productionRayDistanceMetres": {
+        "p0": 5.2e-07,
+        "p25": 0.00340262,
+        "p50": 0.00729217,
+        "p75": 0.0127181,
+        "p90": 0.01769242,
+        "p95": 0.01815301,
+        "p99": 0.02783859,
+        "p100": 0.08812611
+      },
+      "productionRayNormalDot": {
+        "p0": -0.99999944,
+        "p25": -0.9180269,
+        "p50": -0.76181299,
+        "p75": -0.43051025,
+        "p90": 0.83671213,
+        "p95": 0.95912492,
+        "p99": 0.99557863,
+        "p100": 1.0
+      },
+      "productionRayOppositeOrientationCount": 12430
+    },
+    "positive": {
+      "polygonCount": 74775,
+      "nearestDistanceMetres": {
+        "p0": 0.0,
+        "p25": 0.00012984,
+        "p50": 0.00027345,
+        "p75": 0.00048274,
+        "p90": 0.00121073,
+        "p95": 0.00235378,
+        "p99": 0.0075694,
+        "p100": 0.02729269
+      },
+      "nearestNormalDot": {
+        "p0": -0.99997939,
+        "p25": 0.86319889,
+        "p50": 0.957802,
+        "p75": 0.99017543,
+        "p90": 0.99811224,
+        "p95": 0.99953548,
+        "p99": 0.99999952,
+        "p100": 1.00000001
+      },
+      "nearestOppositeOrientationCount": 4554,
+      "productionRayMisses": 337,
+      "productionRayDistanceMetres": {
+        "p0": 1e-08,
+        "p25": 0.01742747,
+        "p50": 0.01776111,
+        "p75": 0.01803345,
+        "p90": 0.01833817,
+        "p95": 0.01867199,
+        "p99": 0.02560041,
+        "p100": 0.09008642
+      },
+      "productionRayNormalDot": {
+        "p0": -0.99986468,
+        "p25": 0.86369506,
+        "p50": 0.95685217,
+        "p75": 0.98961231,
+        "p90": 0.99781562,
+        "p95": 0.99932956,
+        "p99": 0.99999332,
+        "p100": 1.00000001
+      },
+      "productionRayOppositeOrientationCount": 2729
+    }
+  },
+  "negativeExamples": [
+    {
+      "polygon": 312,
+      "tangentZ": -0.8666666666666667,
+      "center": [
+        -0.88382,
+        -0.3350295,
+        0.0438267
+      ],
+      "lowSplitNormal": [
+        -0.3695534,
+        0.0080026,
+        0.929175
+      ],
+      "nearestDistance": 0.00014281,
+      "nearestNormalDot": 0.9928389,
+      "nearestDensePolygon": 3541
+    },
+    {
+      "polygon": 493,
+      "tangentZ": -0.8666666666666667,
+      "center": [
+        -0.8822032,
+        -0.331228,
+        0.0446434
+      ],
+      "lowSplitNormal": [
+        -0.2955859,
+        0.2182412,
+        0.9300536
+      ],
+      "nearestDistance": 0.00011837,
+      "nearestNormalDot": 0.96613745,
+      "nearestDensePolygon": 5730
+    },
+    {
+      "polygon": 671,
+      "tangentZ": -0.9921568627450981,
+      "center": [
+        -0.8814187,
+        -0.1360257,
+        0.0342114
+      ],
+      "lowSplitNormal": [
+        0.8703734,
+        0.4549181,
+        0.1884138
+      ],
+      "nearestDistance": 0.00036307,
+      "nearestNormalDot": 0.26507209,
+      "nearestDensePolygon": 6266
+    },
+    {
+      "polygon": 691,
+      "tangentZ": -0.8745098039215686,
+      "center": [
+        -0.8789498,
+        -0.3276099,
+        0.0588974
+      ],
+      "lowSplitNormal": [
+        -0.1808046,
+        -0.0595669,
+        -0.9817135
+      ],
+      "nearestDistance": 4.051e-05,
+      "nearestNormalDot": 0.99781918,
+      "nearestDensePolygon": 8956
+    },
+    {
+      "polygon": 701,
+      "tangentZ": -0.8980392156862745,
+      "center": [
+        -0.8779027,
+        -0.3299277,
+        0.0590099
+      ],
+      "lowSplitNormal": [
+        -0.254647,
+        -0.0020268,
+        -0.967032
+      ],
+      "nearestDistance": 4.32e-06,
+      "nearestNormalDot": 0.99603559,
+      "nearestDensePolygon": 10307
+    },
+    {
+      "polygon": 703,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8800313,
+        -0.3330524,
+        0.0451655
+      ],
+      "lowSplitNormal": [
+        -0.2520364,
+        0.1439047,
+        0.9569582
+      ],
+      "nearestDistance": 2.265e-05,
+      "nearestNormalDot": 0.97803762,
+      "nearestDensePolygon": 8615
+    },
+    {
+      "polygon": 704,
+      "tangentZ": -0.8745098039215686,
+      "center": [
+        -0.8779706,
+        -0.3318777,
+        0.0449678
+      ],
+      "lowSplitNormal": [
+        -0.2355808,
+        0.3115807,
+        0.9205537
+      ],
+      "nearestDistance": 3.897e-05,
+      "nearestNormalDot": 0.93341447,
+      "nearestDensePolygon": 8899
+    },
+    {
+      "polygon": 813,
+      "tangentZ": -0.7960784313725491,
+      "center": [
+        -0.8757762,
+        -0.350704,
+        0.0559776
+      ],
+      "lowSplitNormal": [
+        -0.2007798,
+        -0.0013376,
+        -0.9796355
+      ],
+      "nearestDistance": 0.00037004,
+      "nearestNormalDot": 0.99928473,
+      "nearestDensePolygon": 9736
+    },
+    {
+      "polygon": 839,
+      "tangentZ": -0.2941176470588235,
+      "center": [
+        -0.8777838,
+        -0.371122,
+        0.035847
+      ],
+      "lowSplitNormal": [
+        -0.4726009,
+        -0.7028688,
+        0.5316237
+      ],
+      "nearestDistance": 0.00013794,
+      "nearestNormalDot": 0.96162388,
+      "nearestDensePolygon": 9998
+    },
+    {
+      "polygon": 991,
+      "tangentZ": -0.35686274509803917,
+      "center": [
+        -0.8751143,
+        -0.3719149,
+        0.0365753
+      ],
+      "lowSplitNormal": [
+        -0.3296709,
+        -0.7768297,
+        0.5365191
+      ],
+      "nearestDistance": 0.00019463,
+      "nearestNormalDot": 0.9096453,
+      "nearestDensePolygon": 12470
+    },
+    {
+      "polygon": 1073,
+      "tangentZ": -0.8352941176470589,
+      "center": [
+        -0.876798,
+        -0.3441166,
+        0.0571788
+      ],
+      "lowSplitNormal": [
+        -0.2306056,
+        0.0892583,
+        -0.9689447
+      ],
+      "nearestDistance": 0.00033961,
+      "nearestNormalDot": 0.99360263,
+      "nearestDensePolygon": 11730
+    },
+    {
+      "polygon": 1082,
+      "tangentZ": -0.9529411764705882,
+      "center": [
+        -0.8741588,
+        -0.1674235,
+        0.0277264
+      ],
+      "lowSplitNormal": [
+        0.3332637,
+        0.1939194,
+        -0.9226757
+      ],
+      "nearestDistance": 0.00027258,
+      "nearestNormalDot": 0.99872653,
+      "nearestDensePolygon": 13091
+    },
+    {
+      "polygon": 1117,
+      "tangentZ": -0.9215686274509804,
+      "center": [
+        -0.8723204,
+        -0.351265,
+        0.0556107
+      ],
+      "lowSplitNormal": [
+        -0.0441659,
+        -0.0629278,
+        -0.9970403
+      ],
+      "nearestDistance": 0.00043617,
+      "nearestNormalDot": 0.99897091,
+      "nearestDensePolygon": 13809
+    },
+    {
+      "polygon": 1123,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.871306,
+        -0.3418904,
+        0.0567773
+      ],
+      "lowSplitNormal": [
+        -0.1963221,
+        0.0539483,
+        -0.9790542
+      ],
+      "nearestDistance": 0.00033071,
+      "nearestNormalDot": 0.98386695,
+      "nearestDensePolygon": 17507
+    },
+    {
+      "polygon": 1133,
+      "tangentZ": -0.5215686274509803,
+      "center": [
+        -0.8827009,
+        0.530389,
+        0.0070893
+      ],
+      "lowSplitNormal": [
+        -0.0632913,
+        -0.0220607,
+        -0.9977513
+      ],
+      "nearestDistance": 0.00050963,
+      "nearestNormalDot": 0.98983055,
+      "nearestDensePolygon": 4983
+    },
+    {
+      "polygon": 1168,
+      "tangentZ": -0.8745098039215686,
+      "center": [
+        -0.8739743,
+        -0.3311914,
+        0.0455834
+      ],
+      "lowSplitNormal": [
+        -0.3329797,
+        0.3496623,
+        0.8757059
+      ],
+      "nearestDistance": 0.00012164,
+      "nearestNormalDot": 0.92563693,
+      "nearestDensePolygon": 12926
+    },
+    {
+      "polygon": 1169,
+      "tangentZ": -0.8431372549019608,
+      "center": [
+        -0.8734091,
+        -0.3326837,
+        0.0467827
+      ],
+      "lowSplitNormal": [
+        -0.3989062,
+        0.1824825,
+        0.8986512
+      ],
+      "nearestDistance": 0.00057702,
+      "nearestNormalDot": 0.94154559,
+      "nearestDensePolygon": 13552
+    },
+    {
+      "polygon": 1292,
+      "tangentZ": -0.9921568627450981,
+      "center": [
+        -0.8717914,
+        -0.4182211,
+        0.0440981
+      ],
+      "lowSplitNormal": [
+        0.8014827,
+        0.0700049,
+        -0.5939063
+      ],
+      "nearestDistance": 0.00023817,
+      "nearestNormalDot": 0.8974543,
+      "nearestDensePolygon": 15681
+    },
+    {
+      "polygon": 1338,
+      "tangentZ": -0.7960784313725491,
+      "center": [
+        -0.872839,
+        -0.3534979,
+        0.0559068
+      ],
+      "lowSplitNormal": [
+        -0.0294313,
+        -0.4262067,
+        -0.9041469
+      ],
+      "nearestDistance": 0.00046692,
+      "nearestNormalDot": 0.94305633,
+      "nearestDensePolygon": 13809
+    },
+    {
+      "polygon": 1438,
+      "tangentZ": -0.615686274509804,
+      "center": [
+        -0.8709152,
+        -0.3779562,
+        0.0449367
+      ],
+      "lowSplitNormal": [
+        0.1910736,
+        0.9336415,
+        -0.3029925
+      ],
+      "nearestDistance": 0.00016672,
+      "nearestNormalDot": -0.16436667,
+      "nearestDensePolygon": 17232
+    },
+    {
+      "polygon": 1439,
+      "tangentZ": -0.9843137254901961,
+      "center": [
+        -0.8684983,
+        -0.1665193,
+        0.030966
+      ],
+      "lowSplitNormal": [
+        0.4347574,
+        0.0743712,
+        -0.8974714
+      ],
+      "nearestDistance": 0.00020789,
+      "nearestNormalDot": 0.978967,
+      "nearestDensePolygon": 19561
+    },
+    {
+      "polygon": 1499,
+      "tangentZ": -0.9921568627450981,
+      "center": [
+        -0.8698451,
+        -0.1763714,
+        0.0278712
+      ],
+      "lowSplitNormal": [
+        0.2865821,
+        0.0476303,
+        -0.956871
+      ],
+      "nearestDistance": 0.00043501,
+      "nearestNormalDot": 0.99539147,
+      "nearestDensePolygon": 18205
+    },
+    {
+      "polygon": 1501,
+      "tangentZ": -0.8980392156862745,
+      "center": [
+        -0.8670405,
+        -0.3611055,
+        0.0445204
+      ],
+      "lowSplitNormal": [
+        -0.0687749,
+        0.7083941,
+        0.7024583
+      ],
+      "nearestDistance": 0.00033893,
+      "nearestNormalDot": 0.89257084,
+      "nearestDensePolygon": 21291
+    },
+    {
+      "polygon": 1504,
+      "tangentZ": -0.6313725490196078,
+      "center": [
+        -0.8707504,
+        -0.4055505,
+        0.0473737
+      ],
+      "lowSplitNormal": [
+        0.955821,
+        -0.0822318,
+        0.2822129
+      ],
+      "nearestDistance": 0.00051068,
+      "nearestNormalDot": 0.9024865,
+      "nearestDensePolygon": 18277
+    },
+    {
+      "polygon": 1560,
+      "tangentZ": -0.7803921568627451,
+      "center": [
+        -0.8683247,
+        -0.3296569,
+        0.0477609
+      ],
+      "lowSplitNormal": [
+        -0.3980135,
+        0.3059219,
+        0.8648683
+      ],
+      "nearestDistance": 3.113e-05,
+      "nearestNormalDot": 0.94935087,
+      "nearestDensePolygon": 19649
+    },
+    {
+      "polygon": 1661,
+      "tangentZ": -0.388235294117647,
+      "center": [
+        -0.8681648,
+        -0.3676361,
+        0.0416932
+      ],
+      "lowSplitNormal": [
+        -0.1822297,
+        0.9678129,
+        -0.1735815
+      ],
+      "nearestDistance": 0.00017797,
+      "nearestNormalDot": 0.80823583,
+      "nearestDensePolygon": 20328
+    },
+    {
+      "polygon": 1666,
+      "tangentZ": -0.9215686274509804,
+      "center": [
+        -0.8682983,
+        -0.3683969,
+        0.0439063
+      ],
+      "lowSplitNormal": [
+        0.8217683,
+        -0.1832674,
+        0.5395461
+      ],
+      "nearestDistance": 0.00011065,
+      "nearestNormalDot": 0.99801306,
+      "nearestDensePolygon": 20437
+    },
+    {
+      "polygon": 1709,
+      "tangentZ": -0.8431372549019608,
+      "center": [
+        -0.8652208,
+        -0.2273588,
+        0.0258071
+      ],
+      "lowSplitNormal": [
+        -0.1402595,
+        0.2069691,
+        -0.9682412
+      ],
+      "nearestDistance": 0.00021329,
+      "nearestNormalDot": 0.98841072,
+      "nearestDensePolygon": 22069
+    },
+    {
+      "polygon": 1717,
+      "tangentZ": -0.8196078431372549,
+      "center": [
+        -0.865836,
+        0.0648104,
+        0.0242914
+      ],
+      "lowSplitNormal": [
+        0.0600534,
+        -0.0726654,
+        -0.9955468
+      ],
+      "nearestDistance": 0.00035649,
+      "nearestNormalDot": 0.98113699,
+      "nearestDensePolygon": 22646
+    },
+    {
+      "polygon": 1725,
+      "tangentZ": -0.6862745098039216,
+      "center": [
+        -0.8660777,
+        -0.3264006,
+        0.047027
+      ],
+      "lowSplitNormal": [
+        -0.3996363,
+        0.675211,
+        0.6199847
+      ],
+      "nearestDistance": 0.00024996,
+      "nearestNormalDot": 0.86224598,
+      "nearestDensePolygon": 22569
+    },
+    {
+      "polygon": 1743,
+      "tangentZ": -0.9843137254901961,
+      "center": [
+        -0.8657348,
+        -0.171427,
+        0.0311036
+      ],
+      "lowSplitNormal": [
+        0.4665036,
+        -0.002848,
+        -0.8845147
+      ],
+      "nearestDistance": 0.00019107,
+      "nearestNormalDot": 0.96297565,
+      "nearestDensePolygon": 23215
+    },
+    {
+      "polygon": 1745,
+      "tangentZ": -0.7803921568627451,
+      "center": [
+        -0.8693381,
+        -0.3944654,
+        0.0453135
+      ],
+      "lowSplitNormal": [
+        0.7643204,
+        -0.327352,
+        -0.5555673
+      ],
+      "nearestDistance": 0.00018521,
+      "nearestNormalDot": 0.98161499,
+      "nearestDensePolygon": 19452
+    },
+    {
+      "polygon": 1752,
+      "tangentZ": -0.9058823529411765,
+      "center": [
+        -0.8662474,
+        -0.3894844,
+        0.046979
+      ],
+      "lowSplitNormal": [
+        0.7421883,
+        -0.4213166,
+        0.5211995
+      ],
+      "nearestDistance": 0.00045717,
+      "nearestNormalDot": 0.93342918,
+      "nearestDensePolygon": 24686
+    },
+    {
+      "polygon": 1804,
+      "tangentZ": -0.8196078431372549,
+      "center": [
+        -0.8652812,
+        0.0628557,
+        0.0247632
+      ],
+      "lowSplitNormal": [
+        0.1524793,
+        -0.336209,
+        -0.9293619
+      ],
+      "nearestDistance": 0.00042047,
+      "nearestNormalDot": 0.97533363,
+      "nearestDensePolygon": 23985
+    },
+    {
+      "polygon": 1884,
+      "tangentZ": -0.7803921568627451,
+      "center": [
+        -0.86307,
+        -0.2350803,
+        0.0254289
+      ],
+      "lowSplitNormal": [
+        -0.0318816,
+        0.0332229,
+        -0.9989393
+      ],
+      "nearestDistance": 0.0005436,
+      "nearestNormalDot": 0.99687901,
+      "nearestDensePolygon": 25365
+    },
+    {
+      "polygon": 1913,
+      "tangentZ": -0.8666666666666667,
+      "center": [
+        -0.8653107,
+        -0.3494105,
+        0.056143
+      ],
+      "lowSplitNormal": [
+        0.1518456,
+        -0.2805087,
+        -0.9477646
+      ],
+      "nearestDistance": 0.00026331,
+      "nearestNormalDot": 0.9901649,
+      "nearestDensePolygon": 23640
+    },
+    {
+      "polygon": 1924,
+      "tangentZ": -0.9372549019607843,
+      "center": [
+        -0.8650048,
+        -0.3668157,
+        0.0405854
+      ],
+      "lowSplitNormal": [
+        0.6337065,
+        -0.2995423,
+        0.7132254
+      ],
+      "nearestDistance": 0.0001722,
+      "nearestNormalDot": 0.97595315,
+      "nearestDensePolygon": 23813
+    },
+    {
+      "polygon": 1984,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8641713,
+        -0.1522618,
+        0.0414026
+      ],
+      "lowSplitNormal": [
+        0.514267,
+        0.2681077,
+        0.8146458
+      ],
+      "nearestDistance": 0.00040097,
+      "nearestNormalDot": 0.98304702,
+      "nearestDensePolygon": 25143
+    },
+    {
+      "polygon": 1996,
+      "tangentZ": -0.6627450980392157,
+      "center": [
+        -0.8630157,
+        -0.3260246,
+        0.0476187
+      ],
+      "lowSplitNormal": [
+        -0.1569054,
+        0.7743618,
+        0.6129799
+      ],
+      "nearestDistance": 0.00035594,
+      "nearestNormalDot": 0.84303545,
+      "nearestDensePolygon": 27120
+    },
+    {
+      "polygon": 2000,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.8634848,
+        -0.168468,
+        0.0149444
+      ],
+      "lowSplitNormal": [
+        0.0190072,
+        0.1365316,
+        0.9904534
+      ],
+      "nearestDistance": 3.234e-05,
+      "nearestNormalDot": 0.89818401,
+      "nearestDensePolygon": 24976
+    },
+    {
+      "polygon": 2044,
+      "tangentZ": -0.788235294117647,
+      "center": [
+        -0.8637831,
+        -0.2309045,
+        0.0108983
+      ],
+      "lowSplitNormal": [
+        -0.4961138,
+        -0.0446842,
+        0.8671069
+      ],
+      "nearestDistance": 0.00017854,
+      "nearestNormalDot": 0.98417913,
+      "nearestDensePolygon": 24457
+    },
+    {
+      "polygon": 2048,
+      "tangentZ": -0.9843137254901961,
+      "center": [
+        -0.863177,
+        -0.3578383,
+        0.0438202
+      ],
+      "lowSplitNormal": [
+        0.1396476,
+        0.7057802,
+        0.6945308
+      ],
+      "nearestDistance": 0.00016692,
+      "nearestNormalDot": -0.06154635,
+      "nearestDensePolygon": 25703
+    },
+    {
+      "polygon": 2100,
+      "tangentZ": -0.8666666666666667,
+      "center": [
+        -0.8630624,
+        -0.2440656,
+        0.0113092
+      ],
+      "lowSplitNormal": [
+        -0.4979045,
+        -0.2278806,
+        0.8367565
+      ],
+      "nearestDistance": 0.00027505,
+      "nearestNormalDot": 0.94700473,
+      "nearestDensePolygon": 26782
+    },
+    {
+      "polygon": 2120,
+      "tangentZ": -0.9137254901960784,
+      "center": [
+        -0.8626116,
+        0.4564597,
+        0.0096307
+      ],
+      "lowSplitNormal": [
+        -0.401968,
+        -0.2073166,
+        0.8918753
+      ],
+      "nearestDistance": 0.00013365,
+      "nearestNormalDot": 0.97944065,
+      "nearestDensePolygon": 27425
+    },
+    {
+      "polygon": 2130,
+      "tangentZ": -0.8196078431372549,
+      "center": [
+        -0.8630579,
+        0.0621747,
+        0.0257372
+      ],
+      "lowSplitNormal": [
+        0.1532502,
+        -0.650197,
+        -0.7441493
+      ],
+      "nearestDistance": 0.00036897,
+      "nearestNormalDot": 0.97731952,
+      "nearestDensePolygon": 26613
+    },
+    {
+      "polygon": 2139,
+      "tangentZ": -0.7725490196078432,
+      "center": [
+        -0.8666118,
+        0.0672661,
+        0.0243854
+      ],
+      "lowSplitNormal": [
+        0.0847946,
+        0.0215655,
+        -0.996165
+      ],
+      "nearestDistance": 0.00045368,
+      "nearestNormalDot": 0.99456319,
+      "nearestDensePolygon": 22041
+    },
+    {
+      "polygon": 2157,
+      "tangentZ": -0.9372549019607843,
+      "center": [
+        -0.8620917,
+        -0.1742373,
+        0.0323505
+      ],
+      "lowSplitNormal": [
+        0.4528555,
+        0.0272599,
+        -0.8911671
+      ],
+      "nearestDistance": 2.272e-05,
+      "nearestNormalDot": 0.96836116,
+      "nearestDensePolygon": 26904
+    },
+    {
+      "polygon": 2210,
+      "tangentZ": -0.9137254901960784,
+      "center": [
+        -0.8607984,
+        -0.2334639,
+        0.0124819
+      ],
+      "lowSplitNormal": [
+        -0.3636719,
+        0.0574357,
+        0.9297547
+      ],
+      "nearestDistance": 1.091e-05,
+      "nearestNormalDot": 0.97724658,
+      "nearestDensePolygon": 30527
+    },
+    {
+      "polygon": 2216,
+      "tangentZ": -0.7490196078431373,
+      "center": [
+        -0.8629571,
+        -0.1802923,
+        0.0305822
+      ],
+      "lowSplitNormal": [
+        0.3552098,
+        0.0798856,
+        -0.9313669
+      ],
+      "nearestDistance": 0.00023771,
+      "nearestNormalDot": 0.98050853,
+      "nearestDensePolygon": 27699
+    },
+    {
+      "polygon": 2218,
+      "tangentZ": -0.9529411764705882,
+      "center": [
+        -0.8627424,
+        -0.3500697,
+        0.0570386
+      ],
+      "lowSplitNormal": [
+        -0.2263421,
+        -0.072905,
+        -0.9713156
+      ],
+      "nearestDistance": 0.00060575,
+      "nearestNormalDot": -0.15884851,
+      "nearestDensePolygon": 23214
+    },
+    {
+      "polygon": 2232,
+      "tangentZ": -0.8666666666666667,
+      "center": [
+        -0.8610089,
+        -0.1772813,
+        0.0152289
+      ],
+      "lowSplitNormal": [
+        -0.1069192,
+        0.0930617,
+        0.9899029
+      ],
+      "nearestDistance": 0.00020333,
+      "nearestNormalDot": 0.89274837,
+      "nearestDensePolygon": 29001
+    },
+    {
+      "polygon": 2238,
+      "tangentZ": -0.9764705882352941,
+      "center": [
+        -0.861622,
+        -0.2409547,
+        0.012357
+      ],
+      "lowSplitNormal": [
+        -0.2175328,
+        -0.0497964,
+        0.9747819
+      ],
+      "nearestDistance": 0.00021171,
+      "nearestNormalDot": 0.93531656,
+      "nearestDensePolygon": 29250
+    },
+    {
+      "polygon": 2244,
+      "tangentZ": -0.3254901960784313,
+      "center": [
+        -0.8621839,
+        -0.1793467,
+        0.013846
+      ],
+      "lowSplitNormal": [
+        -0.4078897,
+        -0.2141025,
+        0.8875732
+      ],
+      "nearestDistance": 0.0002836,
+      "nearestNormalDot": 0.98724263,
+      "nearestDensePolygon": 28657
+    },
+    {
+      "polygon": 2245,
+      "tangentZ": -0.9215686274509804,
+      "center": [
+        -0.8611228,
+        -0.3474426,
+        0.0556817
+      ],
+      "lowSplitNormal": [
+        -0.1768973,
+        -0.3120297,
+        -0.9334584
+      ],
+      "nearestDistance": 8.464e-05,
+      "nearestNormalDot": 0.95293043,
+      "nearestDensePolygon": 29798
+    },
+    {
+      "polygon": 2279,
+      "tangentZ": -0.8588235294117648,
+      "center": [
+        -0.859482,
+        -0.1905513,
+        0.0151799
+      ],
+      "lowSplitNormal": [
+        -0.1568464,
+        0.3957461,
+        0.9048669
+      ],
+      "nearestDistance": 7.749e-05,
+      "nearestNormalDot": 0.99823291,
+      "nearestDensePolygon": 33163
+    },
+    {
+      "polygon": 2285,
+      "tangentZ": -0.8274509803921568,
+      "center": [
+        -0.8618614,
+        -0.2486793,
+        0.0118528
+      ],
+      "lowSplitNormal": [
+        -0.1006973,
+        -0.50486,
+        0.8573076
+      ],
+      "nearestDistance": 0.0001423,
+      "nearestNormalDot": 0.7483303,
+      "nearestDensePolygon": 27532
+    },
+    {
+      "polygon": 2294,
+      "tangentZ": -0.8117647058823529,
+      "center": [
+        -0.8622819,
+        -0.2239666,
+        0.0257892
+      ],
+      "lowSplitNormal": [
+        -0.1715304,
+        0.2261406,
+        -0.9588732
+      ],
+      "nearestDistance": 0.00027695,
+      "nearestNormalDot": 0.94362429,
+      "nearestDensePolygon": 27792
+    },
+    {
+      "polygon": 2385,
+      "tangentZ": -0.03529411764705881,
+      "center": [
+        -0.8609087,
+        -0.1878563,
+        0.0112313
+      ],
+      "lowSplitNormal": [
+        -0.5059925,
+        0.8449495,
+        -0.1732969
+      ],
+      "nearestDistance": 0.00052639,
+      "nearestNormalDot": 0.95337248,
+      "nearestDensePolygon": 29596
+    },
+    {
+      "polygon": 2392,
+      "tangentZ": -0.9529411764705882,
+      "center": [
+        -0.8595757,
+        -0.2146431,
+        0.0091007
+      ],
+      "lowSplitNormal": [
+        0.187695,
+        -0.2114241,
+        0.9592031
+      ],
+      "nearestDistance": 0.00249685,
+      "nearestNormalDot": -0.88321038,
+      "nearestDensePolygon": 39204
+    },
+    {
+      "polygon": 2449,
+      "tangentZ": -0.8745098039215686,
+      "center": [
+        -0.8609985,
+        0.4563595,
+        0.0263495
+      ],
+      "lowSplitNormal": [
+        -0.0354105,
+        0.3738142,
+        -0.9268274
+      ],
+      "nearestDistance": 0.00046503,
+      "nearestNormalDot": 0.98478028,
+      "nearestDensePolygon": 30549
+    },
+    {
+      "polygon": 2450,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8589104,
+        0.4509841,
+        0.0252012
+      ],
+      "lowSplitNormal": [
+        0.0029003,
+        0.1750254,
+        -0.9845597
+      ],
+      "nearestDistance": 0.00031015,
+      "nearestNormalDot": 0.98988659,
+      "nearestDensePolygon": 33910
+    },
+    {
+      "polygon": 2479,
+      "tangentZ": -0.7098039215686274,
+      "center": [
+        -0.859385,
+        -0.1414322,
+        0.0541935
+      ],
+      "lowSplitNormal": [
+        -0.6613795,
+        -0.2397313,
+        -0.7107081
+      ],
+      "nearestDistance": 0.00031946,
+      "nearestNormalDot": 0.99692811,
+      "nearestDensePolygon": 31326
+    },
+    {
+      "polygon": 2513,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.8589635,
+        0.3482696,
+        0.0235754
+      ],
+      "lowSplitNormal": [
+        0.4566503,
+        0.1831091,
+        0.8705984
+      ],
+      "nearestDistance": 0.00630121,
+      "nearestNormalDot": -0.87226185,
+      "nearestDensePolygon": 35381
+    },
+    {
+      "polygon": 2517,
+      "tangentZ": -0.3254901960784313,
+      "center": [
+        -0.8604608,
+        -0.3545218,
+        0.0435503
+      ],
+      "lowSplitNormal": [
+        -0.8852471,
+        -0.0955407,
+        -0.4552028
+      ],
+      "nearestDistance": 0.00024036,
+      "nearestNormalDot": 0.15204743,
+      "nearestDensePolygon": 31275
+    },
+    {
+      "polygon": 2520,
+      "tangentZ": -0.8980392156862745,
+      "center": [
+        -0.8583601,
+        -0.2225799,
+        0.0256305
+      ],
+      "lowSplitNormal": [
+        -0.1106194,
+        0.144897,
+        -0.9832438
+      ],
+      "nearestDistance": 0.00063162,
+      "nearestNormalDot": 0.96009029,
+      "nearestDensePolygon": 33928
+    },
+    {
+      "polygon": 2559,
+      "tangentZ": -1.0,
+      "center": [
+        -0.8596712,
+        -0.3200605,
+        0.0364217
+      ],
+      "lowSplitNormal": [
+        0.1281875,
+        0.018311,
+        0.9915809
+      ],
+      "nearestDistance": 0.00011858,
+      "nearestNormalDot": 0.89085854,
+      "nearestDensePolygon": 31847
+    },
+    {
+      "polygon": 2573,
+      "tangentZ": -0.7647058823529411,
+      "center": [
+        -0.8572674,
+        -0.5147503,
+        0.008132
+      ],
+      "lowSplitNormal": [
+        0.4074298,
+        -0.5076154,
+        -0.7591624
+      ],
+      "nearestDistance": 5.146e-05,
+      "nearestNormalDot": 0.90202194,
+      "nearestDensePolygon": 33660
+    },
+    {
+      "polygon": 2579,
+      "tangentZ": -0.9843137254901961,
+      "center": [
+        -0.8568557,
+        -0.2384413,
+        0.0116082
+      ],
+      "lowSplitNormal": [
+        0.1532271,
+        -0.0221075,
+        0.9879436
+      ],
+      "nearestDistance": 0.0026626,
+      "nearestNormalDot": -0.76421089,
+      "nearestDensePolygon": 37391
+    },
+    {
+      "polygon": 2584,
+      "tangentZ": -0.9764705882352941,
+      "center": [
+        -0.853389,
+        0.3921797,
+        0.0106861
+      ],
+      "lowSplitNormal": [
+        0.2087305,
+        -0.293853,
+        0.9327819
+      ],
+      "nearestDistance": 0.01080567,
+      "nearestNormalDot": 0.33609957,
+      "nearestDensePolygon": 66336
+    },
+    {
+      "polygon": 2607,
+      "tangentZ": -0.803921568627451,
+      "center": [
+        -0.8588963,
+        -0.1433501,
+        0.0464651
+      ],
+      "lowSplitNormal": [
+        0.2988867,
+        -0.1371616,
+        0.9443799
+      ],
+      "nearestDistance": 5.895e-05,
+      "nearestNormalDot": 0.9849725,
+      "nearestDensePolygon": 32672
+    },
+    {
+      "polygon": 2613,
+      "tangentZ": -0.30980392156862746,
+      "center": [
+        -0.8602809,
+        -0.3685575,
+        0.0449689
+      ],
+      "lowSplitNormal": [
+        -0.8840407,
+        0.1754703,
+        -0.433223
+      ],
+      "nearestDistance": 0.00024235,
+      "nearestNormalDot": 0.42884798,
+      "nearestDensePolygon": 31541
+    },
+    {
+      "polygon": 2615,
+      "tangentZ": -0.9058823529411765,
+      "center": [
+        -0.8561032,
+        0.403815,
+        0.0109033
+      ],
+      "lowSplitNormal": [
+        0.3873668,
+        0.1926429,
+        0.901574
+      ],
+      "nearestDistance": 0.01569105,
+      "nearestNormalDot": -0.91453469,
+      "nearestDensePolygon": 37518
+    },
+    {
+      "polygon": 2617,
+      "tangentZ": -0.5450980392156863,
+      "center": [
+        -0.8584601,
+        -0.3776367,
+        0.0435227
+      ],
+      "lowSplitNormal": [
+        0.7961439,
+        -0.5474627,
+        -0.2577584
+      ],
+      "nearestDistance": 0.0002525,
+      "nearestNormalDot": 0.99896996,
+      "nearestDensePolygon": 34174
+    },
+    {
+      "polygon": 2640,
+      "tangentZ": -0.7333333333333334,
+      "center": [
+        -0.8568109,
+        -0.5776955,
+        0.001835
+      ],
+      "lowSplitNormal": [
+        0.0537323,
+        0.1981653,
+        -0.9786947
+      ],
+      "nearestDistance": 0.00031931,
+      "nearestNormalDot": 0.98086996,
+      "nearestDensePolygon": 38524
+    },
+    {
+      "polygon": 2643,
+      "tangentZ": -0.9764705882352941,
+      "center": [
+        -0.8572957,
+        0.0687406,
+        0.0250673
+      ],
+      "lowSplitNormal": [
+        0.0040364,
+        -0.0243875,
+        -0.9996945
+      ],
+      "nearestDistance": 0.00055406,
+      "nearestNormalDot": 0.9822086,
+      "nearestDensePolygon": 33855
+    },
+    {
+      "polygon": 2671,
+      "tangentZ": -0.9372549019607843,
+      "center": [
+        -0.8570146,
+        0.4561755,
+        0.0263866
+      ],
+      "lowSplitNormal": [
+        0.1903402,
+        0.4518974,
+        -0.871527
+      ],
+      "nearestDistance": 0.00055928,
+      "nearestNormalDot": 0.95858907,
+      "nearestDensePolygon": 34618
+    },
+    {
+      "polygon": 2679,
+      "tangentZ": -0.6235294117647059,
+      "center": [
+        -0.8587484,
+        -0.5850427,
+        5.89e-05
+      ],
+      "lowSplitNormal": [
+        0.0854877,
+        0.0969697,
+        -0.9916092
+      ],
+      "nearestDistance": 0.00029091,
+      "nearestNormalDot": 0.9969322,
+      "nearestDensePolygon": 33481
+    },
+    {
+      "polygon": 2692,
+      "tangentZ": -0.8274509803921568,
+      "center": [
+        -0.8562856,
+        0.3568744,
+        0.0243399
+      ],
+      "lowSplitNormal": [
+        0.5244753,
+        -0.0893633,
+        0.846723
+      ],
+      "nearestDistance": 0.00568858,
+      "nearestNormalDot": -0.78411183,
+      "nearestDensePolygon": 37923
+    },
+    {
+      "polygon": 2711,
+      "tangentZ": -0.9921568627450981,
+      "center": [
+        -0.8580814,
+        -0.3846092,
+        0.0541791
+      ],
+      "lowSplitNormal": [
+        -0.9207525,
+        0.1825133,
+        -0.3448241
+      ],
+      "nearestDistance": 0.00029855,
+      "nearestNormalDot": 0.99522125,
+      "nearestDensePolygon": 34682
+    },
+    {
+      "polygon": 2716,
+      "tangentZ": -0.1686274509803921,
+      "center": [
+        -0.8589094,
+        -0.2881087,
+        0.0349977
+      ],
+      "lowSplitNormal": [
+        0.3102285,
+        -0.8649977,
+        0.3943821
+      ],
+      "nearestDistance": 0.00029324,
+      "nearestNormalDot": 0.7792839,
+      "nearestDensePolygon": 33207
+    },
+    {
+      "polygon": 2726,
+      "tangentZ": -0.7803921568627451,
+      "center": [
+        -0.8588076,
+        -0.3468491,
+        0.0538257
+      ],
+      "lowSplitNormal": [
+        -0.557696,
+        -0.2124345,
+        -0.8024006
+      ],
+      "nearestDistance": 0.00013559,
+      "nearestNormalDot": 0.96164802,
+      "nearestDensePolygon": 33169
+    },
+    {
+      "polygon": 2737,
+      "tangentZ": -0.8274509803921568,
+      "center": [
+        -0.8572578,
+        -0.1912623,
+        0.0159289
+      ],
+      "lowSplitNormal": [
+        0.2581058,
+        0.2293531,
+        0.938498
+      ],
+      "nearestDistance": 0.00022149,
+      "nearestNormalDot": 0.91329082,
+      "nearestDensePolygon": 36266
+    },
+    {
+      "polygon": 2744,
+      "tangentZ": -0.9686274509803922,
+      "center": [
+        -0.8578565,
+        -0.2427942,
+        0.0143957
+      ],
+      "lowSplitNormal": [
+        0.1438419,
+        -0.0360088,
+        0.9889453
+      ],
+      "nearestDistance": 0.00021007,
+      "nearestNormalDot": 0.86047821,
+      "nearestDensePolygon": 34292
+    },
+    {
+      "polygon": 2772,
+      "tangentZ": -0.788235294117647,
+      "center": [
+        -0.8581285,
+        -0.3191043,
+        0.0245733
+      ],
+      "lowSplitNormal": [
+        0.4241531,
+        0.3602634,
+        0.8308457
+      ],
+      "nearestDistance": 0.00474055,
+      "nearestNormalDot": 0.64521041,
+      "nearestDensePolygon": 38269
+    },
+    {
+      "polygon": 2777,
+      "tangentZ": -0.8901960784313725,
+      "center": [
+        -0.8585505,
+        -0.5875509,
+        3.27e-05
+      ],
+      "lowSplitNormal": [
+        0.3418482,
+        -0.0658508,
+        -0.9374452
+      ],
+      "nearestDistance": 0.00045372,
+      "nearestNormalDot": 0.99643078,
+      "nearestDensePolygon": 36229
+    },
+    {
+      "polygon": 2783,
+      "tangentZ": -0.9764705882352941,
+      "center": [
+        -0.858234,
+        -0.2323588,
+        0.0116082
+      ],
+      "lowSplitNormal": [
+        0.1532222,
+        -0.022087,
+        0.987945
+      ],
+      "nearestDistance": 0.00197229,
+      "nearestNormalDot": 0.77788588,
+      "nearestDensePolygon": 32382
+    },
+    {
+      "polygon": 2784,
+      "tangentZ": -0.6627450980392157,
+      "center": [
+        -0.8518484,
+        0.3413295,
+        0.0242747
+      ],
+      "lowSplitNormal": [
+        0.4631331,
+        0.5952192,
+        0.6566747
+      ],
+      "nearestDistance": 0.00452497,
+      "nearestNormalDot": -0.67689018,
+      "nearestDensePolygon": 46610
+    },
+    {
+      "polygon": 2821,
+      "tangentZ": -0.9058823529411765,
+      "center": [
+        -0.8571809,
+        -0.2275981,
+        0.0256616
+      ],
+      "lowSplitNormal": [
+        0.0014559,
+        0.0630547,
+        -0.998009
+      ],
+      "nearestDistance": 5e-07,
+      "nearestNormalDot": 0.9931046,
+      "nearestDensePolygon": 35225
+    },
+    {
+      "polygon": 2868,
+      "tangentZ": -0.9137254901960784,
+      "center": [
+        -0.8569896,
+        -0.1348545,
+        0.0466082
+      ],
+      "lowSplitNormal": [
+        0.7293515,
+        -0.0304989,
+        0.683459
+      ],
+      "nearestDistance": 0.00018518,
+      "nearestNormalDot": 0.98643591,
+      "nearestDensePolygon": 37514
+    },
+    {
+      "polygon": 2893,
+      "tangentZ": -0.9607843137254902,
+      "center": [
+        -0.8580009,
+        -0.1367921,
+        0.047124
+      ],
+      "lowSplitNormal": [
+        0.4702953,
+        -0.0571216,
+        0.8806586
+      ],
+      "nearestDistance": 0.00026401,
+      "nearestNormalDot": 0.994587,
+      "nearestDensePolygon": 35683
+    },
+    {
+      "polygon": 2914,
+      "tangentZ": -0.43529411764705883,
+      "center": [
+        -0.8563555,
+        -0.1871981,
+        0.0088248
+      ],
+      "lowSplitNormal": [
+        -0.0101112,
+        0.8931095,
+        0.4497257
+      ],
+      "nearestDistance": 0.0023359,
+      "nearestNormalDot": 0.05068028,
+      "nearestDensePolygon": 38108
+    },
+    {
+      "polygon": 2916,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8564057,
+        -0.1797322,
+        0.0324159
+      ],
+      "lowSplitNormal": [
+        0.3256437,
+        0.3025306,
+        -0.8957853
+      ],
+      "nearestDistance": 9.039e-05,
+      "nearestNormalDot": 0.98768412,
+      "nearestDensePolygon": 38573
+    },
+    {
+      "polygon": 2927,
+      "tangentZ": -0.9921568627450981,
+      "center": [
+        -0.8578544,
+        -0.3217495,
+        0.0192376
+      ],
+      "lowSplitNormal": [
+        0.0088701,
+        0.1081924,
+        0.9940904
+      ],
+      "nearestDistance": 0.00022589,
+      "nearestNormalDot": 0.92044336,
+      "nearestDensePolygon": 35965
+    },
+    {
+      "polygon": 2940,
+      "tangentZ": -0.8745098039215686,
+      "center": [
+        -0.8532787,
+        0.4338127,
+        0.010455
+      ],
+      "lowSplitNormal": [
+        0.359067,
+        -0.1559857,
+        0.9201844
+      ],
+      "nearestDistance": 0.01279704,
+      "nearestNormalDot": 0.27423394,
+      "nearestDensePolygon": 48831
+    },
+    {
+      "polygon": 2944,
+      "tangentZ": -0.9137254901960784,
+      "center": [
+        -0.854754,
+        -0.3105682,
+        0.0119115
+      ],
+      "lowSplitNormal": [
+        0.7745845,
+        0.3101952,
+        0.5511785
+      ],
+      "nearestDistance": 0.00382519,
+      "nearestNormalDot": -0.45869798,
+      "nearestDensePolygon": 40742
+    },
+    {
+      "polygon": 2947,
+      "tangentZ": -0.5137254901960784,
+      "center": [
+        -0.8570575,
+        -0.5741194,
+        -0.0073437
+      ],
+      "lowSplitNormal": [
+        -0.5832247,
+        -0.0854032,
+        0.8078089
+      ],
+      "nearestDistance": 0.0025638,
+      "nearestNormalDot": 0.97392363,
+      "nearestDensePolygon": 36934
+    },
+    {
+      "polygon": 2955,
+      "tangentZ": -0.803921568627451,
+      "center": [
+        -0.8570887,
+        -0.2160279,
+        0.0264384
+      ],
+      "lowSplitNormal": [
+        -0.18231,
+        0.5165979,
+        -0.8365941
+      ],
+      "nearestDistance": 0.00045635,
+      "nearestNormalDot": 0.96581538,
+      "nearestDensePolygon": 35542
+    },
+    {
+      "polygon": 2960,
+      "tangentZ": -0.8274509803921568,
+      "center": [
+        -0.8550544,
+        0.0644727,
+        0.0249639
+      ],
+      "lowSplitNormal": [
+        -0.1132718,
+        -0.1638562,
+        -0.9799595
+      ],
+      "nearestDistance": 0.00034946,
+      "nearestNormalDot": 0.92881805,
+      "nearestDensePolygon": 39321
+    },
+    {
+      "polygon": 2976,
+      "tangentZ": -0.9137254901960784,
+      "center": [
+        -0.8564253,
+        0.0701573,
+        0.009207
+      ],
+      "lowSplitNormal": [
+        0.2337132,
+        0.0425653,
+        0.9713735
+      ],
+      "nearestDistance": 0.00207043,
+      "nearestNormalDot": -0.91630178,
+      "nearestDensePolygon": 36941
+    },
+    {
+      "polygon": 2990,
+      "tangentZ": -0.8117647058823529,
+      "center": [
+        -0.8579634,
+        0.3205095,
+        0.0239044
+      ],
+      "lowSplitNormal": [
+        0.7113605,
+        0.1148313,
+        0.6933831
+      ],
+      "nearestDistance": 0.00477338,
+      "nearestNormalDot": -0.77262739,
+      "nearestDensePolygon": 39089
+    },
+    {
+      "polygon": 2997,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.855963,
+        -0.5850661,
+        0.0017403
+      ],
+      "lowSplitNormal": [
+        0.7390712,
+        -0.201855,
+        -0.6426729
+      ],
+      "nearestDistance": 0.00055312,
+      "nearestNormalDot": 0.99870563,
+      "nearestDensePolygon": 39216
+    },
+    {
+      "polygon": 3005,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.8576248,
+        -0.312431,
+        0.0371164
+      ],
+      "lowSplitNormal": [
+        -0.1815238,
+        0.0307192,
+        0.9829066
+      ],
+      "nearestDistance": 1.575e-05,
+      "nearestNormalDot": 0.99999675,
+      "nearestDensePolygon": 35904
+    },
+    {
+      "polygon": 3019,
+      "tangentZ": -0.7490196078431373,
+      "center": [
+        -0.8556046,
+        0.6491194,
+        -0.0963834
+      ],
+      "lowSplitNormal": [
+        0.6477634,
+        0.6655024,
+        -0.3708223
+      ],
+      "nearestDistance": 0.00050528,
+      "nearestNormalDot": 0.99544005,
+      "nearestDensePolygon": 37749
+    },
+    {
+      "polygon": 3028,
+      "tangentZ": -0.6392156862745098,
+      "center": [
+        -0.8572071,
+        -0.3742466,
+        0.0457026
+      ],
+      "lowSplitNormal": [
+        0.6662084,
+        -0.2728891,
+        0.6940446
+      ],
+      "nearestDistance": 0.00030343,
+      "nearestNormalDot": 0.99822944,
+      "nearestDensePolygon": 35706
+    },
+    {
+      "polygon": 3031,
+      "tangentZ": -0.7568627450980392,
+      "center": [
+        -0.8556584,
+        -0.393768,
+        0.0382132
+      ],
+      "lowSplitNormal": [
+        -0.8916461,
+        -0.0683981,
+        0.4475364
+      ],
+      "nearestDistance": 0.0002817,
+      "nearestNormalDot": 0.91840756,
+      "nearestDensePolygon": 38796
+    },
+    {
+      "polygon": 3040,
+      "tangentZ": -0.7019607843137254,
+      "center": [
+        -0.8582406,
+        -0.5869554,
+        -0.0113533
+      ],
+      "lowSplitNormal": [
+        -0.5617755,
+        -0.2117414,
+        0.7997336
+      ],
+      "nearestDistance": 0.00347109,
+      "nearestNormalDot": 0.96704416,
+      "nearestDensePolygon": 38799
+    },
+    {
+      "polygon": 3041,
+      "tangentZ": -0.8274509803921568,
+      "center": [
+        -0.8543627,
+        -0.2827881,
+        0.0122597
+      ],
+      "lowSplitNormal": [
+        0.6175112,
+        -0.1120358,
+        0.7785422
+      ],
+      "nearestDistance": 0.01875484,
+      "nearestNormalDot": -0.54532485,
+      "nearestDensePolygon": 61534
+    },
+    {
+      "polygon": 3092,
+      "tangentZ": -0.8274509803921568,
+      "center": [
+        -0.8531645,
+        0.0639487,
+        0.0256924
+      ],
+      "lowSplitNormal": [
+        -0.0075302,
+        -0.495982,
+        -0.8683001
+      ],
+      "nearestDistance": 0.00033105,
+      "nearestNormalDot": 0.90132683,
+      "nearestDensePolygon": 44052
+    },
+    {
+      "polygon": 3096,
+      "tangentZ": -0.607843137254902,
+      "center": [
+        -0.857098,
+        -0.2652444,
+        0.0246801
+      ],
+      "lowSplitNormal": [
+        0.8127588,
+        -0.1746587,
+        0.5558035
+      ],
+      "nearestDistance": 0.00487055,
+      "nearestNormalDot": -0.45983805,
+      "nearestDensePolygon": 35952
+    },
+    {
+      "polygon": 3111,
+      "tangentZ": -0.9058823529411765,
+      "center": [
+        -0.8524167,
+        -0.3125601,
+        0.0
+      ],
+      "lowSplitNormal": [
+        0.0891043,
+        0.2432905,
+        0.9658521
+      ],
+      "nearestDistance": 0.01467992,
+      "nearestNormalDot": -0.88004659,
+      "nearestDensePolygon": 44664
+    },
+    {
+      "polygon": 3122,
+      "tangentZ": -0.9450980392156862,
+      "center": [
+        -0.8574399,
+        -0.2265705,
+        0.0143191
+      ],
+      "lowSplitNormal": [
+        -0.2256426,
+        0.0310684,
+        0.9737146
+      ],
+      "nearestDistance": 0.00058124,
+      "nearestNormalDot": 0.98381505,
+      "nearestDensePolygon": 34677
+    },
+    {
+      "polygon": 3142,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8545594,
+        0.3317635,
+        0.0117718
+      ],
+      "lowSplitNormal": [
+        0.4323145,
+        -0.2741431,
+        0.8590398
+      ],
+      "nearestDistance": 0.01664135,
+      "nearestNormalDot": -0.93643038,
+      "nearestDensePolygon": 40128
+    },
+    {
+      "polygon": 3149,
+      "tangentZ": -0.607843137254902,
+      "center": [
+        -0.8498742,
+        -0.1593587,
+        0.0108203
+      ],
+      "lowSplitNormal": [
+        0.3307419,
+        -0.1020087,
+        -0.9381919
+      ],
+      "nearestDistance": 0.00013864,
+      "nearestNormalDot": 0.99887001,
+      "nearestDensePolygon": 53458
+    },
+    {
+      "polygon": 3152,
+      "tangentZ": -0.43529411764705883,
+      "center": [
+        -0.8555542,
+        -0.3533678,
+        0.0436993
+      ],
+      "lowSplitNormal": [
+        0.6112427,
+        -0.6729676,
+        0.4165297
+      ],
+      "nearestDistance": 0.00033193,
+      "nearestNormalDot": 0.86069012,
+      "nearestDensePolygon": 39264
+    },
+    {
+      "polygon": 3165,
+      "tangentZ": -0.6549019607843137,
+      "center": [
+        -0.8522924,
+        0.3700654,
+        0.0112889
+      ],
+      "lowSplitNormal": [
+        0.562936,
+        0.1836091,
+        0.8058478
+      ],
+      "nearestDistance": 0.01850985,
+      "nearestNormalDot": -0.54371664,
+      "nearestDensePolygon": 101435
+    },
+    {
+      "polygon": 3190,
+      "tangentZ": -0.9607843137254902,
+      "center": [
+        -0.8549309,
+        -0.3732911,
+        0.0541751
+      ],
+      "lowSplitNormal": [
+        -0.8485999,
+        0.2503906,
+        -0.4660287
+      ],
+      "nearestDistance": 0.00012809,
+      "nearestNormalDot": 0.9972392,
+      "nearestDensePolygon": 39867
+    },
+    {
+      "polygon": 3231,
+      "tangentZ": -0.9607843137254902,
+      "center": [
+        -0.8539004,
+        -0.2141555,
+        0.0278738
+      ],
+      "lowSplitNormal": [
+        0.1912996,
+        0.3435987,
+        -0.9194261
+      ],
+      "nearestDistance": 0.00055209,
+      "nearestNormalDot": 0.89663792,
+      "nearestDensePolygon": 35382
+    },
+    {
+      "polygon": 3242,
+      "tangentZ": -0.8352941176470589,
+      "center": [
+        -0.8549078,
+        -0.5746771,
+        0.003259
+      ],
+      "lowSplitNormal": [
+        0.3844305,
+        0.2056264,
+        -0.8999616
+      ],
+      "nearestDistance": 0.00019588,
+      "nearestNormalDot": 0.99998955,
+      "nearestDensePolygon": 40697
+    },
+    {
+      "polygon": 3257,
+      "tangentZ": -0.8117647058823529,
+      "center": [
+        -0.8560651,
+        -0.1875425,
+        0.0308495
+      ],
+      "lowSplitNormal": [
+        -0.1478108,
+        -0.2888674,
+        -0.9458899
+      ],
+      "nearestDistance": 0.00041956,
+      "nearestNormalDot": 0.97020614,
+      "nearestDensePolygon": 36776
+    },
+    {
+      "polygon": 3260,
+      "tangentZ": -0.1843137254901961,
+      "center": [
+        -0.8550667,
+        -0.1789458,
+        0.0105458
+      ],
+      "lowSplitNormal": [
+        -0.0461791,
+        0.9760666,
+        0.2125124
+      ],
+      "nearestDistance": 0.00062563,
+      "nearestNormalDot": -0.52159843,
+      "nearestDensePolygon": 39698
+    },
+    {
+      "polygon": 3294,
+      "tangentZ": -0.5058823529411764,
+      "center": [
+        -0.8482075,
+        0.4102249,
+        0.0
+      ],
+      "lowSplitNormal": [
+        0.2337292,
+        0.0882787,
+        0.9682859
+      ],
+      "nearestDistance": 0.00880937,
+      "nearestNormalDot": -0.18238636,
+      "nearestDensePolygon": 84138
+    },
+    {
+      "polygon": 3298,
+      "tangentZ": -0.8901960784313725,
+      "center": [
+        -0.8492696,
+        -0.3188091,
+        0.0
+      ],
+      "lowSplitNormal": [
+        0.0891391,
+        0.2433153,
+        0.9658426
+      ],
+      "nearestDistance": 0.01357955,
+      "nearestNormalDot": -0.89811181,
+      "nearestDensePolygon": 43960
+    },
+    {
+      "polygon": 3305,
+      "tangentZ": -0.7647058823529411,
+      "center": [
+        -0.8545588,
+        -0.1447009,
+        0.0538972
+      ],
+      "lowSplitNormal": [
+        -0.3809738,
+        -0.5460184,
+        -0.7461388
+      ],
+      "nearestDistance": 0.00074113,
+      "nearestNormalDot": 0.9927805,
+      "nearestDensePolygon": 41471
+    },
+    {
+      "polygon": 3323,
+      "tangentZ": -0.9450980392156862,
+      "center": [
+        -0.8535998,
+        -0.321177,
+        0.0123048
+      ],
+      "lowSplitNormal": [
+        0.2428517,
+        0.2017359,
+        0.9488549
+      ],
+      "nearestDistance": 0.00092632,
+      "nearestNormalDot": -0.91385673,
+      "nearestDensePolygon": 40401
+    },
+    {
+      "polygon": 3324,
+      "tangentZ": -0.9058823529411765,
+      "center": [
+        -0.8531141,
+        0.3666224,
+        0.0247986
+      ],
+      "lowSplitNormal": [
+        0.8304816,
+        0.1698748,
+        0.5305117
+      ],
+      "nearestDistance": 0.00759659,
+      "nearestNormalDot": -0.29055032,
+      "nearestDensePolygon": 40022
+    },
+    {
+      "polygon": 3329,
+      "tangentZ": -0.5450980392156863,
+      "center": [
+        -0.8546543,
+        -0.1657037,
+        0.0383438
+      ],
+      "lowSplitNormal": [
+        0.3821936,
+        -0.0693007,
+        0.9214801
+      ],
+      "nearestDistance": 0.00040284,
+      "nearestNormalDot": 0.92578553,
+      "nearestDensePolygon": 41268
+    },
+    {
+      "polygon": 3330,
+      "tangentZ": -0.9529411764705882,
+      "center": [
+        -0.8551742,
+        -0.1630575,
+        0.0391868
+      ],
+      "lowSplitNormal": [
+        0.470469,
+        -0.0791021,
+        0.8788639
+      ],
+      "nearestDistance": 0.00061686,
+      "nearestNormalDot": 0.8335993,
+      "nearestDensePolygon": 39423
+    },
+    {
+      "polygon": 3332,
+      "tangentZ": -0.6705882352941177,
+      "center": [
+        -0.852168,
+        -0.2946884,
+        0.0111497
+      ],
+      "lowSplitNormal": [
+        0.1766926,
+        0.1536865,
+        0.9721935
+      ],
+      "nearestDistance": 0.00947372,
+      "nearestNormalDot": -0.54194147,
+      "nearestDensePolygon": 57404
+    },
+    {
+      "polygon": 3336,
+      "tangentZ": -0.8745098039215686,
+      "center": [
+        -0.8530009,
+        -0.1580412,
+        0.0399562
+      ],
+      "lowSplitNormal": [
+        0.4759617,
+        -0.0326306,
+        0.8788604
+      ],
+      "nearestDistance": 0.00042966,
+      "nearestNormalDot": 0.98228919,
+      "nearestDensePolygon": 42779
+    },
+    {
+      "polygon": 3345,
+      "tangentZ": -0.9843137254901961,
+      "center": [
+        -0.8533471,
+        0.0690608,
+        0.0252063
+      ],
+      "lowSplitNormal": [
+        -0.0825644,
+        -0.012181,
+        -0.9965113
+      ],
+      "nearestDistance": 0.00019507,
+      "nearestNormalDot": 0.96852779,
+      "nearestDensePolygon": 42118
+    },
+    {
+      "polygon": 3347,
+      "tangentZ": -0.4117647058823529,
+      "center": [
+        -0.8568743,
+        -0.1345792,
+        0.0518131
+      ],
+      "lowSplitNormal": [
+        -0.7399753,
+        0.1053251,
+        -0.6643366
+      ],
+      "nearestDistance": 0.00055955,
+      "nearestNormalDot": 0.98608733,
+      "nearestDensePolygon": 36386
+    },
+    {
+      "polygon": 3367,
+      "tangentZ": -0.9450980392156862,
+      "center": [
+        -0.8542579,
+        -0.5795393,
+        0.0031905
+      ],
+      "lowSplitNormal": [
+        0.8093615,
+        -0.0268644,
+        -0.5866961
+      ],
+      "nearestDistance": 0.00082446,
+      "nearestNormalDot": 0.97723883,
+      "nearestDensePolygon": 42375
+    },
+    {
+      "polygon": 3374,
+      "tangentZ": -0.8745098039215686,
+      "center": [
+        -0.8540158,
+        0.3688254,
+        0.0240531
+      ],
+      "lowSplitNormal": [
+        0.7543914,
+        0.5376019,
+        0.3766668
+      ],
+      "nearestDistance": 0.00872747,
+      "nearestNormalDot": -0.05197096,
+      "nearestDensePolygon": 37764
+    },
+    {
+      "polygon": 3385,
+      "tangentZ": -0.9450980392156862,
+      "center": [
+        -0.851813,
+        -0.1625655,
+        0.0338241
+      ],
+      "lowSplitNormal": [
+        -0.2039072,
+        -0.1083029,
+        -0.9729812
+      ],
+      "nearestDistance": 2.588e-05,
+      "nearestNormalDot": 0.97300681,
+      "nearestDensePolygon": 46145
+    },
+    {
+      "polygon": 3395,
+      "tangentZ": -0.8666666666666667,
+      "center": [
+        -0.8524759,
+        -0.2493581,
+        0.0123161
+      ],
+      "lowSplitNormal": [
+        0.4060805,
+        -0.0742797,
+        0.9108135
+      ],
+      "nearestDistance": 0.00059538,
+      "nearestNormalDot": -0.23395037,
+      "nearestDensePolygon": 42526
+    },
+    {
+      "polygon": 3404,
+      "tangentZ": -0.43529411764705883,
+      "center": [
+        -0.854141,
+        -0.3512565,
+        0.0437144
+      ],
+      "lowSplitNormal": [
+        0.7400663,
+        -0.6156797,
+        0.2706296
+      ],
+      "nearestDistance": 0.00034286,
+      "nearestNormalDot": 0.94176608,
+      "nearestDensePolygon": 42584
+    },
+    {
+      "polygon": 3411,
+      "tangentZ": -0.9215686274509804,
+      "center": [
+        -0.8514655,
+        0.2696262,
+        0.0127366
+      ],
+      "lowSplitNormal": [
+        0.3233979,
+        0.1380559,
+        0.936138
+      ],
+      "nearestDistance": 0.01404021,
+      "nearestNormalDot": -0.92459429,
+      "nearestDensePolygon": 53841
+    },
+    {
+      "polygon": 3412,
+      "tangentZ": -0.7098039215686274,
+      "center": [
+        -0.8538118,
+        -0.5584728,
+        0.0075046
+      ],
+      "lowSplitNormal": [
+        0.0894261,
+        0.2159948,
+        -0.9722907
+      ],
+      "nearestDistance": 0.00019015,
+      "nearestNormalDot": 0.98724149,
+      "nearestDensePolygon": 42744
+    },
+    {
+      "polygon": 3427,
+      "tangentZ": -0.8196078431372549,
+      "center": [
+        -0.8536566,
+        -0.1609965,
+        0.0398532
+      ],
+      "lowSplitNormal": [
+        0.5181686,
+        -0.0937617,
+        0.8501236
+      ],
+      "nearestDistance": 0.00029388,
+      "nearestNormalDot": 0.7684934,
+      "nearestDensePolygon": 42859
+    },
+    {
+      "polygon": 3431,
+      "tangentZ": -0.9215686274509804,
+      "center": [
+        -0.8540179,
+        -0.1874257,
+        0.0310725
+      ],
+      "lowSplitNormal": [
+        0.0480172,
+        -0.3264527,
+        -0.9439932
+      ],
+      "nearestDistance": 0.00047643,
+      "nearestNormalDot": 0.94704176,
+      "nearestDensePolygon": 41773
+    },
+    {
+      "polygon": 3432,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.8525446,
+        -0.188356,
+        0.0315795
+      ],
+      "lowSplitNormal": [
+        0.08396,
+        -0.8027492,
+        -0.5903766
+      ],
+      "nearestDistance": 0.00013844,
+      "nearestNormalDot": 0.9520708,
+      "nearestDensePolygon": 45583
+    },
+    {
+      "polygon": 3435,
+      "tangentZ": -0.4980392156862745,
+      "center": [
+        -0.8541855,
+        -0.1294975,
+        0.0504789
+      ],
+      "lowSplitNormal": [
+        -0.7525367,
+        0.3671094,
+        -0.546735
+      ],
+      "nearestDistance": 0.00058935,
+      "nearestNormalDot": 0.98220508,
+      "nearestDensePolygon": 40542
+    },
+    {
+      "polygon": 3442,
+      "tangentZ": -0.5529411764705883,
+      "center": [
+        -0.8523119,
+        -0.1667082,
+        0.010712
+      ],
+      "lowSplitNormal": [
+        0.4035333,
+        -0.1345506,
+        -0.9050177
+      ],
+      "nearestDistance": 0.0001668,
+      "nearestNormalDot": 0.99122364,
+      "nearestDensePolygon": 43301
+    },
+    {
+      "polygon": 3443,
+      "tangentZ": -0.6705882352941177,
+      "center": [
+        -0.8538103,
+        -0.5632608,
+        0.0059354
+      ],
+      "lowSplitNormal": [
+        0.0973508,
+        0.1434471,
+        -0.9848582
+      ],
+      "nearestDistance": 0.00025263,
+      "nearestNormalDot": 0.94955066,
+      "nearestDensePolygon": 43306
+    },
+    {
+      "polygon": 3490,
+      "tangentZ": -0.8352941176470589,
+      "center": [
+        -0.8530753,
+        -0.3490864,
+        0.0428347
+      ],
+      "lowSplitNormal": [
+        0.7648127,
+        -0.594397,
+        -0.2485028
+      ],
+      "nearestDistance": 0.0003341,
+      "nearestNormalDot": 0.98168002,
+      "nearestDensePolygon": 44850
+    },
+    {
+      "polygon": 3515,
+      "tangentZ": -0.9529411764705882,
+      "center": [
+        -0.8532352,
+        0.3164792,
+        0.0120333
+      ],
+      "lowSplitNormal": [
+        0.4609703,
+        -0.0288614,
+        0.886946
+      ],
+      "nearestDistance": 0.01556455,
+      "nearestNormalDot": -0.96547913,
+      "nearestDensePolygon": 48427
+    },
+    {
+      "polygon": 3546,
+      "tangentZ": -0.8588235294117648,
+      "center": [
+        -0.854184,
+        -0.3138085,
+        0.0066136
+      ],
+      "lowSplitNormal": [
+        0.5459206,
+        0.0706927,
+        0.8348492
+      ],
+      "nearestDistance": 0.00787224,
+      "nearestNormalDot": -0.78390194,
+      "nearestDensePolygon": 48305
+    },
+    {
+      "polygon": 3552,
+      "tangentZ": -0.7568627450980392,
+      "center": [
+        -0.8522615,
+        0.3691386,
+        0.0117908
+      ],
+      "lowSplitNormal": [
+        0.7791563,
+        0.2993783,
+        0.550716
+      ],
+      "nearestDistance": 0.01906142,
+      "nearestNormalDot": -0.79572473,
+      "nearestDensePolygon": 101435
+    },
+    {
+      "polygon": 3558,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8532205,
+        0.6455122,
+        -0.0952033
+      ],
+      "lowSplitNormal": [
+        0.8132522,
+        0.0229146,
+        -0.5814601
+      ],
+      "nearestDistance": 0.00038737,
+      "nearestNormalDot": 0.97855187,
+      "nearestDensePolygon": 44700
+    },
+    {
+      "polygon": 3565,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8521143,
+        0.6472387,
+        -0.0922947
+      ],
+      "lowSplitNormal": [
+        0.822011,
+        0.3715926,
+        -0.4315285
+      ],
+      "nearestDistance": 0.00034838,
+      "nearestNormalDot": 0.9908953,
+      "nearestDensePolygon": 46474
+    },
+    {
+      "polygon": 3577,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.8532061,
+        0.453163,
+        0.0263212
+      ],
+      "lowSplitNormal": [
+        0.3144219,
+        0.374523,
+        -0.8722795
+      ],
+      "nearestDistance": 0.00040677,
+      "nearestNormalDot": 0.89676906,
+      "nearestDensePolygon": 44238
+    },
+    {
+      "polygon": 3578,
+      "tangentZ": -0.7411764705882353,
+      "center": [
+        -0.8537031,
+        -0.3515828,
+        0.0522653
+      ],
+      "lowSplitNormal": [
+        -0.2555455,
+        -0.7366881,
+        -0.6260887
+      ],
+      "nearestDistance": 0.0006887,
+      "nearestNormalDot": 0.92034172,
+      "nearestDensePolygon": 42439
+    },
+    {
+      "polygon": 3580,
+      "tangentZ": -0.9843137254901961,
+      "center": [
+        -0.8516736,
+        -0.3676578,
+        0.041382
+      ],
+      "lowSplitNormal": [
+        0.7881274,
+        -0.590521,
+        -0.1736095
+      ],
+      "nearestDistance": 0.00030363,
+      "nearestNormalDot": 0.99912428,
+      "nearestDensePolygon": 47658
+    },
+    {
+      "polygon": 3617,
+      "tangentZ": -0.9058823529411765,
+      "center": [
+        -0.8520932,
+        -0.3471771,
+        0.0442088
+      ],
+      "lowSplitNormal": [
+        0.4080924,
+        -0.5522005,
+        0.7270043
+      ],
+      "nearestDistance": 8.663e-05,
+      "nearestNormalDot": 0.91381639,
+      "nearestDensePolygon": 45537
+    },
+    {
+      "polygon": 3620,
+      "tangentZ": -0.6470588235294117,
+      "center": [
+        -0.8529367,
+        -0.5785186,
+        0.0052199
+      ],
+      "lowSplitNormal": [
+        0.9908757,
+        -0.1321127,
+        -0.0266756
+      ],
+      "nearestDistance": 0.00060824,
+      "nearestNormalDot": 0.98945818,
+      "nearestDensePolygon": 46119
+    },
+    {
+      "polygon": 3624,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.852248,
+        -0.4379958,
+        0.0099731
+      ],
+      "lowSplitNormal": [
+        0.2237392,
+        -0.0511651,
+        0.9733051
+      ],
+      "nearestDistance": 0.01236453,
+      "nearestNormalDot": -0.51820873,
+      "nearestDensePolygon": 77343
+    },
+    {
+      "polygon": 3630,
+      "tangentZ": -0.6392156862745098,
+      "center": [
+        -0.8533469,
+        -0.5705591,
+        -0.003306
+      ],
+      "lowSplitNormal": [
+        -0.2965739,
+        -0.0521142,
+        0.9535869
+      ],
+      "nearestDistance": 0.00210874,
+      "nearestNormalDot": 0.86505701,
+      "nearestDensePolygon": 45702
+    },
+    {
+      "polygon": 3636,
+      "tangentZ": -0.9529411764705882,
+      "center": [
+        -0.8558488,
+        -0.299025,
+        0.0117416
+      ],
+      "lowSplitNormal": [
+        0.1650846,
+        0.0643912,
+        0.9841753
+      ],
+      "nearestDistance": 0.00846541,
+      "nearestNormalDot": -0.48856314,
+      "nearestDensePolygon": 48976
+    },
+    {
+      "polygon": 3642,
+      "tangentZ": -0.5215686274509803,
+      "center": [
+        -0.8506672,
+        -0.1818651,
+        0.0116087
+      ],
+      "lowSplitNormal": [
+        0.4855592,
+        0.035976,
+        0.8734633
+      ],
+      "nearestDistance": 0.00288198,
+      "nearestNormalDot": -0.12335382,
+      "nearestDensePolygon": 45577
+    },
+    {
+      "polygon": 3645,
+      "tangentZ": -0.9137254901960784,
+      "center": [
+        -0.8517337,
+        -0.3049566,
+        0.0530561
+      ],
+      "lowSplitNormal": [
+        -0.2682841,
+        0.129211,
+        -0.9546351
+      ],
+      "nearestDistance": 0.00024435,
+      "nearestNormalDot": 0.99849061,
+      "nearestDensePolygon": 52684
+    },
+    {
+      "polygon": 3647,
+      "tangentZ": -0.5058823529411764,
+      "center": [
+        -0.8516304,
+        0.6543718,
+        -0.0941517
+      ],
+      "lowSplitNormal": [
+        -0.9104987,
+        -0.3581067,
+        0.2067651
+      ],
+      "nearestDistance": 0.00017522,
+      "nearestNormalDot": 0.98176192,
+      "nearestDensePolygon": 45888
+    },
+    {
+      "polygon": 3648,
+      "tangentZ": -0.9686274509803922,
+      "center": [
+        -0.8529231,
+        -0.4203052,
+        0.0119337
+      ],
+      "lowSplitNormal": [
+        0.0274907,
+        0.0261282,
+        0.9992805
+      ],
+      "nearestDistance": 0.0101473,
+      "nearestNormalDot": -0.25370706,
+      "nearestDensePolygon": 70553
+    },
+    {
+      "polygon": 3654,
+      "tangentZ": -0.7725490196078432,
+      "center": [
+        -0.8519268,
+        -0.3237156,
+        0.0322883
+      ],
+      "lowSplitNormal": [
+        -0.1024782,
+        -0.3769176,
+        -0.9205603
+      ],
+      "nearestDistance": 0.00057724,
+      "nearestNormalDot": 0.98784972,
+      "nearestDensePolygon": 44105
+    },
+    {
+      "polygon": 3656,
+      "tangentZ": -0.803921568627451,
+      "center": [
+        -0.85221,
+        -0.3661619,
+        0.0441348
+      ],
+      "lowSplitNormal": [
+        0.5342094,
+        -0.1687643,
+        0.828335
+      ],
+      "nearestDistance": 0.00012604,
+      "nearestNormalDot": 0.99885001,
+      "nearestDensePolygon": 45754
+    },
+    {
+      "polygon": 3658,
+      "tangentZ": -0.207843137254902,
+      "center": [
+        -0.8499663,
+        -0.2447915,
+        0.0
+      ],
+      "lowSplitNormal": [
+        0.4945032,
+        -0.3752219,
+        0.7840121
+      ],
+      "nearestDistance": 0.01116927,
+      "nearestNormalDot": -0.39215075,
+      "nearestDensePolygon": 40157
+    },
+    {
+      "polygon": 3667,
+      "tangentZ": -0.9450980392156862,
+      "center": [
+        -0.8528435,
+        -0.2934323,
+        0.0333823
+      ],
+      "lowSplitNormal": [
+        -0.0374773,
+        0.9859837,
+        0.1625779
+      ],
+      "nearestDistance": 0.00021645,
+      "nearestNormalDot": 0.97966043,
+      "nearestDensePolygon": 43885
+    },
+    {
+      "polygon": 3669,
+      "tangentZ": -0.9372549019607843,
+      "center": [
+        -0.8524852,
+        -0.3680721,
+        0.053076
+      ],
+      "lowSplitNormal": [
+        -0.6139603,
+        0.1277247,
+        -0.7789346
+      ],
+      "nearestDistance": 0.00029448,
+      "nearestNormalDot": 0.99210907,
+      "nearestDensePolygon": 44208
+    },
+    {
+      "polygon": 3697,
+      "tangentZ": -0.7647058823529411,
+      "center": [
+        -0.8506071,
+        -0.3601022,
+        0.0527902
+      ],
+      "lowSplitNormal": [
+        -0.5598621,
+        -0.237324,
+        -0.7938714
+      ],
+      "nearestDistance": 0.00012554,
+      "nearestNormalDot": 0.86789959,
+      "nearestDensePolygon": 48343
+    },
+    {
+      "polygon": 3699,
+      "tangentZ": -0.6392156862745098,
+      "center": [
+        -0.8509356,
+        -0.5680149,
+        0.0065315
+      ],
+      "lowSplitNormal": [
+        0.8461757,
+        -0.1821262,
+        -0.500816
+      ],
+      "nearestDistance": 0.00040818,
+      "nearestNormalDot": 0.99972685,
+      "nearestDensePolygon": 47698
+    },
+    {
+      "polygon": 3700,
+      "tangentZ": -0.03529411764705881,
+      "center": [
+        -0.8514826,
+        -0.5697164,
+        0.0076838
+      ],
+      "lowSplitNormal": [
+        0.9552734,
+        -0.295628,
+        -0.007531
+      ],
+      "nearestDistance": 0.00021418,
+      "nearestNormalDot": 0.99735311,
+      "nearestDensePolygon": 46567
+    },
+    {
+      "polygon": 3723,
+      "tangentZ": -0.9921568627450981,
+      "center": [
+        -0.8529577,
+        -0.2230723,
+        0.0100307
+      ],
+      "lowSplitNormal": [
+        0.3133771,
+        -0.0331249,
+        0.9490508
+      ],
+      "nearestDistance": 0.00168417,
+      "nearestNormalDot": -0.74792012,
+      "nearestDensePolygon": 50541
+    },
+    {
+      "polygon": 3739,
+      "tangentZ": -0.8980392156862745,
+      "center": [
+        -0.8523483,
+        -0.3810274,
+        0.0388673
+      ],
+      "lowSplitNormal": [
+        -0.7904592,
+        0.596938,
+        0.1372554
+      ],
+      "nearestDistance": 0.00018337,
+      "nearestNormalDot": 0.94048089,
+      "nearestDensePolygon": 44887
+    },
+    {
+      "polygon": 3740,
+      "tangentZ": -0.788235294117647,
+      "center": [
+        -0.8541055,
+        0.1129704,
+        0.0347135
+      ],
+      "lowSplitNormal": [
+        0.1940314,
+        0.5784307,
+        0.7923192
+      ],
+      "nearestDistance": 0.00030507,
+      "nearestNormalDot": 0.94697795,
+      "nearestDensePolygon": 41470
+    },
+    {
+      "polygon": 3742,
+      "tangentZ": -0.7333333333333334,
+      "center": [
+        -0.852392,
+        -0.1627221,
+        0.0388835
+      ],
+      "lowSplitNormal": [
+        0.6165454,
+        -0.1454549,
+        0.7737664
+      ],
+      "nearestDistance": 0.00018869,
+      "nearestNormalDot": 0.983724,
+      "nearestDensePolygon": 45559
+    },
+    {
+      "polygon": 3754,
+      "tangentZ": -0.9058823529411765,
+      "center": [
+        -0.8490086,
+        -0.1747522,
+        0.0
+      ],
+      "lowSplitNormal": [
+        -0.2046164,
+        0.3697473,
+        0.9063216
+      ],
+      "nearestDistance": 0.00728912,
+      "nearestNormalDot": 0.28498727,
+      "nearestDensePolygon": 67532
+    },
+    {
+      "polygon": 3755,
+      "tangentZ": -0.8196078431372549,
+      "center": [
+        -0.85177,
+        -0.5625035,
+        -0.003306
+      ],
+      "lowSplitNormal": [
+        -0.2965812,
+        -0.0521149,
+        0.9535847
+      ],
+      "nearestDistance": 0.00025757,
+      "nearestNormalDot": 0.82786886,
+      "nearestDensePolygon": 42626
+    },
+    {
+      "polygon": 3763,
+      "tangentZ": -0.7960784313725491,
+      "center": [
+        -0.8525333,
+        -0.3251776,
+        0.052751
+      ],
+      "lowSplitNormal": [
+        -0.3096159,
+        0.1030733,
+        -0.9452587
+      ],
+      "nearestDistance": 0.00016553,
+      "nearestNormalDot": 0.98356835,
+      "nearestDensePolygon": 46134
+    },
+    {
+      "polygon": 3769,
+      "tangentZ": -0.6705882352941177,
+      "center": [
+        -0.8513367,
+        0.2799211,
+        0.0100975
+      ],
+      "lowSplitNormal": [
+        0.1660128,
+        -0.2734175,
+        0.9474611
+      ],
+      "nearestDistance": 0.01424752,
+      "nearestNormalDot": -0.9620107,
+      "nearestDensePolygon": 50750
+    },
+    {
+      "polygon": 3770,
+      "tangentZ": -0.8352941176470589,
+      "center": [
+        -0.8515067,
+        0.65725,
+        -0.0628928
+      ],
+      "lowSplitNormal": [
+        0.0203556,
+        -0.7159035,
+        -0.6979024
+      ],
+      "nearestDistance": 0.00055276,
+      "nearestNormalDot": 0.97567642,
+      "nearestDensePolygon": 47201
+    },
+    {
+      "polygon": 3789,
+      "tangentZ": -0.48235294117647054,
+      "center": [
+        -0.8542762,
+        -0.2746263,
+        0.0123639
+      ],
+      "lowSplitNormal": [
+        0.180752,
+        -0.0886031,
+        0.9795296
+      ],
+      "nearestDistance": 0.017298,
+      "nearestNormalDot": -0.9374081,
+      "nearestDensePolygon": 47735
+    },
+    {
+      "polygon": 3791,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8514168,
+        0.6439289,
+        -0.091708
+      ],
+      "lowSplitNormal": [
+        0.7956326,
+        -0.2162347,
+        -0.5658721
+      ],
+      "nearestDistance": 0.0001838,
+      "nearestNormalDot": 0.9927725,
+      "nearestDensePolygon": 47845
+    },
+    {
+      "polygon": 3795,
+      "tangentZ": -0.7725490196078432,
+      "center": [
+        -0.8509943,
+        -0.1959447,
+        0.0109203
+      ],
+      "lowSplitNormal": [
+        0.4939859,
+        0.1930279,
+        -0.8477724
+      ],
+      "nearestDistance": 0.00035312,
+      "nearestNormalDot": 0.99704732,
+      "nearestDensePolygon": 47230
+    },
+    {
+      "polygon": 3802,
+      "tangentZ": -0.7176470588235294,
+      "center": [
+        -0.8511098,
+        -0.6360183,
+        -0.0118415
+      ],
+      "lowSplitNormal": [
+        0.3685819,
+        -0.637704,
+        0.6763734
+      ],
+      "nearestDistance": 0.00269191,
+      "nearestNormalDot": 0.99551175,
+      "nearestDensePolygon": 47126
+    },
+    {
+      "polygon": 3803,
+      "tangentZ": -0.9137254901960784,
+      "center": [
+        -0.8527966,
+        -0.2548435,
+        0.0123161
+      ],
+      "lowSplitNormal": [
+        0.4060657,
+        -0.0742936,
+        0.9108189
+      ],
+      "nearestDistance": 0.00436425,
+      "nearestNormalDot": 0.01843595,
+      "nearestDensePolygon": 41216
+    },
+    {
+      "polygon": 3810,
+      "tangentZ": -0.9843137254901961,
+      "center": [
+        -0.8507013,
+        -0.1617156,
+        0.0442362
+      ],
+      "lowSplitNormal": [
+        0.6358544,
+        0.2412396,
+        0.7331389
+      ],
+      "nearestDistance": 0.00012262,
+      "nearestNormalDot": 0.99204242,
+      "nearestDensePolygon": 50707
+    },
+    {
+      "polygon": 3813,
+      "tangentZ": -0.9294117647058824,
+      "center": [
+        -0.8503425,
+        -0.3159822,
+        0.0317623
+      ],
+      "lowSplitNormal": [
+        -0.0037211,
+        -0.2097425,
+        -0.9777496
+      ],
+      "nearestDistance": 0.00032712,
+      "nearestNormalDot": 0.97171081,
+      "nearestDensePolygon": 45512
+    },
+    {
+      "polygon": 3815,
+      "tangentZ": -0.8352941176470589,
+      "center": [
+        -0.8521875,
+        0.6496263,
+        -0.0881255
+      ],
+      "lowSplitNormal": [
+        0.6218655,
+        0.7779804,
+        -0.0896091
+      ],
+      "nearestDistance": 0.00023465,
+      "nearestNormalDot": 0.9723581,
+      "nearestDensePolygon": 45072
+    },
+    {
+      "polygon": 3824,
+      "tangentZ": -0.9529411764705882,
+      "center": [
+        -0.8485271,
+        -0.3070621,
+        0.0
+      ],
+      "lowSplitNormal": [
+        -7.1e-06,
+        -5.3e-06,
+        1.0
+      ],
+      "nearestDistance": 0.01467901,
+      "nearestNormalDot": -0.98975334,
+      "nearestDensePolygon": 62572
+    },
+    {
+      "polygon": 3825,
+      "tangentZ": -0.9764705882352941,
+      "center": [
+        -0.8491891,
+        0.3272458,
+        0.0
+      ],
+      "lowSplitNormal": [
+        0.2476661,
+        0.0169088,
+        0.968698
+      ],
+      "nearestDistance": 0.02142467,
+      "nearestNormalDot": 0.18622244,
+      "nearestDensePolygon": 138026
+    },
+    {
+      "polygon": 3838,
+      "tangentZ": -0.9607843137254902,
+      "center": [
+        -0.8508672,
+        -0.5536464,
+        0.0047924
+      ],
+      "lowSplitNormal": [
+        0.3290459,
+        -0.1605437,
+        0.9305668
+      ],
+      "nearestDistance": 0.00353621,
+      "nearestNormalDot": -0.95731278,
+      "nearestDensePolygon": 51889
+    },
+    {
+      "polygon": 3839,
+      "tangentZ": -0.8352941176470589,
+      "center": [
+        -0.851919,
+        -0.157477,
+        0.0431403
+      ],
+      "lowSplitNormal": [
+        0.8619223,
+        0.382709,
+        0.3326017
+      ],
+      "nearestDistance": 3.208e-05,
+      "nearestNormalDot": 0.74168606,
+      "nearestDensePolygon": 45096
+    },
+    {
+      "polygon": 3849,
+      "tangentZ": -0.9921568627450981,
+      "center": [
+        -0.8519085,
+        0.3099127,
+        0.0120333
+      ],
+      "lowSplitNormal": [
+        0.2123626,
+        -0.045192,
+        0.9761454
+      ],
+      "nearestDistance": 0.01550193,
+      "nearestNormalDot": -0.99488126,
+      "nearestDensePolygon": 52424
+    },
+    {
+      "polygon": 3852,
+      "tangentZ": -0.5529411764705883,
+      "center": [
+        -0.8523746,
+        -0.3293157,
+        0.0431719
+      ],
+      "lowSplitNormal": [
+        0.1747599,
+        0.7728313,
+        -0.6100743
+      ],
+      "nearestDistance": 0.00038875,
+      "nearestNormalDot": 0.85000456,
+      "nearestDensePolygon": 45399
+    },
+    {
+      "polygon": 3854,
+      "tangentZ": -0.6627450980392157,
+      "center": [
+        -0.8507608,
+        -0.3011483,
+        0.0
+      ],
+      "lowSplitNormal": [
+        -3.51e-05,
+        -9.1e-06,
+        1.0
+      ],
+      "nearestDistance": 0.01557004,
+      "nearestNormalDot": -0.88541699,
+      "nearestDensePolygon": 54611
+    },
+    {
+      "polygon": 3856,
+      "tangentZ": -0.5764705882352941,
+      "center": [
+        -0.8524768,
+        -0.3569855,
+        0.0286048
+      ],
+      "lowSplitNormal": [
+        -0.4225892,
+        0.453385,
+        0.7847677
+      ],
+      "nearestDistance": 0.00894373,
+      "nearestNormalDot": 0.48188349,
+      "nearestDensePolygon": 68800
+    },
+    {
+      "polygon": 3862,
+      "tangentZ": -0.4509803921568627,
+      "center": [
+        -0.8513096,
+        -0.1772772,
+        0.0051766
+      ],
+      "lowSplitNormal": [
+        -0.1048143,
+        0.8059291,
+        0.5826597
+      ],
+      "nearestDistance": 0.00622177,
+      "nearestNormalDot": -0.72570463,
+      "nearestDensePolygon": 43567
+    },
+    {
+      "polygon": 3881,
+      "tangentZ": -0.5215686274509803,
+      "center": [
+        -0.8507044,
+        0.6571155,
+        -0.0987292
+      ],
+      "lowSplitNormal": [
+        -0.7381086,
+        -0.6744248,
+        -0.0186224
+      ],
+      "nearestDistance": 0.00021023,
+      "nearestNormalDot": 0.60385909,
+      "nearestDensePolygon": 1254236
+    },
+    {
+      "polygon": 3927,
+      "tangentZ": -0.6470588235294117,
+      "center": [
+        -0.8496378,
+        -0.188101,
+        0.0317472
+      ],
+      "lowSplitNormal": [
+        0.0718238,
+        -0.8132032,
+        -0.5775309
+      ],
+      "nearestDistance": 0.00027112,
+      "nearestNormalDot": 0.8483804,
+      "nearestDensePolygon": 49248
+    },
+    {
+      "polygon": 3937,
+      "tangentZ": -0.4901960784313726,
+      "center": [
+        -0.8533226,
+        -0.5601434,
+        -0.0043362
+      ],
+      "lowSplitNormal": [
+        -0.5900068,
+        -0.0157408,
+        0.8072448
+      ],
+      "nearestDistance": 0.00040932,
+      "nearestNormalDot": 0.96502015,
+      "nearestDensePolygon": 42626
+    },
+    {
+      "polygon": 3949,
+      "tangentZ": -0.8823529411764706,
+      "center": [
+        -0.8474941,
+        -0.2550746,
+        0.0
+      ],
+      "lowSplitNormal": [
+        -3.08e-05,
+        -1.47e-05,
+        1.0
+      ],
+      "nearestDistance": 0.01447371,
+      "nearestNormalDot": -0.68020954,
+      "nearestDensePolygon": 41538
+    }
+  ],
+  "blender": "5.2.2 LTS"
+}

@@ -125,6 +125,13 @@ They are starting experiments, not fixed shipping budgets. Inspect triangle
 distribution and thin apertures, not just totals. Do not uniformly subdivide a
 melted mesh or run a second blind percentage reduction after review.
 
+Verify modifier weight semantics before describing a vertex group as protection.
+In Blender 5.2.2 Collapse, zero-weight edges are excluded and higher weights make
+collapse cheaper. A group authored with high weights on ornament therefore needs
+inverted use. Record that setting and compare retained ornament against planar
+regions; the group name and final triangle count are insufficient evidence.
+[Blender's versioned collapse implementation](https://github.com/blender/blender/blob/v5.2.2/source/blender/bmesh/tools/bmesh_decimate_collapse.cc#L216).
+
 Meshy's triangle mode performs decimation; quad mode produces quad-dominant
 topology. A requested polygon count may differ from the result. Neither output
 is automatically approved topology for our game. [Meshy Remesh API](https://docs.meshy.ai/en/api/remesh).
@@ -187,6 +194,20 @@ mesh data can support instance export, but does not alone prove runtime batching
 - Capture the same camera, lighting, DPR and viewport as the archived baseline;
   show current/dense/candidate views and an actual textured in-game close-up.
   A clay pass, validator pass or screenshot alone cannot stand in for the others.
+- Review clay immediately after each destructive geometry operation. The V4
+  platform passed numerical export/tangent gates yet failed visually after a
+  combined fit, contact flatten, collapse and normal-finalization pipeline.
+  Preserve intermediate stages to isolate the first regression. Do not spend
+  another full bake/export cycle repairing a few tangents while broad surfaces
+  and arches already fail the clay comparison.
+- If a few exported tangents are singular despite nondegenerate geometry and UVs,
+  diagnose those exact triangles before changing topology. A local repair may use
+  their UV derivatives, projected onto the exported normal, with handedness from
+  the corresponding bitangent. Require agreement across every incident triangle,
+  finite unit orthogonal results, unchanged positions/UVs/normals/indices and
+  byte-identical unaffected tangents. Arbitrary-axis fallbacks do not establish
+  a valid normal-map basis. Record affected rows and inspect close PBR views;
+  this repair does not establish full MikkTSpace continuity or validate a bake.
 - Record bytes, draw calls, pass-inclusive triangles, geometry and texture
   counts, plus sustained owner tablet frame time/heat separately. A hardware
   desktop capture does not establish tablet performance.

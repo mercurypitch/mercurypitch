@@ -50,14 +50,19 @@ the route or add a new released level during this pass. Fog is owner accepted.
 
 - [x] Previous V4 source accepted: 1,256,556 triangles; 4K base/normal maps.
 - [x] Capture the existing V3 arrival and close-up views in the actual game.
-- [ ] Prepare fitted V4 marble runtime derivative and compare 2K/4K materials.
+- [x] Prepare two fitted V4 derivative approaches and review 2K/4K raw exports.
+      Both fail visual review; neither is approved for runtime integration.
 - [ ] Generate V5 frost and moving-platform source auditions (two 35-credit
       estimates). Review before deciding their runtime integration.
-- [ ] Independently review export geometry, collision alignment and art.
-- [ ] Integrate accepted derivative(s), verify actual browser assets and run
-      focused asset/loader checks.
+- [x] Independently review export geometry, collision alignment and art; reject
+      the 90k bake path and direct 238k path despite structural validation.
+- [ ] Isolate the first destructive production step, then prove one slab/arch
+      region before producing another whole-platform derivative.
+- [ ] Integrate a future accepted derivative, verify actual browser assets and
+      run focused asset/loader checks. Deferred: this batch has no accepted low mesh.
 - [x] Fix the root-browser cover decode check at `4c0ef3c3`; both affected tests pass concurrently locally and all four root-browser CI shards now pass. All 40 PR checks pass on that revision.
-- [ ] Commit/push the asset stage and give the owner a stable refreshed preview.
+- [x] Finalize production evidence and plans for the PR. The stable preview retains V3;
+      no rejected candidate should be installed merely to finish this checklist.
 - [x] Specify the melody-contour learning follow-up and make a listening/visual
       audition while the asset bake runs. Desktop, tablet and phone reviews pass.
       This is reference playback; microphone judging remains a later stage.
@@ -77,13 +82,55 @@ Simply disabling the normal map leaves lumpy broad faces and arches, so that
 fallback is also rejected. No weakened normal strength or clamped normal map
 is accepted as a repair.
 
-The next bounded comparison derives a roughly 240k shell directly from the
-preserved dense donor, protecting ornament and retaining its UVs and provider
-normal map. This avoids the faulty projection onto the provider remesh. It
-must pass clay, PBR, contact, tangent and real-game 2K/4K review; the higher scene
-cost must be reported. The bundle assembler independently verifies exact
-preservation of all five non-marble V3 roots and shared resources. Public
-platforms remain V3 until a replacement passes these gates.
+The direct derivative now has 238,000 shell triangles plus the existing
+32-triangle landing boundary. It retains the provider atlas/PBR, with one
+documented half-pixel repair of a degenerate UV triangle, rather than using the
+rejected projection. High-detail protection weights use Blender Collapse's
+verified inverted-group convention. Overall contact error is 7.168 mm; central
+contact error is 0.9 mm. Both raw 2K/4K exports pass Khronos with zero errors or
+warnings. Seven singular exported tangent rows are reconstructed from their
+actual triangle UV derivatives with measured handedness; all other tangent
+bytes and the exported positions, normals, UVs and indices remain exact.
+This does not claim full MikkTSpace continuity or a successful normal bake.
+
+Matched clay and PBR review decisively rejects the direct 238k candidate too:
+broad-slab triangular shading defects, rough arches and damaged-looking top
+artwork remain. Both 2K and 4K fail; texture resolution is not a repair. The
+combined fitting/flattening/simplification/normal-finalization pipeline is
+implicated, but these final comparisons alone do not isolate its first faulty
+step. Do not claim that seven repaired tangents caused or solved these much
+larger surface defects.
+
+Stop this bounded experiment here. No optimization, assembled V4 bundle or
+public installation follows a failed visual gate. The prepared assembler can
+verify preservation of the other five V3 roots in a future accepted build;
+its existence does not establish acceptance. The original source, packed
+direct Blender project, rejected paths and hash-resolved archive index remain
+under V4. Marble source plus provider remesh cost 40 credits total.
+
+The actual V3 grazing-view baseline submits 63 draw calls and 1,125,424
+pass-inclusive triangles per animation-frame interval. QA-only wrappers observe
+native WebGL calls; they do not suppress drawing or change app runtime code.
+Fog hides distant platforms visually, but all six marble instances still incur
+vertex work. The rejected candidate was not installed or performance-measured.
+Measure a future visually accepted candidate with the same view. Review distance
+LOD or instance visibility against physical-tablet evidence before extending
+geometry density across the main galleries.
+
+### Next bounded production experiment
+
+1. Preserve the rejected outputs. In a separate reproduction directory, capture
+   matched clay snapshots after fit only, contact flattening, simplification and
+   split-normal finalization. Compare the exact same region after every step.
+2. Keep the first failing step isolated. Validate the landing surface separately
+   from layered trim, arches and foliage; a bulk projection through all nearby
+   sheets already failed. Do not use another arbitrary polygon budget as a fix.
+3. Prove one slab/arch component using the Meshy source detail, a deliberate
+   lower-resolution surface and isolated high-to-low bake where necessary.
+   Require clean clay before normals/textures, then clean grazing PBR views.
+4. Only extend the successful component method to the full asset. Recheck the
+   exact glTF in Cloudway, then compare 2K/4K and measure performance. Keep this
+   on the existing mini-game route until the owner accepts the visual result.
 
 ## External request checkpoint
 
@@ -105,11 +152,12 @@ successful singing fills one continuous ribbon from its beginning to its end.
 Start with three notes and a small comfortable range, audition five/seven-note
 phrases, then consider seven-to-ten-note phrases and later vibrato ornaments.
 
-The next specification must cover musical authorship, comfortable transposition,
-one shared curve for display/reference/judging, forward-only live alignment,
-fair timing and breath breaks, existing microphone ownership, lesson placement,
-and replay difficulty. First audition the melodies and visual language. A
-reference-playback demo must be clearly distinguished from microphone judging.
+The saved [specification](MELODY-RIBBON-LEARNING-SPEC.md) covers musical
+authorship, comfortable transposition, one shared curve for display/reference/
+judging, forward-only live alignment, fair timing and breath breaks, existing
+microphone ownership, lesson placement and replay difficulty. The separate
+listening visualizer is ready for musical review. It is reference playback;
+microphone judging and the next learning gallery are not implemented.
 
 Related: [master plan](NEXT-MASTER-PLAN.md),
 [source audition](MESHY-71-ULTRA-4K-AUDITION.md),

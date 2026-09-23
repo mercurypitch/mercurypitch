@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "hypothesis": "If provider normal composition causes the black triangles, disconnecting the provider normal while preserving geometry, normals, UVs, cage and ray distance will eliminate negative tangent-Z texels.",
+  "sourceBlend": {
+    "file": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+    "sha256": "a1b8ff6e2ab588b4b49d84dd5711aa8d7face0454ca88c9d6bb078b7126d20ec"
+  },
+  "output": {
+    "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-normal-geometry-only-2k.png",
+    "sha256": "a350d8132a33367d92aa2ea0e0ad1860fb71e160011b28c7b0d2711961002d44",
+    "bytes": 7059584,
+    "dimensions": [
+      2048,
+      2048
+    ]
+  },
+  "controlledInputs": {
+    "low": "Cloudway_Marble__DonorShell",
+    "high": "Cloudway_Marble__DenseBakeSource",
+    "providerNormalConnected": false,
+    "cageExtrusionMetres": 0.018,
+    "maximumRayDistanceMetres": 0.075,
+    "normalSpace": "TANGENT"
+  },
+  "allTexelStatistics": {
+    "negativeTangentZ": 595308,
+    "tangentZBelowPointOne": 620203,
+    "vectorLengthBelowPointFive": 100046,
+    "minimumTangentZ": -1.0,
+    "medianTangentZ": 0.9529411792755127
+  },
+  "interpretation": "Hypothesis rejected: negative tangent Z persists without the provider normal, so provider-normal composition is not the cause. The unchanged cage/ray projection is hitting oppositely oriented or overlapping dense sheets.",
+  "blender": "5.2.2 LTS",
+  "rebuild": "rtk proxy timeout 900 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/diagnose_marble_normal_bake.py",
+  "usedUvTriangleCentroids": {
+    "sampledTriangles": 89984,
+    "negativeTangentZ": 16348,
+    "tangentZBelowPointOne": 17159,
+    "vectorLengthBelowPointFive": 3238,
+    "exactNeutral": 2085,
+    "exactReverse": 9,
+    "minimumTangentZ": -1.0,
+    "medianTangentZ": 0.9294117647058824
+  }
+}

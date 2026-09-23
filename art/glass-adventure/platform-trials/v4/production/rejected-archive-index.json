@@ -1,0 +1,297 @@
+{
+  "purpose": "Resolve original report paths by their recorded hashes after rejected artifacts were archived. Original reports remain unchanged.",
+  "scope": "Rejected V4 local bake and direct-simplification iterations; immutable provider originals are separate. There is no accepted V4 runtime derivative.",
+  "limitation": "The earliest rejected iteration's packed Blend and standalone AO/metallic/roughness PNG encodings were superseded before archival. Both rejected GLBs retain their exact embedded base/normal/ORM images; ORM retains those three channels, but does not recreate the missing original PNG encodings. The later corrected 90k and direct 238k iterations have their full packed Blend, maps and GLBs preserved.",
+  "reports": [
+    {
+      "report": "art/glass-adventure/platform-trials/v4/production/cloudway-marble-runtime-v4-build-rejected-238k-direct-visual.json",
+      "sha256": "eac0443e9c787e9fbda6a89796f9f3899f1b875d10fda17a9122955b611ec53f",
+      "references": [
+        {
+          "reportPointer": "/runtimeGeometry/residualTangentDiagnosis",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-residual-tangent-singularities.json",
+          "sha256": "1d63749b4f8bf4e3a0a157000f6845ecbcb6b2dcd5306b31b3564b25ad319027",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-residual-tangent-singularities.json",
+          "bytes": 25846
+        },
+        {
+          "reportPointer": "/runtimeGeometry/boundedLocalSliverRepairResult",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-local-sliver-repair.json",
+          "sha256": "18b035d502c9cf6e35c07def035ff8182a5ecc783bcc387caa99f2f3aebf98ad",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-local-sliver-repair.json",
+          "bytes": 1004
+        },
+        {
+          "reportPointer": "/directProviderPbr/maps/baseColor4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-4k.png",
+          "sha256": "f010c48c9377c99f46ddc89025f7b3e830e53e377b908227575bd79e442e05ba",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected/cloudway-marble-v4-base-4k.png",
+          "bytes": 24712264
+        },
+        {
+          "reportPointer": "/directProviderPbr/maps/normal4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-4k.png",
+          "sha256": "56bfd319cca2e1f84e3aa750bb7e21ca49a112766b4962549a1a45f2fe85a64a",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected/cloudway-marble-v4-normal-4k.png",
+          "bytes": 20798487
+        },
+        {
+          "reportPointer": "/directProviderPbr/maps/metallic2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-metallic-2k.png",
+          "sha256": "1fbcf8ae5a16f5be6f4c34f5a034c8802fb695f9cae720dadbeba8e267f459d1",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected/cloudway-marble-v4-metallic-2k.png",
+          "bytes": 781869
+        },
+        {
+          "reportPointer": "/directProviderPbr/maps/roughness2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-roughness-2k.png",
+          "sha256": "446bc4c73aa2b9ebee7e00deaba1c79ea1c13be1b5bc70f6f2fb350dcd9d78dd",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected/cloudway-marble-v4-roughness-2k.png",
+          "bytes": 1761714
+        },
+        {
+          "reportPointer": "/directProviderPbr/maps/orm2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-orm-2k.png",
+          "sha256": "cb03a51adca90a202e9100c475156e6063e4bbe6284f20f20ed9aaac1fe0c6ea",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected/cloudway-marble-v4-orm-2k.png",
+          "bytes": 2523050
+        },
+        {
+          "reportPointer": "/directProviderPbr/maps/baseColor2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-2k.png",
+          "sha256": "c5cd7902866c339320ad71ef51979939356c3cccf617d516058e1d0a54c0f4ff",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected/cloudway-marble-v4-base-2k.png",
+          "bytes": 7322602
+        },
+        {
+          "reportPointer": "/directProviderPbr/maps/normal2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-2k.png",
+          "sha256": "1cd0c38bed3e37b836011149b1ddcaf0d2123f9c2661b689c5355e0acaf7a074",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected/cloudway-marble-v4-normal-2k.png",
+          "bytes": 5009005
+        },
+        {
+          "reportPointer": "/packedBlend",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+          "sha256": "c9b5b4cd9fce13da10348b62546e97b5ee5327fff8efa7135deb3766c6c72710",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/cloudway-platform-kit-v4-238k-direct-visual-rejected.blend",
+          "bytes": 169198318
+        },
+        {
+          "reportPointer": "/variants/4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-4k-blender.glb",
+          "sha256": "4e2edb1e09b96d9b6eef09a5b0bff79000281212ff7032cebba18da56a5b640a",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-4k-238k-direct-visual-rejected.glb",
+          "bytes": 63852840
+        },
+        {
+          "reportPointer": "/variants/2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-2k-blender.glb",
+          "sha256": "a21f976eea18591bbb25eb26b5b67598584bf47d7e4aa597e347c624030f6646",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-2k-238k-direct-visual-rejected.glb",
+          "bytes": 30673700
+        }
+      ]
+    },
+    {
+      "report": "art/glass-adventure/platform-trials/v4/production/cloudway-marble-runtime-v4-build-rejected-90k-projection.json",
+      "sha256": "eace5db9f14559c8b981c9b3d8c9a3b1fee7e07007864bc52510a32b1cd0a4ef",
+      "references": [
+        {
+          "reportPointer": "/selectedToActiveBake/maps/baseColor4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-4k.png",
+          "sha256": "6637a460691aa213f01b9c7d274ca67299e4def88ae86bf6010ea29b8cf75618",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-base-4k.png",
+          "bytes": 23398235
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/normal4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-4k.png",
+          "sha256": "d4054cb86862d88379d5f98ca029419bf39c074a8ae420c25578bcd79948a404",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-normal-4k.png",
+          "bytes": 24709210
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/ambientOcclusion2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-ao-2k.png",
+          "sha256": "5da2555219f541f1d5f8c90ff4fe2fcb2ba65cefcd8ea229101897ffb6ae8c85",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-ao-2k.png",
+          "bytes": 4364044
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/metallic2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-metallic-2k.png",
+          "sha256": "cf11e5fb8e09846f57e709f5651c1f93a5fcede56cc7f91f2fc1a3cde0aa9eef",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-metallic-2k.png",
+          "bytes": 2048720
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/roughness2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-roughness-2k.png",
+          "sha256": "2666c88706cfda3f202fc003641ae35fdb1d83da69995dc14154cb70592bf47a",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-roughness-2k.png",
+          "bytes": 2937022
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/orm2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-orm-2k.png",
+          "sha256": "88014b37ec62e8e6b513f20f80d2b95b64864c556b5f0e6bc3fc24b88ed162c1",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-orm-2k.png",
+          "bytes": 5648736
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/baseColor2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-2k.png",
+          "sha256": "dfece022142d3c2ae6e36ea5e095ceb222f03dec55c3fc48bc13f0342593068b",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-base-2k.png",
+          "bytes": 7281397
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/normal2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-2k.png",
+          "sha256": "1c5816dcbf8fa0c320c69a3ddffeb863d07b9b424ed224802c47fe3e9e4380d3",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected/cloudway-marble-v4-normal-2k.png",
+          "bytes": 7071216
+        },
+        {
+          "reportPointer": "/packedBlend",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+          "sha256": "d34524e05c1fe5910c800c7200c21887fd8af84f9f92273fe3c32a22fa233cd8",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/cloudway-platform-kit-v4-90k-projection-rejected.blend",
+          "bytes": 249327745
+        },
+        {
+          "reportPointer": "/variants/4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-4k-blender.glb",
+          "sha256": "14a5a55c8f4a875b6f32eea7e16ce3cbb181b947968c8459b5dae18e42fa3915",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-4k-90k-corrected-basis-projection-rejected.glb",
+          "bytes": 61022880
+        },
+        {
+          "reportPointer": "/variants/2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-2k-blender.glb",
+          "sha256": "e52046782649f2ea35baa3c865204442414333fe5e1756c89026fc1001888343",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-2k-90k-corrected-basis-projection-rejected.glb",
+          "bytes": 27268048
+        }
+      ]
+    },
+    {
+      "report": "art/glass-adventure/platform-trials/v4/production/cloudway-marble-runtime-v4-build-rejected-negative-tangent-z.json",
+      "sha256": "2d7ac14bf0aefed3f02f16b03b1e4e24ecc027d407447b724b2b79560f2c72b6",
+      "references": [
+        {
+          "reportPointer": "/selectedToActiveBake/maps/baseColor4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-4k.png",
+          "sha256": "e8fe02a1989a8255958b7f15117d19592d26a673b25564c8c394e63351be0eb0",
+          "status": "exact-encoded-image-in-glb",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-4k-negative-tangent-z.glb",
+          "imageIndex": 1,
+          "bufferView": 6,
+          "bytes": 23448669
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/normal4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-4k.png",
+          "sha256": "11cedafd545817777f60254326a3c070401dd68297f5e90fcbc2257053e7adf4",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/sources/rejected/cloudway-marble-v4-normal-4k-negative-tangent-z.png",
+          "bytes": 24815548
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/ambientOcclusion2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-ao-2k.png",
+          "sha256": "2b7631725ad99cecd3838208991dbc4bc9b22e96207ac2b01016cf079cf41887",
+          "status": "historical-intermediate-bytes-not-retained"
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/metallic2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-metallic-2k.png",
+          "sha256": "a4e860e42ca40cff1e4edb15b1ef1cb0f3f10933b46f3d568ea707dfa6a0548b",
+          "status": "historical-intermediate-bytes-not-retained"
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/roughness2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-roughness-2k.png",
+          "sha256": "9f40e503b8fa738356d7549a26c83310c48fde143b74c6e177cb6517b7d9ce6f",
+          "status": "historical-intermediate-bytes-not-retained"
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/orm2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-orm-2k.png",
+          "sha256": "7d9c573d2d808f634b4bce575b76be8831de8b3b6ae9f30c7bb11c0a26124e82",
+          "status": "exact-encoded-image-in-glb",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-2k-negative-tangent-z.glb",
+          "imageIndex": 2,
+          "bufferView": 7,
+          "bytes": 5651373
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/baseColor2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-2k.png",
+          "sha256": "3e9f90aa9fa3eca7d5a36534755b2b684fc8e9e4103b7327f36994c91bc7cd22",
+          "status": "exact-encoded-image-in-glb",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-2k-negative-tangent-z.glb",
+          "imageIndex": 1,
+          "bufferView": 6,
+          "bytes": 7297844
+        },
+        {
+          "reportPointer": "/selectedToActiveBake/maps/normal2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-2k.png",
+          "sha256": "93001824c6f68415c80667e3b817eea48e09073c6be4c2870c45b8282be39707",
+          "status": "exact-encoded-image-in-glb",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-2k-negative-tangent-z.glb",
+          "imageIndex": 0,
+          "bufferView": 5,
+          "bytes": 7095384
+        },
+        {
+          "reportPointer": "/packedBlend",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+          "sha256": "a1b8ff6e2ab588b4b49d84dd5711aa8d7face0454ca88c9d6bb078b7126d20ec",
+          "status": "historical-intermediate-bytes-not-retained"
+        },
+        {
+          "reportPointer": "/variants/4k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-4k-blender.glb",
+          "sha256": "da8419285a7a7d8919109a9a6733f573e5624dce8c01906bd4e0457d7e939456",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-4k-negative-tangent-z.glb",
+          "bytes": 60713044
+        },
+        {
+          "reportPointer": "/variants/2k",
+          "historicalFile": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-2k-blender.glb",
+          "sha256": "6632f9fc7928c557c05b084b421c0d6a39c3a9198232c142461f0e13fb983dfa",
+          "status": "exact-file",
+          "archiveFile": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-2k-negative-tangent-z.glb",
+          "bytes": 26842052
+        }
+      ]
+    }
+  ]
+}

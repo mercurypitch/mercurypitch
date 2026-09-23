@@ -1457,3 +1457,10 @@ recomputing each side independently can introduce a seam without changing the si
 **Cause:** nearest-polygon normal transfer selected nearby leaf or carving faces; some provider split normals already opposed their geometric faces. Comparing two supplied normals could preserve two agreeing but jointly invalid directions. The defect remained with the normal texture disconnected, and invalid ray directions also contaminated the bake.
 **Rule:** compare raw, transferred-without-map and baked-normal views. Check every proposed corner normal against its geometric face, including fallbacks; preserve intended hard edges. Flattened contact polygons need a consistent upward basis. Rebuild tangents and dependent bakes after changing corner normals. Inspect projection hits separately before changing cage distances. Never hide this with stronger lighting or assume a valid GLB is visually correct.
 **See:** `art/glass-adventure/platform-trials/v4/production/build_marble_runtime_v4.py`.
+
+### Verify decimation weight direction before calling a group protective
+
+**Symptom:** a detail-protection group favoured collapse on ornament while excluding broad planar regions.
+**Cause:** the group assigned high weights to protected detail, but Blender Collapse excludes zero-weight edges and makes high-weight edges cheaper to collapse. The group's name did not establish its effect.
+**Rule:** verify modifier semantics, record whether the group is inverted, and compare retained detail under identical cameras. For a high-means-protection group, invert its use by Collapse. A triangle budget alone cannot prove that the intended regions survived.
+**See:** [Blender 5.2.2 collapse edge-cost implementation](https://github.com/blender/blender/blob/v5.2.2/source/blender/bmesh/tools/bmesh_decimate_collapse.cc#L216), `art/glass-adventure/platform-trials/v4/production/build_marble_dense_direct_v4.py`.

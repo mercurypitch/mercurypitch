@@ -33,3 +33,16 @@ The initial V3 baseline captures four real GLBs on an AMD RX 9070 XT Vulkan
 renderer, no console/page errors, and approximately 16.7 ms median/p95 frame
 cadence. See the generated manifests for exact values. This does not resolve
 the owner's physical-tablet loading, memory, frame-rate or heat acceptance.
+
+`baseline-instrumented/manifest.json` adds passive native WebGL draw counters.
+Across 120 frame intervals at the final grazing view, V3 submits 7,560 calls
+and 135,050,880 triangles: 63 calls and 1,125,424 triangles per interval. These
+are pass-inclusive submissions, including instances, not visible-pixel counts
+or GPU timings. All observed draws use TRIANGLES. No multi-draw extension was
+requested; counter consistency, browser errors and the four loaded GLB hashes
+are checked. The wrappers do not alter native calls or suppress drawing.
+
+`baseline-route-override` verifies that the isolated override mechanism loads
+the exact current V3 bytes. It is not a new candidate comparison. Both V4
+marble derivatives failed Blender clay/PBR review before game integration, so
+there is no V4 performance measurement or claim of tablet acceptance here.

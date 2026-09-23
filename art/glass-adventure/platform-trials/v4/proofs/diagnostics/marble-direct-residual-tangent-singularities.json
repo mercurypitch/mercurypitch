@@ -1,0 +1,1080 @@
+{
+  "schema": 1,
+  "status": "fail-closed residual tangent diagnosis; no repair applied",
+  "candidate": {
+    "source": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+    "sourceSha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+    "targetTriangles": 238000,
+    "actualTriangles": 238000,
+    "vertexGroupInverted": true
+  },
+  "preBasisRepair": {
+    "method": "Replace only singular corner normals with the corresponding polygon normal, then regenerate tangent space; positions, indices and UVs remain unchanged.",
+    "repairedCorners": [
+      {
+        "loop": 14479,
+        "polygon": 4826,
+        "normalBefore": [
+          -0.8877132534980774,
+          0.45585814118385315,
+          0.064487524330616
+        ],
+        "normalAfter": [
+          0.45403555035591125,
+          0.8905758261680603,
+          0.02695130556821823
+        ]
+      },
+      {
+        "loop": 15156,
+        "polygon": 5052,
+        "normalBefore": [
+          -0.5542048811912537,
+          0.19250130653381348,
+          -0.8098148107528687
+        ],
+        "normalAfter": [
+          -0.696470320224762,
+          0.4392799437046051,
+          0.5674172043800354
+        ]
+      },
+      {
+        "loop": 141698,
+        "polygon": 47232,
+        "normalBefore": [
+          0.4873869717121124,
+          -0.5444274544715881,
+          0.6826804876327515
+        ],
+        "normalAfter": [
+          0.7488236427307129,
+          0.6626724600791931,
+          0.011333991773426533
+        ]
+      },
+      {
+        "loop": 146513,
+        "polygon": 48837,
+        "normalBefore": [
+          -0.5298386216163635,
+          -0.5124737024307251,
+          0.6757528185844421
+        ],
+        "normalAfter": [
+          -0.7106295228004456,
+          0.7033087015151978,
+          -0.019042566418647766
+        ]
+      },
+      {
+        "loop": 159846,
+        "polygon": 53282,
+        "normalBefore": [
+          0.20249775052070618,
+          0.8311773538589478,
+          0.5178213715553284
+        ],
+        "normalAfter": [
+          0.978733241558075,
+          -0.20152360200881958,
+          -0.03833366930484772
+        ]
+      },
+      {
+        "loop": 175061,
+        "polygon": 58353,
+        "normalBefore": [
+          -0.7371784448623657,
+          -0.4438268542289734,
+          0.5094956159591675
+        ],
+        "normalAfter": [
+          -0.5467851758003235,
+          0.835453450679779,
+          -0.05516935884952545
+        ]
+      },
+      {
+        "loop": 175643,
+        "polygon": 58547,
+        "normalBefore": [
+          -0.7808952927589417,
+          -0.16281452775001526,
+          -0.6030705571174622
+        ],
+        "normalAfter": [
+          0.2004915326833725,
+          -0.979695200920105,
+          -0.0007486399845220149
+        ]
+      },
+      {
+        "loop": 181399,
+        "polygon": 60466,
+        "normalBefore": [
+          0.04937638342380524,
+          -0.7807341814041138,
+          0.6229094862937927
+        ],
+        "normalAfter": [
+          -0.9970937967300415,
+          -0.07543804496526718,
+          -0.010636512190103531
+        ]
+      },
+      {
+        "loop": 186731,
+        "polygon": 62243,
+        "normalBefore": [
+          0.46529603004455566,
+          0.3800089359283447,
+          -0.7994328737258911
+        ],
+        "normalAfter": [
+          0.9026285409927368,
+          -0.24859194457530975,
+          0.35137394070625305
+        ]
+      },
+      {
+        "loop": 187368,
+        "polygon": 62456,
+        "normalBefore": [
+          0.28302764892578125,
+          0.7851505279541016,
+          0.5508483052253723
+        ],
+        "normalAfter": [
+          -0.9395069479942322,
+          0.34230276942253113,
+          0.012466059066355228
+        ]
+      },
+      {
+        "loop": 191271,
+        "polygon": 63757,
+        "normalBefore": [
+          -0.5197175145149231,
+          0.28567641973495483,
+          0.8051599264144897
+        ],
+        "normalAfter": [
+          -0.5083525776863098,
+          -0.8609890937805176,
+          -0.016594717279076576
+        ]
+      },
+      {
+        "loop": 191574,
+        "polygon": 63858,
+        "normalBefore": [
+          0.9285494089126587,
+          -0.3572109043598175,
+          -0.10097748041152954
+        ],
+        "normalAfter": [
+          0.0,
+          0.0,
+          -1.0
+        ]
+      },
+      {
+        "loop": 217909,
+        "polygon": 72636,
+        "normalBefore": [
+          0.7249008417129517,
+          0.6869562864303589,
+          -0.051085591316223145
+        ],
+        "normalAfter": [
+          0.07846531271934509,
+          0.005470409989356995,
+          0.99690181016922
+        ]
+      },
+      {
+        "loop": 223822,
+        "polygon": 74607,
+        "normalBefore": [
+          0.2028125524520874,
+          0.646515965461731,
+          -0.7354482412338257
+        ],
+        "normalAfter": [
+          -0.892523467540741,
+          -0.1855677217245102,
+          -0.41105538606643677
+        ]
+      },
+      {
+        "loop": 227736,
+        "polygon": 75912,
+        "normalBefore": [
+          -0.2426198273897171,
+          -0.871090829372406,
+          -0.427008718252182
+        ],
+        "normalAfter": [
+          0.960721492767334,
+          -0.2755325436592102,
+          -0.03310693800449371
+        ]
+      },
+      {
+        "loop": 292281,
+        "polygon": 97427,
+        "normalBefore": [
+          0.35203394293785095,
+          -0.9358278512954712,
+          0.017268149182200432
+        ],
+        "normalAfter": [
+          0.35218456387519836,
+          -0.9357711672782898,
+          0.017275216057896614
+        ]
+      },
+      {
+        "loop": 310128,
+        "polygon": 103376,
+        "normalBefore": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "normalAfter": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      {
+        "loop": 310374,
+        "polygon": 103458,
+        "normalBefore": [
+          0.6951667666435242,
+          -0.7187374830245972,
+          -0.012635260820388794
+        ],
+        "normalAfter": [
+          0.6951486468315125,
+          -0.7187549471855164,
+          -0.012634985148906708
+        ]
+      },
+      {
+        "loop": 409154,
+        "polygon": 136384,
+        "normalBefore": [
+          -0.3589327931404114,
+          0.6206068396568298,
+          -0.6971474885940552
+        ],
+        "normalAfter": [
+          -0.8763036727905273,
+          -0.48169341683387756,
+          0.007963708601891994
+        ]
+      },
+      {
+        "loop": 441406,
+        "polygon": 147135,
+        "normalBefore": [
+          0.4267006516456604,
+          0.5657157301902771,
+          0.7056148648262024
+        ],
+        "normalAfter": [
+          0.886784017086029,
+          -0.4161180853843689,
+          -0.20114627480506897
+        ]
+      },
+      {
+        "loop": 443377,
+        "polygon": 147792,
+        "normalBefore": [
+          0.8703773021697998,
+          0.45197197794914246,
+          -0.195358008146286
+        ],
+        "normalAfter": [
+          -0.4347624182701111,
+          0.8994241952896118,
+          0.044919341802597046
+        ]
+      },
+      {
+        "loop": 476628,
+        "polygon": 158876,
+        "normalBefore": [
+          0.7977414727210999,
+          0.05424308776855469,
+          -0.6005549430847168
+        ],
+        "normalAfter": [
+          0.0875827968120575,
+          -0.9958528876304626,
+          0.024622755125164986
+        ]
+      },
+      {
+        "loop": 537467,
+        "polygon": 179155,
+        "normalBefore": [
+          0.5055519938468933,
+          0.5196938514709473,
+          0.688720166683197
+        ],
+        "normalAfter": [
+          -0.24339662492275238,
+          0.8640273213386536,
+          -0.44069817662239075
+        ]
+      },
+      {
+        "loop": 547161,
+        "polygon": 182387,
+        "normalBefore": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "normalAfter": [
+          -0.0,
+          -0.0,
+          1.0
+        ]
+      },
+      {
+        "loop": 570408,
+        "polygon": 190136,
+        "normalBefore": [
+          0.2600831091403961,
+          -0.8971631526947021,
+          0.35700854659080505
+        ],
+        "normalAfter": [
+          0.6271045207977295,
+          0.4313136339187622,
+          0.6486204862594604
+        ]
+      },
+      {
+        "loop": 570410,
+        "polygon": 190136,
+        "normalBefore": [
+          0.4359489381313324,
+          -0.8380069732666016,
+          0.3281659185886383
+        ],
+        "normalAfter": [
+          0.6271045207977295,
+          0.4313136339187622,
+          0.6486204862594604
+        ]
+      },
+      {
+        "loop": 585453,
+        "polygon": 195151,
+        "normalBefore": [
+          -0.5249577760696411,
+          -0.42674824595451355,
+          0.736413836479187
+        ],
+        "normalAfter": [
+          -0.5752739310264587,
+          -0.46113458275794983,
+          -0.6755847930908203
+        ]
+      },
+      {
+        "loop": 586660,
+        "polygon": 195553,
+        "normalBefore": [
+          0.0,
+          0.0,
+          -0.9999999403953552
+        ],
+        "normalAfter": [
+          0.0,
+          0.0,
+          -1.0
+        ]
+      },
+      {
+        "loop": 586661,
+        "polygon": 195553,
+        "normalBefore": [
+          0.0,
+          0.0,
+          -0.9999999403953552
+        ],
+        "normalAfter": [
+          0.0,
+          0.0,
+          -1.0
+        ]
+      },
+      {
+        "loop": 631342,
+        "polygon": 210447,
+        "normalBefore": [
+          0.20429028570652008,
+          0.9468326568603516,
+          0.2485424280166626
+        ],
+        "normalAfter": [
+          0.199175164103508,
+          0.2460884153842926,
+          -0.9485619068145752
+        ]
+      },
+      {
+        "loop": 633192,
+        "polygon": 211064,
+        "normalBefore": [
+          -0.07552936673164368,
+          0.4583742022514343,
+          -0.8855441808700562
+        ],
+        "normalAfter": [
+          0.8735010623931885,
+          -0.31727272272109985,
+          -0.36923420429229736
+        ]
+      },
+      {
+        "loop": 710025,
+        "polygon": 236675,
+        "normalBefore": [
+          -0.6766566634178162,
+          -0.37013062834739685,
+          0.6365054249763489
+        ],
+        "normalAfter": [
+          -0.5198037028312683,
+          0.8525800704956055,
+          -0.053958501666784286
+        ]
+      }
+    ],
+    "remainingZeroTangents": 7,
+    "maximumTangentUnitError": 1.0,
+    "postExportFallbackRequired": true
+  },
+  "validatedUvGateBeforeTangentGeneration": {
+    "cornerCount": 714000,
+    "allFinite": true,
+    "degenerateUvTriangles": 0,
+    "minimumUvTriangleArea": 4.5634607204192434e-12,
+    "bounds": [
+      [
+        4.4e-05,
+        1e-05
+      ],
+      [
+        0.999987,
+        0.999961
+      ]
+    ]
+  },
+  "residualLoopCount": 7,
+  "residualPolygonCount": 6,
+  "classificationCounts": {
+    "collapsed-or-numerically-singular-geometry": 6
+  },
+  "polygons": [
+    {
+      "polygon": 97427,
+      "residualLoops": [
+        292281
+      ],
+      "vertexIndices": [
+        64154,
+        64391,
+        64658
+      ],
+      "classification": "collapsed-or-numerically-singular-geometry",
+      "geometryAreaSquareMetres": 2.600835387056577e-07,
+      "geometryEdgeLengthsMetres": [
+        0.038438824167898886,
+        0.0004159939564159047,
+        0.038854601235962266
+      ],
+      "geometryTriangleQuality": 0.0006031712692674428,
+      "centerLocal": [
+        -0.79016161,
+        0.295737356,
+        0.025759995
+      ],
+      "centerWorld": [
+        -0.79016161,
+        0.295737356,
+        0.025759995
+      ],
+      "faceNormal": [
+        0.352184534,
+        -0.935771048,
+        0.017275214
+      ],
+      "uv": [
+        [
+          0.403014987707,
+          0.026724994183
+        ],
+        [
+          0.402640014887,
+          0.027294993401
+        ],
+        [
+          0.402363985777,
+          0.027128994465
+        ]
+      ],
+      "signedUvArea": 1.0979073294947739e-07,
+      "uvArea": 1.0979073294947739e-07,
+      "uvEdgeLengths": [
+        0.0006822783283606897,
+        0.0003220989174820347,
+        0.0007661721262547109
+      ],
+      "uvTriangleQuality": 0.6578495935329476,
+      "analyticRawTangentLength": 30.138243511809794,
+      "corners": [
+        {
+          "loop": 292281,
+          "vertex": 64154,
+          "isResidual": true,
+          "normal": [
+            0.352033943,
+            -0.935827851,
+            0.017268149
+          ],
+          "normalDotFace": 0.9999998407147359,
+          "blenderTangentLength": 0.0,
+          "analyticProjectedTangentLength": 30.13824338034798
+        },
+        {
+          "loop": 292282,
+          "vertex": 64391,
+          "isResidual": false,
+          "normal": [
+            0.832388282,
+            -0.523379445,
+            0.182218641
+          ],
+          "normalDotFace": 0.7860654550604522,
+          "blenderTangentLength": 1.0000000176951287,
+          "analyticProjectedTangentLength": 29.68781082793696
+        },
+        {
+          "loop": 292283,
+          "vertex": 64658,
+          "isResidual": false,
+          "normal": [
+            0.374312878,
+            -0.462945998,
+            0.803474247
+          ],
+          "normalDotFace": 0.5789188705384731,
+          "blenderTangentLength": 0.9999999478459345,
+          "analyticProjectedTangentLength": 18.293779093331835
+        }
+      ]
+    },
+    {
+      "polygon": 103376,
+      "residualLoops": [
+        310128
+      ],
+      "vertexIndices": [
+        36984,
+        68477,
+        68991
+      ],
+      "classification": "collapsed-or-numerically-singular-geometry",
+      "geometryAreaSquareMetres": 1.1368570085323881e-08,
+      "geometryEdgeLengthsMetres": [
+        0.008309412204915738,
+        0.0003968121288351468,
+        0.008706215320535771
+      ],
+      "geometryTriangleQuality": 0.000543190968964281,
+      "centerLocal": [
+        -0.788927376,
+        0.409756571,
+        0.0
+      ],
+      "centerWorld": [
+        -0.788927376,
+        0.409756571,
+        0.0
+      ],
+      "faceNormal": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "uv": [
+        [
+          0.510856330395,
+          0.085135340691
+        ],
+        [
+          0.508929014206,
+          0.088055968285
+        ],
+        [
+          0.508853971958,
+          0.08823800087
+        ]
+      ],
+      "signedUvArea": -6.583194434028883e-08,
+      "uvArea": 6.583194434028883e-08,
+      "uvEdgeLengths": [
+        0.0034992303606962275,
+        0.00019689388259905391,
+        0.0036926872961772824
+      ],
+      "uvTriangleQuality": 0.01759680011693781,
+      "analyticRawTangentLength": 2.68685867730538,
+      "corners": [
+        {
+          "loop": 310128,
+          "vertex": 36984,
+          "isResidual": true,
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalDotFace": 1.0,
+          "blenderTangentLength": 0.0,
+          "analyticProjectedTangentLength": 2.68685867730538
+        },
+        {
+          "loop": 310129,
+          "vertex": 68477,
+          "isResidual": false,
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalDotFace": 1.0,
+          "blenderTangentLength": 0.999999977648258,
+          "analyticProjectedTangentLength": 2.68685867730538
+        },
+        {
+          "loop": 310130,
+          "vertex": 68991,
+          "isResidual": false,
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalDotFace": 1.0,
+          "blenderTangentLength": 0.9999999329447724,
+          "analyticProjectedTangentLength": 2.68685867730538
+        }
+      ]
+    },
+    {
+      "polygon": 103458,
+      "residualLoops": [
+        310374
+      ],
+      "vertexIndices": [
+        68251,
+        69042,
+        68533
+      ],
+      "classification": "collapsed-or-numerically-singular-geometry",
+      "geometryAreaSquareMetres": 1.0431276287192759e-08,
+      "geometryEdgeLengthsMetres": [
+        0.028344998929905125,
+        0.000370292756217633,
+        0.02871529060193332
+      ],
+      "geometryTriangleQuality": 4.43879670792873e-05,
+      "centerLocal": [
+        -0.786740482,
+        -0.18096292,
+        0.019018488
+      ],
+      "centerWorld": [
+        -0.786740482,
+        -0.18096292,
+        0.019018488
+      ],
+      "faceNormal": [
+        0.695148647,
+        -0.718754947,
+        -0.012634985
+      ],
+      "uv": [
+        [
+          0.824093997478,
+          0.448539018631
+        ],
+        [
+          0.823893010616,
+          0.448678016663
+        ],
+        [
+          0.823605000973,
+          0.448611974716
+        ]
+      ],
+      "signedUvArea": 2.6653168561097118e-08,
+      "uvArea": 2.6653168561097118e-08,
+      "uvEdgeLengths": [
+        0.0002443689251177316,
+        0.00029548450630493146,
+        0.000494408912734939
+      ],
+      "uvTriangleQuality": 0.4717086290892633,
+      "analyticRawTangentLength": 36.082551118005334,
+      "corners": [
+        {
+          "loop": 310374,
+          "vertex": 68251,
+          "isResidual": true,
+          "normal": [
+            0.695166767,
+            -0.718737483,
+            -0.012635261
+          ],
+          "normalDotFace": 1.0000000250875019,
+          "blenderTangentLength": 0.0,
+          "analyticProjectedTangentLength": 36.08255127937498
+        },
+        {
+          "loop": 310375,
+          "vertex": 69042,
+          "isResidual": false,
+          "normal": [
+            0.154548436,
+            -0.889662206,
+            0.429669499
+          ],
+          "normalDotFace": 0.7414543903432786,
+          "blenderTangentLength": 0.9999999913852662,
+          "analyticProjectedTangentLength": 32.39048473366427
+        },
+        {
+          "loop": 310376,
+          "vertex": 68533,
+          "isResidual": false,
+          "normal": [
+            0.516147971,
+            -0.803440928,
+            -0.296772659
+          ],
+          "normalDotFace": 0.9400264520663768,
+          "blenderTangentLength": 1.000000013038516,
+          "analyticProjectedTangentLength": 34.59327955193149
+        }
+      ]
+    },
+    {
+      "polygon": 182387,
+      "residualLoops": [
+        547161
+      ],
+      "vertexIndices": [
+        117082,
+        117255,
+        117083
+      ],
+      "classification": "collapsed-or-numerically-singular-geometry",
+      "geometryAreaSquareMetres": 8.191614142560866e-07,
+      "geometryEdgeLengthsMetres": [
+        0.07937812723109651,
+        0.004468568829157587,
+        0.07490960772590574
+      ],
+      "geometryTriangleQuality": 0.0004756262084138308,
+      "centerLocal": [
+        -0.618281841,
+        0.175744846,
+        0.0
+      ],
+      "centerWorld": [
+        -0.618281841,
+        0.175744846,
+        0.0
+      ],
+      "faceNormal": [
+        -0.0,
+        -0.0,
+        1.0
+      ],
+      "uv": [
+        [
+          0.347712904215,
+          0.925456285477
+        ],
+        [
+          0.351504564285,
+          0.918572306633
+        ],
+        [
+          0.351181030273,
+          0.919143617153
+        ]
+      ],
+      "signedUvArea": -3.049300278945566e-08,
+      "uvArea": 3.049300278945566e-08,
+      "uvEdgeLengths": [
+        0.007859125253510887,
+        0.0006565591852410868,
+        0.007202616040963521
+      ],
+      "uvTriangleQuality": 0.0018519611286682434,
+      "analyticRawTangentLength": 239.2195351237065,
+      "corners": [
+        {
+          "loop": 547161,
+          "vertex": 117082,
+          "isResidual": true,
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalDotFace": 1.0,
+          "blenderTangentLength": 0.0,
+          "analyticProjectedTangentLength": 239.2195351237065
+        },
+        {
+          "loop": 547162,
+          "vertex": 117255,
+          "isResidual": false,
+          "normal": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalDotFace": 1.0,
+          "blenderTangentLength": 1.0000000197906045,
+          "analyticProjectedTangentLength": 239.2195351237065
+        },
+        {
+          "loop": 547163,
+          "vertex": 117083,
+          "isResidual": false,
+          "normal": [
+            0.0,
+            0.0,
+            0.99999994
+          ],
+          "normalDotFace": 0.9999999403953552,
+          "blenderTangentLength": 0.9999999601277515,
+          "analyticProjectedTangentLength": 239.2195351237065
+        }
+      ]
+    },
+    {
+      "polygon": 190136,
+      "residualLoops": [
+        570410
+      ],
+      "vertexIndices": [
+        123784,
+        123856,
+        123872
+      ],
+      "classification": "collapsed-or-numerically-singular-geometry",
+      "geometryAreaSquareMetres": 2.7783730871533407e-08,
+      "geometryEdgeLengthsMetres": [
+        0.0028639214313730373,
+        0.009275448015410135,
+        0.012139364448301476
+      ],
+      "geometryTriangleQuality": 0.0007967351557043879,
+      "centerLocal": [
+        -0.201829612,
+        -0.624055862,
+        -0.124163769
+      ],
+      "centerWorld": [
+        -0.201829612,
+        -0.624055862,
+        -0.124163769
+      ],
+      "faceNormal": [
+        0.627104521,
+        0.431313634,
+        0.648620486
+      ],
+      "uv": [
+        [
+          0.152808308601,
+          0.201951101422
+        ],
+        [
+          0.152100652456,
+          0.201922565699
+        ],
+        [
+          0.149588823318,
+          0.202350020409
+        ]
+      ],
+      "signedUvArea": -1.8708390725485913e-07,
+      "uvArea": 1.8708390725485913e-07,
+      "uvEdgeLengths": [
+        0.0007082312520144824,
+        0.0025479409799312237,
+        0.0032441057065606895
+      ],
+      "uvTriangleQuality": 0.07399068969235446,
+      "analyticRawTangentLength": 3.9791711652024624,
+      "corners": [
+        {
+          "loop": 570408,
+          "vertex": 123784,
+          "isResidual": false,
+          "normal": [
+            0.627094388,
+            0.431308389,
+            0.648633718
+          ],
+          "normalDotFace": 1.0000000298023224,
+          "blenderTangentLength": 1.0000000889413019,
+          "analyticProjectedTangentLength": 3.979171184394512
+        },
+        {
+          "loop": 570409,
+          "vertex": 123856,
+          "isResidual": false,
+          "normal": [
+            0.720744669,
+            0.011458158,
+            0.693106055
+          ],
+          "normalDotFace": 0.9064870779402554,
+          "blenderTangentLength": 1.0000000209547577,
+          "analyticProjectedTangentLength": 3.973802426736111
+        },
+        {
+          "loop": 570410,
+          "vertex": 123872,
+          "isResidual": true,
+          "normal": [
+            0.627085805,
+            0.4313021,
+            0.648646235
+          ],
+          "normalDotFace": 1.0000000447034836,
+          "blenderTangentLength": 0.0,
+          "analyticProjectedTangentLength": 3.9791711284567084
+        }
+      ]
+    },
+    {
+      "polygon": 195553,
+      "residualLoops": [
+        586660,
+        586661
+      ],
+      "vertexIndices": [
+        127094,
+        127109,
+        126704
+      ],
+      "classification": "collapsed-or-numerically-singular-geometry",
+      "geometryAreaSquareMetres": 1.6773071820352925e-10,
+      "geometryEdgeLengthsMetres": [
+        0.00016534014749060565,
+        0.0045898590979722145,
+        0.004424519008743111
+      ],
+      "geometryTriangleQuality": 2.857285134057436e-05,
+      "centerLocal": [
+        -0.037849825,
+        -0.039345402,
+        0.0
+      ],
+      "centerWorld": [
+        -0.037849825,
+        -0.039345402,
+        0.0
+      ],
+      "faceNormal": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "uv": [
+        [
+          0.967868983746,
+          0.389003992081
+        ],
+        [
+          0.967914998531,
+          0.389060020447
+        ],
+        [
+          0.967486202717,
+          0.388533502817
+        ]
+      ],
+      "signedUvArea": -1.014335282434331e-10,
+      "uvArea": 1.014335282434331e-10,
+      "uvEdgeLengths": [
+        7.250198835710894e-05,
+        0.0006790336198271142,
+        0.0006065323316094268
+      ],
+      "uvTriangleQuality": 0.0008424014872423961,
+      "analyticRawTangentLength": 838.5186855028933,
+      "corners": [
+        {
+          "loop": 586659,
+          "vertex": 127094,
+          "isResidual": false,
+          "normal": [
+            0.027931593,
+            -0.419867039,
+            -0.907155693
+          ],
+          "normalDotFace": 0.9071556925773621,
+          "blenderTangentLength": 1.0,
+          "analyticProjectedTangentLength": 766.1530729886815
+        },
+        {
+          "loop": 586660,
+          "vertex": 127109,
+          "isResidual": true,
+          "normal": [
+            0.0,
+            0.0,
+            -0.99999994
+          ],
+          "normalDotFace": 0.9999999403953552,
+          "blenderTangentLength": 0.0,
+          "analyticProjectedTangentLength": 838.5186855028933
+        },
+        {
+          "loop": 586661,
+          "vertex": 126704,
+          "isResidual": true,
+          "normal": [
+            0.0,
+            0.0,
+            -0.99999994
+          ],
+          "normalDotFace": 0.9999999403953552,
+          "blenderTangentLength": 0.0,
+          "analyticProjectedTangentLength": 838.5186855028933
+        }
+      ]
+    }
+  ],
+  "interpretation": "UV area being greater than the exact-degeneracy threshold does not by itself prove a numerically stable tangent basis. Triangle quality, geometric area, and the analytic projected tangent above distinguish local conditioning from a normal-basis failure. No export is permitted while any residual loop remains."
+}

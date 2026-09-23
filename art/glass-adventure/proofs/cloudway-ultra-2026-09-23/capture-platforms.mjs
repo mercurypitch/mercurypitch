@@ -39,6 +39,8 @@ const hash = (bytes) => createHash('sha256').update(bytes).digest('hex')
 const errors = []
 const assetWork = []
 const screenshots = []
+const cadenceFrameCount = 120
+const drawCounterName = '__cloudwayProofWebGLDrawCounters'
 try {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 1 })
   if (candidate) {
@@ -95,14 +97,216 @@ try {
       }),
     )
   })
-  await page.addInitScript(() => {
-    const prefix = 'beside-cue:glass-adventure:'
-    localStorage.setItem(`${prefix}tutorial`, 'seen')
-    localStorage.setItem(
-      `${prefix}tutorial:cloudway-glass-ribbon:cloudway-first-crossing:v1`,
-      'seen',
-    )
-  })
+  await page.addInitScript(
+    ({ counterName }) => {
+      const prefix = 'beside-cue:glass-adventure:'
+      localStorage.setItem(`${prefix}tutorial`, 'seen')
+      localStorage.setItem(
+        `${prefix}tutorial:cloudway-glass-ribbon:cloudway-first-crossing:v1`,
+        'seen',
+      )
+
+      if (Object.hasOwn(globalThis, counterName)) return
+
+      const methodNames = [
+        'drawArrays',
+        'drawElements',
+        'drawArraysInstanced',
+        'drawElementsInstanced',
+      ]
+      const makeBucket = () => ({ drawCalls: 0, triangles: 0 })
+      const state = {
+        drawCalls: 0,
+        triangles: 0,
+        byMethod: Object.fromEntries(
+          methodNames.map((method) => [method, makeBucket()]),
+        ),
+        byMode: {},
+        installedWrappers: [],
+        installedExtensionObservers: [],
+        installErrors: [],
+        counterErrors: 0,
+        multiDraw: {
+          extensionRequests: 0,
+          extensionAvailableWhenRequested: null,
+          drawCalls: 0,
+          byMethod: {},
+        },
+      }
+      const modeNames = new Map([
+        [0x0000, 'POINTS'],
+        [0x0001, 'LINES'],
+        [0x0002, 'LINE_LOOP'],
+        [0x0003, 'LINE_STRIP'],
+        [0x0004, 'TRIANGLES'],
+        [0x0005, 'TRIANGLE_STRIP'],
+        [0x0006, 'TRIANGLE_FAN'],
+      ])
+      const asNonnegativeInteger = (value) =>
+        typeof value === 'number' && Number.isFinite(value)
+          ? Math.max(0, Math.trunc(value))
+          : 0
+      const trianglesFor = (mode, count, instanceCount) => {
+        const vertices = asNonnegativeInteger(count)
+        const instances = asNonnegativeInteger(instanceCount)
+        let triangles = 0
+        if (mode === 0x0004) triangles = Math.floor(vertices / 3)
+        else if (mode === 0x0005 || mode === 0x0006)
+          triangles = Math.max(0, vertices - 2)
+        return triangles * instances
+      }
+      const record = (method, mode, count, instanceCount) => {
+        const triangles = trianglesFor(mode, count, instanceCount)
+        const modeName = modeNames.get(mode) ?? `UNKNOWN_${String(mode)}`
+        const modeBucket = (state.byMode[modeName] ??= makeBucket())
+        state.drawCalls += 1
+        state.triangles += triangles
+        state.byMethod[method].drawCalls += 1
+        state.byMethod[method].triangles += triangles
+        modeBucket.drawCalls += 1
+        modeBucket.triangles += triangles
+      }
+      const snapshot = () => ({
+        drawCalls: state.drawCalls,
+        triangles: state.triangles,
+        byMethod: Object.fromEntries(
+          Object.entries(state.byMethod).map(([method, bucket]) => [
+            method,
+            { ...bucket },
+          ]),
+        ),
+        byMode: Object.fromEntries(
+          Object.entries(state.byMode).map(([mode, bucket]) => [
+            mode,
+            { ...bucket },
+          ]),
+        ),
+        installedWrappers: [...state.installedWrappers],
+        installedExtensionObservers: [...state.installedExtensionObservers],
+        installErrors: [...state.installErrors],
+        counterErrors: state.counterErrors,
+        multiDraw: {
+          ...state.multiDraw,
+          byMethod: { ...state.multiDraw.byMethod },
+        },
+      })
+      Object.defineProperty(globalThis, counterName, {
+        configurable: false,
+        enumerable: false,
+        writable: false,
+        value: Object.freeze({ snapshot }),
+      })
+
+      const wrappers = [
+        ['WebGLRenderingContext', 'drawArrays', 2],
+        ['WebGLRenderingContext', 'drawElements', 1],
+        ['WebGL2RenderingContext', 'drawArrays', 2],
+        ['WebGL2RenderingContext', 'drawElements', 1],
+        ['WebGL2RenderingContext', 'drawArraysInstanced', 2, 3],
+        ['WebGL2RenderingContext', 'drawElementsInstanced', 1, 4],
+      ]
+      for (const [contextName, method, countIndex, instanceIndex] of wrappers) {
+        const key = `${contextName}.${method}`
+        try {
+          const prototype = globalThis[contextName]?.prototype
+          const descriptor = prototype
+            ? Object.getOwnPropertyDescriptor(prototype, method)
+            : undefined
+          if (!descriptor || typeof descriptor.value !== 'function') {
+            state.installErrors.push(`${key}: native method unavailable`)
+            continue
+          }
+          const nativeMethod = descriptor.value
+          Object.defineProperty(prototype, method, {
+            ...descriptor,
+            value: function (...args) {
+              const result = Reflect.apply(nativeMethod, this, args)
+              try {
+                record(
+                  method,
+                  args[0],
+                  args[countIndex],
+                  instanceIndex === undefined ? 1 : args[instanceIndex],
+                )
+              } catch {
+                state.counterErrors += 1
+              }
+              return result
+            },
+          })
+          state.installedWrappers.push(key)
+        } catch (error) {
+          state.installErrors.push(`${key}: ${String(error)}`)
+        }
+      }
+
+      const observedMultiDrawExtensions = new WeakSet()
+      const multiDrawMethods = [
+        'multiDrawArraysWEBGL',
+        'multiDrawElementsWEBGL',
+        'multiDrawArraysInstancedWEBGL',
+        'multiDrawElementsInstancedWEBGL',
+      ]
+      const observeMultiDrawExtension = (extension) => {
+        if (!extension || observedMultiDrawExtensions.has(extension)) return
+        observedMultiDrawExtensions.add(extension)
+        for (const method of multiDrawMethods) {
+          const nativeMethod = extension[method]
+          if (typeof nativeMethod !== 'function') continue
+          Object.defineProperty(extension, method, {
+            configurable: true,
+            enumerable: false,
+            writable: true,
+            value: function (...args) {
+              const result = Reflect.apply(nativeMethod, this, args)
+              state.multiDraw.drawCalls += 1
+              state.multiDraw.byMethod[method] =
+                (state.multiDraw.byMethod[method] ?? 0) + 1
+              return result
+            },
+          })
+        }
+      }
+      for (const contextName of [
+        'WebGLRenderingContext',
+        'WebGL2RenderingContext',
+      ]) {
+        const key = `${contextName}.getExtension(WEBGL_multi_draw)`
+        try {
+          const prototype = globalThis[contextName]?.prototype
+          const descriptor = prototype
+            ? Object.getOwnPropertyDescriptor(prototype, 'getExtension')
+            : undefined
+          if (!descriptor || typeof descriptor.value !== 'function') {
+            state.installErrors.push(`${key}: native method unavailable`)
+            continue
+          }
+          const nativeMethod = descriptor.value
+          Object.defineProperty(prototype, 'getExtension', {
+            ...descriptor,
+            value: function (...args) {
+              const extension = Reflect.apply(nativeMethod, this, args)
+              if (args[0] === 'WEBGL_multi_draw') {
+                state.multiDraw.extensionRequests += 1
+                state.multiDraw.extensionAvailableWhenRequested =
+                  extension !== null
+                try {
+                  observeMultiDrawExtension(extension)
+                } catch {
+                  state.counterErrors += 1
+                }
+              }
+              return extension
+            },
+          })
+          state.installedExtensionObservers.push(key)
+        } catch (error) {
+          state.installErrors.push(`${key}: ${String(error)}`)
+        }
+      }
+    },
+    { counterName: drawCounterName },
+  )
   await page.goto(url.href, { waitUntil: 'domcontentloaded' })
   const game = page.getByTestId('glass-adventure')
   await expect(game).toHaveAttribute('data-ready', 'true', { timeout: 90_000 })
@@ -166,21 +370,133 @@ try {
     'marble-side',
     'Real upward mouse drag lowers the camera to inspect grazing top and edge shading.',
   )
-  const cadence = await page.evaluate(async () => {
-    const intervals = []
-    let previous = await new Promise(requestAnimationFrame)
-    for (let i = 0; i < 120; i++) {
-      const next = await new Promise(requestAnimationFrame)
-      intervals.push(next - previous)
-      previous = next
-    }
-    intervals.sort((a, b) => a - b)
-    return {
-      medianMs: intervals[60],
-      p95Ms: intervals[114],
-      maximumMs: intervals[119],
-    }
-  })
+  const sample = await page.evaluate(
+    async ({ counterName, frameCount }) => {
+      const counters = globalThis[counterName]
+      if (!counters || typeof counters.snapshot !== 'function') {
+        throw new Error('WebGL draw counters were not installed')
+      }
+      const intervals = []
+      let previous = await new Promise(requestAnimationFrame)
+      const before = counters.snapshot()
+      for (let i = 0; i < frameCount; i++) {
+        const next = await new Promise(requestAnimationFrame)
+        intervals.push(next - previous)
+        previous = next
+      }
+      const after = counters.snapshot()
+      intervals.sort((a, b) => a - b)
+      const subtractBuckets = (afterBuckets, beforeBuckets) =>
+        Object.fromEntries(
+          Object.entries(afterBuckets).map(([key, bucket]) => [
+            key,
+            {
+              drawCalls:
+                bucket.drawCalls - (beforeBuckets[key]?.drawCalls ?? 0),
+              triangles:
+                bucket.triangles - (beforeBuckets[key]?.triangles ?? 0),
+            },
+          ]),
+        )
+      return {
+        cadence: {
+          medianMs: intervals[Math.floor(frameCount * 0.5)],
+          p95Ms: intervals[Math.floor(frameCount * 0.95) - 1],
+          maximumMs: intervals[frameCount - 1],
+        },
+        renderWork: {
+          frameIntervals: frameCount,
+          drawCalls: after.drawCalls - before.drawCalls,
+          passInclusiveTriangles: after.triangles - before.triangles,
+          byMethod: subtractBuckets(after.byMethod, before.byMethod),
+          byMode: subtractBuckets(after.byMode, before.byMode),
+          installedWrappers: after.installedWrappers,
+          installedExtensionObservers: after.installedExtensionObservers,
+          installErrors: after.installErrors,
+          counterErrors: after.counterErrors,
+          multiDraw: {
+            lifetimeExtensionRequests: after.multiDraw.extensionRequests,
+            sampleExtensionRequests:
+              after.multiDraw.extensionRequests -
+              before.multiDraw.extensionRequests,
+            extensionAvailableWhenRequested:
+              after.multiDraw.extensionAvailableWhenRequested,
+            lifetimeDrawCalls: after.multiDraw.drawCalls,
+            sampleDrawCalls:
+              after.multiDraw.drawCalls - before.multiDraw.drawCalls,
+            sampleByMethod: Object.fromEntries(
+              Object.entries(after.multiDraw.byMethod).map(
+                ([method, drawCalls]) => [
+                  method,
+                  drawCalls - (before.multiDraw.byMethod[method] ?? 0),
+                ],
+              ),
+            ),
+          },
+        },
+      }
+    },
+    { counterName: drawCounterName, frameCount: cadenceFrameCount },
+  )
+  const { cadence, renderWork } = sample
+  assert.deepEqual(renderWork.installErrors, [])
+  assert.equal(renderWork.counterErrors, 0)
+  assert.deepEqual(renderWork.installedWrappers, [
+    'WebGLRenderingContext.drawArrays',
+    'WebGLRenderingContext.drawElements',
+    'WebGL2RenderingContext.drawArrays',
+    'WebGL2RenderingContext.drawElements',
+    'WebGL2RenderingContext.drawArraysInstanced',
+    'WebGL2RenderingContext.drawElementsInstanced',
+  ])
+  assert.deepEqual(renderWork.installedExtensionObservers, [
+    'WebGLRenderingContext.getExtension(WEBGL_multi_draw)',
+    'WebGL2RenderingContext.getExtension(WEBGL_multi_draw)',
+  ])
+  assert.equal(
+    renderWork.multiDraw.lifetimeDrawCalls,
+    0,
+    'WEBGL_multi_draw is outside the standard draw counters',
+  )
+  assert.ok(renderWork.drawCalls > 0, 'WebGL draw-call sample must be nonzero')
+  assert.ok(
+    renderWork.passInclusiveTriangles > 0,
+    'WebGL triangle sample must be nonzero',
+  )
+  assert.equal(
+    Object.values(renderWork.byMethod).reduce(
+      (total, bucket) => total + bucket.drawCalls,
+      0,
+    ),
+    renderWork.drawCalls,
+  )
+  assert.equal(
+    Object.values(renderWork.byMethod).reduce(
+      (total, bucket) => total + bucket.triangles,
+      0,
+    ),
+    renderWork.passInclusiveTriangles,
+  )
+  assert.equal(
+    Object.values(renderWork.byMode).reduce(
+      (total, bucket) => total + bucket.drawCalls,
+      0,
+    ),
+    renderWork.drawCalls,
+  )
+  assert.equal(
+    Object.values(renderWork.byMode).reduce(
+      (total, bucket) => total + bucket.triangles,
+      0,
+    ),
+    renderWork.passInclusiveTriangles,
+  )
+  renderWork.meanDrawCallsPerFrameInterval =
+    renderWork.drawCalls / cadenceFrameCount
+  renderWork.meanPassInclusiveTrianglesPerFrameInterval =
+    renderWork.passInclusiveTriangles / cadenceFrameCount
+  renderWork.sampleView =
+    'Final marble-side grazing view after the recorded upward mouse drag.'
   const renderer = await canvas.evaluate((element) => {
     const gl = element.getContext('webgl2')
     const debug = gl?.getExtension('WEBGL_debug_renderer_info')
@@ -201,8 +517,11 @@ try {
     screenshots,
     assets,
     cadence,
-    cadenceMethod:
-      '120 browser animation-frame intervals, not GPU time or physical-tablet performance',
+    cadenceMethod: `${cadenceFrameCount} browser animation-frame intervals, not GPU time or physical-tablet performance`,
+    renderWork,
+    renderWorkMethod: `Page-init prototype wrappers count one post-native-call delta for drawArrays, drawElements and their WebGL2 instanced variants over the same ${cadenceFrameCount} requestAnimationFrame intervals; all contexts and render passes are included.`,
+    renderWorkLimits:
+      'Triangles are derived from submitted vertex or index counts for TRIANGLES, TRIANGLE_STRIP and TRIANGLE_FAN. They are not GPU timing and do not account for primitive restart, degenerates, clipping, occlusion, discarded fragments or whether submitted primitives produced pixels. WEBGL_multi_draw entry points are observed separately and must remain unused; WebGL1 ANGLE instancing entry points are outside this WebGL2 capture.',
     errors,
   }
   await writeFile(
@@ -215,6 +534,10 @@ try {
       renderer,
       assets: assets.length,
       cadence,
+      renderWork: {
+        drawCalls: renderWork.drawCalls,
+        passInclusiveTriangles: renderWork.passInclusiveTriangles,
+      },
       errors,
     }),
   )

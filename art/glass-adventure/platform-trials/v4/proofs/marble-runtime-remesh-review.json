@@ -1,0 +1,216 @@
+{
+  "schema": 1,
+  "asset": "cloudway-marble-ultra4k-runtime-remesh-v4",
+  "purpose": "Same-envelope neutral-clay review of the immutable dense source and its receipt-matched 90k Meshy remesh before selected-to-active texture and normal/AO baking.",
+  "order": [
+    "Accepted dense donor",
+    "90k runtime remesh"
+  ],
+  "decision": "accepted-for-high-to-low-bake",
+  "decisionBasis": "Matched-envelope front and three-quarter review preserves the platform silhouette, foliage massing, arch cut-outs, corner medallions and hanging ornament. Fine carved relief softened by remeshing is assigned to the 4K normal/base bake. Two invalid tangent corners are repaired by the runtime build before export.",
+  "dense": {
+    "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+    "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+    "fit": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "sourceLandingBlenderZ": 0.139629545,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.951567748,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        },
+        "positiveHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.878735741,
+        "aboveContact": 0.734636201
+      }
+    },
+    "topology": {
+      "vertices": 702537,
+      "triangles": 1256556,
+      "boundaryEdges": 142826,
+      "nonManifoldEdges": 142826,
+      "looseEdges": 0,
+      "zeroAreaFaces": 0,
+      "uv0": "UVMap",
+      "uvCorners": 3769668,
+      "uvFinite": true,
+      "uvRange": {
+        "min": [
+          3.999999989900971e-06,
+          1.0013580322265625e-05
+        ],
+        "max": [
+          0.9999960064888,
+          0.999987006187439
+        ]
+      },
+      "tangentCoverage": true,
+      "validTangentCorners": 3769668,
+      "invalidTangentCorners": 0,
+      "minimumTangentLength": 0.9999998100101767,
+      "maximumTangentUnitError": 1.8998982331819292e-07
+    }
+  },
+  "candidate": {
+    "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/runtime-remesh-90k.glb",
+    "sha256": "fcb61f6e902ebea8ab3d10ac128c0ebc4bfa08a1342dced32b5753bb30d82906",
+    "receipt": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/runtime-remesh-90k-receipt.json",
+    "fit": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.999979,
+          -0.538875,
+          0.0
+        ],
+        "max": [
+          0.999508,
+          0.538811,
+          0.721708
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.999487,
+        1.077686,
+        0.721708
+      ],
+      "sourceLandingBlenderZ": 0.511209875,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.901065068,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153204128,
+          "cubic": -0.153204128,
+          "edgeDerivative": 0.901065068
+        },
+        "positiveHalf": {
+          "linear": 1.153204128,
+          "cubic": -0.153204128,
+          "edgeDerivative": 0.901065068
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.832624774,
+        "aboveContact": 0.696086744
+      }
+    },
+    "topology": {
+      "vertices": 118982,
+      "triangles": 89984,
+      "boundaryEdges": 112678,
+      "nonManifoldEdges": 112678,
+      "looseEdges": 0,
+      "zeroAreaFaces": 0,
+      "uv0": "UVMap",
+      "uvCorners": 269952,
+      "uvFinite": true,
+      "uvRange": {
+        "min": [
+          0.0,
+          2.9802322387695312e-06
+        ],
+        "max": [
+          0.9999989867210388,
+          0.9994919896125793
+        ]
+      },
+      "tangentCoverage": false,
+      "validTangentCorners": 269950,
+      "invalidTangentCorners": 2,
+      "minimumTangentLength": 0.0,
+      "maximumTangentUnitError": 1.0
+    }
+  },
+  "sameEnvelope": true,
+  "contactPlaneBlenderZ": 0.0,
+  "proofs": [
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-runtime-remesh-clay-front.png",
+      "bytes": 1909463,
+      "sha256": "145f241c5de907139dcbd9cb177acfc00102193e63c49f0af9f18fe187d235f6",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-runtime-remesh-clay-three-quarter.png",
+      "bytes": 1965319,
+      "sha256": "1e6b0530d17c50f16771d2bb93a755c7d8fd6eb17f33f71d930a2326098ca4f4",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    }
+  ],
+  "render": {
+    "engine": "Blender Eevee Next",
+    "resolution": [
+      1800,
+      1000
+    ],
+    "camera": "orthographic",
+    "blender": "5.2.2 LTS"
+  },
+  "rebuild": "rtk proxy timeout 900 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/review_marble_runtime_remesh.py"
+}

@@ -1,8 +1,10 @@
 # Cloudway Meshy 7.1 Ultra 4K audition
 
-This isolated audition reuses the accepted marble-platform guide from V2 and
-requests one dense Meshy 7.1 donor through the documented direct API. It does
-not replace the V3 review candidate or any public game asset.
+This production folder begins with an isolated audition using the accepted V2
+marble-platform guide and one dense Meshy 7.1 donor from the documented API.
+The current fitting, runtime and acceptance checkpoint is recorded in
+[the production plan](../../plans/ULTRA-PLATFORM-PRODUCTION-2026-09-23.md).
+Public assets change only after the exact derivative passes visual review.
 
 The fixed request uses `ai_model: "meshy-7.1"`,
 `geometry_resolution: "4k"`, 4K PBR textures, and `should_remesh: false`.
@@ -63,11 +65,63 @@ manifest records source bounds, triangle and vertex counts, material-to-image
 bindings, embedded image hashes, external map hashes, render hashes and the
 review decision.
 
-The Ultra result is accepted as a high-detail source donor for a later
-professional high-to-low workflow. It has cleaner arches, corner blocks, feet,
+The Ultra result is accepted as a high-detail source donor. It has cleaner
+arches, corner blocks, feet,
 medallions, inlay and foliage than V3. It is not runtime-ready: at the matched
 width it is 0.970874 metres deep versus V3's 1.400053 metres, and 0.650717
 metres high versus V3's 0.572171 metres. A future low mesh must preserve the V3
-landing/collider envelope, receive a new UV layout and validated normal/AO bake,
-and pass tangent and runtime-memory review. The comparison performs no
+landing/collider envelope and pass texture, tangent and runtime-memory review.
+Whether to retain source UV/PBR or produce a new layout and high-to-low bake
+depends on the derivative's actual quality. The source comparison performs no
 additional generation, remesh, bake or runtime integration.
+
+## Rejected remesh and bake path
+
+The additional 5-credit 90k provider remesh is preserved with its receipt under
+`meshy/marble-ultra4k`. It was fitted to the existing contact envelope, but
+neutral-clay review exposed poor broad-face shading. Normal transfer also
+revealed provider corner normals facing away from their own geometric faces.
+Geometric-face gating corrects this basis but does not make the whole-shell
+high-to-low projection reliable: nearby overlapping donor sheets contaminate
+the normal bake. A narrower cage reduced those hits while losing coverage.
+
+Rejected maps, packed Blender project, scripts and diagnostic images are
+retained. Disabling the normal map does not earn visual acceptance, because it
+leaves lumpy arches and slab faces. The second comparison simplified the dense
+donor directly while retaining its provider atlas and PBR textures. That path
+also failed visual review; neither derivative is installed in the game.
+
+Historical report paths are resolved by recorded hashes in
+`production/rejected-archive-index.json`; regenerate it with
+`python3 art/glass-adventure/platform-trials/v4/production/index_rejected_archives.py`.
+The corrected 90k rejection has its full packed Blender project, maps and GLBs.
+The earlier rejected iteration retains both GLBs and their exact embedded
+images, but its intermediate packed Blend and three standalone channel PNG
+encodings were superseded before archival. The index records that limitation
+instead of pointing those hashes at newer files.
+
+## Rejected direct 238k derivative
+
+The direct candidate has 238,000 shell triangles and a separate 32-triangle
+landing boundary. Its 2K and 4K raw GLBs pass structural validation, but the
+exact exported assets fail matched clay and PBR review. Broad surfaces show
+triangular shading defects, the arches are rough, and the top artwork loses
+the clean appearance of the dense donor. Higher texture resolution does not
+repair this result. Both independent reviewers rejected it.
+
+See `proofs/marble-direct-dense-clay-front.png` (dense left, derivative right)
+and `proofs/marble-direct-pbr-front.png` (dense, 4K derivative, 2K derivative).
+The paired three-quarter views and `marble-direct-dense-review.json` bind the
+proofs to the exact raw GLBs. The packed Blender project, maps and rejected
+exports are retained for diagnosis. There is no optimized or accepted V4
+runtime bundle and no candidate performance result.
+The optimizer and bundle assembler read the rejection decision and refuse
+downstream production. A future accepted trial must have its own review.
+
+The trial establishes failure of this combined fitting, flattening,
+simplification and normal-finalization pipeline. It does not isolate one step
+as the sole cause. Before another whole-object attempt, compare frozen clay
+stages of those operations, then prove one broad slab/arch region with an
+appropriate low surface and isolated bake. Do not repeat percentage reduction
+or tangent repairs while the clay surface still fails review. Keep Meshy's
+original source immutable; the public V3 platform kit remains unchanged.

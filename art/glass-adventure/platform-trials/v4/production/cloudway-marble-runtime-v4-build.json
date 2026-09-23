@@ -1,0 +1,1867 @@
+{
+  "schema": 2,
+  "assetId": "cloudway-marble-ultra-v4-review",
+  "status": "rejected at matched clay/PBR visual gate; dense source retained as quality authority",
+  "coordinates": "Blender Z-up authoring; glTF +Y up; metres",
+  "inputs": {
+    "denseSha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+    "remeshSha256": "fcb61f6e902ebea8ab3d10ac128c0ebc4bfa08a1342dced32b5753bb30d82906",
+    "remeshReceipt": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/runtime-remesh-90k-receipt.json",
+    "remeshReview": "art/glass-adventure/platform-trials/v4/proofs/marble-runtime-remesh-review.json",
+    "sourceMaps": {
+      "baseColor": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-base_color.png",
+        "bytes": 24712264,
+        "sha256": "f010c48c9377c99f46ddc89025f7b3e830e53e377b908227575bd79e442e05ba",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      },
+      "normal": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-normal.png",
+        "bytes": 20798487,
+        "sha256": "56bfd319cca2e1f84e3aa750bb7e21ca49a112766b4962549a1a45f2fe85a64a",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      },
+      "metallic": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-metallic.png",
+        "bytes": 781869,
+        "sha256": "1fbcf8ae5a16f5be6f4c34f5a034c8802fb695f9cae720dadbeba8e267f459d1",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "roughness": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-roughness.png",
+        "bytes": 1761714,
+        "sha256": "446bc4c73aa2b9ebee7e00deaba1c79ea1c13be1b5bc70f6f2fb350dcd9d78dd",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    }
+  },
+  "derivation": {
+    "path": "direct dense donor; rejected 90k transfer/bake path is archived",
+    "fit": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "sourceLandingBlenderZ": 0.139629545,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.951567748,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        },
+        "positiveHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.878735741,
+        "aboveContact": 0.734636201
+      }
+    },
+    "simplification": {
+      "method": "Blender collapse decimation with weighted detail protection",
+      "targetTriangles": 238000,
+      "requestedRatio": 0.18940660026294093,
+      "vertexGroupInverted": true,
+      "before": {
+        "vertices": 702537,
+        "triangles": 1256556,
+        "boundaryEdges": 142826,
+        "nonManifoldEdges": 142826,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 3769668,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            3.999999989900971e-06,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.9999960064888,
+            0.999987006187439
+          ]
+        },
+        "tangentCoverage": true,
+        "validTangentCorners": 3769668,
+        "invalidTangentCorners": 0,
+        "minimumTangentLength": 0.9999998286366316,
+        "maximumTangentUnitError": 1.7322598377944587e-07
+      },
+      "after": {
+        "vertices": 152295,
+        "triangles": 238000,
+        "boundaryEdges": 49484,
+        "nonManifoldEdges": 55191,
+        "looseEdges": 5707,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 714000,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            4.400000034365803e-05,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.999987006187439,
+            0.9999610185623169
+          ]
+        },
+        "tangentCoverage": false,
+        "validTangentCorners": 713980,
+        "invalidTangentCorners": 20,
+        "minimumTangentLength": 0.0,
+        "maximumTangentUnitError": 1.0
+      },
+      "protection": {
+        "group": "V4_ProtectedDetail",
+        "method": "Protect high-curvature vertices plus the lower ornament, front/back arches, end architecture and raised rim/foliage; concentrate collapse on broad low-curvature slab surfaces.",
+        "factor": 8.0,
+        "authoredWeightSemantics": "Higher authored weights mark protected detail. The Decimate modifier inverts this group so protected vertices receive low effective collapse weights and broad planar vertices receive high effective collapse weights.",
+        "weightPercentiles": {
+          "p0": 0.0,
+          "p25": 0.9,
+          "p50": 0.92,
+          "p75": 0.94,
+          "p90": 1.0,
+          "p95": 1.0,
+          "p99": 1.0,
+          "p100": 1.0
+        },
+        "effectiveCollapseWeightPercentiles": {
+          "p0": 0.0,
+          "p25": 0.06,
+          "p50": 0.08,
+          "p75": 0.1,
+          "p90": 0.1,
+          "p95": 0.978682,
+          "p99": 0.99952,
+          "p100": 1.0
+        },
+        "reasonVertexCounts": {
+          "highCurvature": 280039,
+          "lowerOrnament": 254363,
+          "frontBackArchitecture": 309278,
+          "endArchitecture": 457656,
+          "raisedRimOrFoliage": 137400
+        }
+      },
+      "providerUv0Retained": true
+    },
+    "landingFlattenBeforeSimplification": {
+      "method": "Flatten only vertices on broad upward-facing remesh polygons inside the exact 1.70 x 1.30 metre landing and within 6cm of the sampled datum; preserve UVs, silhouette geometry, ornament and the exposed donor artwork.",
+      "flattenedVertices": 134483,
+      "selectedHeightRangeBeforeMetres": [
+        -0.040258,
+        0.041594
+      ],
+      "targetBlenderZ": 0.0
+    },
+    "landingFlattenAfterSimplification": {
+      "method": "Flatten only vertices on broad upward-facing remesh polygons inside the exact 1.70 x 1.30 metre landing and within 6cm of the sampled datum; preserve UVs, silhouette geometry, ornament and the exposed donor artwork.",
+      "flattenedVertices": 44317,
+      "selectedHeightRangeBeforeMetres": [
+        -0.040712,
+        0.043161
+      ],
+      "targetBlenderZ": 0.0
+    },
+    "landingFlattenAfterLocalSliverRepair": null,
+    "sourceUvAndProviderNormalRetained": true,
+    "selectedToActiveBakeUsed": false
+  },
+  "runtimeGeometry": {
+    "triangles": 238000,
+    "boundaryTriangles": 32,
+    "projectedSixInstanceFrontPassTriangles": 1428000,
+    "budgetRationale": "The 238,000-triangle direct derivative is retained for the quality trial because it avoids the failed remesh projection and protects foliage, arches, medallions, legs and silhouette while simplifying broad slab regions.",
+    "contactMeasurements": {
+      "all": {
+        "sampleCount": 128304,
+        "upwardAreaSquareMetres": 2.043795,
+        "heightRangeMetres": [
+          -0.007168,
+          0.005876
+        ],
+        "maxAbsoluteErrorMetres": 0.007168
+      },
+      "center": {
+        "sampleCount": 12126,
+        "upwardAreaSquareMetres": 0.779202,
+        "heightRangeMetres": [
+          -0.000586,
+          0.0009
+        ],
+        "maxAbsoluteErrorMetres": 0.0009
+      },
+      "edge": {
+        "sampleCount": 109476,
+        "upwardAreaSquareMetres": 0.899103,
+        "heightRangeMetres": [
+          -0.007168,
+          0.005876
+        ],
+        "maxAbsoluteErrorMetres": 0.007168
+      }
+    },
+    "normalFinalization": {
+      "method": "Rebuild split normals from simplified geometric vertex normals; use exact +Z on fully flattened contact polygons and the polygon face normal whenever a smoothed candidate leaves the geometric hemisphere.",
+      "geometricFaceFallbackCorners": 38362,
+      "flattenedContactCornersSetExactUp": 127764,
+      "minimumSelectedPolygonNormalDot": 0.0010267198085784912,
+      "gate": {
+        "cornerCount": 714000,
+        "backwardsOrInvalidCorners": 0,
+        "minimumNormalDotGeometricFace": 0.0010026395320892334,
+        "maximumNormalUnitError": 4.423781250206815e-07,
+        "flattenedUpwardCorners": 127764,
+        "flattenedUpwardCornersNotExactUp": 0
+      }
+    },
+    "uvSingularityRepair": {
+      "method": "Give only decimator-created zero-area UV triangles a loop-local perpendicular half-pixel footprint before tangent generation; geometry and all other UVs unchanged.",
+      "repairedTriangles": 1,
+      "repairs": [
+        {
+          "polygon": 210378,
+          "worldAreaSquareMetres": 2.3066657206527452e-07,
+          "worldCenter": [
+            0.25774693,
+            0.6284464,
+            -0.12258626
+          ],
+          "uvBefore": [
+            [
+              0.257034123,
+              0.760685682
+            ],
+            [
+              0.257735997,
+              0.760936022
+            ],
+            [
+              0.257492006,
+              0.760848999
+            ]
+          ],
+          "uvAfter": [
+            [
+              0.257034123,
+              0.760685682
+            ],
+            [
+              0.257735997,
+              0.760936022
+            ],
+            [
+              0.257533014,
+              0.760734022
+            ]
+          ],
+          "signedAreaBefore": 0.0,
+          "signedAreaAfter": -4.548196397280435e-08,
+          "areaAfter": 4.548196397280435e-08,
+          "neighborPolygon": 210404,
+          "neighborSignedArea": -1.850010100667987e-08,
+          "sharedEdgeUvMismatch": 0.0,
+          "windingMatchesNeighbor": true,
+          "islandContinuity": "Shares the longest geometric edge with the recorded non-degenerate neighbor; the half-pixel footprint uses matching winding and remains inside the provider atlas padding adjacent to that island edge.",
+          "maximumOffsetUv": 0.0001220703125,
+          "maximumOffsetPixelsAt4k": 0.5
+        }
+      ]
+    },
+    "uvGate": {
+      "cornerCount": 714000,
+      "allFinite": true,
+      "degenerateUvTriangles": 0,
+      "minimumUvTriangleArea": 4.5634607204192434e-12,
+      "bounds": [
+        [
+          4.4e-05,
+          1e-05
+        ],
+        [
+          0.999987,
+          0.999961
+        ]
+      ]
+    },
+    "preExportTangentRepair": {
+      "method": "Replace only singular corner normals with the corresponding polygon normal, then regenerate tangent space; positions, indices and UVs remain unchanged.",
+      "repairedCorners": [
+        {
+          "loop": 14479,
+          "polygon": 4826,
+          "normalBefore": [
+            -0.8877132534980774,
+            0.45585814118385315,
+            0.064487524330616
+          ],
+          "normalAfter": [
+            0.45403555035591125,
+            0.8905758261680603,
+            0.02695130556821823
+          ]
+        },
+        {
+          "loop": 15156,
+          "polygon": 5052,
+          "normalBefore": [
+            -0.5542048811912537,
+            0.19250130653381348,
+            -0.8098148107528687
+          ],
+          "normalAfter": [
+            -0.696470320224762,
+            0.4392799437046051,
+            0.5674172043800354
+          ]
+        },
+        {
+          "loop": 141698,
+          "polygon": 47232,
+          "normalBefore": [
+            0.4873869717121124,
+            -0.5444274544715881,
+            0.6826804876327515
+          ],
+          "normalAfter": [
+            0.7488236427307129,
+            0.6626724600791931,
+            0.011333991773426533
+          ]
+        },
+        {
+          "loop": 146513,
+          "polygon": 48837,
+          "normalBefore": [
+            -0.5298386216163635,
+            -0.5124737024307251,
+            0.6757528185844421
+          ],
+          "normalAfter": [
+            -0.7106295228004456,
+            0.7033087015151978,
+            -0.019042566418647766
+          ]
+        },
+        {
+          "loop": 159846,
+          "polygon": 53282,
+          "normalBefore": [
+            0.20249775052070618,
+            0.8311773538589478,
+            0.5178213715553284
+          ],
+          "normalAfter": [
+            0.978733241558075,
+            -0.20152360200881958,
+            -0.03833366930484772
+          ]
+        },
+        {
+          "loop": 175061,
+          "polygon": 58353,
+          "normalBefore": [
+            -0.7371784448623657,
+            -0.4438268542289734,
+            0.5094956159591675
+          ],
+          "normalAfter": [
+            -0.5467851758003235,
+            0.835453450679779,
+            -0.05516935884952545
+          ]
+        },
+        {
+          "loop": 175643,
+          "polygon": 58547,
+          "normalBefore": [
+            -0.7808952927589417,
+            -0.16281452775001526,
+            -0.6030705571174622
+          ],
+          "normalAfter": [
+            0.2004915326833725,
+            -0.979695200920105,
+            -0.0007486399845220149
+          ]
+        },
+        {
+          "loop": 181399,
+          "polygon": 60466,
+          "normalBefore": [
+            0.04937638342380524,
+            -0.7807341814041138,
+            0.6229094862937927
+          ],
+          "normalAfter": [
+            -0.9970937967300415,
+            -0.07543804496526718,
+            -0.010636512190103531
+          ]
+        },
+        {
+          "loop": 186731,
+          "polygon": 62243,
+          "normalBefore": [
+            0.46529603004455566,
+            0.3800089359283447,
+            -0.7994328737258911
+          ],
+          "normalAfter": [
+            0.9026285409927368,
+            -0.24859194457530975,
+            0.35137394070625305
+          ]
+        },
+        {
+          "loop": 187368,
+          "polygon": 62456,
+          "normalBefore": [
+            0.28302764892578125,
+            0.7851505279541016,
+            0.5508483052253723
+          ],
+          "normalAfter": [
+            -0.9395069479942322,
+            0.34230276942253113,
+            0.012466059066355228
+          ]
+        },
+        {
+          "loop": 191271,
+          "polygon": 63757,
+          "normalBefore": [
+            -0.5197175145149231,
+            0.28567641973495483,
+            0.8051599264144897
+          ],
+          "normalAfter": [
+            -0.5083525776863098,
+            -0.8609890937805176,
+            -0.016594717279076576
+          ]
+        },
+        {
+          "loop": 191574,
+          "polygon": 63858,
+          "normalBefore": [
+            0.9285494089126587,
+            -0.3572109043598175,
+            -0.10097748041152954
+          ],
+          "normalAfter": [
+            0.0,
+            0.0,
+            -1.0
+          ]
+        },
+        {
+          "loop": 217909,
+          "polygon": 72636,
+          "normalBefore": [
+            0.7249008417129517,
+            0.6869562864303589,
+            -0.051085591316223145
+          ],
+          "normalAfter": [
+            0.07846531271934509,
+            0.005470409989356995,
+            0.99690181016922
+          ]
+        },
+        {
+          "loop": 223822,
+          "polygon": 74607,
+          "normalBefore": [
+            0.2028125524520874,
+            0.646515965461731,
+            -0.7354482412338257
+          ],
+          "normalAfter": [
+            -0.892523467540741,
+            -0.1855677217245102,
+            -0.41105538606643677
+          ]
+        },
+        {
+          "loop": 227736,
+          "polygon": 75912,
+          "normalBefore": [
+            -0.2426198273897171,
+            -0.871090829372406,
+            -0.427008718252182
+          ],
+          "normalAfter": [
+            0.960721492767334,
+            -0.2755325436592102,
+            -0.03310693800449371
+          ]
+        },
+        {
+          "loop": 292281,
+          "polygon": 97427,
+          "normalBefore": [
+            0.35203394293785095,
+            -0.9358278512954712,
+            0.017268149182200432
+          ],
+          "normalAfter": [
+            0.35218456387519836,
+            -0.9357711672782898,
+            0.017275216057896614
+          ]
+        },
+        {
+          "loop": 310128,
+          "polygon": 103376,
+          "normalBefore": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalAfter": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        {
+          "loop": 310374,
+          "polygon": 103458,
+          "normalBefore": [
+            0.6951667666435242,
+            -0.7187374830245972,
+            -0.012635260820388794
+          ],
+          "normalAfter": [
+            0.6951486468315125,
+            -0.7187549471855164,
+            -0.012634985148906708
+          ]
+        },
+        {
+          "loop": 409154,
+          "polygon": 136384,
+          "normalBefore": [
+            -0.3589327931404114,
+            0.6206068396568298,
+            -0.6971474885940552
+          ],
+          "normalAfter": [
+            -0.8763036727905273,
+            -0.48169341683387756,
+            0.007963708601891994
+          ]
+        },
+        {
+          "loop": 441406,
+          "polygon": 147135,
+          "normalBefore": [
+            0.4267006516456604,
+            0.5657157301902771,
+            0.7056148648262024
+          ],
+          "normalAfter": [
+            0.886784017086029,
+            -0.4161180853843689,
+            -0.20114627480506897
+          ]
+        },
+        {
+          "loop": 443377,
+          "polygon": 147792,
+          "normalBefore": [
+            0.8703773021697998,
+            0.45197197794914246,
+            -0.195358008146286
+          ],
+          "normalAfter": [
+            -0.4347624182701111,
+            0.8994241952896118,
+            0.044919341802597046
+          ]
+        },
+        {
+          "loop": 476628,
+          "polygon": 158876,
+          "normalBefore": [
+            0.7977414727210999,
+            0.05424308776855469,
+            -0.6005549430847168
+          ],
+          "normalAfter": [
+            0.0875827968120575,
+            -0.9958528876304626,
+            0.024622755125164986
+          ]
+        },
+        {
+          "loop": 537467,
+          "polygon": 179155,
+          "normalBefore": [
+            0.5055519938468933,
+            0.5196938514709473,
+            0.688720166683197
+          ],
+          "normalAfter": [
+            -0.24339662492275238,
+            0.8640273213386536,
+            -0.44069817662239075
+          ]
+        },
+        {
+          "loop": 547161,
+          "polygon": 182387,
+          "normalBefore": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "normalAfter": [
+            -0.0,
+            -0.0,
+            1.0
+          ]
+        },
+        {
+          "loop": 570408,
+          "polygon": 190136,
+          "normalBefore": [
+            0.2600831091403961,
+            -0.8971631526947021,
+            0.35700854659080505
+          ],
+          "normalAfter": [
+            0.6271045207977295,
+            0.4313136339187622,
+            0.6486204862594604
+          ]
+        },
+        {
+          "loop": 570410,
+          "polygon": 190136,
+          "normalBefore": [
+            0.4359489381313324,
+            -0.8380069732666016,
+            0.3281659185886383
+          ],
+          "normalAfter": [
+            0.6271045207977295,
+            0.4313136339187622,
+            0.6486204862594604
+          ]
+        },
+        {
+          "loop": 585453,
+          "polygon": 195151,
+          "normalBefore": [
+            -0.5249577760696411,
+            -0.42674824595451355,
+            0.736413836479187
+          ],
+          "normalAfter": [
+            -0.5752739310264587,
+            -0.46113458275794983,
+            -0.6755847930908203
+          ]
+        },
+        {
+          "loop": 586660,
+          "polygon": 195553,
+          "normalBefore": [
+            0.0,
+            0.0,
+            -0.9999999403953552
+          ],
+          "normalAfter": [
+            0.0,
+            0.0,
+            -1.0
+          ]
+        },
+        {
+          "loop": 586661,
+          "polygon": 195553,
+          "normalBefore": [
+            0.0,
+            0.0,
+            -0.9999999403953552
+          ],
+          "normalAfter": [
+            0.0,
+            0.0,
+            -1.0
+          ]
+        },
+        {
+          "loop": 631342,
+          "polygon": 210447,
+          "normalBefore": [
+            0.20429028570652008,
+            0.9468326568603516,
+            0.2485424280166626
+          ],
+          "normalAfter": [
+            0.199175164103508,
+            0.2460884153842926,
+            -0.9485619068145752
+          ]
+        },
+        {
+          "loop": 633192,
+          "polygon": 211064,
+          "normalBefore": [
+            -0.07552936673164368,
+            0.4583742022514343,
+            -0.8855441808700562
+          ],
+          "normalAfter": [
+            0.8735010623931885,
+            -0.31727272272109985,
+            -0.36923420429229736
+          ]
+        },
+        {
+          "loop": 710025,
+          "polygon": 236675,
+          "normalBefore": [
+            -0.6766566634178162,
+            -0.37013062834739685,
+            0.6365054249763489
+          ],
+          "normalAfter": [
+            -0.5198037028312683,
+            0.8525800704956055,
+            -0.053958501666784286
+          ]
+        }
+      ],
+      "remainingZeroTangents": 7,
+      "maximumTangentUnitError": 1.0,
+      "postExportFallbackRequired": true
+    },
+    "preExportResidualTangentPolicy": {
+      "acceptedScope": "exactly 7 rows mapped to 6 diagnosed valid-UV sliver polygons",
+      "exportRepair": "final exported POSITION/UV/NORMAL/indices differential basis; no arbitrary axis and no full-Mikk-continuity claim",
+      "allOtherTangentRowsMustRemainByteExact": true
+    },
+    "postRepairCornerNormalBasisGate": {
+      "cornerCount": 714000,
+      "backwardsOrInvalidCorners": 0,
+      "minimumNormalDotGeometricFace": 0.0010026395320892334,
+      "maximumNormalUnitError": 4.526226689005597e-07,
+      "flattenedUpwardCorners": 127764,
+      "flattenedUpwardCornersNotExactUp": 0
+    },
+    "residualTangentDiagnosis": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-residual-tangent-singularities.json",
+      "bytes": 25846,
+      "sha256": "1d63749b4f8bf4e3a0a157000f6845ecbcb6b2dcd5306b31b3564b25ad319027",
+      "residualLoops": 7,
+      "residualPolygons": 6
+    },
+    "boundedLocalSliverRepair": {
+      "schema": 1,
+      "status": "rejected before mutation",
+      "attemptLimit": 1,
+      "sourceDiagnostic": {
+        "path": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-residual-tangent-singularities.json",
+        "sha256": "1d63749b4f8bf4e3a0a157000f6845ecbcb6b2dcd5306b31b3564b25ad319027",
+        "residualLoops": 7,
+        "residualPolygons": 6
+      },
+      "proposedMethod": "Collapse one disjoint, manifold, same-material, provider-atlas-contiguous edge no longer than 5 mm per diagnosed geometric sliver.",
+      "mutationStarted": false,
+      "failure": {
+        "polygon": 182387,
+        "message": "Geometric sliver 182387 has no disjoint manifold, UV-contiguous, same-material collapse edge at or below 5 mm"
+      },
+      "decision": "Do not widen the distance, seam, manifold, material, or disjointness bounds and do not retry topology tuning. Preserve the 238000-triangle geometry and use the separately validated analytic UV-derivative tangent construction only for the seven exported zero tangent rows."
+    },
+    "boundedLocalSliverRepairResult": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-local-sliver-repair.json",
+      "bytes": 1004,
+      "sha256": "18b035d502c9cf6e35c07def035ff8182a5ecc783bcc387caa99f2f3aebf98ad"
+    },
+    "opaqueReplacementSlabPresent": false
+  },
+  "directProviderPbr": {
+    "sourceNormalMapIncluded": true,
+    "selectedToActiveProjection": false,
+    "maps": {
+      "baseColor4k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-4k.png",
+        "bytes": 24712264,
+        "sha256": "f010c48c9377c99f46ddc89025f7b3e830e53e377b908227575bd79e442e05ba",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "method": "byte-identical copy of provider source base color"
+      },
+      "normal4k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-4k.png",
+        "bytes": 20798487,
+        "sha256": "56bfd319cca2e1f84e3aa750bb7e21ca49a112766b4962549a1a45f2fe85a64a",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "method": "byte-identical copy of provider source tangent normal"
+      },
+      "metallic2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-metallic-2k.png",
+        "bytes": 781869,
+        "sha256": "1fbcf8ae5a16f5be6f4c34f5a034c8802fb695f9cae720dadbeba8e267f459d1",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "roughness2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-roughness-2k.png",
+        "bytes": 1761714,
+        "sha256": "446bc4c73aa2b9ebee7e00deaba1c79ea1c13be1b5bc70f6f2fb350dcd9d78dd",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "orm2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-orm-2k.png",
+        "bytes": 2523050,
+        "sha256": "cb03a51adca90a202e9100c475156e6063e4bbe6284f20f20ed9aaac1fe0c6ea",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "channels": {
+          "red": "neutral occlusion constant 255; provider supplied no AO map",
+          "green": "provider roughness",
+          "blue": "provider metallic"
+        }
+      },
+      "baseColor2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-2k.png",
+        "bytes": 7322602,
+        "sha256": "c5cd7902866c339320ad71ef51979939356c3cccf617d516058e1d0a54c0f4ff",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "normal2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-2k.png",
+        "bytes": 5009005,
+        "sha256": "1cd0c38bed3e37b836011149b1ddcaf0d2123f9c2661b689c5355e0acaf7a074",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Lanczos3 resize followed by per-texel tangent-vector renormalization"
+      }
+    }
+  },
+  "rootContract": {
+    "root": "Cloudway_Marble",
+    "descendantMeshes": [
+      "Cloudway_Marble__DonorShell",
+      "Cloudway_Marble__LandingBoundary"
+    ],
+    "triangles": 238032,
+    "landingBoundsGlTfYUpMetres": {
+      "min": [
+        -0.85,
+        0.0,
+        -0.65
+      ],
+      "max": [
+        0.85,
+        0.0,
+        0.65
+      ]
+    },
+    "collider": {
+      "shape": "box",
+      "width": 1.7,
+      "depth": 1.3,
+      "height": 0.24,
+      "topY": 0.0,
+      "center": [
+        0.0,
+        -0.12,
+        0.0
+      ]
+    },
+    "visualBoundsGlTfYUpMetres": {
+      "min": [
+        -0.899768,
+        -0.427174,
+        -0.69932
+      ],
+      "max": [
+        0.900924,
+        0.142995,
+        0.700776
+      ]
+    },
+    "opaqueReplacementSkinPresent": false
+  },
+  "packedBlend": {
+    "file": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+    "bytes": 169198318,
+    "sha256": "c9b5b4cd9fce13da10348b62546e97b5ee5327fff8efa7135deb3766c6c72710",
+    "imagesPacked": true,
+    "fittedDenseDonorRetained": true,
+    "v3NonMarbleRootsRetained": [
+      "Cloudway_Crackle_Intact",
+      "Cloudway_Crackle_Release",
+      "Cloudway_Crackle_Warning",
+      "Cloudway_Frost",
+      "Cloudway_Glide"
+    ],
+    "missingExternalImages": []
+  },
+  "variants": {
+    "4k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-4k-blender.glb",
+      "bytes": 63852840,
+      "sha256": "4e2edb1e09b96d9b6eef09a5b0bff79000281212ff7032cebba18da56a5b640a",
+      "tangentAndOcclusionPatch": {
+        "method": "Post-export float64 per-triangle UV derivative, Gram-Schmidt projection against the final exported split normal, and handedness from the corresponding bitangent.",
+        "scope": "Only the seven zero TANGENT rows mapped by geometry-area and UV-determinant to the six diagnosed nondegenerate sliver polygons.",
+        "fullMikkContinuityClaimed": false,
+        "arbitraryOrthogonalAxisFallbacks": 0,
+        "inputSingularRows": 7,
+        "exactUvDerivativeTangentsConstructed": 7,
+        "affectedTriangleCount": 6,
+        "sourcePolygonIndicesEqualExportTriangleOrdinals": true,
+        "repairs": [
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 67749,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.8687653880952239,
+              0.0,
+              0.4952238892135104,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 103376,
+                "indices": [
+                  67749,
+                  129711,
+                  130772
+                ],
+                "uvDeterminant": 1.3166388868057766e-07,
+                "geometryAreaSquareMetres": 1.1368559427182845e-08,
+                "projectedTangentLength": 2.6868504009774283,
+                "handedness": 1.0,
+                "parityMeasure": 0.06427251108331788
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999998,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 121125,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.0004559324984160897,
+              -0.9998322126278181,
+              0.018312255931986807,
+              -1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": -1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 97427,
+                "indices": [
+                  121125,
+                  121631,
+                  122187
+                ],
+                "uvDeterminant": -2.1958146589895478e-07,
+                "geometryAreaSquareMetres": 2.6008351121788754e-07,
+                "projectedTangentLength": 30.138241232011808,
+                "handedness": -1.0,
+                "parityMeasure": -0.07860120845085047
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 1.0000000000000004,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 129231,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              -0.006517390697475422,
+              -0.9999157479392602,
+              -0.011225891571117388,
+              -1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0000000000000002,
+            "handedness": -1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 103458,
+                "indices": [
+                  129231,
+                  130873,
+                  129823
+                ],
+                "uvDeterminant": -5.3306337122194236e-08,
+                "geometryAreaSquareMetres": 1.0431276923334004e-08,
+                "projectedTangentLength": 36.08255320226713,
+                "handedness": -1.0,
+                "parityMeasure": -0.010846543614720483
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 1.0,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 223535,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              0.026626623087814973,
+              0.0,
+              0.9996454486181285,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 0.9999999999999999,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 182387,
+                "indices": [
+                  223535,
+                  223753,
+                  223537
+                ],
+                "uvDeterminant": 6.098600557891132e-08,
+                "geometryAreaSquareMetres": 8.19161305010141e-07,
+                "projectedTangentLength": 239.21955154541922,
+                "handedness": 1.0,
+                "parityMeasure": 0.11229814019173956
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999998,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 232336,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.729517009081005,
+              0.6831484109560104,
+              -0.0333643832519498,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0000000000000002,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 190136,
+                "indices": [
+                  232203,
+                  232306,
+                  232336
+                ],
+                "uvDeterminant": 3.7422633347716783e-07,
+                "geometryAreaSquareMetres": 2.778380951850654e-08,
+                "projectedTangentLength": 3.9791464582084624,
+                "handedness": 1.0,
+                "parityMeasure": 0.03731620924243123
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 1.0000000000000002,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 236163,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.32291695205271653,
+              0.0,
+              -0.9464273041692022,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 195553,
+                "indices": [
+                  236716,
+                  236737,
+                  236163
+                ],
+                "uvDeterminant": 2.042384039668832e-10,
+                "geometryAreaSquareMetres": 1.6772541688858666e-10,
+                "projectedTangentLength": 832.8643690221808,
+                "handedness": 1.0,
+                "parityMeasure": 0.0019720466528099223
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999999,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 236737,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.32291695205271653,
+              0.0,
+              -0.9464273041692022,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 195553,
+                "indices": [
+                  236716,
+                  236737,
+                  236163
+                ],
+                "uvDeterminant": 2.042384039668832e-10,
+                "geometryAreaSquareMetres": 1.6772541688858666e-10,
+                "projectedTangentLength": 832.8643690221808,
+                "handedness": 1.0,
+                "parityMeasure": 0.0019720466528099223
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999999,
+            "postPackHandednessMatchesMeasuredParity": true
+          }
+        ],
+        "diagnosticMetricMatches": [
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 97427,
+            "expectedGeometryArea": 2.600835387056577e-07,
+            "actualGeometryArea": 2.6008351121788754e-07,
+            "relativeGeometryAreaError": 1.0568823501250536e-07,
+            "expectedAbsoluteUvDeterminant": 2.1958146589895478e-07,
+            "actualAbsoluteUvDeterminant": 2.1958146589895478e-07,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 103376,
+            "expectedGeometryArea": 1.1368570085323881e-08,
+            "actualGeometryArea": 1.1368559427182845e-08,
+            "relativeGeometryAreaError": 9.375093750937509e-07,
+            "expectedAbsoluteUvDeterminant": 1.3166388868057766e-07,
+            "actualAbsoluteUvDeterminant": 1.3166388868057766e-07,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 103458,
+            "expectedGeometryArea": 1.0431276287192759e-08,
+            "actualGeometryArea": 1.0431276923334004e-08,
+            "relativeGeometryAreaError": 6.098402798314702e-08,
+            "expectedAbsoluteUvDeterminant": 5.3306337122194236e-08,
+            "actualAbsoluteUvDeterminant": 5.3306337122194236e-08,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 182387,
+            "expectedGeometryArea": 8.191614142560866e-07,
+            "actualGeometryArea": 8.19161305010141e-07,
+            "relativeGeometryAreaError": 1.3336314885183653e-07,
+            "expectedAbsoluteUvDeterminant": 6.098600557891132e-08,
+            "actualAbsoluteUvDeterminant": 6.098600557891132e-08,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 190136,
+            "expectedGeometryArea": 2.7783730871533407e-08,
+            "actualGeometryArea": 2.778380951850654e-08,
+            "relativeGeometryAreaError": 2.830684384953827e-06,
+            "expectedAbsoluteUvDeterminant": 3.7416781450971826e-07,
+            "actualAbsoluteUvDeterminant": 3.7422633347716783e-07,
+            "relativeUvDeterminantError": 0.0001563976514822666,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 195553,
+            "expectedGeometryArea": 1.6773071820352925e-10,
+            "actualGeometryArea": 1.6772541688858666e-10,
+            "relativeGeometryAreaError": 3.1606106498347876e-05,
+            "expectedAbsoluteUvDeterminant": 2.028670564868662e-10,
+            "actualAbsoluteUvDeterminant": 2.042384039668832e-10,
+            "relativeUvDeterminantError": 0.006759833280795769,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          }
+        ],
+        "protectedAccessorPayloads": [
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "POSITION",
+            "accessor": 0,
+            "bytes": 3239364,
+            "sha256Before": "956b310a08dbd17504710e48a891634bf214909c6db613e534c66cd83f6bb83d",
+            "sha256After": "956b310a08dbd17504710e48a891634bf214909c6db613e534c66cd83f6bb83d",
+            "byteExact": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "NORMAL",
+            "accessor": 1,
+            "bytes": 3239364,
+            "sha256Before": "64461b8639fb9ab8c0aef9f933cde4cb4007a4baee9b7987de93e9dadda3fcb4",
+            "sha256After": "64461b8639fb9ab8c0aef9f933cde4cb4007a4baee9b7987de93e9dadda3fcb4",
+            "byteExact": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "TEXCOORD_0",
+            "accessor": 2,
+            "bytes": 2159576,
+            "sha256Before": "535ad72993f0c5317d00fa5d8e9d43d281bad128c52f457153a8d2f725962337",
+            "sha256After": "535ad72993f0c5317d00fa5d8e9d43d281bad128c52f457153a8d2f725962337",
+            "byteExact": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "INDICES",
+            "accessor": 4,
+            "bytes": 2856000,
+            "sha256Before": "7eeb67eaf29e9167ec05239707dc1250b37338fbc8e1dfe7e151f622cc088486",
+            "sha256After": "7eeb67eaf29e9167ec05239707dc1250b37338fbc8e1dfe7e151f622cc088486",
+            "byteExact": true
+          }
+        ],
+        "nonTargetTangentRows": [
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "accessor": 3,
+            "rows": 269940,
+            "sha256Before": "0f8562594140a5b2bf4af0b82c1c1cb2daaab8bf1a64332751223faf4578c189",
+            "sha256After": "0f8562594140a5b2bf4af0b82c1c1cb2daaab8bf1a64332751223faf4578c189",
+            "byteExact": true
+          }
+        ],
+        "positionUvNormalIndexByteExact": true,
+        "allOtherTangentRowsByteExact": true,
+        "validatedTangents": 269947,
+        "maximumNormalUnitError": 1.5381491746957465e-07,
+        "maximumTangentUnitError": 8.251465813446934e-05,
+        "untouchedTangentUnitErrorLimit": 0.0001,
+        "untouchedRowsAboveRepairedOneEminusFiveThreshold": 207517,
+        "untouchedRowsAboveRepairedThresholdByteExact": true,
+        "maximumAbsoluteNormalTangentDot": 0.00013802688457165146,
+        "invalidTangentRows": 0,
+        "repairedMaximumTangentUnitError": 3.740734710877547e-08,
+        "repairedMaximumAbsoluteNormalTangentDot": 1.7821336628642825e-09,
+        "postPackMinimumDerivativeAlignment": 0.9999999999999998,
+        "postPackHandednessMatchesMeasuredParity": true,
+        "handednessValues": [
+          -1.0,
+          1.0
+        ],
+        "occlusionSharesOrmTexture": true
+      },
+      "decodedTextureMemory": {
+        "assumption": "RGBA8 GPU allocation for base, normal and ORM; complete mip chain adds 1/3",
+        "textureDimensions": {
+          "baseColor": [
+            4096,
+            4096
+          ],
+          "normal": [
+            4096,
+            4096
+          ],
+          "orm": [
+            2048,
+            2048
+          ]
+        },
+        "decodedBaseLevelBytes": 150994944,
+        "decodedBaseLevelMiB": 144.0,
+        "decodedMipChainBytes": 201326592,
+        "decodedMipChainMiB": 192.0
+      }
+    },
+    "2k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-2k-blender.glb",
+      "bytes": 30673700,
+      "sha256": "a21f976eea18591bbb25eb26b5b67598584bf47d7e4aa597e347c624030f6646",
+      "tangentAndOcclusionPatch": {
+        "method": "Post-export float64 per-triangle UV derivative, Gram-Schmidt projection against the final exported split normal, and handedness from the corresponding bitangent.",
+        "scope": "Only the seven zero TANGENT rows mapped by geometry-area and UV-determinant to the six diagnosed nondegenerate sliver polygons.",
+        "fullMikkContinuityClaimed": false,
+        "arbitraryOrthogonalAxisFallbacks": 0,
+        "inputSingularRows": 7,
+        "exactUvDerivativeTangentsConstructed": 7,
+        "affectedTriangleCount": 6,
+        "sourcePolygonIndicesEqualExportTriangleOrdinals": true,
+        "repairs": [
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 67749,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.8687653880952239,
+              0.0,
+              0.4952238892135104,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 103376,
+                "indices": [
+                  67749,
+                  129711,
+                  130772
+                ],
+                "uvDeterminant": 1.3166388868057766e-07,
+                "geometryAreaSquareMetres": 1.1368559427182845e-08,
+                "projectedTangentLength": 2.6868504009774283,
+                "handedness": 1.0,
+                "parityMeasure": 0.06427251108331788
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999998,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 121125,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.0004559324984160897,
+              -0.9998322126278181,
+              0.018312255931986807,
+              -1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": -1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 97427,
+                "indices": [
+                  121125,
+                  121631,
+                  122187
+                ],
+                "uvDeterminant": -2.1958146589895478e-07,
+                "geometryAreaSquareMetres": 2.6008351121788754e-07,
+                "projectedTangentLength": 30.138241232011808,
+                "handedness": -1.0,
+                "parityMeasure": -0.07860120845085047
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 1.0000000000000004,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 129231,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              -0.006517390697475422,
+              -0.9999157479392602,
+              -0.011225891571117388,
+              -1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0000000000000002,
+            "handedness": -1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 103458,
+                "indices": [
+                  129231,
+                  130873,
+                  129823
+                ],
+                "uvDeterminant": -5.3306337122194236e-08,
+                "geometryAreaSquareMetres": 1.0431276923334004e-08,
+                "projectedTangentLength": 36.08255320226713,
+                "handedness": -1.0,
+                "parityMeasure": -0.010846543614720483
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 1.0,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 223535,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              0.026626623087814973,
+              0.0,
+              0.9996454486181285,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 0.9999999999999999,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 182387,
+                "indices": [
+                  223535,
+                  223753,
+                  223537
+                ],
+                "uvDeterminant": 6.098600557891132e-08,
+                "geometryAreaSquareMetres": 8.19161305010141e-07,
+                "projectedTangentLength": 239.21955154541922,
+                "handedness": 1.0,
+                "parityMeasure": 0.11229814019173956
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999998,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 232336,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.729517009081005,
+              0.6831484109560104,
+              -0.0333643832519498,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0000000000000002,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 190136,
+                "indices": [
+                  232203,
+                  232306,
+                  232336
+                ],
+                "uvDeterminant": 3.7422633347716783e-07,
+                "geometryAreaSquareMetres": 2.778380951850654e-08,
+                "projectedTangentLength": 3.9791464582084624,
+                "handedness": 1.0,
+                "parityMeasure": 0.03731620924243123
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 1.0000000000000002,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 236163,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.32291695205271653,
+              0.0,
+              -0.9464273041692022,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 195553,
+                "indices": [
+                  236716,
+                  236737,
+                  236163
+                ],
+                "uvDeterminant": 2.042384039668832e-10,
+                "geometryAreaSquareMetres": 1.6772541688858666e-10,
+                "projectedTangentLength": 832.8643690221808,
+                "handedness": 1.0,
+                "parityMeasure": 0.0019720466528099223
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999999,
+            "postPackHandednessMatchesMeasuredParity": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "vertex": 236737,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              -1.0
+            ],
+            "new": [
+              -0.32291695205271653,
+              0.0,
+              -0.9464273041692022,
+              1.0
+            ],
+            "incidentTriangleCount": 1,
+            "minimumIncidentDirectionDot": 1.0,
+            "minimumFinalDerivativeAlignment": 1.0,
+            "handedness": 1.0,
+            "incidentTriangles": [
+              {
+                "triangle": 195553,
+                "indices": [
+                  236716,
+                  236737,
+                  236163
+                ],
+                "uvDeterminant": 2.042384039668832e-10,
+                "geometryAreaSquareMetres": 1.6772541688858666e-10,
+                "projectedTangentLength": 832.8643690221808,
+                "handedness": 1.0,
+                "parityMeasure": 0.0019720466528099223
+              }
+            ],
+            "postPackMinimumDerivativeAlignment": 0.9999999999999999,
+            "postPackHandednessMatchesMeasuredParity": true
+          }
+        ],
+        "diagnosticMetricMatches": [
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 97427,
+            "expectedGeometryArea": 2.600835387056577e-07,
+            "actualGeometryArea": 2.6008351121788754e-07,
+            "relativeGeometryAreaError": 1.0568823501250536e-07,
+            "expectedAbsoluteUvDeterminant": 2.1958146589895478e-07,
+            "actualAbsoluteUvDeterminant": 2.1958146589895478e-07,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 103376,
+            "expectedGeometryArea": 1.1368570085323881e-08,
+            "actualGeometryArea": 1.1368559427182845e-08,
+            "relativeGeometryAreaError": 9.375093750937509e-07,
+            "expectedAbsoluteUvDeterminant": 1.3166388868057766e-07,
+            "actualAbsoluteUvDeterminant": 1.3166388868057766e-07,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 103458,
+            "expectedGeometryArea": 1.0431276287192759e-08,
+            "actualGeometryArea": 1.0431276923334004e-08,
+            "relativeGeometryAreaError": 6.098402798314702e-08,
+            "expectedAbsoluteUvDeterminant": 5.3306337122194236e-08,
+            "actualAbsoluteUvDeterminant": 5.3306337122194236e-08,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 182387,
+            "expectedGeometryArea": 8.191614142560866e-07,
+            "actualGeometryArea": 8.19161305010141e-07,
+            "relativeGeometryAreaError": 1.3336314885183653e-07,
+            "expectedAbsoluteUvDeterminant": 6.098600557891132e-08,
+            "actualAbsoluteUvDeterminant": 6.098600557891132e-08,
+            "relativeUvDeterminantError": 0.0,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 190136,
+            "expectedGeometryArea": 2.7783730871533407e-08,
+            "actualGeometryArea": 2.778380951850654e-08,
+            "relativeGeometryAreaError": 2.830684384953827e-06,
+            "expectedAbsoluteUvDeterminant": 3.7416781450971826e-07,
+            "actualAbsoluteUvDeterminant": 3.7422633347716783e-07,
+            "relativeUvDeterminantError": 0.0001563976514822666,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          },
+          {
+            "sourcePolygonAndExportTriangleOrdinal": 195553,
+            "expectedGeometryArea": 1.6773071820352925e-10,
+            "actualGeometryArea": 1.6772541688858666e-10,
+            "relativeGeometryAreaError": 3.1606106498347876e-05,
+            "expectedAbsoluteUvDeterminant": 2.028670564868662e-10,
+            "actualAbsoluteUvDeterminant": 2.042384039668832e-10,
+            "relativeUvDeterminantError": 0.006759833280795769,
+            "mappingEvidence": "The glTF exporter retained source triangle order. Geometry area and the float32-exported UV determinant independently agree; the 1% determinant bound covers subtraction quantization only on the 2.03e-10 sliver."
+          }
+        ],
+        "protectedAccessorPayloads": [
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "POSITION",
+            "accessor": 0,
+            "bytes": 3239364,
+            "sha256Before": "956b310a08dbd17504710e48a891634bf214909c6db613e534c66cd83f6bb83d",
+            "sha256After": "956b310a08dbd17504710e48a891634bf214909c6db613e534c66cd83f6bb83d",
+            "byteExact": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "NORMAL",
+            "accessor": 1,
+            "bytes": 3239364,
+            "sha256Before": "64461b8639fb9ab8c0aef9f933cde4cb4007a4baee9b7987de93e9dadda3fcb4",
+            "sha256After": "64461b8639fb9ab8c0aef9f933cde4cb4007a4baee9b7987de93e9dadda3fcb4",
+            "byteExact": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "TEXCOORD_0",
+            "accessor": 2,
+            "bytes": 2159576,
+            "sha256Before": "535ad72993f0c5317d00fa5d8e9d43d281bad128c52f457153a8d2f725962337",
+            "sha256After": "535ad72993f0c5317d00fa5d8e9d43d281bad128c52f457153a8d2f725962337",
+            "byteExact": true
+          },
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "semantic": "INDICES",
+            "accessor": 4,
+            "bytes": 2856000,
+            "sha256Before": "7eeb67eaf29e9167ec05239707dc1250b37338fbc8e1dfe7e151f622cc088486",
+            "sha256After": "7eeb67eaf29e9167ec05239707dc1250b37338fbc8e1dfe7e151f622cc088486",
+            "byteExact": true
+          }
+        ],
+        "nonTargetTangentRows": [
+          {
+            "mesh": 0,
+            "primitive": 0,
+            "accessor": 3,
+            "rows": 269940,
+            "sha256Before": "7fbe3bcf4e4da834ccb2ff5430bda938345b6fbee25de2e04fa0ec0f077b3556",
+            "sha256After": "7fbe3bcf4e4da834ccb2ff5430bda938345b6fbee25de2e04fa0ec0f077b3556",
+            "byteExact": true
+          }
+        ],
+        "positionUvNormalIndexByteExact": true,
+        "allOtherTangentRowsByteExact": true,
+        "validatedTangents": 269947,
+        "maximumNormalUnitError": 1.5381491746957465e-07,
+        "maximumTangentUnitError": 8.251465813446934e-05,
+        "untouchedTangentUnitErrorLimit": 0.0001,
+        "untouchedRowsAboveRepairedOneEminusFiveThreshold": 207519,
+        "untouchedRowsAboveRepairedThresholdByteExact": true,
+        "maximumAbsoluteNormalTangentDot": 0.00013802688457165146,
+        "invalidTangentRows": 0,
+        "repairedMaximumTangentUnitError": 3.740734710877547e-08,
+        "repairedMaximumAbsoluteNormalTangentDot": 1.7821336628642825e-09,
+        "postPackMinimumDerivativeAlignment": 0.9999999999999998,
+        "postPackHandednessMatchesMeasuredParity": true,
+        "handednessValues": [
+          -1.0,
+          1.0
+        ],
+        "occlusionSharesOrmTexture": true
+      },
+      "decodedTextureMemory": {
+        "assumption": "RGBA8 GPU allocation for base, normal and ORM; complete mip chain adds 1/3",
+        "textureDimensions": {
+          "baseColor": [
+            2048,
+            2048
+          ],
+          "normal": [
+            2048,
+            2048
+          ],
+          "orm": [
+            2048,
+            2048
+          ]
+        },
+        "decodedBaseLevelBytes": 50331648,
+        "decodedBaseLevelMiB": 48.0,
+        "decodedMipChainBytes": 67108864,
+        "decodedMipChainMiB": 64.0
+      }
+    },
+    "sameGeometry": true,
+    "selection": "rejected; no optimization, actual-game candidate, combined bundle, or install"
+  },
+  "rejected90kArchive": {
+    "blend": "art/glass-adventure/platform-trials/v4/sources/rejected/cloudway-platform-kit-v4-90k-projection-rejected.blend",
+    "maps": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-90k-projection-rejected",
+    "report": "art/glass-adventure/platform-trials/v4/production/cloudway-marble-runtime-v4-build-rejected-90k-projection.json"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/build_marble_dense_direct_v4.py",
+    "blender": "5.2.2 LTS"
+  }
+}
