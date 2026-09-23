@@ -1,6 +1,7 @@
 # Meshy 7.1 and Ultra 4K — capability check and platform audition
 
-Checked 23 September 2026. Finish the current V8/V9 museum repairs first.
+Checked 23 September 2026. Museum runtime repair remains the delivery priority;
+the independent source audition ran while final museum assembly was underway.
 The owner requested a higher-detail platform experiment; no new level is needed.
 
 ## Verified API support
@@ -83,5 +84,32 @@ resume an existing task instead of resubmitting it.
 
 - [x] Verify official API and installed MCP capabilities.
 - [ ] Finish current museum asset repair and browser review.
-- [ ] Generate and archive the single-platform 7.1 Ultra 4K audition.
-- [ ] Review source, Blender bake and actual game comparisons before replacement.
+- [x] Generate and archive the single-platform 7.1 Ultra 4K audition.
+- [x] Review equal-scale source clay and PBR comparisons against current V3.
+- [ ] Prepare a fitted runtime mesh, Blender bake and actual game comparisons before replacement.
+
+## Actual API trial — 23 September
+
+The explicit request succeeded as task `01a0cef2-fffb-726e-8659-b4e06c21149a`,
+charged **35 credits**, and left a balance of 3,800 after this isolated job. The
+provider response confirms `geometry_resolution: "4k"`; it does not return an
+`ai_model` field. Record the explicit 7.1 request without inventing a separately
+confirmed model version.
+
+The dense GLB contains 1,256,556 triangles and 702,537 exported vertices, with a
+65,096,584-byte source archive. Base color and normal are actually 4096 x 4096;
+metallic and roughness are 2048 x 2048. All requested PBR roles are present.
+The model, four maps, fixed request and sanitized task/credit receipt are saved
+under `art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/`.
+
+Equal-scale clay/PBR comparison accepts the Ultra result as a high-detail source:
+arches, corner blocks, feet, flower medallions, inlay and foliage read more
+coherently than V3. The four matching-camera proofs and hash-bound decision are
+in `platform-trials/v4/proofs/`. In those images, current V3 is on the left and
+Ultra 4K is on the right.
+
+This is not a runtime replacement. At the same 1.801668-metre width, the Ultra
+source is 0.970874 metres deep versus V3's 1.400053, and 0.650717 metres high
+versus 0.572171. The next mesh must fit the existing landing/collider envelope
+before UV, normal/AO and texture-size auditions. The original dense source stays
+unchanged. Existing V3 platforms and gameplay are unchanged.
