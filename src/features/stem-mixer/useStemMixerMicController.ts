@@ -32,6 +32,9 @@ export const PITCH_FFT_SIZE = 1024 // synced with PITCH_DETECT_CONFIG.bufferSize
 export interface StemMixerMicDeps {
   getAudioCtx: () => AudioContext | null | undefined
   ensureAudioCtx: () => AudioContext
+  /** Extra delay on the way to the speakers — the key shifter's latency. The
+   *  singer answers what they hear, so the judge looks that much further back. */
+  outputDelaySec?: () => number
 }
 
 export interface StemMixerMicController {
@@ -135,7 +138,7 @@ export const useStemMixerMicController = (
     refFreq: number,
     micFreq: number,
   ): void => {
-    const offset = micLatencySec()
+    const offset = micLatencySec() + (deps.outputDelaySec?.() ?? 0)
 
     let judgeTime = timeSec
     let judgeRef = refFreq

@@ -4,9 +4,10 @@
 // been told nothing (UX-32).
 // ============================================================
 
-import { cleanup, render, screen } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
 import type { StemMixerTransportProps } from '@/components/StemMixerTransport'
 import { StemMixerTransport } from '@/components/StemMixerTransport'
 import type { WorkspaceLayout } from '@/features/stem-mixer/useStemMixerLayoutController'
@@ -93,5 +94,32 @@ describe('StemMixerTransport accessible names', () => {
   it('says Pause while playing', () => {
     render(() => <StemMixerTransport {...props({ playing: () => true })} />)
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument()
+  })
+})
+
+describe('StemMixerTransport key', () => {
+  it('puts the key control right after the speed select, when the mixer binds one', () => {
+    const [value, setValue] = createSignal(0)
+    const binding: KeyShiftBinding = {
+      value,
+      onChange: setValue,
+      keyLabel: () => 'G major',
+      suggestion: () => null,
+      onFindKey: vi.fn(),
+      disabledReason: () => undefined,
+    }
+    render(() => <StemMixerTransport {...props({ keyControl: binding })} />)
+
+    const control = screen.getByTestId('key-shift-control')
+    expect(screen.getByTitle('Playback speed').nextElementSibling).toBe(control)
+    fireEvent.click(screen.getByRole('button', { name: 'Raise the key' }))
+    expect(screen.getByTestId('key-shift-value').textContent).toBe('+1')
+    expect(screen.getByTestId('key-shift-label').textContent).toBe('G major')
+  })
+
+  it('has no key control without a binding', () => {
+    render(() => <StemMixerTransport {...props()} />)
+
+    expect(screen.queryByTestId('key-shift-control')).toBeNull()
   })
 })

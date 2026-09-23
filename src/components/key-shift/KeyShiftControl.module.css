@@ -1,0 +1,133 @@
+/* Sits beside the transport's speed select and matches it
+   (`.sm-speed-select` in StemMixer.tsx). */
+.keyShift {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0 0.3rem;
+  font-family: monospace;
+  font-size: 0.65rem;
+  color: var(--fg-secondary, #8b949e);
+}
+
+.label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.stepper,
+.find {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 0.3rem;
+  background: var(--bg-tertiary, #21262d);
+}
+
+.stepper {
+  overflow: hidden;
+}
+
+.step,
+.value,
+.find {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.step,
+.value {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.step {
+  width: 1.5rem;
+}
+
+.value {
+  min-width: 2.2em;
+  padding: 0 0.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+span.value {
+  cursor: default;
+}
+
+.find {
+  gap: 0.3rem;
+  padding: 0 0.45rem;
+  white-space: nowrap;
+}
+
+.find svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.step:hover:not(:disabled),
+button.value:hover:not(:disabled),
+.find:hover:not(:disabled) {
+  color: var(--fg-primary, #c9d1d9);
+  background: color-mix(in srgb, var(--fg-primary, #c9d1d9) 8%, transparent);
+}
+
+.step:disabled,
+.value:disabled,
+.find:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.step:focus-visible,
+.value:focus-visible,
+.find:focus-visible {
+  outline: 2px solid var(--accent, #58a6ff);
+  outline-offset: -2px;
+}
+
+/* Past ±4: still offered, but marked. */
+.keyShift[data-quality='stretch'] .value {
+  color: var(--warning, #d29922);
+}
+
+.keyShift[data-quality='stretch'] .stepper {
+  border-color: color-mix(in srgb, var(--warning, #d29922) 55%, transparent);
+}
+
+/* A finger's worth, for the phone stage's sheet. */
+.keyShift[data-size='touch'] {
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.keyShift[data-size='touch'] .stepper,
+.keyShift[data-size='touch'] .find {
+  height: 44px;
+  border-radius: 0.6rem;
+}
+
+.keyShift[data-size='touch'] .step {
+  width: 44px;
+}
+
+.keyShift[data-size='touch'] .value {
+  min-width: 3em;
+}
+
+.keyShift[data-size='touch'] .find {
+  padding: 0 0.8rem;
+}
+
+.keyShift[data-size='touch'] .find svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
