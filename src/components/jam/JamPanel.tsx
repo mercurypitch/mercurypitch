@@ -34,6 +34,7 @@ import { JamNowSinging } from './JamNowSinging'
 import panelStyles from './JamPanel.module.css'
 import { JamPickerList } from './JamPickerList'
 import { JamRoomCode } from './JamRoomCode'
+import { JamRoomKey } from './JamRoomKey'
 import { JamSharedPitchCanvas } from './JamSharedPitchCanvas'
 import pitchCanvasStyles from './JamSharedPitchCanvas.module.css'
 import { JamSongShare } from './JamSongShare'
@@ -948,6 +949,8 @@ export const JamPanel: Component = () => {
                   onSelectExercise={togglePicker}
                   pickerOpen={showExercisePicker()}
                 />
+
+                <JamRoomKey />
 
                 {/* Say it plainly. Everything on screen is real UI, but the
                   peers are invented -- letting someone believe a stranger

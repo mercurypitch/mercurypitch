@@ -325,6 +325,12 @@ export interface JamSongMessage {
      * arriving separately could describe a song the peer has not loaded.
      */
     parts?: Record<number, string>
+    /**
+     * The room's key, in semitones from the song's own; absent is the
+     * original key. Only the host sets it, and every peer shifts its own
+     * audio. A peer on an older build ignores it and plays the original.
+     */
+    keyShift?: number
   }
 }
 
