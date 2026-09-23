@@ -18,7 +18,7 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
-import { nativeRunControls } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls } from '@/stores/native-shell-store'
 import type { MelodyItem, NoteName } from '@/types'
 import { dispatchSingRoom, singRoomContext } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
@@ -354,5 +354,26 @@ describe('"Remove" on the song sheet', () => {
     expect(singRoomContext().melody).toBe(false)
     expect(singRoomContext().melodyLoaded).toBe(false)
     expect(singRoomContext().state).not.toBe('live')
+  })
+})
+
+describe('arriving through an alley door', () => {
+  // `active` is what the arrival sets, and what every automatic start —
+  // the remembered grant reaching for the microphone — is gated on.
+  it('waits for the shell to release the arrival', async () => {
+    const release = holdRoomArrival()
+    mountRoom()
+    await Promise.resolve()
+    expect(singRoomContext().active).toBe(false)
+
+    release()
+    await Promise.resolve()
+    expect(singRoomContext().active).toBe(true)
+  })
+
+  it('arrives at once when nothing holds it', async () => {
+    mountRoom()
+    await Promise.resolve()
+    expect(singRoomContext().active).toBe(true)
   })
 })

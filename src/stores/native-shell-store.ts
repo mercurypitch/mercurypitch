@@ -173,3 +173,35 @@ export function consumeRunParked(tab: ActiveTab): boolean {
   parkedFrom = null
   return parked
 }
+
+// ── The door that opened into a room ─────────────────────────
+//
+// The alley's Enter grows a clone of the door over the screen, and the room
+// mounts UNDER it. A room that starts its own arrival on mount — the Sing
+// room reaches for the microphone the moment it opens, once the grant is
+// remembered — would then start while the alley's ambient is still fading
+// and a picture of the door is still on the glass (S4 brief §2: the arrival
+// flow "starts only after the clone is gone and the ambient is silent").
+//
+// So the shell holds the arrival for the length of that hand-over, and a room
+// that has an arrival waits for `roomArrivalHeld()` to fall before it runs.
+// Holds count, so two overlapping ones cannot release each other early; the
+// release is idempotent, so a failsafe and the normal path can both call it.
+
+const [arrivalHolds, setArrivalHolds] = createSignal(0)
+
+/** True while a door is still handing the screen over to its room. */
+export function roomArrivalHeld(): boolean {
+  return arrivalHolds() > 0
+}
+
+/** Hold every room's arrival until the returned release is called. */
+export function holdRoomArrival(): () => void {
+  setArrivalHolds((count) => count + 1)
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    setArrivalHolds((count) => Math.max(0, count - 1))
+  }
+}

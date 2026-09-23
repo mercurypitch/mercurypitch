@@ -43,7 +43,7 @@ import { exposeForE2E } from '@/lib/test-utils'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
+import { nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores/sing-takes-store'
@@ -501,8 +501,21 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     return false
   }
 
+  // The arrival — which, with a remembered grant, is the microphone opening
+  // on its own — waits while the shell holds it. The alley's Enter mounts
+  // this room UNDER a clone of the door it opened, with that door's ambient
+  // still fading (S4 brief §2); the room starts once the clone is gone and
+  // the alley is silent. Nothing holds it on the web, or on any other way in,
+  // so everywhere else this is the `enterSingRoom()` it always was, run in
+  // the same place: before the rest of the mount below.
+  let arrived = false
+  createEffect(() => {
+    if (arrived || roomArrivalHeld()) return
+    arrived = true
+    untrack(enterSingRoom)
+  })
+
   onMount(() => {
-    enterSingRoom()
     onCleanup(props.subscribeFrames(onFrame))
 
     // What the room thinks is happening, for the walk that drives it.
