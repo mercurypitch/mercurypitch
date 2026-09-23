@@ -1,12 +1,26 @@
 # Glass adventure — current master plan
 
-Updated 2026-09-21. This is the current plan, not a chronological chat log.
+Updated 2026-09-23. This is the current plan, not a chronological chat log.
 Detailed research and chapter plans remain in
 `<user-dotfiles>/personal/besidecue/glass-adventure/`.
 Code and production sources are preserved in draft PR #807 on
 `feat/glass-museum-level-one`. No merge or release is authorized for this pass.
 
 ## Where we are
+
+The current priority is the [museum component repair](./MUSEUM-COMPONENT-REPAIR-2026-09-22.md)
+and close-up quality of the existing Cloudway trial. The tighter 9–14m fog is
+owner accepted. V7 repaired the central balcony; the older temple/cypress and
+Conservatory still need replacement. Source audits identify excessive geometry
+reduction as the cause of the coarse silhouettes; an older dome material split
+also changed some corner normals and needs seam review in the replacement.
+No new levels until this route is pristine. PR checks passed on `0d5fe540`
+(40 passed, one production-only skip).
+
+The owner's new [camera and route follow-ups](./CAMERA-AND-ROUTE-FOLLOWUPS-2026-09-23.md)
+are saved as backlog: gentler left/right turns, distinct look-sensitivity and
+follow-smoothness tuning, then crescent/S-bend/offset/curved route auditions using
+the same platform family. These settings and route variants are not implemented.
 
 The shared campaign contains First Light, Glassworks Journey, Twin Galleries
 and Resonance Conservatory, with separate progress and the Journey rewards
@@ -114,7 +128,8 @@ traversal and rendered browser checks pass. The HTTPS playtest route and
 new-head PR gate are tracked in the pilot checklist; tablet acceptance remains
 open.
 
-After tablet acceptance, choose between The Opaline Ferry (staggered moving
+After current-route visual acceptance and the camera/route audition, choose
+between The Opaline Ferry (staggered moving
 rafts with low/high lessons on docks) and The Frost Conservatory (curving frost
 with optional crackle shortcuts and safe gentle-wave stations). Both reuse this
 simulation and platform family; neither is implemented yet.
@@ -140,9 +155,11 @@ intersections, correct surface contact, normals, repeated-object instancing,
 fracture/animation preparation and measured rendering cost. It defines a full
 asset inventory, per-family evidence, source-preserving fixes and a reusable
 checklist/skill built from verified guidance and our own production lessons.
-The Cloudway family passes its scoped production audit, including landing
-proxies, coherent outward fracture winding, hashes and instanced parts. The
-broader existing museum inventory has not yet passed this new audit.
+The Cloudway family passed its scoped structural production audit, including
+landing proxies, outward fracture winding, hashes and instanced parts. That did
+not establish visual quality: the owner's close-up report exposed excessive
+shape reduction. V3 platform replacements and V7 balcony repair are integrated;
+the wider museum inventory and current-route scenery are still under review.
 
 ### N2 finish — close the current visual polish
 

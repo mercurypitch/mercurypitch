@@ -85,3 +85,33 @@ rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --py
 That comparison script is prepared but has not run because the V8 candidate does
 not exist. No runtime packer has been run or V8 export created. Binary formats in
 this folder are covered by the local `.gitattributes` Git LFS rules.
+
+## Local finishing preparation — 23 September
+
+`production/finish_conservatory_candidate.py` is a prepared Blender step for a
+future archived `conservatory-remesh-110k-retexture-pbr.glb` plus matching remesh
+and retexture receipts. It is not evidence that a candidate or bake exists.
+It retains the provider normal map and prepares a separate dense-donor normal
+and AO bake for side-by-side review, with UV/PBR/export checks and a packed
+editable source. Surface registration, cage projection and visible bake quality
+must be reviewed on the real inputs before either variant is accepted.
+
+The script parses and Blender 5.2.2 rejects the absent PBR input before producing
+anything. The actual bake/export path remains unverified until a candidate
+exists. Retexture submission, candidate render review, V7-preserving combined
+runtime assembly and public installation are still outstanding.
+
+The remesh producer now writes its returned task ID before checking the new
+balance. An offline fault-injection check confirmed that a balance-read failure
+retains the ID and a rerun polls that task without submitting another one.
+Free-form provider error messages are omitted from archived status fields.
+
+The checked-in normal-transform fixture passes in Blender 5.2.2 for flat and
+custom slanted normals under rotated, nonuniform scale. It compares with
+Blender's encoded representation of the independently calculated inverse
+transpose; stored-normal quantization is about 0.00011 in this fixture. A
+singular transform must fail before changing vertices. Run locally with:
+
+```sh
+rtk proxy timeout 90 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/check_conservatory_normals.py
+```

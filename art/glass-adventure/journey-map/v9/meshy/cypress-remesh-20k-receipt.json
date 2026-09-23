@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-cypress-v9-candidate",
+  "operation": "remesh",
+  "parentTaskId": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+  "sourceVariant": "pre_remeshed_glb",
+  "source": {
+    "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
+    "bytes": 11942508,
+    "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+    "providerTaskType": "image-to-3d"
+  },
+  "request": {
+    "topology": "triangle",
+    "target_polycount": 20000,
+    "target_formats": [
+      "glb"
+    ],
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "authorization": {
+    "sourceTransferApproval": "pending-specific-user-confirmation",
+    "assertedBySubmitFlag": false
+  },
+  "estimatedCredits": 5,
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "not-submitted"
+}

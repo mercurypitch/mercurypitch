@@ -135,7 +135,6 @@ def safe_status(task: dict[str, object]) -> dict[str, object]:
         "faceCount": ("face_count", "faceCount"),
         "vertexCount": ("vertex_count", "vertexCount"),
         "errorCode": ("error_code", "errorCode"),
-        "errorMessage": ("error_message", "errorMessage"),
     }
     result: dict[str, object] = {}
     for output_key, input_keys in aliases.items():
@@ -284,6 +283,8 @@ def main() -> None:
             reconciliation = reconcile_provider(client)
             receipt["providerReconciliation"] = reconciliation
             balance_before = int(reconciliation["balance"])
+            if balance_before < int(receipt["estimatedCredits"]):
+                raise RuntimeError("Insufficient Meshy balance for the prepared remesh")
             receipt["balanceBefore"] = balance_before
             save(receipt)
 
@@ -321,13 +322,14 @@ def main() -> None:
             task_id = result.get("task_id")
             if not task_id:
                 raise RuntimeError("Meshy remesh returned no task ID; do not retry")
+            # Persist the charged task before any auxiliary call can fail.
+            receipt.update({"taskId": task_id, "state": "submitted"})
+            save(receipt)
             balance_after_submit = client.tool(
                 "meshy_check_balance", {"response_format": "json"}
             )["balance"]
             receipt.update(
                 {
-                    "taskId": task_id,
-                    "state": "submitted",
                     "balanceAfterSubmit": balance_after_submit,
                     "observedBalanceDeltaAtSubmit": balance_before - balance_after_submit,
                 }

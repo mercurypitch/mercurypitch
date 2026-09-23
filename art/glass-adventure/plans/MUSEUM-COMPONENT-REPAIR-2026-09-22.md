@@ -51,17 +51,21 @@ process started. Read-only provider reconciliation confirmed no interrupted V8
 job exists. No new task, upload or charge occurred. A specific upload approval
 question now covers the preserved Conservatory, temple and cypress source files;
 do not retry the submissions before that answer. Local proofs and packing work
-can continue.
+can continue. The owner requested the question again on 23 September after
+enabling full access; it has been reissued and remains pending. Full filesystem
+access and source-transfer confirmation are separate.
 
 ## Work checklist
 
 - [x] Tighten Cloudway fog from 16–31m to 9–14m. Arrival, raft approach,
       midroute and both zoom extremes have actual WebGL screenshots under
       `art/glass-adventure/proofs/polish-2026-09-22/fog-tightened/`.
+- [x] Owner accepted this fog range on 23 September; leave it unchanged.
 - [x] Complete the component-level source/normal/history comparison; see
       `MUSEUM-SHAPE-AUDIT-2026-09-23.md`.
-- [ ] Inspect the dense Conservatory source, then produce one V8 candidate if
-      it retains useful ribs, canopy structure and separate openings.
+- [x] Inspect dense Conservatory, temple and cypress sources in neutral clay;
+      useful ribs, silhouettes and separate openings survive in the dense donors.
+- [ ] Produce V8/V9 remesh candidates after source-transfer confirmation.
 - [ ] Review identical-camera original/current/candidate views before replacing
       any more public models. Technical validation alone does not establish quality.
 - [ ] Finish runtime derivatives with useful texture detail, stable nodes,
@@ -71,12 +75,22 @@ can continue.
       triangles. Owner tablet frame rate and heat remain separate acceptance checks.
 - [x] Publish the shorter fog and source-review stages to PR #807; stable HTTPS
       preview refreshed. No replacement museum model has been installed yet.
+- [x] Save camera smoothing/sensitivity and non-linear route ideas as backlog in
+      `CAMERA-AND-ROUTE-FOLLOWUPS-2026-09-23.md`; no movement or route changes now.
+- [x] Expand `GAME-ASSET-QUALITY-AUDIT.md` with the high-to-low detail workflow,
+      source references and silhouette/UV/bake/runtime review gates.
+- [x] Prepare V9 temple/cypress remesh receipts and comparison scripts; offline
+      source/hash checks and unauthorized/taskless-resume guards pass. V8 has a
+      prepared bake/finish script and a passing Blender normal-transform fixture.
+      Full baking, candidate review and combined runtime packing remain unverified
+      and unperformed because no replacement candidate exists yet.
 
 Published stages: `c20538d2` (Conservatory source and live museum baseline),
 `d6b70614` (shorter fog, seven passing tests and five rendered views), and
 `e2045a1c` (temple/cypress source comparisons and geometry lineage). Independent
-review found no correctness issues in the fog or capture harness. The latest
-cloud CI is pending; the previously completed head is recorded below.
+review found no correctness issues in the fog or capture harness. Cloud CI at
+`0d5fe540` is green: 40 passing checks, one production-only skip. New changes
+will receive a separate PR check run; no merge or release is authorized.
 
 The shorter-fog HTTPS preview was restarted on 23 September and verified HTTP
 200 at `https://192.168.178.33:5300/glass-game/?layout=cloudway`. Hot reload and

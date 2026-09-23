@@ -5,6 +5,11 @@ polish. This is an audit plan and initial checklist, not a claim that the existi
 assets pass, nor permission to overwrite raw sources. It precedes further scene
 density increases in the next landscape batch.
 
+Update 2026-09-23: the museum repair is the active representative audit. See
+[geometry lineage](./MUSEUM-SHAPE-AUDIT-2026-09-23.md) and the production contract
+below. The owner specifically requires detail-preserving game assets; passing
+structural checks or increasing a triangle count does not establish acceptance.
+
 ## Outcome and sequence
 
 1. Inventory the actual exported GLBs, materials, texture maps, collision shapes,
@@ -90,6 +95,105 @@ fragment cost/order, cleanup and no state leakage between encounter IDs.
   art previews. Verify in the actual host with its camera, light and UI composition.
 - Adding physical canopies increased pass-inclusive map draws/triangles in V6.
   Added realism needs a measured device budget before more decoration is layered on.
+- Inspect the preserved dense source, the provider's textured output and our
+  exported derivative separately. The museum temple was reduced from 1,789,350
+  triangles to 21,839 before a local reduction to 9,993; the tree went from
+  663,730 to 7,136 to 1,192. Restoring only the last reduction cannot restore the
+  original form. Hash/position comparisons isolated this from the later normals
+  cleanup. A material split additionally changed some dome normals: preserve
+  those corner attributes when assigning variants.
+
+## Detail-preserving production contract — current repair
+
+This is our proposed acceptance procedure for the temple, cypress and
+Conservatory, based on the actual failed assets. It does not certify candidates
+that have not yet been generated. Installed tools checked on 23 September:
+Blender 5.2.2 LTS, Three.js 0.185.1; retain exact versions in export receipts.
+
+### Shape first
+
+Keep dense raw models immutable. Archive a neutral clay view from the nearest
+allowed inspection camera, a normal playing view and a grazing side view. Name
+the features that must survive: dome ribs, open arches, column/flute rhythm,
+statue profile, branch silhouette and gaps in foliage. If those are already
+fused in the dense model, replace or repair that component before reduction.
+
+Prepare a lower-cost candidate against those features, with more geometry at
+visible curves and outlines and less on broad hidden surfaces. The first Meshy
+targets are 110k for the Conservatory, 90k for the temple and 20k for the tree.
+They are starting experiments, not fixed shipping budgets. Inspect triangle
+distribution and thin apertures, not just totals. Do not uniformly subdivide a
+melted mesh or run a second blind percentage reduction after review.
+
+Meshy's triangle mode performs decimation; quad mode produces quad-dominant
+topology. A requested polygon count may differ from the result. Neither output
+is automatically approved topology for our game. [Meshy Remesh API](https://docs.meshy.ai/en/api/remesh).
+
+### Transfer detail onto the accepted surface
+
+The established workflow is **retopology plus high-to-low baking**. Blender can
+project dense-surface shading onto a selected lower-resolution target, using
+a cage/ray range and tangent-space normals. UV-border padding protects seams
+under filtering and mipmaps. [Blender baking manual](https://docs.blender.org/manual/id/5.0/render/cycles/baking.html).
+
+Our implementation gates:
+
+- Keep high and low candidates in the same coordinate system. Freeze final
+  triangulation, UVs and intended corner normals before baking. Record hashes
+  so later geometry/material edits cannot silently invalidate the transfer.
+- Review a UV checker at actual game scale. Protect visible faces and narrow
+  trim from low texel density. Deliberate shared/mirrored UVs need a documented
+  reason; unique statue/portrait surfaces must not pick up unrelated details.
+- Bake one focal region first. Use a controlled cage/ray distance and isolate
+  nearby components when rays would hit the wrong column, leaf or inner wall.
+  Inspect black misses, inverted relief, wavy projection and seams before a
+  full bake. The bake cannot restore a missing outline or reopen a sealed arch.
+- Compare dense-to-candidate normal detail with Meshy's generated normal map.
+  A PBR retexture is not proof of geometric detail transfer. Do not add the two
+  maps as RGB or double the same relief; select or deliberately compose the
+  appropriate detail with a verified tangent-space method.
+- Keep baked occlusion separate from base colour. Avoid frozen lighting and
+  excessively dark creases. Preserve material identity: marble, metal, foliage
+  and glazing need distinct roughness/metallic responses, not one glossy coat.
+- Retain full-resolution source maps and the packed `.blend`. Choose runtime
+  map resolution/compression only after equal-camera comparison. Prefer a crisp
+  smaller asset over unnecessary upscaling of a blurry source atlas.
+
+Meshy can generate base colour plus normal/roughness/metallic maps with
+`enable_pbr`; original UV reuse is configurable. Record actual output maps,
+UV changes and resolution rather than assuming the flag proves export quality.
+[Meshy Retexture API](https://docs.meshy.ai/en/api/retexture).
+
+### Verify what the game actually loads
+
+For glTF, use tangent-space +Y normal maps, marked Non-Color in Blender, through
+a Normal Map node. Occlusion uses R; roughness/metallic can share G/B in a packed
+texture. UV/shading discontinuities can split exported vertices. Shared Blender
+mesh data can support instance export, but does not alone prove runtime batching.
+[Blender glTF manual](https://docs.blender.org/manual/id/5.0/addons/import_export/scene_gltf2.html).
+
+- Reimport into a fresh Blender scene and load the exact derivative in the
+  shared Three.js game. Verify normal direction and highlights across the dome
+  material split, UV borders, silhouette, apertures and ground contact.
+- Preserve current logical IDs, node names, coordinates and the accepted V7
+  connector. Keep temple variants sharing geometry; retain the runtime tree
+  `InstancedMesh`. Multiply a tree's triangle cost by visible instances and
+  rendered passes: instancing reduces submissions, not all vertex work.
+- Capture the same camera, lighting, DPR and viewport as the archived baseline;
+  show current/dense/candidate views and an actual textured in-game close-up.
+  A clay pass, validator pass or screenshot alone cannot stand in for the others.
+- Record bytes, draw calls, pass-inclusive triangles, geometry and texture
+  counts, plus sustained owner tablet frame time/heat separately. A hardware
+  desktop capture does not establish tablet performance.
+- If close detail is good but cost is high, profile then prepare a separately
+  reviewed distance LOD from the accepted source. Do not reduce the inspection
+  model globally to satisfy a distant-view budget. Texture compression requires
+  loader support and visual proof before introducing another format.
+
+Each accepted asset needs a small receipt: source/candidate/export hashes,
+feature checklist, topology/UV/bake settings, texture channels and sizes,
+Blender source, fresh-import check, exact runtime proof and remaining exceptions.
+Do not publish a replacement on polygon count or provider success alone.
 
 ## Research to complete before formalizing the skill
 
@@ -127,5 +231,7 @@ Starting sources:
 - [ ] Publish the lessons/report template and reusable skill after the first audit.
 - [ ] Extend the audit to new Meshy generation, fracture and animation deliveries.
 
-No asset repairs, donor regeneration or skill installation were performed by
-this planning document. Current camera/sway work remains the active deliverable.
+This document is the checklist, not proof of a completed whole-project audit.
+Current model production and approval state live in
+[MUSEUM-COMPONENT-REPAIR-2026-09-22.md](./MUSEUM-COMPONENT-REPAIR-2026-09-22.md).
+The reusable skill remains a follow-up after this procedure has been exercised.

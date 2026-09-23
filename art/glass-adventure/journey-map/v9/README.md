@@ -39,6 +39,58 @@ instances, with the colour variants retained as separate material treatments.
 The structured handoff is
 `proofs/museum-remesh-source-manifest-v9.json`.
 
+## Receipt-guarded candidate production
+
+`production/run_museum_remesh.py` prepares one independently receipted candidate
+per asset. Running it without a mode is a local-only preflight: it verifies the
+source GLB, its V3 provider receipt, the exact source hash, and the fixed request,
+then writes a `not-submitted` receipt. It does not start the MCP launcher.
+
+```bash
+rtk python3 art/glass-adventure/journey-map/v9/production/run_museum_remesh.py --asset temple
+rtk python3 art/glass-adventure/journey-map/v9/production/run_museum_remesh.py --asset cypress
+```
+
+After specific source-transfer approval, run V8 Conservatory first. Once its
+task ID is safely receipted, the V9 submission commands are:
+
+```bash
+rtk proxy timeout 1200 python3 art/glass-adventure/journey-map/v9/production/run_museum_remesh.py --asset temple --submit --authorized-source-transfer
+rtk proxy timeout 1200 python3 art/glass-adventure/journey-map/v9/production/run_museum_remesh.py --asset cypress --submit --authorized-source-transfer
+```
+
+The script saves `submission-unconfirmed` before the charged call and saves the
+returned task ID before checking balance or doing any other provider read. A
+rerun cannot resubmit an ambiguous receipt. `--resume` only polls and archives a
+task ID already present in the receipt. Status receipts omit free-form provider
+messages and signed URLs; download URLs remain in memory and must use the
+`assets.meshy.ai` host.
+
+## Candidate and finish gates
+
+The 90k and 20k triangle requests are first review budgets. Meshy's triangle
+remesh is a decimation operation; its polygon count does not establish clean
+retopology or fidelity. After each receipt reaches `archived`, create the
+same-camera four-stage clay review with:
+
+```bash
+rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/review_museum_remesh_candidate.py -- --asset temple
+rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/review_museum_remesh_candidate.py -- --asset cypress
+```
+
+The order is dense source, old textured donor, current V4, and V9 candidate.
+The review manifest records topology, normal health, UV layers, and whether a
+tangent basis can be computed. It deliberately marks the professional finish as
+unfinished. A visually accepted candidate still needs a final non-overlapping
+UV layout, dense-to-low tangent-space normal and ambient-occlusion transfer,
+PBR texture work on that same UV layout, tangent and split-normal validation,
+and fresh export/reimport checks. The temple material split must retain the
+reviewed loop normals, and amber/teal temples must share geometry. Every runtime
+cypress placement must reuse one finished mesh.
+
+No candidate, bake, PBR texture, packed Blender file, runtime derivative, or
+public asset is produced by the current source-preparation checkpoint.
+
 ## Proofs and reproduction
 
 The clay and textured comparisons are in `proofs/`:
