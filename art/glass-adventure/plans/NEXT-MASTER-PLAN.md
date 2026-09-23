@@ -8,6 +8,8 @@ Code and production sources are preserved in draft PR #807 on
 
 ## Where we are
 
+Current work is the owner-approved [7.1 platform production trial](./ULTRA-PLATFORM-PRODUCTION-2026-09-23.md): fit the accepted marble source for Cloudway, audition new frost/moving sources, and judge the benefit in the existing mini-game before applying it to the main galleries. A melody-ribbon learning specification and listening visualizer follow this asset stage.
+
 The [museum component repair](./MUSEUM-COMPONENT-REPAIR-2026-09-22.md)
 is integrated and has passed source, Blender and actual-browser review. V8
 preserves the accepted balcony and replaces the Conservatory; V9 restores the
@@ -155,6 +157,8 @@ with optional crackle shortcuts and safe gentle-wave stations). Both reuse this
 simulation and platform family; neither is implemented yet.
 
 These other ideas remain **planning only**:
+
+- [Melody-ribbon learning](./MELODY-RIBBON-LEARNING-SPEC.md): authored pitch glides, short anchor landings and continuous live trace fill at a safe portrait/vase. A separate 3/5/7/10-note listening audition has passed responsive/input/audio-lifecycle review; actual judging and the new gallery are not implemented. Longer phrases include breath breaks; vibrato follows successful glide teaching.
 
 - [Replay difficulty and level stars](./REPLAY-DIFFICULTY-AND-LEVEL-STARS.md): first
   clear on easy, selected harder replays for higher level stars, possible separate
