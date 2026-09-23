@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "cloudway-marble-ultra4k-runtime-remesh-v4",
+  "operation": "remesh",
+  "state": "archived",
+  "parentTaskId": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+  "sourceVariant": "dense provider GLB",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+    "bytes": 65096584,
+    "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+    "triangles": 1256556,
+    "referencedVertices": 702537,
+    "providerTaskType": "image-to-3d"
+  },
+  "budgetBasis": {
+    "targetTriangles": 90000,
+    "currentV3MarbleTriangles": 40032,
+    "denseDonorTriangles": 1256556,
+    "runtimeInstancesInCurrentCloudway": 6,
+    "projectedFrontPassTrianglesAtCurrentInstanceCount": 540000,
+    "reason": "The accepted dense donor has silhouette-bearing arches, feet, medallions and foliage absent at V3's 40k budget. Ninety thousand triangles more than doubles the per-platform detail while bounding the six-instance front pass near 540k."
+  },
+  "request": {
+    "topology": "triangle",
+    "target_polycount": 90000,
+    "target_formats": [
+      "glb"
+    ],
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "authorization": {
+    "sourceTransferApproval": "asserted-by-operator-from-current-user-authorization",
+    "assertedBySubmitFlag": true,
+    "assertedAtUtc": "2026-09-23T17:55:46.401114+00:00"
+  },
+  "estimatedCredits": 5,
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "readiness": "Topology candidate only. It must pass dense-source clay comparison, fitted high-to-low bake, UV/normal/tangent validation and runtime texture audition.",
+  "balanceBefore": 3800,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 35
+  },
+  "submittedAtUtc": "2026-09-23T17:55:46.599559+00:00",
+  "taskId": "01a0cf68-cb89-760f-95a1-a52c39414bd6",
+  "balanceAfterSubmit": 3795,
+  "observedBalanceDeltaAtSubmit": 5,
+  "lastStatus": {
+    "taskId": "01a0cf68-cb89-760f-95a1-a52c39414bd6",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "lastCheckedAtUtc": "2026-09-23T17:58:32.888225+00:00",
+  "archiveDownloadTaskId": "01a0cf68-cb89-760f-95a1-a52c39414bd6",
+  "archiveDownloadStartedAtUtc": "2026-09-23T17:58:32.888701+00:00",
+  "finalStatus": {
+    "taskId": "01a0cf68-cb89-760f-95a1-a52c39414bd6",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "balanceAfterArchiveCheck": 3795,
+  "observedBalanceDeltaFinal": 5,
+  "archivedAtUtc": "2026-09-23T17:59:05.558672+00:00",
+  "archiveDownload": {
+    "method": "bounded CDN byte ranges or authenticated MCP download",
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlPersisted": false
+  },
+  "file": {
+    "path": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/runtime-remesh-90k.glb",
+    "bytes": 35933084,
+    "sha256": "fcb61f6e902ebea8ab3d10ac128c0ebc4bfa08a1342dced32b5753bb30d82906",
+    "meshes": 1,
+    "primitives": 1,
+    "referencedVertices": 118982,
+    "triangles": 89984
+  }
+}
