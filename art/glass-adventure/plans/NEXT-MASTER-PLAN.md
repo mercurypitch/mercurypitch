@@ -14,13 +14,19 @@ owner accepted. V7 repaired the central balcony; the older temple/cypress and
 Conservatory still need replacement. Source audits identify excessive geometry
 reduction as the cause of the coarse silhouettes; an older dome material split
 also changed some corner normals and needs seam review in the replacement.
-No new levels until this route is pristine. PR checks passed on `0d5fe540`
+The owner explicitly approved all three source transfers on 23 September; Meshy
+replacement production is running. No new levels until this route is pristine. PR checks passed on `ff36e14f`
 (40 passed, one production-only skip).
 
 The owner's new [camera and route follow-ups](./CAMERA-AND-ROUTE-FOLLOWUPS-2026-09-23.md)
 are saved as backlog: gentler left/right turns, distinct look-sensitivity and
 follow-smoothness tuning, then crescent/S-bend/offset/curved route auditions using
 the same platform family. These settings and route variants are not implemented.
+
+The owner also requested a [Meshy 7.1 / Ultra 4K platform audition](./MESHY-71-ULTRA-4K-AUDITION.md).
+API support is verified; the installed MCP 0.4.0 lacks explicit 7.1/4K geometry
+parameters. Finish the current museum batch, then compare one higher-detail
+platform donor and runtime textures without adding a new level.
 
 The shared campaign contains First Light, Glassworks Journey, Twin Galleries
 and Resonance Conservatory, with separate progress and the Journey rewards

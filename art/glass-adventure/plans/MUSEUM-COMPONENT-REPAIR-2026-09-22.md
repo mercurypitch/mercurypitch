@@ -46,14 +46,13 @@ finishing, matching-camera comparison, then runtime integration. V8 owns the
 Conservatory replacement and preserves the accepted V7 balcony; V9 owns the
 temples and cypress. Keep the current assets until each candidate clears review.
 
-The first V8 submission was rejected by automatic approval review before its
-process started. Read-only provider reconciliation confirmed no interrupted V8
-job exists. No new task, upload or charge occurred. A specific upload approval
-question now covers the preserved Conservatory, temple and cypress source files;
-do not retry the submissions before that answer. Local proofs and packing work
-can continue. The owner requested the question again on 23 September after
-enabling full access; it has been reissued and remains pending. Full filesystem
-access and source-transfer confirmation are separate.
+The owner explicitly approved source transfers for all three preserved models on
+23 September ("yes, sure send the approval or just do it"). The earlier automatic
+review rejection occurred before any task or charge; reconciliation verified that.
+Production has now started: the V8 Conservatory remesh task is
+`01a0ceb5-4dd4-7530-a1d0-6e920c57b326` (5 credits). V9 temple/cypress remeshes
+follow, with independent geometry review before texturing. Keep the existing
+public models until the replacements pass visual and runtime checks.
 
 ## Work checklist
 
@@ -65,7 +64,8 @@ access and source-transfer confirmation are separate.
       `MUSEUM-SHAPE-AUDIT-2026-09-23.md`.
 - [x] Inspect dense Conservatory, temple and cypress sources in neutral clay;
       useful ribs, silhouettes and separate openings survive in the dense donors.
-- [ ] Produce V8/V9 remesh candidates after source-transfer confirmation.
+- [x] Receive explicit source-transfer approval for Conservatory, temple and cypress.
+- [ ] Produce and review V8/V9 remesh candidates; production is running.
 - [ ] Review identical-camera original/current/candidate views before replacing
       any more public models. Technical validation alone does not establish quality.
 - [ ] Finish runtime derivatives with useful texture detail, stable nodes,
@@ -89,7 +89,7 @@ Published stages: `c20538d2` (Conservatory source and live museum baseline),
 `d6b70614` (shorter fog, seven passing tests and five rendered views), and
 `e2045a1c` (temple/cypress source comparisons and geometry lineage). Independent
 review found no correctness issues in the fog or capture harness. Cloud CI at
-`0d5fe540` is green: 40 passing checks, one production-only skip. New changes
+`ff36e14f` is green: 40 passing checks, one production-only skip. New changes
 will receive a separate PR check run; no merge or release is authorized.
 
 The shorter-fog HTTPS preview was restarted on 23 September and verified HTTP

@@ -1,51 +1,35 @@
 {
   "schema": 1,
   "provider": "Meshy",
-  "assetId": "floating-museum-cypress-v9-candidate",
+  "assetId": "floating-museum-conservatory-v8-candidate",
   "operation": "remesh",
-  "parentTaskId": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+  "parentTaskId": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
   "sourceVariant": "pre_remeshed_glb",
   "source": {
-    "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
-    "bytes": 11942508,
-    "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+    "file": "meshy/raw/conservatory-pre-remesh-v6.glb",
+    "bytes": 21519992,
+    "sha256": "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4",
     "providerTaskType": "image-to-3d"
   },
   "request": {
     "topology": "triangle",
-    "target_polycount": 20000,
+    "target_polycount": 110000,
     "target_formats": [
       "glb"
     ],
     "origin_at": "bottom",
     "response_format": "json"
   },
-  "authorization": {
-    "sourceTransferApproval": "asserted-by-operator-after-specific-user-confirmation",
-    "assertedBySubmitFlag": true,
-    "assertedAtUtc": "2026-09-23T14:48:14.677201+00:00"
-  },
+  "authorization": "Owner explicitly authorized Meshy credits needed for the V8 conservatory repair.",
   "estimatedCredits": 5,
   "credentialsPersisted": false,
   "providerUrlsPersisted": false,
   "state": "archived",
   "providerReconciliation": {
-    "checkedAtUtc": "2026-09-23T14:48:14.007873+00:00",
-    "purpose": "Prevent an unreceipted or duplicate submission before cypress V9.",
+    "checkedAtUtc": "2026-09-23T14:39:42.631152+00:00",
+    "purpose": "Confirm the interrupted V8 attempt created no unreceipted paid task.",
     "taskLists": {
       "remesh": [
-        {
-          "taskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
-          "status": "SUCCEEDED",
-          "progress": 100,
-          "createdAt": 1790174775688
-        },
-        {
-          "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
-          "status": "SUCCEEDED",
-          "progress": 100,
-          "createdAt": 1790174384249
-        },
         {
           "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
           "status": "SUCCEEDED",
@@ -92,50 +76,48 @@
         }
       ]
     },
-    "balance": 3870,
-    "conclusion": "Every task newer than the V7 baseline has a local receipt."
+    "balance": 3880,
+    "conclusion": "No remesh or retexture task exists after the archived V7 tasks."
   },
-  "balanceBefore": 3870,
+  "balanceBefore": 3880,
   "parentStatusAtSubmission": {
-    "taskId": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+    "taskId": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
     "status": "SUCCEEDED",
     "outcome": "SUCCEEDED",
     "progress": 100,
     "consumedCredits": 30
   },
-  "submittedAtUtc": "2026-09-23T14:48:14.910860+00:00",
-  "taskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
-  "balanceAfterSubmit": 3865,
+  "submittedAtUtc": "2026-09-23T14:39:43.477322+00:00",
+  "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+  "balanceAfterSubmit": 3875,
   "observedBalanceDeltaAtSubmit": 5,
   "lastStatus": {
-    "taskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+    "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
     "status": "SUCCEEDED",
     "outcome": "SUCCEEDED",
     "progress": 100,
     "consumedCredits": 5
   },
-  "lastCheckedAtUtc": "2026-09-23T14:48:50.168645+00:00",
-  "archiveDownloadTaskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
-  "archiveDownloadStartedAtUtc": "2026-09-23T14:48:50.169304+00:00",
+  "lastCheckedAtUtc": "2026-09-23T14:41:44.684523+00:00",
   "finalStatus": {
-    "taskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+    "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
     "status": "SUCCEEDED",
     "outcome": "SUCCEEDED",
     "progress": 100,
     "consumedCredits": 5
   },
-  "balanceAfterArchiveCheck": 3865,
+  "balanceAfterArchiveCheck": 3875,
   "observedBalanceDeltaFinal": 5,
-  "archivedAtUtc": "2026-09-23T14:48:50.850235+00:00",
+  "archivedAtUtc": "2026-09-23T14:41:47.365477+00:00",
   "archiveDownload": {
     "method": "bounded CDN byte ranges or authenticated MCP download",
     "sourceHost": "assets.meshy.ai",
     "signedUrlPersisted": false
   },
   "file": {
-    "path": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k.glb",
-    "bytes": 1134492,
-    "sha256": "45b23c602602c8e491ede05c5b42c7aaca08b7d82851b3e53a7b713b6b6d4627"
+    "path": "meshy/conservatory-remesh-110k.glb",
+    "bytes": 8188772,
+    "sha256": "f936106d6eed572666b21b511efcbec35c342ae6be0c2402ea94aac6f133febf"
   },
-  "readiness": "Review-only untextured geometry candidate. Compare the continuous tree silhouette, rounded foliage masses, branch and trunk reads, planter, and vines against the dense archive before any UV, bake, texture, or runtime work."
+  "readiness": "Review-only untextured geometry candidate. Inspect ribs, bays, foliage silhouette, circular plinth, primary openings, and finial before retexture."
 }

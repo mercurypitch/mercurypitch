@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "purpose": "Same-scale clay silhouette comparison; review-only and not a runtime export.",
+  "order": [
+    "archived pre-remesh",
+    "V6 textured final shown as clay",
+    "V8 110k remesh"
+  ],
+  "assets": [
+    {
+      "name": "archived-pre-remesh",
+      "file": "glass-adventure/journey-map/v8/meshy/raw/conservatory-pre-remesh-v6.glb",
+      "sha256": "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4",
+      "triangles": 1201474,
+      "vertices": 591793,
+      "sourceDimensionsGlTfYUp": [
+        1.8931964635849,
+        1.8990674018859863,
+        1.8939604759216309
+      ],
+      "displayDimensionsGlTfYUpMetres": [
+        2.3,
+        2.65,
+        2.3
+      ],
+      "displayX": -3.0
+    },
+    {
+      "name": "v6-textured-final-clay",
+      "file": "glass-adventure/journey-map/v6/meshy/conservatory-final.glb",
+      "sha256": "643280e10516cdc360e2a57f98b0cd1e3bd304a73a9c914ce28be936c634c4b1",
+      "triangles": 22870,
+      "vertices": 45720,
+      "sourceDimensionsGlTfYUp": [
+        1.892025113105774,
+        1.8961759805679321,
+        1.8885669708251953
+      ],
+      "displayDimensionsGlTfYUpMetres": [
+        2.3,
+        2.65,
+        2.3
+      ],
+      "displayX": 0.0
+    },
+    {
+      "name": "v8-remesh-110k",
+      "file": "glass-adventure/journey-map/v8/meshy/conservatory-remesh-110k.glb",
+      "sha256": "f936106d6eed572666b21b511efcbec35c342ae6be0c2402ea94aac6f133febf",
+      "triangles": 109636,
+      "vertices": 214753,
+      "sourceDimensionsGlTfYUp": [
+        1.9925827980041504,
+        1.997135877609253,
+        1.9913289546966553
+      ],
+      "displayDimensionsGlTfYUpMetres": [
+        2.3,
+        2.65,
+        2.3
+      ],
+      "displayX": 3.0
+    }
+  ],
+  "proofs": [
+    {
+      "file": "proofs/conservatory-geometry-front-v8.png",
+      "bytes": 2275401,
+      "sha256": "61c64af3745818790ec0dd62f2201929ec4169abd07459ba5b3e85199f405223"
+    },
+    {
+      "file": "proofs/conservatory-geometry-angle-v8.png",
+      "bytes": 2276672,
+      "sha256": "77cd23b1434ad9a240b8751e66772b611de7a2460b4504de16a764e821807bd2"
+    }
+  ],
+  "renderEngine": "CYCLES CPU",
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/render_conservatory_geometry_comparison.py"
+}
