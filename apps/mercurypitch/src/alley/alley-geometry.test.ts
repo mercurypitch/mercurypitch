@@ -187,6 +187,65 @@ describe('where a tap goes', () => {
   it('spans the tap band over every door plus 6 px, clamped to the screen', () => {
     expect(tapBand(at393, 393, 852)).toEqual({ x: 0, y: 226.4, w: 393, h: 473 })
   })
+
+  it('starts the band below the headline block, however tall it is', () => {
+    expect(tapBand(at393, 393, 852, 300)).toEqual({
+      x: 0,
+      y: 300,
+      w: 393,
+      h: 399.4,
+    })
+    // A block shorter than the doors' tops changes nothing.
+    expect(tapBand(at393, 393, 852, 120).y).toBe(226.4)
+    // And one past the sills leaves an empty band, never a negative one.
+    expect(tapBand(at393, 393, 852, 900).h).toBe(0)
+  })
+})
+
+/** A door drawn as an upright rectangle: enough to pin the rule. */
+function box(key: string, x0: number, y0: number, x1: number, y1: number) {
+  const quad: Quad = [
+    [x0, y0],
+    [x1, y0],
+    [x1, y1],
+    [x0, y1],
+  ]
+  return {
+    key,
+    quad,
+    x0,
+    x1,
+    y0,
+    y1,
+    cx: (x0 + x1) / 2,
+    cy: (y0 + y1) / 2,
+    points: '',
+  } as DoorLayout
+}
+
+describe('the rule pickDoor keeps', () => {
+  it('takes the quad the tap is inside over a nearer centre', () => {
+    // Tall and narrow beside short and wide: at (9, 10) the short door's
+    // centre is nearer, but the tap is inside the tall one.
+    const tall = box('ear', 0, 0, 10, 200)
+    const short = box('piano', 12, 0, 22, 20)
+    expect(pickDoor([9, 10], [short, tall]).key).toBe('ear')
+  })
+
+  it('outside every quad, weighs height at 0.16 of width', () => {
+    // Straight above A by 60 and diagonally off B: the weight picks A, an
+    // unweighted distance would pick B.
+    const a = box('ear', -5, -5, 5, 5)
+    const b = box('piano', 25, 95, 35, 105)
+    expect(pickDoor([0, 60], [b, a]).key).toBe('ear')
+  })
+
+  it('does not ignore height', () => {
+    // Nearer to B across, far from it down: height has to count.
+    const a = box('ear', -2, -2, 2, 2)
+    const b = box('piano', 3, 195, 7, 205)
+    expect(pickDoor([4, 0], [b, a]).key).toBe('ear')
+  })
 })
 
 describe('the projective map', () => {

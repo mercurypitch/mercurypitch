@@ -336,17 +336,22 @@ export interface Band {
 /**
  * The one surface that takes a door tap: the union of the quads with 6 px of
  * slack, clamped to the screen — the guitar's right jamb runs past the edge
- * and the surface must not.
+ * and the surface must not — and to `minTop`, the measured bottom of the
+ * headline block. Under a tall safe area the headline reaches down over the
+ * door tops, and a tap on the words must not open a door behind them.
  */
 export function tapBand(
   doors: readonly DoorLayout[],
   w: number,
   h: number,
+  minTop = 0,
 ): Band {
   const x = r1(Math.max(0, Math.min(...doors.map((d) => d.x0)) - 6))
-  const y = r1(Math.max(0, Math.min(...doors.map((d) => d.y0)) - 6))
-  const x1 = r1(Math.min(w, Math.max(...doors.map((d) => d.x1)) + 6))
   const y1 = r1(Math.min(h, Math.max(...doors.map((d) => d.y1)) + 6))
+  const y = r1(
+    Math.min(y1, Math.max(0, minTop, Math.min(...doors.map((d) => d.y0)) - 6)),
+  )
+  const x1 = r1(Math.min(w, Math.max(...doors.map((d) => d.x1)) + 6))
   return { x, y, w: r1(x1 - x), h: r1(y1 - y) }
 }
 

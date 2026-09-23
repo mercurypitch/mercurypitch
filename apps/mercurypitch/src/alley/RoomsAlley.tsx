@@ -134,6 +134,7 @@ export const RoomsAlley: Component = () => {
   let panel: HTMLDivElement | undefined
   let card: HTMLDivElement | undefined
   let singVideo: HTMLVideoElement | undefined
+  let top: HTMLDivElement | undefined
 
   const [size, setSize] = createSignal({
     w: window.innerWidth,
@@ -142,7 +143,13 @@ export const RoomsAlley: Component = () => {
   const doors = createMemo(() =>
     layoutDoors(ALLEY_PLATE, DOORS, size().w, size().h),
   )
-  const band = createMemo(() => tapBand(doors(), size().w, size().h))
+  // The headline block's measured bottom: the band starts under it, whatever
+  // the safe area and the headline's line count make of it. A tap on the
+  // words falls through to the plate and clears a selection.
+  const [topBottom, setTopBottom] = createSignal(0)
+  const band = createMemo(() =>
+    tapBand(doors(), size().w, size().h, topBottom()),
+  )
   const layoutOf = (key: DoorKey): DoorLayout =>
     doors().find((door) => door.key === key) ?? doors()[0]
   const plate = plateSource()
@@ -313,11 +320,18 @@ export const RoomsAlley: Component = () => {
       const h = root.clientHeight
       const now = untrack(size)
       if (w > 0 && h > 0 && (w !== now.w || h !== now.h)) setSize({ w, h })
+      if (top !== undefined) {
+        const bottom = Math.ceil(top.offsetTop + top.offsetHeight)
+        if (bottom !== untrack(topBottom)) setTopBottom(bottom)
+      }
     }
     measure()
-    // iPad and Android rotate; the doors are recomputed, not assumed.
+    // iPad and Android rotate; the doors are recomputed, not assumed. The
+    // top block is watched too: the safe area and the headline size it.
     const observer = new ResizeObserver(measure)
     if (root !== undefined) observer.observe(root)
+    // Border box: the safe area is padding, and the content box ignores it.
+    if (top !== undefined) observer.observe(top, { box: 'border-box' })
     onCleanup(() => observer.disconnect())
 
     // Back from a room: the door it opened settles into place.
@@ -406,7 +420,7 @@ export const RoomsAlley: Component = () => {
           title after. First in the document, so a screen reader starts
           there (S4 §2). A div, not a <header>: app.css styles every
           header as the web's top bar. */}
-      <div class="mp-alley__top">
+      <div ref={top} class="mp-alley__top" data-testid="alley-top">
         <img
           class="mp-alley__mark"
           src="/brand-mark.svg"
@@ -426,7 +440,9 @@ export const RoomsAlley: Component = () => {
             <h1 class="mp-alley__headline" data-testid="alley-headline">
               {ALLEY_COPY.headline}
             </h1>
-            <p class="mp-alley__subline">{ALLEY_COPY.subline}</p>
+            <p class="mp-alley__subline" data-testid="alley-subline">
+              {ALLEY_COPY.subline}
+            </p>
           </div>
         </Show>
       </div>

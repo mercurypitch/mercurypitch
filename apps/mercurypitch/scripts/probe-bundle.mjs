@@ -3130,6 +3130,100 @@ async function walkAlley(browser, args, frame) {
   return steps.map((step) => `[${at}] ${step}`)
 }
 
+// ── The headline block takes no door taps ───────────────────
+//
+// Under a tall safe area (59 px on a Dynamic Island phone) the headline
+// block reaches down over the tops of the doors. The tap band starts at the
+// block's measured bottom, so a tap on the subline opens nothing, and it
+// clears a door that was out.
+const SAFE_TOP_FRAMES = [
+  { width: 393, height: 852, safeTop: 59 },
+  { width: 375, height: 667, safeTop: 20 },
+]
+
+async function walkAlleySafeTop(browser, args, frame) {
+  const context = await isolate(
+    await browser.newContext({
+      viewport: { width: frame.width, height: frame.height },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  let step = null
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="alley-subline"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.evaluate((px) => {
+      document.documentElement.style.setProperty('--safe-top', `${px}px`)
+    }, frame.safeTop)
+    await page.waitForTimeout(500)
+    const measure = () =>
+      page.evaluate(() => {
+        const box = (id) =>
+          document
+            .querySelector(`[data-testid="${id}"]`)
+            .getBoundingClientRect()
+        const doors = [...document.querySelectorAll('.mp-alley__key')].map(
+          (k) => k.getBoundingClientRect().top,
+        )
+        return {
+          sublineBottom: box('alley-subline').bottom,
+          topBottom: box('alley-top').bottom,
+          bandTop: box('alley-hit').top,
+          highestDoor: Math.min(...doors),
+        }
+      })
+    const m = await measure()
+    const subline = await page
+      .locator('[data-testid="alley-subline"]')
+      .boundingBox()
+    // Its last line, where it comes closest to the doors.
+    const at = {
+      x: subline.x + subline.width / 2,
+      y: subline.y + subline.height - 4,
+    }
+
+    // A door out, then the subline: the door goes back, nothing else comes out.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'safe top: select Sing')
+    await page.touchscreen.tap(at.x, at.y)
+    await waitPhase(page, 'rest', null, 'safe top: a tap on the subline')
+    // From rest: the subline selects nothing.
+    await page.touchscreen.tap(at.x, at.y)
+    await page.waitForTimeout(400)
+    const after = await alleyNow(page)
+    if (after.phase !== 'rest' || after.door !== null) {
+      throw new Error(`a tap on the subline selected ${JSON.stringify(after)}`)
+    }
+    if (m.bandTop < m.topBottom - 0.5) {
+      throw new Error(
+        `the band starts inside the headline block ${JSON.stringify(m)}`,
+      )
+    }
+    step = `alley safe top ${frame.safeTop} px: subline bottom ${Math.round(m.sublineBottom)}, block bottom ${Math.round(m.topBottom)}, band top ${Math.round(m.bandTop)} (highest door ${Math.round(m.highestDoor)}); a subline tap cleared Sing, then selected nothing`
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  return [`[${frame.width}x${frame.height}] ${step}`]
+}
+
 // ── The room's microphone waits for the hand-over ───────────
 //
 // A context that has granted the microphone, and a device that remembers it
@@ -3562,6 +3656,17 @@ async function main() {
         failures.push(
           `[${frame.width}x${frame.height}] alley mic: ${error.message}`,
         )
+      }
+    }
+    if (!args.chromeOnly) {
+      for (const frame of SAFE_TOP_FRAMES) {
+        try {
+          steps.push(...(await walkAlleySafeTop(browser, args, frame)))
+        } catch (error) {
+          failures.push(
+            `[${frame.width}x${frame.height}] alley safe top: ${error.message}`,
+          )
+        }
       }
     }
   } finally {
