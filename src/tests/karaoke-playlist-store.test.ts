@@ -53,7 +53,13 @@ describe('buildQueue', () => {
       deps,
     )
     expect(q).toEqual([
-      { sessionId: 's5', songTitle: 'Solo Track', singerName: 'Alice' },
+      {
+        sessionId: 's5',
+        songTitle: 'Solo Track',
+        singerName: 'Alice',
+        itemId: 'i1',
+        itemKind: 'session',
+      },
     ])
   })
 
@@ -201,5 +207,30 @@ describe('per-entry vocal volume', () => {
     )
     expect(q.map((e) => e.vocalVolume)).toEqual([0.2, 0.2, 0.2, 0.6, undefined])
     expect(q.map((e) => e.sessionId)).toEqual(['s1', 's2', 's3', 's5', 's4'])
+  })
+})
+
+describe('per-entry key', () => {
+  it('carries an entry key and which entry each song came from', () => {
+    const q = buildQueue(
+      playlist({
+        items: [
+          { id: 'i1', kind: 'group', refId: 'g1', keyShift: -2 },
+          { id: 'i2', kind: 'session', refId: 's5', keyShift: 3 },
+          { id: 'i3', kind: 'session', refId: 's4' },
+        ],
+      }),
+      deps,
+    )
+
+    expect(q.map((e) => e.keyShift)).toEqual([-2, -2, -2, 3, undefined])
+    expect(q.map((e) => e.itemId)).toEqual(['i1', 'i1', 'i1', 'i2', 'i3'])
+    expect(q.map((e) => e.itemKind)).toEqual([
+      'group',
+      'group',
+      'group',
+      'session',
+      'session',
+    ])
   })
 })
