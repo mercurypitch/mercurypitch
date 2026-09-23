@@ -10,11 +10,13 @@
 // APP_VERSION. Headless preview runs must set those localStorage keys and
 // reload, or the welcome overlay covers the page under test.
 
+import type { Accessor } from 'solid-js'
 import { createSignal, untrack } from 'solid-js'
 import type { ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { createPersistedSignal } from '@/lib/storage'
 import { exposeForE2E } from '@/lib/test-utils'
 import type { MelodyItem } from '@/types'
@@ -283,7 +285,24 @@ export const [welcomeSeen, setWelcomeSeen] = createPersistedSignal<string>(
   '',
 )
 
-export const [showWelcome, setShowWelcome] = createSignal(welcomeSeen() === '')
+const [firstLightDue, setShowWelcome] = createSignal(welcomeSeen() === '')
+
+/**
+ * Whether the web's first run — First Light — is due.
+ *
+ * NEVER UNDER THE NATIVE BUILD. There the first run is the alley with its
+ * headline (S4, owner decision 10), and it keeps its own flag
+ * (`apps/mercurypitch/src/alley/alley-welcome.ts`). This is the one place the
+ * web answer is turned off, rather than at each of its readers: App.tsx opens
+ * First Light from it, holds the opening curtain on it and defers the survey
+ * behind it, and the keyboard shortcuts stand down for it. A setter call on
+ * the native side (the web's "Replay the intro") therefore changes nothing a
+ * reader can see.
+ */
+export const showWelcome: Accessor<boolean> = IS_NATIVE_BUILD
+  ? () => false
+  : firstLightDue
+export { setShowWelcome }
 
 export function dismissWelcome(): void {
   setShowWelcome(false)

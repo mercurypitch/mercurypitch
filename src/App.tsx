@@ -729,7 +729,10 @@ const AppShell: Component<AppProps> = (props) => {
   const OPENING_HOLD_FIRST_RUN_MS = 2000
   const OPENING_HOLD_RETURNING_MS = 750
   const OPENING_FADE_MS = 400
+  // Never under the native build: its launch frame is the storyboard and
+  // the splash theme, and its first run is the alley (S4 decision 10).
   const openingDue =
+    !IS_NATIVE_BUILD &&
     navigator.webdriver !== true &&
     parseHash(window.location.hash).type !== 'voice-constellation'
   const firstRunBoot = openingDue && showWelcome()
@@ -3123,89 +3126,97 @@ const AppShell: Component<AppProps> = (props) => {
             art rides in when its file lands (the obsidian ground and
             the lockup carry the frame until then); the hint appears
             only when the wait outlives the minimum hold. */}
-        <Show when={opening() !== 'gone'}>
-          <div
-            class={styles.appOpening}
-            classList={{
-              [styles.appOpeningLeaving]: opening() === 'fading',
-              [styles.appOpeningFirstRun]: firstRunBoot,
-            }}
-            data-onboarding-flow
-            role="status"
-            aria-live="polite"
-          >
-            {/* Wide and tall are separate recompositions, not crops —
-                covering a 9:19.5 phone with the 16:9 plate meant a ~2.2x
-                upscale of the middle quarter, which is what read as
-                mushy. Both tiers are sized so an ordinary screen scales
-                them DOWN. Same wide/tall split as the onboarding sky. */}
-            <picture class={styles.appOpeningArtLayer}>
-              <source
-                srcset="/opening/first-light-tall.webp"
-                media="(max-aspect-ratio: 1/1)"
-              />
-              <img
-                class={styles.appOpeningArt}
-                classList={{ [styles.appOpeningArtReady]: openingArtReady() }}
-                src="/opening/first-light-wide.webp"
-                alt=""
-                decoding="async"
-                ref={(el) => {
-                  if (el.complete && el.naturalWidth > 0)
-                    setOpeningArtReady(true)
-                }}
-                onLoad={() => setOpeningArtReady(true)}
-              />
-            </picture>
-            {/* First light itself, blooming along the horizon — first
-                arrival only, and only once the plate is actually there
-                to bloom over. */}
-            <Show when={firstRunBoot && openingArtReady()}>
-              <div class={styles.appOpeningBloom} aria-hidden="true" />
-            </Show>
-            {/* The mark is the shipped brand asset, never a copy pasted
-                into JSX: this opening first went out carrying the
-                superseded pre-meniscus mark because it was hand-inlined.
-                public/brand-mark.svg is the Meniscus v2 master. */}
-            <div class={styles.appOpeningLockup}>
-              <img
-                class={styles.appOpeningMark}
-                src="/brand-mark.svg"
-                alt=""
-                decoding="async"
-              />
-              <span class={styles.appOpeningWordmark}>
-                Mercury<span>Pitch</span>
-              </span>
+        {/* Folded out of the native bundle, art and all: see openingDue. */}
+        {IS_NATIVE_BUILD ? null : (
+          <Show when={opening() !== 'gone'}>
+            <div
+              class={styles.appOpening}
+              classList={{
+                [styles.appOpeningLeaving]: opening() === 'fading',
+                [styles.appOpeningFirstRun]: firstRunBoot,
+              }}
+              data-onboarding-flow
+              role="status"
+              aria-live="polite"
+            >
+              {/* Wide and tall are separate recompositions, not crops —
+                  covering a 9:19.5 phone with the 16:9 plate meant a ~2.2x
+                  upscale of the middle quarter, which is what read as
+                  mushy. Both tiers are sized so an ordinary screen scales
+                  them DOWN. Same wide/tall split as the onboarding sky. */}
+              <picture class={styles.appOpeningArtLayer}>
+                <source
+                  srcset="/opening/first-light-tall.webp"
+                  media="(max-aspect-ratio: 1/1)"
+                />
+                <img
+                  class={styles.appOpeningArt}
+                  classList={{ [styles.appOpeningArtReady]: openingArtReady() }}
+                  src="/opening/first-light-wide.webp"
+                  alt=""
+                  decoding="async"
+                  ref={(el) => {
+                    if (el.complete && el.naturalWidth > 0)
+                      setOpeningArtReady(true)
+                  }}
+                  onLoad={() => setOpeningArtReady(true)}
+                />
+              </picture>
+              {/* First light itself, blooming along the horizon — first
+                  arrival only, and only once the plate is actually there
+                  to bloom over. */}
+              <Show when={firstRunBoot && openingArtReady()}>
+                <div class={styles.appOpeningBloom} aria-hidden="true" />
+              </Show>
+              {/* The mark is the shipped brand asset, never a copy pasted
+                  into JSX: this opening first went out carrying the
+                  superseded pre-meniscus mark because it was hand-inlined.
+                  public/brand-mark.svg is the Meniscus v2 master. */}
+              <div class={styles.appOpeningLockup}>
+                <img
+                  class={styles.appOpeningMark}
+                  src="/brand-mark.svg"
+                  alt=""
+                  decoding="async"
+                />
+                <span class={styles.appOpeningWordmark}>
+                  Mercury<span>Pitch</span>
+                </span>
+              </div>
+              <p class={styles.appOpeningHint}>Preparing your first note…</p>
             </div>
-            <p class={styles.appOpeningHint}>Preparing your first note…</p>
-          </div>
-        </Show>
+          </Show>
+        )}
         {/* First Light — the whole first run. A fresh visitor lands
             straight on beat 1; Settings → "Replay the intro" reopens it
             through the same `showWelcome` flag. */}
-        <Show when={flowOpen()}>
-          <ErrorBoundary
-            fallback={() => {
-              // A dead chunk (offline, or a deploy swapped the hashed
-              // assets) used to take the whole app down with it — and
-              // would now also strand the opening backdrop. Give up on the flow
-              // for this session only: the seen-flag in localStorage is
-              // untouched, so the next visit offers it again. Deferred a
-              // tick — these are writes, not render work.
-              queueMicrotask(() => {
-                closeOnboarding()
-                setShowWelcome(false)
-              })
-              return null
-            }}
-          >
-            <FirstLight
-              replay={onboardingReplay()}
-              onReady={dropOpeningAfterHold}
-            />
-          </ErrorBoundary>
-        </Show>
+        {/* Never under the native build, whose first run is the alley
+            (S4 decision 10): the ternary folds, so the flow's chunk is not
+            in the phone's bundle at all. */}
+        {IS_NATIVE_BUILD ? null : (
+          <Show when={flowOpen()}>
+            <ErrorBoundary
+              fallback={() => {
+                // A dead chunk (offline, or a deploy swapped the hashed
+                // assets) used to take the whole app down with it — and
+                // would now also strand the opening backdrop. Give up on the flow
+                // for this session only: the seen-flag in localStorage is
+                // untouched, so the next visit offers it again. Deferred a
+                // tick — these are writes, not render work.
+                queueMicrotask(() => {
+                  closeOnboarding()
+                  setShowWelcome(false)
+                })
+                return null
+              }}
+            >
+              <FirstLight
+                replay={onboardingReplay()}
+                onReady={dropOpeningAfterHold}
+              />
+            </ErrorBoundary>
+          </Show>
+        )}
 
         <Show when={whatsNew.open()}>
           <Suspense fallback={null}>

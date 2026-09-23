@@ -30,7 +30,7 @@ import { APP_VERSION, COMMIT_SHA, IS_DEV } from '@/lib/defaults'
 import type { PerformanceMode } from '@/lib/device-tier'
 import { deviceClass, deviceTier, PERFORMANCE_MODE_DESCRIPTIONS, PERFORMANCE_MODE_LABELS, PERFORMANCE_MODES, performanceMode, refreshDeviceTierAttributes, setPerformanceMode, } from '@/lib/device-tier'
 import { PRIVACY_URL, TERMS_URL, WEBSITE_URL } from '@/lib/legal-links'
-import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
+import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { ResetScope } from '@/lib/reset-app-data'
 import { resetAppData } from '@/lib/reset-app-data'
 import { isScoreMode, SCORE_MODE_INFO, SCORE_MODES } from '@/lib/score-window'
@@ -408,27 +408,40 @@ export const SettingsPanel: Component = () => {
           >
             <h3 class={styles.settingsSectionTitle}>Getting started</h3>
             <div class={styles.settingsDivider} />
-            <p class={styles.settingsDesc}>
-              Replay the guided intro — or make another voiceprint any time in
-              the Voice Mirror (a free 60-second run; no need to redo the
-              intro). Every voiceprint stacks in your history above.
-            </p>
+            {/* The app has no guided intro to replay: its first run is the
+                alley, and the Developer screen is what resets that. */}
+            {IS_NATIVE_BUILD ? (
+              <p class={styles.settingsDesc}>
+                Make another voiceprint any time in the Voice Mirror (a free
+                60-second run). Every voiceprint stacks in your history above.
+              </p>
+            ) : (
+              <p class={styles.settingsDesc}>
+                Replay the guided intro — or make another voiceprint any time in
+                the Voice Mirror (a free 60-second run; no need to redo the
+                intro). Every voiceprint stacks in your history above.
+              </p>
+            )}
             <div class={styles.settingsActionRow}>
-              {/* The intro is a lazily loaded chunk, so the wait here is
-                  exactly its fetch — which is what the spinner is timed to.
-                  The import is the same module specifier App.tsx lazy-loads,
-                  so this resolves against the same chunk rather than adding
-                  one. */}
-              <BusyButton
-                class={styles.settingsActionBtn}
-                busyLabel="Loading the intro…"
-                onClick={() => {
-                  setShowWelcome(true)
-                  return import('@/features/onboarding/FirstLight')
-                }}
-              >
-                Replay the intro
-              </BusyButton>
+              {IS_NATIVE_BUILD ? null : (
+                <>
+                  {/* The intro is a lazily loaded chunk, so the wait here is
+                      exactly its fetch — which is what the spinner is timed to.
+                      The import is the same module specifier App.tsx lazy-loads,
+                      so this resolves against the same chunk rather than adding
+                      one. */}
+                  <BusyButton
+                    class={styles.settingsActionBtn}
+                    busyLabel="Loading the intro…"
+                    onClick={() => {
+                      setShowWelcome(true)
+                      return import('@/features/onboarding/FirstLight')
+                    }}
+                  >
+                    Replay the intro
+                  </BusyButton>
+                </>
+              )}
               <BusyLink
                 href="/mirror"
                 class={styles.settingsActionBtn}
