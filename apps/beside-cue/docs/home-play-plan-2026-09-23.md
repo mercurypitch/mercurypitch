@@ -3,10 +3,14 @@
 **Date:** 2026-09-23 · **Status:** proposal with mocks and a working lip-sync
 spike. No app code, content or media is changed by this document.
 
-**Mocks:** [`home-play/index.html`](home-play/index.html) in this folder. Serve
-it from the repository root, because it loads the approved art and recordings
-from `apps/beside-cue/public/`. The same page is also published as a private
-artifact for review.
+**Mocks:** [`home-play/index.html`](home-play/index.html) in this folder. It
+loads the approved art and recordings from `apps/beside-cue/public/` by
+relative path, so open it through any static server rooted at the repository
+or the app, for example `python3 -m http.server -d apps/beside-cue` and then
+`/docs/home-play/`. A copy with bundled assets is published as a private
+artifact: <https://claude.ai/artifact/DSQ2e1NaT1pHAwNFC8jWrg>. The page plays
+all eight scenes and the reel, all 67 English lines with their real lip-sync
+tracks, the ten Cue forms with their chimes, and the smart-cue screens.
 
 ## 0. Summary
 
