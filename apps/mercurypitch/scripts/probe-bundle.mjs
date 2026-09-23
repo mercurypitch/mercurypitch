@@ -1745,6 +1745,37 @@ async function walkRound2(page, ctx, steps) {
       `the grabber's target is ${grabber.width}x${grabber.height}, under 44`,
     )
   }
+  // The box says 44x44 whatever clips it, so the box is not the question.
+  // Review N2: centred on the 16px band, the target reached 13px above the
+  // panel, `.panel`'s own overflow clipped that, and a tap 4px below the
+  // panel's top edge landed on the BACKDROP. Asked of the page, not the box:
+  // whose element is under the thumb, down the target's centre line?
+  const reach = await page.evaluate(() => {
+    const panel = document.querySelector('[data-testid="sheet-panel"]')
+    const hit = document.querySelector('[data-testid="sheet-handle"]')
+    if (panel === null || hit === null) return null
+    const top = panel.getBoundingClientRect().top
+    const box = hit.getBoundingClientRect()
+    const x = box.left + box.width / 2
+    return [4, 22, 40].map((dy) => {
+      const node = document.elementFromPoint(x, top + dy)
+      return {
+        dy,
+        grabber: node !== null && hit.contains(node),
+        what:
+          node === null
+            ? 'nothing'
+            : (node.getAttribute('data-testid') ?? node.tagName.toLowerCase()),
+      }
+    })
+  })
+  if (reach === null) throw new Error('no sheet panel to measure the grabber in')
+  const missed = reach.filter((point) => !point.grabber)
+  if (missed.length > 0) {
+    throw new Error(
+      `a tap on the grabber's centre line lands on ${missed.map((point) => `${point.what} at +${point.dy}px`).join(', ')}, not the grabber`,
+    )
+  }
   // …and it costs the sheet nothing. R7 first shipped the target as the
   // band's own height, which pushed this sheet's content 28px down the
   // screen and every other sheet in the app with it (review F6). The number
@@ -1777,7 +1808,7 @@ async function walkRound2(page, ctx, steps) {
     'the sheet after a tap on its grabber',
   )
   steps.push(
-    `sheet: the grabber is ${grabber.width}x${grabber.height} over a ${band.height}px band, content still ${contentTop}px down, and a tap closes`,
+    `sheet: the grabber is ${grabber.width}x${grabber.height} over a ${band.height}px band, the grabber is under the thumb at +4, +22 and +40px, content still ${contentTop}px down, and a tap closes`,
   )
 
   // ── R4: the pill opens Your takes, and Remove removes one ──

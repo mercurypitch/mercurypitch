@@ -82,19 +82,28 @@
    itself stays 38x4; only the target around it is finger-sized.
 
    OUT OF FLOW, because a 44px box inside a 16px band is the thing that moved
-   every sheet. It is centred on the band and reaches past it in both
-   directions: upwards into the panel's rounded top, downwards over the gap
-   above the first row — which is the "grabber + title row" R7 asked for. */
+   every sheet. It hangs DOWN from the band's top edge — which is the panel's
+   own top edge — over the gap above the first row: the "grabber + title row"
+   R7 asked for.
+
+   Not centred on the band. Centred, the box reached 13px above the panel,
+   and `.panel` is `overflow-y: auto`, which clips that overhang: a tap on
+   the top third of the target landed on the backdrop (review N2 — about
+   44x31 of the 44x44 was reachable). Hung from the top edge, all of it is
+   inside the panel. The 4px bar stays where it was, 6px down, because the
+   box centres it on the band's line rather than its own. */
 .handleHit {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 50%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   width: 44px;
   height: 44px;
-  transform: translate(-50%, -50%);
+  padding-top: 6px;
+  box-sizing: border-box;
+  transform: translateX(-50%);
 }
 
 .handle {
