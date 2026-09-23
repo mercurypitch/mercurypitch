@@ -65,10 +65,10 @@ unfinished code paths or rejected visual assets presented as completed work.
 
 ## 2. Camera and turn comfort
 
-- [ ] Diagnose input/heading/camera response using repeatable turns at varied zoom.
-- [ ] Implement smooth bounded facing/follow and preserve responsive corrections.
-- [ ] Add dev look-sensitivity/follow controls, persistence, defaults and presets.
-- [ ] Verify mouse, keyboard, touch, reduced motion, wall/challenge transitions.
+- [x] Diagnose input/heading/camera response using repeatable turns at varied zoom.
+- [x] Implement smooth bounded facing/follow and preserve responsive corrections.
+- [x] Add dev look-sensitivity/follow controls, persistence, defaults and presets.
+- [x] Verify mouse, keyboard, touch, reduced motion, wall/challenge transitions.
 
 ## 3. Current trial route and scenery
 
@@ -139,6 +139,18 @@ unfinished code paths or rejected visual assets presented as completed work.
       enemies, broad mechanics or publication work to fill spare time.
 
 ## Current checkpoint
+
+24 September update: stage 2 implementation and focused verification complete.
+52 unit tests, two real-input browser cases and Beside Cue typecheck passed;
+owner hardware comfort acceptance remains at the final testing boundary. See
+`CAMERA-COMFORT-IMPLEMENTATION-2026-09-23.md` and its preserved rendered proofs.
+Replay isolation and collection foundations pass focused tests; selector and
+album work is still being integrated with completion presentation. Platform
+4K masters are preserved; runtime delivery compression is being compared.
+Melody judge is implemented; actual microphone practice is in progress.
+Current-trial route auditions are the next camera-agent slice.
+
+Original baseline follows:
 
 Planning baseline: `e2b33a4b`; worktree clean; all 40 PR checks passed (one
 production-only job skipped). New V5 assets are source auditions only; V3 remains

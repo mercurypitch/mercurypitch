@@ -8,10 +8,11 @@ import type { AnimationAction } from 'three'
 import { AnimationMixer, Group, LoopOnce, LoopRepeat, Vector3 } from 'three'
 import type { GameSnapshot } from '../contracts'
 import { MOVEMENT } from '../core/movement'
+import { stepAngularResponse } from './angular-response'
 import { loadMercModel } from './merc-model'
 
-const TURN_RESPONSE = 10
 const MAXIMUM_TURN_RADIANS_PER_SECOND = 6
+const MAXIMUM_TURN_ACCELERATION = 72
 const MINIMUM_MOVE_TIME_SCALE = 0.35
 const MAXIMUM_MOVE_TIME_SCALE = 2.4
 
@@ -54,6 +55,7 @@ export async function loadAdventureMerc(url: string) {
   let celebrateUntil = 0
   let completed = 0
   let disposed = false
+  const facingResponse = { angle: root.rotation.y, velocity: 0 }
   const play = (name: string, still: boolean, timeScale = 1) => {
     const clip = clips.get(name)
     if (!clip) return
@@ -119,17 +121,15 @@ export async function loadAdventureMerc(url: string) {
       body.position.y = -visualGroundY * scale * stretch + 0.015
       root.position.copy(player.position)
       const desiredYaw = presentation.facingYaw ?? player.facingYaw + Math.PI
-      const angle = Math.atan2(
-        Math.sin(desiredYaw - root.rotation.y),
-        Math.cos(desiredYaw - root.rotation.y),
-      )
       const requestedTurnDt = presentation.turnDeltaSeconds ?? dt
       const turnDt = Number.isFinite(requestedTurnDt)
         ? Math.max(0, Math.min(0.05, requestedTurnDt))
         : 0
-      const blended = angle * (1 - Math.exp(-TURN_RESPONSE * turnDt))
-      const maximumStep = MAXIMUM_TURN_RADIANS_PER_SECOND * turnDt
-      root.rotation.y += Math.max(-maximumStep, Math.min(maximumStep, blended))
+      stepAngularResponse(facingResponse, desiredYaw, turnDt, {
+        maximumSpeed: MAXIMUM_TURN_RADIANS_PER_SECOND,
+        maximumAcceleration: MAXIMUM_TURN_ACCELERATION,
+      })
+      root.rotation.y = facingResponse.angle
     },
     dispose() {
       if (disposed) return

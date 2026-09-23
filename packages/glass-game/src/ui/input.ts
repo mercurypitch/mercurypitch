@@ -26,6 +26,8 @@ function changesDirection(before: MovementAxes, after: MovementAxes): boolean {
 
 export interface AdventureInput {
   read(yaw: number): MovementInput
+  /** World-space heading requested by the current contact, before acceleration. */
+  desiredTravelYaw(yaw: number): number | null
   hasMovementIntent(): boolean
   consumeMovementReferenceChange(): boolean
   setStick(x: number, y: number): void
@@ -50,6 +52,21 @@ export function createAdventureInput(): AdventureInput {
       Number(held.has('KeyW') || held.has('ArrowUp')) -
       Number(held.has('KeyS') || held.has('ArrowDown')),
   })
+  const movementInput = (yaw: number): MovementInput => {
+    const { x, forward } = movementAxes()
+    const magnitude = Math.hypot(x, forward)
+    const length = Math.max(1, magnitude)
+    const moving = magnitude > MOVEMENT_INTENT_THRESHOLD
+    return {
+      moveX: moving
+        ? (x * Math.cos(yaw) - forward * Math.sin(yaw)) / length
+        : 0,
+      moveZ: moving
+        ? (-x * Math.sin(yaw) - forward * Math.cos(yaw)) / length
+        : 0,
+      jumpDown: touchJump || held.has('Space'),
+    }
+  }
   return {
     key(event, down) {
       const target = event.target as HTMLElement | null
@@ -88,20 +105,14 @@ export function createAdventureInput(): AdventureInput {
       event.preventDefault()
       return true
     },
-    read(yaw) {
-      const { x, forward } = movementAxes()
-      const magnitude = Math.hypot(x, forward)
-      const length = Math.max(1, magnitude)
-      const moving = magnitude > MOVEMENT_INTENT_THRESHOLD
-      return {
-        moveX: moving
-          ? (x * Math.cos(yaw) - forward * Math.sin(yaw)) / length
-          : 0,
-        moveZ: moving
-          ? (-x * Math.sin(yaw) - forward * Math.cos(yaw)) / length
-          : 0,
-        jumpDown: touchJump || held.has('Space'),
-      }
+    read: movementInput,
+    desiredTravelYaw(yaw) {
+      const movement = movementInput(yaw)
+      if (
+        Math.hypot(movement.moveX, movement.moveZ) <= MOVEMENT_INTENT_THRESHOLD
+      )
+        return null
+      return Math.atan2(-movement.moveX, -movement.moveZ)
     },
     hasMovementIntent() {
       return hasMovementIntent(movementAxes())

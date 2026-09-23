@@ -363,6 +363,67 @@ describe('camera-relative traversal', () => {
     rig.update(withMotion(moving, facingAcrossWrap, { speed: 0 }), FRAME)
     expect(rig.movementYaw()).toBe(rig.yaw())
   })
+  it('starts automatic heading follow without an immediate maximum-rate step', () => {
+    const rig = createAdventureCamera(OPEN_ROOM)
+    const moving = withMotion(
+      createGlassGame(OPEN_ROOM).snapshot(),
+      Math.PI / 2,
+    )
+    const start = rig.yaw()
+    rig.setMovementActive(true)
+
+    rig.update(moving, FRAME)
+
+    const firstStep = Math.abs(angleError(start, rig.yaw()))
+    expect(firstStep).toBeGreaterThan(0)
+    expect(firstStep).toBeLessThan(0.02)
+  })
+  it('tunes view response without changing movement or jump reach', () => {
+    const gentleGame = createGlassGame(OPEN_ROOM)
+    const responsiveGame = createGlassGame(OPEN_ROOM)
+    const gentle = createAdventureCamera(OPEN_ROOM, {
+      followSmoothnessSeconds: 0.4,
+    })
+    const responsive = createAdventureCamera(OPEN_ROOM, {
+      followSmoothnessSeconds: 0.08,
+    })
+    gentle.setMovementActive(true)
+    responsive.setMovementActive(true)
+    let gentlePeak = 0
+    let responsivePeak = 0
+    let gentleEarlyYaw = gentle.yaw()
+    let responsiveEarlyYaw = responsive.yaw()
+
+    for (let frame = 0; frame < 120; frame++) {
+      const movement = {
+        moveX: 1,
+        moveZ: 0,
+        jumpDown: frame === 0,
+      }
+      gentleGame.step(movement, FRAME)
+      responsiveGame.step(movement, FRAME)
+      gentle.update(gentleGame.snapshot(), FRAME)
+      responsive.update(responsiveGame.snapshot(), FRAME)
+      gentlePeak = Math.max(gentlePeak, gentleGame.snapshot().player.position.y)
+      responsivePeak = Math.max(
+        responsivePeak,
+        responsiveGame.snapshot().player.position.y,
+      )
+      if (frame === 11) {
+        gentleEarlyYaw = gentle.yaw()
+        responsiveEarlyYaw = responsive.yaw()
+      }
+    }
+
+    expect(gentleGame.snapshot().player).toEqual(
+      responsiveGame.snapshot().player,
+    )
+    expect(gentlePeak).toBeGreaterThan(0.2)
+    expect(gentlePeak).toBeCloseTo(responsivePeak, 10)
+    expect(Math.abs(angleError(responsiveEarlyYaw, -Math.PI / 2))).toBeLessThan(
+      Math.abs(angleError(gentleEarlyYaw, -Math.PI / 2)),
+    )
+  })
   it('keeps manual orbit until its quiet window expires and movement resumes', () => {
     const rig = createAdventureCamera(GLASSWORKS)
     const moving = withMotion(createGlassGame(GLASSWORKS).snapshot(), 0)
@@ -596,7 +657,9 @@ describe('camera-relative traversal', () => {
     rig.update({ ...teleported, paused: true }, 30)
     expect(rig.yaw()).toBe(start)
     rig.update(teleported, 30)
-    expect(Math.abs(rig.yaw() - start)).toBeCloseTo(2.8 * 0.05)
+    // A delayed frame is clamped to 50ms, then ramps from rest under the
+    // default 14rad/s² acceleration budget rather than jumping to 2.8rad/s.
+    expect(Math.abs(rig.yaw() - start)).toBeCloseTo((14 * 0.05 ** 2) / 2)
     const target = new Vector3(12, 0.42, -9)
     expect(rig.camera.position.distanceTo(target)).toBeCloseTo(4)
   })

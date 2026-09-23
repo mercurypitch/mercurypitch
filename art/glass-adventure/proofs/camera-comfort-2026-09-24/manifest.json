@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-09-24",
+  "viewport": {
+    "width": 640,
+    "height": 480
+  },
+  "raster": "WebGL2 drawing enabled with Chromium SwiftShader",
+  "clips": "The loading tail was removed and each captured action timeline was compressed to 6.08 seconds for side-by-side review; no frames were synthesized.",
+  "scenario": "Open tuner, drag 80px right, hold W, add A, release W, release A.",
+  "presets": [
+    {
+      "id": "gentle",
+      "settings": {
+        "lookSensitivity": 0.8,
+        "followSmoothnessSeconds": 0.32
+      }
+    },
+    {
+      "id": "responsive",
+      "settings": {
+        "lookSensitivity": 1.2,
+        "followSmoothnessSeconds": 0.12
+      }
+    }
+  ]
+}

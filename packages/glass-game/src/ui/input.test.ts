@@ -64,6 +64,26 @@ describe('adventure movement reference intent', () => {
     expect(input.consumeMovementReferenceChange()).toBe(true)
   })
 
+  it('reports keyboard and continuous-stick headings on the stable movement basis', () => {
+    const input = createAdventureInput()
+    const basis = Math.PI / 3
+
+    input.key(keyboardEvent('KeyW'), true)
+    expect(input.desiredTravelYaw(basis)).toBeCloseTo(basis)
+    input.key(keyboardEvent('KeyA'), true)
+    expect(input.desiredTravelYaw(basis)).toBeCloseTo(basis + Math.PI / 4)
+    input.key(keyboardEvent('KeyW'), false)
+    expect(input.desiredTravelYaw(basis)).toBeCloseTo(basis + Math.PI / 2)
+
+    input.clear()
+    input.setStick(-1, 0)
+    expect(input.desiredTravelYaw(basis)).toBeCloseTo(basis + Math.PI / 2)
+    input.setStick(-Math.SQRT1_2, -Math.SQRT1_2)
+    expect(input.desiredTravelYaw(basis)).toBeCloseTo(basis + Math.PI / 4)
+    input.setStick(0, 0)
+    expect(input.desiredTravelYaw(basis)).toBeNull()
+  })
+
   it('uses the movement threshold consistently and clears stale requests', () => {
     const input = createAdventureInput()
 

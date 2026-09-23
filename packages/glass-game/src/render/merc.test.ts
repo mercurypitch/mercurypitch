@@ -250,9 +250,9 @@ it('turns toward a side step smoothly and independently of frame cadence', async
   const thirtyFps = await turnFor(1 / 30, 6)
 
   expect(firstLongFrame).toBeGreaterThan(0)
-  expect(firstLongFrame).toBeLessThan(0.4)
-  expect(sixtyFps).toBeGreaterThan(1)
-  expect(sixtyFps).toBeLessThan(1.35)
+  expect(firstLongFrame).toBeLessThan(0.1)
+  expect(sixtyFps).toBeGreaterThan(0.9)
+  expect(sixtyFps).toBeLessThan(1.05)
   expect(thirtyFps).toBeCloseTo(sixtyFps, 5)
 })
 
@@ -269,7 +269,7 @@ it('uses the presentation clock to face an exhibit while simulation is paused', 
         turnDeltaSeconds: 1 / 60,
       })
     expect(actor.root.rotation.y).toBeGreaterThan(1.4)
-    expect(actor.root.rotation.y).toBeLessThan(Math.PI / 2)
+    expect(actor.root.rotation.y).toBeLessThanOrEqual(Math.PI / 2)
 
     const frozen = actor.root.rotation.y
     actor.update(snapshot, 0, false, {
@@ -281,7 +281,7 @@ it('uses the presentation clock to face an exhibit while simulation is paused', 
     for (let frame = 0; frame < 30; frame++)
       actor.update(snapshot, 0, false, { turnDeltaSeconds: 1 / 60 })
     expect(actor.root.rotation.y).toBeLessThan(frozen)
-    expect(actor.root.rotation.y).toBeGreaterThanOrEqual(0)
+    expect(actor.root.rotation.y).toBeGreaterThan(-1e-12)
   } finally {
     actor.dispose()
   }

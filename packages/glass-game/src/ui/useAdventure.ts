@@ -10,6 +10,8 @@ import type { LoadingProgress } from '../loading-progress'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
+import type { CameraComfortSettings } from './camera-comfort'
+import { CAMERA_COMFORT_PREFERENCE, normalizeCameraComfort, parseCameraComfort, serializeCameraComfort, } from './camera-comfort'
 import { createAdventureInput } from './input'
 import type { AdventureLoadingPhase } from './loading-lifecycle'
 import { createAdventureLoadingLifecycle } from './loading-lifecycle'
@@ -34,6 +36,9 @@ export function useAdventure(
 ) {
   const game = createGlassGame(level, host.loadProgress(level.id))
   const input = createAdventureInput()
+  const [cameraComfort, setCameraComfort] = createSignal(
+    parseCameraComfort(host.readPreference(CAMERA_COMFORT_PREFERENCE)),
+  )
   const [snapshot, setSnapshot] = createSignal(game.snapshot())
   const [completionPresented, setCompletionPresented] = createSignal(
     game.snapshot().complete,
@@ -317,6 +322,16 @@ export function useAdventure(
     setNarrationPreferences(narration.preferences())
   }
 
+  function changeCameraComfort(next: CameraComfortSettings): void {
+    const normalized = normalizeCameraComfort(next)
+    setCameraComfort(normalized)
+    host.writePreference(
+      CAMERA_COMFORT_PREFERENCE,
+      serializeCameraComfort(normalized),
+    )
+    renderer?.setFollowSmoothness(normalized.followSmoothnessSeconds)
+  }
+
   function gameplayGesture(): void {
     if (!ready()) return
     soundscape.activate()
@@ -366,6 +381,7 @@ export function useAdventure(
     try {
       attempt = createGlassRenderer(mount(), level, host.assetUrl, {
         reducedMotion,
+        followSmoothnessSeconds: cameraComfort().followSmoothnessSeconds,
         onLoadingProgress: (progress) => {
           loading.reportProgress(generation, progress)
         },
@@ -625,11 +641,21 @@ export function useAdventure(
     changeAudio,
     narrationPreferences,
     changeNarration,
+    cameraComfort,
+    changeCameraComfort,
     gameplayGesture,
     challengeCamera,
     cameraYaw: () => {
       snapshot()
       return renderer?.getCameraYaw() ?? 0
+    },
+    mercYaw: () => {
+      snapshot()
+      return renderer?.getMercYaw() ?? null
+    },
+    desiredTravelYaw: () => {
+      snapshot()
+      return input.desiredTravelYaw(renderer?.getMovementYaw() ?? 0)
     },
     orbit: (x: number, y: number) => {
       if (ready()) renderer?.orbit(x, y)

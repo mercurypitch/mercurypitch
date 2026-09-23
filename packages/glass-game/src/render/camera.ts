@@ -5,13 +5,13 @@
 import type { Object3D } from 'three'
 import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
+import { shortestAngleDelta, stepAngularResponse, stopAngularResponse, } from './angular-response'
 import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
 import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
 
 const ORBIT_FOLLOW_GRACE_SECONDS = 0.2
 const EXPLORATION_FOV_DEGREES = 48
-const FOLLOW_RESPONSE = 5
 const MAXIMUM_FOLLOW_RADIANS_PER_SECOND = 2.8
 const FOLLOW_COMPLETE_RADIANS = 0.01
 const MOVING_SPEED = 0.05
@@ -31,9 +31,17 @@ const ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE = 1.15
 const ENCLOSURE_READABLE_BOOM_DISTANCE = 1.55
 const ENCLOSURE_DISTANCE_RECOVERY_RESPONSE = 7
 
+export const CAMERA_FOLLOW_SMOOTHNESS = {
+  minimum: 0.08,
+  maximum: 0.45,
+  default: 0.2,
+} as const
+
 export interface AdventureCameraOptions {
   /** Avoid unsolicited view rotation for vestibular-sensitive players. */
   reducedMotion?: boolean
+  /** Seconds for automatic follow to accelerate from rest to its turn cap. */
+  followSmoothnessSeconds?: number
 }
 
 export interface ChallengeCameraMetrics {
@@ -66,8 +74,13 @@ function frameUnion(
   }
 }
 
-function shortestAngleDelta(from: number, to: number): number {
-  return Math.atan2(Math.sin(to - from), Math.cos(to - from))
+function validFollowSmoothness(value: number | undefined): number {
+  if (!Number.isFinite(value)) return CAMERA_FOLLOW_SMOOTHNESS.default
+  return MathUtils.clamp(
+    value!,
+    CAMERA_FOLLOW_SMOOTHNESS.minimum,
+    CAMERA_FOLLOW_SMOOTHNESS.maximum,
+  )
 }
 
 /** Positive forward means away from the eye along the ground plane. */
@@ -105,6 +118,10 @@ export function createAdventureCamera(
   const challengeReturnOffset = new Vector3()
   let occluders: Object3D[] = []
   let yaw = level.spawn.facingYaw
+  const followResponse = { angle: yaw, velocity: 0 }
+  let followSmoothnessSeconds = validFollowSmoothness(
+    options.followSmoothnessSeconds,
+  )
   let pitch = 0.36
   let renderedPitch = pitch
   let distance = 4
@@ -440,7 +457,10 @@ export function createAdventureCamera(
         challengePlayerOrigin = null
       }
       requestedChallengeId = encounterId
-      if (encounterId !== null) orbitActive = false
+      if (encounterId !== null) {
+        orbitActive = false
+        stopAngularResponse(followResponse, yaw)
+      }
     },
     setChallengeSafeBottomFraction(fraction: number) {
       if (!Number.isFinite(fraction)) return
@@ -478,6 +498,7 @@ export function createAdventureCamera(
       challengeSafeBottomFraction = 0
       challengeDirector.clear()
       orbitActive = false
+      stopAngularResponse(followResponse, yaw)
     },
     yaw: () => (challengeDirector.active() ? renderedChallengeYaw : yaw),
     movementYaw: () => movementReferenceYaw,
@@ -493,6 +514,10 @@ export function createAdventureCamera(
       committedHeading = null
       movementActive = false
       movementReferenceYaw = yaw
+      stopAngularResponse(followResponse, yaw)
+    },
+    setFollowSmoothness(seconds: number) {
+      followSmoothnessSeconds = validFollowSmoothness(seconds)
     },
     setOrbitActive(active: boolean) {
       if (challengeInputLocked()) {
@@ -504,6 +529,7 @@ export function createAdventureCamera(
       if (active) {
         movementReferenceYaw = yaw
         committedHeading = null
+        stopAngularResponse(followResponse, yaw)
       }
     },
     orbit(dx: number, dy: number) {
@@ -522,6 +548,7 @@ export function createAdventureCamera(
         movementReferenceYaw = yaw
         orbitQuietSeconds = 0
         committedHeading = null
+        stopAngularResponse(followResponse, yaw)
       }
     },
     zoom(delta: number) {
@@ -537,6 +564,7 @@ export function createAdventureCamera(
       movementReferenceYaw = yaw
       orbitQuietSeconds = ORBIT_FOLLOW_GRACE_SECONDS
       committedHeading = null
+      stopAngularResponse(followResponse, yaw)
     },
     update(snapshot: GameSnapshot, dt: number, presentationPaused = false) {
       const safeDt =
@@ -617,8 +645,10 @@ export function createAdventureCamera(
         !snapshot.paused &&
         snapshot.phase === 'idle' &&
         !teleport
-      if (!followsHeading) committedHeading = null
-      else if (movementActive && moving && !orbitActive)
+      if (!followsHeading) {
+        committedHeading = null
+        stopAngularResponse(followResponse, yaw)
+      } else if (movementActive && moving && !orbitActive)
         committedHeading = facing
       // Input intent, rather than velocity, defines one movement contact. A
       // collision can stop Merc without releasing the held key/stick; keeping
@@ -630,15 +660,19 @@ export function createAdventureCamera(
         !orbitActive &&
         orbitQuietSeconds >= ORBIT_FOLLOW_GRACE_SECONDS
       ) {
-        const delta = shortestAngleDelta(yaw, committedHeading)
-        const blended = delta * (1 - Math.exp(-FOLLOW_RESPONSE * safeDt))
-        const maximumStep = MAXIMUM_FOLLOW_RADIANS_PER_SECOND * safeDt
-        yaw += MathUtils.clamp(blended, -maximumStep, maximumStep)
-        if (
-          Math.abs(shortestAngleDelta(yaw, committedHeading)) <=
-          FOLLOW_COMPLETE_RADIANS
-        ) {
-          yaw += shortestAngleDelta(yaw, committedHeading)
+        const settled = stepAngularResponse(
+          followResponse,
+          committedHeading,
+          safeDt,
+          {
+            maximumSpeed: MAXIMUM_FOLLOW_RADIANS_PER_SECOND,
+            maximumAcceleration:
+              MAXIMUM_FOLLOW_RADIANS_PER_SECOND / followSmoothnessSeconds,
+            completeRadians: FOLLOW_COMPLETE_RADIANS,
+          },
+        )
+        yaw = followResponse.angle
+        if (settled) {
           committedHeading = null
         }
       }

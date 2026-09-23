@@ -29,6 +29,7 @@ import { createVessel } from './vessels'
 
 export interface GlassRendererOptions {
   reducedMotion?: boolean
+  followSmoothnessSeconds?: number
   onAssetError?: (id: string, error: unknown) => void
   onLoadingProgress?: (progress: LoadingProgress) => void
   onContextLost?: () => void
@@ -58,8 +59,11 @@ export interface GlassRenderer {
   recenter(): void
   /** Actual rendered view heading, used for presentation and diagnostics. */
   getCameraYaw(): number
+  /** Actual rendered Merc heading, used only by development diagnostics. */
+  getMercYaw(): number | null
   /** Stable camera-relative movement basis for the current held input. */
   getMovementYaw(): number
+  setFollowSmoothness(seconds: number): void
   setMovementActive(active: boolean): void
   rebaseMovement(): void
   cancelHeadingFollow(): void
@@ -165,6 +169,7 @@ function createGlassRendererInstance(
     : new FogExp2(0x59899e, 0.009)
   const camera = createAdventureCamera(level, {
     reducedMotion: options.reducedMotion,
+    followSmoothnessSeconds: options.followSmoothnessSeconds,
   })
   camera.camera.far = sceneFrame.cameraFar
   camera.camera.updateProjectionMatrix()
@@ -370,7 +375,9 @@ function createGlassRendererInstance(
     zoom: camera.zoom,
     recenter: camera.recenter,
     getCameraYaw: camera.yaw,
+    getMercYaw: () => merc?.root.rotation.y ?? null,
     getMovementYaw: camera.movementYaw,
+    setFollowSmoothness: camera.setFollowSmoothness,
     setMovementActive: camera.setMovementActive,
     rebaseMovement: camera.rebaseMovement,
     cancelHeadingFollow: camera.cancelHeadingFollow,

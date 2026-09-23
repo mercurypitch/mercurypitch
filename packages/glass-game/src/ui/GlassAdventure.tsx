@@ -1,5 +1,5 @@
 // Glass adventure — the same playable museum surface in web and native hosts.
-import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
@@ -15,12 +15,18 @@ import { Tutorial } from './Tutorial'
 import { useAdventure } from './useAdventure'
 import { VoiceChallengePanel } from './VoiceChallengePanel'
 
+const CameraTuningPanel = lazy(async () => ({
+  default: (await import('./CameraTuningPanel')).CameraTuningPanel,
+}))
+
 export interface GlassAdventureProps {
   host: GlassGameHost
   level?: LevelDefinition
   onContinue?(): void
   continueLabel?: string
   freshStart?: boolean
+  onRestart?(): void
+  replayGoal?: { title: string; tier: 1 | 2 | 3 }
 }
 export function GlassAdventure(props: GlassAdventureProps) {
   const [replay, setReplay] = createSignal<{
@@ -39,6 +45,10 @@ export function GlassAdventure(props: GlassAdventureProps) {
     }
   })
   const restart = (): void => {
+    if (props.onRestart !== undefined) {
+      props.onRestart()
+      return
+    }
     const level = props.level ?? GLASSWORKS
     setReplay({ levelId: level.id, visit: nextVisit++ })
   }
@@ -51,6 +61,7 @@ export function GlassAdventure(props: GlassAdventureProps) {
           onRestart={restart}
           onContinue={props.onContinue}
           continueLabel={props.continueLabel}
+          replayGoal={props.replayGoal}
         />
       )}
     </Show>
@@ -107,6 +118,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       default:
         return []
     }
+  })
+  const waveCycles = createMemo(() => {
+    const challenge = active()?.challenge
+    return challenge?.kind === 'settle-wave'
+      ? challenge.wave.requiredCycles
+      : undefined
   })
   const count = createMemo(
     () =>
@@ -202,6 +219,10 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       data-player-y={adventure.snapshot().player.position.y}
       data-player-z={adventure.snapshot().player.position.z}
       data-camera-yaw={adventure.cameraYaw()}
+      data-merc-yaw={adventure.mercYaw() ?? undefined}
+      data-travel-yaw={adventure.desiredTravelYaw() ?? undefined}
+      data-look-sensitivity={adventure.cameraComfort().lookSensitivity}
+      data-follow-smoothness={adventure.cameraComfort().followSmoothnessSeconds}
       data-challenge-camera-mode={
         adventure.challengeCamera()?.mode ?? 'exploration'
       }
@@ -256,8 +277,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           )
             isTap = false
           adventure.orbit(
-            (event.clientX - previous.x) * -0.005,
-            (event.clientY - previous.y) * 0.004,
+            (event.clientX - previous.x) *
+              -0.005 *
+              adventure.cameraComfort().lookSensitivity,
+            (event.clientY - previous.y) *
+              0.004 *
+              adventure.cameraComfort().lookSensitivity,
           )
           previous = { x: event.clientX, y: event.clientY }
         }}
@@ -348,6 +373,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             ?
           </button>
         </div>
+        <Show when={import.meta.env.DEV}>
+          <CameraTuningPanel
+            settings={adventure.cameraComfort()}
+            onChange={adventure.changeCameraComfort}
+          />
+        </Show>
         <Show
           when={
             adventure.notice() &&
@@ -429,6 +460,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               charge={adventure.snapshot().activeEncounter?.charge ?? 0}
               pair={adventure.voicePair()}
               wave={active()?.challenge.kind === 'settle-wave'}
+              waveCycles={waveCycles()}
               steps={voiceSteps()}
               stepIndex={adventure.snapshot().activeEncounter?.stepIndex ?? 0}
               onCancel={adventure.cancel}

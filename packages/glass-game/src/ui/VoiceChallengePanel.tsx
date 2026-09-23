@@ -22,6 +22,7 @@ export function VoiceChallengePanel(props: {
   charge: number
   pair: boolean
   wave?: boolean
+  waveCycles?: number
   steps: readonly PitchTargetId[]
   stepIndex: number
   onCancel(): void
@@ -34,7 +35,12 @@ export function VoiceChallengePanel(props: {
   const percent = () => Math.round(props.charge * 100)
   const stepLabels = () =>
     props.wave === true
-      ? ['Settle your note', 'Sway twice']
+      ? [
+          'Settle your note',
+          (props.waveCycles ?? 2) === 2
+            ? 'Sway twice'
+            : `Sway ${props.waveCycles} times`,
+        ]
       : props.steps.map((step) =>
           step === 'low'
             ? 'Lower note'

@@ -1,6 +1,6 @@
 // Challenge camera browser smoke — live panel-safe framing, input lock and return.
 
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 
 interface CameraMetrics {
   mode: 'exploration' | 'entering' | 'holding' | 'restoring'
@@ -126,8 +126,256 @@ async function installCameraVoice(page: Page): Promise<void> {
   })
 }
 
+async function openComfortMuseum(page: Page): Promise<void> {
+  await installCameraVoice(page)
+  const response = await page.goto('/glass-game/')
+  expect(response?.status()).toBe(200)
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 40_000 },
+  )
+}
+
+async function numericAttribute(page: Page, name: string): Promise<number> {
+  const value = await page
+    .getByTestId('glass-adventure')
+    .getAttribute(`data-${name}`)
+  if (value === null || !Number.isFinite(Number(value)))
+    throw new Error(`Missing numeric adventure attribute: ${name}`)
+  return Number(value)
+}
+
+function angleDelta(from: number, to: number): number {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from))
+}
+
+async function dragMuseumWithMouse(
+  page: Page,
+  pixels: number,
+): Promise<number> {
+  const viewport = page.getByLabel('Glass museum; drag to look around')
+  const bounds = await viewport.boundingBox()
+  if (bounds === null) throw new Error('Missing museum viewport.')
+  const before = await numericAttribute(page, 'camera-yaw')
+  const x = bounds.x + bounds.width * 0.35
+  const y = bounds.y + bounds.height * 0.48
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + pixels, y, { steps: 6 })
+  await page.mouse.up()
+  await page.waitForTimeout(50)
+  return Math.abs(
+    angleDelta(before, await numericAttribute(page, 'camera-yaw')),
+  )
+}
+
+async function dragMuseumWithTouch(
+  page: Page,
+  context: BrowserContext,
+  pixels: number,
+): Promise<number> {
+  const viewport = page.getByLabel('Glass museum; drag to look around')
+  const bounds = await viewport.boundingBox()
+  if (bounds === null) throw new Error('Missing museum viewport.')
+  const before = await numericAttribute(page, 'camera-yaw')
+  const x = bounds.x + bounds.width * 0.45
+  const y = bounds.y + bounds.height * 0.46
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ id: 10, x, y }],
+  })
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ id: 10, x: x + pixels, y }],
+  })
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  })
+  await page.waitForTimeout(50)
+  await cdp.detach()
+  return Math.abs(
+    angleDelta(before, await numericAttribute(page, 'camera-yaw')),
+  )
+}
+
 test.afterEach(async ({ page }) => {
   await page.evaluate(() => window.cameraVoiceTrack?.stop()).catch(() => {})
+})
+
+test('camera presets persist and scale real mouse orbit while keyboard turns stay bounded @smoke', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await openComfortMuseum(page)
+  const tune = page.getByRole('button', { name: 'Camera tuning' })
+  await tune.click()
+  let panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
+  await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
+  await panel.getByRole('button', { name: 'Close camera tuning' }).click()
+  const gentleOrbit = await dragMuseumWithMouse(page, 80)
+
+  await page.getByRole('button', { name: 'Recenter camera' }).click()
+  await tune.click()
+  panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
+  await panel.getByRole('button', { name: 'Responsive', exact: true }).click()
+  await panel.getByRole('button', { name: 'Close camera tuning' }).click()
+  const responsiveOrbit = await dragMuseumWithMouse(page, 80)
+  expect(responsiveOrbit / gentleOrbit).toBeCloseTo(1.5, 1)
+
+  await page.reload()
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 40_000 },
+  )
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-look-sensitivity',
+    '1.2',
+  )
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-follow-smoothness',
+    '0.12',
+  )
+  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
+  await expect(
+    panel.getByRole('button', { name: 'Responsive', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  await panel.getByRole('button', { name: 'Copy preset' }).click()
+  await expect(panel.getByRole('button', { name: 'Copied' })).toBeVisible()
+  expect(
+    JSON.parse(await page.evaluate(() => navigator.clipboard.readText())),
+  ).toEqual({
+    cameraComfort: {
+      lookSensitivity: 1.2,
+      followSmoothnessSeconds: 0.12,
+    },
+  })
+  await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
+  await panel.getByRole('button', { name: 'Close camera tuning' }).click()
+
+  await page.clock.install()
+  await page.keyboard.down('KeyW')
+  await page.clock.runFor(400)
+  await page.keyboard.up('KeyW')
+  const settledYaw = await numericAttribute(page, 'merc-yaw')
+  await page.keyboard.down('KeyA')
+  await page.clock.runFor(50)
+  const firstYaw = await numericAttribute(page, 'merc-yaw')
+  const firstTurn = Math.abs(angleDelta(settledYaw, firstYaw))
+  const travelYaw = await numericAttribute(page, 'travel-yaw')
+  const firstError = Math.abs(angleDelta(firstYaw, travelYaw + Math.PI))
+  expect(firstTurn).toBeGreaterThan(0)
+  expect(firstTurn).toBeLessThan(0.16)
+  await page.clock.runFor(450)
+  expect(
+    Math.abs(
+      angleDelta(
+        await numericAttribute(page, 'merc-yaw'),
+        (await numericAttribute(page, 'travel-yaw')) + Math.PI,
+      ),
+    ),
+  ).toBeLessThan(firstError)
+  await page.keyboard.up('KeyA')
+
+  await page.getByRole('button', { name: 'Camera tuning' }).click()
+  panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
+  await panel.getByRole('button', { name: 'Reset defaults' }).click()
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-look-sensitivity',
+    '1',
+  )
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-follow-smoothness',
+    '0.2',
+  )
+})
+
+test('phone tuner fits the viewport and real touch orbit and steering stay smooth @smoke', async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openComfortMuseum(page)
+  const tune = page.getByRole('button', { name: 'Camera tuning' })
+  await tune.click()
+  let panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
+  const panelBounds = await panel.boundingBox()
+  expect(panelBounds).not.toBeNull()
+  expect(panelBounds!.x).toBeGreaterThanOrEqual(0)
+  expect(panelBounds!.y).toBeGreaterThanOrEqual(0)
+  expect(panelBounds!.x + panelBounds!.width).toBeLessThanOrEqual(390)
+  expect(panelBounds!.y + panelBounds!.height).toBeLessThanOrEqual(844)
+  await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
+  await panel.getByRole('button', { name: 'Close camera tuning' }).click()
+  const gentleOrbit = await dragMuseumWithTouch(page, context, 80)
+
+  await page.getByRole('button', { name: 'Recenter camera' }).click()
+  await tune.click()
+  panel = page.getByRole('dialog', { name: 'Camera comfort tuning' })
+  await panel.getByRole('button', { name: 'Responsive', exact: true }).click()
+  await panel.getByRole('button', { name: 'Close camera tuning' }).click()
+  const responsiveOrbit = await dragMuseumWithTouch(page, context, 80)
+  expect(responsiveOrbit / gentleOrbit).toBeCloseTo(1.5, 1)
+
+  const cdp = await context.newCDPSession(page)
+  const stick = await page
+    .getByRole('group', { name: 'Move Merc' })
+    .boundingBox()
+  expect(stick).not.toBeNull()
+  const centre = {
+    x: stick!.x + stick!.width / 2,
+    y: stick!.y + stick!.height / 2,
+  }
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ id: 20, ...centre }],
+  })
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ id: 20, x: centre.x, y: centre.y - 38 }],
+  })
+  await page.waitForTimeout(450)
+  const settledYaw = await numericAttribute(page, 'merc-yaw')
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ id: 20, x: centre.x + 38, y: centre.y }],
+  })
+  await page.waitForTimeout(50)
+  const firstYaw = await numericAttribute(page, 'merc-yaw')
+  const firstTurn = Math.abs(angleDelta(settledYaw, firstYaw))
+  const firstError = Math.abs(
+    angleDelta(
+      firstYaw,
+      (await numericAttribute(page, 'travel-yaw')) + Math.PI,
+    ),
+  )
+  expect(firstTurn).toBeGreaterThan(0)
+  expect(firstTurn).toBeLessThan(0.18)
+  await page.waitForTimeout(450)
+  expect(
+    Math.abs(
+      angleDelta(
+        await numericAttribute(page, 'merc-yaw'),
+        (await numericAttribute(page, 'travel-yaw')) + Math.PI,
+      ),
+    ),
+  ).toBeLessThan(firstError)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  })
+  await cdp.detach()
+  expect(
+    await page.evaluate(() => ({
+      width: document.documentElement.scrollWidth,
+      height: document.documentElement.scrollHeight,
+    })),
+  ).toEqual({ width: 390, height: 844 })
 })
 
 test('frames Merc and the exhibit above the phone panel and restores after cancel @smoke', async ({
