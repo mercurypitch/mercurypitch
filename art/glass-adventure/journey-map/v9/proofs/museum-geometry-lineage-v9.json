@@ -1,0 +1,163 @@
+{
+  "schema": 1,
+  "purpose": "Reproducible local audit of museum geometry and normal lineage; no network access.",
+  "assets": {
+    "templeDenseArchive": {
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3-pre-remesh.glb",
+      "bytes": 32205248,
+      "sha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+      "positionCount": 894355,
+      "normalCount": null,
+      "indexCount": 5368050,
+      "triangles": 1789350
+    },
+    "templeTexturedDonor": {
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3.glb",
+      "bytes": 13592912,
+      "sha256": "bfc6be24ea860df8ca04a9d8bc269a2552f932cb5726c817b9071fa2b1d37c8c",
+      "positionCount": 36057,
+      "normalCount": 36057,
+      "indexCount": 65517,
+      "triangles": 21839
+    },
+    "templeV3Runtime": {
+      "file": "art/glass-adventure/journey-map/v3/exports/floating-museum-sculpture-kit-v3.glb",
+      "bytes": 3928964,
+      "sha256": "a43c4f9693d97cb48c95cf644745244fa5461e339a606de004bf9c956de6194f",
+      "positionCount": 19495,
+      "normalCount": 19495,
+      "indexCount": 29979,
+      "triangles": 9993
+    },
+    "templeV4Structure": {
+      "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "bytes": 5642860,
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+      "positionCount": 14118,
+      "normalCount": 14118,
+      "indexCount": 21708,
+      "triangles": 7236
+    },
+    "templeV4Dome": {
+      "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "bytes": 5642860,
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+      "positionCount": 5419,
+      "normalCount": 5419,
+      "indexCount": 8271,
+      "triangles": 2757
+    },
+    "cypressDenseArchive": {
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
+      "bytes": 11942508,
+      "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+      "positionCount": 331413,
+      "normalCount": null,
+      "indexCount": 1991190,
+      "triangles": 663730
+    },
+    "cypressTexturedDonor": {
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3.glb",
+      "bytes": 14166912,
+      "sha256": "2d19cf0cf1c29c69c1143c3a3d6221b4e9a32487c9944a7fa54f540cb60ade65",
+      "positionCount": 12276,
+      "normalCount": 12276,
+      "indexCount": 21408,
+      "triangles": 7136
+    },
+    "cypressV3Runtime": {
+      "file": "art/glass-adventure/journey-map/v3/exports/floating-museum-sculpture-kit-v3.glb",
+      "bytes": 3928964,
+      "sha256": "a43c4f9693d97cb48c95cf644745244fa5461e339a606de004bf9c956de6194f",
+      "positionCount": 3079,
+      "normalCount": 3079,
+      "indexCount": 3576,
+      "triangles": 1192
+    },
+    "cypressV4Runtime": {
+      "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "bytes": 5642860,
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+      "positionCount": 3079,
+      "normalCount": 3079,
+      "indexCount": 3576,
+      "triangles": 1192
+    },
+    "cliffDenseArchive": {
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cliff-v3-pre-remesh.glb",
+      "bytes": 19092356,
+      "sha256": "6d72a57e2305bce261c40ad42303e5c75666993e9da68531cc3f7abbe73504bb",
+      "positionCount": 529688,
+      "normalCount": null,
+      "indexCount": 3183828,
+      "triangles": 1061276
+    },
+    "cliffTexturedDonor": {
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cliff-v3.glb",
+      "bytes": 16458528,
+      "sha256": "8792c90d6d45d7ca15a3feeab9fb3c34263023810f5fada41f73c3abbed3cc4c",
+      "positionCount": 29039,
+      "normalCount": 29039,
+      "indexCount": 47241,
+      "triangles": 15747
+    },
+    "cliffV3Runtime": {
+      "file": "art/glass-adventure/journey-map/v3/exports/floating-museum-sculpture-kit-v3.glb",
+      "bytes": 3928964,
+      "sha256": "a43c4f9693d97cb48c95cf644745244fa5461e339a606de004bf9c956de6194f",
+      "positionCount": 16462,
+      "normalCount": 16462,
+      "indexCount": 23925,
+      "triangles": 7975
+    },
+    "cliffV4Runtime": {
+      "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "bytes": 5642860,
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+      "positionCount": 16462,
+      "normalCount": 16462,
+      "indexCount": 23925,
+      "triangles": 7975
+    }
+  },
+  "runtimeFileParity": {
+    "artExport": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+    "runtimeAsset": "apps/beside-cue/public/games/journey-map-v4/floating-museum-twin-finish-kit-v4.glb",
+    "artSha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+    "runtimeSha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+    "byteIdentical": true
+  },
+  "lineage": {
+    "templeV3ToV4": {
+      "sourceTriangles": 9993,
+      "targetTriangles": 9993,
+      "exactIndexedTrianglePositionParity": true,
+      "normalComparison": {
+        "indexedCorners": 29979,
+        "changedAbove0_01Degrees": 702,
+        "changedAbove1Degree": 702,
+        "changedAbove1DegreePercent": 2.3416,
+        "maximumAngleDegrees": 123.719828
+      }
+    },
+    "cypressV3ToV4": {
+      "sourceTriangles": 1192,
+      "targetTriangles": 1192,
+      "exactIndexedPositionAndNormalParity": true
+    },
+    "cliffV3ToV4": {
+      "sourceTriangles": 7975,
+      "targetTriangles": 7975,
+      "exactIndexedPositionAndNormalParity": true
+    }
+  },
+  "v4NormalHealth": {
+    "uniqueAccessorVectors": 48110,
+    "allFinite": true,
+    "allNonZero": true,
+    "minimumLength": 0.9999999136392209,
+    "maximumLength": 1.0000001378539578,
+    "maximumAbsoluteUnitLengthError": 1.3785395780452347e-07
+  },
+  "command": "rtk python3 art/glass-adventure/journey-map/v9/production/audit_geometry_lineage.py"
+}

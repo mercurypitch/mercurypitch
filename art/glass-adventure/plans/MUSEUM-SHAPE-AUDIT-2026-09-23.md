@@ -72,6 +72,27 @@ The archived V3 and V4 review renders already show the same coarse silhouette:
 Those proofs predate the current screenshot and show the faceting before any
 recent investigation of normals.
 
+## Local V9 source gate
+
+The same-camera CPU clay comparison in `journey-map/v9/proofs/` confirms that
+both dense archives are coherent repair sources. The dense temple restores the
+dome curve, architectural edges, statue anatomy, drapery, and steps; the dense
+cypress restores rounded foliage clusters, branches, trunk, planter, and vines.
+The textured donors already show reduction damage, and the current V4 meshes
+make it substantially worse. This directly separates missing geometry from a
+lighting or normal-only artifact.
+
+The proof and lineage records are reproducible:
+
+- `journey-map/v9/proofs/museum-source-shape-comparison-v9.json`
+- `journey-map/v9/proofs/museum-geometry-lineage-v9.json`
+- `journey-map/v9/production/render_source_shape_comparison.py`
+- `journey-map/v9/production/audit_geometry_lineage.py`
+
+The exact files prepared for a future approved remesh are recorded in
+`journey-map/v9/proofs/museum-remesh-source-manifest-v9.json`. No upload, remote
+task, or credit charge occurred during this audit.
+
 ## Repair recommendation
 
 Use the archived dense pre-remesh temple and cypress as the shape authority.

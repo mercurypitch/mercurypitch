@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "date": "2026-09-23",
+  "state": "ready-awaiting-specific-external-upload-approval",
+  "externalActions": {
+    "sourceUploads": 0,
+    "v9TasksCreated": 0,
+    "creditsCharged": 0
+  },
+  "sources": [
+    {
+      "asset": "temple",
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3-pre-remesh.glb",
+      "bytes": 32205248,
+      "sha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+      "positionCount": 894355,
+      "normalCount": null,
+      "indexCount": 5368050,
+      "triangles": 1789350,
+      "visualGate": "pass",
+      "candidateTargetTriangles": 90000
+    },
+    {
+      "asset": "cypress",
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
+      "bytes": 11942508,
+      "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+      "positionCount": 331413,
+      "normalCount": null,
+      "indexCount": 1991190,
+      "triangles": 663730,
+      "visualGate": "pass",
+      "candidateTargetTriangles": 20000
+    }
+  ],
+  "candidateContract": {
+    "provider": "Meshy",
+    "operation": "remesh",
+    "topology": "triangle",
+    "targetFormats": [
+      "glb"
+    ],
+    "originAt": "bottom",
+    "retextureBeforeClayApproval": false,
+    "runtimeIntegrationInThisCheckpoint": false
+  },
+  "evidence": {
+    "shapeComparison": "art/glass-adventure/journey-map/v9/proofs/museum-source-shape-comparison-v9.json",
+    "geometryLineage": "art/glass-adventure/journey-map/v9/proofs/museum-geometry-lineage-v9.json",
+    "audit": "art/glass-adventure/plans/MUSEUM-SHAPE-AUDIT-2026-09-23.md"
+  },
+  "providerReconciliationBeforeV9": {
+    "balance": 3880,
+    "newestArchivedRemeshTaskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+    "newestArchivedRetextureTaskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+    "activeV8OrV9TaskKnown": false,
+    "note": "Read-only reconciliation supplied by the concurrent conservatory task; no V8 or V9 upload reached the provider."
+  }
+}
+
