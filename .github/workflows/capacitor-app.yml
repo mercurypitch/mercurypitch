@@ -524,12 +524,13 @@ jobs:
           set -euo pipefail
           export "${PREFIX}_DEBUG_KEYSTORE_FILE=$DEBUG_KEYSTORE_FILE"
           cd "$APP_DIR/android"
-          profile_args=()
+          profile_argument=''
           if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
             test -n "$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
-            profile_args+=("-P$NATIVE_TEST_ANDROID_GRADLE_PROPERTY")
+            profile_argument="-P$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
           fi
-          ./gradlew "${profile_args[@]}" test lint assembleDebug \
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" ./gradlew test lint assembleDebug \
             :app:assembleDebugAndroidTest --no-daemon
 
       - name: Upload debug APK
@@ -607,12 +608,13 @@ jobs:
           export "${PREFIX}_KEY_ALIAS=$KEY_ALIAS"
           export "${PREFIX}_KEY_PASSWORD=$KEY_PASSWORD"
           cd "$APP_DIR/android"
-          profile_args=()
+          profile_argument=''
           if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
             test -n "$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
-            profile_args+=("-P$NATIVE_TEST_ANDROID_GRADLE_PROPERTY")
+            profile_argument="-P$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
           fi
-          ./gradlew "${profile_args[@]}" bundleRelease assembleRelease --no-daemon
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" ./gradlew bundleRelease assembleRelease --no-daemon
 
       # Every run, not only a release: the release bundle is built on pull
       # requests too, so this is where a size regression is cheapest to see.
@@ -817,10 +819,10 @@ jobs:
           set -euo pipefail
           cd "$APP_DIR/ios/App"
 
-          profile_args=()
+          profile_argument=''
           if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
             test -n "$NATIVE_TEST_IOS_BUILD_SETTING"
-            profile_args+=("$NATIVE_TEST_IOS_BUILD_SETTING")
+            profile_argument="$NATIVE_TEST_IOS_BUILD_SETTING"
           fi
 
           # A tag names the version it is releasing; everything else carries
@@ -876,7 +878,8 @@ jobs:
           # So the App target names its own certificate and asks for its
           # profile through the build setting named by
           # `profile-build-setting` -- which no other target reads.
-          xcodebuild \
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" xcodebuild \
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \
@@ -887,7 +890,6 @@ jobs:
             CURRENT_PROJECT_VERSION="$RUN_NUMBER" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             "${PROFILE_SETTING}=$PROFILE_NAME" \
-            "${profile_args[@]}" \
             archive
 
           if [[ "$UPLOAD" != "true" ]]; then
@@ -1025,12 +1027,13 @@ jobs:
         run: |
           set -euo pipefail
           cd "$APP_DIR/ios/App"
-          profile_args=()
+          profile_argument=''
           if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
             test -n "$NATIVE_TEST_IOS_BUILD_SETTING"
-            profile_args+=("$NATIVE_TEST_IOS_BUILD_SETTING")
+            profile_argument="$NATIVE_TEST_IOS_BUILD_SETTING"
           fi
-          xcodebuild \
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" xcodebuild \
             -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
@@ -1038,7 +1041,6 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
-            "${profile_args[@]}" \
             build
 
       - name: Upload simulator build

@@ -4,7 +4,7 @@
 
 import { glassGameAssetPath } from '@irchiinnuss/glass-game/assets'
 import { spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,7 +14,12 @@ import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAsse
 const temporary: string[] = []
 const opalineAsset = `games/${glassGameAssetPath('opaline-v6')}`
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url))
+const repository = fileURLToPath(new URL('../../../', import.meta.url))
 const iosGuard = resolve('ios/App/scripts/validate-native-games-profile.sh')
+const optionalProfileRunner = resolve(
+  repository,
+  '.github/scripts/run-with-optional-profile-argument.sh',
+)
 
 function fixture(): string {
   const directory = mkdtempSync(resolve(tmpdir(), 'beside-cue-native-'))
@@ -376,7 +381,6 @@ describe('explicit native games profile', () => {
   })
 
   it('wires the complete games profile into non-tag distribution builds', () => {
-    const repository = fileURLToPath(new URL('../../../', import.meta.url))
     const caller = readFileSync(
       resolve(repository, '.github/workflows/beside-cue-mobile.yml'),
       'utf8',
@@ -414,20 +418,47 @@ describe('explicit native games profile', () => {
         /"\$NATIVE_TEST_PROFILE_SCRIPT" -- --platform (?:android|ios) --build/gu,
       ),
     ).toHaveLength(4)
+    expect(reusable).not.toContain('profile_args')
     expect(
-      reusable.match(
-        /profile_args\+=\("-P\$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"\)/gu,
-      ),
-    ).toHaveLength(2)
-    expect(
-      reusable.match(/profile_args\+=\("\$NATIVE_TEST_IOS_BUILD_SETTING"\)/gu),
-    ).toHaveLength(2)
+      reusable.match(/run-with-optional-profile-argument\.sh/gu),
+    ).toHaveLength(4)
     expect(reusable).toContain('Upload signed native testing artifacts')
     expect(reusable).toContain(
       "if: env.USE_NATIVE_TEST_PROFILE == 'true' && env.HAS_UPLOAD_KEY == 'true'",
     )
     expect(reusable).toContain(
       "UPLOAD: ${{ github.event_name != 'pull_request' && (inputs.testflight-upload-from == 'main-and-tags' || github.ref_type == 'tag') }}",
+    )
+  })
+
+  it('omits an empty profile argument and inserts a populated one', () => {
+    const directory = fixture()
+    const recorder = resolve(directory, 'record-arguments.sh')
+    writeFileSync(recorder, '#!/bin/sh\nprintf "<%s>\\n" "$@"\n')
+    chmodSync(recorder, 0o755)
+
+    const empty = spawnSync(
+      '/bin/bash',
+      [optionalProfileRunner, '', recorder, 'build', '--quiet'],
+      { encoding: 'utf8' },
+    )
+    expect(empty.status, empty.stderr).toBe(0)
+    expect(empty.stdout).toBe('<build>\n<--quiet>\n')
+
+    const populated = spawnSync(
+      '/bin/bash',
+      [
+        optionalProfileRunner,
+        'BESIDE_CUE_INFO_PLIST_PATH=build/games/Info.plist',
+        recorder,
+        'build',
+        '--quiet',
+      ],
+      { encoding: 'utf8' },
+    )
+    expect(populated.status, populated.stderr).toBe(0)
+    expect(populated.stdout).toBe(
+      '<BESIDE_CUE_INFO_PLIST_PATH=build/games/Info.plist>\n<build>\n<--quiet>\n',
     )
   })
 })
