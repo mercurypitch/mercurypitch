@@ -19,6 +19,14 @@ The durable execution record is
 its final integration/CI checkpoint is authoritative for this batch. Plans are
 mirrored under `<user-dotfiles>/personal/besidecue/glass-adventure/`.
 
+## Approved final five passes before device tests
+
+The owner approved camera comfort, picture-bearing portrait shatter, matched
+Merc musical phrases, bounded mobile rendering quality, and the final museum
+art/pond/stair pass. Follow [FINAL-FIVE-PASSES-2026-09-24.md](./FINAL-FIVE-PASSES-2026-09-24.md).
+Complete the batch, review and polish, then hand back for physical-device tests.
+PR #861 stays open; no new levels or public release in this batch.
+
 ## Current priority after mobile playtest
 
 The owner reported poor real-mobile performance, unclear challenge activation and
