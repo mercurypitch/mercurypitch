@@ -126,3 +126,8 @@ images must come from the real runtime, not only offline render scenes.
   public manifest still matches all three decoded-audio verification receipts.
   Stage commits preserve camera, rendering, portrait, museum and voice work
   separately. Exact-head cloud CI and the fresh Android artifact are pending.
+- The first cloud pass on `dd6e2bfd` exposed a packaging import that Vite resolved
+  but Node type stripping could not. The voice catalogue now has an explicit
+  package export; the inventory uses that export without changing compiler flags.
+  A child-Node inventory test reproduces the old failure and passes after the fix;
+  Node 22 independently loads all 88 variants. Cloud checks will rerun on the fix.
