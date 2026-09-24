@@ -12,6 +12,42 @@ from pathlib import Path
 import struct
 
 
+TANGENT_INDEPENDENT_MATERIAL_EXTENSIONS = frozenset(
+    {
+        "KHR_materials_emissive_strength",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+    }
+)
+
+
+def contains_normal_texture(value):
+    """Return whether a nested material extension references a normal texture."""
+    if isinstance(value, dict):
+        return any(
+            "normaltexture" in key.casefold() or contains_normal_texture(child)
+            for key, child in value.items()
+        )
+    if isinstance(value, list):
+        return any(contains_normal_texture(child) for child in value)
+    return False
+
+
+def tangent_is_provably_unused(material):
+    """Only remove tangents when every material feature is known not to use them."""
+    if "normalTexture" in material:
+        return False
+    extensions = material.get("extensions") or {}
+    if contains_normal_texture(extensions):
+        return False
+    # KHR_materials_anisotropy consumes the tangent basis even without a texture.
+    if "KHR_materials_anisotropy" in extensions:
+        return False
+    # An extension not reviewed here may consume TANGENT through shader behavior
+    # that is not exposed as a normal-texture property. Retention is lossless.
+    return set(extensions).issubset(TANGENT_INDEPENDENT_MATERIAL_EXTENSIONS)
+
+
 def read(path):
     raw = path.read_bytes()
     magic, version, size = struct.unpack_from("<III", raw)
@@ -60,11 +96,7 @@ def repair(doc, binary):
             assert not primitive.get("targets"), "Morph streams need a separate repair."
             material = doc["materials"][primitive["material"]] if "material" in primitive else {}
             attrs = primitive["attributes"]
-            if "TANGENT" in attrs and "normalTexture" not in material and not any(
-                "NormalTexture" in key or "normalTexture" in key
-                for extension in material.get("extensions", {}).values()
-                for key in extension
-            ):
+            if "TANGENT" in attrs and tangent_is_provably_unused(material):
                 removed.add(attrs.pop("TANGENT"))
                 edits.append({"mesh": mi, "primitive": pi, "change": "remove unused tangent on material without normal maps"})
             base_texture = material.get("pbrMetallicRoughness", {}).get("baseColorTexture")
