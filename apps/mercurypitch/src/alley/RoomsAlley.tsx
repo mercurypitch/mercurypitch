@@ -178,9 +178,9 @@ export const RoomsAlley: Component = () => {
   )
   const layoutOf = (key: DoorKey): DoorLayout =>
     doors().find((door) => door.key === key) ?? doors()[0]
-  // The 1x file unless it would be upscaled on this screen.
+  // The 1x file unless it would be upscaled at the scale it is drawn at.
   const plate = createMemo(() =>
-    plateSourceFor(size().w, size().h, window.devicePixelRatio || 1),
+    plateSourceFor(fit().scale, window.devicePixelRatio || 1),
   )
 
   const reduced = (): boolean =>

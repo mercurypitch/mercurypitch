@@ -314,6 +314,19 @@ describe('the dock', () => {
   })
 })
 
+describe('the plate file', () => {
+  it('is the 1x on a DPR 3 screen on its side, where the band draws it small', async () => {
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    vi.stubGlobal('devicePixelRatio', 3)
+    const { el } = await mountAlley()
+    const plateModule = await import('./alley-plate')
+    expect(el('alley-plate').getAttribute('src')).toBe(
+      plateModule.ALLEY_PLATE.src,
+    )
+  })
+})
+
 describe('the right safe-area inset', () => {
   it('keeps the doors and the tap band clear of it on a screen on its side', async () => {
     vi.stubGlobal('innerWidth', 852)
