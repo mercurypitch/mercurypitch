@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Merc melody phrase audition</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        color: #f9f5ea;
+        background: #101819;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 280px;
+        margin: 0;
+        background:
+          radial-gradient(circle at 82% 8%, #a76d3438, transparent 30rem),
+          radial-gradient(circle at 12% 52%, #6ba2a526, transparent 28rem),
+          linear-gradient(150deg, #172326 0%, #0d1415 72%);
+      }
+
+      main {
+        width: min(72rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: clamp(2rem, 6vw, 5.5rem) 0 4rem;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 2rem;
+        align-items: end;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #d7c49430;
+      }
+
+      .eyebrow,
+      .meta,
+      dt {
+        color: #d9bf83;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 13ch;
+        margin: 0.45rem 0 0;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(2.5rem, 7vw, 5.6rem);
+        font-weight: 400;
+        line-height: 0.94;
+        letter-spacing: -0.045em;
+      }
+
+      .status {
+        max-width: 17rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid #d9bf8352;
+        border-radius: 1rem;
+        background: #171f1fe0;
+        color: #e7ddc4;
+        line-height: 1.45;
+      }
+
+      .status strong {
+        display: block;
+        margin-bottom: 0.25rem;
+        color: #fff7df;
+      }
+
+      .intro {
+        max-width: 48rem;
+        margin: 1.6rem 0 2.4rem;
+        color: #cbd2ce;
+        font-size: 1rem;
+        line-height: 1.65;
+      }
+
+      .phrases {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+      }
+
+      article {
+        position: relative;
+        overflow: hidden;
+        min-width: 0;
+        padding: 1.35rem;
+        border: 1px solid #eff8ef1a;
+        border-radius: 1.25rem;
+        background: linear-gradient(145deg, #263334e8, #192324e8);
+        box-shadow: 0 1.2rem 3rem #0006;
+      }
+
+      article::before {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 3px;
+        background: linear-gradient(90deg, #d2a85d, #8fc6c3, transparent);
+        content: '';
+      }
+
+      h2 {
+        min-height: 2.2em;
+        margin: 0.5rem 0 1rem;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(1.65rem, 3vw, 2.35rem);
+        font-weight: 400;
+        line-height: 1.08;
+      }
+
+      audio {
+        width: 100%;
+        height: 2.6rem;
+        margin: 0.4rem 0 1rem;
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 0.55rem 1rem;
+        margin: 0;
+      }
+
+      dd {
+        min-width: 0;
+        margin: 0;
+        color: #ced7d1;
+        overflow-wrap: anywhere;
+      }
+
+      code {
+        color: #dcebea;
+        font-size: 0.76rem;
+      }
+
+      .review {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-top: 2.5rem;
+        padding: clamp(1.25rem, 4vw, 2rem);
+        border: 1px solid #d9bf8338;
+        border-radius: 1.25rem;
+        background: #121b1cdb;
+      }
+
+      h3 {
+        margin: 0 0 0.8rem;
+        color: #f5e7c6;
+        font-size: 1rem;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 1.15rem;
+        color: #cbd2ce;
+        line-height: 1.65;
+      }
+
+      footer {
+        margin-top: 1.5rem;
+        color: #859693;
+        font-size: 0.8rem;
+      }
+
+      @media (max-width: 800px) {
+        header,
+        .review {
+          grid-template-columns: 1fr;
+        }
+
+        .status {
+          max-width: none;
+        }
+
+        .phrases {
+          grid-template-columns: 1fr;
+        }
+
+        h2 {
+          min-height: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <div class="eyebrow">Glassworks · Coda Echo · v6</div>
+          <h1>Merc phrase audition</h1>
+        </div>
+        <div class="status" role="status">
+          <strong>Owner listening pending</strong>
+          Pitch, lyric and runtime checks passed. This page does not record a
+          perceptual approval.
+        </div>
+      </header>
+
+      <p class="intro">
+        These are the native D3, Natural-pace representatives used by the game.
+        Listen for clear words, believable Merc character, natural consonants
+        and any metallic or stretched resynthesis artifacts. Only one player
+        runs at a time.
+      </p>
+
+      <section class="phrases" aria-label="Merc phrase candidates">
+        <article>
+          <div class="meta">First arc · 3 notes</div>
+          <h2>Let it shine</h2>
+          <audio controls preload="metadata">
+            <source src="let-it-shine-root50-pace100.mp3" type="audio/mpeg" />
+          </audio>
+          <dl>
+            <dt>Source</dt>
+            <dd>Gentle</dd>
+            <dt>Bytes</dt>
+            <dd>24,620</dd>
+            <dt>SHA-256</dt>
+            <dd><code>1ef4912d…b77a</code></dd>
+          </dl>
+        </article>
+
+        <article>
+          <div class="meta">Sunlit steps · 5 notes</div>
+          <h2>Tiny sparks can glow</h2>
+          <audio controls preload="metadata">
+            <source
+              src="tiny-sparks-can-glow-root50-pace100.mp3"
+              type="audio/mpeg"
+            />
+          </audio>
+          <dl>
+            <dt>Source</dt>
+            <dd>Gentle, natural “sparks” consonants</dd>
+            <dt>Bytes</dt>
+            <dd>41,324</dd>
+            <dt>SHA-256</dt>
+            <dd><code>841fca67…a159</code></dd>
+          </dl>
+        </article>
+
+        <article>
+          <div class="meta">Gallery arch · 7 notes</div>
+          <h2>Another beautiful mess</h2>
+          <audio controls preload="metadata">
+            <source
+              src="another-beautiful-mess-root50-pace100.mp3"
+              type="audio/mpeg"
+            />
+          </audio>
+          <dl>
+            <dt>Source</dt>
+            <dd>Gentle, voiced “ti” nucleus</dd>
+            <dt>Bytes</dt>
+            <dd>58,220</dd>
+            <dt>SHA-256</dt>
+            <dd><code>bafef1ed…4d19</code></dd>
+          </dl>
+        </article>
+      </section>
+
+      <section class="review" aria-label="Listening checklist">
+        <div>
+          <h3>Listen for</h3>
+          <ul>
+            <li>
+              Every intended word is understandable without reading ahead.
+            </li>
+            <li>Consonants stay crisp without chopping the vowel.</li>
+            <li>
+              Word stress feels spoken and musical rather than mechanical.
+            </li>
+            <li>The seven-note phrase remains one natural thought.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Automated evidence already complete</h3>
+          <ul>
+            <li>Exact unprompted lyric transcript for these three files.</li>
+            <li>Production judge completion at 24, 44.1 and 48 kHz.</li>
+            <li>Zero retries on each positive reference.</li>
+            <li>
+              Wrong key, constant note, silence and missing anchors rejected.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <footer>
+        Automated acceptance covers 88 delivered key and pace variants. Gallery
+        arch uses the instrumental guide wherever a sung variant did not pass
+        the exact lyric gate.
+      </footer>
+    </main>
+    <script>
+      for (const player of document.querySelectorAll('audio')) {
+        player.addEventListener('play', () => {
+          for (const other of document.querySelectorAll('audio'))
+            if (other !== player) other.pause()
+        })
+      }
+    </script>
+  </body>
+</html>

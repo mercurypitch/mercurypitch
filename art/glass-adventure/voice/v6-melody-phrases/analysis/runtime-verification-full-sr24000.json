@@ -1,0 +1,2180 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "manifestSha256": "b7c3792905d2d31ef5ea8324879bde54833bafacfddf6f7025ff29acfc89e478",
+  "detector": {
+    "algorithm": "production YIN",
+    "sampleRate": 24000,
+    "window": 2048,
+    "hop": 1024,
+    "minimumFrequency": 60,
+    "maximumFrequency": 1600,
+    "minimumAmplitude": 0.005,
+    "confidenceFloorAtJudge": 0.5
+  },
+  "judgePolicy": {
+    "dropoutGraceSeconds": 0.4,
+    "minimumAnchorEvidenceSeconds": 0.12
+  },
+  "approvedVariantCount": 88,
+  "completedVariantCount": 88,
+  "maximumRetryCount": 0,
+  "minimumVoicedFrames": 46,
+  "failed": [],
+  "negativeControls": {
+    "twoSemitonesHighCompletes": false,
+    "constantRootCompletes": false,
+    "silenceCompletes": false,
+    "missingMiddleAnchorCompletes": false,
+    "missingFinalAnchorCompletes": false
+  },
+  "variants": [
+    {
+      "id": "first-arc-r48-p080",
+      "assetPath": "first-arc/r48-p080.mp3",
+      "bytes": 20204,
+      "sha256": "ee0694208dd97b7473dc9378ce36ba08edf62082486d0dce4934db8fd914fa3a",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 46,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r48-p100",
+      "assetPath": "first-arc/r48-p100.mp3",
+      "bytes": 24620,
+      "sha256": "1ce39bd24c5999e408832246ebf77a160ff3dd2796698a584471d498da0c3ca3",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 59,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r48-p125",
+      "assetPath": "first-arc/r48-p125.mp3",
+      "bytes": 29996,
+      "sha256": "2e96dba1ca5161a3f52b7aa00410181868a8127a48cca1d3cdf936283831f95f",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 74,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r49-p080",
+      "assetPath": "first-arc/r49-p080.mp3",
+      "bytes": 20204,
+      "sha256": "a157c0abcadcbcc7b5df506ace870cb17e1f2e28dfd08dad7d83fe08326e72fe",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 46,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r49-p100",
+      "assetPath": "first-arc/r49-p100.mp3",
+      "bytes": 24620,
+      "sha256": "05a5f37dc6b3e8888c7a8a2e8bc8f49cf191c066561923c2ef596199e6dfa5d9",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 59,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r49-p125",
+      "assetPath": "first-arc/r49-p125.mp3",
+      "bytes": 29996,
+      "sha256": "317ecee7111ef370dd31e71b455d49ea38bd26d219ba29a77e6887daf98891c0",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 74,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r50-p080",
+      "assetPath": "first-arc/r50-p080.mp3",
+      "bytes": 20204,
+      "sha256": "c5a2739e23934e37e340237df42d5a546496d6d02326163fa1419d5c055151a0",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 47,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r50-p100",
+      "assetPath": "first-arc/r50-p100.mp3",
+      "bytes": 24620,
+      "sha256": "1ef4912d033eb2399e7977841b0534b9704206c12fc4cc22453ddc63c705b77a",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 60,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r50-p125",
+      "assetPath": "first-arc/r50-p125.mp3",
+      "bytes": 29996,
+      "sha256": "9b9d7b11da6dc69eff0f2da614df6b4833e91491d3bfdb08683b175239b2b5bb",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 75,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r51-p080",
+      "assetPath": "first-arc/r51-p080.mp3",
+      "bytes": 20204,
+      "sha256": "5089c0d68d7ec427faa8af73225037ee210d2591b68c7b1ba862d5ee09c0129b",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 47,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r51-p100",
+      "assetPath": "first-arc/r51-p100.mp3",
+      "bytes": 24620,
+      "sha256": "919637655f86c9cfc1944dce51887d8524e47d901086f8baf95b53d98122b909",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 60,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r51-p125",
+      "assetPath": "first-arc/r51-p125.mp3",
+      "bytes": 29996,
+      "sha256": "974bdb4f39c54efbd2caea406d41735fee95ee1bbc5875037e50dc04abae68e6",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 75,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r52-p080",
+      "assetPath": "first-arc/r52-p080.mp3",
+      "bytes": 20204,
+      "sha256": "51a77dd82209a6951d8e6c0cf063c45e63fb571c0f11c35ed9986b327530fbe6",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 47,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r52-p100",
+      "assetPath": "first-arc/r52-p100.mp3",
+      "bytes": 24620,
+      "sha256": "56f7ebf1a908a859a84960bb7c2df87eb275eda9a0ca6badd2310b601947ebb8",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 60,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r52-p125",
+      "assetPath": "first-arc/r52-p125.mp3",
+      "bytes": 29996,
+      "sha256": "1eba66f1e02776bd1af67b51cf8dbca6eedc611b403005e3de0451249c2e2903",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 75,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r53-p080",
+      "assetPath": "first-arc/r53-p080.mp3",
+      "bytes": 20204,
+      "sha256": "5a1411f963c13c8bb364a4f8ba2e7e8804bb1e0d7e12c08f267e49582701035a",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 47,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r53-p100",
+      "assetPath": "first-arc/r53-p100.mp3",
+      "bytes": 24620,
+      "sha256": "2b1bc6b570d13328e59a2a42569d5efe8aa84bcc799d5e32e8b9aec17feae168",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 60,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r53-p125",
+      "assetPath": "first-arc/r53-p125.mp3",
+      "bytes": 29996,
+      "sha256": "c606e1a9d932bc1949a713a0d5d2c3bc713d97e9a5f1689674f8b3b01d0864ca",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 75,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r54-p080",
+      "assetPath": "first-arc/r54-p080.mp3",
+      "bytes": 20204,
+      "sha256": "15984956ddbf7513b041c9337f6f7c8040a541940573472f3ab470779d17be3b",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 47,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r54-p100",
+      "assetPath": "first-arc/r54-p100.mp3",
+      "bytes": 24620,
+      "sha256": "354f483157a962fbc95c22b07c63b07dc33637773670807ea32b84ae954d1332",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 60,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r54-p125",
+      "assetPath": "first-arc/r54-p125.mp3",
+      "bytes": 29996,
+      "sha256": "7dd49a9d3dae23cc74ed0b6d0f2882a3ae9460b186b2a8fb4b5d7513d1d626b7",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 76,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.8586666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r55-p080",
+      "assetPath": "first-arc/r55-p080.mp3",
+      "bytes": 20204,
+      "sha256": "c34e9086673b700156c4c24cd624457faafd94d2fba8a5796c3914b1e635340d",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 46,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r55-p100",
+      "assetPath": "first-arc/r55-p100.mp3",
+      "bytes": 24620,
+      "sha256": "a0e897454207b158c18283a26e21c138a90cfb4fc74044922786db35cd86db4b",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 59,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r55-p125",
+      "assetPath": "first-arc/r55-p125.mp3",
+      "bytes": 29996,
+      "sha256": "711b03ce0da005240f4d337bbf71d866fe9d1c846f579db5da6734df232f2db2",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 74,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r56-p080",
+      "assetPath": "first-arc/r56-p080.mp3",
+      "bytes": 20204,
+      "sha256": "9dbd9d612cd48a11539b36edaa75c1720739ba0440cbbf1c1fcc6faf6a8ed4e4",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 46,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r56-p100",
+      "assetPath": "first-arc/r56-p100.mp3",
+      "bytes": 24620,
+      "sha256": "542c0dfa5afd4696912435c0357cef05473d1af490c92407fc9e0a2ac723a557",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 59,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r56-p125",
+      "assetPath": "first-arc/r56-p125.mp3",
+      "bytes": 29996,
+      "sha256": "9f30720c499e9eaa4a0cbb9d1a81a2944d1a0f11f689c9da0d06f4c425449603",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 74,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r57-p080",
+      "assetPath": "first-arc/r57-p080.mp3",
+      "bytes": 20204,
+      "sha256": "ac1dcf0aca5e1b5be15310799fda2e19de8795d30b219e8fc1ff33f3cadece16",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 46,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r57-p100",
+      "assetPath": "first-arc/r57-p100.mp3",
+      "bytes": 24620,
+      "sha256": "2f90c808286195ee05d4c8e2d281f5267b91d6faedfcdf1532c2b9338b55bea9",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 59,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r57-p125",
+      "assetPath": "first-arc/r57-p125.mp3",
+      "bytes": 29996,
+      "sha256": "86d3d09f05cc37ea418f0c74bc83c32ccd6dc44201173daeff8a8e8241aa5082",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 75,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.8586666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r58-p080",
+      "assetPath": "first-arc/r58-p080.mp3",
+      "bytes": 20204,
+      "sha256": "2e136435611f6948878630cac20bdccf5c6f9f793099d8a09657edea35fee6fa",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 46,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r58-p100",
+      "assetPath": "first-arc/r58-p100.mp3",
+      "bytes": 24620,
+      "sha256": "9c9fd3ef5f05ccb049c95680dd1b99405e3404cd848394de9d48a4c6f640f604",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 59,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r58-p125",
+      "assetPath": "first-arc/r58-p125.mp3",
+      "bytes": 29996,
+      "sha256": "bc74c2f2a622b5c01ab8f6d2d862d1038caa4c0b5a45651464d09fe7bd3b4fc7",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 74,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r59-p080",
+      "assetPath": "first-arc/r59-p080.mp3",
+      "bytes": 20204,
+      "sha256": "7e53b470b6f7ae0e464190c19acc4ee93909190d8d4595b4da0289cbe9ab6347",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 47,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r59-p100",
+      "assetPath": "first-arc/r59-p100.mp3",
+      "bytes": 24620,
+      "sha256": "7523d673f9b0b562e679283e54bbe0490fb4e19116f829ddf42af068114dbb60",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 59,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r59-p125",
+      "assetPath": "first-arc/r59-p125.mp3",
+      "bytes": 29996,
+      "sha256": "203189a36349f01a7a1e01bfa20bcceccc719601c091b217a97b8271ab2fd609",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 75,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r60-p080",
+      "assetPath": "first-arc/r60-p080.mp3",
+      "bytes": 20204,
+      "sha256": "730a9bb254d88d193cbfed7238091706fafb10a7377a5c79ba9a56062307a8e1",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 47,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.7493333333333334,
+            "toCaptureSeconds": 1.92,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r60-p100",
+      "assetPath": "first-arc/r60-p100.mp3",
+      "bytes": 24620,
+      "sha256": "67037cc0b7934ac7ff588675da2dc38737498ea1861e1d228de87674281f8d8d",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 60,
+      "evidenceGaps": {
+        "maximumSeconds": 0.17066666666666652,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.176,
+            "toCaptureSeconds": 2.3466666666666667,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "first-arc-r60-p125",
+      "assetPath": "first-arc/r60-p125.mp3",
+      "bytes": 29996,
+      "sha256": "f786f4746ba1f3d4bb6d0289065e994f2668e71585cc789e10ec8ac95843a841",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 74,
+      "evidenceGaps": {
+        "maximumSeconds": 0.21333333333333337,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.688,
+            "toCaptureSeconds": 2.9013333333333335,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r48-p080",
+      "assetPath": "sunlit-steps/r48-p080.mp3",
+      "bytes": 33644,
+      "sha256": "43b253b7bd5e6074bbad5bba38068478064a4ff22152661bbf1e72e0695756d3",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r48-p100",
+      "assetPath": "sunlit-steps/r48-p100.mp3",
+      "bytes": 41324,
+      "sha256": "efae53eb9539babd2d37e48ac8815876077b73a8dcfc907ead1c30dcf9c1e070",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r48-p125",
+      "assetPath": "sunlit-steps/r48-p125.mp3",
+      "bytes": 50924,
+      "sha256": "737945d35cea8fb90d14bae1c2be69c9808120aecee8e99c0988b200360b1c55",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 120,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7306666666666666,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r49-p080",
+      "assetPath": "sunlit-steps/r49-p080.mp3",
+      "bytes": 33644,
+      "sha256": "4d59c9b06f7140d9f28bdbe79d6979718de5b9e9c7f86b8fd233292763964593",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r49-p100",
+      "assetPath": "sunlit-steps/r49-p100.mp3",
+      "bytes": 41324,
+      "sha256": "5011f62489a463f051cbd08ea9773e2bdf9d7ac28f8180e725a1b8fa09f684ca",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r49-p125",
+      "assetPath": "sunlit-steps/r49-p125.mp3",
+      "bytes": 50924,
+      "sha256": "421fd93d2f838b9f287bfe4062ba1d5586cdb9b6490f63263e9e71d553cfaf23",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 120,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7306666666666666,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r50-p080",
+      "assetPath": "sunlit-steps/r50-p080.mp3",
+      "bytes": 33644,
+      "sha256": "4bf1689d63e56a1d869ecdced4a8f6010c8638863e85094e99d38e37db8147fc",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r50-p100",
+      "assetPath": "sunlit-steps/r50-p100.mp3",
+      "bytes": 41324,
+      "sha256": "841fca67027178d99059a0918241498a81992716b04609d965d4f6b50fb2a159",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r50-p125",
+      "assetPath": "sunlit-steps/r50-p125.mp3",
+      "bytes": 50924,
+      "sha256": "96ef379b6c9e2c143a6978d05ba26ffb465611eed8ebe8cb42e286cebb70d76a",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 121,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r51-p080",
+      "assetPath": "sunlit-steps/r51-p080.mp3",
+      "bytes": 33644,
+      "sha256": "86e7f87cd1f7daf6e1f537ca706d0fae7bc88054f325ffc440722e59aab55ccb",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r51-p100",
+      "assetPath": "sunlit-steps/r51-p100.mp3",
+      "bytes": 41324,
+      "sha256": "ab6ec6acb66c3bdbc24b85a55b1be78e7d2fcb21e95981164c83b35da282dfdd",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r51-p125",
+      "assetPath": "sunlit-steps/r51-p125.mp3",
+      "bytes": 50924,
+      "sha256": "3db6f1bfbde3cc3be435e46e0b88f2d93df67ed72252ea4823022cec0a12cf31",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 120,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7306666666666666,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r52-p080",
+      "assetPath": "sunlit-steps/r52-p080.mp3",
+      "bytes": 33644,
+      "sha256": "73256aee25e95193bbaba9f78491820924fa3e94093df560dcdb3db8f5683498",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r52-p100",
+      "assetPath": "sunlit-steps/r52-p100.mp3",
+      "bytes": 41324,
+      "sha256": "b6bbfe2bf7338ac500395679ddf465f3cf68a04728c7b076e3c8d5b2624f0202",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 92,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.029333333333333,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r52-p125",
+      "assetPath": "sunlit-steps/r52-p125.mp3",
+      "bytes": 50924,
+      "sha256": "b3c77c47816125716293abd36d26b895b93a6065df2e9b5a1441d71105723390",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r53-p080",
+      "assetPath": "sunlit-steps/r53-p080.mp3",
+      "bytes": 33644,
+      "sha256": "afa2f5e0f68fa2200a420f7c9fef8c5e46a9de9a82aa5471d653b025e4b52565",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r53-p100",
+      "assetPath": "sunlit-steps/r53-p100.mp3",
+      "bytes": 41324,
+      "sha256": "dd59e943822a8da42f8a42ad3a1447f3b4d661aa45bf0f86ab4c69e2b09f7e38",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 92,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.029333333333333,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r53-p125",
+      "assetPath": "sunlit-steps/r53-p125.mp3",
+      "bytes": 50924,
+      "sha256": "733dc8610888f5cc9dbb3ecc0c049b6dedc7a0ebc267f4947a69ec5a461aecba",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r54-p080",
+      "assetPath": "sunlit-steps/r54-p080.mp3",
+      "bytes": 33644,
+      "sha256": "383a07417894ac4be58378bce18cb3fe89ce772904e4fca04c9469099a5389c3",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r54-p100",
+      "assetPath": "sunlit-steps/r54-p100.mp3",
+      "bytes": 41324,
+      "sha256": "718e83a743c9989e0b08b5b2da7f738cf02b3622cc9c5d9b7edf9f95f6218d0e",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r54-p125",
+      "assetPath": "sunlit-steps/r54-p125.mp3",
+      "bytes": 50924,
+      "sha256": "bd2ce7fe0c458b35056e5ad18c99972cbd3b2285eb61133a30fe2fd3e2af59f8",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r55-p080",
+      "assetPath": "sunlit-steps/r55-p080.mp3",
+      "bytes": 33644,
+      "sha256": "728bbf9c6f687511d6b3c1ae200e67c7fd78314cb61b0b1d5a2042b17052250f",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r55-p100",
+      "assetPath": "sunlit-steps/r55-p100.mp3",
+      "bytes": 41324,
+      "sha256": "a5dd5ed06ab196ca17629b40b135bed8cf0b9008539c463d22112a9dc49bb783",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 92,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.029333333333333,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r55-p125",
+      "assetPath": "sunlit-steps/r55-p125.mp3",
+      "bytes": 50924,
+      "sha256": "0d51414fab52a07890d2f5c824bbce4cc3cf27245666d54a4217f8260b51eb6e",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r56-p080",
+      "assetPath": "sunlit-steps/r56-p080.mp3",
+      "bytes": 33644,
+      "sha256": "9789c243cf1ec5dd484c1a8994b9edc85158c4e8a80b8a62059b915c4f89db6a",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.792,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.34133333333333327,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.7733333333333334,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r56-p100",
+      "assetPath": "sunlit-steps/r56-p100.mp3",
+      "bytes": 41324,
+      "sha256": "003715033da193edde696509bf658a1edbf475830696b5fa17fa78cb6851d1ec",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r56-p125",
+      "assetPath": "sunlit-steps/r56-p125.mp3",
+      "bytes": 50924,
+      "sha256": "f506c560547f250ae1f14245087304322a093335f83b6041c205c6df8a86159f",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r57-p080",
+      "assetPath": "sunlit-steps/r57-p080.mp3",
+      "bytes": 33644,
+      "sha256": "9f149e4c40bc12f150e3341584918594048593ff8af130a728eb2663e871dfc5",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3839999999999999,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.8346666666666667,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.816,
+            "durationSeconds": 0.3839999999999999,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r57-p100",
+      "assetPath": "sunlit-steps/r57-p100.mp3",
+      "bytes": 41324,
+      "sha256": "c229cf15eea5269285a91e50af10f8e151932f895f568133a13c3663c0692572",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r57-p125",
+      "assetPath": "sunlit-steps/r57-p125.mp3",
+      "bytes": 50924,
+      "sha256": "2b8c4cf4525198624191f1da3eb323d63151d8c8797298b898c7b9ff4f0a30ea",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r58-p080",
+      "assetPath": "sunlit-steps/r58-p080.mp3",
+      "bytes": 33644,
+      "sha256": "c71769e0cd1dfb4adc81b27552111ed4b81b304e632a4d6d7d272c5f74792f95",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3839999999999999,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.8346666666666667,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.816,
+            "durationSeconds": 0.3839999999999999,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r58-p100",
+      "assetPath": "sunlit-steps/r58-p100.mp3",
+      "bytes": 41324,
+      "sha256": "e3679fbb25621b4f977fee2915c251de7534c3bfe18e68bc09f82c60fb9f94c6",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 92,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.029333333333333,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r58-p125",
+      "assetPath": "sunlit-steps/r58-p125.mp3",
+      "bytes": 50924,
+      "sha256": "334a9042ca33de67f5cc109de83aff67da4d2b9571c73691e62ca1f6f65767ed",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r59-p080",
+      "assetPath": "sunlit-steps/r59-p080.mp3",
+      "bytes": 33644,
+      "sha256": "42217869f669c48f7ad2bd6c4d7669a3c7c6a77061c44f6f2cb4c8fbd38efa65",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3839999999999999,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.8346666666666667,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.816,
+            "durationSeconds": 0.3839999999999999,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r59-p100",
+      "assetPath": "sunlit-steps/r59-p100.mp3",
+      "bytes": 41324,
+      "sha256": "78aee875cebb222184cbcd375d484e7c9588817aeb156c9ef56c70366a8d5e8b",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 92,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.029333333333333,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r59-p125",
+      "assetPath": "sunlit-steps/r59-p125.mp3",
+      "bytes": 50924,
+      "sha256": "f89e3360a057521f15b008d39b45c45e4508faaf2bf455c82f3d670dac860311",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r60-p080",
+      "assetPath": "sunlit-steps/r60-p080.mp3",
+      "bytes": 33644,
+      "sha256": "14e22a43284c9207700dec1f47d854f6c95c1575bf0158be78bfa61aa1fe6490",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 72,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3839999999999999,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 1.8346666666666667,
+            "toCaptureSeconds": 2.1333333333333333,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 2.432,
+            "toCaptureSeconds": 2.816,
+            "durationSeconds": 0.3839999999999999,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r60-p100",
+      "assetPath": "sunlit-steps/r60-p100.mp3",
+      "bytes": 41324,
+      "sha256": "8ab829a85e840ff11c1691f96edd4b497439bdf4b8be917c90bd87bcb4b67c94",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 93,
+      "evidenceGaps": {
+        "maximumSeconds": 0.3413333333333335,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.2186666666666666,
+            "toCaptureSeconds": 2.56,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          },
+          {
+            "fromCaptureSeconds": 3.072,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.3413333333333335,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "sunlit-steps-r60-p125",
+      "assetPath": "sunlit-steps/r60-p125.mp3",
+      "bytes": 50924,
+      "sha256": "4fd6ba33f818862f5428bd317d8354559e512f494bf322cfb3eb439429cbb865",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 122,
+      "evidenceGaps": {
+        "maximumSeconds": 0.38400000000000034,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 2.7733333333333334,
+            "toCaptureSeconds": 3.072,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 3.84,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.38400000000000034,
+            "skippedDetectorHops": 8
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r48-p100",
+      "assetPath": "gallery-arch/r48-p100.mp3",
+      "bytes": 58220,
+      "sha256": "e353d254ad805c936360a67b606b65d9cdc4ebd0068181d7d03503a1e545052b",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 149,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2853333333333334,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.1280000000000001,
+            "skippedDetectorHops": 2
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r49-p100",
+      "assetPath": "gallery-arch/r49-p100.mp3",
+      "bytes": 58220,
+      "sha256": "ddc655800a833e714b026a6a19636837dec4e4b12859ef6d047531789814c7b3",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 150,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2853333333333334,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.1280000000000001,
+            "skippedDetectorHops": 2
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r50-p100",
+      "assetPath": "gallery-arch/r50-p100.mp3",
+      "bytes": 58220,
+      "sha256": "bafef1ed23157b25986d3fbaacfe604f2580a33cb48424cf5040482cfff14d19",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 149,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2853333333333334,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.1280000000000001,
+            "skippedDetectorHops": 2
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r51-p100",
+      "assetPath": "gallery-arch/r51-p100.mp3",
+      "bytes": 58220,
+      "sha256": "4df874bb63d7cd8b99084ae9525dde1a076256a30e4bea91758127d86c7a2720",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 150,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2853333333333334,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.1280000000000001,
+            "skippedDetectorHops": 2
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r54-p100",
+      "assetPath": "gallery-arch/r54-p100.mp3",
+      "bytes": 58220,
+      "sha256": "bd745529c02edaa0b4fa280bd1984ddacf71a0b55b791560c6306a6e6c50c467",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 148,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2853333333333334,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.1280000000000001,
+            "skippedDetectorHops": 2
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r56-p100",
+      "assetPath": "gallery-arch/r56-p100.mp3",
+      "bytes": 58220,
+      "sha256": "77005194272cecfa268a3346f8123dc841e24754e75cda22e9b25983251affbe",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 148,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2853333333333334,
+            "toCaptureSeconds": 3.4133333333333336,
+            "durationSeconds": 0.1280000000000001,
+            "skippedDetectorHops": 2
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          },
+          {
+            "fromCaptureSeconds": 6.741333333333333,
+            "toCaptureSeconds": 6.8693333333333335,
+            "durationSeconds": 0.1280000000000001,
+            "skippedDetectorHops": 2
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r58-p100",
+      "assetPath": "gallery-arch/r58-p100.mp3",
+      "bytes": 58220,
+      "sha256": "1eeb6b2d56fad857a805a3c54aef6719f1386e515c8fb269eb9758c8474f7a9f",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 148,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2853333333333334,
+            "toCaptureSeconds": 3.456,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r59-p125",
+      "assetPath": "gallery-arch/r59-p125.mp3",
+      "bytes": 72044,
+      "sha256": "105ee910b9bdeb86ea7e72ce306afbc2cace7e7f042d9dffcf54408592d1e882",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 188,
+      "evidenceGaps": {
+        "maximumSeconds": 0.34133333333333393,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 4.053333333333334,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          },
+          {
+            "fromCaptureSeconds": 6.656,
+            "toCaptureSeconds": 6.997333333333334,
+            "durationSeconds": 0.34133333333333393,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r60-p100",
+      "assetPath": "gallery-arch/r60-p100.mp3",
+      "bytes": 58220,
+      "sha256": "9497dc1ac02a56acc2da883fd5213b779b9fcd096dc81f48854bdb024158758a",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 148,
+      "evidenceGaps": {
+        "maximumSeconds": 0.29866666666666664,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 3.2426666666666666,
+            "toCaptureSeconds": 3.456,
+            "durationSeconds": 0.21333333333333337,
+            "skippedDetectorHops": 4
+          },
+          {
+            "fromCaptureSeconds": 5.333333333333333,
+            "toCaptureSeconds": 5.632,
+            "durationSeconds": 0.29866666666666664,
+            "skippedDetectorHops": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-arch-r60-p125",
+      "assetPath": "gallery-arch/r60-p125.mp3",
+      "bytes": 72044,
+      "sha256": "15a767398f6114672059bce6a88b8b4c8b733834816cb15fa6aa40b8740bf881",
+      "complete": true,
+      "retryCount": 0,
+      "progress": 1,
+      "voicedFrames": 189,
+      "evidenceGaps": {
+        "maximumSeconds": 0.34133333333333393,
+        "gaps": [
+          {
+            "fromCaptureSeconds": 4.053333333333334,
+            "toCaptureSeconds": 4.224,
+            "durationSeconds": 0.17066666666666652,
+            "skippedDetectorHops": 3
+          },
+          {
+            "fromCaptureSeconds": 6.656,
+            "toCaptureSeconds": 6.997333333333334,
+            "durationSeconds": 0.34133333333333393,
+            "skippedDetectorHops": 7
+          }
+        ]
+      }
+    }
+  ]
+}

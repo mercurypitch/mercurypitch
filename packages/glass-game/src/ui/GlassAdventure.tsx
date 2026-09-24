@@ -7,6 +7,7 @@ import type { GlassGameHost } from '../host'
 import { AdventureGuidance } from './AdventureGuidance'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
+import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
 import { createFreshVisitHost } from './fresh-visit-host'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
@@ -90,6 +91,10 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
     level,
     () => canvas,
     encoreOpen,
+  )
+  const encoreAudioLeases = createEncoreAudioLeaseOwner(
+    adventure.silenceForEncore,
+    adventure.releaseEncore,
   )
   const loadingPresentationPhase = createMemo<LoadingScreenPhase>(() => {
     const phase = adventure.loadingPhase()
@@ -779,8 +784,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                   host={props.host}
                   levelId={level.id}
                   encore={definition()}
-                  beforeCapture={adventure.silenceForEncore}
-                  onReleaseVoice={adventure.releaseEncore}
+                  audioLeases={encoreAudioLeases}
                   onComplete={adventure.celebrateEncore}
                   onClose={closeEncore}
                 />

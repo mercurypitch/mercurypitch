@@ -25,7 +25,7 @@ export interface MusicalMemoryStore {
 
 export interface MusicalMemoryPlayback {
   play(
-    audio: Blob,
+    audio: Blob | Promise<Blob>,
     onEnded?: () => void,
     beforePlayback?: Promise<void>,
   ): Promise<boolean>

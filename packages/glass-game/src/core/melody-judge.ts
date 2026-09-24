@@ -6,6 +6,7 @@
 // only from fresh, ordered PitchObservations and locally reachable curve points.
 
 import type { PitchObservation } from '../contracts'
+import { createMelodyAnchorEvidenceGuard } from './melody-anchor-evidence'
 import type { CompiledMelody, CompiledMelodyAnchor, CompiledMelodyPhrase, CompiledMelodySegment, MelodyContourPoint, } from './melody-contour'
 import { sampleMelodyAtTime } from './melody-contour'
 
@@ -18,6 +19,8 @@ export interface MelodyJudgePolicy {
   dropoutGraceSeconds: number
   mismatchGraceSeconds: number
   acquisitionSeconds: number
+  /** Fresh, aligned voiced time required at each landing; zero disables it. */
+  minimumAnchorEvidenceSeconds: number
   minimumPace: number
   maximumPace: number
   alignmentResolutionSeconds: number
@@ -34,6 +37,7 @@ export const DEFAULT_MELODY_JUDGE_POLICY: MelodyJudgePolicy = {
   dropoutGraceSeconds: 0.18,
   mismatchGraceSeconds: 0.45,
   acquisitionSeconds: 0.12,
+  minimumAnchorEvidenceSeconds: 0,
   minimumPace: 0.65,
   maximumPace: 1.6,
   alignmentResolutionSeconds: 0.01,
@@ -130,6 +134,13 @@ function validatePolicy(policy: MelodyJudgePolicy): void {
     throw new Error(
       'Melody judge directionThresholdCents must be finite and non-negative.',
     )
+  if (
+    !finite(policy.minimumAnchorEvidenceSeconds) ||
+    policy.minimumAnchorEvidenceSeconds < 0
+  )
+    throw new Error(
+      'Melody judge minimumAnchorEvidenceSeconds must be finite and non-negative.',
+    )
   if (policy.minimumPace > policy.maximumPace)
     throw new Error('Melody judge pace range is inverted.')
   if (policy.dropoutGraceSeconds < policy.maximumSampleGapSeconds)
@@ -192,6 +203,11 @@ export function createMelodyJudge(
   const coveredAnchors = new Set<string>()
   const completedPhrases = new Set<string>()
   const handledSeparations = new Set<string>()
+  const anchorEvidence = createMelodyAnchorEvidenceGuard({
+    minimumSeconds: policy.minimumAnchorEvidenceSeconds,
+    maximumSampleGapSeconds: policy.maximumSampleGapSeconds,
+    alignmentResolutionSeconds: policy.alignmentResolutionSeconds,
+  })
 
   const currentPhrase = (): CompiledMelodyPhrase => melody.phrases[phraseIndex]
 
@@ -229,6 +245,7 @@ export function createMelodyJudge(
     lastGoodCapture = null
     lastGoodMidi = null
     interruption = null
+    anchorEvidence.clearContinuity()
     pitchErrorCents = null
     feedback = nextPhase === 'breath' ? 'breathe' : 'find-start'
   }
@@ -236,6 +253,7 @@ export function createMelodyJudge(
   const resetCurrentPhrase = (): void => {
     const phrase = currentPhrase()
     for (const anchor of phrase.anchors) coveredAnchors.delete(anchor.id)
+    anchorEvidence.reset(phrase.anchors.map((anchor) => anchor.id))
     for (const segment of phrase.segments) handledSeparations.delete(segment.id)
     confirmedPhase = phrase.phaseStart
     retryCount++
@@ -399,18 +417,56 @@ export function createMelodyJudge(
       )
     })
 
+  const constrainToHeardAnchors = (candidateTimes: number[]): number[] =>
+    anchorEvidence.constrain(candidateTimes, currentPhrase().anchors)
+
+  const heldAnchorCandidates = (midi: number): number[] => {
+    if (policy.minimumAnchorEvidenceSeconds <= 0) return []
+    const phrase = currentPhrase()
+    const heldAnchor = phrase.anchors.find(
+      (anchor) =>
+        !anchorEvidence.hasRequired(anchor.id) &&
+        candidates.some(
+          (timeSeconds) => judgePoint(timeSeconds).anchorId === anchor.id,
+        ),
+    )
+    if (!heldAnchor) return []
+    return matchingCurrentCandidates(midi).filter(
+      (timeSeconds) => judgePoint(timeSeconds).anchorId === heldAnchor.id,
+    )
+  }
+
+  const uniqueCandidateTimes = (candidateTimes: number[]): number[] =>
+    [...new Set(candidateTimes)].sort((left, right) => left - right)
+
+  const recordCandidateAnchorEvidence = (
+    candidateTimes: readonly number[],
+    capturedAtSeconds: number,
+  ): void => {
+    if (candidateTimes.length === 0) {
+      anchorEvidence.clearContinuity()
+      return
+    }
+    const point = judgePoint(Math.max(...candidateTimes))
+    anchorEvidence.record(
+      point.kind === 'landing' ? (point.anchorId ?? null) : null,
+      capturedAtSeconds,
+    )
+  }
+
   const coverReachedAnchors = (
     events: MelodyJudgeEvent[],
     furthestTime: number,
   ): void => {
     const phrase = currentPhrase()
     for (const anchor of phrase.anchors) {
+      if (coveredAnchors.has(anchor.id)) continue
       if (
-        coveredAnchors.has(anchor.id) ||
         furthestTime + policy.alignmentResolutionSeconds / 2 <
-          anchor.completedAtSeconds
+        anchor.completedAtSeconds
       )
-        continue
+        break
+      if (!anchorEvidence.hasRequired(anchor.id)) break
       coveredAnchors.add(anchor.id)
       events.push({
         type: 'anchor-complete',
@@ -480,7 +536,8 @@ export function createMelodyJudge(
     }
     if (
       furthestTime + policy.alignmentResolutionSeconds / 2 >=
-      phrase.endSeconds
+        phrase.endSeconds &&
+      phrase.anchors.every((anchor) => coveredAnchors.has(anchor.id))
     )
       finishPhrase(events)
     return events
@@ -513,7 +570,9 @@ export function createMelodyJudge(
         Math.abs(frame.midi - targetAt(timeSeconds)) * 100 <=
         policy.landingToleranceCents + EPSILON,
     )
-    candidates = seeded.length > 0 ? seeded : [acquisitionTime]
+    const initialCandidates = seeded.length > 0 ? seeded : [acquisitionTime]
+    const constrained = constrainToHeardAnchors(initialCandidates)
+    candidates = constrained.length > 0 ? constrained : [acquisitionTime]
     phase = 'following'
     feedback = 'on-track'
     pitchErrorCents = 0
@@ -535,10 +594,12 @@ export function createMelodyJudge(
     pitchErrorCents = errorCents
     if (Math.abs(errorCents) > policy.landingToleranceCents + EPSILON) {
       clearAcquisition()
+      anchorEvidence.clearContinuity()
       feedback = pitchFeedback(errorCents)
       return []
     }
     feedback = 'on-track'
+    anchorEvidence.record(acquisitionAnchor.id, frame.captureSeconds)
     if (acquisitionLastCapture === null) {
       acquisitionLastCapture = frame.captureSeconds
       acquisitionAccumulated = 0
@@ -585,9 +646,14 @@ export function createMelodyJudge(
     if (interruption?.kind === 'mismatch') {
       const elapsedSinceGood = frame.captureSeconds - lastGoodCapture
       if (elapsedSinceGood <= policy.maximumSampleGapSeconds + EPSILON) {
-        const recovered = alignForward(frame.midi, elapsedSinceGood)
-        if (recovered.length > 0) {
-          candidates = recovered
+        const recovered = uniqueCandidateTimes([
+          ...alignForward(frame.midi, elapsedSinceGood),
+          ...heldAnchorCandidates(frame.midi),
+        ])
+        const constrained = constrainToHeardAnchors(recovered)
+        if (constrained.length > 0) {
+          recordCandidateAnchorEvidence(constrained, frame.captureSeconds)
+          candidates = constrainToHeardAnchors(recovered)
           lastGoodCapture = frame.captureSeconds
           lastGoodMidi = frame.midi
           interruption = null
@@ -599,6 +665,7 @@ export function createMelodyJudge(
       const matching = matchingCurrentCandidates(frame.midi)
       if (matching.length > 0) {
         candidates = matching
+        recordCandidateAnchorEvidence(matching, frame.captureSeconds)
         lastGoodCapture = frame.captureSeconds
         lastGoodMidi = frame.midi
         interruption = null
@@ -606,6 +673,7 @@ export function createMelodyJudge(
         pitchErrorCents = 0
         return []
       }
+      anchorEvidence.clearContinuity()
       feedbackAgainst(frame.midi, targetAt(Math.max(...candidates)))
       if (
         frame.captureSeconds - interruption.startedCaptureSeconds >
@@ -621,16 +689,22 @@ export function createMelodyJudge(
       resetCurrentPhrase()
       return acquire(frame)
     }
-    const aligned = alignForward(frame.midi, elapsed)
-    if (aligned.length === 0) {
+    const aligned = uniqueCandidateTimes([
+      ...alignForward(frame.midi, elapsed),
+      ...heldAnchorCandidates(frame.midi),
+    ])
+    const constrained = constrainToHeardAnchors(aligned)
+    if (constrained.length === 0) {
       interruption = {
         kind: 'mismatch',
         startedCaptureSeconds: frame.captureSeconds,
       }
+      anchorEvidence.clearContinuity()
       feedbackAgainst(frame.midi, targetAt(Math.max(...candidates)))
       return []
     }
-    candidates = aligned
+    recordCandidateAnchorEvidence(constrained, frame.captureSeconds)
+    candidates = constrainToHeardAnchors(aligned)
     lastGoodCapture = frame.captureSeconds
     lastGoodMidi = frame.midi
     interruption = null
@@ -657,6 +731,7 @@ export function createMelodyJudge(
       sequence = frame.sequence
       captureSeconds = frame.captureSeconds
       if (!freshVoiced(frame, nowMs)) {
+        anchorEvidence.clearContinuity()
         handleDropout(frame)
         return []
       }

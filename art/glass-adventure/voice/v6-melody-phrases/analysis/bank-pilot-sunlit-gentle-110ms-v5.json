@@ -1,0 +1,123 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "status": "pilot",
+  "codec": "mono 24 kHz MP3 64k",
+  "synthesis": {
+    "pitchSource": "authored contour on naturally voiced WORLD frames",
+    "detectorCarrier": "none",
+    "maximumMappedConsonantEdgeSeconds": 0.11,
+    "defaultNucleusSelection": "full aligned vowel",
+    "specialNucleusWindows": [
+      {
+        "phraseId": "another-beautiful-mess",
+        "syllable": "ti",
+        "seconds": 0.04,
+        "selection": "fully voiced WORLD window, then periodicity and energy"
+      }
+    ]
+  },
+  "variantFilter": "sunlit-steps-r50-p100",
+  "roots": [
+    50
+  ],
+  "paces": [
+    1
+  ],
+  "variantCount": 1,
+  "totalBytes": 41324,
+  "maximumBytes": 41324,
+  "pyinMedianAbsoluteCentsMaximum": 1.0318616294949123,
+  "pyinP95AbsoluteCentsMaximum": 6.53399293314294,
+  "maximumSampleDelta": 0.22998046875,
+  "variants": [
+    {
+      "id": "sunlit-steps-r50-p100",
+      "phraseId": "tiny-sparks-can-glow",
+      "melodyId": "sunlit-steps",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "sparks-gentle",
+      "asset": "adventure-voice-v6/sunlit-steps/r50-p100.mp3",
+      "bytes": 41324,
+      "sha256": "bc2a7e88287bbaeb2b4b0f0050a993165966c2c701cb5431e3a4ce4b92faefba",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.3,
+          0.355,
+          0.36,
+          0.54,
+          0.64,
+          0.7,
+          1.04,
+          1.1,
+          1.52,
+          1.6,
+          1.66,
+          1.8,
+          2.02,
+          2.1,
+          2.48
+        ],
+        "targetSeconds": [
+          0,
+          0.11,
+          1.045,
+          1.05,
+          1.1600000000000001,
+          2.04,
+          2.1,
+          2.21,
+          3.04,
+          3.15,
+          3.23,
+          4.09,
+          4.2,
+          4.308,
+          4.692,
+          4.8
+        ],
+        "nucleusSelections": [
+          {
+            "syllable": "Ti",
+            "start": 0.3,
+            "end": 0.355,
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "ny",
+            "start": 0.54,
+            "end": 0.64,
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "sparks",
+            "start": 1.04,
+            "end": 1.1,
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "can",
+            "start": 1.6,
+            "end": 1.66,
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "glow",
+            "start": 2.02,
+            "end": 2.1,
+            "policy": "full aligned vowel"
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 5.085,
+      "peakDb": -7.319689679285318,
+      "maximumSampleDelta": 0.22998046875,
+      "pyinVoicedFrames": 826,
+      "pyinMedianAbsoluteCents": 1.0318616294949123,
+      "pyinP95AbsoluteCents": 6.53399293314294,
+      "pyinMaximumAbsoluteCents": 30.637058500630587
+    }
+  ]
+}

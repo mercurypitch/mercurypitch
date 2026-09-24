@@ -1,0 +1,143 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:03,080"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 3080
+			},
+			"text": " ♪ Let it shine ♪",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 0.914597,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:00,160",
+						"to": "00:00:00,690"
+					},
+					"offsets": {
+						"from": 160,
+						"to": 690
+					},
+					"id": 20724,
+					"p": 0.0898439,
+					"t_dtw": -1
+				},
+				{
+					"text": " Let",
+					"timestamps": {
+						"from": "00:00:00,690",
+						"to": "00:00:01,380"
+					},
+					"offsets": {
+						"from": 690,
+						"to": 1380
+					},
+					"id": 3914,
+					"p": 0.936282,
+					"t_dtw": -1
+				},
+				{
+					"text": " it",
+					"timestamps": {
+						"from": "00:00:01,380",
+						"to": "00:00:01,840"
+					},
+					"offsets": {
+						"from": 1380,
+						"to": 1840
+					},
+					"id": 340,
+					"p": 0.979856,
+					"t_dtw": -1
+				},
+				{
+					"text": " shine",
+					"timestamps": {
+						"from": "00:00:01,840",
+						"to": "00:00:02,770"
+					},
+					"offsets": {
+						"from": 1840,
+						"to": 2770
+					},
+					"id": 18340,
+					"p": 0.988216,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:02,980",
+						"to": "00:00:02,980"
+					},
+					"offsets": {
+						"from": 2980,
+						"to": 2980
+					},
+					"id": 20724,
+					"p": 0.810057,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_154]",
+					"timestamps": {
+						"from": "00:00:03,080",
+						"to": "00:00:03,080"
+					},
+					"offsets": {
+						"from": 3080,
+						"to": 3080
+					},
+					"id": 50517,
+					"p": 0.0275315,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

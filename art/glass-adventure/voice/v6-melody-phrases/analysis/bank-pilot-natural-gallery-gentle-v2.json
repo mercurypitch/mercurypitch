@@ -1,0 +1,124 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "status": "pilot",
+  "codec": "mono 24 kHz MP3 64k",
+  "synthesis": {
+    "pitchSource": "authored contour on naturally voiced WORLD frames",
+    "detectorCarrier": "none",
+    "maximumMappedConsonantEdgeSeconds": 0.065
+  },
+  "variantFilter": "gallery-arch-r50-p100",
+  "roots": [
+    50
+  ],
+  "paces": [
+    1
+  ],
+  "variantCount": 1,
+  "totalBytes": 58220,
+  "maximumBytes": 58220,
+  "pyinMedianAbsoluteCentsMaximum": 1.023031406463204,
+  "pyinP95AbsoluteCentsMaximum": 6.395888817423333,
+  "maximumSampleDelta": 0.20672607421875,
+  "variants": [
+    {
+      "id": "gallery-arch-r50-p100",
+      "phraseId": "another-beautiful-mess",
+      "melodyId": "gallery-arch",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "mess-gentle",
+      "asset": "adventure-voice-v6/gallery-arch/r50-p100.mp3",
+      "bytes": 58220,
+      "sha256": "15e1edf15337061df5ee6526049b274ffaee3ce5c48a074e53f7080ab9e01bda",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.16,
+          0.22,
+          0.29,
+          0.46,
+          0.515,
+          0.52,
+          0.62,
+          0.74,
+          0.88,
+          1.08,
+          1.2550000000000001,
+          1.26,
+          1.32,
+          1.435,
+          1.44,
+          1.46,
+          1.56,
+          1.69,
+          1.82,
+          1.96,
+          2.24
+        ],
+        "targetSeconds": [
+          0,
+          0.065,
+          0.9850000000000001,
+          1.05,
+          1.115,
+          2.095,
+          2.1,
+          2.165,
+          3.085,
+          3.15,
+          3.215,
+          4.195,
+          4.2,
+          4.26,
+          5.245000000000001,
+          5.250000000000001,
+          5.270000000000001,
+          6.235000000000001,
+          6.300000000000002,
+          6.365000000000002,
+          6.835000000000001,
+          6.900000000000001
+        ],
+        "nucleusSeconds": [
+          {
+            "start": 0.16,
+            "end": 0.22
+          },
+          {
+            "start": 0.46,
+            "end": 0.515
+          },
+          {
+            "start": 0.62,
+            "end": 0.74
+          },
+          {
+            "start": 1.08,
+            "end": 1.2550000000000001
+          },
+          {
+            "start": 1.32,
+            "end": 1.435
+          },
+          {
+            "start": 1.46,
+            "end": 1.56
+          },
+          {
+            "start": 1.82,
+            "end": 1.96
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 7.185,
+      "peakDb": -6.517508188449367,
+      "maximumSampleDelta": 0.20672607421875,
+      "pyinVoicedFrames": 1064,
+      "pyinMedianAbsoluteCents": 1.023031406463204,
+      "pyinP95AbsoluteCents": 6.395888817423333,
+      "pyinMaximumAbsoluteCents": 89.30996016118016
+    }
+  ]
+}

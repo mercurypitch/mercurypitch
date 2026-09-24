@@ -1,0 +1,23 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "detector": {
+    "algorithm": "production YIN",
+    "sampleRate": 24000,
+    "window": 2048,
+    "hop": 1024,
+    "minimumFrequency": 60,
+    "maximumFrequency": 1600,
+    "minimumAmplitude": 0.005,
+    "confidenceFloorAtJudge": 0.5
+  },
+  "approvedVariantCount": 0,
+  "completedVariantCount": 0,
+  "maximumRetryCount": null,
+  "minimumVoicedFrames": null,
+  "failed": [],
+  "negativeControls": {
+    "twoSemitonesHighCompletes": false,
+    "constantRootCompletes": false
+  },
+  "variants": []
+}

@@ -6,6 +6,8 @@
 // currently live under Beside Cue's public/games directory; web hosts may stage
 // only this allowlist elsewhere without changing the IDs authored in levels.
 
+import { MERC_ENCORE_VARIANTS } from '../content/encore-examples'
+
 const MATERIALS = [
   'warm-carrara',
   'verde-marble',
@@ -76,6 +78,12 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'merc-encore-light-v5': 'adventure-voice/merc-encore-light-v5.mp3',
   'merc-encore-home-v5': 'adventure-voice/merc-encore-home-v5.mp3',
   ...Object.fromEntries(
+    MERC_ENCORE_VARIANTS.map((variant) => [
+      variant.assetId,
+      variant.assetPath,
+    ]),
+  ),
+  ...Object.fromEntries(
     REACTION_CUES.map((cue) => [
       `merc-voice-${cue}`,
       `adventure-voice-v2/merc-d2-${cue}.mp3`,
@@ -111,6 +119,7 @@ const MANIFEST_FILES = [
   'cloudway-v3/manifest.json',
   'adventure-voice-v1/manifest.json',
   'adventure-voice-v2/manifest.json',
+  'adventure-voice-v6/manifest.json',
 ] as const
 
 // Standard glTF external buffers preserve the accepted source bytes while
@@ -123,10 +132,9 @@ const DEPENDENCY_FILES = [
 ] as const
 
 /** Explicit-listen examples are loaded on demand by the practice UI. */
-export const GLASS_GAME_ON_DEMAND_ASSET_IDS = [
-  'merc-encore-light-v5',
-  'merc-encore-home-v5',
-] as const
+export const GLASS_GAME_ON_DEMAND_ASSET_IDS = MERC_ENCORE_VARIANTS.map(
+  (variant) => variant.assetId,
+)
 
 /** Delivery inventory for web and native, including on-demand audio. This is
  * a packaging list, not a runtime preload list; world load plans stay separate. */
