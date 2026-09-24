@@ -1478,3 +1478,13 @@ recomputing each side independently can introduce a seam without changing the si
 **Cause:** its selected node's scale decoded integer vertex positions, but the authored-unit loader reset that scale to place the object.
 **Rule:** place decode transforms below a stable, unscaled semantic root. Reopen the final export and measure bounds through the actual game adapter; a source-editor view cannot prove the placement contract.
 **See:** `art/glass-adventure/journey-map/v10/production/package_botanical.mjs`, `packages/glass-game/src/journey/models.ts`.
+
+### Recheck formatting after import-sort fixes
+
+**Symptom:** `pr:prepare` passed locally, but changed-file CI rejected one import line.
+**Cause:** preparation formats before ESLint fixes; the import sorter then moved a
+named import inside the one-line-import plugin's output without restoring its spaces.
+**Rule:** after lint changes an import list, run Prettier on that file and verify
+that scoped formatting and lint both pass. Do not rerun every local gate.
+**See:** `scripts/pr-prepare.mjs`, `.prettierrc.json`,
+`packages/glass-game/src/content/cloudway-layouts.ts`.
