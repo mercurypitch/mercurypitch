@@ -2,6 +2,7 @@
 // Render catalog — new exhibits and platform skins are data, not loader branches.
 // ============================================================
 
+import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
 import type { SurfaceTextures } from './texture-recipe'
 
@@ -48,7 +49,7 @@ function collectedPortrait(portraitTexture: string): BreakableRenderRecipe {
     shardPrefix: 'legend_cash_shard_',
     shardCount: 16,
     persistentPrefix: 'legend_cash_frame_',
-    displayHeight: 0.84,
+    displayHeight: PORTRAIT_EXHIBIT_ENVELOPE.height,
     fallbackShape: 'slab',
     portraitTexture,
     portraitMaterial: 'legend_portrait',
@@ -157,7 +158,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     shardPrefix: 'legend_cash_shard_',
     shardCount: 16,
     persistentPrefix: 'legend_cash_frame_',
-    displayHeight: 0.84,
+    displayHeight: PORTRAIT_EXHIBIT_ENVELOPE.height,
     fallbackShape: 'slab',
     portraitTexture: 'legend-johnny-cash',
     portraitMaterial: 'legend_portrait',
@@ -171,7 +172,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     shardPrefix: 'legend_cash_shard_',
     shardCount: 16,
     persistentPrefix: 'legend_cash_frame_',
-    displayHeight: 0.84,
+    displayHeight: PORTRAIT_EXHIBIT_ENVELOPE.height,
     fallbackShape: 'slab',
     portraitTexture: 'painting-archive-v5',
     portraitMaterial: 'legend_portrait',

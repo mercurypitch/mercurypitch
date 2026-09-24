@@ -5,6 +5,7 @@ import type { LevelDefinition, Vec3 } from '../contracts'
 export const EXIT_PORTAL_HEIGHT = 1.5
 
 const CROSSING_EPSILON = 1e-8
+const BLOCKING_EPSILON = 1e-6
 
 export interface ExitPortalGeometry {
   center: Vec3
@@ -89,4 +90,56 @@ export function crossesExitPortal(
     feetY < portal.top - CROSSING_EPSILON &&
     bodyTop > portal.bottom + CROSSING_EPSILON
   )
+}
+
+/**
+ * Resolves a sealed-portal crossing on the side where it began. Players that
+ * load on either side remain untouched until they actually cross the plane.
+ */
+export function blockExitPortalCrossing(
+  previousFeet: Vec3,
+  currentFeet: Vec3,
+  portal: ExitPortalGeometry,
+  body: { height: number; radius: number },
+): Vec3 | null {
+  const previousNormal =
+    previousFeet[portal.normalAxis] - portal.center[portal.normalAxis]
+  if (Math.abs(previousNormal) <= CROSSING_EPSILON) return null
+  const approachSide = previousNormal < 0 ? -1 : 1
+  const currentNormal =
+    currentFeet[portal.normalAxis] - portal.center[portal.normalAxis]
+  const normalDelta = currentNormal - previousNormal
+  if (
+    normalDelta * approachSide >= -CROSSING_EPSILON ||
+    currentNormal * approachSide >= body.radius + BLOCKING_EPSILON
+  )
+    return null
+
+  const barrierNormal = approachSide * body.radius
+  const crossingTime = Math.max(
+    0,
+    Math.min(1, (barrierNormal - previousNormal) / normalDelta),
+  )
+  const lateral =
+    previousFeet[portal.lateralAxis] +
+    (currentFeet[portal.lateralAxis] - previousFeet[portal.lateralAxis]) *
+      crossingTime
+  if (
+    lateral <= portal.minLateral - body.radius + CROSSING_EPSILON ||
+    lateral >= portal.maxLateral + body.radius - CROSSING_EPSILON
+  )
+    return null
+  const feetY = previousFeet.y + (currentFeet.y - previousFeet.y) * crossingTime
+  if (
+    feetY >= portal.top - CROSSING_EPSILON ||
+    feetY + body.height <= portal.bottom + CROSSING_EPSILON
+  )
+    return null
+
+  return {
+    ...currentFeet,
+    [portal.normalAxis]:
+      portal.center[portal.normalAxis] +
+      approachSide * (body.radius + BLOCKING_EPSILON),
+  }
 }

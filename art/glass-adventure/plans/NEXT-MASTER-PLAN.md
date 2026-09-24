@@ -9,8 +9,10 @@ The Glassworks foundation was squash-merged through PR #807 into `main` at
 `3076872d5dca644682985f2bda70a84e18c2ff95` on 24 September 2026, after the
 required PR Gate passed again. The owner authorized roadmap **1–8**, including
 configurable melody, and asked us to **stop before 9** for testing. Items 10–11
-remain later. Current work is `feat/glass-native-preview-builds`: the owner
-explicitly approved games-enabled Android and TestFlight testing builds.
+remain later. Native testing builds were enabled through PR #860, merged at
+`ff7eae76082451febfe15d5ea5ebbccfb3a6bc38`. Current work is
+`feat/glass-mobile-playability`: the approved performance, guidance and collision
+follow-up on a new branch/PR.
 Public release remains a separate decision.
 The durable execution record is
 [APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md](./APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md);
@@ -54,7 +56,9 @@ upload key is configured; Google Play internal upload remains manual.
 `bc-v*` public-release tags retain canonical games-off manifests/bundles and the
 existing 90/150 MiB warning/failure limits. The test profile has a separate
 300/340 MiB budget based on a real 378.07 MiB unpacked game-enabled web build
-and its 288.72 MiB ZIP estimate. Actual native package sizes still require CI.
+and its 288.72 MiB ZIP estimate. Native run 590 passed: signed Android AAB
+302.0 MiB / APK 302.8 MiB, and internal TestFlight 0.1.0 (590) uploaded
+successfully. All 43 PR checks passed before merging #860.
 This testing configuration supports physical-device measurement; it is not
 acceptance of current mobile frame rate or authorization for public release.
 
@@ -240,3 +244,16 @@ Detailed companions include `LEVEL-AUTHORING-PLAN.md`, `LONGER-LEVELS.md`,
 [friendly rivals](./FRIENDLY-RIVALS-AND-RESONANCE-DUELS.md).
 Dated proposal documents retain their historical wording; the approved execution
 record and this current master plan state what has now been implemented.
+
+### Android APK feedback — September 24, during mobile follow-up
+
+- Audit camera recentering when combining forward and lateral keys: reported side movement followed by a return to Merc. Reproduce before changing steering design.
+- Inspect the final Glassworks Journey portrait orientation (reported upside down), including runtime texture/UV orientation.
+- Inspect portrait fracture composition: the picture remains visible while glass behind it breaks. Present picture-bearing shard vs reveal alternatives before changing the effect.
+- Melody tracking received a positive device report. Next creative pass: short singable Merc phrases paired with matching reference melodies and configurable scoring, then repeat-after-Merc listening/singing acceptance.
+
+The first musical phrase audition proposal is saved in
+[MERC-MUSICAL-PHRASES-2026-09-24.md](./MERC-MUSICAL-PHRASES-2026-09-24.md).
+Camera and portrait findings, including the corrected orientation and pending
+fracture choice, are recorded in
+[the Android audit](../proofs/mobile-playability-2026-09-24/camera-portrait-audit.md).

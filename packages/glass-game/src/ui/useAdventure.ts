@@ -10,6 +10,7 @@ import type { LoadingProgress } from '../loading-progress'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
+import { initialAdventureNotice } from './adventure-notice'
 import type { CameraComfortSettings } from './camera-comfort'
 import { CAMERA_COMFORT_PREFERENCE, normalizeCameraComfort, parseCameraComfort, serializeCameraComfort, } from './camera-comfort'
 import { createAdventureInput } from './input'
@@ -38,13 +39,14 @@ export function useAdventure(
   presentationCovered: () => boolean = () => false,
 ) {
   const game = createGlassGame(level, host.loadProgress(level.id))
+  const initialSnapshot = game.snapshot()
   const input = createAdventureInput()
   const [cameraComfort, setCameraComfort] = createSignal(
     parseCameraComfort(host.readPreference(CAMERA_COMFORT_PREFERENCE)),
   )
-  const [snapshot, setSnapshot] = createSignal(game.snapshot())
+  const [snapshot, setSnapshot] = createSignal(initialSnapshot)
   const [completionPresented, setCompletionPresented] = createSignal(
-    game.snapshot().complete,
+    initialSnapshot.complete,
   )
   const [loadingPhase, setLoadingPhase] =
     createSignal<AdventureLoadingPhase>('loading-assets')
@@ -70,8 +72,7 @@ export function useAdventure(
   const pitch = () => voiceState()?.pitch ?? null
   const target = () => voiceState()?.target ?? null
   const [notice, setNotice] = createSignal(
-    level.guidance?.openingNotice ??
-      'Explore the museum and approach a glass exhibit.',
+    initialAdventureNotice(level, initialSnapshot),
   )
   const [narrationCaption, setNarrationCaption] = createSignal('')
   const [paused, setPaused] = createSignal(false)
@@ -491,6 +492,7 @@ export function useAdventure(
   }
 
   onMount(() => {
+    if (notice()) announce(notice())
     const viewport = mount()
     let voicePanel: HTMLElement | null = null
     const measureChallengePanel = (): void => {

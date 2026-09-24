@@ -1,0 +1,287 @@
+{
+  "arrivalDefault": {
+    "camera": {
+      "mode": "exploration",
+      "encounterId": null,
+      "progress": 0,
+      "settled": false,
+      "safeBottomFraction": 0,
+      "position": {
+        "x": -2.742059149651485,
+        "y": 1.8290969331003597,
+        "z": -2.940890940822447
+      },
+      "target": {
+        "x": -2.6,
+        "y": 0.42,
+        "z": 0.8
+      },
+      "mercFrame": null,
+      "targetFrame": null,
+      "combinedFrame": null,
+      "safeBottomNdc": null,
+      "side": null,
+      "clearance": null,
+      "occluded": null
+    },
+    "platformPasses": {
+      "offscreen-1": {
+        "drawCalls": 14,
+        "triangles": 5038692,
+        "marbleInstances": [
+          3
+        ]
+      },
+      "offscreen-12": {
+        "drawCalls": 9,
+        "triangles": 3772676,
+        "marbleInstances": [
+          3
+        ]
+      },
+      "screen": {
+        "drawCalls": 14,
+        "triangles": 5038692,
+        "marbleInstances": [
+          3
+        ]
+      }
+    },
+    "wallMilliseconds": 5
+  },
+  "arrivalNoRasterFrameTime": {
+    "frames": 30,
+    "totalWallMilliseconds": 218
+  },
+  "arrivalZoomedIn": {
+    "camera": {
+      "mode": "exploration",
+      "encounterId": null,
+      "progress": 0,
+      "settled": false,
+      "safeBottomFraction": 0,
+      "position": {
+        "x": -2.663926617343168,
+        "y": 1.0540936198951618,
+        "z": -0.8834009233701012
+      },
+      "target": {
+        "x": -2.6,
+        "y": 0.42,
+        "z": 0.8
+      },
+      "mercFrame": null,
+      "targetFrame": null,
+      "combinedFrame": null,
+      "safeBottomNdc": null,
+      "side": null,
+      "clearance": null,
+      "occluded": null
+    },
+    "platformPasses": {
+      "offscreen-1": {
+        "drawCalls": 25,
+        "triangles": 5185942,
+        "marbleInstances": [
+          3
+        ]
+      },
+      "offscreen-12": {
+        "drawCalls": 15,
+        "triangles": 3773804,
+        "marbleInstances": [
+          3
+        ]
+      },
+      "screen": {
+        "drawCalls": 25,
+        "triangles": 5185942,
+        "marbleInstances": [
+          3
+        ]
+      }
+    },
+    "wallMilliseconds": 7
+  },
+  "arrivalZoomedInNoRasterFrameTime": {
+    "frames": 30,
+    "totalWallMilliseconds": 216
+  },
+  "arrivalZoomedOut": {
+    "camera": {
+      "mode": "exploration",
+      "encounterId": null,
+      "progress": 0,
+      "settled": false,
+      "safeBottomFraction": 0,
+      "position": {
+        "x": -2.830846118183663,
+        "y": 2.7097825162880844,
+        "z": -5.278947778836477
+      },
+      "target": {
+        "x": -2.6,
+        "y": 0.42,
+        "z": 0.8
+      },
+      "mercFrame": null,
+      "targetFrame": null,
+      "combinedFrame": null,
+      "safeBottomNdc": null,
+      "side": null,
+      "clearance": null,
+      "occluded": null
+    },
+    "platformPasses": {
+      "offscreen-1": {
+        "drawCalls": 14,
+        "triangles": 3782136,
+        "marbleInstances": [
+          2
+        ]
+      },
+      "offscreen-12": {
+        "drawCalls": 9,
+        "triangles": 2516120,
+        "marbleInstances": [
+          2
+        ]
+      },
+      "screen": {
+        "drawCalls": 14,
+        "triangles": 3782136,
+        "marbleInstances": [
+          2
+        ]
+      }
+    },
+    "wallMilliseconds": 13
+  },
+  "arrivalZoomedOutNoRasterFrameTime": {
+    "frames": 30,
+    "totalWallMilliseconds": 205
+  },
+  "arrivalChallenge": {
+    "camera": {
+      "mode": "holding",
+      "encounterId": "cloudway-arrival-goblet",
+      "progress": 1,
+      "settled": true,
+      "safeBottomFraction": 0.3602091471354167,
+      "position": {
+        "x": -1.0880561977020928,
+        "y": 0.6984564511504179,
+        "z": -0.45808441112769094
+      },
+      "target": {
+        "x": -1.934190395988646,
+        "y": 0.09590756953826374,
+        "z": 1.75
+      },
+      "mercFrame": {
+        "minX": 0.05162819750485263,
+        "maxX": 0.48912051146030044,
+        "minY": -0.11152983553576142,
+        "maxY": 0.45585484522041464
+      },
+      "targetFrame": {
+        "minX": -0.5074268776683581,
+        "maxX": -0.03344352866495065,
+        "minY": 0.048197491972109464,
+        "maxY": 0.8514559693688785
+      },
+      "combinedFrame": {
+        "minX": -0.5074268776683581,
+        "maxX": 0.48912051146030044,
+        "minY": -0.11152983553576142,
+        "maxY": 0.8514559693688785
+      },
+      "safeBottomNdc": -0.20958170572916662,
+      "side": -1,
+      "clearance": 1,
+      "occluded": false
+    },
+    "platformPasses": {
+      "offscreen-1": {
+        "drawCalls": 25,
+        "triangles": 5185942,
+        "marbleInstances": [
+          3
+        ]
+      },
+      "offscreen-12": {
+        "drawCalls": 15,
+        "triangles": 3773804,
+        "marbleInstances": [
+          3
+        ]
+      },
+      "screen": {
+        "drawCalls": 25,
+        "triangles": 5185942,
+        "marbleInstances": [
+          3
+        ]
+      }
+    },
+    "wallMilliseconds": 7
+  },
+  "arrivalChallengeNoRasterFrameTime": {
+    "frames": 30,
+    "totalWallMilliseconds": 290
+  },
+  "arrivalChallengeWithoutInstancedRaycastsFrameTime": {
+    "frames": 30,
+    "totalWallMilliseconds": 287
+  },
+  "firstRecoveryForward": {
+    "camera": {
+      "mode": "exploration",
+      "encounterId": null,
+      "progress": 0,
+      "settled": false,
+      "safeBottomFraction": 0.3602091471354167,
+      "position": {
+        "x": -1.9159196976524018,
+        "y": 1.8654664655538071,
+        "z": 5.721980981889638
+      },
+      "target": {
+        "x": -1.231477997054157,
+        "y": 0.45636953245344747,
+        "z": 9.40246809524968
+      },
+      "mercFrame": null,
+      "targetFrame": null,
+      "combinedFrame": null,
+      "safeBottomNdc": null,
+      "side": null,
+      "clearance": null,
+      "occluded": null
+    },
+    "platformPasses": {
+      "offscreen-1": {
+        "drawCalls": 27,
+        "triangles": 6444970,
+        "marbleInstances": [
+          4
+        ]
+      },
+      "offscreen-12": {
+        "drawCalls": 17,
+        "triangles": 5032832,
+        "marbleInstances": [
+          4
+        ]
+      },
+      "screen": {
+        "drawCalls": 27,
+        "triangles": 6444970,
+        "marbleInstances": [
+          4
+        ]
+      }
+    },
+    "wallMilliseconds": 4
+  }
+}
