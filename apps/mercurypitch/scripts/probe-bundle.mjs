@@ -3339,6 +3339,12 @@ async function walkAlley(browser, args, frame) {
     const keyLevel = (await alleyNow(page)).level
     await page.keyboard.press('Escape')
     await waitPhase(page, 'rest', null, 'keyboard: Escape')
+    const refocused = await page.evaluate(
+      () => document.activeElement?.dataset?.testid ?? null,
+    )
+    if (refocused !== 'alley-door-sing') {
+      throw new Error(`Escape: focus went to ${refocused}, not the Sing door`)
+    }
     await page.waitForTimeout(700)
     const hushed = await alleyNow(page)
     if (hushed.level !== 0 || hushed.sounding !== null) {
@@ -3351,7 +3357,7 @@ async function walkAlley(browser, args, frame) {
       kept: doorKeys,
     })
     steps.push(
-      `alley keyboard: skip link focuses the alley (hash kept), Tab reaches the Ear Lab, Enter on Sing shows the card with a ${ring.outline} ring, Escape puts it back (ambient ${keyLevel.toFixed(2)} to 0); ${note}`,
+      `alley keyboard: skip link focuses the alley (hash kept), Tab reaches the Ear Lab, Enter on Sing shows the card with a ${ring.outline} ring, Escape puts it back (ambient ${keyLevel.toFixed(2)} to 0, focus on the Sing door); ${note}`,
     )
   } catch (error) {
     failures.push(error.message)

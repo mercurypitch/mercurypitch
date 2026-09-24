@@ -256,6 +256,8 @@ describe('the keyboard', () => {
 
     expect(el('rooms-alley').dataset.phase).toBe('rest')
     expect(escape.defaultPrevented).toBe(true)
+    // Not <body>: the door the card was for.
+    expect(document.activeElement).toBe(el('alley-door-sing'))
   })
 
   it('Escape mid-open calls the open off, as Back does', async () => {

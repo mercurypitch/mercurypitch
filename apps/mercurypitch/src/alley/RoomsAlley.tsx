@@ -394,7 +394,15 @@ export const RoomsAlley: Component = () => {
       }
       if (phase !== 'selected' && phase !== 'alive') return
       event.preventDefault()
+      const door = alley().door
       clear()
+      // The card that had focus is gone: focus goes back to the door it was
+      // for, not to <body>, so the next Tab starts where the reader was.
+      root
+        ?.querySelector<HTMLButtonElement>(
+          `.mp-alley__key[data-door="${door}"]`,
+        )
+        ?.focus({ preventScroll: true })
     }
     window.addEventListener('keydown', onKey)
     onCleanup(() => window.removeEventListener('keydown', onKey))
