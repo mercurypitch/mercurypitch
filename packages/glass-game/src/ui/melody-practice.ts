@@ -8,7 +8,8 @@ import { createMelodyJudge } from '../core/melody-judge'
 import type { MelodyReferencePlayer } from '../core/melody-reference'
 import type { GlassGameHost, GlassVoiceSession } from '../host'
 import { feedbackCopy, idleCopy } from './melody-practice-copy'
-import { microphoneError } from './mic-error'
+import type { MicrophoneIssue } from './mic-error'
+import { microphoneIssue, microphoneTakeoverTimedOut } from './mic-error'
 
 export type MelodyPracticeMode =
   | 'idle'
@@ -32,6 +33,8 @@ export interface MelodyPracticeSnapshot {
   message: string
   hint: string
   error: string | null
+  microphoneIssue: MicrophoneIssue | null
+  microphoneRecoveryPending: boolean
 }
 
 export interface MelodyPracticeConfiguration {
@@ -48,7 +51,12 @@ export interface MelodyPracticeRecordingAdapter {
 export interface MelodyPracticeOptions {
   host: Pick<
     GlassGameHost,
-    'createVoice' | 'readPreference' | 'writePreference' | 'subscribeForeground'
+    | 'createVoice'
+    | 'readPreference'
+    | 'writePreference'
+    | 'subscribeForeground'
+    | 'takeOverMicrophone'
+    | 'releaseUnusedMicrophoneTakeover'
   >
   melody: MelodyDefinition
   createReference(compiled: CompiledMelody): MelodyReferencePlayer
@@ -69,6 +77,7 @@ export interface MelodyPracticeOptions {
 export interface MelodyPracticeController {
   snapshot(): MelodyPracticeSnapshot
   start(): Promise<void>
+  recoverMicrophone(): Promise<boolean>
   hear(): Promise<void>
   replay(): Promise<void>
   configure(configuration: MelodyPracticeConfiguration): boolean
@@ -158,6 +167,8 @@ export function createMelodyPractice(
     message: initial.message,
     hint: initial.hint,
     error: null,
+    microphoneIssue: null,
+    microphoneRecoveryPending: false,
   }
 
   const compile = (
@@ -272,7 +283,10 @@ export function createMelodyPractice(
       lastCaptureSeconds = Math.max(lastCaptureSeconds, latest.captureSeconds)
   }
 
-  const fail = (message: string): void => {
+  const fail = (
+    message: string,
+    issue: MicrophoneIssue | null = null,
+  ): void => {
     generation++
     stopOwnedResources()
     if (disposed) return
@@ -284,6 +298,8 @@ export function createMelodyPractice(
       message,
       hint: 'You can try again when you are ready.',
       error: message,
+      microphoneIssue: issue,
+      microphoneRecoveryPending: false,
     })
     options.onError?.(message)
   }
@@ -307,6 +323,8 @@ export function createMelodyPractice(
       message: copy.message,
       hint: copy.hint,
       error: null,
+      microphoneIssue: null,
+      microphoneRecoveryPending: false,
     })
     options.onComplete?.(copySnapshot(state))
   }
@@ -339,6 +357,8 @@ export function createMelodyPractice(
       message: copy.message,
       hint: copy.hint,
       error: null,
+      microphoneIssue: null,
+      microphoneRecoveryPending: false,
     })
   }
 
@@ -363,6 +383,8 @@ export function createMelodyPractice(
       message: 'Listen to the whole shape.',
       hint: 'Your turn begins only after the melody becomes quiet.',
       error: null,
+      microphoneIssue: null,
+      microphoneRecoveryPending: false,
     })
     try {
       await player.play((timelineSeconds) => {
@@ -495,6 +517,7 @@ export function createMelodyPractice(
       disposed ||
       !foreground ||
       !options.canPlay() ||
+      state.microphoneRecoveryPending ||
       !['idle', 'complete', 'error'].includes(state.mode)
     )
       return
@@ -510,6 +533,8 @@ export function createMelodyPractice(
       message: 'Opening the microphone…',
       hint: 'The museum will stay quiet while permission opens.',
       error: null,
+      microphoneIssue: null,
+      microphoneRecoveryPending: false,
     })
     let session: GlassVoiceSession
     try {
@@ -542,8 +567,59 @@ export function createMelodyPractice(
       await playReference(run)
     } catch (cause) {
       if (disposed || run !== generation) return
-      fail(microphoneError(cause))
+      const issue = microphoneIssue(cause)
+      fail(issue.message, issue)
     }
+  }
+
+  const releaseUnusedTakeover = async (): Promise<void> => {
+    try {
+      await options.host.releaseUnusedMicrophoneTakeover?.()
+    } catch {
+      // The shared manager's next acquisition rechecks the lock either way.
+    }
+  }
+
+  const recoverMicrophone = async (): Promise<boolean> => {
+    const issue = state.microphoneIssue
+    const takeOver = options.host.takeOverMicrophone
+    if (
+      disposed ||
+      !foreground ||
+      state.mode !== 'error' ||
+      state.microphoneRecoveryPending ||
+      issue?.action !== 'take-over' ||
+      takeOver === undefined
+    )
+      return false
+    const run = ++generation
+    emit({ microphoneRecoveryPending: true })
+    let moved = false
+    try {
+      moved = await takeOver()
+    } catch {
+      moved = false
+    }
+    if (disposed || run !== generation || !foreground) {
+      if (moved) await releaseUnusedTakeover()
+      return false
+    }
+    if (!moved) {
+      const timeout = microphoneTakeoverTimedOut()
+      emit({
+        message: timeout.message,
+        hint: 'Only another participating tab can hand the microphone over.',
+        error: timeout.message,
+        microphoneIssue: timeout,
+        microphoneRecoveryPending: false,
+      })
+      options.onError?.(timeout.message)
+      return false
+    }
+    emit({ microphoneRecoveryPending: false })
+    await start()
+    if (voice === null) await releaseUnusedTakeover()
+    return voice !== null
   }
 
   const hear = async (): Promise<void> => {
@@ -572,6 +648,8 @@ export function createMelodyPractice(
         message: 'Listen to the whole shape.',
         hint: 'The ribbon and the sound follow the same curve.',
         error: null,
+        microphoneIssue: null,
+        microphoneRecoveryPending: false,
       })
       await quiet
       if (disposed || run !== generation) return
@@ -618,6 +696,8 @@ export function createMelodyPractice(
       message: copy.message,
       hint: copy.hint,
       error: null,
+      microphoneIssue: null,
+      microphoneRecoveryPending: false,
     })
   }
 
@@ -635,6 +715,8 @@ export function createMelodyPractice(
       message: 'Practice paused.',
       hint: 'Return to the app, then tap Sing when you are ready.',
       error: null,
+      microphoneIssue: null,
+      microphoneRecoveryPending: false,
     })
   }
 
@@ -656,6 +738,7 @@ export function createMelodyPractice(
   return {
     snapshot: () => copySnapshot(state),
     start,
+    recoverMicrophone,
     hear,
     async replay() {
       if (
@@ -715,6 +798,8 @@ export function createMelodyPractice(
         message: copy.message,
         hint: copy.hint,
         error: null,
+        microphoneIssue: null,
+        microphoneRecoveryPending: false,
       })
       return true
     },
@@ -734,6 +819,8 @@ export function createMelodyPractice(
         message: 'Choose a new comfortable note.',
         hint: 'Tap Sing, then hum any easy note gently and steadily.',
         error: null,
+        microphoneIssue: null,
+        microphoneRecoveryPending: false,
       })
     },
     cancel,

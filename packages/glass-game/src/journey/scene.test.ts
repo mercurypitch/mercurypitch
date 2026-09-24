@@ -20,6 +20,8 @@ const state = vi.hoisted(() => ({
   loadModels: vi.fn(),
   loopDispose: vi.fn(),
   loopSetForeground: vi.fn(),
+  resize: undefined as (() => void) | undefined,
+  getError: vi.fn((): number => 0),
   canvasListeners: new Map<string, EventListenerOrEventListenerObject>(),
   renderFrame: undefined as
     | ((visibleSeconds: number, dt: number) => void)
@@ -63,6 +65,11 @@ vi.mock('three', async (original) => ({
     shadowMap = { enabled: false }
     setPixelRatio = vi.fn()
     setSize = vi.fn()
+    getContext = () => ({
+      drawingBufferWidth: 1024,
+      drawingBufferHeight: 768,
+      getError: state.getError,
+    })
     render = vi.fn(() => {
       this.info.render.calls++
     })
@@ -168,6 +175,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   state.environmentShouldFail = true
   state.renderFrame = undefined
+  state.resize = undefined
+  state.getError.mockReset().mockReturnValue(0)
   state.canvasListeners.clear()
   state.environmentLoad.mockResolvedValue(undefined)
 })
@@ -180,6 +189,9 @@ function stubBrowser(): void {
   vi.stubGlobal(
     'ResizeObserver',
     class {
+      constructor(resize: () => void) {
+        state.resize = resize
+      }
       observe = vi.fn()
       disconnect = vi.fn()
     },
@@ -228,66 +240,78 @@ it('retires acquired owners and preserves the original construction failure', ()
   expect(append).not.toHaveBeenCalled()
 })
 
-it('does not report ready before a model-backed label projection is published', async () => {
-  state.environmentShouldFail = false
-  const markers = [new Group(), new Group(), new Group()] as const
-  const model = {
-    root: new Group(),
-    selectableRoots: new Map([['stage', new Group()]]),
-    portraitSurfaces: new Map(),
-    portraitMysteries: new Map(),
-    starMarkers: new Map([['stage', markers]]),
-    setSelected: vi.fn(),
-    update: vi.fn(),
-    dispose: vi.fn(),
-  }
-  state.loadModels.mockResolvedValueOnce(model)
-  const projections = vi.fn()
-  const append = vi.fn()
-  stubBrowser()
-  const scene = createMuseumJourneyScene(
-    {
+it.each([0, 1, 1024])(
+  'does not report ready before a visible model-backed frame, starting at width %s',
+  async (initialWidth) => {
+    state.environmentShouldFail = false
+    const markers = [new Group(), new Group(), new Group()] as const
+    const model = {
+      root: new Group(),
+      selectableRoots: new Map([['stage', new Group()]]),
+      portraitSurfaces: new Map(),
+      portraitMysteries: new Map(),
+      starMarkers: new Map([['stage', markers]]),
+      setSelected: vi.fn(),
+      update: vi.fn(),
+      dispose: vi.fn(),
+    }
+    state.loadModels.mockResolvedValueOnce(model)
+    const projections = vi.fn()
+    const append = vi.fn()
+    stubBrowser()
+    const container = {
       append,
-      clientWidth: 1024,
+      clientWidth: initialWidth,
       clientHeight: 768,
-    } as unknown as HTMLElement,
-    DEFINITION,
-    (id) => id,
-    {
-      selectedStageId: 'stage',
-      foreground: true,
-      reducedMotion: false,
-      onSelect: vi.fn(),
-      onFailure: vi.fn(),
-      onProjectStageLabels: projections,
-    },
-  )
-  let readySettled = false
-  void scene.ready.then(() => {
-    readySettled = true
-  })
+    }
+    const scene = createMuseumJourneyScene(
+      container as unknown as HTMLElement,
+      DEFINITION,
+      (id) => id,
+      {
+        selectedStageId: 'stage',
+        foreground: true,
+        reducedMotion: false,
+        onSelect: vi.fn(),
+        onFailure: vi.fn(),
+        onProjectStageLabels: projections,
+      },
+    )
+    let readySettled = false
+    void scene.ready.then(() => {
+      readySettled = true
+    })
 
-  try {
-    await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
-    await Promise.resolve()
-    expect(readySettled).toBe(false)
-    expect(append).toHaveBeenCalledOnce()
+    try {
+      await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
+      await Promise.resolve()
+      expect(readySettled).toBe(false)
+      expect(append).toHaveBeenCalledOnce()
 
-    const renderFrame = state.renderFrame
-    if (renderFrame === undefined)
-      throw new Error('Missing scene frame callback')
-    renderFrame(0, 0)
-    await scene.ready
+      const renderFrame = state.renderFrame
+      if (renderFrame === undefined)
+        throw new Error('Missing scene frame callback')
+      if (initialWidth < 2) {
+        renderFrame(0, 0)
+        await Promise.resolve()
+        expect(readySettled).toBe(false)
+        expect(projections).not.toHaveBeenCalled()
+        container.clientWidth = 1024
+        state.resize?.()
+      }
+      renderFrame(0, 0)
+      await scene.ready
 
-    expect(readySettled).toBe(true)
-    expect(projections).toHaveBeenLastCalledWith([
-      expect.objectContaining({ stageId: 'stage', visible: true }),
-    ])
-  } finally {
-    scene.dispose()
-    vi.unstubAllGlobals()
-  }
-})
+      expect(readySettled).toBe(true)
+      expect(projections).toHaveBeenLastCalledWith([
+        expect.objectContaining({ stageId: 'stage', visible: true }),
+      ])
+    } finally {
+      scene.dispose()
+      vi.unstubAllGlobals()
+    }
+  },
+)
 
 it('zooms and orbits without turning a pinch into a gallery selection, then resets', async () => {
   state.environmentShouldFail = false
@@ -517,6 +541,57 @@ it('retires active gestures and ignores selection mutations after context loss',
   } finally {
     scene.dispose()
     intersect.mockRestore()
+    vi.unstubAllGlobals()
+  }
+})
+
+it('rejects first-frame GPU errors through the map failure lifecycle', async () => {
+  state.environmentShouldFail = false
+  const model = {
+    root: new Group(),
+    selectableRoots: new Map([['stage', new Group()]]),
+    portraitSurfaces: new Map(),
+    portraitMysteries: new Map(),
+    starMarkers: new Map([
+      ['stage', [new Group(), new Group(), new Group()] as const],
+    ]),
+    setSelected: vi.fn(),
+    update: vi.fn(),
+    dispose: vi.fn(),
+  }
+  state.loadModels.mockResolvedValueOnce(model)
+  stubBrowser()
+  const onFailure = vi.fn()
+  const scene = createMuseumJourneyScene(
+    {
+      append: vi.fn(),
+      clientWidth: 1024,
+      clientHeight: 768,
+    } as unknown as HTMLElement,
+    DEFINITION,
+    (id) => id,
+    {
+      selectedStageId: 'stage',
+      foreground: true,
+      reducedMotion: false,
+      onSelect: vi.fn(),
+      onFailure,
+    },
+  )
+  const rejected = expect(scene.ready).rejects.toThrow('0x502')
+  try {
+    await vi.waitFor(() => expect(model.setSelected).toHaveBeenCalled())
+    state.getError.mockReturnValueOnce(0x0502)
+    state.renderFrame?.(0, 0)
+    await rejected
+    expect(onFailure).toHaveBeenCalledOnce()
+    expect(state.loopSetForeground).toHaveBeenLastCalledWith(false)
+    const signal = state.loadModels.mock.calls[0]?.[3] as AbortSignal
+    expect(signal.aborted).toBe(true)
+    state.renderFrame?.(1, 0.016)
+    expect(state.getError).toHaveBeenCalledOnce()
+  } finally {
+    scene.dispose()
     vi.unstubAllGlobals()
   }
 })

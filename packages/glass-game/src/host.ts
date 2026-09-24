@@ -87,6 +87,10 @@ export interface GlassMercNarration {
 export interface GlassGameHost {
   assetUrl(id: string): string
   createVoice(): GlassVoiceSession
+  /** Ask another cooperating app tab to release its mic before retrying here. */
+  takeOverMicrophone?(): Promise<boolean>
+  /** Give back a completed handoff if its requesting surface disappeared. */
+  releaseUnusedMicrophoneTakeover?(): Promise<void>
   createSound(): GlassSound
   createMusic?(): GlassMuseumAudio
   createNarration?(): GlassMercNarration

@@ -10,6 +10,8 @@ const state = vi.hoisted(() => {
   const visibleRoomIds = new Set<string>()
   return {
     render: vi.fn(),
+    setSize: vi.fn(),
+    getError: vi.fn((): number => 0),
     listeners: new Map<string, EventListener>(),
     loseContext: false,
     assetFailure: null as Error | null,
@@ -44,8 +46,13 @@ vi.mock('three', async (original) => ({
     }
     shadowMap = {}
     info = { render: {}, memory: {} }
-    setSize = vi.fn()
+    setSize = state.setSize
     setPixelRatio = vi.fn()
+    getContext = () => ({
+      drawingBufferWidth: 800,
+      drawingBufferHeight: 600,
+      getError: state.getError,
+    })
     render = state.render
     dispose = state.rendererDispose
     forceContextLoss = state.forceContextLoss
@@ -139,6 +146,8 @@ afterEach(() => {
   state.museumFailure = null
   state.environmentLoadFailure = null
   state.render.mockClear()
+  state.setSize.mockClear()
+  state.getError.mockReset().mockReturnValue(0)
   state.rendererDispose.mockClear()
   state.forceContextLoss.mockClear()
   state.canvasRemove.mockClear()
@@ -148,6 +157,58 @@ afterEach(() => {
   state.cullCloudwayPlatforms.mockClear()
   state.runtimeRoomId = undefined
   state.visibleRoomIds.clear()
+})
+
+it.each([1, 0.5])(
+  'waits for a usable viewport and resumes rendering after hidden layout at pixel ratio %s',
+  async (pixelRatio) => {
+    const container = browserFixture()
+    vi.stubGlobal('window', { devicePixelRatio: pixelRatio })
+    Object.assign(container, { clientWidth: 0, clientHeight: 0 })
+    const renderer = createGlassRenderer(container, GLASSWORKS, (id) => id)
+    await renderer.ready
+    const snapshot = createGlassGame(GLASSWORKS).snapshot()
+    expect(renderer.render(snapshot, 0.016)).toBe(false)
+    expect(state.render).not.toHaveBeenCalled()
+    expect(state.setSize).not.toHaveBeenCalled()
+
+    Object.assign(container, { clientWidth: 1, clientHeight: 600 })
+    renderer.resize()
+    expect(renderer.render(snapshot, 0.016)).toBe(false)
+    expect(state.setSize).not.toHaveBeenCalled()
+
+    Object.assign(container, { clientWidth: 800, clientHeight: 600 })
+    renderer.resize()
+    expect(renderer.render(snapshot, 0.016)).toBe(true)
+    expect(state.render).toHaveBeenCalledOnce()
+    expect(state.setSize).toHaveBeenLastCalledWith(800, 600, false)
+
+    Object.assign(container, { clientWidth: 800, clientHeight: 1 })
+    renderer.resize()
+    expect(renderer.render(snapshot, 0.016)).toBe(false)
+    expect(state.render).toHaveBeenCalledOnce()
+    renderer.dispose()
+  },
+)
+
+it('rejects a failed GPU upload before claiming a good first frame', async () => {
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  state.getError.mockReturnValueOnce(0x0502)
+  expect(() =>
+    renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016),
+  ).toThrow('0x502')
+  renderer.dispose()
+})
+
+it('checks the first frame without polling the GPU on every game frame', async () => {
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  expect(state.getError).toHaveBeenCalledOnce()
+  renderer.dispose()
 })
 
 it.each([false, true])(

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { ChallengeDefinition, GameEvent, LevelDefinition, PitchObservation, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import type { GlassSound, GlassVoiceSession } from '../host'
+import type { MicrophoneIssue } from './mic-error'
 import { createVoiceChallenge } from './voice-challenge'
 
 const HOLD = {
@@ -19,12 +20,12 @@ const HOLD = {
 interface Deferred {
   promise: Promise<void>
   resolve(): void
-  reject(error: Error): void
+  reject(error: unknown): void
 }
 
 function deferred(): Deferred {
   let resolve!: () => void
-  let reject!: (error: Error) => void
+  let reject!: (error: unknown) => void
   const promise = new Promise<void>((accept, fail) => {
     resolve = accept
     reject = fail
@@ -192,6 +193,7 @@ function harness(
   const preferences = new Map(Object.entries(initialPreferences))
   const events: GameEvent[] = []
   const errors: string[] = []
+  const microphoneIssues: Array<MicrophoneIssue | undefined> = []
   let canPlay = true
   let clock = 1000
   let voiceIndex = 0
@@ -209,7 +211,10 @@ function harness(
     beforeCapture: () => Promise.resolve(),
     onChange: () => undefined,
     onEvents: (batch) => events.push(...batch),
-    onError: (message) => errors.push(message),
+    onError: (message, microphone) => {
+      errors.push(message)
+      microphoneIssues.push(microphone)
+    },
     onPauseAudio: () => undefined,
     onReleaseVoice: () => undefined,
     now: () => clock,
@@ -220,6 +225,7 @@ function harness(
     preferences,
     events,
     errors,
+    microphoneIssues,
     voices: suppliedVoices,
     sounds: suppliedSounds,
     setCanPlay(value: boolean) {
@@ -734,6 +740,27 @@ describe('voice challenge controller', () => {
     expect(controller.snapshot().mode).toBe('off')
     expect(game.snapshot().paused).toBe(false)
     expect(errors).toHaveLength(1)
+  })
+
+  it('preserves a live app-tab claim for cooperative recovery', async () => {
+    const voice = new FakeVoice()
+    const gate = deferred()
+    voice.startGate = gate
+    const fixture = harness(COMFORTABLE, { 'comfortable-note': '57' }, [voice])
+    const starting = fixture.controller.start('vessel')
+    await flush()
+
+    gate.reject({ kind: 'held-elsewhere', message: 'manager detail' })
+    await starting
+
+    expect(fixture.controller.snapshot().mode).toBe('off')
+    expect(fixture.game.snapshot().paused).toBe(false)
+    expect(fixture.microphoneIssues).toEqual([
+      expect.objectContaining({
+        kind: 'held-elsewhere',
+        action: 'take-over',
+      }),
+    ])
   })
 
   it('stops an acquired voice when the sound factory throws', async () => {

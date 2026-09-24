@@ -1,9 +1,11 @@
 // Browser host foreground tests — the first visibility state arrives before map loading.
 
+import { micManager } from '@irchiinnuss/pitch-engine'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createBrowserGlassHost } from './browser-host'
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -43,5 +45,24 @@ describe('browser host foreground subscription', () => {
     unsubscribe()
     browserDocument.dispatchEvent(new Event('visibilitychange'))
     expect(listener).toHaveBeenCalledTimes(4)
+  })
+
+  it('routes cooperative takeover and unused cleanup through the shared manager', async () => {
+    const takeOver = vi
+      .spyOn(micManager, 'takeOverFromOtherTab')
+      .mockResolvedValue(true)
+    const release = vi
+      .spyOn(micManager, 'releaseTakeoverIfUnused')
+      .mockResolvedValue()
+    const host = createBrowserGlassHost({
+      assetUrl: (id) => id,
+      storagePrefix: 'journey-test',
+      onExit: vi.fn(),
+    })
+
+    await expect(host.takeOverMicrophone?.()).resolves.toBe(true)
+    await host.releaseUnusedMicrophoneTakeover?.()
+    expect(takeOver).toHaveBeenCalledOnce()
+    expect(release).toHaveBeenCalledOnce()
   })
 })

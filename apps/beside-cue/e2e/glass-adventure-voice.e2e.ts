@@ -364,9 +364,10 @@ async function minimizeMuseumRaster(page: Page): Promise<void> {
   expect(before.viewport).not.toBeNull()
   expect(before.canvas).not.toBeNull()
 
+  // Keep both axes valid for half-resolution transmission targets.
   await canvas.evaluate((element) => {
-    element.width = 1
-    element.height = 1
+    element.width = 2
+    element.height = 2
   })
 
   expect(await viewport.boundingBox()).toEqual(before.viewport)
@@ -383,10 +384,10 @@ async function minimizeMuseumRaster(page: Page): Promise<void> {
       }
     }),
   ).toEqual({
-    canvasWidth: 1,
-    canvasHeight: 1,
-    drawingBufferWidth: 1,
-    drawingBufferHeight: 1,
+    canvasWidth: 2,
+    canvasHeight: 2,
+    drawingBufferWidth: 2,
+    drawingBufferHeight: 2,
   })
 }
 

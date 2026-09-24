@@ -18,6 +18,7 @@ import { CLOUDWAY_FOG_COLOR, CLOUDWAY_FOG_FAR, CLOUDWAY_FOG_NEAR, isCloudwayLeve
 import { createContactShadow } from './contact-shadow'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMuseumEnvironment } from './environment'
+import { verifyFirstFrame } from './first-frame'
 import { createGalleryInspection } from './gallery-inspection'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
@@ -26,6 +27,7 @@ import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
 import { fitSkyBackdrop } from './sky-backdrop'
 import { createVessel } from './vessels'
+import { canRenderViewport } from './viewport'
 
 export interface GlassRendererOptions {
   reducedMotion?: boolean
@@ -51,7 +53,7 @@ export interface GlassRenderer {
     snapshot: GameSnapshot,
     dt: number,
     presentation?: GlassRendererPresentation,
-  ): void
+  ): boolean
   resize(): void
   orbit(dxRadians: number, dyRadians: number): void
   setOrbitActive(active: boolean): void
@@ -153,7 +155,8 @@ function createGlassRendererInstance(
   renderer.transmissionResolutionScale = 0.5
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = PCFShadowMap
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5)
+  renderer.setPixelRatio(pixelRatio)
   renderer.domElement.style.cssText =
     'display:block;width:100%;height:100%;touch-action:none;'
   renderer.domElement.setAttribute('aria-label', 'Floating glass museum')
@@ -268,10 +271,14 @@ function createGlassRendererInstance(
   )
   let latest: GameSnapshot | undefined
   let skyBackdrop: Texture | undefined
+  let drawable = false
+  let firstFrameVerified = false
   const resize = () => {
     if (disposed) return
-    const width = Math.max(1, container.clientWidth)
-    const height = Math.max(1, container.clientHeight)
+    const width = container.clientWidth
+    const height = container.clientHeight
+    drawable = canRenderViewport(width, height, pixelRatio)
+    if (!drawable) return
     renderer.setSize(width, height, false)
     if (skyBackdrop) fitSkyBackdrop(skyBackdrop, width, height)
     camera.camera.aspect = width / height
@@ -395,7 +402,7 @@ function createGlassRendererInstance(
         museum.planarReflectionMetrics.targetHeight,
     }),
     render(snapshot, delta, presentation) {
-      if (disposed || contextLost) return
+      if (disposed || contextLost || !drawable) return false
       latest = snapshot
       const cameraDt = Math.max(0, Math.min(0.05, delta))
       const simulationDt = snapshot.paused ? 0 : cameraDt
@@ -488,6 +495,11 @@ function createGlassRendererInstance(
         },
       )
       renderer.render(scene, camera.camera)
+      if (!firstFrameVerified) {
+        verifyFirstFrame(renderer.getContext())
+        firstFrameVerified = true
+      }
+      return !contextLost
     },
     dispose() {
       if (disposed) return

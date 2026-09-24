@@ -114,6 +114,8 @@ it('captures only the nearest visible front-facing mirror on a bounded cadence',
 it.each([
   { width: 3840, height: 2160, targetWidth: 1024, targetHeight: 576 },
   { width: 1170, height: 500, targetWidth: 512, targetHeight: 219 },
+  { width: 2, height: 800, targetWidth: 2, targetHeight: 512 },
+  { width: 800, height: 2, targetWidth: 512, targetHeight: 2 },
 ])(
   'caps extra reflection pixels at $width x $height',
   ({ width, height, targetWidth, targetHeight }) => {

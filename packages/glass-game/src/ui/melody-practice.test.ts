@@ -80,9 +80,16 @@ function harness(
   let foreground: (foreground: boolean) => void = () => undefined
   let nowMs = 1000
   const releases: string[] = []
+  const takeOverMicrophone = vi.fn(async () => true)
+  const releaseUnusedMicrophoneTakeover = vi.fn(async () => undefined)
   const host: Pick<
     GlassGameHost,
-    'createVoice' | 'readPreference' | 'writePreference' | 'subscribeForeground'
+    | 'createVoice'
+    | 'readPreference'
+    | 'writePreference'
+    | 'subscribeForeground'
+    | 'takeOverMicrophone'
+    | 'releaseUnusedMicrophoneTakeover'
   > = {
     createVoice: vi.fn(() => voice),
     readPreference: (key) => preferences.get(key) ?? null,
@@ -93,6 +100,8 @@ function harness(
       foreground = listener
       return () => undefined
     },
+    takeOverMicrophone,
+    releaseUnusedMicrophoneTakeover,
   }
   const makeReference = vi.fn((contour: CompiledMelody) => {
     const player = new ReferenceFake()
@@ -134,11 +143,13 @@ function harness(
     makeReference,
     preferences,
     recordingEvents,
+    releaseUnusedMicrophoneTakeover,
     references,
     releases,
     setNow: (value: number) => {
       nowMs = value
     },
+    takeOverMicrophone,
     voice,
   }
 }
@@ -278,6 +289,47 @@ describe('melody practice controller', () => {
     expect(controller.snapshot().mode).toBe('idle')
   })
 
+  it('does not let a retired async reference release a newer silence hold', async () => {
+    const quiet = [deferred(), deferred()]
+    const players: ReferenceFake[] = []
+    const releases = vi.fn()
+    let quietIndex = 0
+    const controller = createMelodyPractice({
+      host: {
+        createVoice: () => new VoiceFake(),
+        readPreference: () => '60',
+        writePreference: () => undefined,
+        subscribeForeground: () => () => undefined,
+      },
+      melody: glassMelody('first-arc'),
+      createReference: () => {
+        const player = new ReferenceFake()
+        players.push(player)
+        return player
+      },
+      beforeCapture: () => quiet[quietIndex++]!.promise,
+      canPlay: () => true,
+      onChange: () => undefined,
+      onReleaseVoice: releases,
+    })
+
+    const retired = controller.hear()
+    quiet[0]!.resolve()
+    await flush()
+    controller.cancel()
+    const current = controller.hear()
+    expect(releases).toHaveBeenCalledOnce()
+
+    await retired
+    expect(releases).toHaveBeenCalledOnce()
+    quiet[1]!.resolve()
+    await flush()
+    players[1]!.finished.resolve()
+    await current
+    expect(releases).toHaveBeenCalledTimes(2)
+    controller.dispose()
+  })
+
   it('cancels a live recording before stopping the one mic and never auto-resumes after background', async () => {
     const app = harness()
     const starting = app.controller.start()
@@ -320,5 +372,86 @@ describe('melody practice controller', () => {
     app.foreground(false)
     expect(order).toEqual(['recording:start', 'recording:stop', 'voice:stop'])
     expect(app.releases).toEqual(['released'])
+  })
+
+  it('moves a cooperative tab-held microphone here and retries the same practice', async () => {
+    const app = harness(null)
+    app.voice.start.mockRejectedValueOnce({
+      kind: 'held-elsewhere',
+      message: 'manager detail',
+    })
+
+    await app.controller.start()
+    expect(app.controller.snapshot()).toMatchObject({
+      mode: 'error',
+      microphoneIssue: { action: 'take-over', kind: 'held-elsewhere' },
+      microphoneRecoveryPending: false,
+    })
+
+    await expect(app.controller.recoverMicrophone()).resolves.toBe(true)
+    expect(app.takeOverMicrophone).toHaveBeenCalledOnce()
+    expect(app.voice.start).toHaveBeenCalledTimes(2)
+    expect(app.controller.snapshot()).toMatchObject({
+      mode: 'calibrating',
+      microphoneIssue: null,
+      microphoneRecoveryPending: false,
+    })
+    expect(app.releaseUnusedMicrophoneTakeover).not.toHaveBeenCalled()
+  })
+
+  it('keeps an unanswered live tab claim distinct from an OS device lock', async () => {
+    const app = harness(null)
+    app.voice.start.mockRejectedValueOnce({
+      kind: 'held-elsewhere',
+      message: 'manager detail',
+    })
+    app.takeOverMicrophone.mockResolvedValueOnce(false)
+    await app.controller.start()
+
+    await expect(app.controller.recoverMicrophone()).resolves.toBe(false)
+    expect(app.voice.start).toHaveBeenCalledOnce()
+    expect(app.controller.snapshot()).toMatchObject({
+      mode: 'error',
+      message: expect.stringContaining('wait a moment'),
+      microphoneIssue: { action: 'take-over', kind: 'held-elsewhere' },
+      microphoneRecoveryPending: false,
+    })
+  })
+
+  it('retries browser or OS busy capture without invoking cooperative takeover', async () => {
+    const app = harness(null)
+    app.voice.start.mockRejectedValueOnce({
+      kind: 'device-busy',
+      message: 'manager detail',
+    })
+    await app.controller.start()
+    expect(app.controller.snapshot().microphoneIssue).toMatchObject({
+      action: 'retry',
+      kind: 'device-busy',
+    })
+
+    await app.controller.start()
+    expect(app.controller.snapshot().mode).toBe('calibrating')
+    expect(app.takeOverMicrophone).not.toHaveBeenCalled()
+  })
+
+  it('returns a won handoff when the practice disappears before acquiring', async () => {
+    const app = harness(null)
+    const takeover = deferred<boolean>()
+    app.voice.start.mockRejectedValueOnce({
+      kind: 'held-elsewhere',
+      message: 'manager detail',
+    })
+    app.takeOverMicrophone.mockReturnValueOnce(takeover.promise)
+    await app.controller.start()
+
+    const recovering = app.controller.recoverMicrophone()
+    expect(app.controller.snapshot().microphoneRecoveryPending).toBe(true)
+    app.controller.dispose()
+    takeover.resolve(true)
+
+    await expect(recovering).resolves.toBe(false)
+    expect(app.releaseUnusedMicrophoneTakeover).toHaveBeenCalledOnce()
+    expect(app.voice.start).toHaveBeenCalledOnce()
   })
 })

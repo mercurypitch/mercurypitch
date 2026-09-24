@@ -23,7 +23,12 @@ export interface MelodyPracticeChoice {
 export interface MelodyPracticeProps {
   host: Pick<
     GlassGameHost,
-    'createVoice' | 'readPreference' | 'writePreference' | 'subscribeForeground'
+    | 'createVoice'
+    | 'readPreference'
+    | 'writePreference'
+    | 'subscribeForeground'
+    | 'takeOverMicrophone'
+    | 'releaseUnusedMicrophoneTakeover'
   >
   melody: MelodyDefinition
   createReference(compiled: CompiledMelody): MelodyReferencePlayer
@@ -85,6 +90,8 @@ function emptySnapshot(props: MelodyPracticeProps): MelodyPracticeSnapshot {
     message: props.melody.title,
     hint: props.melody.description,
     error: null,
+    microphoneIssue: null,
+    microphoneRecoveryPending: false,
   }))
 }
 
@@ -233,9 +240,27 @@ export function MelodyPractice(props: MelodyPracticeProps) {
   const paceChoices = () => props.paceChoices ?? DEFAULT_PACE_CHOICES
   const transpositionChoices = () =>
     props.transpositionChoices ?? DEFAULT_TRANSPOSITION_CHOICES
+  const microphoneAction = () => snapshot().microphoneIssue?.action ?? 'none'
+  const canRecoverMicrophone = () =>
+    microphoneAction() === 'retry' ||
+    (microphoneAction() === 'take-over' &&
+      props.host.takeOverMicrophone !== undefined)
   const mayStart = () =>
-    !active(snapshot().mode) && snapshot().mode !== 'paused'
-  const mayHear = () => mayStart() && snapshot().contour !== null
+    !active(snapshot().mode) &&
+    snapshot().mode !== 'paused' &&
+    (snapshot().microphoneIssue === null || canRecoverMicrophone())
+  const mayHear = () =>
+    !active(snapshot().mode) &&
+    snapshot().mode !== 'paused' &&
+    snapshot().contour !== null
+
+  const startOrRecover = (): void => {
+    if (microphoneAction() === 'take-over') {
+      void controller?.recoverMicrophone()
+      return
+    }
+    void controller?.start()
+  }
 
   const applyConfiguration = (configuration: {
     pace?: number
@@ -425,6 +450,7 @@ export function MelodyPractice(props: MelodyPracticeProps) {
           <button
             class={styles.secondaryAction}
             type="button"
+            disabled={snapshot().microphoneRecoveryPending}
             onClick={() => void controller?.hear()}
           >
             Hear melody
@@ -434,13 +460,21 @@ export function MelodyPractice(props: MelodyPracticeProps) {
           <button
             class={styles.primaryAction}
             type="button"
-            onClick={() => void controller?.start()}
+            disabled={snapshot().microphoneRecoveryPending}
+            aria-busy={snapshot().microphoneRecoveryPending}
+            onClick={startOrRecover}
           >
-            {snapshot().rootMidi === null
-              ? 'Find my note and sing'
-              : snapshot().mode === 'complete'
-                ? 'Sing again'
-                : 'Sing the melody'}
+            {snapshot().microphoneRecoveryPending
+              ? 'Moving microphone…'
+              : microphoneAction() === 'take-over'
+                ? 'Use it here'
+                : snapshot().mode === 'error'
+                  ? 'Try again'
+                  : snapshot().rootMidi === null
+                    ? 'Find my note and sing'
+                    : snapshot().mode === 'complete'
+                      ? 'Sing again'
+                      : 'Sing the melody'}
           </button>
         </Show>
       </div>

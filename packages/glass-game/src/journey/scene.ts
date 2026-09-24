@@ -5,6 +5,8 @@ import { ACESFilmicToneMapping, AmbientLight, DirectionalLight, Fog, HemisphereL
 import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import { disposeObject } from '../render/dispose'
 import { createMuseumEnvironment } from '../render/environment'
+import { verifyFirstFrame } from '../render/first-frame'
+import { canRenderViewport } from '../render/viewport'
 import { clampJourneyInspectionZoom, clampJourneyOrbit, JOURNEY_DEFAULT_ORBIT, journeyCameraView, projectJourneyStage, } from './camera'
 import { createJourneyPointerTracker, journeyWheelZoomDelta, } from './interaction'
 import { JOURNEY_MEDALLION_CLEARANCE_Y, journeyMarkerPoint } from './landmarks'
@@ -175,12 +177,11 @@ function buildMuseumJourneyScene(
   renderer.transmissionResolutionScale = 0.5
   renderer.info.autoReset = false
   renderer.shadowMap.enabled = true
-  renderer.setPixelRatio(
-    Math.min(
-      window.devicePixelRatio || 1,
-      window.matchMedia('(pointer: coarse)').matches ? 1.5 : 1.8,
-    ),
+  const pixelRatio = Math.min(
+    window.devicePixelRatio || 1,
+    window.matchMedia('(pointer: coarse)').matches ? 1.5 : 1.8,
   )
+  renderer.setPixelRatio(pixelRatio)
   renderer.domElement.style.cssText =
     'display:block;width:100%;height:100%;touch-action:none;'
   renderer.domElement.setAttribute(
@@ -333,10 +334,15 @@ function buildMuseumJourneyScene(
   updateDesiredView(true)
   publishCameraState()
 
+  let drawable = false
+  let firstFrameVerified = false
+
   function resize(): void {
     if (disposed) return
-    const width = Math.max(1, container.clientWidth)
-    const height = Math.max(1, container.clientHeight)
+    const width = container.clientWidth
+    const height = container.clientHeight
+    drawable = canRenderViewport(width, height, pixelRatio)
+    if (!drawable) return
     renderer.setSize(width, height, false)
     sky.resize(width, height)
     camera.aspect = width / height
@@ -349,7 +355,7 @@ function buildMuseumJourneyScene(
   observer.observe(container)
 
   function renderFrame(visibleSeconds: number, dt: number): void {
-    if (disposed || contextLost) return
+    if (disposed || contextLost || !drawable) return
     if (reducedMotion) {
       target.copy(desiredTarget)
       cameraDistance = desiredDistance
@@ -373,7 +379,18 @@ function buildMuseumJourneyScene(
     // With auto-reset disabled this single reset includes Three's shadow pass
     // in the same totals as the visible scene draw.
     renderer.info.reset()
-    renderer.render(scene, camera)
+    try {
+      renderer.render(scene, camera)
+      if (models !== undefined && !firstFrameVerified) {
+        verifyFirstFrame(renderer.getContext())
+        firstFrameVerified = true
+      }
+    } catch (error) {
+      failGraphics(
+        error instanceof Error ? error : new Error('The museum frame failed.'),
+      )
+      return
+    }
     const projections = definition.stages.map((stage) => {
       const projected = projectJourneyStage(
         journeyMarkerPoint(stage),
@@ -528,8 +545,7 @@ function buildMuseumJourneyScene(
     renderer.domElement.removeEventListener('wheel', onWheel),
   )
 
-  const onContextLost = (event: Event): void => {
-    event.preventDefault()
+  function failGraphics(error: Error): void {
     if (disposed || contextLost) return
     contextLost = true
     abort.abort()
@@ -540,9 +556,12 @@ function buildMuseumJourneyScene(
     progressDisplay?.dispose()
     progressDisplay = undefined
     delete renderer.domElement.dataset.journeyProgress
-    const error = new Error('The floating museum lost its graphics context.')
     failProjection(error)
     options.onFailure(error)
+  }
+  const onContextLost = (event: Event): void => {
+    event.preventDefault()
+    failGraphics(new Error('The floating museum lost its graphics context.'))
   }
   renderer.domElement.addEventListener('webglcontextlost', onContextLost)
   onConstructionFailure(() =>

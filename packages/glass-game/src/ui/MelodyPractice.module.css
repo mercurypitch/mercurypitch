@@ -256,6 +256,11 @@
   color: #f4f7ee;
 }
 
+.actions button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .utilityRow {
   display: flex;
   align-items: flex-start;

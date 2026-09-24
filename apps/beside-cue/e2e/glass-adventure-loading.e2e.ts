@@ -1,5 +1,6 @@
 // Museum loading — opaque concealment, blocked input, recoverable failures and tutorial entry.
 import { expect, test, type Page } from '@playwright/test'
+import { fileURLToPath } from 'node:url'
 
 test.use({
   viewport: { width: 640, height: 480 },
@@ -326,4 +327,125 @@ test('First Light teaching appears after loading and is skippable and replayable
   await expect(tutorial).toBeVisible()
   await tutorial.getByRole('button', { name: 'Skip tutorial' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+// This uses real WebGL draws, unlike the DOM-focused loading cases above.
+test('half-resolution glass waits through hidden layouts without invalid framebuffers @smoke', async ({
+  page,
+}) => {
+  await page.route('**/__viewport-proof', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<html><body></body></html>',
+    }),
+  )
+  await page.goto('/__viewport-proof')
+  const proof = await page.evaluate(
+    async ({ viewportModule, threeModule }) => {
+      const { canRenderViewport } = await import(viewportModule)
+      const THREE = await import(threeModule)
+      const renderer = new THREE.WebGLRenderer({ antialias: true })
+      renderer.transmissionResolutionScale = 0.5
+      const scene = new THREE.Scene()
+      scene.background = new THREE.Color('#6688aa')
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
+      camera.position.z = 3
+      const geometry = new THREE.BoxGeometry()
+      const material = new THREE.MeshPhysicalMaterial({
+        transmission: 1,
+        roughness: 0.1,
+      })
+      scene.add(new THREE.Mesh(geometry, material))
+      const gl = renderer.getContext()
+      const frames: {
+        ratio: number
+        size: number
+        drawn: boolean
+        error: number
+      }[] = []
+      try {
+        for (const ratio of [1, 0.5, 1.5]) {
+          renderer.setPixelRatio(ratio)
+          for (const size of [0, 1, 2, 4, 128, 0, 128]) {
+            const drawn = canRenderViewport(size, size, ratio)
+            if (drawn) {
+              renderer.setSize(size, size, false)
+              renderer.render(scene, camera)
+            }
+            frames.push({ ratio, size, drawn, error: gl.getError() })
+          }
+        }
+        return frames
+      } finally {
+        geometry.dispose()
+        material.dispose()
+        renderer.dispose()
+        renderer.forceContextLoss()
+      }
+    },
+    {
+      viewportModule: `/@fs${fileURLToPath(new URL('../../../packages/glass-game/src/render/viewport.ts', import.meta.url))}`,
+      threeModule: `/@fs${fileURLToPath(new URL('../../../packages/glass-game/node_modules/three/build/three.module.js', import.meta.url))}`,
+    },
+  )
+  expect(proof).toHaveLength(21)
+  expect(proof.every((frame) => frame.error === 0)).toBe(true)
+  expect(
+    proof.filter((frame) => frame.size <= 1).every((frame) => !frame.drawn),
+  ).toBe(true)
+  expect(
+    proof.filter((frame) => frame.size === 128).every((frame) => frame.drawn),
+  ).toBe(true)
+})
+
+test('a failed first GPU upload offers a fresh-scene retry without losing the saved checkpoint', async ({
+  page,
+}) => {
+  await prepare(page)
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'beside-cue:glass-adventure:progress:glassworks',
+      JSON.stringify({
+        version: 1,
+        levelId: 'glassworks',
+        checkpointId: 'goblet',
+        completedBreakableIds: ['glassworks.first-goblet'],
+      }),
+    )
+    const getError = WebGL2RenderingContext.prototype.getError
+    let failNextGallery = true
+    WebGL2RenderingContext.prototype.getError = function () {
+      if (
+        failNextGallery &&
+        this.canvas instanceof HTMLCanvasElement &&
+        this.canvas.getAttribute('aria-label') === 'Floating glass museum'
+      ) {
+        failNextGallery = false
+        return this.INVALID_OPERATION
+      }
+      return getError.call(this)
+    }
+  })
+  await page.goto('/glass-game/')
+  const cover = page.getByTestId('glass-loading-screen')
+  await expect(cover).toHaveAttribute('data-phase', 'error', {
+    timeout: 60_000,
+  })
+  await expect(cover).toContainText('graphics connection stopped')
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'false',
+  )
+  await cover.getByRole('button', { name: 'Retry', exact: true }).click()
+  await ready(page)
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem(
+            'beside-cue:glass-adventure:progress:glassworks',
+          ) ?? '{}',
+        ).completedBreakableIds,
+    ),
+  ).toContain('glassworks.first-goblet')
 })

@@ -3,7 +3,8 @@
 import type { BreakableDefinition, ChallengeDefinition, GameEvent, GlassGame, LevelDefinition, PitchObservation, PitchTargetId, PitchTargets, } from '../contracts'
 import { createChallengeJudge } from '../core/challenge'
 import type { GlassGameHost, GlassSound, GlassVoiceSession } from '../host'
-import { microphoneError } from './mic-error'
+import type { MicrophoneIssue } from './mic-error'
+import { microphoneIssue } from './mic-error'
 
 export type VoiceChallengeMode =
   | 'off'
@@ -38,7 +39,7 @@ interface VoiceChallengeOptions {
   beforeCapture(): Promise<void>
   onChange(snapshot: VoiceChallengeSnapshot): void
   onEvents(events: GameEvent[]): void
-  onError(message: string): void
+  onError(message: string, microphone?: MicrophoneIssue): void
   onPauseAudio(): void
   onReleaseVoice(): void
   now?: () => number
@@ -323,10 +324,10 @@ export function createVoiceChallenge(
     if (!disposed && options.canPlay()) options.game.setPaused(false)
   }
 
-  const fail = (message: string): void => {
+  const fail = (message: string, microphone?: MicrophoneIssue): void => {
     options.onPauseAudio()
     cancel()
-    if (!disposed) options.onError(message)
+    if (!disposed) options.onError(message, microphone)
   }
 
   const syncProgress = (): void => {
@@ -634,7 +635,8 @@ export function createVoiceChallenge(
       await advanceCalibration(run)
     } catch (cause) {
       if (disposed || run !== generation) return
-      fail(microphoneError(cause))
+      const issue = microphoneIssue(cause)
+      fail(issue.message, issue)
     }
   }
 

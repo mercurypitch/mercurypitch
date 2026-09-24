@@ -54,8 +54,10 @@ function reflectionTargetSize(
       : 384
   const scale = Math.min(1, maximum / Math.max(safeWidth, safeHeight))
   return {
-    width: Math.max(1, Math.round(safeWidth * scale)),
-    height: Math.max(1, Math.round(safeHeight * scale)),
+    // Reflected glass uses the same half-resolution transmission pass as the
+    // main camera, so even a narrow resized view needs two target pixels.
+    width: Math.max(2, Math.round(safeWidth * scale)),
+    height: Math.max(2, Math.round(safeHeight * scale)),
     frameInterval: detailed
       ? compact
         ? 6

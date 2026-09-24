@@ -15,6 +15,8 @@ import { CAMERA_COMFORT_PREFERENCE, normalizeCameraComfort, parseCameraComfort, 
 import { createAdventureInput } from './input'
 import type { AdventureLoadingPhase } from './loading-lifecycle'
 import { createAdventureLoadingLifecycle } from './loading-lifecycle'
+import type { MicrophoneIssue, MicrophoneRecoveryAction } from './mic-error'
+import { microphoneTakeoverTimedOut } from './mic-error'
 import { createAdventureNarration } from './narration'
 import { createAdventureSoundscape } from './soundscape'
 import { hasSeenTutorial, markTutorialSeen } from './tutorial-progress'
@@ -54,6 +56,10 @@ export function useAdventure(
   const [loadError, setLoadError] = createSignal<string | null>(null)
   const ready = () => loadingPhase() === 'ready'
   const [error, setError] = createSignal<string | null>(null)
+  const [microphoneIssue, setMicrophoneIssue] =
+    createSignal<MicrophoneIssue | null>(null)
+  const [microphoneRecoveryPending, setMicrophoneRecoveryPending] =
+    createSignal(false)
   const [voiceState, setVoiceState] = createSignal<VoiceChallengeSnapshot>()
   const voiceMode = () => voiceState()?.mode ?? 'off'
   const voicePanelVisible = createMemo(() => voiceMode() !== 'off')
@@ -214,7 +220,10 @@ export function useAdventure(
       refresh()
     },
     onEvents: events,
-    onError: setError,
+    onError: (message, microphone) => {
+      setError(message)
+      setMicrophoneIssue(microphone ?? null)
+    },
     onPauseAudio: () => soundscape.pause(),
     onReleaseVoice: () => {
       narration.releaseVoice()
@@ -234,8 +243,65 @@ export function useAdventure(
     )
       return
     setError(null)
+    setMicrophoneIssue(null)
     input.clear()
     await voiceChallenge.start(id)
+  }
+
+  function microphoneRecoveryAction(): MicrophoneRecoveryAction {
+    const action = microphoneIssue()?.action ?? 'none'
+    if (action === 'take-over' && host.takeOverMicrophone === undefined)
+      return 'none'
+    return action
+  }
+
+  async function releaseUnusedMicrophoneTakeover(): Promise<void> {
+    try {
+      await host.releaseUnusedMicrophoneTakeover?.()
+    } catch {
+      // A later acquisition rechecks the shared lock; cleanup must stay silent.
+    }
+  }
+
+  async function recoverMicrophone(): Promise<void> {
+    const action = microphoneRecoveryAction()
+    if (action === 'none' || microphoneRecoveryPending()) return
+    if (action === 'retry') {
+      await start()
+      return
+    }
+    const takeOver = host.takeOverMicrophone
+    if (takeOver === undefined) return
+    setMicrophoneRecoveryPending(true)
+    let moved = false
+    try {
+      moved = await takeOver()
+      if (!alive) {
+        if (moved) await releaseUnusedMicrophoneTakeover()
+        return
+      }
+      if (!moved) {
+        const issue = microphoneTakeoverTimedOut()
+        setMicrophoneIssue(issue)
+        setError(issue.message)
+        return
+      }
+      setMicrophoneIssue(null)
+      setError(null)
+      await start()
+      if (voiceMode() === 'off') await releaseUnusedMicrophoneTakeover()
+    } catch {
+      if (!alive) {
+        if (moved) await releaseUnusedMicrophoneTakeover()
+        return
+      }
+      const issue = microphoneTakeoverTimedOut()
+      setMicrophoneIssue(issue)
+      setError(issue.message)
+      if (moved) await releaseUnusedMicrophoneTakeover()
+    } finally {
+      if (alive) setMicrophoneRecoveryPending(false)
+    }
   }
 
   function pause(): void {
@@ -496,11 +562,15 @@ export function useAdventure(
         (phase === 'ready' || needsStableFrame)
       )
         try {
-          activeRenderer.render(game.snapshot(), Math.min(0.05, elapsed), {
-            challengeEncounterId: voiceState()?.encounterId ?? null,
-            paused: paused() || tutorial(),
-            safeBottomFraction: challengeSafeBottom(),
-          })
+          const rendered = activeRenderer.render(
+            game.snapshot(),
+            Math.min(0.05, elapsed),
+            {
+              challengeEncounterId: voiceState()?.encounterId ?? null,
+              paused: paused() || tutorial(),
+              safeBottomFraction: challengeSafeBottom(),
+            },
+          )
           // Inspection attributes are sampled, not a second per-frame UI loop.
           if (needsStableFrame || now - lastCameraMetricsAt >= 100) {
             lastCameraMetricsAt = now
@@ -512,7 +582,7 @@ export function useAdventure(
               activeRenderer.nearbyArtwork(game.snapshot().player.position),
             )
           }
-          if (activeRenderer === renderer && needsStableFrame) {
+          if (rendered && activeRenderer === renderer && needsStableFrame) {
             loading.frameRendered(rendererGeneration)
           }
         } catch {
@@ -615,6 +685,10 @@ export function useAdventure(
     retryLoading,
     ready,
     error,
+    microphoneIssue,
+    microphoneRecoveryAction,
+    microphoneRecoveryPending,
+    recoverMicrophone,
     voiceMode,
     pitch,
     target,

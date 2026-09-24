@@ -426,7 +426,22 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         </Show>
         <Show when={adventure.error()}>
           <div class={styles.error} role="alert">
-            {adventure.error()}
+            <p>{adventure.error()}</p>
+            <Show when={adventure.microphoneRecoveryAction() !== 'none'}>
+              <button
+                class={styles.errorAction}
+                type="button"
+                disabled={adventure.microphoneRecoveryPending()}
+                aria-busy={adventure.microphoneRecoveryPending()}
+                onClick={() => void adventure.recoverMicrophone()}
+              >
+                {adventure.microphoneRecoveryPending()
+                  ? 'Moving microphone…'
+                  : adventure.microphoneRecoveryAction() === 'take-over'
+                    ? 'Use it here'
+                    : 'Try again'}
+              </button>
+            </Show>
           </div>
         </Show>
         <Show
@@ -445,7 +460,13 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               adventure.snapshot().phase === 'shattering'
             }
           />
-          <Show when={adventure.voiceMode() === 'off' && nearby()}>
+          <Show
+            when={
+              adventure.voiceMode() === 'off' &&
+              adventure.microphoneIssue() === null &&
+              nearby()
+            }
+          >
             <div class={styles.encounterOffer}>
               <span>
                 {nearby()?.optional === true

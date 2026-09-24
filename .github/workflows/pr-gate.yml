@@ -480,6 +480,7 @@ jobs:
             encore,
             journey,
             loading,
+            mic-recovery,
             music,
             narration,
             replay,

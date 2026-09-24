@@ -1,4 +1,5 @@
 // Browser host — storage, microphone and audio adapters for either product shell.
+import { micManager } from '@irchiinnuss/pitch-engine'
 import type { GlassGameHost } from '../host'
 import { createBrowserGlassSound } from './glass-sound'
 import { createBrowserMelodyReference } from './melody-reference'
@@ -34,6 +35,8 @@ export function createBrowserGlassHost(
   return {
     assetUrl: options.assetUrl,
     createVoice: createBrowserVoice,
+    takeOverMicrophone: () => micManager.takeOverFromOtherTab(),
+    releaseUnusedMicrophoneTakeover: () => micManager.releaseTakeoverIfUnused(),
     createSound: createBrowserGlassSound,
     createMelodyReference: createBrowserMelodyReference,
     memories: createBrowserMemoryStore(options.storagePrefix),
