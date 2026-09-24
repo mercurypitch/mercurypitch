@@ -31,8 +31,9 @@ Commit and push each coherent stage; keep #861 open for owner acceptance.
      with coherent curved treads and natural arrivals. Preserve raw asset lineage.
 - [x] Review all five changes together; resolve findings and inspect polished
       phone/tablet/desktop layouts and actual rendered art at matched cameras.
-- [ ] Run focused behavior/regression checks, required proportional pre-push gates,
-      commit/push stages and review exact-head CI. Update the PR description.
+- [x] Run focused behavior/regression checks and required proportional pre-push
+      gates; commit/push coherent stages and update the PR description.
+- [ ] Review final exact-head CI after the cold-start rendering correction.
 - [ ] Provide the owner a current preview/build and concise device test route.
       Device singing, sustained performance and camera feel remain owner acceptance.
 
@@ -131,3 +132,21 @@ images must come from the real runtime, not only offline render scenes.
   package export; the inventory uses that export without changing compiler flags.
   A child-Node inventory test reproduces the old failure and passes after the fix;
   Node 22 independently loads all 88 variants. Cloud checks will rerun on the fix.
+- The next cloud pass on `6e623f8f` passed web packaging, both native games builds,
+  all unit/type/lint/health gates and the new Encore and render-quality suites.
+  Full browser coverage found an obsolete camera assertion (a short side tap
+  was required to swing 90 degrees) and a real-raster phone startup error under
+  Balanced quality across controls/voice/journey. The camera test now checks
+  steady brief corrections and completed sustained turns at three zooms;
+  the prior assertion reproduced red and the updated case passes. The phone
+  startup cause is under investigation before the final CI/handoff checkpoint.
+- Cold-start root cause is confirmed: Balanced disabled automatic shadows before
+  the initial reflection probe, which then sampled an uninitialized shadow
+  texture. Asset requests all succeeded; real SwiftShader draws reported a
+  texture/sampler mismatch. Initializing the manual shadow update before the
+  first offscreen scene render fixes the cause without bypassing first-frame
+  validation. Probe/main-frame, fresh-renderer recovery and High-to-Balanced
+  cadence regressions pass (21 renderer tests); the old setup fails the new probe
+  assertion. All six controls browser tests pass, and both unchanged phone
+  voice/journey cases pass with real raster output. Source and scoped checks
+  are reviewed; exact-head CI follows this final correction.

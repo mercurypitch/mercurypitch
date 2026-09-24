@@ -791,6 +791,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** raycast the delivered donor from the actual viewing side and inspect a rendered earned state. Preserve the inset silhouette/UVs and derive front clearance from geometry; do not substitute a rectangle or trust texture-install diagnostics as visual proof.
 **See:** `packages/glass-game/src/journey/architecture.ts`, `art/glass-adventure/journey-map/v4/proofs/runtime/`.
 
+### Initialize manual shadows before offscreen startup renders
+
+**Symptom:** phone assets loaded successfully, then first-frame validation reported a graphics failure; desktop High quality worked.
+**Cause:** Balanced disabled automatic shadows, but the reflection probe rendered before the main cadence requested its first shadow update. Three sampled a placeholder texture with the wrong sampler type.
+**Rule:** prime manual shadows before any scene render, including startup probes. Test cold startup in each automatic profile with real pixels; a High-to-Balanced switch or no-raster input test misses this boundary.
+**See:** `packages/glass-game/src/render/glass-renderer.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
