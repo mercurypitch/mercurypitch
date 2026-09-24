@@ -1,0 +1,93 @@
+{
+  "url": "http://127.0.0.1:5613/glass-game/?campaign=1",
+  "renderer": "ANGLE (AMD, Vulkan 1.4.359 (AMD Radeon RX 9070 XT (RADV GFX1201) (0x00007550)), radv)",
+  "proofs": [
+    {
+      "id": "first-light-isle",
+      "title": "First Light Gallery",
+      "file": "first-light",
+      "zoom": 0.8,
+      "yaw": -0.62,
+      "pitch": 0.81,
+      "metrics": {
+        "drawCalls": 281,
+        "triangles": 4086938,
+        "geometries": 58,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "id": "glassworks-isle",
+      "title": "Glassworks Journey",
+      "file": "glassworks",
+      "zoom": 0.65,
+      "yaw": 0.1,
+      "pitch": 0.77,
+      "metrics": {
+        "drawCalls": 281,
+        "triangles": 4086938,
+        "geometries": 58,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "id": "twin-galleries-isle",
+      "title": "Twin Galleries",
+      "file": "twin-galleries",
+      "zoom": 0.83,
+      "yaw": 0.27,
+      "pitch": 0.83,
+      "metrics": {
+        "drawCalls": 281,
+        "triangles": 4086938,
+        "geometries": 58,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "id": "resonance-conservatory-isle",
+      "title": "Resonance Conservatory",
+      "file": "conservatory",
+      "zoom": 0.83,
+      "yaw": 0.62,
+      "pitch": 0.83,
+      "metrics": {
+        "drawCalls": 281,
+        "triangles": 4086938,
+        "geometries": 58,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "id": "twin-galleries-isle",
+      "title": "Twin Galleries",
+      "file": "bridge-connections",
+      "zoom": 0.42,
+      "yaw": 0.06,
+      "pitch": 0.71,
+      "metrics": {
+        "drawCalls": 281,
+        "triangles": 4086938,
+        "geometries": 58,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    }
+  ],
+  "errors": [],
+  "evidence": "Actual game raster, desktop Chromium. Not device performance acceptance."
+}

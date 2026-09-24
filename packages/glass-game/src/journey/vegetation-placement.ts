@@ -3,6 +3,7 @@
 import type { Group, Mesh, Object3D } from 'three'
 import { InstancedMesh, Matrix4, Quaternion, Vector3 } from 'three'
 import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyLandmass, MuseumJourneySpillway, } from '../content/museum-journey'
+import { clearsJourneyStairway } from './terrace-layout'
 
 export interface VegetationFootprint {
   position: Vector3
@@ -19,8 +20,11 @@ export interface AuthoredFlowerPlacement {
 export const AUTHORED_CYPRESS_BASE_RADIUS = 0.24
 const AUTHORED_FLOWER_BASE_RADIUS = 0.48
 const VEGETATION_GAP = 0.08
+// The shipped map_platform top measures 3.288 m on both X and Z. Keep a
+// conservative depth inset for its chamfered rim; the old 1.233 value used a
+// second, nonexistent 0.75 Z scale and rejected valid side-garden placements.
 const TERRACE_HALF_WIDTH = 1.644
-const TERRACE_HALF_DEPTH = 1.233
+const TERRACE_HALF_DEPTH = 1.5
 
 export function rimPoint(
   island: MuseumJourneyLandmass,
@@ -30,9 +34,13 @@ export function rimPoint(
   const radiusX = island.terraceScale[0] * 1.38 * inset
   const radiusZ = island.terraceScale[2] * 1.38 * inset
   return new Vector3(
-    island.position[0] + Math.cos(angle + island.yaw) * radiusX,
+    island.position[0] +
+      Math.cos(island.yaw) * Math.cos(angle) * radiusX +
+      Math.sin(island.yaw) * Math.sin(angle) * radiusZ,
     island.position[1] + 0.05,
-    island.position[2] + Math.sin(angle + island.yaw) * radiusZ,
+    island.position[2] -
+      Math.sin(island.yaw) * Math.cos(angle) * radiusX +
+      Math.cos(island.yaw) * Math.sin(angle) * radiusZ,
   )
 }
 
@@ -99,6 +107,7 @@ export function clearsJourneyLandmarks(
   footprintRadius = 0,
 ): boolean {
   for (const stage of definition.stages) {
+    if (!clearsJourneyStairway(stage, point, footprintRadius)) return false
     if (
       Math.hypot(point.x - stage.position[0], point.z - stage.position[2]) <
       0.8 + footprintRadius
@@ -138,7 +147,7 @@ export function clearsJourneyLandmarks(
       bridge.width * 0.5 + 0.08 + footprintRadius
     )
       return false
-  return true
+  return clearsJourneyArchitecture(definition, point, footprintRadius)
 }
 
 function clearsJourneyArchitecture(
@@ -159,8 +168,8 @@ function clearsJourneyArchitecture(
     const dz = point.z - stage.architecturePosition[2]
     const sine = Math.sin(stage.yaw)
     const cosine = Math.cos(stage.yaw)
-    const localX = cosine * dx + sine * dz
-    const localZ = -sine * dx + cosine * dz
+    const localX = cosine * dx - sine * dz
+    const localZ = sine * dx + cosine * dz
     const clearanceX = halfWidth * stage.scale + footprintRadius
     const clearanceZ = halfDepth * stage.scale + footprintRadius
     if (
@@ -173,7 +182,7 @@ function clearsJourneyArchitecture(
   return true
 }
 
-function fitsIslandTerrace(
+export function fitsIslandTerrace(
   island: MuseumJourneyLandmass,
   point: Vector3,
   footprintRadius: number,
@@ -182,8 +191,8 @@ function fitsIslandTerrace(
   const dz = point.z - island.position[2]
   const sine = Math.sin(island.yaw)
   const cosine = Math.cos(island.yaw)
-  const localX = cosine * dx + sine * dz
-  const localZ = -sine * dx + cosine * dz
+  const localX = cosine * dx - sine * dz
+  const localZ = sine * dx + cosine * dz
   const radiusX = island.terraceScale[0] * TERRACE_HALF_WIDTH - footprintRadius
   const radiusZ = island.terraceScale[2] * TERRACE_HALF_DEPTH - footprintRadius
   if (radiusX <= 0 || radiusZ <= 0) return false
@@ -446,9 +455,9 @@ export function createAuthoredFlowerPlacement(
       const sine = Math.sin(island.yaw)
       const cosine = Math.cos(island.yaw)
       const point = new Vector3(
-        island.position[0] + cosine * localX - sine * localZ,
+        island.position[0] + cosine * localX + sine * localZ,
         island.position[1] + 0.05,
-        island.position[2] + sine * localX + cosine * localZ,
+        island.position[2] - sine * localX + cosine * localZ,
       )
       const direction = point.clone().sub(islandCenter).setY(0).normalize()
       return { angle, point, score: direction.dot(frontDirection) }
