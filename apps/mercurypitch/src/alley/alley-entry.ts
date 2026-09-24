@@ -34,6 +34,13 @@ export const REVEAL_MS = 240
 export const ROOM_WAIT_MS = 1500
 /** Past this the arrival is released whatever else happened. */
 export const ARRIVAL_FAILSAFE_MS = 4000
+/**
+ * The clone's fade when the user went somewhere else after it covered. With
+ * the poll below and the removal's slack, the clone is gone inside 120 ms.
+ */
+export const LEAVE_MS = 80
+/** How often a covered clone asks whether the user is still going its way. */
+const AWAY_POLL_MS = 20
 
 export interface DoorOpenPlan {
   readonly door: DoorLayout
@@ -56,6 +63,13 @@ export interface DoorOpenPlan {
   readonly ambientSilent: Promise<void>
   /** The clone covers the screen: mount the room under it. */
   readonly onCovered: () => void
+  /**
+   * Asked, once covered, until the clone is gone: has the user gone somewhere
+   * other than the door's room (a rail tab, More, the pill, Back)? Then the
+   * clone gets out of the way at once instead of waiting on a room that is
+   * no longer coming.
+   */
+  readonly away: () => boolean
   /** Hold the room's own arrival; the returned function lets it start. */
   readonly holdArrival: () => () => void
 }
@@ -71,17 +85,52 @@ const wait = (ms: number): Promise<void> =>
     window.setTimeout(resolve, ms)
   })
 
-/** The room's background element, once it exists and its picture decodes. */
-async function roomDrawn(selector: string): Promise<void> {
+/**
+ * Wait for the room's background element to exist and its picture to decode,
+ * or for the deadline. Ends early, answering false, when `away()` says the
+ * user went elsewhere or the room's element is unmounted: nothing is coming
+ * to be revealed. True otherwise.
+ */
+async function roomDrawn(
+  selector: string,
+  away: () => boolean,
+): Promise<boolean> {
   const deadline = performance.now() + ROOM_WAIT_MS
   let element: Element | null = null
-  while (element === null && performance.now() < deadline) {
-    element = document.querySelector(selector)
-    if (element === null) await wait(40)
-  }
-  if (element === null) return
+  let over = false
+  let left = false
+  const watching = new Promise<void>((resolve) => {
+    const tick = (): void => {
+      if (over) return resolve()
+      if (away() || (element !== null && !element.isConnected)) {
+        left = true
+        return resolve()
+      }
+      window.setTimeout(tick, AWAY_POLL_MS)
+    }
+    tick()
+  })
+  const drawing = (async (): Promise<void> => {
+    while (element === null && !left && performance.now() < deadline) {
+      element = document.querySelector(selector)
+      if (element === null) await wait(40)
+    }
+    if (element === null || left) return
+    await backgroundDecoded(element, deadline)
+    // Unmounted while its picture was being waited on: nothing to reveal.
+    if (!element.isConnected) left = true
+  })()
+  await Promise.race([watching, drawing])
+  over = true
+  return !left
+}
+
+async function backgroundDecoded(
+  element: Element,
+  deadline: number,
+): Promise<void> {
   let url: string | null = null
-  while (url === null && performance.now() < deadline) {
+  while (url === null && element.isConnected && performance.now() < deadline) {
     url = backgroundUrl(window.getComputedStyle(element).backgroundImage)
     if (url === null) await wait(40)
   }
@@ -235,8 +284,9 @@ function startOpen(
   }
 
   const reveal = async (): Promise<void> => {
-    await roomDrawn(plan.roomBackground)
-    const fade = plan.reduced ? REDUCED_MS : REVEAL_MS
+    const drawn = await roomDrawn(plan.roomBackground, plan.away)
+    // Gone elsewhere: out of the way at once, over whatever is there now.
+    const fade = !drawn ? LEAVE_MS : plan.reduced ? REDUCED_MS : REVEAL_MS
     clone.dataset.phase = 'revealing'
     clone.style.transition = `opacity ${fade}ms linear`
     clone.style.opacity = '0'

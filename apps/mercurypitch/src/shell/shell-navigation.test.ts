@@ -9,7 +9,7 @@ import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { canGoBack, installHistoryDepth } from './history-depth'
 import { openColumn, openMore, pushed, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
-import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorClear, registerDoorOpen, resolveBack, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
+import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorClear, registerDoorOpen, resolveBack, returnToRun, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
 
 // Only for the ORDER of the first four outcomes, which never reach history.
 // Everything about leaving the room is driven through the real host below:
@@ -146,6 +146,30 @@ describe('a door open in flight', () => {
 
     expect(cancel).toHaveBeenCalledTimes(1)
     expect(window.location.hash).toContain('progress')
+  })
+
+  it('the pill calls it off and still goes back to the run', () => {
+    // A keyboard press on the pill fires no pointerdown, and the grow's last
+    // frame could cover and navigate to the door's room over the run's.
+    unregister = registerRunControls({
+      tab: TAB_SINGING,
+      roomLabel: 'Sing',
+      isPlaying: () => true,
+      isPaused: () => false,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+    })
+    setPlaybackState('playing')
+    setActiveTab(TAB_HOME)
+    const cancel = vi.fn(() => true)
+    registerDoorOpen(cancel)
+
+    returnToRun()
+
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(window.location.hash).toContain('singing')
   })
 
   it('an open that has covered is not in flight any more', () => {

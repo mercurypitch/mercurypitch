@@ -33,6 +33,7 @@ function plan(over: Partial<DoorOpenPlan> = {}): DoorOpenPlan {
     roomBackground: '[data-testid="sing-cover"]',
     ambientSilent: Promise.resolve(),
     onCovered: () => undefined,
+    away: () => false,
     holdArrival: held,
     ...over,
   }
@@ -137,6 +138,43 @@ describe('an open called off', () => {
     expect(roomArrivalHeld()).toBe(true)
     await vi.advanceTimersByTimeAsync(5000)
     expect(roomArrivalHeld()).toBe(false)
+  })
+})
+
+describe('somewhere else, once the clone has covered', () => {
+  // Covered, the open cannot be called off: the room is being mounted. A rail
+  // tab, More or Back in the wait for the room's background left the new
+  // surface under an opaque clone until the deadline and the fade, 1.7 s.
+  it('the clone is gone within 120 ms of the user going elsewhere', async () => {
+    let elsewhere = false
+    const open = openDoor(plan({ away: () => elsewhere }))
+    await vi.advanceTimersByTimeAsync(700)
+    expect(open.clone.dataset.phase).toBe('covered')
+
+    elsewhere = true
+    await vi.advanceTimersByTimeAsync(120)
+    expect(open.clone.isConnected).toBe(false)
+  })
+
+  it('the clone is gone within 120 ms of the room unmounting', async () => {
+    // A room that mounted but has not drawn its background yet.
+    const room = document.createElement('div')
+    room.dataset.testid = 'sing-cover'
+    document.body.appendChild(room)
+    const open = openDoor(plan())
+    await vi.advanceTimersByTimeAsync(700)
+    expect(open.clone.dataset.phase).toBe('covered')
+
+    room.remove()
+    await vi.advanceTimersByTimeAsync(120)
+    expect(open.clone.isConnected).toBe(false)
+  })
+
+  it('a room that stays waits out its background as before', async () => {
+    const open = openDoor(plan())
+    await vi.advanceTimersByTimeAsync(700)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(open.clone.isConnected).toBe(true)
   })
 })
 

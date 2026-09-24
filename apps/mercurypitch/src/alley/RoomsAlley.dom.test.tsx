@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TAB_SINGING } from '@/features/tabs/constants'
+import { TAB_PROGRESS, TAB_SINGING } from '@/features/tabs/constants'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
 import type * as RunShell from '../shell/run-shell-store'
@@ -149,6 +149,39 @@ describe('entering a room from the alley', () => {
     expect(nav.goToTab).not.toHaveBeenCalled()
     expect(welcome.welcomeSeen()).toBe(false)
     expect(el('rooms-alley').dataset.phase).toBe('rest')
+  })
+})
+
+describe('somewhere else, after the clone has covered', () => {
+  // The open cannot be called off once covered, and the clone waited up to
+  // 1.7 s on a room the user had already left: a rail tab, More, the pill
+  // or Back changed the surface under an opaque clone.
+  it('a rail tab: the clone is gone within 120 ms', async () => {
+    const { el, shell } = await mountAlley()
+    const ui = await import('@/stores/ui-store')
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(document.querySelector('[data-testid="alley-morph"]')).not.toBeNull()
+
+    // What goToTab(TAB_PROGRESS) and the router do.
+    window.location.hash = '#/progress'
+    ui.setActiveTab(TAB_PROGRESS)
+    expect(shell.currentTab()).toBe(TAB_PROGRESS)
+    await vi.advanceTimersByTimeAsync(120)
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+  })
+
+  it('More over the room: the clone is gone within 120 ms', async () => {
+    const { el, shell } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(document.querySelector('[data-testid="alley-morph"]')).not.toBeNull()
+
+    shell.openMore()
+    await vi.advanceTimersByTimeAsync(120)
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
   })
 })
 

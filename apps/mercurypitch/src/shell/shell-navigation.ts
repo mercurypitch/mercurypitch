@@ -142,6 +142,8 @@ export function goToTab(tab: ActiveTab): void {
 export function returnToRun(): void {
   const owner = runOwner()
   if (owner === null) return
+  // As for a rail tab: a door still growing would navigate on top of this.
+  cancelDoorOpen()
   closeColumn()
   closeMore()
   popScreen()

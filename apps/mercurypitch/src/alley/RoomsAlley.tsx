@@ -33,7 +33,7 @@ import { roomName } from '@/features/rooms/room-names'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { exposeForE2E } from '@/lib/test-utils'
 import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
-import { shellCovered } from '../shell/run-shell-store'
+import { currentTab, shellCovered } from '../shell/run-shell-store'
 import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
@@ -312,6 +312,10 @@ export const RoomsAlley: Component = () => {
       spec.clip !== null && singVideo !== undefined && !singVideo.paused
         ? singVideo
         : null
+    // The door's own route, as the cover left it: the room may rewrite the
+    // hash as it mounts, so "elsewhere" is a different hash AND a different
+    // tab, or a sheet or screen the shell put over the room.
+    let arrivedHash: string | null = null
     const handle = openDoor({
       door: layoutOf(key),
       width: size().w,
@@ -334,7 +338,11 @@ export const RoomsAlley: Component = () => {
         // pressed: an open called off leaves it to be seen again.
         markWelcomeSeen()
         goToTab(tab)
+        arrivedHash = window.location.hash
       },
+      away: () =>
+        untrack(shellCovered) ||
+        (untrack(currentTab) !== tab && window.location.hash !== arrivedHash),
       holdArrival: holdRoomArrival,
     })
     const unregister = registerDoorOpen(cancelOpen)

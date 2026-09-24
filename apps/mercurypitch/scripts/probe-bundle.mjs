@@ -3336,6 +3336,56 @@ async function walkAlley(browser, args, frame) {
       `alley Sing picked then Back: answered '${backAnswer}', still on ${afterBack.hash}, alley ${afterBack.alley.phase}, no card`,
     )
 
+    // ── A rail tab after the cover (PR 859 review, items 21 and 29) ─
+    // Covered, the open cannot be called off: the room is being mounted. A
+    // rail tab in the wait for the room's background once left Progress under
+    // an opaque clone for up to 1.7 s. The clone has to get out of the way.
+    // The room's picture never decodes here, so the clone is still waiting
+    // on it when Progress is tapped: a room that draws fast would reveal on
+    // its own and prove nothing.
+    await page.evaluate(() => {
+      window.__mpDecode = HTMLImageElement.prototype.decode
+      HTMLImageElement.prototype.decode = () => new Promise(() => undefined)
+    })
+    await tapDoor(page, 'sing')
+    await waitPhase(
+      page,
+      'alive',
+      'sing',
+      'Progress after the cover: select Sing',
+    )
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(600)
+    const coveredAt = await page.evaluate(() => ({
+      clone:
+        document.querySelector('[data-testid="alley-morph"]')?.dataset.phase ??
+        null,
+      alley: window.mpAlley?.().phase ?? null,
+    }))
+    await page.locator('[data-rail-item="progress"]').click()
+    await page.waitForTimeout(200)
+    const progressAfter = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+    }))
+    await page.evaluate(() => {
+      HTMLImageElement.prototype.decode = window.__mpDecode
+    })
+    if (
+      coveredAt.clone !== 'covered' ||
+      !progressAfter.hash.includes('progress') ||
+      progressAfter.clone
+    ) {
+      throw new Error(
+        `Progress after the cover: ${JSON.stringify({ coveredAt, ...progressAfter })}`,
+      )
+    }
+    await page.locator('[data-rail-item="rooms"]').click()
+    await waitPhase(page, 'rest', null, 'Progress after the cover: Rooms again')
+    steps.push(
+      `alley Enter, room not drawn, rail Progress at +600 ms (clone ${coveredAt.clone}): on ${progressAfter.hash}, no clone 200 ms later`,
+    )
+
     // ── Reduced motion ────────────────────────────────────────
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page
