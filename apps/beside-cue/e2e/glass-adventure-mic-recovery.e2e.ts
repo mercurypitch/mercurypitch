@@ -18,6 +18,7 @@ declare global {
 const MIC_MANAGER_MODULE = `/@fs${fileURLToPath(
   new URL('../../../packages/pitch-engine/src/mic-manager.ts', import.meta.url),
 )}`
+const CAPTURE_PROOF = process.env.GLASS_MIC_RECOVERY_PROOF === '1'
 
 test.use({
   viewport: { width: 1180, height: 760 },
@@ -144,7 +145,12 @@ async function captureProof(
   testInfo: TestInfo,
   name: string,
 ): Promise<void> {
-  await page.screenshot({ path: testInfo.outputPath(`${name}.png`) })
+  if (!CAPTURE_PROOF) return
+  await page.screenshot({
+    animations: 'disabled',
+    caret: 'hide',
+    path: testInfo.outputPath(`${name}.png`),
+  })
 }
 
 test.afterEach(async ({ page }) => {

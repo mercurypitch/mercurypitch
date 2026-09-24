@@ -90,6 +90,17 @@ recording/privacy/audio ownership. No unresolved GitHub review threads existed
 at review time. All 115 baseline branch commits were authored by the owner.
 This bounded review is not proof that an application of this size has no defects.
 
+## Final CI corrections
+
+The first pushed review revision exposed controller growth beyond the existing
+file-size ratchet; microphone lifecycle is now a separate module, with unchanged
+baseline and passing focused tests/independent review. The permission-denial
+browser scenario now follows the deliberate **Try again** recovery action rather
+than the previous generic start button, and still asserts a fresh encounter and
+no abandoned mic capture. Screenshot readback stalled on the shared CI runner;
+proof capture is opt-in while behavioral, computed-style, geometry, overlap and
+touch assertions remain mandatory. Reviewed PNGs are retained in the proof folder.
+
 ## Follow-ups for the next PR
 
 - One further Floating Museum art pass: compare close-up source and runtime

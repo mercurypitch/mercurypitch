@@ -926,7 +926,7 @@ test('true background cancels a pending permission grant and a late stream canno
   ).toBe(1)
 })
 
-test('permission denial returns to a fresh start instead of leaving the encounter stuck', async ({
+test('permission denial offers an explicit retry into a fresh encounter', async ({
   page,
 }) => {
   await openMuseum(page)
@@ -941,14 +941,19 @@ test('permission denial returns to a fresh start instead of leaving the encounte
     'Microphone access is off.',
   )
   await expect(
-    page.getByRole('button', { name: 'Sing to the glass' }),
+    page.getByRole('alert').getByRole('button', { name: 'Try again' }),
   ).toBeVisible()
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expectMicrophoneOff(page)
 
-  await page.getByRole('button', { name: 'Sing to the glass' }).click()
+  await page
+    .getByRole('alert')
+    .getByRole('button', { name: 'Try again' })
+    .click()
   await expect(
     page.getByRole('heading', { name: 'Hum an easy note.' }),
   ).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
 test('Twin high-note calibration rejects an overlapping range and recovers safely', async ({

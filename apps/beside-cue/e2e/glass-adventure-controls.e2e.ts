@@ -287,7 +287,10 @@ test.describe('phone', () => {
     }
     await page.setViewportSize({ width: 320, height: 740 })
     await page.clock.runFor(32)
-    await page.screenshot({ path: testInfo.outputPath('phone-controls.png') })
+    // Proof capture is opt-in: shared CI GPUs can stall screenshot readback.
+    // Geometry, computed styles, real rendering and input remain mandatory.
+    if (process.env.GLASS_CONTROLS_PROOF === '1')
+      await page.screenshot({ path: testInfo.outputPath('phone-controls.png') })
     await help.tap()
     await expect(
       page.getByRole('dialog', { name: 'A little room to wander.' }),
@@ -297,9 +300,10 @@ test.describe('phone', () => {
     await expect(
       page.getByRole('dialog', { name: 'Camera comfort tuning' }),
     ).toBeVisible()
-    await page.screenshot({
-      path: testInfo.outputPath('phone-tuning-panel.png'),
-    })
+    if (process.env.GLASS_CONTROLS_PROOF === '1')
+      await page.screenshot({
+        path: testInfo.outputPath('phone-tuning-panel.png'),
+      })
     await page.getByRole('button', { name: 'Close camera tuning' }).tap()
     // Resume a released-input frame after the tutorial before pressing Jump.
     await page.clock.runFor(32)

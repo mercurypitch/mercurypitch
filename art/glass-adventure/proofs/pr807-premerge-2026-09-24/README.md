@@ -28,3 +28,8 @@ context menu is prevented, and native CDP touch still jumps. The existing
 three-finger movement/orbit/jump/cancellation case also passes. Safari-prefixed
 selection and callout rules are included; physical iPhone acceptance remains
 with the owner.
+
+Proof screenshot capture can be repeated with `GLASS_MIC_RECOVERY_PROOF=1`
+for the mic spec or `GLASS_CONTROLS_PROOF=1` for the controls spec. CI still
+asserts layout, styling and actual interactions; screenshot readback is optional
+because it stalled on shared CI GPU runners.

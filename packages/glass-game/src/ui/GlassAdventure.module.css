@@ -214,7 +214,8 @@
 }
 @media (max-width: 520px) {
   .error {
-    top: max(224px, calc(env(safe-area-inset-top) + 206px));
+    /* Clear the complete utility rail, including the development Tune action. */
+    top: calc(max(18px, env(safe-area-inset-top)) + 220px);
   }
 }
 .primary {
