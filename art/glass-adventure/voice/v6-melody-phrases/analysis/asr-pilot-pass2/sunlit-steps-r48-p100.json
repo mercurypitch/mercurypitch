@@ -1,0 +1,157 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:04,960"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 4960
+			},
+			"text": " ♪ Tiny sparks can glow ♪",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 0.828994,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:00,210",
+						"to": "00:00:00,640"
+					},
+					"offsets": {
+						"from": 210,
+						"to": 640
+					},
+					"id": 20724,
+					"p": 0.0659757,
+					"t_dtw": -1
+				},
+				{
+					"text": " Tiny",
+					"timestamps": {
+						"from": "00:00:00,780",
+						"to": "00:00:01,500"
+					},
+					"offsets": {
+						"from": 780,
+						"to": 1500
+					},
+					"id": 20443,
+					"p": 0.106983,
+					"t_dtw": -1
+				},
+				{
+					"text": " sparks",
+					"timestamps": {
+						"from": "00:00:01,500",
+						"to": "00:00:02,780"
+					},
+					"offsets": {
+						"from": 1500,
+						"to": 2780
+					},
+					"id": 38306,
+					"p": 0.950509,
+					"t_dtw": -1
+				},
+				{
+					"text": " can",
+					"timestamps": {
+						"from": "00:00:02,780",
+						"to": "00:00:03,430"
+					},
+					"offsets": {
+						"from": 2780,
+						"to": 3430
+					},
+					"id": 460,
+					"p": 0.958114,
+					"t_dtw": -1
+				},
+				{
+					"text": " glow",
+					"timestamps": {
+						"from": "00:00:03,430",
+						"to": "00:00:04,290"
+					},
+					"offsets": {
+						"from": 3430,
+						"to": 4290
+					},
+					"id": 19634,
+					"p": 0.973197,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:04,290",
+						"to": "00:00:04,810"
+					},
+					"offsets": {
+						"from": 4290,
+						"to": 4810
+					},
+					"id": 20724,
+					"p": 0.700571,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_248]",
+					"timestamps": {
+						"from": "00:00:04,960",
+						"to": "00:00:04,960"
+					},
+					"offsets": {
+						"from": 4960,
+						"to": 4960
+					},
+					"id": 50611,
+					"p": 0.0423338,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

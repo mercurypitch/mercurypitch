@@ -1,0 +1,52 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "voice_name": "Merc V1 Gentle Whimsical D2",
+  "model_id": "eleven_v3",
+  "output_format": "pcm_24000",
+  "voice_settings": {
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0,
+    "use_speaker_boost": false,
+    "speed": 1
+  },
+  "lines": [
+    {
+      "id": "shine-gentle",
+      "phrase_id": "let-it-shine",
+      "text": "[sings gently, with three clear notes] Let it shine.",
+      "seed": 2092461
+    },
+    {
+      "id": "shine-playful",
+      "phrase_id": "let-it-shine",
+      "text": "[sings brightly and playfully, with three clear notes] Let it shine.",
+      "seed": 2092462
+    },
+    {
+      "id": "sparks-gentle",
+      "phrase_id": "tiny-sparks-can-glow",
+      "text": "[sings gently, with warm wonder and five clear notes] Tiny sparks can glow.",
+      "seed": 2092463
+    },
+    {
+      "id": "sparks-playful",
+      "phrase_id": "tiny-sparks-can-glow",
+      "text": "[sings playfully, with five clear notes] Tiny sparks can glow.",
+      "seed": 2092464
+    },
+    {
+      "id": "mess-gentle",
+      "phrase_id": "another-beautiful-mess",
+      "text": "[sings gently, with fond mischief and seven clear notes] Another beautiful mess.",
+      "seed": 2092465
+    },
+    {
+      "id": "mess-playful",
+      "phrase_id": "another-beautiful-mess",
+      "text": "[sings playfully, with seven clear notes] Another beautiful mess.",
+      "seed": 2092466
+    }
+  ]
+}

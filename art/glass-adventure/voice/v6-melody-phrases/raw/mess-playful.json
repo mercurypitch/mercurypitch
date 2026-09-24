@@ -1,0 +1,31 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "id": "mess-playful",
+  "phrase_id": "another-beautiful-mess",
+  "text": "[sings playfully, with seven clear notes] Another beautiful mess.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "[sings playfully, with seven clear notes] Another beautiful mess.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 2092466
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-24T19:58:15.770Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "jvaJXmpOoMz6JCKI20WQ",
+  "character_cost": "36",
+  "bytes": 115200,
+  "sha256": "e31157c1e0671a0b53025788ac75d53aa4643071e54b0799dd1742c960c445a1",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 2.4,
+  "completed_at": "2026-09-24T19:58:21.965Z"
+}

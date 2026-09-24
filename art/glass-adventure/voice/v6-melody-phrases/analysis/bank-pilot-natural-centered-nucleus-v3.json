@@ -1,0 +1,263 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "status": "pilot",
+  "codec": "mono 24 kHz MP3 64k",
+  "synthesis": {
+    "pitchSource": "authored contour on naturally voiced WORLD frames",
+    "detectorCarrier": "none",
+    "maximumMappedConsonantEdgeSeconds": 0.065,
+    "sustainedNucleusWindowSeconds": 0.06
+  },
+  "variantFilter": "r50-p100",
+  "roots": [
+    50
+  ],
+  "paces": [
+    1
+  ],
+  "variantCount": 3,
+  "totalBytes": 124164,
+  "maximumBytes": 58220,
+  "pyinMedianAbsoluteCentsMaximum": 0.9396449704144771,
+  "pyinP95AbsoluteCentsMaximum": 6.216557020161883,
+  "maximumSampleDelta": 0.243682861328125,
+  "variants": [
+    {
+      "id": "first-arc-r50-p100",
+      "phraseId": "let-it-shine",
+      "melodyId": "first-arc",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "shine-gentle",
+      "asset": "adventure-voice-v6/first-arc/r50-p100.mp3",
+      "bytes": 24620,
+      "sha256": "07ca624b66b521341dcbe3c48f33b24ff8fb6a52e285ac6743aefb2d545d314a",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.4,
+          0.4600000000000001,
+          0.72,
+          0.77,
+          0.8300000000000001,
+          0.98,
+          1.26,
+          1.32,
+          1.76
+        ],
+        "targetSeconds": [
+          0,
+          0.065,
+          0.9850000000000001,
+          1.05,
+          1.1,
+          2.035,
+          2.1,
+          2.165,
+          2.6350000000000002,
+          2.7
+        ],
+        "nucleusSeconds": [
+          {
+            "start": 0.4,
+            "end": 0.4600000000000001
+          },
+          {
+            "start": 0.77,
+            "end": 0.8300000000000001
+          },
+          {
+            "start": 1.26,
+            "end": 1.32
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 2.985,
+      "peakDb": -8.507366338417931,
+      "maximumSampleDelta": 0.1778564453125,
+      "pyinVoicedFrames": 483,
+      "pyinMedianAbsoluteCents": 0.6370585006308715,
+      "pyinP95AbsoluteCents": 4.9520334664940435,
+      "pyinMaximumAbsoluteCents": 7.4124795293059265
+    },
+    {
+      "id": "sunlit-steps-r50-p100",
+      "phraseId": "tiny-sparks-can-glow",
+      "melodyId": "sunlit-steps",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "sparks-playful",
+      "asset": "adventure-voice-v6/sunlit-steps/r50-p100.mp3",
+      "bytes": 41324,
+      "sha256": "051224a9ea1e84594cd0e68749e2c122bec8dc3fd050f5f26bdf4a8bbc1088a9",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.26,
+          0.295,
+          0.3,
+          0.43999999999999995,
+          0.5,
+          0.5800000000000001,
+          0.8,
+          0.8600000000000001,
+          1.18,
+          1.26,
+          1.32,
+          1.4100000000000001,
+          1.62,
+          1.68,
+          2.0
+        ],
+        "targetSeconds": [
+          0,
+          0.065,
+          1.045,
+          1.05,
+          1.115,
+          2.035,
+          2.1,
+          2.165,
+          3.085,
+          3.15,
+          3.215,
+          4.135,
+          4.2,
+          4.265000000000001,
+          4.734999999999999,
+          4.8
+        ],
+        "nucleusSeconds": [
+          {
+            "start": 0.26,
+            "end": 0.295
+          },
+          {
+            "start": 0.43999999999999995,
+            "end": 0.5
+          },
+          {
+            "start": 0.8,
+            "end": 0.8600000000000001
+          },
+          {
+            "start": 1.26,
+            "end": 1.32
+          },
+          {
+            "start": 1.62,
+            "end": 1.68
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 5.085,
+      "peakDb": -4.834161974973404,
+      "maximumSampleDelta": 0.243682861328125,
+      "pyinVoicedFrames": 816,
+      "pyinMedianAbsoluteCents": 0.6685400428374066,
+      "pyinP95AbsoluteCents": 5.392270152884038,
+      "pyinMaximumAbsoluteCents": 30.637058500630587
+    },
+    {
+      "id": "gallery-arch-r50-p100",
+      "phraseId": "another-beautiful-mess",
+      "melodyId": "gallery-arch",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "mess-gentle",
+      "asset": "adventure-voice-v6/gallery-arch/r50-p100.mp3",
+      "bytes": 58220,
+      "sha256": "89a95bdd745c312fdec9436daf4c852df190d8f9a707b7da4006cf5f9619662c",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.16,
+          0.22,
+          0.29,
+          0.46,
+          0.515,
+          0.52,
+          0.6499999999999999,
+          0.71,
+          0.88,
+          1.1375,
+          1.1975,
+          1.26,
+          1.3475,
+          1.4075,
+          1.44,
+          1.48,
+          1.54,
+          1.69,
+          1.86,
+          1.9200000000000002,
+          2.24
+        ],
+        "targetSeconds": [
+          0,
+          0.065,
+          0.9850000000000001,
+          1.05,
+          1.115,
+          2.095,
+          2.1,
+          2.165,
+          3.085,
+          3.15,
+          3.215,
+          4.1375,
+          4.2,
+          4.265000000000001,
+          5.217500000000001,
+          5.250000000000001,
+          5.290000000000001,
+          6.235000000000001,
+          6.300000000000002,
+          6.365000000000002,
+          6.835000000000001,
+          6.900000000000001
+        ],
+        "nucleusSeconds": [
+          {
+            "start": 0.16,
+            "end": 0.22
+          },
+          {
+            "start": 0.46,
+            "end": 0.515
+          },
+          {
+            "start": 0.6499999999999999,
+            "end": 0.71
+          },
+          {
+            "start": 1.1375,
+            "end": 1.1975
+          },
+          {
+            "start": 1.3475,
+            "end": 1.4075
+          },
+          {
+            "start": 1.48,
+            "end": 1.54
+          },
+          {
+            "start": 1.86,
+            "end": 1.9200000000000002
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 7.185,
+      "peakDb": -6.58966084383753,
+      "maximumSampleDelta": 0.205657958984375,
+      "pyinVoicedFrames": 1082,
+      "pyinMedianAbsoluteCents": 0.9396449704144771,
+      "pyinP95AbsoluteCents": 6.216557020161883,
+      "pyinMaximumAbsoluteCents": 29.152108545340383
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "native_root_midi": 50,
+  "supported_root_midi": {
+    "minimum": 48,
+    "maximum": 60
+  },
+  "supported_paces": [
+    0.8,
+    1,
+    1.25
+  ],
+  "phrases": [
+    {
+      "id": "let-it-shine",
+      "melody_id": "first-arc",
+      "words": "Let it shine",
+      "syllables": [
+        "Let",
+        "it",
+        "shine"
+      ],
+      "word_syllable_counts": [
+        1,
+        1,
+        1
+      ],
+      "word_syllable_character_counts": [
+        [
+          3
+        ],
+        [
+          2
+        ],
+        [
+          5
+        ]
+      ],
+      "auditions": [
+        "shine-gentle",
+        "shine-playful"
+      ]
+    },
+    {
+      "id": "tiny-sparks-can-glow",
+      "melody_id": "sunlit-steps",
+      "words": "Tiny sparks can glow",
+      "syllables": [
+        "Ti",
+        "ny",
+        "sparks",
+        "can",
+        "glow"
+      ],
+      "word_syllable_counts": [
+        2,
+        1,
+        1,
+        1
+      ],
+      "word_syllable_character_counts": [
+        [
+          2,
+          2
+        ],
+        [
+          6
+        ],
+        [
+          3
+        ],
+        [
+          4
+        ]
+      ],
+      "auditions": [
+        "sparks-gentle",
+        "sparks-playful"
+      ]
+    },
+    {
+      "id": "another-beautiful-mess",
+      "melody_id": "gallery-arch",
+      "words": "Another beautiful mess",
+      "syllables": [
+        "A",
+        "no",
+        "ther",
+        "beau",
+        "ti",
+        "ful",
+        "mess"
+      ],
+      "word_syllable_counts": [
+        3,
+        3,
+        1
+      ],
+      "word_syllable_character_counts": [
+        [
+          1,
+          2,
+          4
+        ],
+        [
+          4,
+          2,
+          3
+        ],
+        [
+          4
+        ]
+      ],
+      "auditions": [
+        "mess-gentle",
+        "mess-playful"
+      ]
+    }
+  ]
+}

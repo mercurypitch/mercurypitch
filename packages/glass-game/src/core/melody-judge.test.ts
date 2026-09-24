@@ -1,8 +1,10 @@
 // Live melody judge — capture-clock fairness and forward-only contour coverage.
 
 import { describe, expect, it } from 'vitest'
+import { MERC_ENCORE_JUDGE_POLICY } from '../content/encore-examples'
 import { glassMelody } from '../content/melodies'
 import type { PitchObservation } from '../contracts'
+import type { MelodyDefinition } from './melody-contour'
 import { compileMelody, sampleMelodyAtTime } from './melody-contour'
 import type { MelodyJudge, MelodyJudgeEvent } from './melody-judge'
 import { createMelodyJudge } from './melody-judge'
@@ -14,8 +16,65 @@ interface CaptureState {
 
 const HOP_SECONDS = 0.025
 
+const LYRIC_EVIDENCE_POLICY = MERC_ENCORE_JUDGE_POLICY
+
 function compiled(id: 'first-arc' | 'sunlit-steps' | 'two-windows') {
   return compileMelody(glassMelody(id), { rootMidi: 60 })
+}
+
+function shortThreeAnchorMelody() {
+  const definition: MelodyDefinition = {
+    id: 'short-three-anchor',
+    version: 1,
+    title: 'Short three anchor',
+    description: 'A compact contour for anchor evidence regressions.',
+    feel: {
+      landingSeconds: 0.2,
+      finalLandingSeconds: 0.2,
+      transitionSeconds: 0.1,
+      breathSeconds: 0.1,
+      connection: 'glide',
+    },
+    phrases: [
+      {
+        id: 'short-phrase',
+        allowBreathAfter: false,
+        anchors: [
+          { id: 'short-home', offsetSemitones: 0 },
+          { id: 'short-middle', offsetSemitones: 2 },
+          { id: 'short-final', offsetSemitones: 4 },
+        ],
+      },
+    ],
+  }
+  return compileMelody(definition, { rootMidi: 60 })
+}
+
+function shortLandingMelody() {
+  const definition: MelodyDefinition = {
+    id: 'short-landing',
+    version: 1,
+    title: 'Short landing',
+    description: 'A minimum-duration landing for acquisition regressions.',
+    feel: {
+      landingSeconds: 0.05,
+      finalLandingSeconds: 0.05,
+      transitionSeconds: 0.1,
+      breathSeconds: 0.1,
+      connection: 'glide',
+    },
+    phrases: [
+      {
+        id: 'short-landing-phrase',
+        allowBreathAfter: false,
+        anchors: [
+          { id: 'short-landing-anchor', offsetSemitones: 0 },
+          { id: 'short-landing-next', offsetSemitones: 2 },
+        ],
+      },
+    ],
+  }
+  return compileMelody(definition, { rootMidi: 60 })
 }
 
 function emit(
@@ -251,5 +310,199 @@ describe('live melody judge', () => {
       events.filter((event) => event.type === 'anchor-complete'),
     ).toHaveLength(3)
     expect(events.at(-1)).toEqual({ type: 'complete' })
+  })
+
+  describe('opt-in lyrical anchor evidence', () => {
+    it('rejects a negative evidence requirement', () => {
+      expect(() =>
+        createMelodyJudge(compiled('first-arc'), {
+          minimumAnchorEvidenceSeconds: -0.01,
+        }),
+      ).toThrow(/minimumAnchorEvidenceSeconds/)
+    })
+
+    it('bridges a consonant dropout within Encore grace after hearing every landing', () => {
+      const melody = compiled('first-arc')
+      const judge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const events = singPhrase(
+        judge,
+        melody,
+        0,
+        { sequence: 0, captureSeconds: 0 },
+        1,
+        (midi, elapsed) => (elapsed >= 0.95 && elapsed < 1.3 ? null : midi),
+      )
+
+      expect(
+        events
+          .filter((event) => event.type === 'anchor-complete')
+          .map((event) => event.anchorId),
+      ).toEqual(['first-arc-home', 'first-arc-rise', 'first-arc-return'])
+      expect(events.at(-1)).toEqual({ type: 'complete' })
+    })
+
+    it('freezes contour progress while a bounded consonant is unvoiced', () => {
+      const melody = compiled('first-arc')
+      const judge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const state = { sequence: 0, captureSeconds: 0 }
+      while (state.captureSeconds < 0.75) {
+        const target = sampleMelodyAtTime(melody, state.captureSeconds).midi!
+        emit(judge, state, target)
+      }
+      const beforeDropout = judge.snapshot()
+
+      for (let index = 0; index < 15; index++) emit(judge, state, null)
+
+      expect(judge.snapshot()).toMatchObject({
+        progress: beforeDropout.progress,
+        coveredAnchorIds: beforeDropout.coveredAnchorIds,
+        retryCount: 0,
+        complete: false,
+      })
+
+      emit(judge, state, beforeDropout.targetMidi)
+      expect(judge.snapshot().retryCount).toBe(0)
+    })
+
+    it('keeps an interrupted acquisition inside a shorter authored landing', () => {
+      const melody = shortLandingMelody()
+      const judge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const state = { sequence: 0, captureSeconds: 0 }
+
+      emit(judge, state, 60)
+      emit(judge, state, 60)
+      emit(judge, state, null)
+      for (let index = 0; index < 4; index++) emit(judge, state, 60)
+
+      expect(judge.snapshot()).toMatchObject({
+        phase: 'following',
+        retryCount: 0,
+        complete: false,
+      })
+    })
+
+    it('does not credit an anchor from the first voiced frame after a dropout', () => {
+      const melody = shortThreeAnchorMelody()
+      const judge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const state = { sequence: 0, captureSeconds: 0 }
+
+      while (state.captureSeconds <= 0.475 + 1e-9) {
+        const elapsed = state.captureSeconds
+        const target = sampleMelodyAtTime(
+          melody,
+          Math.min(melody.phrases[0].endSeconds - 1e-8, elapsed),
+        ).midi!
+        emit(judge, state, elapsed >= 0.275 && elapsed < 0.475 ? null : target)
+      }
+
+      expect(judge.snapshot().coveredAnchorIds).toEqual(['short-home'])
+      expect(judge.snapshot().complete).toBe(false)
+    })
+
+    it('cannot skip a wholly unheard middle or final landing', () => {
+      const middleMelody = shortThreeAnchorMelody()
+      const middleJudge = createMelodyJudge(middleMelody, LYRIC_EVIDENCE_POLICY)
+      singPhrase(
+        middleJudge,
+        middleMelody,
+        0,
+        { sequence: 0, captureSeconds: 0 },
+        1,
+        (midi, elapsed) => (elapsed >= 0.275 && elapsed < 0.65 ? null : midi),
+      )
+      expect(middleJudge.snapshot().coveredAnchorIds).not.toContain(
+        'short-middle',
+      )
+      expect(middleJudge.snapshot().coveredAnchorIds).not.toContain(
+        'short-final',
+      )
+      expect(middleJudge.snapshot().complete).toBe(false)
+
+      const finalMelody = shortThreeAnchorMelody()
+      const finalJudge = createMelodyJudge(finalMelody, LYRIC_EVIDENCE_POLICY)
+      const finalState = { sequence: 0, captureSeconds: 0 }
+      while (finalState.captureSeconds <= 0.8 + 1e-9) {
+        const elapsed = finalState.captureSeconds
+        const target = sampleMelodyAtTime(
+          finalMelody,
+          Math.min(finalMelody.phrases[0].endSeconds - 1e-8, elapsed),
+        ).midi!
+        emit(
+          finalJudge,
+          finalState,
+          elapsed >= 0.55 && elapsed < 0.775 ? null : target,
+        )
+      }
+      expect(finalJudge.snapshot().coveredAnchorIds).toEqual([
+        'short-home',
+        'short-middle',
+      ])
+      expect(finalJudge.snapshot().complete).toBe(false)
+    })
+
+    it('keeps wrong-key and constant-note negatives incomplete', () => {
+      const melody = compiled('first-arc')
+      const wrongKeyJudge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const wrongKeyState = { sequence: 0, captureSeconds: 0 }
+      for (let index = 0; index < 100; index++)
+        emit(wrongKeyJudge, wrongKeyState, 61)
+      expect(wrongKeyJudge.snapshot()).toMatchObject({
+        progress: 0,
+        complete: false,
+      })
+
+      const constantJudge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const constantState = { sequence: 0, captureSeconds: 0 }
+      for (let index = 0; index < 240; index++)
+        emit(constantJudge, constantState, 60)
+      expect(constantJudge.snapshot().coveredAnchorIds).not.toContain(
+        'first-arc-rise',
+      )
+      expect(constantJudge.snapshot().complete).toBe(false)
+    })
+
+    it('retries after silence beyond the Encore lyrical grace', () => {
+      const melody = compiled('first-arc')
+      const judge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const state = { sequence: 0, captureSeconds: 0 }
+      while (state.captureSeconds < 0.7) {
+        const target = sampleMelodyAtTime(melody, state.captureSeconds).midi!
+        emit(judge, state, target)
+      }
+      for (let index = 0; index < 18; index++) emit(judge, state, null)
+
+      expect(judge.snapshot().retryCount).toBeGreaterThan(0)
+      expect(judge.snapshot().coveredAnchorIds).toEqual([])
+      expect(judge.snapshot().complete).toBe(false)
+    })
+
+    it('gets no anchor evidence from weak, stale or duplicate frames', () => {
+      const melody = shortThreeAnchorMelody()
+      const judge = createMelodyJudge(melody, LYRIC_EVIDENCE_POLICY)
+      const first: PitchObservation = {
+        sequence: 0,
+        captureSeconds: 0,
+        capturedAtMs: 0,
+        midi: 60,
+        confidence: 0.95,
+      }
+      judge.feed(first, 0)
+      for (let index = 0; index < 20; index++) judge.feed(first, 0)
+
+      const state = { sequence: 1, captureSeconds: HOP_SECONDS }
+      for (let index = 0; index < 8; index++)
+        emit(judge, state, 60, { confidence: 0.2 })
+      for (let index = 0; index < 8; index++)
+        emit(judge, state, 60, {
+          capturedAtMs: state.captureSeconds * 1000 - 500,
+        })
+      emit(judge, state, 60)
+
+      expect(judge.snapshot()).toMatchObject({
+        progress: 0,
+        coveredAnchorIds: [],
+        complete: false,
+      })
+    })
   })
 })

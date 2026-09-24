@@ -1,0 +1,157 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:06,000"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 6000
+			},
+			"text": " ♪ Chinese park skin glow ♪",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:00,210",
+						"to": "00:00:00,710"
+					},
+					"offsets": {
+						"from": 210,
+						"to": 710
+					},
+					"id": 20724,
+					"p": 0.580561,
+					"t_dtw": -1
+				},
+				{
+					"text": " Chinese",
+					"timestamps": {
+						"from": "00:00:01,150",
+						"to": "00:00:02,380"
+					},
+					"offsets": {
+						"from": 1150,
+						"to": 2380
+					},
+					"id": 3999,
+					"p": 0.989593,
+					"t_dtw": -1
+				},
+				{
+					"text": " park",
+					"timestamps": {
+						"from": "00:00:02,380",
+						"to": "00:00:03,340"
+					},
+					"offsets": {
+						"from": 2380,
+						"to": 3340
+					},
+					"id": 3952,
+					"p": 0.507035,
+					"t_dtw": -1
+				},
+				{
+					"text": " skin",
+					"timestamps": {
+						"from": "00:00:03,340",
+						"to": "00:00:04,300"
+					},
+					"offsets": {
+						"from": 3340,
+						"to": 4300
+					},
+					"id": 4168,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": " glow",
+					"timestamps": {
+						"from": "00:00:04,300",
+						"to": "00:00:05,260"
+					},
+					"offsets": {
+						"from": 4300,
+						"to": 5260
+					},
+					"id": 19634,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:05,260",
+						"to": "00:00:05,850"
+					},
+					"offsets": {
+						"from": 5260,
+						"to": 5850
+					},
+					"id": 20724,
+					"p": 0.999977,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_300]",
+					"timestamps": {
+						"from": "00:00:06,000",
+						"to": "00:00:06,000"
+					},
+					"offsets": {
+						"from": 6000,
+						"to": 6000
+					},
+					"id": 50663,
+					"p": 0.557358,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

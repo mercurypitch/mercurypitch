@@ -1,0 +1,60 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "bankReport": "bank-pilot.json",
+  "gate": "hash-bound unprompted Whisper base.en transcript equals intended lyric after case/punctuation normalization",
+  "ownerListening": "pending",
+  "variantCount": 3,
+  "exactCount": 2,
+  "counts": {
+    "first-arc": {
+      "total": 1,
+      "exact": 1
+    },
+    "sunlit-steps": {
+      "total": 1,
+      "exact": 0
+    },
+    "gallery-arch": {
+      "total": 1,
+      "exact": 1
+    }
+  },
+  "variants": [
+    {
+      "id": "first-arc-r50-p100",
+      "melodyId": "first-arc",
+      "rootMidi": 50,
+      "pace": 1,
+      "sourceSha256": "1ef4912d033eb2399e7977841b0534b9704206c12fc4cc22453ddc63c705b77a",
+      "modelSha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "expected": "Let it shine",
+      "transcript": "\u266a Let it shine \u266a",
+      "exact": true,
+      "meanTokenProbability": 0.7697308
+    },
+    {
+      "id": "sunlit-steps-r50-p100",
+      "melodyId": "sunlit-steps",
+      "rootMidi": 50,
+      "pace": 1,
+      "sourceSha256": "29f475e2e0aa5a35d6462e0c7c540466c00c3803179bb6f88c173766580822fa",
+      "modelSha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "expected": "Tiny sparks can glow",
+      "transcript": "Tiny Spark in Glo.",
+      "exact": false,
+      "meanTokenProbability": 0.9877388333333333
+    },
+    {
+      "id": "gallery-arch-r50-p100",
+      "melodyId": "gallery-arch",
+      "rootMidi": 50,
+      "pace": 1,
+      "sourceSha256": "bafef1ed23157b25986d3fbaacfe604f2580a33cb48424cf5040482cfff14d19",
+      "modelSha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "expected": "Another beautiful mess",
+      "transcript": "\u266a Another beautiful mess. \u266a",
+      "exact": true,
+      "meanTokenProbability": 0.5465298333333334
+    }
+  ]
+}

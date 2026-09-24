@@ -1,0 +1,31 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "id": "shine-playful",
+  "phrase_id": "let-it-shine",
+  "text": "[sings brightly and playfully, with three clear notes] Let it shine.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "[sings brightly and playfully, with three clear notes] Let it shine.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 2092462
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-24T19:57:46.908Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "yTGkNSfpX19La7aTBqdv",
+  "character_cost": "37",
+  "bytes": 99840,
+  "sha256": "41117114074f506cbfb6e3f5d6f0c2f9586b74db6946f994371bb31a179033a8",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 2.08,
+  "completed_at": "2026-09-24T19:57:49.224Z"
+}
