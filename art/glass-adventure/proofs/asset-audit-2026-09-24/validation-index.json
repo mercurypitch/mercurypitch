@@ -1,0 +1,122 @@
+[
+  {
+    "file": "apps/beside-cue/public/games/adventure-v2/garden-kit.glb",
+    "exitCode": 0,
+    "report": "adventure-v2-garden-kit.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v2/platform-kit.glb",
+    "exitCode": 0,
+    "report": "adventure-v2-platform-kit.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v2/vessels.glb",
+    "exitCode": 1,
+    "report": "adventure-v2-vessels.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v3/aurora-coupe.glb",
+    "exitCode": 1,
+    "report": "adventure-v3-aurora-coupe.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v3/cut-crystal-decanter.glb",
+    "exitCode": 1,
+    "report": "adventure-v3-cut-crystal-decanter.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v3/fluted-carafe.glb",
+    "exitCode": 1,
+    "report": "adventure-v3-fluted-carafe.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v3/garden-arcade.glb",
+    "exitCode": 0,
+    "report": "adventure-v3-garden-arcade.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v3/gilded-column.glb",
+    "exitCode": 0,
+    "report": "adventure-v3-gilded-column.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v3/moon-amphora.glb",
+    "exitCode": 1,
+    "report": "adventure-v3-moon-amphora.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v3/observatory-canopy.glb",
+    "exitCode": 0,
+    "report": "adventure-v3-observatory-canopy.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v4/museum-screen-bay.glb",
+    "exitCode": 0,
+    "report": "adventure-v4-museum-screen-bay.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v4/museum-window-bay.glb",
+    "exitCode": 0,
+    "report": "adventure-v4-museum-window-bay.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v5/museum-decor.glb",
+    "exitCode": 0,
+    "report": "adventure-v5-museum-decor.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v6/amber-cadence-urn.glb",
+    "exitCode": 1,
+    "report": "adventure-v6-amber-cadence-urn.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v6/opaline-echo-amphora.glb",
+    "exitCode": 1,
+    "report": "adventure-v6-opaline-echo-amphora.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure-v6/twin-tone-resonance-harp.glb",
+    "exitCode": 0,
+    "report": "adventure-v6-twin-tone-resonance-harp.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure/legend-slab.glb",
+    "exitCode": 0,
+    "report": "adventure-legend-slab.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure/platform-kit.glb",
+    "exitCode": 1,
+    "report": "adventure-platform-kit.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/adventure/vessels.glb",
+    "exitCode": 0,
+    "report": "adventure-vessels.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/cloudway-v6/cloudway-platform-kit-v6.glb",
+    "exitCode": 0,
+    "report": "cloudway-v6-cloudway-platform-kit-v6.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+    "exitCode": 0,
+    "report": "glass3d-merc.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+    "exitCode": 0,
+    "report": "journey-map-v1-floating-museum-map-kit-v1.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+    "exitCode": 0,
+    "report": "journey-map-v8-floating-museum-architecture-kit-v8.glb.txt"
+  },
+  {
+    "file": "apps/beside-cue/public/games/journey-map-v9/floating-museum-twin-finish-kit-v9.glb",
+    "exitCode": 0,
+    "report": "journey-map-v9-floating-museum-twin-finish-kit-v9.glb.txt"
+  }
+]

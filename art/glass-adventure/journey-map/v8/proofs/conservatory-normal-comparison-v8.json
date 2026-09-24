@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "purpose": "Same-geometry, same-camera comparison of the provider normal and dense-donor normal bake. Review-only; no automatic normal selection.",
+  "candidateManifest": {
+    "file": "exports/floating-museum-conservatory-candidate-v8.json",
+    "sha256": "d085ebace84ca91df0b337320451153112f2c5ffbd04d38d6c71156c7b44db44"
+  },
+  "order": [
+    "Meshy normal",
+    "dense-donor normal bake"
+  ],
+  "assets": [
+    {
+      "label": "Meshy normal",
+      "file": "exports/floating-museum-conservatory-candidate-v8-meshy-normal.glb",
+      "bytes": 30606544,
+      "sha256": "4295d8a324f86048f9832306b3a1c74e15d601a0ea07dfa1ee33f593b223f697",
+      "triangles": 109636,
+      "displayX": -1.35
+    },
+    {
+      "label": "dense-donor normal bake",
+      "file": "exports/floating-museum-conservatory-candidate-v8-dense-bake-normal.glb",
+      "bytes": 33289232,
+      "sha256": "8b3465883aea800de84c3d9237d2752af405e049d64a3bece4052f283772530f",
+      "triangles": 109636,
+      "displayX": 1.35
+    }
+  ],
+  "proofs": [
+    {
+      "file": "proofs/conservatory-normal-comparison-front-v8.png",
+      "bytes": 2802368,
+      "sha256": "497d8dae4774455b918bb902bc1cd13515939df7745b5be388919afcd097403f"
+    },
+    {
+      "file": "proofs/conservatory-normal-comparison-angle-v8.png",
+      "bytes": 2771119,
+      "sha256": "1ec127bdb229c22f638a3c567f0fe270e3c242097e5206c14ac4deb79821338e"
+    },
+    {
+      "file": "proofs/conservatory-normal-comparison-close-v8.png",
+      "bytes": 2451515,
+      "sha256": "3c5fc6baa0d353c89ccf6481941094b75e244e98c6856a801ba5890674396e91"
+    }
+  ],
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 24,
+    "seed": 17,
+    "cpuThreads": 8,
+    "resolution": [
+      1800,
+      1000
+    ],
+    "blender": "5.2.2 LTS"
+  },
+  "requiredReview": "Inspect roof ribs, leaf clumps, fluting, arch trim, planters and base at equal zoom; also consult the projection audit for ray misses before selecting a normal.",
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/render_conservatory_normal_comparison.py"
+}

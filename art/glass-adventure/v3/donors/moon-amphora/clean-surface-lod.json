@@ -1,0 +1,12 @@
+{
+  "operation": "one conservative 200k triangle LOD from the cleaned actual donor",
+  "targetTriangles": 200000,
+  "triangles": 200000,
+  "selfIntersectionPairs": 1,
+  "badEdges": 0,
+  "badVertices": 0,
+  "nonContiguousEdges": 0,
+  "signedVolume": 0.007089578309147016,
+  "sampledMaxDistanceToCleanMetres": 0.00011590401118155569,
+  "sampledMaxDistanceFromCleanMetres": 0.00017055195348802954
+}

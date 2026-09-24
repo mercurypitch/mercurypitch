@@ -1,0 +1,385 @@
+{
+  "status": "passed",
+  "scope": "automated source/closedness/orientation/intersection/physical-material/GLB-reimport gates; visual review recorded separately",
+  "bundleSha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251",
+  "bundleBytes": 11461724,
+  "triangleTotalIncludingShards": 223688,
+  "meshes": [
+    {
+      "triangles": 99976,
+      "vertices": 49942,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.007074068864131572,
+      "name": "vase_amphora_intact"
+    },
+    {
+      "triangles": 5576,
+      "vertices": 2788,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004088346617165983,
+      "name": "vase_amphora_shard_000"
+    },
+    {
+      "triangles": 3594,
+      "vertices": 1799,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00025769307740810334,
+      "name": "vase_amphora_shard_001"
+    },
+    {
+      "triangles": 2410,
+      "vertices": 1207,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 8.97916880698441e-05,
+      "name": "vase_amphora_shard_002"
+    },
+    {
+      "triangles": 3418,
+      "vertices": 1711,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004000033329266328,
+      "name": "vase_amphora_shard_003"
+    },
+    {
+      "triangles": 3770,
+      "vertices": 1887,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004220899714721608,
+      "name": "vase_amphora_shard_004"
+    },
+    {
+      "triangles": 5458,
+      "vertices": 2733,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0001226161446081916,
+      "name": "vase_amphora_shard_005"
+    },
+    {
+      "triangles": 9462,
+      "vertices": 4729,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0003505857981127564,
+      "name": "vase_amphora_shard_006"
+    },
+    {
+      "triangles": 4302,
+      "vertices": 2153,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004502064869279043,
+      "name": "vase_amphora_shard_007"
+    },
+    {
+      "triangles": 3214,
+      "vertices": 1609,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00013298409035526312,
+      "name": "vase_amphora_shard_008"
+    },
+    {
+      "triangles": 3192,
+      "vertices": 1598,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00022704465878419593,
+      "name": "vase_amphora_shard_009"
+    },
+    {
+      "triangles": 6500,
+      "vertices": 3250,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0005113053098000096,
+      "name": "vase_amphora_shard_010"
+    },
+    {
+      "triangles": 13498,
+      "vertices": 6745,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00038089482736114005,
+      "name": "vase_amphora_shard_011"
+    },
+    {
+      "triangles": 4490,
+      "vertices": 2249,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004029108662079885,
+      "name": "vase_amphora_shard_012"
+    },
+    {
+      "triangles": 3936,
+      "vertices": 1972,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00024962836406546533,
+      "name": "vase_amphora_shard_013"
+    },
+    {
+      "triangles": 4316,
+      "vertices": 2160,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.000458781461150428,
+      "name": "vase_amphora_shard_014"
+    },
+    {
+      "triangles": 3290,
+      "vertices": 1647,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0003576806404071689,
+      "name": "vase_amphora_shard_015"
+    },
+    {
+      "triangles": 3674,
+      "vertices": 1839,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00039355450790438343,
+      "name": "vase_amphora_shard_016"
+    },
+    {
+      "triangles": 4978,
+      "vertices": 2493,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00010104146841926643,
+      "name": "vase_amphora_shard_017"
+    },
+    {
+      "triangles": 2124,
+      "vertices": 1064,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 7.914876821858253e-05,
+      "name": "vase_amphora_shard_018"
+    },
+    {
+      "triangles": 7330,
+      "vertices": 3655,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00025172933923409835,
+      "name": "vase_amphora_shard_019"
+    },
+    {
+      "triangles": 8126,
+      "vertices": 4065,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0005025773621243542,
+      "name": "vase_amphora_shard_020"
+    },
+    {
+      "triangles": 10786,
+      "vertices": 5381,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00029176637634023615,
+      "name": "vase_amphora_shard_021"
+    },
+    {
+      "triangles": 6268,
+      "vertices": 3126,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.00023119965729752624,
+      "name": "vase_amphora_shard_022"
+    }
+  ],
+  "volumeRelativeError": 7.378036456978628e-10,
+  "boundsBlenderZUp": {
+    "min": [
+      -0.1460062712430954,
+      -0.14620812237262726,
+      0.0
+    ],
+    "max": [
+      0.14593207836151123,
+      0.14612875878810883,
+      0.5499162077903748
+    ]
+  },
+  "rays": [
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09157085418701172,
+          "normalZ": 0.9998489022254944,
+          "face": 23182
+        },
+        {
+          "heightMetres": 1.2151896953582764e-05,
+          "normalZ": -1.0,
+          "face": 97921
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09176641702651978,
+          "normalZ": 0.9998448491096497,
+          "face": 26127
+        },
+        {
+          "heightMetres": 1.0639429092407227e-05,
+          "normalZ": -1.0,
+          "face": 97921
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        -0.04,
+        0
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09177124500274658,
+          "normalZ": 0.9998489022254944,
+          "face": 23182
+        },
+        {
+          "heightMetres": 1.3634562492370605e-05,
+          "normalZ": -1.0,
+          "face": 97921
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09164071083068848,
+          "normalZ": 0.9997590780258179,
+          "face": 20216
+        },
+        {
+          "heightMetres": 1.2889504432678223e-05,
+          "normalZ": -1.0,
+          "face": 97921
+        }
+      ]
+    },
+    {
+      "offsetFractionOfBounds": [
+        0,
+        -0.04
+      ],
+      "hits": [
+        {
+          "heightMetres": 0.09170389175415039,
+          "normalZ": 0.9998030662536621,
+          "face": 57027
+        },
+        {
+          "heightMetres": 1.1399388313293457e-05,
+          "normalZ": -1.0,
+          "face": 97921
+        }
+      ]
+    }
+  ],
+  "materialSlots": [
+    "glass_shell",
+    "gold_trim",
+    "glass_cut"
+  ],
+  "uv0NormalsPreserved": true,
+  "tangentsOnEveryPrimitive": true
+}

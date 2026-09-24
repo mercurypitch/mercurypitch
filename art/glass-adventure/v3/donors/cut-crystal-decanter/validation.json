@@ -1,0 +1,40 @@
+{
+  "status": "passed",
+  "glbSha256": "2fb379b4effb24169d0181764735481313a1e53c71e23d85e575d77d54244533",
+  "glbBytes": 8264408,
+  "validatedAtUtc": "2026-09-15T13:49:26.154012+00:00",
+  "scope": "Local authoring validation: independent fresh GLB geometry/material/surface-attribute checks plus actual intact and fracture optical proof review",
+  "geometryReport": "geometry-validation.json",
+  "finalizationReport": "finalization.json",
+  "materialReport": "material-finalization.json",
+  "proofs": [
+    {
+      "path": "finalized-intact.png",
+      "sha256": "111a665650b6c79f5daccdcafdb1312855718242f2d7d40ceb4c7d6efb88924e",
+      "visuallyInspected": true
+    },
+    {
+      "path": "finalized-fracture.png",
+      "sha256": "90403e6c696f569bd30ff6daa628caec2fcc5cfaa3d03c52687adabb3f09e894",
+      "visuallyInspected": true
+    }
+  ],
+  "readiness": "Staged for gallery and in-game user inspection; not runtime activated",
+  "ownerApproval": false,
+  "runtimeActivated": false,
+  "observed": "Transparent faceted crystal retains original gold neck/base bands. Real hollow body reconstructs from22closed fragments plus separate solid stopper.",
+  "limitations": [
+    "Source shoulder waviness and softened deep diamond cuts remain visible close-up.",
+    "Dark studio proof is not an in-game lighting or performance result."
+  ],
+  "contract": {
+    "intactGroup": "decanter_cut_intact",
+    "intactParts": [
+      "decanter_cut_body",
+      "decanter_cut_stopper"
+    ],
+    "shardCount": 23,
+    "intactTriangles": 49998,
+    "totalTrianglesIncludingShards": 116838
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "sourceSha256": "123256c902dd06eda6d2373cc9bd7ec4a8810e6c12d9e07fb842b686e75cd781",
+  "outputSha256": "6e2447a19cc74c506d440ad860c6f57e3b82866c89d361903a2fa77d549cb411",
+  "scriptSha256": "93de221ea42b3d5dec7eff1a62372091caaec1c6f02d9e761b54c51526dfb0a6",
+  "attributeHelperSha256": "c960d73d9c0e79868ab1f5fe998559f504ee59a9631c0c454c1df82b83a3e648",
+  "zeroTangentsRepaired": 126,
+  "basis": "Unit tangent orthogonal to the unchanged vertex normal; w=1 on UV-degenerate corners only.",
+  "geometryAndUVBytesUnchanged": true,
+  "nonzeroBakedTangentsUnchanged": true
+}

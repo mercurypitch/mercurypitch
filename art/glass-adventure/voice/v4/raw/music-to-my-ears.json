@@ -1,0 +1,30 @@
+{
+  "revision": "merc-break-reactions-v4-2026-09-20",
+  "id": "music-to-my-ears",
+  "text": "Music to my ears. Confetti to my feet.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "Music to my ears. Confetti to my feet.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 209205
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-20T13:58:03.044Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "0KQsWmM9mb3DttNWLyLt",
+  "character_cost": "21",
+  "bytes": 153600,
+  "sha256": "867e8c158addf0d3bfdd84dc7d632a2aece6d8232edce6945422921220745085",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 3.2,
+  "completed_at": "2026-09-20T13:58:04.675Z"
+}

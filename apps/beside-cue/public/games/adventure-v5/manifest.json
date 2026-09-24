@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "assetVersion": 5,
+  "sourcePolicy": "Preserved Meshy donor geometry and packed 2K Blender sources; combined runtime GLB uses 1K maps. Painting masters remain 1024x1536 PNG and runtime copies are 768x1152 WebP.",
+  "scope": "Reusable museum decoration bundle and three frame-surface paintings.",
+  "totalBytes": 9939810,
+  "assets": [
+    {
+      "id": "museum-decor-v5",
+      "file": "museum-decor.glb",
+      "bytes": 9240644,
+      "sha256": "998d3026a7393cab3bae36c7e1d8ef9b13ea586230713e0089ba81f29068540a",
+      "source": "art/glass-adventure/v5/sources/museum-decor-v5.blend",
+      "sourceSha256": "78ab98614f0462694a0278541cd30b1268b8097ebf2c3a4090899acc8cd208f5",
+      "receipt": "art/glass-adventure/v5/exports/bundle-receipt.json",
+      "triangles": 16201,
+      "textureMapCount": 8,
+      "textureDimensions": [1024, 1024],
+      "nodes": [
+        {
+          "node": "decor_crystal_planter",
+          "mesh": "decor_crystal_planter_mesh",
+          "triangles": 9236,
+          "materials": ["meshy_crystal_planter_atlas"],
+          "frontAxis": "+Z",
+          "origin": "bottom-centre",
+          "dimensionsMetres": {
+            "width": 0.9739499688148499,
+            "depth": 0.912357747554779,
+            "height": 1.3999998569488525
+          },
+          "meshNode": "decor_crystal_planter"
+        },
+        {
+          "node": "decor_gallery_frame",
+          "triangles": 6965,
+          "materials": ["meshy_gallery_frame_atlas", "decor_surface"],
+          "surfaceMaterial": "decor_surface",
+          "surfaceFaces": 55,
+          "frontAxis": "+Z",
+          "origin": "centre",
+          "dimensionsMetres": {
+            "width": 1.1165249347686768,
+            "depth": 0.07678020745515823,
+            "height": 1.7999999523162842
+          },
+          "insetDimensionsMetres": {
+            "width": 0.7895786903706554,
+            "height": 1.4990200021555664
+          },
+          "insetShading": "Isolated planar welded inset with flat front-facing normals; ornament geometry and UVs preserved",
+          "meshNodes": ["gallery_frame_mesh", "gallery_frame_surface"],
+          "meshes": ["Mesh_0", "Mesh_0.001"],
+          "insetVertices": 48
+        }
+      ]
+    },
+    {
+      "id": "painting-archive-v5",
+      "file": "painting-archive.webp",
+      "bytes": 183140,
+      "sha256": "65d20719a91bc3840a822bba085c0b6782b170b175d823e4f7831357941e5ea2",
+      "dimensions": [768, 1152],
+      "source": "art/glass-adventure/v5/paintings/archive-master.png",
+      "sourceBytes": 3119587,
+      "sourceSha256": "4d570e4620639f1a654ce62966383aaafafc91a68bfa2eb3c8cf2b3b62b2da77",
+      "sourceDimensions": [1024, 1536],
+      "prompt": "art/glass-adventure/v5/paintings/archive.prompt.txt",
+      "consumerMaterial": "decor_surface"
+    },
+    {
+      "id": "painting-garden-v5",
+      "file": "painting-garden.webp",
+      "bytes": 264866,
+      "sha256": "e3531404dc3f4b4c84502a5c00de1fa82064e336f812791750ac578a43e3b7bb",
+      "dimensions": [768, 1152],
+      "source": "art/glass-adventure/v5/paintings/garden-master.png",
+      "sourceBytes": 3289542,
+      "sourceSha256": "641c37231fd9ec00acc739076135bf4c9f2f8aa067a9b7966c579eb86bf33dfe",
+      "sourceDimensions": [1024, 1536],
+      "prompt": "art/glass-adventure/v5/paintings/garden.prompt.txt",
+      "consumerMaterial": "decor_surface"
+    },
+    {
+      "id": "painting-portrait-v5",
+      "file": "painting-portrait.webp",
+      "bytes": 251160,
+      "sha256": "914051374a8521f9397f6c4a1b90d878cb5d4b9d6f55f7bf2e1835cd84ec5b8d",
+      "dimensions": [768, 1152],
+      "source": "art/glass-adventure/v5/paintings/portrait-master.png",
+      "sourceBytes": 3391592,
+      "sourceSha256": "b63b5891c626866d226c63b13e1e94ae3e519b4b72a96ea3101ec5710a013f74",
+      "sourceDimensions": [1024, 1536],
+      "prompt": "art/glass-adventure/v5/paintings/portrait.prompt.txt",
+      "consumerMaterial": "decor_surface"
+    }
+  ]
+}

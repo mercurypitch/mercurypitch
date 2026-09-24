@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "candidate": "direct dense-derived 238000-triangle Cloudway marble",
+  "decision": "rejected at matched Blender visual gate",
+  "reasons": [
+    "Matched neutral clay exposes severe long-triangle shading discontinuities and dark facets across the broad fascia and arches compared with the dense source.",
+    "Matched PBR exposes fractured and washed top shading plus isolated black triangles; this is present before runtime compression and is not a 2K-versus-4K selection issue.",
+    "Normal finalization required 38362 polygon-face fallback corners. That unusually high measured count is a plausible contributor to the visible discontinuities, but the fit, flatten, collapse, and normal stages were not separately ablated, so this review does not assign a single cause.",
+    "Measured regional retention underrepresents raised rim and foliage: 35216 of 280231 source-region triangles remain (12.5668%), and that region falls from 22.3015% to 14.7966% of the mesh."
+  ],
+  "acceptedForOptimization": false,
+  "acceptedForRuntimeOrCombinedBundle": false,
+  "archivedCandidate": {
+    "raw4k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-4k-238k-direct-visual-rejected.glb",
+      "sha256": "4e2edb1e09b96d9b6eef09a5b0bff79000281212ff7032cebba18da56a5b640a"
+    },
+    "raw2k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/rejected/cloudway-marble-ultra-v4-2k-238k-direct-visual-rejected.glb",
+      "sha256": "a21f976eea18591bbb25eb26b5b67598584bf47d7e4aa597e347c624030f6646"
+    },
+    "packedBlend": {
+      "file": "art/glass-adventure/platform-trials/v4/sources/rejected/cloudway-platform-kit-v4-238k-direct-visual-rejected.blend",
+      "sha256": "c9b5b4cd9fce13da10348b62546e97b5ee5327fff8efa7135deb3766c6c72710"
+    },
+    "buildReport": {
+      "file": "art/glass-adventure/platform-trials/v4/production/cloudway-marble-runtime-v4-build-rejected-238k-direct-visual.json",
+      "sha256": "eac0443e9c787e9fbda6a89796f9f3899f1b875d10fda17a9122955b611ec53f"
+    },
+    "maps": "art/glass-adventure/platform-trials/v4/sources/rejected/marble-runtime-textures-238k-direct-visual-rejected"
+  },
+  "proofs": [
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-dense-clay-front.png",
+      "sha256": "e349962c1dd3f65d83a5eba783302c9f658ad0dbab89a49edf91e0cbc66e7d42"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-dense-clay-three-quarter.png",
+      "sha256": "ffb9efe824028caa659d5e1f3a3a50023b0e1acc18c4d0263f12ab0e32633d1a"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-pbr-front.png",
+      "sha256": "9ed93c9085fde6e0f7e01b0e30779cd86b4917a27943603bba65f6fe33ec0d48"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-pbr-three-quarter.png",
+      "sha256": "d0331e1794d25984e613ea0d516eab11aa8ffd2e4090dc81df3b1d69479d75b1"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-pbr-front-close.png",
+      "sha256": "030ab8db783c09ef514cb88a51e73e5a8c8124951d5d7d4bda850a4d0727e500"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-dense-review.json",
+      "sha256": "a500f065233f7cdb3fce96943e02953ca000d2cf659d10001c85517eac52968c"
+    }
+  ],
+  "nextStep": "Retain the dense source as the quality authority. Do not install the rejected 90K projection or this 238K simplification. Freeze and compare the fitted dense clay result at each geometry/normal stage, then run one bounded semantic pilot that separates slab, arch, and ornament treatment with an isolated bake before considering another runtime candidate. No dense runtime trial is part of this batch."
+}

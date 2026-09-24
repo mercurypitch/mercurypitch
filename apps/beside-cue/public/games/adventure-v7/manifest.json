@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Original fictional Resonance Conservatory paintings, shared by wall frames, inspection and campaign art.",
+  "sourceReceipt": "art/glass-adventure/v7-conservatory/imagegen-receipt.json",
+  "encoding": "Full-resolution RGB WebP, quality 88, method 6. Source masters unchanged.",
+  "assets": [
+    {
+      "id": "painting-listening-garden-v7",
+      "file": "listening-garden.webp",
+      "source": "art/glass-adventure/v7-conservatory/paintings/listening-garden-master.png",
+      "sourceSha256": "a65b75e80340f1ebfb4dfffdc100d760add5cd8c4cc91e9bca2be9fc92703759",
+      "sha256": "fac4fd6540d7efdac901289985cf847059793d03c420f4b81c23fe9917912da8",
+      "dimensions": [1024, 1536],
+      "bytes": 557820
+    },
+    {
+      "id": "painting-wave-keeper-v7",
+      "file": "wave-keeper.webp",
+      "source": "art/glass-adventure/v7-conservatory/paintings/wave-keeper-master.png",
+      "sourceSha256": "b1ca75b3af2dab9353dfd3781984d982ff000e826c6fd7bda9bb781f2e1199dd",
+      "sha256": "2412dea62981a20f2549c426937d55ba0fec3be908d5aeb65cc95d2d4da58e3b",
+      "dimensions": [1024, 1536],
+      "bytes": 500112
+    }
+  ]
+}

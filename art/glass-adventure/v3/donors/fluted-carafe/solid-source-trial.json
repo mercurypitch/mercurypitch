@@ -1,0 +1,41 @@
+{
+  "sourcePairs": 9,
+  "reducedPairs": 5,
+  "triangles": 1335284,
+  "simplifyToleranceMetres": 5e-05,
+  "transform": {
+    "uniformScale": 0.36255154091182457,
+    "sourceFootCentre": [
+      -0.0004591643810272217,
+      0.0005689859390258789,
+      -0.9520205855369568
+    ]
+  },
+  "maxDistanceToSourceMetres": 0.0,
+  "maxDistanceFromSourceMetres": 7.873248250689358e-05,
+  "measurement": {
+    "node": "vase_fluted_intact",
+    "role": "intact",
+    "triangles": 1335284,
+    "vertices": 667472,
+    "nonManifoldEdges": 0,
+    "signedVolume": 0.0016158318276779493,
+    "materials": [
+      "glass_shell",
+      "glass_cut",
+      "gold_trim"
+    ],
+    "bounds": {
+      "min": [
+        -0.13204209506511688,
+        6.936731551832054e-06,
+        -0.13551220297813416
+      ],
+      "max": [
+        0.13204209506511688,
+        0.6899999976158142,
+        0.13551220297813416
+      ]
+    }
+  }
+}

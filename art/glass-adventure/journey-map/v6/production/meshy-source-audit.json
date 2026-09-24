@@ -1,0 +1,254 @@
+{
+  "schema": 1,
+  "purpose": "Read-only topology, material, UV and bounds audit of archived Meshy inputs.",
+  "assets": {
+    "twinConnector": {
+      "file": "meshy/twin-connector-final.glb",
+      "bytes": 17720364,
+      "sha256": "e889e129074dafc7e31723005399e14c23cedbbb33394be2fa5986ec90b8d221",
+      "sceneObjects": 1,
+      "meshObjects": [
+        {
+          "name": "Mesh_0",
+          "mesh": "Mesh_0",
+          "triangles": 18259,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "materials": [
+            "Material_0"
+          ],
+          "topology": {
+            "vertices": 36240,
+            "triangles": 18259,
+            "boundaryEdges": 36051,
+            "nonManifoldEdges": 36051,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          },
+          "matrixWorld": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "triangles": 18259,
+      "boundsBlenderZUp": {
+        "min": [
+          -0.5889919996261597,
+          -0.3405229449272156,
+          -0.9504419565200806
+        ],
+        "max": [
+          0.5868509411811829,
+          0.3415360152721405,
+          0.947344958782196
+        ]
+      },
+      "dimensionsGlTfYUp": [
+        1.1758429408073425,
+        1.8977869153022766,
+        0.6820589601993561
+      ],
+      "materials": [
+        "Material_0"
+      ],
+      "images": [
+        {
+          "name": "Image_0",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true,
+          "source": "FILE"
+        },
+        {
+          "name": "Image_1",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true,
+          "source": "FILE"
+        },
+        {
+          "name": "Image_3",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true,
+          "source": "FILE"
+        },
+        {
+          "name": "normal",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true,
+          "source": "FILE"
+        }
+      ],
+      "checks": {
+        "hasMesh": true,
+        "uv0OnEveryMesh": true,
+        "noLooseEdges": true,
+        "noZeroAreaFaces": true
+      }
+    },
+    "conservatory": {
+      "file": "meshy/conservatory-final.glb",
+      "bytes": 16032368,
+      "sha256": "643280e10516cdc360e2a57f98b0cd1e3bd304a73a9c914ce28be936c634c4b1",
+      "sceneObjects": 1,
+      "meshObjects": [
+        {
+          "name": "Mesh_0",
+          "mesh": "Mesh_0",
+          "triangles": 22870,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "materials": [
+            "Material_0"
+          ],
+          "topology": {
+            "vertices": 45720,
+            "triangles": 22870,
+            "boundaryEdges": 45290,
+            "nonManifoldEdges": 45290,
+            "looseEdges": 0,
+            "zeroAreaFaces": 0,
+            "blenderMeshInvalid": false
+          },
+          "matrixWorld": [
+            [
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "triangles": 22870,
+      "boundsBlenderZUp": {
+        "min": [
+          -0.9461170434951782,
+          -0.9433120489120483,
+          -0.9505628943443298
+        ],
+        "max": [
+          0.9459080696105957,
+          0.9452549815177917,
+          0.9456130862236023
+        ]
+      },
+      "dimensionsGlTfYUp": [
+        1.892025113105774,
+        1.8961759805679321,
+        1.88856703042984
+      ],
+      "materials": [
+        "Material_0"
+      ],
+      "images": [
+        {
+          "name": "Image_0",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true,
+          "source": "FILE"
+        },
+        {
+          "name": "Image_1",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true,
+          "source": "FILE"
+        },
+        {
+          "name": "Image_3",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB",
+          "packed": true,
+          "source": "FILE"
+        },
+        {
+          "name": "normal",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color",
+          "packed": true,
+          "source": "FILE"
+        }
+      ],
+      "checks": {
+        "hasMesh": true,
+        "uv0OnEveryMesh": true,
+        "noLooseEdges": true,
+        "noZeroAreaFaces": true
+      }
+    }
+  },
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/journey-map/v6/production/audit_meshy_sources.py"
+}

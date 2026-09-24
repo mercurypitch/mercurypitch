@@ -1,0 +1,73 @@
+{
+  "createdAt": "2026-09-21T00:10:08.214Z",
+  "url": "https://127.0.0.1:5291/glass-game/?campaign=1",
+  "evidence": "Actual shared campaign render; SwiftShader software rendering, not physical-device FPS or thermal acceptance. Counts include shadow passes.",
+  "proofs": [
+    {
+      "name": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "touch": false,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 157,
+        "triangles": 253126,
+        "geometries": 30,
+        "textures": 23,
+        "waterTriangles": 2688,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "errors": [],
+      "screenshot": "desktop.png",
+      "bytes": 839102,
+      "sha256": "311157a1a148cacf59ea03c790e77e267215d5f83b52cfc78ed261e4a9656a79"
+    },
+    {
+      "name": "tablet",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "touch": true,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 157,
+        "triangles": 253126,
+        "geometries": 30,
+        "textures": 23,
+        "waterTriangles": 2688,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "errors": [],
+      "screenshot": "tablet.png",
+      "bytes": 445431,
+      "sha256": "36fbe3e10cdca70a4ee45c578d23a479628e4da501cb9e6d639dfec8dc657c03"
+    },
+    {
+      "name": "phone",
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "touch": true,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 113,
+        "triangles": 186599,
+        "geometries": 26,
+        "textures": 23,
+        "waterTriangles": 2688,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "errors": [],
+      "screenshot": "phone.png",
+      "bytes": 140010,
+      "sha256": "29acb5883d2d2fc1b72dde2fd197ba60362d31bd5a38b1c67f3bfacad8ba9362"
+    }
+  ]
+}

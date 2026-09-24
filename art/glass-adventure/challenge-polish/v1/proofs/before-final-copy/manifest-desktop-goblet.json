@@ -1,0 +1,71 @@
+{
+  "capturedAt": "2026-09-21T16:23:16.245Z",
+  "url": "https://127.0.0.1:5298/glass-game/?campaign=1",
+  "proofs": [
+    {
+      "case": "desktop-goblet",
+      "evidence": "Compiled campaign host, real keyboard entry on desktop and real tap on touch contexts. Saved earlier checkpoint only; silent PCM leaves challenge open. Software rendering, not physical-device performance.",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "before": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.6623888234469367e-16",
+        "playerY": "0",
+        "playerZ": "-0.6259945436508044",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"safeBottomFraction\":0,\"position\":{\"x\":1.337734541131168e-16,\"y\":1.8173287870892774,\"z\":-3.892343149112515},\"target\":{\"x\":-3.208549364530589e-16,\"y\":0.42,\"z\":-0.18002061756541377},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "singing": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.6623888234469367e-16",
+        "playerY": "0",
+        "playerZ": "-0.6259945436508044",
+        "cameraYaw": "-1.2794019897596973",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-chamber/chamber/chamber/encounter/threshold-goblet\",\"progress\":1,\"safeBottomFraction\":0.3381423611111111,\"position\":{\"x\":-2.352103525316359,\"y\":0.24089026692301901,\"z\":0.826084472204835},\"target\":{\"x\":0.0000887688371925821,\"y\":0.1930936592706341,\"z\":0.12058691494630397},\"mercFrame\":{\"minX\":-0.5507998402387578,\"maxX\":-0.22321729042772315,\"minY\":-0.16574642661181935,\"maxY\":0.35516556719597175},\"targetFrame\":{\"minX\":0.23154607081914402,\"maxX\":0.5890883830494166,\"minY\":0.04269257949622152,\"maxY\":0.8060848798532686},\"combinedFrame\":{\"minX\":-0.5507998402387578,\"maxX\":0.5890883830494166,\"minY\":-0.16574642661181935,\"maxY\":0.8060848798532686},\"safeBottomNdc\":-0.25371527777777775,\"side\":1,\"clearance\":0.919690631687787,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      },
+      "returned": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.6623888234469367e-16",
+        "playerY": "0",
+        "playerZ": "-0.6259945436508044",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"safeBottomFraction\":0.3381423611111111,\"position\":{\"x\":1.337734541131168e-16,\"y\":1.8173287870892774,\"z\":-3.892343149112515},\"target\":{\"x\":-3.208549364530589e-16,\"y\":0.42,\"z\":-0.18002061756541377},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "panelBounds": {
+        "x": 500,
+        "y": 611.671875,
+        "width": 440,
+        "height": 260.328125
+      },
+      "files": [
+        "desktop-goblet-singing.png",
+        "desktop-goblet-returned.png"
+      ],
+      "errors": []
+    }
+  ]
+}

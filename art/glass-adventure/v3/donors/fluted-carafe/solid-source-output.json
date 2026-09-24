@@ -1,0 +1,16 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "input": "/home/maff/.codex/worktrees/00ad/mercurypitch-agent/art/glass-adventure/v3/donors/fluted-carafe/solid-source-input.npz",
+  "simplifyTolerance": 5e-05,
+  "before": {
+    "triangles": 1986380,
+    "volume": 0.0016158895943191721
+  },
+  "meshes": [
+    {
+      "key": "intact",
+      "volume": 0.0016158318276779775,
+      "triangles": 1335284
+    }
+  ]
+}

@@ -1,0 +1,535 @@
+// Museum controls — real mouse, keyboard and simultaneous touch through the shared surface.
+import { expect, test, type Page } from '@playwright/test'
+
+test.use({
+  launchOptions: {
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+  },
+})
+// Include browser/context fixture setup in the budget. Calling setTimeout from
+// inside a test happens after those fixtures have already been created.
+// On CI head 413d9580, the SwiftShader phone and replay journeys exceeded 120s
+// before passing on retry; this is an allowance, not a hardware performance gate.
+test.setTimeout(180_000)
+
+const RASTER_METHODS = [
+  'clear',
+  'drawArrays',
+  'drawArraysInstanced',
+  'drawElements',
+  'drawElementsInstanced',
+] as const
+
+async function omitRasterOutput(page: Page): Promise<void> {
+  // This spec asserts controller state and accessible UI. Keep the real scene
+  // graph, input, RAF and physics paths, while omitting only SwiftShader pixel
+  // output that can turn a few virtual frames into a minute of CI work.
+  await page.addInitScript((methods) => {
+    for (const name of methods)
+      Object.defineProperty(WebGL2RenderingContext.prototype, name, {
+        configurable: true,
+        value: () => undefined,
+      })
+  }, RASTER_METHODS)
+}
+
+async function openMuseum(page: Page, renderPixels = false): Promise<void> {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text())
+  })
+  page.on('requestfailed', (request) =>
+    errors.push(`${request.url()} ${request.failure()?.errorText}`),
+  )
+  if (!renderPixels) await omitRasterOutput(page)
+  await page.addInitScript(() =>
+    localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen'),
+  )
+  const response = await page.goto('/glass-game/')
+  expect(response?.status()).toBe(200)
+  try {
+    await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+      'data-ready',
+      'true',
+      { timeout: 30_000 },
+    )
+  } catch (error) {
+    throw new Error(`Museum did not open: ${errors.join('; ')}`, {
+      cause: error,
+    })
+  }
+  await page.clock.install()
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
+}
+async function value(page: Page, key: string): Promise<number> {
+  return Number(
+    await page.getByTestId('glass-adventure').getAttribute(`data-${key}`),
+  )
+}
+
+test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 480 })
+  await openMuseum(page)
+  const initialYaw = await value(page, 'camera-yaw')
+  await page.mouse.move(320, 210)
+  await page.mouse.down()
+  await page.mouse.move(400, 220, { steps: 4 })
+  await page.clock.runFor(32)
+  const draggedYaw = await value(page, 'camera-yaw')
+  expect(Math.abs(draggedYaw - initialYaw)).toBeGreaterThan(0.2)
+  await page.clock.runFor(1_900)
+  const heldStart = {
+    x: await value(page, 'player-x'),
+    z: await value(page, 'player-z'),
+  }
+  await page.keyboard.down('KeyD')
+  await page.clock.runFor(350)
+  await page.keyboard.up('KeyD')
+  expect(
+    Math.hypot(
+      (await value(page, 'player-x')) - heldStart.x,
+      (await value(page, 'player-z')) - heldStart.z,
+    ),
+  ).toBeGreaterThan(0.2)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
+  await page.mouse.up()
+  await page.mouse.move(470, 240)
+  await page.clock.runFor(32)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
+
+  await page.mouse.down()
+  await page.keyboard.press('Escape')
+  await expect(
+    page.getByRole('dialog', { name: 'Take a little breath.' }),
+  ).toBeVisible()
+  await page.mouse.move(520, 200)
+  await page.keyboard.press('Escape')
+  await page.mouse.move(540, 210)
+  await page.clock.runFor(32)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
+  await page.mouse.up()
+
+  await page.clock.runFor(1_900)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(draggedYaw, 5)
+  const strafeStart = {
+    x: await value(page, 'player-x'),
+    z: await value(page, 'player-z'),
+  }
+  await page.keyboard.down('KeyD')
+  await page.clock.runFor(600)
+  await page.keyboard.up('KeyD')
+  const strafe = {
+    x: (await value(page, 'player-x')) - strafeStart.x,
+    z: (await value(page, 'player-z')) - strafeStart.z,
+  }
+  const expected = { x: Math.cos(draggedYaw), z: -Math.sin(draggedYaw) }
+  expect(strafe.x * expected.x + strafe.z * expected.z).toBeGreaterThan(0.35)
+  expect(Math.abs(strafe.x * expected.z - strafe.z * expected.x)).toBeLessThan(
+    0.08,
+  )
+  expect(
+    Math.abs((await value(page, 'camera-yaw')) - draggedYaw),
+  ).toBeGreaterThan(0.4)
+
+  const x = await value(page, 'player-x')
+  const z = await value(page, 'player-z')
+  await page.keyboard.down('KeyW')
+  await page.clock.runFor(250)
+  await page.keyboard.up('KeyW')
+  expect(
+    Math.hypot(
+      (await value(page, 'player-x')) - x,
+      (await value(page, 'player-z')) - z,
+    ),
+  ).toBeGreaterThan(0.15)
+  await page.clock.runFor(200)
+  const stopped = [await value(page, 'player-x'), await value(page, 'player-z')]
+  await page.clock.runFor(200)
+  expect(await value(page, 'player-x')).toBeCloseTo(stopped[0], 4)
+  expect(await value(page, 'player-z')).toBeCloseTo(stopped[1], 4)
+  await page.getByRole('button', { name: 'How to play' }).focus()
+  await page.keyboard.press('Space')
+  await expect(
+    page.getByRole('dialog', { name: 'A little room to wander.' }),
+  ).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('wheel zoom and a short side step complete the same heading turn @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 480 })
+  await openMuseum(page)
+  await page.mouse.move(320, 250)
+
+  // Real wheel input exercises the UI-to-rig path at near, far and middle zoom.
+  // Derive Merc's heading from actual travel, independently of the camera API.
+  for (const wheel of [-1_100, 2_350, -1_250]) {
+    await page.mouse.wheel(0, wheel)
+    await page.clock.runFor(32)
+    const start = [await value(page, 'player-x'), await value(page, 'player-z')]
+    await page.keyboard.down('KeyA')
+    await page.clock.runFor(200)
+    await page.keyboard.up('KeyA')
+    await page.clock.runFor(1_200)
+    const dx = (await value(page, 'player-x')) - start[0]
+    const dz = (await value(page, 'player-z')) - start[1]
+    expect(Math.hypot(dx, dz)).toBeGreaterThan(0.15)
+    const heading = Math.atan2(-dx, -dz)
+    const view = await value(page, 'camera-yaw')
+    const error = Math.atan2(Math.sin(heading - view), Math.cos(heading - view))
+    expect(Math.abs(error)).toBeLessThan(0.04)
+  }
+
+  await page.mouse.down()
+  await page.mouse.move(410, 250, { steps: 5 })
+  await page.mouse.up()
+  await page.clock.runFor(32)
+  const manualYaw = await value(page, 'camera-yaw')
+  await page.clock.runFor(1_200)
+  expect(await value(page, 'camera-yaw')).toBeCloseTo(manualYaw, 5)
+  // Move immediately after a second look gesture, without waiting out a long
+  // quiet timer. The short movement must still leave a turn to finish.
+  await page.mouse.down()
+  await page.mouse.move(430, 250, { steps: 3 })
+  await page.mouse.up()
+  await page.clock.runFor(32)
+  const start = [await value(page, 'player-x'), await value(page, 'player-z')]
+  await page.keyboard.down('KeyA')
+  await page.clock.runFor(200)
+  await page.keyboard.up('KeyA')
+  await page.clock.runFor(1_200)
+  const heading = Math.atan2(
+    start[0] - (await value(page, 'player-x')),
+    start[1] - (await value(page, 'player-z')),
+  )
+  expect(
+    Math.hypot(
+      start[0] - (await value(page, 'player-x')),
+      start[1] - (await value(page, 'player-z')),
+    ),
+  ).toBeGreaterThan(0.15)
+  const difference = heading - (await value(page, 'camera-yaw'))
+  expect(
+    Math.abs(Math.atan2(Math.sin(difference), Math.cos(difference))),
+  ).toBeLessThan(0.04)
+})
+
+test('changing a held key chord steers from the current view @smoke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 480 })
+  await openMuseum(page)
+  await page.mouse.move(320, 210)
+  await page.mouse.down()
+  await page.mouse.move(360, 210, { steps: 3 })
+  await page.mouse.up()
+  await page.clock.runFor(250)
+  await page.keyboard.down('KeyA')
+  await page.clock.runFor(200)
+
+  async function expectTravel(heading: number): Promise<void> {
+    // Allow the bounded physical acceleration to finish before measuring travel.
+    await page.clock.runFor(180)
+    const x = await value(page, 'player-x')
+    const z = await value(page, 'player-z')
+    await page.clock.runFor(160)
+    const dx = (await value(page, 'player-x')) - x
+    const dz = (await value(page, 'player-z')) - z
+    expect(Math.hypot(dx, dz)).toBeGreaterThan(0.14)
+    const difference = Math.atan2(-dx, -dz) - heading
+    expect(
+      Math.abs(Math.atan2(Math.sin(difference), Math.cos(difference))),
+    ).toBeLessThan(0.12)
+    expect(await value(page, 'player-y')).toBeCloseTo(0, 3)
+  }
+
+  const diagonalHeading = (await value(page, 'camera-yaw')) + Math.PI / 4
+  await page.keyboard.down('KeyW')
+  await expectTravel(diagonalHeading)
+  const forwardHeading = await value(page, 'camera-yaw')
+  await page.keyboard.up('KeyA')
+  await expectTravel(forwardHeading)
+  await page.keyboard.up('KeyW')
+})
+
+test.describe('phone', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+  test('Tune clears Help and movement labels cannot be selected @smoke', async ({
+    page,
+    context,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 740 })
+    await openMuseum(page, true)
+    const help = page.getByRole('button', { name: 'How to play' })
+    const tune = page.getByRole('button', {
+      name: 'Camera tuning',
+      exact: true,
+    })
+    for (const width of [320, 390, 768, 1180]) {
+      await page.setViewportSize({ width, height: 740 })
+      const helpBox = await help.boundingBox()
+      const tuneBox = await tune.boundingBox()
+      expect(helpBox).not.toBeNull()
+      expect(tuneBox).not.toBeNull()
+      expect(
+        tuneBox!.y - (helpBox!.y + helpBox!.height),
+      ).toBeGreaterThanOrEqual(8)
+      expect(tuneBox!.x + tuneBox!.width).toBeLessThanOrEqual(width)
+    }
+    await page.setViewportSize({ width: 320, height: 740 })
+    await page.clock.runFor(32)
+    // Proof capture is opt-in: shared CI GPUs can stall screenshot readback.
+    // Geometry, computed styles, real rendering and input remain mandatory.
+    if (process.env.GLASS_CONTROLS_PROOF === '1')
+      await page.screenshot({ path: testInfo.outputPath('phone-controls.png') })
+    await help.tap()
+    await expect(
+      page.getByRole('dialog', { name: 'A little room to wander.' }),
+    ).toBeVisible()
+    await page.keyboard.press('Escape')
+    await tune.tap()
+    await expect(
+      page.getByRole('dialog', { name: 'Camera comfort tuning' }),
+    ).toBeVisible()
+    if (process.env.GLASS_CONTROLS_PROOF === '1')
+      await page.screenshot({
+        path: testInfo.outputPath('phone-tuning-panel.png'),
+      })
+    await page.getByRole('button', { name: 'Close camera tuning' }).tap()
+    // Resume a released-input frame after the tutorial before pressing Jump.
+    await page.clock.runFor(32)
+
+    const jump = page.getByRole('button', { name: 'Jump', exact: true })
+    await expect(jump.locator('span')).toHaveCSS('user-select', 'none')
+    await expect(
+      page
+        .getByRole('group', { name: 'Move Merc' })
+        .getByText('Move', { exact: true }),
+    ).toHaveCSS('user-select', 'none')
+    const label = await jump.locator('span').boundingBox()
+    expect(label).not.toBeNull()
+    await page.mouse.move(label!.x, label!.y + label!.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(
+      label!.x + label!.width,
+      label!.y + label!.height / 2,
+      { steps: 5 },
+    )
+    await page.mouse.up()
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+      '',
+    )
+    await page.evaluate(() => {
+      document.addEventListener(
+        'contextmenu',
+        (event) => {
+          document.body.dataset.movementContextMenu = String(
+            event.defaultPrevented,
+          )
+        },
+        { once: true },
+      )
+    })
+    await jump.click({ button: 'right' })
+    await expect(page.locator('body')).toHaveAttribute(
+      'data-movement-context-menu',
+      'true',
+    )
+    const cdp = await context.newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        {
+          id: 1,
+          x: label!.x + label!.width / 2,
+          y: label!.y + label!.height / 2,
+        },
+      ],
+    })
+    await page.clock.runFor(100)
+    expect(await value(page, 'player-y')).toBeGreaterThan(0.1)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
+  })
+  test('three fingers move, orbit and jump independently; cancellation releases the controls @smoke', async ({
+    page,
+    context,
+  }) => {
+    await openMuseum(page)
+    const cdp = await context.newCDPSession(page)
+    const stick = await page
+      .getByRole('group', { name: 'Move Merc' })
+      .boundingBox()
+    const jump = await page
+      .getByRole('button', { name: 'Jump', exact: true })
+      .boundingBox()
+    expect(stick).not.toBeNull()
+    expect(jump).not.toBeNull()
+    const centre = {
+      x: stick!.x + stick!.width / 2,
+      y: stick!.y + stick!.height / 2,
+    }
+    const movement = { id: 1, x: centre.x + 20, y: centre.y - 8 }
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ id: 1, ...centre }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [movement],
+    })
+    const x = await value(page, 'player-x')
+    const z = await value(page, 'player-z')
+    await page.clock.runFor(100)
+    expect(
+      Math.hypot(
+        (await value(page, 'player-x')) - x,
+        (await value(page, 'player-z')) - z,
+      ),
+    ).toBeGreaterThan(0.03)
+    const yaw = await value(page, 'camera-yaw')
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [movement, { id: 2, x: 220, y: 380 }],
+    })
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [movement, { id: 2, x: 265, y: 390 }],
+    })
+    await page.clock.runFor(32)
+    expect(Math.abs((await value(page, 'camera-yaw')) - yaw)).toBeGreaterThan(
+      0.1,
+    )
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        movement,
+        { id: 2, x: 265, y: 390 },
+        { id: 3, x: jump!.x + jump!.width / 2, y: jump!.y + jump!.height / 2 },
+      ],
+    })
+    await page.clock.runFor(100)
+    expect(await value(page, 'player-y')).toBeGreaterThan(0.1)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchCancel',
+      touchPoints: [],
+    })
+    await page.clock.runFor(200)
+    const released = [
+      await value(page, 'player-x'),
+      await value(page, 'player-z'),
+      await value(page, 'camera-yaw'),
+    ]
+    await page.clock.runFor(200)
+    expect(await value(page, 'player-x')).toBeCloseTo(released[0], 4)
+    expect(await value(page, 'player-z')).toBeCloseTo(released[1], 4)
+    expect(await value(page, 'camera-yaw')).toBeCloseTo(released[2], 5)
+    expect(
+      await page.evaluate(() => ({
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight,
+      })),
+    ).toEqual({ width: 390, height: 844 })
+  })
+})
+
+test('replay starts fresh while gameplay saves preserve durable completion', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 640, height: 480 })
+  await omitRasterOutput(page)
+  const completedProgress = {
+    version: 1,
+    levelId: 'glassworks',
+    checkpointId: 'hero',
+    finished: true,
+    completedBreakableIds: [
+      'glassworks.first-goblet',
+      'glassworks.rounded-vase',
+      'glassworks.hero-display',
+    ],
+  }
+  await page.addInitScript((progress) => {
+    localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen')
+    localStorage.setItem(
+      'beside-cue:glass-adventure:progress:glassworks',
+      JSON.stringify(progress),
+    )
+  }, completedProgress)
+  await page.goto('/glass-game/')
+  await expect(
+    page.getByRole('dialog', { name: 'You made the museum sing.' }),
+  ).toBeVisible()
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-completed',
+    '3',
+  )
+  await page.getByRole('button', { name: 'Play this gallery again' }).click()
+  await expect(page.getByLabel('0 of 3 main exhibits opened')).toBeVisible({
+    timeout: 30_000,
+  })
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 30_000 },
+  )
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-completed',
+    '0',
+  )
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-checkpoint',
+    'arrival',
+  )
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  const savedAfterLoad = await page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem('beside-cue:glass-adventure:progress:glassworks')!,
+    ),
+  )
+  expect(savedAfterLoad).toEqual(completedProgress)
+
+  const adventure = page.getByTestId('glass-adventure')
+  await page.keyboard.down('KeyW')
+  try {
+    await expect(adventure).toHaveAttribute('data-checkpoint', 'jump-arrival', {
+      timeout: 5000,
+    })
+  } finally {
+    await page.keyboard.up('KeyW')
+  }
+  const savedAfterMovement = await page.evaluate(() =>
+    JSON.parse(
+      localStorage.getItem('beside-cue:glass-adventure:progress:glassworks')!,
+    ),
+  )
+  expect(savedAfterMovement).toEqual({
+    version: 2,
+    levelId: 'glassworks',
+    checkpointId: 'jump-arrival',
+    completedBreakableIds: [
+      'glassworks.first-goblet',
+      'glassworks.rounded-vase',
+      'glassworks.hero-display',
+    ],
+    finished: true,
+    rewards: {
+      version: 1,
+      discoveredEncounterIds: [],
+      collectedCoinIds: [],
+      qualityResults: [],
+      collectedPortraitIds: [],
+    },
+  })
+})

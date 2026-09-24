@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "kind": "rejected-download-attempt",
+  "recordedAtUtc": "2026-09-23T21:09:49.006252+00:00",
+  "artifact": "set-0-normal",
+  "attempt": 1,
+  "maximumAttempts": 3,
+  "sourceHost": "assets.meshy.ai",
+  "signedUrlPersisted": false,
+  "partialBytesPersisted": false,
+  "httpStatus": 200,
+  "contentType": "image/png",
+  "contentLength": "22643007",
+  "expectedBytes": 22643007,
+  "receivedBytes": 1090248,
+  "reasonCode": "content-length-mismatch",
+  "reason": "Artifact stream length did not match Content-Length",
+  "bytes": 1090248,
+  "sha256": "20c991e1951808cf0cd00142b7f8a46167a651ae100da2f817d6ab781d94ef3e",
+  "metadataFile": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/rejected-downloads/set-0-normal-attempt-1-20c991e19518.json"
+}

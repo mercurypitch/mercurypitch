@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "authorization": "User requested concept fidelity modeling and authorized broad Meshy spending. Exact guide files generated from selected concept A.",
+  "balanceBefore": 4150,
+  "tasks": [
+    {
+      "asset": "temple",
+      "taskId": "01a0c1ef-9a17-7153-b8b2-384093df5d82",
+      "guide": "concepts/temple-guide.png",
+      "targetTriangles": 22000,
+      "quotedCredits": 30,
+      "status": "archived",
+      "consumedCredits": 30,
+      "receipt": "meshy/temple-receipt.json"
+    },
+    {
+      "asset": "cliff",
+      "taskId": "01a0c1ef-fb0b-7173-9943-cb904a0e8df7",
+      "guide": "concepts/cliff-guide.png",
+      "targetTriangles": 16000,
+      "quotedCredits": 30,
+      "status": "archived",
+      "consumedCredits": 30,
+      "receipt": "meshy/cliff-receipt.json"
+    },
+    {
+      "asset": "cypress",
+      "taskId": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+      "guide": "concepts/cypress-guide.png",
+      "targetTriangles": 7000,
+      "quotedCredits": 30,
+      "status": "archived",
+      "consumedCredits": 30,
+      "receipt": "meshy/cypress-receipt.json"
+    }
+  ],
+  "state": "archived",
+  "archivedAtUtc": "2026-09-21T03:17:34.059794+00:00",
+  "balanceAfterArchiveCheck": 4060,
+  "consumedCreditsTotal": 90,
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false
+}

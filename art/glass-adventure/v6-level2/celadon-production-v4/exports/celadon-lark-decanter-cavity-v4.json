@@ -1,0 +1,1048 @@
+{
+  "schema": 1,
+  "status": "prepared cavity shell; fracture/export validation pending",
+  "assetId": "celadon-lark-decanter",
+  "donor": {
+    "file": "../meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+    "bytes": 7283672,
+    "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45"
+  },
+  "normalization": {
+    "method": "semantic donor-envelope retopology with selected-to-active PBR transfer",
+    "uniformScale": 0.6057656912504278,
+    "sourceFootCentre": [
+      -0.0009541362524032593,
+      0.0009124279022216797,
+      -0.950843095779419
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.18882344663143158,
+        -0.18883395195007324,
+        0.0
+      ],
+      "max": [
+        0.18887394666671753,
+        0.18882279098033905,
+        1.149999976158142
+      ]
+    },
+    "dimensionsMetres": [
+      0.3776974081993103,
+      0.3776567578315735,
+      1.149999976158142
+    ],
+    "cleanProjectionMaster": {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+      "bytes": 7283672,
+      "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45",
+      "normalization": {
+        "uniformScale": 0.6057656912504278,
+        "sourceFootCentre": [
+          -0.0009541362524032593,
+          0.0009124279022216797,
+          -0.950843095779419
+        ],
+        "boundsMetres": {
+          "min": [
+            -0.1889037787914276,
+            -0.18885940313339233,
+            0.0
+          ],
+          "max": [
+            0.1889037936925888,
+            0.18885940313339233,
+            1.149999976158142
+          ]
+        },
+        "dimensionsMetres": [
+          0.3778075575828552,
+          0.37771880626678467,
+          1.149999976158142
+        ]
+      }
+    },
+    "texturedTransferSource": {
+      "file": "meshy/celadon-lark-decanter-regenerated-v2.glb",
+      "bytes": 11300716,
+      "sha256": "04f6d35af846a10609c72e5fd11437ca7523f99e31fda8ca26e0302728e8b2e2",
+      "normalization": {
+        "uniformScale": 0.6058853074198204,
+        "sourceFootCentre": [
+          -0.0011275112628936768,
+          0.001042976975440979,
+          -0.9507960677146912
+        ],
+        "boundsMetres": {
+          "min": [
+            -0.1888359785079956,
+            -0.18881750106811523,
+            0.0
+          ],
+          "max": [
+            0.1888359785079956,
+            0.18881748616695404,
+            1.1500000953674316
+          ]
+        },
+        "dimensionsMetres": [
+          0.3776719570159912,
+          0.37763500213623047,
+          1.1500000953674316
+        ]
+      }
+    },
+    "semanticExterior": {
+      "method": "Single connected solid authored from the outermost clean-donor radial hit at 96 angles and 128 body elevations; donor sector maxima directly preserve the scalloped mouth. A planar sealed foot replaces the donor's axial tunnel.",
+      "angularSegments": 96,
+      "bodyElevationSamples": 128,
+      "ringCountIncludingFootAndScallop": 130,
+      "topology": {
+        "triangles": 24960,
+        "vertices": 12482,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.03993732218363532
+      },
+      "boundsMetres": {
+        "min": [
+          -0.18882344663143158,
+          -0.18883395195007324,
+          0.0
+        ],
+        "max": [
+          0.18887394666671753,
+          0.18882279098033905,
+          1.149999976158142
+        ]
+      },
+      "dimensionsMetres": [
+        0.3776974081993103,
+        0.3776567578315735,
+        1.149999976158142
+      ],
+      "groundContact": {
+        "minimumZMetres": 0.0,
+        "verticesAtZ0": 97,
+        "maximumContactRadiusMetres": 0.11902073950776362,
+        "sealedPlanarUnderside": true
+      },
+      "rim": {
+        "minimumSectorMaximumZMetres": 1.1344549655914307,
+        "maximumSectorMaximumZMetres": 1.149999976158142,
+        "heightRangeMetres": 0.015545010566711426,
+        "sectorMaximums": [
+          {
+            "z": 1.1348230838775635,
+            "radius": 0.10622911296537747
+          },
+          {
+            "z": 1.1374304294586182,
+            "radius": 0.10964240027998282
+          },
+          {
+            "z": 1.141831874847412,
+            "radius": 0.1114133452042926
+          },
+          {
+            "z": 1.146531343460083,
+            "radius": 0.10930618948401945
+          },
+          {
+            "z": 1.1486051082611084,
+            "radius": 0.107401003900577
+          },
+          {
+            "z": 1.1497583389282227,
+            "radius": 0.10720778603748513
+          },
+          {
+            "z": 1.1499087810516357,
+            "radius": 0.10844764007017257
+          },
+          {
+            "z": 1.1495130062103271,
+            "radius": 0.10905278408946815
+          },
+          {
+            "z": 1.1473121643066406,
+            "radius": 0.10935894679802018
+          },
+          {
+            "z": 1.143923282623291,
+            "radius": 0.1110932177581924
+          },
+          {
+            "z": 1.1380946636199951,
+            "radius": 0.11019039853277585
+          },
+          {
+            "z": 1.135460376739502,
+            "radius": 0.10610411784891763
+          },
+          {
+            "z": 1.1355931758880615,
+            "radius": 0.10598403140457739
+          },
+          {
+            "z": 1.138324499130249,
+            "radius": 0.11009006803610444
+          },
+          {
+            "z": 1.1429494619369507,
+            "radius": 0.11188521963024989
+          },
+          {
+            "z": 1.1475048065185547,
+            "radius": 0.10722237919399852
+          },
+          {
+            "z": 1.1497293710708618,
+            "radius": 0.10824468370907532
+          },
+          {
+            "z": 1.1499545574188232,
+            "radius": 0.10956928495740455
+          },
+          {
+            "z": 1.1498548984527588,
+            "radius": 0.10838330832323324
+          },
+          {
+            "z": 1.1485626697540283,
+            "radius": 0.1086797633692108
+          },
+          {
+            "z": 1.146113634109497,
+            "radius": 0.11153102856697257
+          },
+          {
+            "z": 1.1422322988510132,
+            "radius": 0.11151663591183684
+          },
+          {
+            "z": 1.1377928256988525,
+            "radius": 0.1100106157023291
+          },
+          {
+            "z": 1.1367318630218506,
+            "radius": 0.09664955777414587
+          },
+          {
+            "z": 1.1359405517578125,
+            "radius": 0.09761705045058759
+          },
+          {
+            "z": 1.1378555297851562,
+            "radius": 0.11006173235524991
+          },
+          {
+            "z": 1.1416033506393433,
+            "radius": 0.11125130185703273
+          },
+          {
+            "z": 1.146216869354248,
+            "radius": 0.10930019937805897
+          },
+          {
+            "z": 1.1481273174285889,
+            "radius": 0.10803169654393364
+          },
+          {
+            "z": 1.149688482284546,
+            "radius": 0.1092866998682116
+          },
+          {
+            "z": 1.149999976158142,
+            "radius": 0.10891737313651567
+          },
+          {
+            "z": 1.149564504623413,
+            "radius": 0.10779284382339677
+          },
+          {
+            "z": 1.1475743055343628,
+            "radius": 0.10896175094737719
+          },
+          {
+            "z": 1.1441688537597656,
+            "radius": 0.11018969092877662
+          },
+          {
+            "z": 1.1389269828796387,
+            "radius": 0.10971815426110793
+          },
+          {
+            "z": 1.1355600357055664,
+            "radius": 0.10434260207165197
+          },
+          {
+            "z": 1.1344549655914307,
+            "radius": 0.10686820460351833
+          },
+          {
+            "z": 1.1385953426361084,
+            "radius": 0.11023097902193714
+          },
+          {
+            "z": 1.1429309844970703,
+            "radius": 0.11199586101684059
+          },
+          {
+            "z": 1.1464145183563232,
+            "radius": 0.10961710921606543
+          },
+          {
+            "z": 1.1497734785079956,
+            "radius": 0.10710089449410506
+          },
+          {
+            "z": 1.1499826908111572,
+            "radius": 0.10758273155853265
+          },
+          {
+            "z": 1.1497385501861572,
+            "radius": 0.10771178938967282
+          },
+          {
+            "z": 1.1480634212493896,
+            "radius": 0.10593886560619212
+          },
+          {
+            "z": 1.1462557315826416,
+            "radius": 0.10882740904650116
+          },
+          {
+            "z": 1.141042709350586,
+            "radius": 0.11140862177700855
+          },
+          {
+            "z": 1.1380434036254883,
+            "radius": 0.10978343547990782
+          },
+          {
+            "z": 1.1372277736663818,
+            "radius": 0.09400293633810872
+          },
+          {
+            "z": 1.1380338668823242,
+            "radius": 0.09174787833326807
+          },
+          {
+            "z": 1.1384401321411133,
+            "radius": 0.10906896674345132
+          },
+          {
+            "z": 1.1415761709213257,
+            "radius": 0.11152338613545365
+          },
+          {
+            "z": 1.1463093757629395,
+            "radius": 0.11079760274375258
+          },
+          {
+            "z": 1.1481653451919556,
+            "radius": 0.10862929802832545
+          },
+          {
+            "z": 1.1497433185577393,
+            "radius": 0.10691851476423037
+          },
+          {
+            "z": 1.1498358249664307,
+            "radius": 0.1087850501763075
+          },
+          {
+            "z": 1.149440050125122,
+            "radius": 0.10905699287403059
+          },
+          {
+            "z": 1.1472423076629639,
+            "radius": 0.10803602946725976
+          },
+          {
+            "z": 1.1434309482574463,
+            "radius": 0.11191368016533115
+          },
+          {
+            "z": 1.1381242275238037,
+            "radius": 0.1101983056538634
+          },
+          {
+            "z": 1.1355334520339966,
+            "radius": 0.10685515478016858
+          },
+          {
+            "z": 1.1360089778900146,
+            "radius": 0.10592693702663204
+          },
+          {
+            "z": 1.1381345987319946,
+            "radius": 0.11004645080389558
+          },
+          {
+            "z": 1.1439459323883057,
+            "radius": 0.11113391975758065
+          },
+          {
+            "z": 1.1479628086090088,
+            "radius": 0.10836473689748789
+          },
+          {
+            "z": 1.149782419204712,
+            "radius": 0.10626846952440619
+          },
+          {
+            "z": 1.1499650478363037,
+            "radius": 0.10739280815397208
+          },
+          {
+            "z": 1.1496951580047607,
+            "radius": 0.10858617778640138
+          },
+          {
+            "z": 1.1485310792922974,
+            "radius": 0.10745113466027917
+          },
+          {
+            "z": 1.145617127418518,
+            "radius": 0.1115463875369468
+          },
+          {
+            "z": 1.1421369314193726,
+            "radius": 0.11094479639065845
+          },
+          {
+            "z": 1.1376941204071045,
+            "radius": 0.11020708148977712
+          },
+          {
+            "z": 1.1356241703033447,
+            "radius": 0.09533353595734956
+          },
+          {
+            "z": 1.1379480361938477,
+            "radius": 0.09227785714985265
+          },
+          {
+            "z": 1.1391305923461914,
+            "radius": 0.1098496419367004
+          },
+          {
+            "z": 1.1419233083724976,
+            "radius": 0.11161649498789679
+          },
+          {
+            "z": 1.1459949016571045,
+            "radius": 0.11140121330138822
+          },
+          {
+            "z": 1.1485806703567505,
+            "radius": 0.10652554259998986
+          },
+          {
+            "z": 1.149722933769226,
+            "radius": 0.109665264101034
+          },
+          {
+            "z": 1.1499722003936768,
+            "radius": 0.10830045464664927
+          },
+          {
+            "z": 1.1496814489364624,
+            "radius": 0.10802729605233552
+          },
+          {
+            "z": 1.147718906402588,
+            "radius": 0.10899939225942634
+          },
+          {
+            "z": 1.1440436840057373,
+            "radius": 0.11049999531169809
+          },
+          {
+            "z": 1.1389122009277344,
+            "radius": 0.10979873519582373
+          },
+          {
+            "z": 1.1358671188354492,
+            "radius": 0.10567550868463839
+          },
+          {
+            "z": 1.1367697715759277,
+            "radius": 0.09863075869193076
+          },
+          {
+            "z": 1.139288067817688,
+            "radius": 0.11015928163769952
+          },
+          {
+            "z": 1.143893837928772,
+            "radius": 0.111478821204744
+          },
+          {
+            "z": 1.1474995613098145,
+            "radius": 0.10923855502523426
+          },
+          {
+            "z": 1.1496388912200928,
+            "radius": 0.10903283214610147
+          },
+          {
+            "z": 1.1498953104019165,
+            "radius": 0.10853002374985668
+          },
+          {
+            "z": 1.1497242450714111,
+            "radius": 0.10716778375166276
+          },
+          {
+            "z": 1.148587703704834,
+            "radius": 0.10838266944204906
+          },
+          {
+            "z": 1.146203875541687,
+            "radius": 0.1103995906320001
+          },
+          {
+            "z": 1.1414706707000732,
+            "radius": 0.11124999791628984
+          },
+          {
+            "z": 1.1375441551208496,
+            "radius": 0.10974218700778338
+          },
+          {
+            "z": 1.1351008415222168,
+            "radius": 0.10473106778531938
+          }
+        ]
+      },
+      "uv0": {
+        "method": "non-overlapping cylindrical side band plus separate planar foot and mouth islands",
+        "minimum": [
+          0.0,
+          0.017552715943259068
+        ],
+        "maximum": [
+          1.0,
+          0.9811852747744938
+        ],
+        "loopCount": 74880,
+        "triangleCount": 24960,
+        "zeroAreaTriangles": 0,
+        "minimumTriangleArea": 3.391472868216951e-05
+      },
+      "donorEnvelopeFidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 0.0,
+          "p50": 0.0,
+          "p95": 1.4901161193847656e-08,
+          "p99": 0.0003906876215478409,
+          "max": 0.07691311836242676
+        },
+        "sourceToFinalMetres": {
+          "min": 4.3443975528134615e-08,
+          "p05": 4.0754017391009256e-05,
+          "p50": 0.0022484641522169113,
+          "p95": 0.030701633915305112,
+          "p99": 0.04079441025853155,
+          "max": 0.04721923917531967
+        },
+        "sourceSampleCount": 10113
+      }
+    },
+    "textureTransfer": {
+      "method": "Cycles CPU selected-to-active bake from authored textured donor onto semantic UV0",
+      "maps": {
+        "baseColor": {
+          "file": "sources/celadon-transfer-textures/celadon-lark-decanter-base-color-2k.png",
+          "bytes": 4882492,
+          "sha256": "d551f777d17174137a1538bddc7f8fddeb30641aeb092a06ef834cab1125c18b",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bakeType": "EMIT",
+          "samples": 8,
+          "marginPixels": 20,
+          "cageExtrusionMetres": 0.012,
+          "maximumRayDistanceMetres": 0.035,
+          "channelRange": [
+            0,
+            255
+          ],
+          "maximumChannelStandardDeviation": 75.3531
+        },
+        "roughness": {
+          "file": "sources/celadon-transfer-textures/celadon-lark-decanter-roughness-2k.tmp.png",
+          "bytes": 1327456,
+          "sha256": "afcec95da5cef4ad37674c97569ac13eac5f7d19e3dc30418540ee77112c5d94",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bakeType": "EMIT",
+          "samples": 8,
+          "marginPixels": 20,
+          "cageExtrusionMetres": 0.012,
+          "maximumRayDistanceMetres": 0.035,
+          "channelRange": [
+            0,
+            119
+          ],
+          "maximumChannelStandardDeviation": 23.2501
+        },
+        "metallic": {
+          "file": "sources/celadon-transfer-textures/celadon-lark-decanter-metallic-2k.tmp.png",
+          "bytes": 391362,
+          "sha256": "f3a5e74364137d329609c514ea84bf499576336426bc2be51550a409686848a2",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bakeType": "EMIT",
+          "samples": 8,
+          "marginPixels": 20,
+          "cageExtrusionMetres": 0.012,
+          "maximumRayDistanceMetres": 0.035,
+          "channelRange": [
+            0,
+            255
+          ],
+          "maximumChannelStandardDeviation": 73.1797
+        },
+        "normal": {
+          "file": "sources/celadon-transfer-textures/celadon-lark-decanter-normal-2k.png",
+          "bytes": 4051071,
+          "sha256": "4358c69ee8a45125f4f4682b8bec07400247b3f8c4340385cd1d8d4c40dafe5e",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bakeType": "NORMAL",
+          "samples": 8,
+          "marginPixels": 20,
+          "cageExtrusionMetres": 0.012,
+          "maximumRayDistanceMetres": 0.035,
+          "channelRange": [
+            0,
+            255
+          ],
+          "maximumChannelStandardDeviation": 22.2011
+        },
+        "orm": {
+          "file": "sources/celadon-transfer-textures/celadon-lark-decanter-orm-2k.png",
+          "bytes": 955796,
+          "sha256": "88572fd938873c8d84c926b503a388747f55111fb154e2c3b52b2e41aee88ec3",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "channels": {
+            "red": "constant ambient occlusion 1.0",
+            "green": "baked roughness",
+            "blue": "baked metallic"
+          }
+        }
+      },
+      "packedSourceResolution": 2048,
+      "runtimeExportMaximumResolution": 1024
+    }
+  },
+  "cleanup": {
+    "weld": {
+      "vertices": 12482,
+      "faces": 24960,
+      "weldedVertices": 12482,
+      "weldedFaces": 24960
+    },
+    "localRepair": {
+      "method": "no repair applied; exterior was authored as one checked oriented solid",
+      "before": {
+        "triangles": 24960,
+        "vertices": 12482,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.03993732218363532
+      },
+      "after": {
+        "triangles": 24960,
+        "vertices": 12482,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.03993732218363532
+      }
+    },
+    "collapsedComponents": {
+      "removedComponents": 0,
+      "removedFaces": 0,
+      "components": []
+    }
+  },
+  "lod": {
+    "requested": 30000,
+    "before": 24960,
+    "after": 24960,
+    "applied": false
+  },
+  "exteriorCheck": {
+    "triangles": 24960,
+    "vertices": 12482,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.03993732218363532
+  },
+  "exteriorFidelityBeforeCavity": {
+    "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+    "finalToSourceMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "sourceToFinalMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "sourceSampleCount": 12482
+  },
+  "materialRegions": {
+    "method": "single coherent opaque donor PBR atlas across the exterior",
+    "surfaceMaterial": "celadon_shell",
+    "sourceTextureDimensions": {
+      "baseColor": [
+        2048,
+        2048
+      ],
+      "metallicRoughness": [
+        2048,
+        2048
+      ]
+    },
+    "faceAssignments": {
+      "celadon_shell": 24960
+    },
+    "transmission": 0.0,
+    "normalMapStrength": 0.72,
+    "reason": "Preserves the authored pale-celadon ceramic, ivory foot, gold trim, and jewel cues as one coherent opaque PBR atlas without triangle-level material boundaries.",
+    "geometryChanged": false,
+    "transfer": "selected-to-active 2K bake from the textured regenerated-v2 donor"
+  },
+  "cavityProfile": {
+    "method": "32 radial donor-surface rays at 12 elevations; fifth-percentile radius minus fixed wall allowance",
+    "floorZMetres": 0.184,
+    "targetWallMetres": 0.012,
+    "rows": [
+      {
+        "zMetres": 0.2415,
+        "outerRayMetres": {
+          "min": 0.09288053959608078,
+          "p05": 0.09299266524612904,
+          "p50": 0.10849335417151451,
+          "p95": 0.11573415361344815,
+          "p99": 0.11577035121619701,
+          "max": 0.1157742291688919
+        },
+        "innerRadiusMetres": 0.08099266524612904
+      },
+      {
+        "zMetres": 0.32043181818181815,
+        "outerRayMetres": {
+          "min": 0.13859300315380096,
+          "p05": 0.1386004276573658,
+          "p50": 0.15164930373430252,
+          "p95": 0.158108189702034,
+          "p99": 0.15814863100647927,
+          "max": 0.15815700590610504
+        },
+        "innerRadiusMetres": 0.1266004276573658
+      },
+      {
+        "zMetres": 0.39936363636363637,
+        "outerRayMetres": {
+          "min": 0.1648748368024826,
+          "p05": 0.16490163579583167,
+          "p50": 0.18000797182321548,
+          "p95": 0.18785786926746367,
+          "p99": 0.18787904500961303,
+          "max": 0.18788695335388184
+        },
+        "innerRadiusMetres": 0.15290163579583166
+      },
+      {
+        "zMetres": 0.4782954545454545,
+        "outerRayMetres": {
+          "min": 0.17591111361980438,
+          "p05": 0.17596327736973763,
+          "p50": 0.18679200112819672,
+          "p95": 0.19025692716240883,
+          "p99": 0.19028137251734734,
+          "max": 0.19029049575328827
+        },
+        "innerRadiusMetres": 0.16396327736973762
+      },
+      {
+        "zMetres": 0.5572272727272727,
+        "outerRayMetres": {
+          "min": 0.13982971012592316,
+          "p05": 0.13989098742604256,
+          "p50": 0.15461201965808868,
+          "p95": 0.16838300973176956,
+          "p99": 0.16839876621961594,
+          "max": 0.16839881241321564
+        },
+        "innerRadiusMetres": 0.12789098742604255
+      },
+      {
+        "zMetres": 0.6361590909090908,
+        "outerRayMetres": {
+          "min": 0.100078284740448,
+          "p05": 0.10010012350976467,
+          "p50": 0.11064207926392555,
+          "p95": 0.13646647781133653,
+          "p99": 0.13656574875116348,
+          "max": 0.1365872472524643
+        },
+        "innerRadiusMetres": 0.08810012350976468
+      },
+      {
+        "zMetres": 0.715090909090909,
+        "outerRayMetres": {
+          "min": 0.06303252279758453,
+          "p05": 0.06306370571255684,
+          "p50": 0.06637900695204735,
+          "p95": 0.07500301115214825,
+          "p99": 0.075032172575593,
+          "max": 0.07503475248813629
+        },
+        "innerRadiusMetres": 0.05106370571255685
+      },
+      {
+        "zMetres": 0.7940227272727272,
+        "outerRayMetres": {
+          "min": 0.039317142218351364,
+          "p05": 0.03933050911873579,
+          "p50": 0.0401577427983284,
+          "p95": 0.04092128239572048,
+          "p99": 0.04092513415962458,
+          "max": 0.04092657193541527
+        },
+        "innerRadiusMetres": 0.02733050911873579
+      },
+      {
+        "zMetres": 0.8729545454545453,
+        "outerRayMetres": {
+          "min": 0.033381152898073196,
+          "p05": 0.03340128138661384,
+          "p50": 0.033549556508660316,
+          "p95": 0.03449216075241566,
+          "p99": 0.03451075546443463,
+          "max": 0.03451734036207199
+        },
+        "innerRadiusMetres": 0.021401281386613843
+      },
+      {
+        "zMetres": 0.9518863636363635,
+        "outerRayMetres": {
+          "min": 0.03799177706241608,
+          "p05": 0.03799615614116192,
+          "p50": 0.03825093060731888,
+          "p95": 0.03870954904705286,
+          "p99": 0.03880483835935593,
+          "max": 0.038812797516584396
+        },
+        "innerRadiusMetres": 0.02599615614116192
+      },
+      {
+        "zMetres": 1.0308181818181816,
+        "outerRayMetres": {
+          "min": 0.0449664443731308,
+          "p05": 0.045001727528870106,
+          "p50": 0.04630771838128567,
+          "p95": 0.048551703058183196,
+          "p99": 0.048647861294448376,
+          "max": 0.048684362322092056
+        },
+        "innerRadiusMetres": 0.03300172752887011
+      },
+      {
+        "zMetres": 1.10975,
+        "outerRayMetres": {
+          "min": 0.07808389514684677,
+          "p05": 0.07819134965538979,
+          "p50": 0.08305448293685913,
+          "p95": 0.08771785758435727,
+          "p99": 0.08913348354399205,
+          "max": 0.08961524814367294
+        },
+        "innerRadiusMetres": 0.0661913496553898
+      }
+    ],
+    "profileMetres": [
+      [
+        0.184,
+        0.012958826439380646
+      ],
+      [
+        0.21275,
+        0.05264523240998388
+      ],
+      [
+        0.2415,
+        0.08099266524612904
+      ],
+      [
+        0.32043181818181815,
+        0.12016490956644216
+      ],
+      [
+        0.39936363636363637,
+        0.1478217802743117
+      ],
+      [
+        0.4782954545454545,
+        0.14825196686387063
+      ],
+      [
+        0.5572272727272727,
+        0.12665146276851494
+      ],
+      [
+        0.6361590909090908,
+        0.08810012350976468
+      ],
+      [
+        0.715090909090909,
+        0.05106370571255685
+      ],
+      [
+        0.7940227272727272,
+        0.02733050911873579
+      ],
+      [
+        0.8729545454545453,
+        0.021401281386613843
+      ],
+      [
+        0.9518863636363635,
+        0.02599615614116192
+      ],
+      [
+        1.0308181818181816,
+        0.03300172752887011
+      ],
+      [
+        1.10975,
+        0.04959653859212995
+      ],
+      [
+        1.242,
+        0.04959653859212995
+      ]
+    ],
+    "segments": 48
+  },
+  "cavityBackend": {
+    "backend": "manifold3d 3.5.3",
+    "exteriorInputVolumeCubicMetres": 0.03993732218363516,
+    "cutterVolumeCubicMetres": 0.024052870346960367,
+    "shellVolumeCubicMetres": 0.016696674795576443,
+    "removedCavityVolumeCubicMetres": 0.023240647388058717,
+    "exteriorInputTriangles": 24960,
+    "cutterTriangles": 1440,
+    "shellTriangles": 26576,
+    "materialFaceCounts": {
+      "0": 25096,
+      "1": 1480,
+      "2": 0
+    }
+  },
+  "cavityThickness": {
+    "sampledFaces": 1344,
+    "rimSeamFacesUnder3mm": 0,
+    "nearestExteriorDistanceMetres": {
+      "min": 0.007652758155018091,
+      "p05": 0.010039674676954746,
+      "p50": 0.016953214071691036,
+      "p95": 0.039438643306493756,
+      "p99": 0.04628525998443365,
+      "max": 0.04691218212246895
+    },
+    "interpretation": "The minimum includes the intentional cavity/exterior seam at the open mouth; p05 gates the measurable inner wall away from that seam."
+  },
+  "centralMouthRayZMetres": [
+    0.18400001525878906,
+    1.4901161193847656e-08
+  ],
+  "shellCheck": {
+    "triangles": 26576,
+    "vertices": 13290,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.01669667484159872
+  },
+  "exteriorBoundsMaxDeltaMetres": 0.0,
+  "nodes": {
+    "root": "breakable_l2_high_celadon_decanter",
+    "intact": "breakable_l2_high_celadon_decanter_intact",
+    "collider": "COLLIDER_breakable_l2_high_celadon_decanter"
+  },
+  "packedBlenderSource": {
+    "file": "sources/celadon-lark-decanter-cavity-v4.blend",
+    "bytes": 10678573,
+    "sha256": "e04c5af3e54c1d9e2231e540427060b2bceddfe812019a58973df1ddb4e119fb"
+  },
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "toolchain": {
+      "blender": "5.2.2 LTS (d13f752e3b9c)",
+      "backendPython": "3.14.7",
+      "manifold3d": "3.5.3",
+      "backendNumpy": "2.5.3",
+      "scratchPythonPath": "/tmp/glass-museum-manifold",
+      "scratchPathCommitted": false,
+      "buildScript": {
+        "file": "art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py",
+        "sha256": "17e704463316858c3eeadbb71d12aaeac520021d46f73a33c03cc5fdc5677384"
+      },
+      "sharedPipeline": {
+        "file": "art/glass-adventure/v6-level2/finalize_vessels.py",
+        "sha256": "b313a0c45d38d7b1a6ab594e1080697fcf8035033929325a4ecb2aeb82fce224"
+      }
+    },
+    "commands": {
+      "prepare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase prepare",
+      "fracture": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase fracture",
+      "validate": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase validate",
+      "render": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase render",
+      "compare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase compare"
+    },
+    "paidProviderRequest": null,
+    "providerSpend": "No new provider request; reuses the receipted regenerated-v2 donors."
+  },
+  "gameplayReadiness": "Prepared production shell only; matched shards and fresh GLB validation are still required."
+}

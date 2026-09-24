@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "hypothesis": "The automatic cage origin determines which overlapping dense sheet is hit first. Changing only cage extrusion and inward ray reach should sharply reduce negative tangent Z when the production cage begins outside an unrelated sheet.",
+  "sourceBlend": {
+    "file": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+    "sha256": "d34524e05c1fe5910c800c7200c21887fd8af84f9f92273fe3c32a22fa233cd8"
+  },
+  "output": {
+    "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-normal-geometry-only-2k-corrected-production-cage.png",
+    "sha256": "7a770ad91b90b851a717d87948371e4aee01127aa3c24fd3cef52d1a7e0b3138",
+    "bytes": 7024536,
+    "dimensions": [
+      2048,
+      2048
+    ]
+  },
+  "controlledInputs": {
+    "low": "Cloudway_Marble__DonorShell",
+    "high": "Cloudway_Marble__DenseBakeSource",
+    "providerNormalConnected": false,
+    "cageExtrusionMetres": 0.018,
+    "maximumRayDistanceMetres": 0.075,
+    "normalSpace": "TANGENT"
+  },
+  "allTexelStatistics": {
+    "negativeTangentZ": 606925,
+    "tangentZBelowPointOne": 630428,
+    "vectorLengthBelowPointFive": 97040,
+    "minimumTangentZ": -1.0,
+    "medianTangentZ": 0.9529411792755127
+  },
+  "interpretation": "4mm cage comparison; exact-neutral centroids are a conservative miss/default proxy. Visual clay gate required before selection.",
+  "blender": "5.2.2 LTS",
+  "rebuild": "rtk proxy timeout 900 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/diagnose_marble_normal_bake.py -- --cage-extrusion 0.018 --max-ray-distance 0.075 --slug corrected-production-cage",
+  "usedUvTriangleCentroids": {
+    "sampledTriangles": 89984,
+    "negativeTangentZ": 16620,
+    "tangentZBelowPointOne": 17394,
+    "vectorLengthBelowPointFive": 3163,
+    "exactNeutral": 2237,
+    "exactReverse": 10,
+    "minZ": -1.0,
+    "medianZ": 0.9294117647058824
+  }
+}

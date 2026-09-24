@@ -68,6 +68,14 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+  <!-- Glassworks is the museum campaign. The original sixty-second /glass
+       challenge below remains a separate, independently loadable room. -->
+  <url>
+    <loc>https://mercurypitch.com/glass-game</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
   <!-- Glass aliases (/break-glass-with-your-voice, /high-note-test, /shatter)
        serve the same page with canonical /glass, so only the canonical URL
        is listed. -->

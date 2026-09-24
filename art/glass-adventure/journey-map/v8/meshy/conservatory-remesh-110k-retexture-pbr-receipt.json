@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-conservatory-v8-candidate",
+  "operation": "retexture",
+  "parentTaskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+  "source": {
+    "file": "meshy/conservatory-remesh-110k.glb",
+    "bytes": 8188772,
+    "sha256": "f936106d6eed572666b21b511efcbec35c342ae6be0c2402ea94aac6f133febf",
+    "triangles": 109636
+  },
+  "request": {
+    "text_style_prompt": "Premium magical floating-museum botanical conservatory. Ivory Carrara marble columns, plinth, steps and carved ribs; restrained warm brass Corinthian capitals, gold ribs and finial; pale celadon clear glass canopy; deep emerald ivy with individually readable leaves and sparse ivory and blush flowers. Preserve the open arched bays, planters and central urn as geometry. Clean physically based materials, no baked shadows, no opaque turquoise panels, no dirt, and no painted-on geometry.",
+    "ai_model": "meshy-6",
+    "enable_original_uv": true,
+    "enable_pbr": true,
+    "hd_texture": false,
+    "remove_lighting": true,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true,
+    "response_format": "json"
+  },
+  "authorization": "Owner explicitly approved transferring the preserved source models to Meshy and using the credits needed for this repair.",
+  "clayReview": {
+    "file": "proofs/conservatory-remesh-clay-review-v8.json",
+    "sha256": "642c15bae798cc58811e436f3d2584ab59ef0aa4d4c5144bdaa82781ea59c775",
+    "decision": "accepted-for-pbr-retexture",
+    "comparisonManifestSha256": "dd4204a5cbc869e6396e90b0a982bdf9004f631952307f01846b86270ac7319e",
+    "proofs": [
+      {
+        "file": "proofs/conservatory-geometry-front-v8.png",
+        "sha256": "61c64af3745818790ec0dd62f2201929ec4169abd07459ba5b3e85199f405223"
+      },
+      {
+        "file": "proofs/conservatory-geometry-angle-v8.png",
+        "sha256": "77cd23b1434ad9a240b8751e66772b611de7a2460b4504de16a764e821807bd2"
+      }
+    ]
+  },
+  "estimatedCredits": 10,
+  "expectedTextureResolution": "2K base color and PBR maps",
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "archived",
+  "balanceBefore": 3865,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "submittedAtUtc": "2026-09-23T14:49:27.296048+00:00",
+  "taskId": "01a0cebe-365f-7743-8e07-98ea3f53c7b3",
+  "balanceAfterSubmit": 3855,
+  "observedBalanceDeltaAtSubmit": 10,
+  "lastStatus": {
+    "taskId": "01a0cebe-365f-7743-8e07-98ea3f53c7b3",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 10
+  },
+  "lastCheckedAtUtc": "2026-09-23T14:54:19.213046+00:00",
+  "finalStatus": {
+    "taskId": "01a0cebe-365f-7743-8e07-98ea3f53c7b3",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 10
+  },
+  "balanceAfterArchiveCheck": 3855,
+  "observedBalanceDeltaFinal": 10,
+  "archivedAtUtc": "2026-09-23T14:54:36.241612+00:00",
+  "archiveDownload": {
+    "method": "bounded CDN byte ranges from authenticated task status",
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlPersisted": false
+  },
+  "file": {
+    "path": "meshy/conservatory-remesh-110k-retexture-pbr.glb",
+    "bytes": 20430664,
+    "sha256": "e82ced33f896eb4468af828006eaed8231e7bb2a8a9eee19cc0b64013ef9e0f6"
+  },
+  "readiness": "Review-only provider PBR candidate. Blender normalization, material audit, fresh-export validation, and visual acceptance remain separate gates."
+}

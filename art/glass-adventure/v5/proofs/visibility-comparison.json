@@ -1,0 +1,149 @@
+{
+  "method": "Same final scene and fixed poses; comparison intercepts only visibility select to return all rooms. Counts include render passes; not FPS.",
+  "rows": [
+    {
+      "file": "800-arrival.png",
+      "allRooms": {
+        "drawCalls": 550,
+        "triangles": 4729682,
+        "textures": 39,
+        "geometries": 178
+      },
+      "culled": {
+        "drawCalls": 544,
+        "triangles": 4721610,
+        "textures": 39,
+        "geometries": 178
+      },
+      "drawCallReductionPercent": 1.1,
+      "triangleReductionPercent": 0.2,
+      "pixelsDifferentAbove8Percent": 0.0
+    },
+    {
+      "file": "800-garden.png",
+      "allRooms": {
+        "drawCalls": 581,
+        "triangles": 4911233,
+        "textures": 39,
+        "geometries": 178
+      },
+      "culled": {
+        "drawCalls": 561,
+        "triangles": 4653058,
+        "textures": 39,
+        "geometries": 178
+      },
+      "drawCallReductionPercent": 3.4,
+      "triangleReductionPercent": 5.3,
+      "pixelsDifferentAbove8Percent": 0.0
+    },
+    {
+      "file": "800-portrait.png",
+      "allRooms": {
+        "drawCalls": 340,
+        "triangles": 2802217,
+        "textures": 39,
+        "geometries": 178
+      },
+      "culled": {
+        "drawCalls": 235,
+        "triangles": 1865769,
+        "textures": 39,
+        "geometries": 178
+      },
+      "drawCallReductionPercent": 30.9,
+      "triangleReductionPercent": 33.4,
+      "pixelsDifferentAbove8Percent": 0.0
+    },
+    {
+      "file": "800-panorama.png",
+      "allRooms": {
+        "drawCalls": 620,
+        "triangles": 4930532,
+        "textures": 39,
+        "geometries": 178
+      },
+      "culled": {
+        "drawCalls": 620,
+        "triangles": 4930532,
+        "textures": 39,
+        "geometries": 178
+      },
+      "drawCallReductionPercent": 0.0,
+      "triangleReductionPercent": 0.0,
+      "pixelsDifferentAbove8Percent": 0.0
+    },
+    {
+      "file": "390-arrival.png",
+      "allRooms": {
+        "drawCalls": 252,
+        "triangles": 2194482,
+        "textures": 38,
+        "geometries": 175
+      },
+      "culled": {
+        "drawCalls": 138,
+        "triangles": 1321362,
+        "textures": 38,
+        "geometries": 169
+      },
+      "drawCallReductionPercent": 45.2,
+      "triangleReductionPercent": 39.8,
+      "pixelsDifferentAbove8Percent": 0.0
+    },
+    {
+      "file": "390-garden.png",
+      "allRooms": {
+        "drawCalls": 490,
+        "triangles": 3819777,
+        "textures": 39,
+        "geometries": 178
+      },
+      "culled": {
+        "drawCalls": 470,
+        "triangles": 3561602,
+        "textures": 39,
+        "geometries": 178
+      },
+      "drawCallReductionPercent": 4.1,
+      "triangleReductionPercent": 6.8,
+      "pixelsDifferentAbove8Percent": 0.0
+    },
+    {
+      "file": "390-portrait.png",
+      "allRooms": {
+        "drawCalls": 328,
+        "triangles": 2685541,
+        "textures": 39,
+        "geometries": 178
+      },
+      "culled": {
+        "drawCalls": 223,
+        "triangles": 1749093,
+        "textures": 39,
+        "geometries": 178
+      },
+      "drawCallReductionPercent": 32.0,
+      "triangleReductionPercent": 34.9,
+      "pixelsDifferentAbove8Percent": 0.0
+    },
+    {
+      "file": "390-panorama.png",
+      "allRooms": {
+        "drawCalls": 580,
+        "triangles": 4559840,
+        "textures": 39,
+        "geometries": 178
+      },
+      "culled": {
+        "drawCalls": 580,
+        "triangles": 4559840,
+        "textures": 39,
+        "geometries": 178
+      },
+      "drawCallReductionPercent": 0.0,
+      "triangleReductionPercent": 0.0,
+      "pixelsDifferentAbove8Percent": 0.0
+    }
+  ]
+}

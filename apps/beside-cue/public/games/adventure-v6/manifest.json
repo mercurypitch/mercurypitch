@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "description": "Original Twin Galleries paintings, preserved listening-court harp, and approved hollow amber, opaline, and celadon vessel fractures.",
+  "sourceReceipt": "art/glass-adventure/v6-level2/imagegen-receipt.json",
+  "encoding": "Full-resolution RGB WebP, quality 88, method 6. Source masters unchanged.",
+  "assets": [
+    {
+      "file": "low-note-keeper.webp",
+      "source": "art/glass-adventure/v6-level2/paintings/low-note-keeper-master.png",
+      "sourceSha256": "9e8b7a7f79a73053ee7d6a5e2cda8c25fe5f5a7cded7d892f952050cf21b5ddc",
+      "sha256": "309f3ea72a9afca7846816ec94886ad184ff3d544e9e064fd2f7f5f363e7ab6c",
+      "dimensions": [1024, 1536],
+      "bytes": 352834
+    },
+    {
+      "file": "high-note-muse.webp",
+      "source": "art/glass-adventure/v6-level2/paintings/high-note-muse-master.png",
+      "sourceSha256": "92621506c8ed2e25b08eb531757d5cc4b21403a0558fe768124929ace8d61469",
+      "sha256": "2782be241a9bfd38138f69831f24c92dda093a0503bbeca050c33e93a54242f6",
+      "dimensions": [1024, 1536],
+      "bytes": 406372
+    },
+    {
+      "file": "interval-between.webp",
+      "source": "art/glass-adventure/v6-level2/paintings/interval-between-master.png",
+      "sourceSha256": "fac4a003be291df5f1dc01f434db098c73c52c16733586e59c17e6eff5a6f893",
+      "sha256": "7810c0cfbf8456785bc44f06fa03d3c2de668e4d9aec3e903f2160c3f112802a",
+      "dimensions": [1024, 1536],
+      "bytes": 479278
+    }
+  ],
+  "models": [
+    {
+      "id": "twin-tone-harp-v6",
+      "file": "twin-tone-resonance-harp.glb",
+      "node": "decor_l2_twin_tone_resonance_harp",
+      "source": "art/glass-adventure/v6-level2/sources/twin-tone-resonance-harp-final-v2.blend",
+      "sourceSha256": "0330aef16c2144479840be8a7d747c047caa52aa406b07a9d6dfa80142c8d8cb",
+      "sha256": "43805c83bd0f54937cb2b709b66d3c03fbf245fbcdb377e92c29a035df96d438",
+      "dimensions": [
+        1.5003591775894165, 0.6857956647872925, 1.6500000953674316
+      ],
+      "triangles": 9837,
+      "textureCount": 4,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "Authored base-only proxy; the render GLB contains no collider mesh."
+    },
+    {
+      "id": "opaline-v6",
+      "file": "opaline-echo-amphora-qa-v2.glb",
+      "node": "breakable_l2_opaline_echo_amphora",
+      "intactNode": "breakable_l2_opaline_echo_amphora_intact",
+      "shardPrefix": "breakable_l2_opaline_echo_amphora_shard_",
+      "shardCount": 18,
+      "source": "art/glass-adventure/v6-level2/sources/opaline-echo-amphora-fracture-v2.blend",
+      "sourceSha256": "169aa9e27e5dab371fec360a4124255f35bdaa480fb97b939452b65f789238c6",
+      "runtimeSource": "art/glass-adventure/v6-level2/exports/opaline-echo-amphora-fracture-v2.glb",
+      "sha256": "b8a06ba8111db685e5e68a71ce75d2e903257e68c5fbb5672e917266298d7766",
+      "dimensions": [
+        0.6186075806617737, 0.5681103467941284, 0.9200000166893005
+      ],
+      "intactTriangles": 8728,
+      "triangles": 23382,
+      "textureCount": 5,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only the declared intact and shard nodes.",
+      "bytes": 3814404,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v6-opaline-echo-amphora.json"
+    },
+    {
+      "id": "amber-v6",
+      "file": "amber-cadence-urn-qa-v2.glb",
+      "node": "breakable_l2_low_amber_urn",
+      "intactNode": "breakable_l2_low_amber_urn_intact",
+      "shardPrefix": "breakable_l2_low_amber_urn_shard_",
+      "shardCount": 16,
+      "source": "art/glass-adventure/v6-level2/sources/amber-cadence-urn-fracture-v2.blend",
+      "sourceSha256": "461ac348fc0197cf3bb4ef105505d2752382e08152aa2b93072048bd60810ab7",
+      "runtimeSource": "art/glass-adventure/v6-level2/exports/amber-cadence-urn-fracture-v2.glb",
+      "sha256": "fc416cb997b38a3fe66b8c975effad535628ad0614609321ff9348073a486209",
+      "dimensions": [
+        0.9315478801727295, 0.9315483570098877, 0.7200000286102295
+      ],
+      "intactTriangles": 9864,
+      "triangles": 26488,
+      "textureCount": 4,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only declared intact and shard nodes.",
+      "bytes": 3741768,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v6-amber-cadence-urn.json"
+    },
+    {
+      "id": "celadon-lark-decanter-fracture-v4",
+      "file": "celadon-lark-decanter-fracture-v4.glb",
+      "node": "breakable_l2_high_celadon_decanter",
+      "intactNode": "breakable_l2_high_celadon_decanter_intact",
+      "shardPrefix": "breakable_l2_high_celadon_decanter_shard_",
+      "shardCount": 18,
+      "source": "art/glass-adventure/v6-level2/celadon-production-v4/sources/celadon-lark-decanter-fracture-v4.blend",
+      "sourceSha256": "301cdba45fcb131d77f1c5b77ddf39e42ce609407456c270baf4e427b82c27d2",
+      "runtimeSource": "art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-v4.glb",
+      "sha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346",
+      "dimensions": [0.3776974081993103, 0.3776567578315735, 1.149999976158142],
+      "intactTriangles": 26512,
+      "triangles": 63592,
+      "textureCount": 3,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "The embedded collider is validation-only; gameplay uses the existing required-display mount and loads only the declared intact and 18 independently closed shard nodes.",
+      "bytes": 5820204,
+      "attributeRepair": "art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-attribute-repair-v4.json"
+    }
+  ]
+}

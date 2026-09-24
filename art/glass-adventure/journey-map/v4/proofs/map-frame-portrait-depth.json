@@ -1,0 +1,430 @@
+{
+  "schema": 1,
+  "source": {
+    "file": "art/glass-adventure/journey-map/v2/exports/floating-museum-map-kit-v1.glb",
+    "bytes": 6831200,
+    "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709"
+  },
+  "frameNode": {
+    "name": "map_frame",
+    "rawGltfTransform": {},
+    "generatedPrimitiveChildrenHaveIdentityTransform": true,
+    "runtimeRotationYRadians": 3.141592653589793,
+    "runtimeUniformScale": 0.72,
+    "cameraSide": "+Z in monument space",
+    "cameraRayInDonorCoordinates": "-Z toward +Z after rotationY=PI"
+  },
+  "primitives": [
+    {
+      "material": "map_frame_atlas_01",
+      "triangleCount": 945,
+      "vertexCount": 1927,
+      "positionBounds": {
+        "min": [
+          -0.5590804815292358,
+          0.0,
+          -0.05521427094936371
+        ],
+        "max": [
+          0.5571773052215576,
+          1.8059673309326172,
+          0.03913600742816925
+        ]
+      },
+      "normalBounds": {
+        "min": [
+          -0.9997031092643738,
+          -0.9999775886535645,
+          -1.0
+        ],
+        "max": [
+          0.9999805688858032,
+          0.998325765132904,
+          0.9999260306358337
+        ]
+      },
+      "uvBounds": {
+        "min": [
+          0.0011878078803420067,
+          0.0005900263786315918
+        ],
+        "max": [
+          0.9987692832946777,
+          0.998458981513977
+        ]
+      },
+      "doubleSided": true
+    },
+    {
+      "material": "map_frame_atlas_00",
+      "triangleCount": 55,
+      "vertexCount": 48,
+      "positionBounds": {
+        "min": [
+          -0.3949415385723114,
+          0.13522672653198242,
+          -0.017141126096248627
+        ],
+        "max": [
+          0.3946371376514435,
+          1.6342467069625854,
+          -0.017141126096248627
+        ]
+      },
+      "normalBounds": {
+        "min": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "max": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "uvBounds": {
+        "min": [
+          0.10495255887508392,
+          0.0
+        ],
+        "max": [
+          0.8950474262237549,
+          1.0
+        ]
+      },
+      "doubleSided": true
+    }
+  ],
+  "inset": {
+    "material": "map_frame_atlas_00",
+    "purpose": "exact arched portrait surface",
+    "boundsDonorLocal": {
+      "min": [
+        -0.3949415385723114,
+        0.13522672653198242,
+        -0.017141126096248627
+      ],
+      "max": [
+        0.3946371376514435,
+        1.6342467069625854,
+        -0.017141126096248627
+      ]
+    },
+    "boundsRuntimeMonument": {
+      "min": [
+        -0.2841387391090393,
+        0.09736324310302734,
+        0.012341610789299011
+      ],
+      "max": [
+        0.2843579077720642,
+        1.1766576290130615,
+        0.012341610789299011
+      ]
+    },
+    "uvBounds": {
+      "min": [
+        0.10495255887508392,
+        0.0
+      ],
+      "max": [
+        0.8950474262237549,
+        1.0
+      ]
+    },
+    "authoredUvFitsTwoByThreePortrait": true
+  },
+  "raycast": {
+    "method": "Exact barycentric intersections against every indexed GLB triangle at fixed XY rays.",
+    "samples": [
+      {
+        "xy": [
+          0.0,
+          0.3
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.03747704915365423,
+          "material": "map_frame_atlas_01",
+          "triangle": 395
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 33
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.03747704915365423,
+            "material": "map_frame_atlas_01",
+            "triangle": 395
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 33
+          }
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          0.6
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.03745435163020717,
+          "material": "map_frame_atlas_01",
+          "triangle": 409
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 21
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.03745435163020717,
+            "material": "map_frame_atlas_01",
+            "triangle": 409
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 21
+          }
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          0.9
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.03743994872201516,
+          "material": "map_frame_atlas_01",
+          "triangle": 454
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 30
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.03743994872201516,
+            "material": "map_frame_atlas_01",
+            "triangle": 454
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 30
+          }
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          1.2
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.03744713854166139,
+          "material": "map_frame_atlas_01",
+          "triangle": 504
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 23
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.03744713854166139,
+            "material": "map_frame_atlas_01",
+            "triangle": 504
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 23
+          }
+        ]
+      },
+      {
+        "xy": [
+          0.0,
+          1.45
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.03743811986612033,
+          "material": "map_frame_atlas_01",
+          "triangle": 426
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 34
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.03743811986612033,
+            "material": "map_frame_atlas_01",
+            "triangle": 426
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 34
+          }
+        ]
+      },
+      {
+        "xy": [
+          -0.25,
+          0.5
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.037464228882780594,
+          "material": "map_frame_atlas_01",
+          "triangle": 289
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 2
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.037464228882780594,
+            "material": "map_frame_atlas_01",
+            "triangle": 289
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 2
+          }
+        ]
+      },
+      {
+        "xy": [
+          0.25,
+          0.5
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.037512649817967515,
+          "material": "map_frame_atlas_01",
+          "triangle": 621
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 54
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.037512649817967515,
+            "material": "map_frame_atlas_01",
+            "triangle": 621
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 54
+          }
+        ]
+      },
+      {
+        "xy": [
+          -0.25,
+          1.1
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.037527916037209785,
+          "material": "map_frame_atlas_01",
+          "triangle": 337
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248623,
+          "material": "map_frame_atlas_00",
+          "triangle": 15
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.037527916037209785,
+            "material": "map_frame_atlas_01",
+            "triangle": 337
+          },
+          {
+            "z": -0.017141126096248623,
+            "material": "map_frame_atlas_00",
+            "triangle": 15
+          }
+        ]
+      },
+      {
+        "xy": [
+          0.25,
+          1.1
+        ],
+        "rotatedFrameCameraFirst": {
+          "z": -0.03754523367060475,
+          "material": "map_frame_atlas_01",
+          "triangle": 579
+        },
+        "unrotatedFrameCameraFirst": {
+          "z": -0.017141126096248627,
+          "material": "map_frame_atlas_00",
+          "triangle": 46
+        },
+        "hitsByIncreasingLocalZ": [
+          {
+            "z": -0.03754523367060475,
+            "material": "map_frame_atlas_01",
+            "triangle": 579
+          },
+          {
+            "z": -0.017141126096248627,
+            "material": "map_frame_atlas_00",
+            "triangle": 46
+          }
+        ]
+      }
+    ],
+    "grid": {
+      "columns": 81,
+      "rows": 101,
+      "pointsInsideArchedInset": 7760,
+      "cameraFirstWithRuntimeRotation": {
+        "map_frame_atlas_01": 7740,
+        "map_frame_atlas_00": 20
+      },
+      "cameraFirstWithoutRuntimeRotation": {
+        "map_frame_atlas_00": 7735,
+        "map_frame_atlas_01": 25
+      },
+      "rotatedAtlas01CoverDepthLocalZ": {
+        "min": -0.05028560164914139,
+        "max": -0.037170146478938015
+      }
+    },
+    "finding": "With rotationY=PI, map_frame_atlas_01 is a front slab over the nominal atlas00 inset from the overview camera side."
+  },
+  "earnedOverlayPlacement": {
+    "geometry": "clone the exact 55-triangle map_frame_atlas_00 geometry",
+    "runtimeAlgorithm": "minimumFrameZ(frame, frame) - 0.003 - minimumFrameZ(frame, inset)",
+    "frontmostAnyDonorVertexLocalZ": -0.05521427094936371,
+    "frontmostAnyDonorVertexRuntimeZ": 0.039754275083541867,
+    "configuredClearanceLocalMetres": 0.003,
+    "targetOverlayTotalLocalZ": -0.05821427094936371,
+    "overlayChildTranslationLocalZ": -0.041073144853115084,
+    "targetOverlayRuntimeZ": 0.04191427508354187,
+    "clearanceRuntimeMetres": 0.00216,
+    "materialRequirements": [
+      "DoubleSide because the runtime camera sees the rotated back face",
+      "authored UV crop retained",
+      "repeat.x=-1 and offset.x=1 for the rotationY=PI horizontal flip"
+    ],
+    "note": "The arched inset outline, rather than a rectangle, keeps the earned surface inside the gilded rim when placed ahead of the donor slab."
+  }
+}

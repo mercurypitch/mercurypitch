@@ -1,0 +1,185 @@
+{
+  "schema": 1,
+  "purpose": "Read-only diagnosis of the rejected V9 dome colour: distinguish the glTF face partition from the warm-ivory-as-gold texture mask.",
+  "conclusion": {
+    "primaryCause": "texture mask",
+    "finding": "Broad ivory panels are already assigned to the dome primitive. The hard gold boolean classifies low-chroma warm ivory as protected gold and sets most of the tint mask to zero. The Y split can account for a thin edge ring, but not the broad untinted lower dome."
+  },
+  "inputs": [
+    {
+      "file": "art/glass-adventure/journey-map/v9/exports/floating-museum-temple-candidate-v9-meshy-normal.glb",
+      "bytes": 21601268,
+      "sha256": "b31cdf876f601b510ee8910a144ec9258b592d355f088b0097e5a04fd5770360"
+    },
+    {
+      "file": "art/glass-adventure/journey-map/v9/sources/temple-bake-v9/provider-base-color.png",
+      "bytes": 5625779,
+      "sha256": "34162564fdc4d6f6b6b9c2a756f7e916a01c763eda2813afd377af11593ab736"
+    },
+    {
+      "file": "art/glass-adventure/proofs/museum-components-2026-09-23/v9-speckled-domes-desktop/rejected-kit.glb",
+      "bytes": 21230800,
+      "sha256": "444c0669ebc8760e25cc70c5a25541203fa18b156ff3d2ab581ae03b4b1b3793"
+    },
+    {
+      "file": "art/glass-adventure/proofs/museum-components-2026-09-23/v9-speckled-domes-desktop/twin-galleries-isle.png",
+      "bytes": 2221305,
+      "sha256": "1c6a8f72817bd7b092b1b106a4a93f4a694c7150dd7945fcc1b6a0cd1f19b31d"
+    },
+    {
+      "file": "art/glass-adventure/proofs/museum-components-2026-09-23/v9-speckled-domes-desktop/review.json",
+      "bytes": 278,
+      "sha256": "32c10b27c0166be27db937a1ecf05aef83e179a6187cd527cdfa1f8492db6f00"
+    }
+  ],
+  "historicalRejectedTint": {
+    "finishScriptObservedSha256": "fed2242b63e67047fb98fb2fe15533a4e01adb2cee9001b80e062dd2cdcab98f",
+    "amberBaseSha256": "fd59af03cc38336446f23d84ee6351d1c02aeef59da538ebccb019a52af241a4",
+    "tealBaseSha256": "0e0e99ede27fbebfa089581763cd6c331f7c37e5ece8bbdb1f0f420840eae531",
+    "rule": {
+      "bright": "clip((maxRGB - 0.38) / 0.42, 0, 1)",
+      "pale": "clip((0.28 - chroma) / 0.22, 0, 1)",
+      "gold": "R > 1.04*G and G > 1.10*B and chroma > 0.07",
+      "emerald": "G > 1.12*R and G > 0.88*B and chroma > 0.08",
+      "mask": "bright * pale * not-gold * not-emerald"
+    }
+  },
+  "geometryPartition": {
+    "criterion": "glTF triangle centroid Y >= 1.65 metres",
+    "positionYMinMaxMetres": [
+      0.0,
+      2.667687
+    ],
+    "triangles": {
+      "total": 89166,
+      "structure": 64181,
+      "dome": 24985
+    },
+    "surfaceAreaSquareMetres": {
+      "total": 39.305212,
+      "structure": 32.485617,
+      "dome": 6.819595
+    },
+    "domeCentroidYMinMaxMetres": [
+      1.650018,
+      2.667368
+    ],
+    "domeVertexYMinMaxMetres": [
+      1.448836,
+      2.667687
+    ],
+    "structureVertexYMaxMetres": 1.768134,
+    "crossingThreshold": {
+      "triangles": 830,
+      "assignedDome": 601,
+      "assignedStructure": 229,
+      "areaAssignedDomeSquareMetres": 0.69376,
+      "areaAssignedStructureSquareMetres": 0.232713,
+      "structureAreaAsPercentOfDomeArea": 3.4124
+    }
+  },
+  "lowerDomeBandAreaWeightedUvCentres": {
+    "centroidYRangeMetres": [
+      1.65,
+      1.85
+    ],
+    "triangles": 9797,
+    "surfaceAreaSquareMetres": 3.198942,
+    "samples": 9797,
+    "chromaQuantiles10_25_50_75_90": [
+      0.141176,
+      0.152941,
+      0.164706,
+      0.203922,
+      0.403922
+    ],
+    "shareChromaBelow18Percent": 71.1058,
+    "shareChromaBelow24Percent": 82.2869,
+    "shareChromaBelow28Percent": 84.0406,
+    "shareChromaAbove40Percent": 11.208,
+    "shareCurrentGoldBooleanPercent": 70.5001,
+    "shareCurrentEmeraldBooleanPercent": 6.8981,
+    "shareCurrentMaskZeroPercent": 77.539,
+    "shareCurrentMaskBelowPoint1Percent": 77.5986,
+    "shareWarmLowChromaPercent": 80.5958,
+    "shareWarmLowChromaClassedGoldPercent": 59.5717
+  },
+  "wholeDomeAreaWeightedUvCentres": {
+    "triangles": 24985,
+    "surfaceAreaSquareMetres": 6.819595,
+    "samples": 24985,
+    "chromaQuantiles10_25_50_75_90": [
+      0.141176,
+      0.152941,
+      0.164706,
+      0.211765,
+      0.419608
+    ],
+    "shareChromaBelow18Percent": 70.0844,
+    "shareChromaBelow24Percent": 81.124,
+    "shareChromaBelow28Percent": 83.1851,
+    "shareChromaAbove40Percent": 11.5018,
+    "shareCurrentGoldBooleanPercent": 72.7527,
+    "shareCurrentEmeraldBooleanPercent": 7.5456,
+    "shareCurrentMaskZeroPercent": 80.4976,
+    "shareCurrentMaskBelowPoint1Percent": 80.5613,
+    "shareWarmLowChromaPercent": 79.095,
+    "shareWarmLowChromaClassedGoldPercent": 61.377
+  },
+  "wholeDomeUvRaster": {
+    "atlasDimensions": [
+      2048,
+      2048
+    ],
+    "coveredPixels": 388388,
+    "uvMinMax": {
+      "min": [
+        0.0,
+        6.97e-06
+      ],
+      "max": [
+        1.0,
+        1.0
+      ]
+    },
+    "seamSpanningTriangles": 0,
+    "samples": 388388,
+    "chromaQuantiles10_25_50_75_90": [
+      0.141176,
+      0.152941,
+      0.164706,
+      0.2,
+      0.423529
+    ],
+    "shareChromaBelow18Percent": 69.8158,
+    "shareChromaBelow24Percent": 81.5079,
+    "shareChromaBelow28Percent": 83.7572,
+    "shareChromaAbove40Percent": 11.0122,
+    "shareCurrentGoldBooleanPercent": 73.38,
+    "shareCurrentEmeraldBooleanPercent": 8.0942,
+    "shareCurrentMaskZeroPercent": 81.7201,
+    "shareCurrentMaskBelowPoint1Percent": 81.8208,
+    "shareWarmLowChromaPercent": 78.7872,
+    "shareWarmLowChromaClassedGoldPercent": 62.6196
+  },
+  "recommendation": {
+    "mask": "Use neutralWeight = 1 - smoothstep(0.24, 0.42, chroma). Give all texels through chroma 0.24 full tint weight, then fade continuously to zero by 0.42. Remove the absolute bright gate and the hard gold/emerald booleans. Preserve luminance in the target-colour shading step.",
+    "thresholdBasis": "The accepted dome UV raster has median chroma 0.164706, 75th percentile 0.20 and 90th percentile 0.423529. The proposed interval includes the neutral panel population and protects the saturated accent tail.",
+    "partition": "Keep the 1.65 metre split for the next texture-only candidate. Review the thin spring-ring edge separately; do not move geometry or recompute normals, tangents or UVs to fix this colour defect.",
+    "runtime": "Recheck the final 2K WebP because the rejected amber/teal encodes had PSNR 28.6302/27.0243 dB and MAE 4.6633/5.9618; lossy encoding can accentuate hard mask edges, though it is not the primary cause."
+  },
+  "method": {
+    "geometry": "Decode the accepted GLB POSITION/TEXCOORD_0/index accessors, reproduce the packer face-centroid split and weight UV-centroid samples by 3D face area.",
+    "raster": "Rasterize the union of all accepted dome UV triangles into the 2048x2048 provider atlas with Pillow polygon coverage; sample each covered pixel once.",
+    "limits": [
+      "UV-centroid sampling represents each triangle by one texel; 3D area weighting reduces triangle-density bias but does not integrate the full UV face.",
+      "The UV raster measures atlas coverage, not screen-space visibility or minification in the browser. Polygon edge inclusion depends on Pillow's raster rule.",
+      "The split audit rules out partitioning as the primary broad-panel cause; it does not claim the 1.65 metre boundary is semantically perfect."
+    ]
+  },
+  "reproduction": {
+    "script": "art/glass-adventure/journey-map/v9/proofs/audit_dome_tint_mask_v9.py",
+    "scriptSha256": "6b83c8b9dd507d638c35c22026b699ce7fae07b802a139acddd86d68dfd76109",
+    "command": "rtk python3 art/glass-adventure/journey-map/v9/proofs/audit_dome_tint_mask_v9.py"
+  }
+}

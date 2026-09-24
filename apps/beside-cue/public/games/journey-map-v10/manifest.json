@@ -1,0 +1,27 @@
+{
+  "version": 10,
+  "description": "Rebaked camellia marble planters; prior museum cliff, temples and cypress geometry and textures preserved.",
+  "assets": [
+    {
+      "id": "floating-museum-twin-finish-kit-v4",
+      "file": "floating-museum-botanical-kit-v10.glb",
+      "bytes": 25596100,
+      "sha256": "bac1a83183a86397d1c46e1cc1cda1802d664739edfdfbe326eddbcfbd75498f",
+      "source": "art/glass-adventure/journey-map/v10/baked/camellia-crescent-rebaked.blend",
+      "recipe": "art/glass-adventure/journey-map/v10/production/package_botanical.mjs",
+      "flowerRoot": "map_flower_cluster",
+      "flowerTriangles": 117800,
+      "botanicalTextureResolution": 1024,
+      "acceptedInputs": "art/glass-adventure/journey-map/v10/production/accepted-inputs.json"
+    }
+  ],
+  "validation": {
+    "gltfErrors": 0,
+    "gltfWarnings": 1,
+    "warning": "Existing cliff has no authored tangent stream; derivative tangent space preserved exactly from V9.",
+    "nonBotanicalNodesPreserved": 11,
+    "proof": "art/glass-adventure/journey-map/v10/proofs/bundle-preservation.json",
+    "botanicalZeroTangentsRepaired": 126,
+    "physicalDevicePerformance": "Owner acceptance pending; software-rendered proofs are not device benchmarks."
+  }
+}

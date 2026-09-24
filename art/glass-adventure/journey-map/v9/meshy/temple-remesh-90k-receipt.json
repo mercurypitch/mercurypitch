@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-temple-v9-candidate",
+  "operation": "remesh",
+  "parentTaskId": "01a0c1ef-9a17-7153-b8b2-384093df5d82",
+  "sourceVariant": "pre_remeshed_glb",
+  "source": {
+    "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3-pre-remesh.glb",
+    "bytes": 32205248,
+    "sha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+    "providerTaskType": "image-to-3d"
+  },
+  "request": {
+    "topology": "triangle",
+    "target_polycount": 90000,
+    "target_formats": [
+      "glb"
+    ],
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "authorization": {
+    "sourceTransferApproval": "asserted-by-operator-after-specific-user-confirmation",
+    "assertedBySubmitFlag": true,
+    "assertedAtUtc": "2026-09-23T14:46:14.687339+00:00"
+  },
+  "estimatedCredits": 5,
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "archived",
+  "providerReconciliation": {
+    "checkedAtUtc": "2026-09-23T14:46:14.035809+00:00",
+    "purpose": "Prevent an unreceipted or duplicate submission before temple V9.",
+    "taskLists": {
+      "remesh": [
+        {
+          "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790174384249
+        },
+        {
+          "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790082668648
+        },
+        {
+          "taskId": "01a0c57f-b423-77b4-a2cd-0e4648510e29",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019875918
+        },
+        {
+          "taskId": "01a0c57f-a8a7-72ee-8557-126f8ec28e78",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019872982
+        },
+        {
+          "taskId": "01a0c57f-9917-734f-9c03-ea200ea04a4b",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019868992
+        },
+        {
+          "taskId": "01a0c104-1de9-73fb-8209-ba38f8260ced",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789944667664
+        },
+        {
+          "taskId": "01a0c090-4b93-76b7-a17d-49e24fcb356e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789937077359
+        }
+      ],
+      "retexture": [
+        {
+          "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790083241392
+        }
+      ]
+    },
+    "balance": 3875,
+    "conclusion": "Every task newer than the V7 baseline has a local receipt."
+  },
+  "balanceBefore": 3875,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0c1ef-9a17-7153-b8b2-384093df5d82",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 30
+  },
+  "submittedAtUtc": "2026-09-23T14:46:14.910422+00:00",
+  "taskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+  "balanceAfterSubmit": 3870,
+  "observedBalanceDeltaAtSubmit": 5,
+  "lastStatus": {
+    "taskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "lastCheckedAtUtc": "2026-09-23T14:47:41.894598+00:00",
+  "archiveDownloadTaskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+  "archiveDownloadStartedAtUtc": "2026-09-23T14:47:41.895113+00:00",
+  "finalStatus": {
+    "taskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "balanceAfterArchiveCheck": 3870,
+  "observedBalanceDeltaFinal": 5,
+  "archivedAtUtc": "2026-09-23T14:47:49.740258+00:00",
+  "archiveDownload": {
+    "method": "bounded CDN byte ranges or authenticated MCP download",
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlPersisted": false
+  },
+  "file": {
+    "path": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k.glb",
+    "bytes": 4841948,
+    "sha256": "157548ec5501305cb23ac2fce88df22ae6c5127b447c760c93a81bcadab1eb7f"
+  },
+  "readiness": "Review-only untextured geometry candidate. Compare dome curvature, column and arch profiles, statue anatomy and drapery, ornaments, steps, and the rear silhouette against the dense archive before any UV, bake, texture, or runtime work."
+}

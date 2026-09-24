@@ -1,0 +1,17 @@
+{
+  "ai_model": "meshy-6",
+  "file_path": "art/glass-adventure/v6-level2/concepts/opaline-echo-amphora.png",
+  "should_texture": true,
+  "enable_pbr": true,
+  "should_remesh": true,
+  "target_polycount": 8000,
+  "topology": "triangle",
+  "target_formats": ["glb"],
+  "texture_prompt": "Pearl-opal glass body with subtle celadon-to-lilac iridescence, integrated polished jade handles and foot, restrained hammered champagne-gold rings and wave band. Preserve open mouth, fused handles and elegant clean silhouette. Neutral clean PBR, no ground.",
+  "remove_lighting": true,
+  "save_pre_remeshed_model": true,
+  "image_enhancement": false,
+  "multi_view_thumbnails": true,
+  "origin_at": "bottom",
+  "response_format": "json"
+}

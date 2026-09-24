@@ -1,0 +1,136 @@
+{
+  "schema": 1,
+  "purpose": "Source suitability gate before any V8 Meshy remesh request.",
+  "assessment": {
+    "triangleRetentionFractionV6": 0.019034952067210776,
+    "candidateGate": "The preserved donor is structurally usable only if its ribs, bays, foliage silhouette, and circular plinth remain coherent in both recorded views."
+  },
+  "assets": [
+    {
+      "label": "preserved-pre-remesh",
+      "file": "glass-adventure/journey-map/v6/meshy/conservatory-pre-remesh.glb",
+      "bytes": 21519992,
+      "sha256": "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4",
+      "triangles": 1201474,
+      "vertices": 591793,
+      "materials": [],
+      "images": [],
+      "normalization": {
+        "sourceDimensionsGlTfYUp": [
+          1.8931964635849,
+          1.8990674018859863,
+          1.8939604759216309
+        ],
+        "scaleBlenderXYZ": [
+          1.2148765325546265,
+          1.2143864631652832,
+          1.3954217433929443
+        ],
+        "dimensionsGlTfYUpMetres": [
+          2.299999952316284,
+          2.6499998569488525,
+          2.299999952316284
+        ],
+        "anchorErrorMetres": 0.0
+      },
+      "proofs": [
+        {
+          "view": "front",
+          "file": "proofs/conservatory-preserved-pre-remesh-front-v8.png",
+          "bytes": 1187152,
+          "sha256": "ab348cf95129d9f273eb94d27502308bdb5881dad0ac55057e3c86a4b7717a01"
+        },
+        {
+          "view": "angle",
+          "file": "proofs/conservatory-preserved-pre-remesh-angle-v8.png",
+          "bytes": 1170159,
+          "sha256": "6e9a04f76d979153ab6f801d224e5a26b1786a95f26c192865e2b0ff414adc04"
+        }
+      ]
+    },
+    {
+      "label": "v6-22k-remesh",
+      "file": "glass-adventure/journey-map/v6/meshy/conservatory-final.glb",
+      "bytes": 16032368,
+      "sha256": "643280e10516cdc360e2a57f98b0cd1e3bd304a73a9c914ce28be936c634c4b1",
+      "triangles": 22870,
+      "vertices": 45720,
+      "materials": [
+        "Material_0"
+      ],
+      "images": [
+        {
+          "name": "Image_0",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        },
+        {
+          "name": "Image_1",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        },
+        {
+          "name": "Image_3",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        },
+        {
+          "name": "normal",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        }
+      ],
+      "normalization": {
+        "sourceDimensionsGlTfYUp": [
+          1.892025113105774,
+          1.8961759805679321,
+          1.8885669708251953
+        ],
+        "scaleBlenderXYZ": [
+          1.215628743171692,
+          1.217854619026184,
+          1.3975496292114258
+        ],
+        "dimensionsGlTfYUpMetres": [
+          2.3000001907348633,
+          2.6500000953674316,
+          2.3000001907348633
+        ],
+        "anchorErrorMetres": 0.0
+      },
+      "proofs": [
+        {
+          "view": "front",
+          "file": "proofs/conservatory-v6-remesh-front-v8.png",
+          "bytes": 1111592,
+          "sha256": "78738266030d02bf935f3b615fe310b53567a02e5cfe21c90a8dcf5935b1b339"
+        },
+        {
+          "view": "angle",
+          "file": "proofs/conservatory-v6-remesh-angle-v8.png",
+          "bytes": 1101066,
+          "sha256": "613dd86b32300cc610b694db6227126a08d51e9a4a7e52fc3f50ddcd30938ef5"
+        }
+      ]
+    }
+  ],
+  "render": {
+    "engine": "CYCLES CPU",
+    "samples": 10,
+    "blender": "5.2.2 LTS",
+    "cameraContract": "Same normalized dimensions, lens, front view, and angle view for both assets.",
+    "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/audit_conservatory_source.py"
+  }
+}

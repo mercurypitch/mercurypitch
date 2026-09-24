@@ -1,0 +1,675 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-architecture-kit-v8",
+  "runtimeLogicalAssetId": "floating-museum-architecture-kit-v6",
+  "status": "review-only combined derivative; public/runtime integration not performed",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "root": "map_museum_polish_kit_root",
+  "normalSelection": {
+    "cliVariant": "meshy-normal",
+    "normalSource": "meshy",
+    "explicitNoDefault": true,
+    "visualSelectionReceipt": {
+      "file": "proofs/conservatory-candidate-selection-v8.json",
+      "bytes": 3576,
+      "sha256": "957a1800ec882228b68fed1355a7cf3095cbe9e617737ff29f3bb90bb73c2ac2",
+      "decision": "accepted-for-runtime-assembly",
+      "reviewedAtUtc": "2026-09-23T15:26:57Z",
+      "selectedNormalSource": "meshy",
+      "bakeProjectionAudit": {
+        "file": "proofs/conservatory-pbr-bake-projection-v8.json",
+        "bytes": 1405,
+        "sha256": "0faa4b9e30c412fd6dd90b199bf37272b39cf24b675dca1795c98bfe07dee766",
+        "decision": "accepted"
+      },
+      "proofs": [
+        {
+          "file": "proofs/conservatory-normal-comparison-v8.json",
+          "bytes": 2181,
+          "sha256": "039f49053dbdcab96b08671c55d1a5dbfd05c2dc4ced81fea501d22431947c7b"
+        },
+        {
+          "file": "proofs/conservatory-normal-comparison-front-v8.png",
+          "bytes": 2802368,
+          "sha256": "497d8dae4774455b918bb902bc1cd13515939df7745b5be388919afcd097403f"
+        },
+        {
+          "file": "proofs/conservatory-normal-comparison-angle-v8.png",
+          "bytes": 2771119,
+          "sha256": "1ec127bdb229c22f638a3c567f0fe270e3c242097e5206c14ac4deb79821338e"
+        },
+        {
+          "file": "proofs/conservatory-normal-comparison-close-v8.png",
+          "bytes": 2451515,
+          "sha256": "3c5fc6baa0d353c89ccf6481941094b75e244e98c6856a801ba5890674396e91"
+        }
+      ],
+      "review": {
+        "finding": "Accept the Meshy-normal variant. At identical geometry, material, lighting, and cameras it keeps coherent relief on the roof ribs, fascia, columns, foliage, and planters. Reject the dense-donor normal for runtime because it creates dark roof-panel halos and harsher patching on ribs and columns.",
+        "knownLimitations": [
+          "The source retains fused and crumpled foliage in several garlands and planters.",
+          "The translucent roof panels retain visible surface-texture variation and are not pristine architectural glass.",
+          "The projection audit measures normalized surface proximity and approximate cage-ray coverage; it does not prove a clean tangent-space texture bake.",
+          "The dense-donor bake is retained for audit evidence, but its visible artifacts make it unsuitable for the runtime candidate."
+        ]
+      }
+    }
+  },
+  "sources": {
+    "v7ArchitectureKit": {
+      "file": "art/glass-adventure/journey-map/v7/exports/floating-museum-architecture-kit-v7.glb",
+      "bytes": 12263920,
+      "sha256": "b427dd61cd5da0c68cd9831d2524e6d7452888d21bcb3219c0671182b1002cd4"
+    },
+    "v8ConservatoryCandidateManifest": {
+      "file": "exports/floating-museum-conservatory-candidate-v8.json",
+      "bytes": 23142,
+      "sha256": "d085ebace84ca91df0b337320451153112f2c5ffbd04d38d6c71156c7b44db44"
+    },
+    "v8ConservatoryCandidate": {
+      "file": "exports/floating-museum-conservatory-candidate-v8-meshy-normal.glb",
+      "bytes": 30606544,
+      "sha256": "4295d8a324f86048f9832306b3a1c74e15d601a0ea07dfa1ee33f593b223f697",
+      "triangles": 109636,
+      "dimensionsGlTfYUpMetres": [
+        2.3000000715255737,
+        2.6500000953674316,
+        2.3000000715255737
+      ],
+      "anchorErrorMetres": 0.0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "bindings": {
+        "baseColor": {
+          "index": 2
+        },
+        "normal": {
+          "index": 1
+        },
+        "metallicRoughness": {
+          "index": 3
+        },
+        "occlusion": {
+          "index": 3,
+          "strength": 1
+        },
+        "transmission": {
+          "index": 0
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 7498034,
+          "sha256": "e70c3eb9e2b935a5ad5923382278149087cb4f7f016d73f0b0abb39ae8248707"
+        },
+        "normal": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5278389,
+          "sha256": "9c0ab873a2aa0f7fca13dc7c1fec97bc1fa9c9f4e717d3523d65aa5f0a8bb731"
+        },
+        "metallicRoughness": {
+          "imageIndex": 3,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5983340,
+          "sha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d"
+        },
+        "occlusion": {
+          "imageIndex": 3,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5983340,
+          "sha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d"
+        },
+        "transmission": {
+          "imageIndex": 0,
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "bytes": 213738,
+          "sha256": "b4e4373c7fa44cc8642be0f4659fc80b6b12980199aa1595af40098e19a08138"
+        }
+      },
+      "forbiddenGeometryCodecExtensions": []
+    },
+    "retextureReceipt": {
+      "file": "meshy/conservatory-remesh-110k-retexture-pbr-receipt.json",
+      "bytes": 3591,
+      "sha256": "5295504ebdef054caa949fa90be3491d0d50c28346d5606e6e01917918152062"
+    }
+  },
+  "glb": {
+    "file": "exports/floating-museum-architecture-kit-v8.glb",
+    "bytes": 25448308,
+    "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615",
+    "triangles": {
+      "map_conservatory": 109636,
+      "map_twin_connector": 102607,
+      "total": 212243
+    },
+    "nodes": [
+      "map_conservatory_geometry",
+      "map_conservatory",
+      "map_twin_connector_geometry",
+      "map_twin_connector",
+      "map_museum_polish_kit_root"
+    ],
+    "images": [
+      {
+        "name": "conservatory-v8-transmission-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 86598,
+        "sha256": "2b8a34a89e491336016a030f11ae6c4eaaf939f3016fd63cf67c1d2aeab2d7a3"
+      },
+      {
+        "name": "conservatory-v8-meshy-normal-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 1293408,
+        "sha256": "62a618bc6adf9bfdeafbe6086eb054ecdd96ad61b87df07798baa3b11d76e12e"
+      },
+      {
+        "name": "conservatory-v8-base-2k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 1503000,
+        "sha256": "2e4114c0774558a4834bb40d5b96d6321813c784af46e7902dffe77cfffe5778"
+      },
+      {
+        "name": "conservatory-v8-orm-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 1626260,
+        "sha256": "78fb4e344168305eb12223994377d76bb68964acadf8fa7585c3b4b7c6eb84da"
+      },
+      {
+        "name": "twin-connector-v7-normal-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 293578,
+        "sha256": "1e5876ff7267ce0cdd846d14e3a7ad71d2848599a06de9adc1649007dfb903b4"
+      },
+      {
+        "name": "twin-connector-v7-base-2k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 1726448,
+        "sha256": "f91f0188169068c194efde990f0d5df0fd5913dd5bc87e51f735048a5c3b0f82"
+      },
+      {
+        "name": "twin-connector-v7-orm-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 237338,
+        "sha256": "faa6e3eb8ea8c90d1445bf5d43835e344e1184da159d38f44aa397ebbedccfee"
+      }
+    ],
+    "extensionsUsed": [
+      "EXT_texture_webp",
+      "KHR_materials_ior",
+      "KHR_materials_transmission"
+    ],
+    "extensionsRequired": [
+      "EXT_texture_webp"
+    ],
+    "forbiddenGeometryCodecExtensions": []
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-architecture-kit-v8.blend",
+    "bytes": 19538623,
+    "sha256": "a0a2cef23529f41ac47ac1e999a2b249216c685b1e8ad604cb133b2a0866d812",
+    "imagesPacked": true,
+    "missingExternalFiles": []
+  },
+  "v7ConnectorPreservation": {
+    "source": "art/glass-adventure/journey-map/v7/exports/floating-museum-architecture-kit-v7.glb",
+    "sourceSha256": "b427dd61cd5da0c68cd9831d2524e6d7452888d21bcb3219c0671182b1002cd4",
+    "nodesJsonExact": true,
+    "meshJsonExact": true,
+    "materialJsonExact": true,
+    "texturesJsonExact": true,
+    "imagesJsonExact": true,
+    "accessorsJsonExact": true,
+    "samplersJsonExact": true,
+    "accessorPayloads": [
+      {
+        "accessor": 4,
+        "bytes": 2180736,
+        "sha256": "08bb06dbb4b4d4f1b3ed82c1043233c9a64751293b5e5b8377c5f1a1fd05e0a3",
+        "outputSha256": "08bb06dbb4b4d4f1b3ed82c1043233c9a64751293b5e5b8377c5f1a1fd05e0a3",
+        "exact": true
+      },
+      {
+        "accessor": 5,
+        "bytes": 2180736,
+        "sha256": "1459dc91ef688ff19ff38815040ee4b21e51ac183c342bcc80df343f053f644c",
+        "outputSha256": "1459dc91ef688ff19ff38815040ee4b21e51ac183c342bcc80df343f053f644c",
+        "exact": true
+      },
+      {
+        "accessor": 6,
+        "bytes": 1453824,
+        "sha256": "8b8e9524a201c5b4c7c4461bb72c641259a706fabb4e7476468f26c551b2412a",
+        "outputSha256": "8b8e9524a201c5b4c7c4461bb72c641259a706fabb4e7476468f26c551b2412a",
+        "exact": true
+      },
+      {
+        "accessor": 7,
+        "bytes": 1231284,
+        "sha256": "7557168dfd819cc1de742b618d23cbdea5fb1c2a3c97da35d68598d513afcced",
+        "outputSha256": "7557168dfd819cc1de742b618d23cbdea5fb1c2a3c97da35d68598d513afcced",
+        "exact": true
+      }
+    ],
+    "imagePayloads": [
+      {
+        "image": 4,
+        "bytes": 293578,
+        "sha256": "1e5876ff7267ce0cdd846d14e3a7ad71d2848599a06de9adc1649007dfb903b4",
+        "outputSha256": "1e5876ff7267ce0cdd846d14e3a7ad71d2848599a06de9adc1649007dfb903b4",
+        "exact": true
+      },
+      {
+        "image": 5,
+        "bytes": 1726448,
+        "sha256": "f91f0188169068c194efde990f0d5df0fd5913dd5bc87e51f735048a5c3b0f82",
+        "outputSha256": "f91f0188169068c194efde990f0d5df0fd5913dd5bc87e51f735048a5c3b0f82",
+        "exact": true
+      },
+      {
+        "image": 6,
+        "bytes": 237338,
+        "sha256": "faa6e3eb8ea8c90d1445bf5d43835e344e1184da159d38f44aa397ebbedccfee",
+        "outputSha256": "faa6e3eb8ea8c90d1445bf5d43835e344e1184da159d38f44aa397ebbedccfee",
+        "exact": true
+      }
+    ],
+    "bufferViewPayloads": [
+      {
+        "bufferView": 8,
+        "bytes": 2180736,
+        "sha256": "08bb06dbb4b4d4f1b3ed82c1043233c9a64751293b5e5b8377c5f1a1fd05e0a3",
+        "outputSha256": "08bb06dbb4b4d4f1b3ed82c1043233c9a64751293b5e5b8377c5f1a1fd05e0a3",
+        "exact": true
+      },
+      {
+        "bufferView": 9,
+        "bytes": 2180736,
+        "sha256": "1459dc91ef688ff19ff38815040ee4b21e51ac183c342bcc80df343f053f644c",
+        "outputSha256": "1459dc91ef688ff19ff38815040ee4b21e51ac183c342bcc80df343f053f644c",
+        "exact": true
+      },
+      {
+        "bufferView": 10,
+        "bytes": 1453824,
+        "sha256": "8b8e9524a201c5b4c7c4461bb72c641259a706fabb4e7476468f26c551b2412a",
+        "outputSha256": "8b8e9524a201c5b4c7c4461bb72c641259a706fabb4e7476468f26c551b2412a",
+        "exact": true
+      },
+      {
+        "bufferView": 11,
+        "bytes": 1231284,
+        "sha256": "7557168dfd819cc1de742b618d23cbdea5fb1c2a3c97da35d68598d513afcced",
+        "outputSha256": "7557168dfd819cc1de742b618d23cbdea5fb1c2a3c97da35d68598d513afcced",
+        "exact": true
+      },
+      {
+        "bufferView": 12,
+        "bytes": 293578,
+        "sha256": "1e5876ff7267ce0cdd846d14e3a7ad71d2848599a06de9adc1649007dfb903b4",
+        "outputSha256": "1e5876ff7267ce0cdd846d14e3a7ad71d2848599a06de9adc1649007dfb903b4",
+        "exact": true
+      },
+      {
+        "bufferView": 13,
+        "bytes": 1726448,
+        "sha256": "f91f0188169068c194efde990f0d5df0fd5913dd5bc87e51f735048a5c3b0f82",
+        "outputSha256": "f91f0188169068c194efde990f0d5df0fd5913dd5bc87e51f735048a5c3b0f82",
+        "exact": true
+      },
+      {
+        "bufferView": 14,
+        "bytes": 237338,
+        "sha256": "faa6e3eb8ea8c90d1445bf5d43835e344e1184da159d38f44aa397ebbedccfee",
+        "outputSha256": "faa6e3eb8ea8c90d1445bf5d43835e344e1184da159d38f44aa397ebbedccfee",
+        "exact": true
+      }
+    ]
+  },
+  "v8ConservatoryGeometryPreservation": {
+    "normalVariant": "meshy-normal",
+    "geometryAccessorPayloads": [
+      {
+        "sourceAccessor": 0,
+        "outputAccessor": 0,
+        "bytes": 2578668,
+        "sha256": "74b1ad875237d8a4b97910fb53981070c6cc72f6475b03146447026cbc0c02ea",
+        "outputSha256": "74b1ad875237d8a4b97910fb53981070c6cc72f6475b03146447026cbc0c02ea",
+        "exact": true
+      },
+      {
+        "sourceAccessor": 1,
+        "outputAccessor": 1,
+        "bytes": 2578668,
+        "sha256": "6506807a2c624058537dc1e66581d88fe9190746397980fe96118a3248b6cfe6",
+        "outputSha256": "6506807a2c624058537dc1e66581d88fe9190746397980fe96118a3248b6cfe6",
+        "exact": true
+      },
+      {
+        "sourceAccessor": 2,
+        "outputAccessor": 2,
+        "bytes": 1719112,
+        "sha256": "167214440aa7df12c49726669bc879b38ed7686846365acabba129dd04a32f03",
+        "outputSha256": "167214440aa7df12c49726669bc879b38ed7686846365acabba129dd04a32f03",
+        "exact": true
+      },
+      {
+        "sourceAccessor": 3,
+        "outputAccessor": 3,
+        "bytes": 3438224,
+        "sha256": "f7c181b92b655d6d8e229072f895b9080cad6fb806dee73875d1e2239f3ad027",
+        "outputSha256": "f7c181b92b655d6d8e229072f895b9080cad6fb806dee73875d1e2239f3ad027",
+        "exact": true
+      },
+      {
+        "sourceAccessor": 4,
+        "outputAccessor": 8,
+        "bytes": 1315632,
+        "sha256": "c4b31bea395684250e20905c5fdb76baad81b7529a2df7cc9b013c9d86ddfae1",
+        "outputSha256": "c4b31bea395684250e20905c5fdb76baad81b7529a2df7cc9b013c9d86ddfae1",
+        "exact": true
+      }
+    ],
+    "secondGeometryReduction": false
+  },
+  "conservatoryRuntimeTexturePass": {
+    "baseColor": "2K review-quality WebP",
+    "dataMaps": "1K lossless; smaller of lossless WebP and optimized PNG",
+    "maps": {
+      "transmission": {
+        "sourceDimensions": [
+          1024,
+          1024
+        ],
+        "sourceBytes": 213738,
+        "sourceSha256": "b4e4373c7fa44cc8642be0f4659fc80b6b12980199aa1595af40098e19a08138",
+        "runtimeDimensions": [
+          1024,
+          1024
+        ],
+        "runtimeBytes": 86598,
+        "runtimeSha256": "2b8a34a89e491336016a030f11ae6c4eaaf939f3016fd63cf67c1d2aeab2d7a3",
+        "runtimeMimeType": "image/webp",
+        "encoding": {
+          "format": "lossless WebP",
+          "lossless": true,
+          "alternatives": {
+            "losslessWebpBytes": 86598,
+            "optimizedPngBytes": 213738
+          }
+        },
+        "compressionPsnrDb": "infinite",
+        "compressionMeanAbsoluteError": 0.0
+      },
+      "normal": {
+        "sourceDimensions": [
+          2048,
+          2048
+        ],
+        "sourceBytes": 5278389,
+        "sourceSha256": "9c0ab873a2aa0f7fca13dc7c1fec97bc1fa9c9f4e717d3523d65aa5f0a8bb731",
+        "runtimeDimensions": [
+          1024,
+          1024
+        ],
+        "runtimeBytes": 1293408,
+        "runtimeSha256": "62a618bc6adf9bfdeafbe6086eb054ecdd96ad61b87df07798baa3b11d76e12e",
+        "runtimeMimeType": "image/webp",
+        "encoding": {
+          "format": "lossless WebP",
+          "lossless": true,
+          "alternatives": {
+            "losslessWebpBytes": 1293408,
+            "optimizedPngBytes": 1496715
+          }
+        },
+        "compressionPsnrDb": "infinite",
+        "compressionMeanAbsoluteError": 0.0
+      },
+      "baseColor": {
+        "sourceDimensions": [
+          2048,
+          2048
+        ],
+        "sourceBytes": 7498034,
+        "sourceSha256": "e70c3eb9e2b935a5ad5923382278149087cb4f7f016d73f0b0abb39ae8248707",
+        "runtimeDimensions": [
+          2048,
+          2048
+        ],
+        "runtimeBytes": 1503000,
+        "runtimeSha256": "2e4114c0774558a4834bb40d5b96d6321813c784af46e7902dffe77cfffe5778",
+        "runtimeMimeType": "image/webp",
+        "encoding": {
+          "format": "WebP",
+          "lossless": false,
+          "quality": 92,
+          "method": 6
+        },
+        "compressionPsnrDb": 39.6189,
+        "compressionMeanAbsoluteError": 1.9032
+      },
+      "metallicRoughness": {
+        "sourceDimensions": [
+          2048,
+          2048
+        ],
+        "sourceBytes": 5983340,
+        "sourceSha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d",
+        "runtimeDimensions": [
+          1024,
+          1024
+        ],
+        "runtimeBytes": 1626260,
+        "runtimeSha256": "78fb4e344168305eb12223994377d76bb68964acadf8fa7585c3b4b7c6eb84da",
+        "runtimeMimeType": "image/webp",
+        "encoding": {
+          "format": "lossless WebP",
+          "lossless": true,
+          "alternatives": {
+            "losslessWebpBytes": 1626260,
+            "optimizedPngBytes": 1810915
+          }
+        },
+        "compressionPsnrDb": "infinite",
+        "compressionMeanAbsoluteError": 0.0
+      }
+    }
+  },
+  "freshReimport": {
+    "root": "map_museum_polish_kit_root",
+    "coordinates": "Fresh GLB reimport into Blender Z-up; dimensions listed in glTF X/Y/Z order.",
+    "nodes": {
+      "map_conservatory": {
+        "meshChildren": [
+          "map_conservatory_geometry"
+        ],
+        "triangles": 109636,
+        "dimensionsGlTfYUpMetres": [
+          2.3000000715255737,
+          2.6500000953674316,
+          2.3000000715255737
+        ],
+        "anchorErrorMetres": 0.0,
+        "uv0Present": true,
+        "materials": [
+          "map_conservatory_atlas"
+        ],
+        "aperture": null
+      },
+      "map_twin_connector": {
+        "meshChildren": [
+          "map_twin_connector_geometry"
+        ],
+        "triangles": 102607,
+        "dimensionsGlTfYUpMetres": [
+          1.7000000476837158,
+          2.799999952316284,
+          0.800000011920929
+        ],
+        "anchorErrorMetres": 0.0,
+        "uv0Present": true,
+        "materials": [
+          "map_twin_connector_atlas"
+        ],
+        "aperture": {
+          "method": "front-to-back ray grid through the central opening after fresh GLB import",
+          "samplesAcrossWidth": 401,
+          "rows": [
+            {
+              "heightFraction": 0.16,
+              "heightMetres": 0.4479999923706055,
+              "clearWidthMetres": 0.8160000228881836
+            },
+            {
+              "heightFraction": 0.28,
+              "heightMetres": 0.7839999866485596,
+              "clearWidthMetres": 0.8415000236034393
+            },
+            {
+              "heightFraction": 0.4,
+              "heightMetres": 1.1199999809265138,
+              "clearWidthMetres": 0.8160000228881836
+            }
+          ],
+          "minimumSampledClearWidthMetres": 0.8160000228881836
+        }
+      }
+    },
+    "images": [
+      {
+        "name": "conservatory-v8-base-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "conservatory-v8-meshy-normal-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "conservatory-v8-orm-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "conservatory-v8-transmission-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "twin-connector-v7-base-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "twin-connector-v7-normal-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "twin-connector-v7-orm-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ]
+  },
+  "validation": {
+    "explicitReviewedNormalSelection": true,
+    "candidateManifestAndSelectionHashesMatched": true,
+    "freshGlbReimport": true,
+    "packedEditableRuntimeSource": true,
+    "requiredNamedHierarchy": true,
+    "reviewedConservatoryTriangleCountExact": true,
+    "noSecondGeometryReduction": true,
+    "dimensionsAndGroundAnchorsPassed": true,
+    "connectorAperturePassed": true,
+    "uv0Present": true,
+    "v7ConnectorLogicalRecordsAndPayloadsExact": true,
+    "noDracoOrMeshopt": true,
+    "runtimeIntegration": "not performed"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/build_architecture_kit_runtime.py -- --normal-variant meshy-normal",
+    "blender": "5.2.2 LTS"
+  }
+}

@@ -1,0 +1,1388 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-twin-finish-kit-v9",
+  "runtimeLogicalAssetIdBeforeIntegration": "floating-museum-twin-finish-kit-v4",
+  "status": "review-only combined derivative; public/runtime integration not performed",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "root": "map_twin_finish_kit_root",
+  "normalSelections": {
+    "explicitNoDefault": true,
+    "temple": {
+      "cliVariant": "meshy",
+      "visualSelectionReceipt": {
+        "file": "proofs/temple-normal-selection-v9.json",
+        "bytes": 4582,
+        "sha256": "d5c860118c4e699c4f7845eb356996b9679bd164f915c0febe3cc9b357ab1909",
+        "decision": "accepted-for-runtime-packing",
+        "reviewedAtUtc": "2026-09-23T15:34:00Z",
+        "selectedVariant": "meshy",
+        "selectedNormalSource": "meshy",
+        "proofs": [
+          {
+            "file": "proofs/temple-normal-comparison-v9.json",
+            "bytes": 4105,
+            "sha256": "635ece6a7ab4339af08a791eb04fd79944e96e4ff96f5dce3234a029a79c7202"
+          },
+          {
+            "file": "proofs/temple-normal-comparison-front-v9.png",
+            "bytes": 2363286,
+            "sha256": "b438d4efb0528392fe30d55e16b765bf64f32a4df01363ba159ac60abb53c792"
+          },
+          {
+            "file": "proofs/temple-normal-comparison-angle-v9.png",
+            "bytes": 2477706,
+            "sha256": "ab15b3ccccee0b289a76aa3a97ec318fcee3968eff714267de368a3f3166ab32"
+          }
+        ],
+        "review": {
+          "finding": "Select the Meshy-normal variant. The dense-donor normal makes the dome ribs slightly more pronounced, but introduces narrow dark streaks and uneven accents at inner arch and column edges, cornices and statue folds. The Meshy normal keeps the accepted architecture cleaner and more coherent at runtime scale.",
+          "knownLimitations": [
+            "The temple is an 89,166-triangle review-budget remesh, not hand-authored retopology.",
+            "The selected candidate retains the shared dense-donor ambient-occlusion transfer in its ORM texture; only the dense-donor normal map is rejected.",
+            "The dense-donor normal variant remains archived for audit evidence.",
+            "The repair is accepted as a substantial fidelity improvement, not as pristine source sculpture."
+          ]
+        },
+        "source": {
+          "file": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k-retexture-pbr.glb",
+          "bytes": 13110040,
+          "sha256": "00450f65f8594c912520eefeaa55475914987ea11bd06bb2739eaebe20362162",
+          "receipt": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k-retexture-pbr-receipt.json",
+          "receiptSha256": "ae2f7e616c0472b901a7026cf06cddb0b0a97ee27ba1eea0c2ebc233d91fcb40"
+        }
+      }
+    },
+    "cypress": {
+      "cliVariant": "meshy",
+      "visualSelectionReceipt": {
+        "file": "proofs/cypress-normal-selection-v9.json",
+        "bytes": 3014,
+        "sha256": "c3114407974cc43be0518647a9369b226a23d1b5369fa930615b7c44dbe65c81",
+        "decision": "accepted-for-runtime-packing",
+        "reviewedAtUtc": "2026-09-23T15:29:20Z",
+        "selectedVariant": "meshy",
+        "selectedNormalSource": "meshy",
+        "proofs": [
+          {
+            "file": "proofs/cypress-normal-comparison-v9.json",
+            "bytes": 2565,
+            "sha256": "ce47e4103156f5357262ce97200973d2a7119552abe9c293ff10f8669635542a"
+          },
+          {
+            "file": "proofs/cypress-normal-comparison-front-v9.png",
+            "bytes": 1910605,
+            "sha256": "4d7dfe19cb5f569ca007cbcc3e7b491a107a3b731e8c9b8abb9f2bc8ac55fbbb"
+          },
+          {
+            "file": "proofs/cypress-normal-comparison-angle-v9.png",
+            "bytes": 1942613,
+            "sha256": "b1457ebbd4acf7514c26d649a5a60ba27b6af72f0c71e7c863c9ed85e62cb1a1"
+          }
+        ],
+        "review": {
+          "finding": "Select the Meshy-normal variant. At identical geometry, material, lighting and cameras it keeps coherent directional foliage grooves and the accepted rounded clump silhouette. The dense-donor normal adds dark high-frequency ripples and crusty surface noise across the crown.",
+          "knownLimitations": [
+            "The cypress is a 20,605-triangle review-budget remesh, not hand-authored retopology.",
+            "The selected candidate retains the shared dense-donor ambient-occlusion transfer in its ORM texture; only the dense-donor normal map is rejected.",
+            "The dense-donor normal variant remains archived for audit evidence."
+          ]
+        },
+        "source": {
+          "file": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k-retexture-pbr.glb",
+          "bytes": 10374880,
+          "sha256": "c2e6c4403903d9805dca8de75f41a24e67a9ff67489eaaabe3773108961f0cf5",
+          "receipt": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k-retexture-pbr-receipt.json",
+          "receiptSha256": "c278e7a6144f0387ca58b61f13a54466534f09f0cfc1d356760f0ac3db08b833"
+        }
+      }
+    }
+  },
+  "sources": {
+    "v4TwinFinishKit": {
+      "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "bytes": 5642860,
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991"
+    },
+    "templeCandidateManifest": {
+      "file": "exports/floating-museum-temple-candidate-v9.json",
+      "bytes": 15802,
+      "sha256": "192bbca55271f3bc85df594f547590298bd7f3e219b938f8e70956ba7efcf440"
+    },
+    "templeCandidate": {
+      "asset": "temple",
+      "file": "exports/floating-museum-temple-candidate-v9-meshy-normal.glb",
+      "bytes": 21601268,
+      "sha256": "b31cdf876f601b510ee8910a144ec9258b592d355f088b0097e5a04fd5770360",
+      "triangles": 89166,
+      "dimensionsGlTfYUpMetres": [
+        2.400000214576721,
+        2.667686939239502,
+        2.66242253780365
+      ],
+      "anchorErrorMetres": 0.0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "bindings": {
+        "baseColor": {
+          "index": 1
+        },
+        "normal": {
+          "index": 0
+        },
+        "metallicRoughness": {
+          "index": 2
+        },
+        "occlusion": {
+          "index": 2,
+          "strength": 1
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5625779,
+          "sha256": "34162564fdc4d6f6b6b9c2a756f7e916a01c763eda2813afd377af11593ab736"
+        },
+        "normal": {
+          "imageIndex": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 3913964,
+          "sha256": "f06d8935533fce7ce37b57d5b850ea6763ab3ebd5f204609cf32f9eba67a9cbb"
+        },
+        "metallicRoughness": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5332189,
+          "sha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d"
+        },
+        "occlusion": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5332189,
+          "sha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d"
+        }
+      },
+      "forbiddenGeometryCodecExtensions": []
+    },
+    "cypressCandidateManifest": {
+      "file": "exports/floating-museum-cypress-candidate-v9.json",
+      "bytes": 12300,
+      "sha256": "e586ec1bff80c2d2de2f662c7ade350f3a70346eb741cda25aabd9a5dbcbf923"
+    },
+    "cypressCandidate": {
+      "asset": "cypress",
+      "file": "exports/floating-museum-cypress-candidate-v9-meshy-normal.glb",
+      "bytes": 19736348,
+      "sha256": "f322d7f5cfb9f099a143dac1b110cc8efbf3762ca46b67d264d73c373f3486e4",
+      "triangles": 20605,
+      "dimensionsGlTfYUpMetres": [
+        0.38449329137802124,
+        1.7999999523162842,
+        0.45893892645835876
+      ],
+      "anchorErrorMetres": 0.0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "bindings": {
+        "baseColor": {
+          "index": 1
+        },
+        "normal": {
+          "index": 0
+        },
+        "metallicRoughness": {
+          "index": 2
+        },
+        "occlusion": {
+          "index": 2,
+          "strength": 1
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 7728067,
+          "sha256": "4710864df041932e41deed0bed697d60eef4ad38e8fdac677e6e3ccf2b10cd7b"
+        },
+        "normal": {
+          "imageIndex": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5320703,
+          "sha256": "ed8d6d9c763b732a329993bc00913089b39abe902e95dd4172313c92a7b55f82"
+        },
+        "metallicRoughness": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5046572,
+          "sha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a"
+        },
+        "occlusion": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5046572,
+          "sha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a"
+        }
+      },
+      "forbiddenGeometryCodecExtensions": []
+    }
+  },
+  "glb": {
+    "file": "exports/floating-museum-twin-finish-kit-v9.glb",
+    "bytes": 19481064,
+    "sha256": "04da964628212b243ca5b4afd327a1e52d43388929de2057be02bec44a495d74",
+    "triangles": {
+      "storedUniqueGeometry": 119546,
+      "declaredMeshPrimitives": 144531,
+      "projectedRuntimeAcrossNodeInstances": 212312,
+      "map_cliff": 7975,
+      "map_cypress": 20605,
+      "map_flower_clusterStored": 1800,
+      "map_flower_clusterRendered": 5400,
+      "map_templeStored": 89166,
+      "map_templeRenderedTwinInstances": 178332,
+      "map_templeStructure": 64181,
+      "map_templeDome": 24985
+    },
+    "geometrySharing": {
+      "amberTealStructureMeshIndex": 4,
+      "amberTealDomeAttributeAccessors": {
+        "POSITION": 13,
+        "NORMAL": 14,
+        "TEXCOORD_0": 15,
+        "TANGENT": 16
+      },
+      "amberTealDomeIndexAccessor": 18,
+      "templeStructureAndDomeShareVertexAttributes": true
+    },
+    "nodes": [
+      "map_cliff_geometry",
+      "map_cliff",
+      "map_cypress_geometry",
+      "map_cypress",
+      "map_flower_cluster_bloom_a",
+      "map_flower_cluster_bloom_b",
+      "map_flower_cluster_bloom_c",
+      "map_flower_cluster",
+      "map_temple_amber_dome",
+      "map_temple_amber_structure",
+      "map_temple_amber",
+      "map_temple_teal_dome",
+      "map_temple_teal_structure",
+      "map_temple_teal",
+      "map_twin_finish_kit_root"
+    ],
+    "images": [
+      {
+        "name": "map_cliff_texture_02",
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 9188,
+        "sha256": "da60d3b62f2a4a90849ccd45b3799921ce5dfa31171231db8cba26a7c45ccdff"
+      },
+      {
+        "name": "map_cliff_texture_03",
+        "mimeType": "image/png",
+        "dimensions": [
+          512,
+          512
+        ],
+        "bytes": 607995,
+        "sha256": "2ec67084335b282605c0923d6a89005e467e2779e7a2d5c666d2da593aafde19"
+      },
+      {
+        "name": "map_cliff_texture_00",
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 432318,
+        "sha256": "1da749672ba690667f392f3a63b022f886bbe0c445a7567a186aeac7f208230f"
+      },
+      {
+        "name": "map_cliff_texture_01",
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 138549,
+        "sha256": "a63fee7e46c361edac7148b5a8c1dc3b553d17a4d24066d7d4a298516d6d5afc"
+      },
+      {
+        "name": "cypress-v9-meshy-normal-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 1266934,
+        "sha256": "100f4e6c18a5cd888be622d85022c1196930cbb6d25f9c7d0aaf67717b751875"
+      },
+      {
+        "name": "cypress-v9-base-2k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 1408534,
+        "sha256": "04781988cbe232e15ebe1a50daa339b3731e7c71dee51b2da944e91691e8b20b"
+      },
+      {
+        "name": "cypress-v9-orm-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 1310360,
+        "sha256": "24e5f6984a8a8bb4ea93b90d072d4d99a84a407c670def32eb61c5b8288a8e54"
+      },
+      {
+        "name": "temple-v9-meshy-normal-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 968184,
+        "sha256": "26eb18fb6ae877cb0756f352a22b6b6cd2aa33c3320df4bc38fbecbf7d538c75"
+      },
+      {
+        "name": "map_planter_texture_01",
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          512,
+          512
+        ],
+        "bytes": 54189,
+        "sha256": "8d5b99c2bd7907525a1e88c988ca5cb04debb840d3508b135fc81943808b17d6"
+      },
+      {
+        "name": "map_planter_texture_02",
+        "mimeType": "image/png",
+        "dimensions": [
+          512,
+          512
+        ],
+        "bytes": 583683,
+        "sha256": "e8dc51dcef6c6800be76a779b2765464747031a1c971fe657ea45145b5175c9a"
+      },
+      {
+        "name": "map_planter_texture_00",
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          512,
+          512
+        ],
+        "bytes": 113055,
+        "sha256": "6f159db7e7e84ada41e8c68823db6b28df734d67b3af5e9564349eaaee8c12a8"
+      },
+      {
+        "name": "map_planter_texture_03",
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          512,
+          512
+        ],
+        "bytes": 68319,
+        "sha256": "56c99a22c8569279ab8830eaf64c03b0e05c04becafcfcd2645c9c83807c857e"
+      },
+      {
+        "name": "temple-v9-dome-amber-base-2k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 531056,
+        "sha256": "54808c56775ff53704891d9e5c6b43613230a77d591fc267df2211ecf12b73d7"
+      },
+      {
+        "name": "temple-v9-structure-base-2k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 867690,
+        "sha256": "31156b013397f0b11a20b27fb0abb780be2519fbea7d2a6f3ce486154cdb6da9"
+      },
+      {
+        "name": "temple-v9-orm-1k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "bytes": 1457876,
+        "sha256": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f"
+      },
+      {
+        "name": "temple-v9-dome-teal-base-2k",
+        "mimeType": "image/webp",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 585804,
+        "sha256": "4f16a5c5d0d94484be8dc87f672ca02bb5addb0d0af280c8dade33557dc07f68"
+      }
+    ],
+    "extensionsUsed": [
+      "EXT_texture_webp"
+    ],
+    "extensionsRequired": [
+      "EXT_texture_webp"
+    ],
+    "forbiddenGeometryCodecExtensions": []
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-twin-finish-kit-v9.blend",
+    "bytes": 18480950,
+    "sha256": "0af29fd0d2b9e6d4e626698de874c3e2672a96279a12aa0f02291a6dd1784547",
+    "imagesPacked": true,
+    "missingExternalFiles": []
+  },
+  "v4CliffFlowerPreservation": {
+    "source": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+    "sourceSha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+    "stableIndices": {
+      "nodes": [
+        0,
+        1,
+        4,
+        5,
+        6,
+        7
+      ],
+      "meshes": [
+        0,
+        2
+      ],
+      "materials": [
+        0,
+        2
+      ],
+      "textures": [
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11
+      ],
+      "images": [
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11
+      ],
+      "accessors": [
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11
+      ],
+      "bufferViews": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ]
+    },
+    "nodesJsonExact": true,
+    "meshesJsonExact": true,
+    "materialsJsonExact": true,
+    "texturesJsonExact": true,
+    "imagesJsonExact": true,
+    "accessorsJsonExact": true,
+    "samplersJsonExact": true,
+    "bufferViewLogicalRecordsExact": true,
+    "accessorPayloads": [
+      {
+        "accessor": 0,
+        "bytes": 197544,
+        "sha256": "40cb6220d78e6d079f35bec5e98be9d3264472cf7cc69cc9f61de45c45233b49",
+        "outputSha256": "40cb6220d78e6d079f35bec5e98be9d3264472cf7cc69cc9f61de45c45233b49",
+        "exact": true
+      },
+      {
+        "accessor": 1,
+        "bytes": 197544,
+        "sha256": "870117abcde2faf4839e1063d7aa49966c9a1ea557852a7345162aed9f23ec9c",
+        "outputSha256": "870117abcde2faf4839e1063d7aa49966c9a1ea557852a7345162aed9f23ec9c",
+        "exact": true
+      },
+      {
+        "accessor": 2,
+        "bytes": 131696,
+        "sha256": "ebdea161f9252a27cbaeb0aa240eed3b489231d4eccf3302a25062816d7332e3",
+        "outputSha256": "ebdea161f9252a27cbaeb0aa240eed3b489231d4eccf3302a25062816d7332e3",
+        "exact": true
+      },
+      {
+        "accessor": 3,
+        "bytes": 47850,
+        "sha256": "6220d7ddf8c075ba6afdc9eea1ed5d0c00bbb0026a7ce01d5e559fc25059c890",
+        "outputSha256": "6220d7ddf8c075ba6afdc9eea1ed5d0c00bbb0026a7ce01d5e559fc25059c890",
+        "exact": true
+      },
+      {
+        "accessor": 8,
+        "bytes": 43356,
+        "sha256": "4e7f2e5d4fb48e87d789690931317ba71d1244e2c746b2ff986a7b8b65370da0",
+        "outputSha256": "4e7f2e5d4fb48e87d789690931317ba71d1244e2c746b2ff986a7b8b65370da0",
+        "exact": true
+      },
+      {
+        "accessor": 9,
+        "bytes": 43356,
+        "sha256": "32721e882ca5a28ad60fbcd8375ac9633d26638fef3cadfead91e14539150d56",
+        "outputSha256": "32721e882ca5a28ad60fbcd8375ac9633d26638fef3cadfead91e14539150d56",
+        "exact": true
+      },
+      {
+        "accessor": 10,
+        "bytes": 28904,
+        "sha256": "ef8872dadc011b05ccd8289061c71ce462b381370bbdd1e914ff0f10c65f8d98",
+        "outputSha256": "ef8872dadc011b05ccd8289061c71ce462b381370bbdd1e914ff0f10c65f8d98",
+        "exact": true
+      },
+      {
+        "accessor": 11,
+        "bytes": 10800,
+        "sha256": "c8a360e1c73fe941ed2132542ee0bcfb3e5ab49cd12b730ea68bc57f077245ed",
+        "outputSha256": "c8a360e1c73fe941ed2132542ee0bcfb3e5ab49cd12b730ea68bc57f077245ed",
+        "exact": true
+      }
+    ],
+    "imagePayloads": [
+      {
+        "image": 0,
+        "bytes": 9188,
+        "sha256": "da60d3b62f2a4a90849ccd45b3799921ce5dfa31171231db8cba26a7c45ccdff",
+        "outputSha256": "da60d3b62f2a4a90849ccd45b3799921ce5dfa31171231db8cba26a7c45ccdff",
+        "exact": true
+      },
+      {
+        "image": 1,
+        "bytes": 607995,
+        "sha256": "2ec67084335b282605c0923d6a89005e467e2779e7a2d5c666d2da593aafde19",
+        "outputSha256": "2ec67084335b282605c0923d6a89005e467e2779e7a2d5c666d2da593aafde19",
+        "exact": true
+      },
+      {
+        "image": 2,
+        "bytes": 432318,
+        "sha256": "1da749672ba690667f392f3a63b022f886bbe0c445a7567a186aeac7f208230f",
+        "outputSha256": "1da749672ba690667f392f3a63b022f886bbe0c445a7567a186aeac7f208230f",
+        "exact": true
+      },
+      {
+        "image": 3,
+        "bytes": 138549,
+        "sha256": "a63fee7e46c361edac7148b5a8c1dc3b553d17a4d24066d7d4a298516d6d5afc",
+        "outputSha256": "a63fee7e46c361edac7148b5a8c1dc3b553d17a4d24066d7d4a298516d6d5afc",
+        "exact": true
+      },
+      {
+        "image": 8,
+        "bytes": 54189,
+        "sha256": "8d5b99c2bd7907525a1e88c988ca5cb04debb840d3508b135fc81943808b17d6",
+        "outputSha256": "8d5b99c2bd7907525a1e88c988ca5cb04debb840d3508b135fc81943808b17d6",
+        "exact": true
+      },
+      {
+        "image": 9,
+        "bytes": 583683,
+        "sha256": "e8dc51dcef6c6800be76a779b2765464747031a1c971fe657ea45145b5175c9a",
+        "outputSha256": "e8dc51dcef6c6800be76a779b2765464747031a1c971fe657ea45145b5175c9a",
+        "exact": true
+      },
+      {
+        "image": 10,
+        "bytes": 113055,
+        "sha256": "6f159db7e7e84ada41e8c68823db6b28df734d67b3af5e9564349eaaee8c12a8",
+        "outputSha256": "6f159db7e7e84ada41e8c68823db6b28df734d67b3af5e9564349eaaee8c12a8",
+        "exact": true
+      },
+      {
+        "image": 11,
+        "bytes": 68319,
+        "sha256": "56c99a22c8569279ab8830eaf64c03b0e05c04becafcfcd2645c9c83807c857e",
+        "outputSha256": "56c99a22c8569279ab8830eaf64c03b0e05c04becafcfcd2645c9c83807c857e",
+        "exact": true
+      }
+    ],
+    "bufferViewPayloads": [
+      {
+        "bufferView": 0,
+        "bytes": 197544,
+        "sha256": "40cb6220d78e6d079f35bec5e98be9d3264472cf7cc69cc9f61de45c45233b49",
+        "outputSha256": "40cb6220d78e6d079f35bec5e98be9d3264472cf7cc69cc9f61de45c45233b49",
+        "exact": true
+      },
+      {
+        "bufferView": 1,
+        "bytes": 197544,
+        "sha256": "870117abcde2faf4839e1063d7aa49966c9a1ea557852a7345162aed9f23ec9c",
+        "outputSha256": "870117abcde2faf4839e1063d7aa49966c9a1ea557852a7345162aed9f23ec9c",
+        "exact": true
+      },
+      {
+        "bufferView": 2,
+        "bytes": 131696,
+        "sha256": "ebdea161f9252a27cbaeb0aa240eed3b489231d4eccf3302a25062816d7332e3",
+        "outputSha256": "ebdea161f9252a27cbaeb0aa240eed3b489231d4eccf3302a25062816d7332e3",
+        "exact": true
+      },
+      {
+        "bufferView": 3,
+        "bytes": 47850,
+        "sha256": "6220d7ddf8c075ba6afdc9eea1ed5d0c00bbb0026a7ce01d5e559fc25059c890",
+        "outputSha256": "6220d7ddf8c075ba6afdc9eea1ed5d0c00bbb0026a7ce01d5e559fc25059c890",
+        "exact": true
+      },
+      {
+        "bufferView": 4,
+        "bytes": 9188,
+        "sha256": "da60d3b62f2a4a90849ccd45b3799921ce5dfa31171231db8cba26a7c45ccdff",
+        "outputSha256": "da60d3b62f2a4a90849ccd45b3799921ce5dfa31171231db8cba26a7c45ccdff",
+        "exact": true
+      },
+      {
+        "bufferView": 5,
+        "bytes": 607995,
+        "sha256": "2ec67084335b282605c0923d6a89005e467e2779e7a2d5c666d2da593aafde19",
+        "outputSha256": "2ec67084335b282605c0923d6a89005e467e2779e7a2d5c666d2da593aafde19",
+        "exact": true
+      },
+      {
+        "bufferView": 6,
+        "bytes": 432318,
+        "sha256": "1da749672ba690667f392f3a63b022f886bbe0c445a7567a186aeac7f208230f",
+        "outputSha256": "1da749672ba690667f392f3a63b022f886bbe0c445a7567a186aeac7f208230f",
+        "exact": true
+      },
+      {
+        "bufferView": 7,
+        "bytes": 138549,
+        "sha256": "a63fee7e46c361edac7148b5a8c1dc3b553d17a4d24066d7d4a298516d6d5afc",
+        "outputSha256": "a63fee7e46c361edac7148b5a8c1dc3b553d17a4d24066d7d4a298516d6d5afc",
+        "exact": true
+      },
+      {
+        "bufferView": 16,
+        "bytes": 43356,
+        "sha256": "4e7f2e5d4fb48e87d789690931317ba71d1244e2c746b2ff986a7b8b65370da0",
+        "outputSha256": "4e7f2e5d4fb48e87d789690931317ba71d1244e2c746b2ff986a7b8b65370da0",
+        "exact": true
+      },
+      {
+        "bufferView": 17,
+        "bytes": 43356,
+        "sha256": "32721e882ca5a28ad60fbcd8375ac9633d26638fef3cadfead91e14539150d56",
+        "outputSha256": "32721e882ca5a28ad60fbcd8375ac9633d26638fef3cadfead91e14539150d56",
+        "exact": true
+      },
+      {
+        "bufferView": 18,
+        "bytes": 28904,
+        "sha256": "ef8872dadc011b05ccd8289061c71ce462b381370bbdd1e914ff0f10c65f8d98",
+        "outputSha256": "ef8872dadc011b05ccd8289061c71ce462b381370bbdd1e914ff0f10c65f8d98",
+        "exact": true
+      },
+      {
+        "bufferView": 19,
+        "bytes": 10800,
+        "sha256": "c8a360e1c73fe941ed2132542ee0bcfb3e5ab49cd12b730ea68bc57f077245ed",
+        "outputSha256": "c8a360e1c73fe941ed2132542ee0bcfb3e5ab49cd12b730ea68bc57f077245ed",
+        "exact": true
+      },
+      {
+        "bufferView": 20,
+        "bytes": 54189,
+        "sha256": "8d5b99c2bd7907525a1e88c988ca5cb04debb840d3508b135fc81943808b17d6",
+        "outputSha256": "8d5b99c2bd7907525a1e88c988ca5cb04debb840d3508b135fc81943808b17d6",
+        "exact": true
+      },
+      {
+        "bufferView": 21,
+        "bytes": 583683,
+        "sha256": "e8dc51dcef6c6800be76a779b2765464747031a1c971fe657ea45145b5175c9a",
+        "outputSha256": "e8dc51dcef6c6800be76a779b2765464747031a1c971fe657ea45145b5175c9a",
+        "exact": true
+      },
+      {
+        "bufferView": 22,
+        "bytes": 113055,
+        "sha256": "6f159db7e7e84ada41e8c68823db6b28df734d67b3af5e9564349eaaee8c12a8",
+        "outputSha256": "6f159db7e7e84ada41e8c68823db6b28df734d67b3af5e9564349eaaee8c12a8",
+        "exact": true
+      },
+      {
+        "bufferView": 23,
+        "bytes": 68319,
+        "sha256": "56c99a22c8569279ab8830eaf64c03b0e05c04becafcfcd2645c9c83807c857e",
+        "outputSha256": "56c99a22c8569279ab8830eaf64c03b0e05c04becafcfcd2645c9c83807c857e",
+        "exact": true
+      }
+    ]
+  },
+  "selectedCandidateGeometryPreservation": {
+    "temple": {
+      "normalVariant": "meshy",
+      "attributeAccessorPayloads": [
+        {
+          "semantic": "POSITION",
+          "sourceAccessor": 0,
+          "outputAccessor": 13,
+          "sha256": "5bc6d409d1b44be9846d42ffca091a525d979f5b2c730a036cd39bd4bc50cc25",
+          "outputSha256": "5bc6d409d1b44be9846d42ffca091a525d979f5b2c730a036cd39bd4bc50cc25",
+          "exact": true
+        },
+        {
+          "semantic": "NORMAL",
+          "sourceAccessor": 1,
+          "outputAccessor": 14,
+          "sha256": "03f0952dab92038e6014826ea0ee298befc7e96a707c5100d862aa6e19a2adb9",
+          "outputSha256": "03f0952dab92038e6014826ea0ee298befc7e96a707c5100d862aa6e19a2adb9",
+          "exact": true
+        },
+        {
+          "semantic": "TEXCOORD_0",
+          "sourceAccessor": 2,
+          "outputAccessor": 15,
+          "sha256": "22ee292f28f8e53c54e023a32595df6c87227d410d46f839ce3de166169025f4",
+          "outputSha256": "22ee292f28f8e53c54e023a32595df6c87227d410d46f839ce3de166169025f4",
+          "exact": true
+        },
+        {
+          "semantic": "TANGENT",
+          "sourceAccessor": 3,
+          "outputAccessor": 16,
+          "sha256": "3ad5fcd955da3294676659cd7057f0708424a6ecc68857d9f359ab1b509b3f9c",
+          "outputSha256": "3ad5fcd955da3294676659cd7057f0708424a6ecc68857d9f359ab1b509b3f9c",
+          "exact": true
+        }
+      ],
+      "partition": {
+        "criterion": "glTF face-centre Y >= 1.65m",
+        "equivalentAuthoringCriterion": "Blender face-centre Z >= 1.65m",
+        "triangles": {
+          "source": 89166,
+          "structure": 64181,
+          "dome": 24985
+        },
+        "indexValues": {
+          "source": 267498,
+          "structure": 192543,
+          "dome": 74955
+        },
+        "sourceIndexSha256": "a26cfe7aa2697a9880822d80f2bb85e9c304ac9fa0cb26d9cbbf81ffaa08b6fc",
+        "exactTriangleMultiset": true,
+        "positionsNormalsTangentsUvsChanged": false
+      },
+      "sharedStructureMeshIndex": 4,
+      "sharedDomeAccessorIndices": {
+        "attributes": {
+          "POSITION": 13,
+          "NORMAL": 14,
+          "TEXCOORD_0": 15,
+          "TANGENT": 16
+        },
+        "indices": 18
+      },
+      "secondGeometryReduction": false
+    },
+    "cypress": {
+      "normalVariant": "meshy",
+      "accessorPayloads": [
+        {
+          "sourceAccessor": 0,
+          "outputAccessor": 4,
+          "sha256": "5cb8dd10a6415c04b0e38a7f51c2573df52566971e2519ab8b44ce7ae229e7fa",
+          "outputSha256": "5cb8dd10a6415c04b0e38a7f51c2573df52566971e2519ab8b44ce7ae229e7fa",
+          "exact": true
+        },
+        {
+          "sourceAccessor": 1,
+          "outputAccessor": 5,
+          "sha256": "3a902ce1bd3b90000fa3c100c6e8754d7e0c2047e6ef3045f70c9e43cc818b02",
+          "outputSha256": "3a902ce1bd3b90000fa3c100c6e8754d7e0c2047e6ef3045f70c9e43cc818b02",
+          "exact": true
+        },
+        {
+          "sourceAccessor": 2,
+          "outputAccessor": 6,
+          "sha256": "db66321e22a039596f0dede1bbaa062746465c20dd7a02b57fcc393026500a22",
+          "outputSha256": "db66321e22a039596f0dede1bbaa062746465c20dd7a02b57fcc393026500a22",
+          "exact": true
+        },
+        {
+          "sourceAccessor": 3,
+          "outputAccessor": 7,
+          "sha256": "13e08c20b29f3845b0838eccdebaf1f8e9faa8bb63fa23a6c4ede7e7a5243e21",
+          "outputSha256": "13e08c20b29f3845b0838eccdebaf1f8e9faa8bb63fa23a6c4ede7e7a5243e21",
+          "exact": true
+        },
+        {
+          "sourceAccessor": 4,
+          "outputAccessor": 12,
+          "sha256": "fa8923f20c304af5d177c5f1db4b57c596d8fce7a5753adb855ca5fbf9dec1a0",
+          "outputSha256": "fa8923f20c304af5d177c5f1db4b57c596d8fce7a5753adb855ca5fbf9dec1a0",
+          "exact": true
+        }
+      ],
+      "secondGeometryReduction": false
+    }
+  },
+  "runtimeTexturePass": {
+    "baseColor": "2K review-quality WebP",
+    "dataMaps": "1K lossless; smaller of lossless WebP and optimized PNG",
+    "maps": {
+      "cypress": {
+        "normal": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 5320703,
+          "sourceSha256": "ed8d6d9c763b732a329993bc00913089b39abe902e95dd4172313c92a7b55f82",
+          "runtimeDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeBytes": 1266934,
+          "runtimeSha256": "100f4e6c18a5cd888be622d85022c1196930cbb6d25f9c7d0aaf67717b751875",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "lossless WebP",
+            "lossless": true,
+            "alternatives": {
+              "losslessWebpBytes": 1266934,
+              "optimizedPngBytes": 1471246
+            }
+          },
+          "compressionPsnrDb": "infinite",
+          "compressionMeanAbsoluteError": 0.0
+        },
+        "baseColor": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 7728067,
+          "sourceSha256": "4710864df041932e41deed0bed697d60eef4ad38e8fdac677e6e3ccf2b10cd7b",
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeBytes": 1408534,
+          "runtimeSha256": "04781988cbe232e15ebe1a50daa339b3731e7c71dee51b2da944e91691e8b20b",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "WebP",
+            "lossless": false,
+            "quality": 92,
+            "method": 6
+          },
+          "compressionPsnrDb": 40.4236,
+          "compressionMeanAbsoluteError": 1.7983
+        },
+        "metallicRoughness": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 5046572,
+          "sourceSha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a",
+          "runtimeDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeBytes": 1310360,
+          "runtimeSha256": "24e5f6984a8a8bb4ea93b90d072d4d99a84a407c670def32eb61c5b8288a8e54",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "lossless WebP",
+            "lossless": true,
+            "alternatives": {
+              "losslessWebpBytes": 1310360,
+              "optimizedPngBytes": 1542856
+            }
+          },
+          "compressionPsnrDb": "infinite",
+          "compressionMeanAbsoluteError": 0.0
+        }
+      },
+      "temple": {
+        "normal": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 3913964,
+          "sourceSha256": "f06d8935533fce7ce37b57d5b850ea6763ab3ebd5f204609cf32f9eba67a9cbb",
+          "runtimeDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeBytes": 968184,
+          "runtimeSha256": "26eb18fb6ae877cb0756f352a22b6b6cd2aa33c3320df4bc38fbecbf7d538c75",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "lossless WebP",
+            "lossless": true,
+            "alternatives": {
+              "losslessWebpBytes": 968184,
+              "optimizedPngBytes": 1154856
+            }
+          },
+          "compressionPsnrDb": "infinite",
+          "compressionMeanAbsoluteError": 0.0
+        },
+        "structureBaseColor": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 5625779,
+          "sourceSha256": "34162564fdc4d6f6b6b9c2a756f7e916a01c763eda2813afd377af11593ab736",
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeBytes": 867690,
+          "runtimeSha256": "31156b013397f0b11a20b27fb0abb780be2519fbea7d2a6f3ce486154cdb6da9",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "WebP",
+            "lossless": false,
+            "quality": 92,
+            "method": 6
+          },
+          "compressionPsnrDb": 39.8261,
+          "compressionMeanAbsoluteError": 1.7606
+        },
+        "metallicRoughnessAndOcclusion": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 5332189,
+          "sourceSha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d",
+          "runtimeDimensions": [
+            1024,
+            1024
+          ],
+          "runtimeBytes": 1457876,
+          "runtimeSha256": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "lossless WebP",
+            "lossless": true,
+            "alternatives": {
+              "losslessWebpBytes": 1457876,
+              "optimizedPngBytes": 1645134
+            }
+          },
+          "compressionPsnrDb": "infinite",
+          "compressionMeanAbsoluteError": 0.0
+        },
+        "amberDomeBaseColor": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 3651003,
+          "sourceSha256": "d12adb6c614ee0fb3821cf7845e24bc2c2383a8fc34a4a2bb1fe0b8d61e7fe03",
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeBytes": 531056,
+          "runtimeSha256": "54808c56775ff53704891d9e5c6b43613230a77d591fc267df2211ecf12b73d7",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "WebP",
+            "lossless": false,
+            "quality": 92,
+            "method": 6
+          },
+          "compressionPsnrDb": 35.3672,
+          "compressionMeanAbsoluteError": 1.8533,
+          "sourceFile": "sources/temple-bake-v9/temple-dome-amber-base.png"
+        },
+        "tealDomeBaseColor": {
+          "sourceDimensions": [
+            2048,
+            2048
+          ],
+          "sourceBytes": 4103517,
+          "sourceSha256": "d305559cfbe9be04cabe0799964e724b994d43b47a5334277681cf973afa2168",
+          "runtimeDimensions": [
+            2048,
+            2048
+          ],
+          "runtimeBytes": 585804,
+          "runtimeSha256": "4f16a5c5d0d94484be8dc87f672ca02bb5addb0d0af280c8dade33557dc07f68",
+          "runtimeMimeType": "image/webp",
+          "encoding": {
+            "format": "WebP",
+            "lossless": false,
+            "quality": 92,
+            "method": 6
+          },
+          "compressionPsnrDb": 33.1623,
+          "compressionMeanAbsoluteError": 2.3165,
+          "sourceFile": "sources/temple-bake-v9/temple-dome-teal-base.png"
+        }
+      }
+    }
+  },
+  "sceneInstancing": {
+    "storedUniqueGeometryTriangles": 119546,
+    "glbSceneNodeRenderedTriangles": 212312,
+    "runtimeMapCypressPlacementSource": "packages/glass-game/src/journey/vegetation.ts:cypressTransforms",
+    "runtimeMapCypressInstanceCount": 13,
+    "runtimeMapCypressRenderedTriangles": 267865,
+    "runtimeMapProjectionAuthority": "source-derived placement count; browser renderer QA remains authoritative"
+  },
+  "freshReimport": {
+    "root": "map_twin_finish_kit_root",
+    "coordinates": "Fresh GLB reimport into Blender Z-up; dimensions listed in glTF X/Y/Z order.",
+    "nodes": {
+      "map_cliff": {
+        "meshChildren": [
+          "map_cliff_geometry"
+        ],
+        "trianglesRendered": 7975,
+        "uniqueMeshDatablocks": 1,
+        "dimensionsGlTfYUpMetres": [
+          4.5,
+          2.0313870906829834,
+          2.4640555381774902
+        ],
+        "anchorErrorMetres": 0.0,
+        "uv0Present": true,
+        "materials": [
+          "map_cliff_atlas"
+        ]
+      },
+      "map_cypress": {
+        "meshChildren": [
+          "map_cypress_geometry"
+        ],
+        "trianglesRendered": 20605,
+        "uniqueMeshDatablocks": 1,
+        "dimensionsGlTfYUpMetres": [
+          0.38449329137802124,
+          1.7999999523162842,
+          0.45893892645835876
+        ],
+        "anchorErrorMetres": 0.0,
+        "uv0Present": true,
+        "materials": [
+          "map_cypress_atlas"
+        ]
+      },
+      "map_flower_cluster": {
+        "meshChildren": [
+          "map_flower_cluster_bloom_c",
+          "map_flower_cluster_bloom_b",
+          "map_flower_cluster_bloom_a"
+        ],
+        "trianglesRendered": 5400,
+        "uniqueMeshDatablocks": 1,
+        "dimensionsGlTfYUpMetres": [
+          0.869657576084137,
+          0.4931323230266571,
+          0.575716108083725
+        ],
+        "anchorErrorMetres": 0.0,
+        "uv0Present": true,
+        "materials": [
+          "map_planter_atlas_00"
+        ]
+      },
+      "map_temple_amber": {
+        "meshChildren": [
+          "map_temple_amber_structure",
+          "map_temple_amber_dome"
+        ],
+        "trianglesRendered": 89166,
+        "uniqueMeshDatablocks": 2,
+        "dimensionsGlTfYUpMetres": [
+          2.400000214576721,
+          2.667686939239502,
+          2.66242253780365
+        ],
+        "anchorErrorMetres": 0.0,
+        "uv0Present": true,
+        "materials": [
+          "map_temple_dome_amber_atlas",
+          "map_temple_structure_atlas"
+        ]
+      },
+      "map_temple_teal": {
+        "meshChildren": [
+          "map_temple_teal_structure",
+          "map_temple_teal_dome"
+        ],
+        "trianglesRendered": 89166,
+        "uniqueMeshDatablocks": 2,
+        "dimensionsGlTfYUpMetres": [
+          2.400000214576721,
+          2.667686939239502,
+          2.66242253780365
+        ],
+        "anchorErrorMetres": 0.0,
+        "uv0Present": true,
+        "materials": [
+          "map_temple_dome_teal_atlas",
+          "map_temple_structure_atlas"
+        ]
+      }
+    },
+    "amberTealStructureMeshDatablockShared": true,
+    "images": [
+      {
+        "name": "cypress-v9-base-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "cypress-v9-meshy-normal-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "cypress-v9-orm-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_cliff_texture_00",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "map_cliff_texture_01",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_cliff_texture_02",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "map_cliff_texture_03",
+        "dimensions": [
+          512,
+          512
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_planter_texture_00",
+        "dimensions": [
+          512,
+          512
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "map_planter_texture_01",
+        "dimensions": [
+          512,
+          512
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "map_planter_texture_02",
+        "dimensions": [
+          512,
+          512
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "map_planter_texture_03",
+        "dimensions": [
+          512,
+          512
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "temple-v9-dome-amber-base-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "temple-v9-dome-teal-base-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "temple-v9-meshy-normal-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "temple-v9-orm-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "temple-v9-structure-base-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      }
+    ]
+  },
+  "validation": {
+    "explicitReviewedNormalSelections": true,
+    "candidateManifestsAndSelectionHashesMatched": true,
+    "freshGlbReimport": true,
+    "packedEditableRuntimeSource": true,
+    "requiredNamedHierarchy": true,
+    "reviewedCandidateTriangleCountsExact": true,
+    "templeFacePartitionExact": true,
+    "templeVertexAttributePayloadsExact": true,
+    "amberTealGeometrySharingPassed": true,
+    "noSecondGeometryReduction": true,
+    "dimensionsAndGroundAnchorsPassed": true,
+    "uv0Present": true,
+    "v4CliffFlowerLogicalRecordsAndPayloadsExact": true,
+    "noOrphanRecords": {
+      "bufferViews": true,
+      "accessors": true,
+      "images": true,
+      "textures": true,
+      "meshes": true,
+      "materials": true
+    },
+    "oldV4CypressTemplePayloadsCopied": false,
+    "noDracoOrMeshopt": true,
+    "runtimeIntegration": "not performed"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/build_twin_finish_kit_runtime.py -- --temple-normal-variant meshy --cypress-normal-variant meshy",
+    "blender": "5.2.2 LTS"
+  }
+}

@@ -1,0 +1,9 @@
+Use case: stylized-concept
+Asset type: original museum wall painting texture, portrait aspect ratio 2:3, full bleed, no frame or border
+Primary request: Paint an original symbolic portrait titled only in production notes "The Low Note Keeper". A fictional dark-skinned male singing muse is shown from the chest upward in calm three-quarter view, eyes gently closed and mouth softly open sustaining one resonant low note. His form is rendered in warm amber glass, smoky quartz, umber, and subtle gold leaf, with an ivory crescent halo behind him. Broad jade and bronze ribbons move outward in slow low arcs like visible resonance. His expression is warm, dignified, tranquil, and alive; he must not resemble any real singer or celebrity.
+Style/medium: sumptuous art-nouveau oil and gouache painting with translucent stained-glass planes, hand-brushed texture, and restrained gold-leaf accents
+Composition/framing: vertical 2:3 full-bleed flat artwork, direct front-on reproduction, strong face and shoulder silhouette readable at gallery distance
+Lighting/mood: warm amber side light, quiet lower-gallery intimacy, deep petrol and burnt plum background
+Color palette: amber, smoky quartz, umber, deep petrol, jade, ivory, restrained antique gold
+Constraints: fictional adult person; intact serene portrait; full image is only the flat artwork; no frame, border, room, typography, notes, letters, words, signature, or watermark
+Avoid: celebrity likeness, caricature, open screaming mouth, violence, cracks across face, flying shards, photorealistic camera look, costume text

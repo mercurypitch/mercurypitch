@@ -1,0 +1,857 @@
+{
+  "edits": [
+    {
+      "mesh": 0,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 0,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 1,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 1,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 1,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 2,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 2,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 2,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 3,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 3,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 3,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 4,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 4,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 4,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 5,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 5,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 6,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 6,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 7,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 7,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 8,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 8,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 9,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 9,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 9,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 10,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 10,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 11,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 11,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 12,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 12,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 12,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 13,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 13,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 13,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 14,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 14,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 15,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 15,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 15,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 16,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 16,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 16,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 17,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 17,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 17,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 18,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 18,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 18,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 19,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 19,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 19,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 20,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 20,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 20,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 21,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 21,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 21,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 22,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 22,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 22,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 23,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 23,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 23,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 24,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 25,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 26,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 27,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 28,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 29,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 30,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 31,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 32,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 33,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 34,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 35,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 36,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 37,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 38,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 39,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 40,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 41,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 42,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 43,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 44,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 45,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 46,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 47,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 48,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 49,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 50,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 51,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 52,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 53,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 54,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 55,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 56,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 57,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 58,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 59,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 60,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 60,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 61,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 61,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 62,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 62,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 62,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 63,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 63,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 63,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 64,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 64,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 64,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 65,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 65,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 65,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 66,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 66,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 66,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 67,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 67,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 67,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 68,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 68,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 68,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 69,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 69,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 69,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 70,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 70,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 70,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 71,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 71,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 71,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 72,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 72,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 72,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 73,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 73,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 73,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 74,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 74,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 74,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 75,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 75,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 76,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 76,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 76,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 77,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 77,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 77,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 78,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 78,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 78,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 79,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 79,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 79,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 80,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 80,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 80,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 81,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 81,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 81,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 82,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 82,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 82,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 83,
+      "primitive": 0,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 83,
+      "primitive": 1,
+      "change": "remove unused tangent on material without normal maps"
+    },
+    {
+      "mesh": 83,
+      "primitive": 2,
+      "change": "remove unused tangent on material without normal maps"
+    }
+  ],
+  "removedUnusedTangentAccessors": 169,
+  "protectedStreams": 676,
+  "geometrySignatureUnchanged": true,
+  "source": "art/glass-adventure/attribute-repair-v1/sources/adventure-v2-vessels.glb",
+  "output": "apps/beside-cue/public/games/adventure-v2/vessels-qa-v2.glb",
+  "sourceSha256": "40c58723fea8c6d60b7b00393a3d9264a741e96b546deb7e5e43cb9f4544432b",
+  "outputSha256": "6b04ecf14ef27b8610d3ee7e37980bb6cda0d0427ce89fc7d691a9827c936393",
+  "bytes": 3378428
+}

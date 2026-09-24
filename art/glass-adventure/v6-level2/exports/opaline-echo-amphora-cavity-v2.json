@@ -1,0 +1,478 @@
+{
+  "schema": 1,
+  "status": "prepared cavity shell; fracture/export validation pending",
+  "assetId": "opaline-echo-amphora",
+  "donor": {
+    "file": "meshy/opaline-echo-amphora-donor.glb",
+    "bytes": 10618916,
+    "sha256": "dc09fcefb94170c71e54b3bbe48a2f005fa4ea7332589daa05a38ef4634381c8"
+  },
+  "normalization": {
+    "uniformScale": 0.4843675426296501,
+    "sourceFootCentre": [
+      -0.0008614957332611084,
+      0.0010735094547271729,
+      -0.9507680535316467
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.30930379033088684,
+        -0.2840551435947418,
+        0.0
+      ],
+      "max": [
+        0.30930379033088684,
+        0.2840551733970642,
+        0.9200000166893005
+      ]
+    },
+    "dimensionsMetres": [
+      0.6186075806617737,
+      0.5681103467941284,
+      0.9200000166893005
+    ]
+  },
+  "cleanup": {
+    "weld": {
+      "vertices": 7869,
+      "faces": 8168,
+      "weldedVertices": 4083,
+      "weldedFaces": 8168
+    },
+    "localRepair": {
+      "method": "remove inspected two-edge triangle flaps",
+      "faces": [
+        {
+          "centreMetres": [
+            -0.09649999439716339,
+            -0.13569951057434082,
+            0.9038702249526978
+          ],
+          "areaSquareMetres": 4.58637305200682e-06,
+          "verticesMetres": [
+            [
+              -0.09599947184324265,
+              -0.13647562265396118,
+              0.903805136680603
+            ],
+            [
+              -0.10424632579088211,
+              -0.12966640293598175,
+              0.9038826823234558
+            ],
+            [
+              -0.08925417065620422,
+              -0.14095650613307953,
+              0.9039228558540344
+            ]
+          ]
+        },
+        {
+          "centreMetres": [
+            0.2708589434623718,
+            -0.03949056565761566,
+            0.5629570484161377
+          ],
+          "areaSquareMetres": 1.445581619918812e-05,
+          "verticesMetres": [
+            [
+              0.2718835473060608,
+              -0.03873608261346817,
+              0.5584118962287903
+            ],
+            [
+              0.27329784631729126,
+              -0.03879662603139877,
+              0.561293363571167
+            ],
+            [
+              0.26739537715911865,
+              -0.04093898460268974,
+              0.569165825843811
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "lod": {
+    "requested": 9000,
+    "before": 8166,
+    "after": 8166,
+    "applied": false
+  },
+  "exteriorCheck": {
+    "triangles": 8166,
+    "vertices": 4081,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.11947697964131007
+  },
+  "exteriorFidelityBeforeCavity": {
+    "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+    "finalToSourceMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "sourceToFinalMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0004887566319666803
+    },
+    "sourceSampleCount": 7869
+  },
+  "materialRegions": {
+    "method": "continuous texture-space transmission mask; no per-face glass/opaque boundary",
+    "maskImage": "opaline_transmission_mask_v2",
+    "maskDimensions": [
+      2048,
+      2048
+    ],
+    "maskTransmission": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.28041622042655945,
+      "p95": 0.47999998927116394,
+      "p99": 0.47999998927116394,
+      "max": 0.47999998927116394
+    },
+    "opaqueCuePixels": {
+      "jadeAboveHalf": 798442,
+      "goldAboveHalf": 1259142,
+      "total": 4194304
+    },
+    "thresholds": {
+      "jadeGreenExcessSmoothstep": [
+        0.045,
+        0.18
+      ],
+      "jadeChromaSmoothstep": [
+        0.06,
+        0.24
+      ],
+      "goldWarmExcessSmoothstep": [
+        0.04,
+        0.2
+      ],
+      "goldMetallicSmoothstep": [
+        0.45,
+        0.85
+      ]
+    },
+    "faceAssignments": {
+      "glass_shell": 8166,
+      "opaque_trim": 0
+    },
+    "geometryChanged": false
+  },
+  "cavityProfile": {
+    "method": "32 radial donor-surface rays at 12 elevations; fifth-percentile radius minus fixed wall allowance",
+    "floorZMetres": 0.2116,
+    "targetWallMetres": 0.018,
+    "rows": [
+      {
+        "zMetres": 0.2576,
+        "outerRayMetres": {
+          "min": 0.21005859971046448,
+          "p05": 0.2101117454469204,
+          "p50": 0.21325407177209854,
+          "p95": 0.21534678786993028,
+          "p99": 0.21543409302830696,
+          "max": 0.21544668078422546
+        },
+        "innerRadiusMetres": 0.19211174544692042
+      },
+      {
+        "zMetres": 0.3148909090909091,
+        "outerRayMetres": {
+          "min": 0.24168995022773743,
+          "p05": 0.24183523133397103,
+          "p50": 0.2427665740251541,
+          "p95": 0.24563153684139252,
+          "p99": 0.2459014283120632,
+          "max": 0.24596276879310608
+        },
+        "innerRadiusMetres": 0.22383523133397104
+      },
+      {
+        "zMetres": 0.37218181818181817,
+        "outerRayMetres": {
+          "min": 0.2611055076122284,
+          "p05": 0.2611930832266808,
+          "p50": 0.26574909687042236,
+          "p95": 0.2671678468585014,
+          "p99": 0.2672581461071968,
+          "max": 0.26728808879852295
+        },
+        "innerRadiusMetres": 0.2431930832266808
+      },
+      {
+        "zMetres": 0.4294727272727273,
+        "outerRayMetres": {
+          "min": 0.2781938910484314,
+          "p05": 0.2783354908227921,
+          "p50": 0.27983900904655457,
+          "p95": 0.2808368355035782,
+          "p99": 0.2809215006232262,
+          "max": 0.2809448838233948
+        },
+        "innerRadiusMetres": 0.26033549082279206
+      },
+      {
+        "zMetres": 0.4867636363636364,
+        "outerRayMetres": {
+          "min": 0.28372395038604736,
+          "p05": 0.28382634073495866,
+          "p50": 0.28468745946884155,
+          "p95": 0.28803944438695905,
+          "p99": 0.2907907086610794,
+          "max": 0.2909955680370331
+        },
+        "innerRadiusMetres": 0.26582634073495864
+      },
+      {
+        "zMetres": 0.5440545454545456,
+        "outerRayMetres": {
+          "min": 0.2755468487739563,
+          "p05": 0.2756132289767265,
+          "p50": 0.2763458490371704,
+          "p95": 0.2870458379387855,
+          "p99": 0.2976425775885582,
+          "max": 0.29774168133735657
+        },
+        "innerRadiusMetres": 0.2576132289767265
+      },
+      {
+        "zMetres": 0.6013454545454546,
+        "outerRayMetres": {
+          "min": 0.2551068961620331,
+          "p05": 0.25534785389900205,
+          "p50": 0.2565135657787323,
+          "p95": 0.27174650877714157,
+          "p99": 0.28871703386306763,
+          "max": 0.2887856960296631
+        },
+        "innerRadiusMetres": 0.23734785389900206
+      },
+      {
+        "zMetres": 0.6586363636363637,
+        "outerRayMetres": {
+          "min": 0.21056661009788513,
+          "p05": 0.211439611017704,
+          "p50": 0.21260079741477966,
+          "p95": 0.21328809037804602,
+          "p99": 0.2134946356713772,
+          "max": 0.21350693702697754
+        },
+        "innerRadiusMetres": 0.19343961101770402
+      },
+      {
+        "zMetres": 0.7159272727272727,
+        "outerRayMetres": {
+          "min": 0.1324392855167389,
+          "p05": 0.13252885192632674,
+          "p50": 0.1328069195151329,
+          "p95": 0.133362028747797,
+          "p99": 0.1334391537308693,
+          "max": 0.13346251845359802
+        },
+        "innerRadiusMetres": 0.11452885192632674
+      },
+      {
+        "zMetres": 0.7732181818181818,
+        "outerRayMetres": {
+          "min": 0.10261460393667221,
+          "p05": 0.10285300128161907,
+          "p50": 0.1035703495144844,
+          "p95": 0.11391118876636028,
+          "p99": 0.11912874601781369,
+          "max": 0.11919856071472168
+        },
+        "innerRadiusMetres": 0.08485300128161907
+      },
+      {
+        "zMetres": 0.8305090909090911,
+        "outerRayMetres": {
+          "min": 0.07250107079744339,
+          "p05": 0.07258202470839023,
+          "p50": 0.0730874240398407,
+          "p95": 0.07366705909371377,
+          "p99": 0.07395049251616001,
+          "max": 0.07407581806182861
+        },
+        "innerRadiusMetres": 0.05458202470839023
+      },
+      {
+        "zMetres": 0.8878,
+        "outerRayMetres": {
+          "min": 0.10458923131227493,
+          "p05": 0.10491321012377738,
+          "p50": 0.10596492514014244,
+          "p95": 0.10680755861103534,
+          "p99": 0.10701164230704308,
+          "max": 0.1070256158709526
+        },
+        "innerRadiusMetres": 0.08691321012377738
+      }
+    ],
+    "profileMetres": [
+      [
+        0.2116,
+        0.030737879271507267
+      ],
+      [
+        0.2346,
+        0.12487263454049828
+      ],
+      [
+        0.2576,
+        0.19211174544692042
+      ],
+      [
+        0.3148909090909091,
+        0.2197133533358574
+      ],
+      [
+        0.37218181818181817,
+        0.2424546017944813
+      ],
+      [
+        0.4294727272727273,
+        0.25645163826147716
+      ],
+      [
+        0.4867636363636364,
+        0.26125835351149246
+      ],
+      [
+        0.5440545454545456,
+        0.25359580787022906
+      ],
+      [
+        0.6013454545454546,
+        0.22946689796447753
+      ],
+      [
+        0.6586363636363637,
+        0.1817721056143443
+      ],
+      [
+        0.7159272727272727,
+        0.11452885192632674
+      ],
+      [
+        0.7732181818181818,
+        0.08465462597211203
+      ],
+      [
+        0.8305090909090911,
+        0.05458202470839023
+      ],
+      [
+        0.8878,
+        0.0707476174160838
+      ],
+      [
+        0.9936,
+        0.0707476174160838
+      ]
+    ],
+    "segments": 24
+  },
+  "cavityBackend": {
+    "backend": "manifold3d 3.5.3",
+    "exteriorInputVolumeCubicMetres": 0.11947697964131052,
+    "cutterVolumeCubicMetres": 0.08108187503958238,
+    "shellVolumeCubicMetres": 0.04134598126409052,
+    "removedCavityVolumeCubicMetres": 0.07813099837722,
+    "exteriorInputTriangles": 8166,
+    "cutterTriangles": 720,
+    "shellTriangles": 8728,
+    "materialFaceCounts": {
+      "0": 8041,
+      "1": 0,
+      "2": 687,
+      "3": 0
+    }
+  },
+  "cavityThickness": {
+    "sampledFaces": 687,
+    "rimSeamFacesUnder3mm": 5,
+    "nearestExteriorDistanceMetres": {
+      "min": 4.209093731333269e-07,
+      "p05": 0.006626363471150398,
+      "p50": 0.024836651980876923,
+      "p95": 0.08600736409425735,
+      "p99": 0.10787283882498741,
+      "max": 0.10814350098371506
+    },
+    "interpretation": "The minimum includes the intentional cavity/exterior seam at the open mouth; p05 gates the measurable inner wall away from that seam."
+  },
+  "centralMouthRayZMetres": [
+    0.21160000562667847,
+    9.396672248840332e-05
+  ],
+  "shellCheck": {
+    "triangles": 8728,
+    "vertices": 4362,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.04134598127217435
+  },
+  "exteriorBoundsMaxDeltaMetres": 0.0,
+  "nodes": {
+    "root": "breakable_l2_opaline_echo_amphora",
+    "intact": "breakable_l2_opaline_echo_amphora_intact",
+    "collider": "COLLIDER_breakable_l2_opaline_echo_amphora"
+  },
+  "packedBlenderSource": {
+    "file": "sources/opaline-echo-amphora-cavity-v2.blend",
+    "bytes": 12084925,
+    "sha256": "726bd19eb0e506cea2307008e14e33c654821495d60f51da4a798eaef94e6982"
+  },
+  "gameplayReadiness": "Prepared production shell only; matched shards and fresh GLB validation are still required.",
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "toolchain": {
+      "blender": "5.2.2 LTS (d13f752e3b9c)",
+      "backendPython": "3.14.7",
+      "manifold3d": "3.5.3",
+      "backendNumpy": "2.5.3",
+      "scratchPythonPath": "/tmp/glass-museum-manifold",
+      "scratchPathCommitted": false,
+      "solidFractureBackend": {
+        "file": "art/glass-adventure/v3/solid_fracture.py",
+        "sha256": "1adef949624b5bc2a25e74cdf316f260956ade6083a2c68a756fa1bdfb189b39"
+      }
+    },
+    "commands": {
+      "installScratchBackend": "rtk proxy /usr/bin/python3 -m pip install --target /tmp/glass-museum-manifold manifold3d==3.5.3 numpy==2.5.3",
+      "topologyAudit": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/inspect_vessels.py",
+      "prepare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase prepare",
+      "fractureExport": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase fracture",
+      "freshGlbValidation": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase validate",
+      "proofs": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset opaline-echo-amphora --phase render"
+    },
+    "archivedIntermediateInputs": [
+      "sources/opaline-echo-amphora-fracture-work-v2/cavity-input.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cavity-output.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cavity-output.json",
+      "sources/opaline-echo-amphora-fracture-work-v2/cut-input.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cut-output.npz",
+      "sources/opaline-echo-amphora-fracture-work-v2/cut-output.json"
+    ]
+  }
+}

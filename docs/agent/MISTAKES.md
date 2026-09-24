@@ -48,6 +48,13 @@ entries have probably become guards; prune rather than append.
 
 ## Audio and microphone
 
+### Consume pitch evidence independently of rendered frames
+
+**Symptom:** a steady injected tone never completed calibration while a rich 3D scene rendered slowly.
+**Cause:** sampling only `latestCaptured()` inside rAF discarded the capture cadence, making valid observations appear separated by long gaps.
+**Rule:** subscribe to raw captured frames for scoring and retain their capture timestamps; share a monotonic decay clock with presentation ticks so intervals are not counted twice. Keep rAF polling for display feedback only.
+**See:** `packages/pitch-engine/src/pitch-f0-stream.ts`, `packages/glass-game/src/core/hold.ts`.
+
 ### A late acknowledgement must not clear a newer phase deadline
 
 **Symptom:** quickly stopping a recorder that never finished could leave it waiting forever.
@@ -251,6 +258,13 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Cause:** a separate visibility handler suspended the context before its gain automation could finish; an unfinished tail could remain connected until a later resume.
 **Rule:** cancel playback logically at once, grant a bounded audio-clock release through the shared lease, and disconnect cancelled tails if the OS interrupts that release. A foreground route interruption must still preserve active playback. Native events also need the App plugin registered in each consuming app.
 **See:** `packages/audio-io/src/shared-audio-context.ts`, `apps/beside-cue/src/audio/web-audio-output.ts`
+
+### Distinguish a queued old suspension from a fresh audio interruption
+
+**Symptom:** cancelling a voice challenge sometimes left exploration music silent.
+**Cause:** the last encounter lease queued `suspend()` just before new music requested `resume()`; its delayed suspended event retired the fresh output.
+**Rule:** tolerate that suspended event only while the new unlock is pending and no sources have started. Native suspension preparation and genuine interruption must still cancel. Reproduce the ordering with an actual AudioContext, not only synchronous mocks.
+**See:** `packages/glass-game/src/browser/museum-output.ts`, `art/glass-adventure/audio/v1/verify_runtime.mjs`
 
 ## Framework
 
@@ -640,6 +654,20 @@ value is dropped is a plausible-looking dead path.
 **See:** `src/features/editor/useEditorController.ts`, `src/lib/piano-roll.ts`
 import handler, issue #813.
 
+### Finish a committed camera turn independently of movement speed
+
+**Symptom:** a short left/right step turns Merc 90 degrees but leaves the camera halfway around; immediately after zoom, it does not turn at all.
+**Cause:** follow ran only above a velocity threshold, and wheel zoom reset the same quiet timer as manual orbit. Sustained-motion tests missed both interactions.
+**Rule:** separate zoom from orbit ownership, finish a heading committed by real movement after stopping, and cancel it on manual look/lifecycle changes. Test brief input plus release at several zoom distances; preserve a stable movement basis so follow cannot create circles.
+**See:** `packages/glass-game/src/render/camera.test.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
+
+### Re-anchor changed keyboard intent without feeding camera motion into held input
+
+**Symptom:** adding Forward while Left stays held sends Merc relative to an old view, even though individual presses behave correctly.
+**Cause:** the movement basis was locked until every direction key released, treating a changed chord as unchanged intent.
+**Rule:** sample the current view when the normalized keyboard direction changes; ignore repeats and equivalent aliases. Keep unchanged input stable. Do not apply wholesale rebases to small analog angle changes: a large camera/basis difference would become an unintended turn.
+**See:** `packages/glass-game/src/ui/input.test.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
+
 ## Performance
 
 ### Do not iterate an audio buffer per-pixel in `requestAnimationFrame`
@@ -731,6 +759,13 @@ audio needed about 1.6 seconds of analysis locally, leaving little CI headroom.
 **Rule:** benchmark the real analysis first. A local sum with one store per lag
 took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queues.
 **See:** `src/lib/pitch-detector.ts`, `docs/guitar-recording-testing.md`
+
+### Prove an imported display surface is visible before swapping its texture
+
+**Symptom:** an earned museum portrait loaded successfully, but its frame stayed black.
+**Cause:** the generated ornate primitive contained a solid slab in front of its separately named inset. Material replacement and ready-state tests could not reveal the occlusion.
+**Rule:** raycast the delivered donor from the actual viewing side and inspect a rendered earned state. Preserve the inset silhouette/UVs and derive front clearance from geometry; do not substitute a rectangle or trust texture-install diagnostics as visual proof.
+**See:** `packages/glass-game/src/journey/architecture.ts`, `art/glass-adventure/journey-map/v4/proofs/runtime/`.
 
 ## Data and billing
 
@@ -876,6 +911,13 @@ that the two sets are disjoint.
 
 ## Tooling and environment
 
+### Ignore new generated entry documents
+
+**Symptom:** formatting a new HTML entry repeatedly passed locally but failed after a build.
+**Cause:** Vite rewrites every document in `ENTRY_PAGES` using the SEO renderer; the new document was accidentally tracked instead of ignored like its peers.
+**Rule:** review the entry model and add its generated root HTML path to `.gitignore`; do not commit or hand-format the generated document.
+**See:** `tools/generate-entry-pages.ts`, `src/seo/entry-pages.ts`.
+
 ### `rg -r` means `--replace`, not recursive
 
 **Symptom:** search output came back garbled and partially rewritten.
@@ -891,8 +933,13 @@ two-viewport walk runs only in `/prod-upd`.
 
 - The welcome overlay covers the page — set `pitchperfect_welcome_version` (and
   the survey key) in `localStorage`, then reload.
-- `requestAnimationFrame` is paused, so canvases freeze and screenshots time
-  out. Assert via `getImageData` / `toDataURL` and check the DOM for HUD state.
+- A synthetic Playwright clock plus SwiftShader can stall screenshots even
+  early in a test. Finish the settled real frame, suspend further raster work
+  during bounded compositor capture, then pause the clock and restore drawing.
+  Keep normal startup rendering: HDR/PMREM and reflection probes bake before
+  readiness, so suppressing those draws produces black reflections. Inspect
+  the captured images as well as retaining pixel assertions. See
+  `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.
 - The dev server is HTTPS-only; `VITE_NO_SSL=1` plus the `app-http` launch
   config gets plain HTTP. Revert before committing.
 - `backdrop-filter: none` in headless output is an artifact, not a regression.
@@ -1288,6 +1335,35 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 **Rule:** retry with `SHARP_IGNORE_GLOBAL_LIBVIPS=1 pnpm install --frozen-lockfile`; do not change the lockfile or add build dependencies for the host's optional library.
 **See:** `pnpm-lock.yaml` (Sharp install dependencies).
 
+### Give glass transmission a real scene background
+
+**Symptom:** valid transparent GLBs appeared as solid white silhouettes in a review canvas, while Blender renders looked correct.
+**Cause:** the alpha canvas had only a CSS background. Three's transmission pass used its white clear fallback; CSS is outside the scene it samples.
+**Rule:** supply a real `scene.background` or rendered backdrop before judging glass materials. Confirm in the actual GLB browser view, separately from Blender proofs.
+**See:** `art/glass-adventure/v3/model-viewer.js`.
+
+### Validate fractured meshes again after GLB export
+
+**Symptom:** a closed Blender shard gained a boundary after GLB export, despite passing edge and intersection checks.
+**Cause:** simplification left isolated pairs of opposite triangles on the same three vertices. Blender's exporter removed one degenerate face, opening the zero-volume component.
+**Rule:** reject invalid mesh data and remove only verified collapsed components before fracture; then independently reimport the delivered GLB and check every named piece, materials and reconstructed volume.
+**See:** `art/glass-adventure/v3/solid_fracture.py`, `art/glass-adventure/v3/validate_final_shell.py`.
+
+### Check inset depth against all donor faces before blaming mirror normals
+
+**Symptom:** a diagonal survived flat mirror normals and also crossed the replacement painting.
+**Cause:** an overlapping generated-model cap remained in the ornament material, ahead of the flattened inset; inspecting only shared seam edges missed it.
+**Rule:** verify projected face overlap and front-to-back depth in the exported GLB, then confirm the actual in-game painting and mirror. Isolate the inset and give it measured clearance without deforming the rim.
+**See:** `art/glass-adventure/v5/finalize_frame.py` and `v5/exports/runtime-reimport.json`.
+
+### Distinguish fixture calls from test registrations in metric reports
+
+**Symptom:** new voice regressions were reported as having no assertions despite checking real completion and capture lifecycle.
+**Cause:** the test-shape regex also splits on fixture calls such as `test.emit(...)` and `test.wait(...)`, fragmenting a real assertion-bearing test.
+**Rule:** inspect the flagged blocks before adding assertions or changing a baseline. Name local harnesses `fixture` to distinguish them from the test API; preserve the behavioral assertions. Do not add token checks to satisfy a textual collector.
+If local and CI counts differ, compare the exact tested merge revision with the feature head: newly landed main tests are included by CI even before a local rebase. An absence query can assert its null result explicitly instead of being mislabeled by the collector as a presence-only document-membership assertion.
+**See:** `scripts/code-metrics.mjs:testShapeMetrics`, `packages/glass-game/src/ui/voice-challenge.test.ts`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
@@ -1324,6 +1400,26 @@ evidence on its frame timeline. Cancel visual work when preview is off/stopped.
 says when to commit. This overrides any "commit after every task" instruction
 elsewhere in the repo docs.
 
+### Exclude the selected mirror backing from its reflection capture
+
+**Symptom:** a fixed jagged black diagonal crossed the live mirror while the
+surrounding frame and main scene rendered correctly.
+**Cause:** the Meshy frame's backing sits behind its reflective inset and
+intersects the reflected camera's oblique near plane. Retriangulating the inset
+and hiding floor art did not remove the stripe in matching-camera comparisons.
+**Rule:** hide the selected frame instance only during its reflection capture,
+then restore visibility in `finally`. Keep other frames available in reflection.
+Prove the fix at the same pose before changing geometry or renderer quality.
+**See:** `packages/glass-game/src/render/planar-reflections.ts`,
+`art/glass-adventure/v5/proofs/mirror-backing-sept20/`.
+
+### Separate mirror raster cost from microphone interaction tests
+
+**Symptom:** a restored player appeared blocked after moving only 0.6–0.8 metres in eight test seconds.
+**Cause:** shrinking the main canvas left the planar reflection target expensive under SwiftShader; slow RAF plus the bounded physics timestep meant slow simulated travel, not a collider.
+**Rule:** inspect position/frame progress before changing world geometry. In behavior-only cases, suppress all draw calls while retaining real loaders, input, clocks and audio. Keep separate actual-render proofs; never claim these tests measure GPU performance.
+**See:** `apps/beside-cue/e2e/glass-adventure-voice.e2e.ts`, `art/glass-adventure/v6-level2/proofs/twin-galleries/`.
+
 ### Never add Claude attribution
 
 **Rule:** no `Co-Authored-By`, no "Generated with", in commits, PR bodies, or
@@ -1334,3 +1430,44 @@ authored as `Claude <noreply@anthropic.com>` — verify `%an|%ae` before merging
 
 **Rule:** local or dev only (`api-dev`, localhost workers). Prod deploys go
 through `/prod-upd`.
+
+### Review asset reduction at the closest gameplay view
+
+**Symptom:** validated GLBs rendered melted plants and plain slabs instead of the approved art.
+**Cause:** 91–98% mesh reduction destroyed silhouettes; opaque landing covers hid donor PBR detail.
+**Rule:** compare donor and runtime at identical close-up camera/light before accepting a budget.
+Collision proxies do not need opaque decorative covers. Passing GLB validation is not art approval.
+Include the preserved pre-remesh source: a textured provider donor can already have lost 99% of
+its triangles before local reduction. Compare file hashes and triangle positions before blaming
+a later normals pass. When splitting a mesh for colour variants, preserve its split normals;
+recomputing each side independently can introduce a seam without changing the silhouette.
+**See:** `art/glass-adventure/plans/CLOUDWAY-VISUAL-QUALITY-REVIEW.md`,
+`art/glass-adventure/plans/MUSEUM-SHAPE-AUDIT-2026-09-23.md`.
+
+### Review silhouettes before reducing generated museum assets
+
+**Symptom:** museum domes, statues and cypresses looked jagged despite valid glTF and texture maps.
+**Cause:** provider remeshing followed by local decimation discarded useful shapes; normal maps could not restore outlines. Dense normal bakes also introduced projection halos on some surfaces.
+**Rule:** preserve dense donors, accept remeshes in clay, compare baked/provider normals under identical lighting, then inspect exact runtime exports. Keep instancing and measure total scene cost; successful validators alone do not establish visual quality. Review material recolouring on the actual surface UV footprint: a whole-atlas colour average missed a mask that treated warm neutral dome stone as gold and left 80.5% of the dome untinted.
+**See:** `art/glass-adventure/plans/MUSEUM-COMPONENT-REPAIR-2026-09-22.md`.
+
+### Validate transferred normals before judging the texture bake
+
+**Symptom:** a remeshed platform had isolated black landing triangles even in a neutral clay view.
+**Cause:** nearest-polygon normal transfer selected nearby leaf or carving faces; some provider split normals already opposed their geometric faces. Comparing two supplied normals could preserve two agreeing but jointly invalid directions. The defect remained with the normal texture disconnected, and invalid ray directions also contaminated the bake.
+**Rule:** compare raw, transferred-without-map and baked-normal views. Check every proposed corner normal against its geometric face, including fallbacks; preserve intended hard edges. Flattened contact polygons need a consistent upward basis. Rebuild tangents and dependent bakes after changing corner normals. Inspect projection hits separately before changing cage distances. Never hide this with stronger lighting or assume a valid GLB is visually correct.
+**See:** `art/glass-adventure/platform-trials/v4/production/build_marble_runtime_v4.py`.
+
+### Verify decimation weight direction before calling a group protective
+
+**Symptom:** a detail-protection group favoured collapse on ornament while excluding broad planar regions.
+**Cause:** the group assigned high weights to protected detail, but Blender Collapse excludes zero-weight edges and makes high-weight edges cheaper to collapse. The group's name did not establish its effect.
+**Rule:** verify modifier semantics, record whether the group is inverted, and compare retained detail under identical cameras. For a high-means-protection group, invert its use by Collapse. A triangle budget alone cannot prove that the intended regions survived. In the V4 replay, even correctly inverted whole-shell collapse creates damaged broad surfaces; a geometry-identical normal reset cannot repair them. Check matched clay immediately after each operation. Keep collider flattening off visible relief and foliage.
+**See:** [Blender 5.2.2 collapse edge-cost implementation](https://github.com/blender/blender/blob/v5.2.2/source/blender/bmesh/tools/bmesh_decimate_collapse.cc#L216), `art/glass-adventure/platform-trials/v4/production/build_marble_dense_direct_v4.py`.
+
+### Keep quantization transforms below authored placement roots
+
+**Symptom:** a valid quantized planter imported at the wrong size in the game.
+**Cause:** its selected node's scale decoded integer vertex positions, but the authored-unit loader reset that scale to place the object.
+**Rule:** place decode transforms below a stable, unscaled semantic root. Reopen the final export and measure bounds through the actual game adapter; a source-editor view cannot prove the placement contract.
+**See:** `art/glass-adventure/journey-map/v10/production/package_botanical.mjs`, `packages/glass-game/src/journey/models.ts`.

@@ -1,0 +1,55 @@
+{
+  "note": "Production-pipeline QA build with test-only journey selection. World files use the real WebGL renderer. This is visual evidence, not a gameplay, FPS, or direct-hit acceptance result.",
+  "save": {
+    "levelId": "glassworks-journey/journey",
+    "checkpointId": "glassworks-journey/journey/garden/checkpoint/entry",
+    "completedBreakableIds": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet"
+    ]
+  },
+  "files": [
+    {
+      "file": "phone-320x640-world.png",
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "purpose": "Actual rendered phone world; verifies the shared Merc visual clears the floor at the garden checkpoint.",
+      "sha256": "cfbfd06f94e854e8e5f5895ce366d4f727b96f7b3995614f6d4ce8c4af55ce15"
+    },
+    {
+      "file": "tablet-1024x768-world.png",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "purpose": "Actual rendered tablet world; verifies the shared Merc visual clears the floor at the garden checkpoint.",
+      "sha256": "7a58c8780dffe35ddf9cc57474e93c620dcec62e9128bf9b0ac4f186541696b2"
+    },
+    {
+      "file": "tablet-1024x768-artwork-facing.png",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "purpose": "Actual rendered west-wall framing used to locate the canvas artwork target and inspect the mounted frame.",
+      "pose": {
+        "commandedYawRadians": 2.12849110551418,
+        "commandedVerticalDragPixels": -55,
+        "note": "The pointer command aims from the garden entry checkpoint toward the west-wall painting and lowers the default camera pitch toward its 0.14 radian limit. The raster records the resulting settled view; it does not record the final numeric camera pose."
+      },
+      "paintingProjectionPixels": {
+        "minX": 505,
+        "maxX": 607,
+        "minY": 44,
+        "maxY": 245
+      },
+      "sha256": "fb52f4100da37656279c8069817382bd090dceb06e74c392416a0bc2650c8569"
+    }
+  ],
+  "limits": [
+    "The direct canvas hit did not complete in this real-raster capture. The input E2E separately passed mouse and touch at yaw pi/2 and (250, 115); that verified target belongs to the E2E pose, not this final framing raster.",
+    "The inspector's emitted phone and tablet styles are covered separately by built-ui.json and built-*-artwork.png, whose helper deliberately suppresses scene draw calls.",
+    "The frame contact guarantee is derived from measured GLB geometry and its focused content regression; this raster is supporting visual evidence."
+  ]
+}

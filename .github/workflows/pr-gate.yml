@@ -102,7 +102,7 @@ jobs:
                 [[ -z "$file" ]] && continue
 
                 case "$file" in
-                  package.json|pnpm-lock.yaml|pnpm-workspace.yaml|eslint.config.js|.prettierrc.json|.github/workflows/*.yml|.github/workflows/*.yaml)
+                  package.json|pnpm-lock.yaml|pnpm-workspace.yaml|eslint.config.js|.prettierrc.json|.gitattributes|.github/workflows/*.yml|.github/workflows/*.yaml)
                     root=true
                     beside=true
                     db=true
@@ -124,6 +124,12 @@ jobs:
                     # but adds no source of its own that MercuryPitch compiles,
                     # so a change here cannot break the web build.
                     mercurypitch=true
+                    ;;
+                  apps/beside-cue/public/games/*|packages/glass-game/*)
+                    # Root /glass-game consumes these canonical shared bytes
+                    # and package modules as well as the Beside Cue host.
+                    root=true
+                    beside=true
                     ;;
                   apps/beside-cue/*|packages/beside-cue-core/*)
                     beside=true
@@ -290,8 +296,12 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
       - uses: ./.github/actions/setup
-
       # Each shard builds its own dist rather than downloading a shared
       # artifact. `dist` is 69 MB, so publishing it once and pulling it four
       # times costs more wall-clock than four parallel builds do — and it would
@@ -380,19 +390,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
       - uses: ./.github/actions/setup
-
       - name: Check Beside Cue
         run: pnpm beside-cue:check
 
       - name: Test Beside Cue
         run: pnpm beside-cue:test
-
-      - name: Install Chromium for Beside Cue browser tests
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Test Beside Cue browser paths
-        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts
 
       - name: Build Beside Cue store app
         # beside-cue:check already typechecks every package, including the app.
@@ -407,6 +415,107 @@ jobs:
       # The Android and iOS native builds live in beside-cue-mobile.yml, which
       # runs the same Gradle gate and additionally publishes an installable APK
       # per pull request. Keeping them here too would build Android twice.
+
+  beside-cue-browser:
+    name: Beside Cue browser tests (legacy ${{ matrix.shard }}/2)
+    needs: scope
+    if: needs.scope.outputs.beside == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
+      - uses: ./.github/actions/setup
+      - name: Install Chromium for Beside Cue browser tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Keep the existing games and games-off paths sharded, but give the
+      # heavier adventure files their own jobs below. One browser worker per
+      # runner prevents concurrent WebGL contexts from fighting for CPU.
+      - name: Test Beside Cue browser paths
+        timeout-minutes: 20
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --project=chromium --project=chromium-store --shard=${{ matrix.shard }}/2 --reporter=line,html
+
+      # Keep a step deadline below the job deadline so even a stuck browser
+      # leaves traces. The line reporter also prints each failure immediately.
+      - name: Upload Beside Cue browser failure reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beside-cue-playwright-shard-${{ matrix.shard }}
+          path: |
+            apps/beside-cue/playwright-report
+            apps/beside-cue/test-results
+          retention-days: 7
+
+  beside-cue-adventure-browser:
+    name: Beside Cue adventure (${{ matrix.spec }})
+    needs: scope
+    if: needs.scope.outputs.beside == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        spec:
+          [
+            artwork,
+            authoring,
+            camera,
+            campaign,
+            chamber,
+            cloudway,
+            collection,
+            controls,
+            encore,
+            journey,
+            loading,
+            mic-recovery,
+            music,
+            narration,
+            replay,
+            solids,
+            voice,
+          ]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hydrate runtime game assets
+        run: >-
+          git lfs pull
+          --include="apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**"
+          --exclude=""
+      - uses: ./.github/actions/setup
+      - name: Install Chromium for Glass Adventure browser tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Each file loads and compiles the authored museum through SwiftShader.
+      # File-level jobs keep a slow GPU process from delaying unrelated paths
+      # and make the exact failing interaction visible in the required gate.
+      - name: Test Glass Adventure browser paths
+        timeout-minutes: 17
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+        run: pnpm exec playwright test -c apps/beside-cue/playwright.config.ts --project=chromium-adventure apps/beside-cue/e2e/glass-adventure-${{ matrix.spec }}.e2e.ts --reporter=line,html
+
+      - name: Upload Glass Adventure browser failure reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glass-adventure-playwright-${{ matrix.spec }}
+          path: |
+            apps/beside-cue/playwright-report
+            apps/beside-cue/test-results
+          retention-days: 7
 
   mercurypitch:
     name: Mercury Pitch
@@ -461,6 +570,8 @@ jobs:
         e2e,
         workers,
         beside-cue,
+        beside-cue-browser,
+        beside-cue-adventure-browser,
         mercurypitch,
       ]
     if: always()

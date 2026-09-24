@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-twin-connector-v7-candidate",
+  "operation": "retexture",
+  "parentTaskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+  "source": {
+    "file": "meshy/twin-connector-remesh-100k.glb",
+    "bytes": 7046796,
+    "sha256": "862ff6575fdd69bf2da46f65f51b85519b6d65304eaaaf2e2f2990161f468f91",
+    "triangles": 102607
+  },
+  "request": {
+    "text_style_prompt": "Premium magical floating-museum architecture. Ivory Carrara marble piers, arches, ribs and balustrades with restrained warm brass and gold acanthus trim and finials. Botanical drapery is deep realistic emerald foliage with individually readable green leaves and sparse ivory and blush-pink flowers. Clean physically based materials, fine carved relief, no baked shadows, no blue panels, no dirt, and no painted-on geometry.",
+    "ai_model": "meshy-6",
+    "enable_original_uv": true,
+    "enable_pbr": true,
+    "hd_texture": false,
+    "remove_lighting": true,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true,
+    "response_format": "json"
+  },
+  "authorization": "Owner authorized unrestricted Meshy use for Glassworks asset production; this finishes the first bounded one-connector quality candidate.",
+  "estimatedCredits": 10,
+  "expectedTextureResolution": "2K base color and PBR maps",
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "archived",
+  "balanceBefore": 3890,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "submittedAtUtc": "2026-09-22T13:20:40.489750+00:00",
+  "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+  "balanceAfterSubmit": 3880,
+  "observedBalanceDeltaAtSubmit": 10,
+  "lastStatus": {
+    "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 10
+  },
+  "lastCheckedAtUtc": "2026-09-22T13:25:52.620093+00:00",
+  "incompleteNativeDownload": {
+    "bytes": 8991879,
+    "sha256": "b43e0a1e736e6735c16b5e24331f982ebb07ac2c46a9de458f381d9d6b13d127",
+    "cause": "MCP download exceeded its bounded request deadline",
+    "retained": false,
+    "disposition": "Discarded after the complete provider artifact was recovered and hash-validated through bounded CDN ranges."
+  },
+  "finalStatus": {
+    "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 10
+  },
+  "balanceAfterArchiveCheck": 3880,
+  "observedBalanceDeltaFinal": 10,
+  "archivedAtUtc": "2026-09-22T13:26:09.896258+00:00",
+  "archiveDownload": {
+    "method": "bounded CDN byte ranges from authenticated task status",
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlPersisted": false
+  },
+  "file": {
+    "path": "meshy/twin-connector-remesh-100k-retexture-pbr.glb",
+    "bytes": 18749744,
+    "sha256": "3e3011719a7b5599f2dde35a4f5685cbc1cc68c136509a0ba498409c1689f459"
+  },
+  "readiness": "Review-only provider PBR candidate. Blender normalization, material audit, fresh-export validation, and visual acceptance remain separate gates."
+}

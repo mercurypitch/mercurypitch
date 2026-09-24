@@ -106,10 +106,13 @@
   outline-offset: 3px;
 }
 
-/* Every cover is half a row: the ten of them pair off cleanly, so no card
-   needs a full row to keep the grid from leaving a hole. A cover with no
-   span at all collapses into one twelfth of the grid, so a new one must be
-   named here too. */
+/* Glassworks is the full-width playable feature. The other ten covers pair
+   off cleanly beneath it. A cover with no span collapses into one twelfth of
+   the grid, so a new one must be named here too. */
+.glassworks {
+  grid-column: 1 / -1;
+}
+
 .practice,
 .exercises,
 .karaoke,
@@ -206,6 +209,7 @@
 }
 
 .practiceVisual,
+.glassworksVisual,
 .karaokeVisual,
 .exercisesVisual,
 .analysisVisual,
@@ -217,6 +221,48 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
+}
+
+.glassworks {
+  min-height: 370px;
+  background:
+    radial-gradient(70% 84% at 50% 12%, rgba(224, 201, 134, 0.24), transparent),
+    linear-gradient(145deg, #183c42, #09252f 62%, #071923);
+}
+
+.glassworksVisual::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  right: 8%;
+  bottom: 44px;
+  width: min(42%, 360px);
+  border: 1px solid rgba(222, 193, 116, 0.58);
+  border-radius: 48% 48% 16px 16px;
+  background:
+    linear-gradient(180deg, transparent 50%, rgba(7, 25, 35, 0.54)),
+    url('/glass-game-assets/adventure-v6/interval-between.webp') 50% 38% / cover;
+  box-shadow:
+    0 0 0 8px rgba(7, 25, 35, 0.36),
+    0 22px 52px rgba(0, 0, 0, 0.32);
+  transition: transform 420ms ease;
+}
+
+.glassworksVisual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(9, 31, 39, 0.08) 42%, transparent 72%),
+    radial-gradient(
+      circle at 80% 24%,
+      rgba(229, 199, 118, 0.18),
+      transparent 32%
+    );
+}
+
+.cover:hover .glassworksVisual::before {
+  transform: translateY(-4px) scale(1.015);
 }
 
 /* The only photographic covers. `object-fit: cover` with a bias towards the
@@ -881,6 +927,7 @@
   }
 
   .practice,
+  .glassworks,
   .karaoke,
   .pianoNight,
   .guitarNight,
@@ -895,6 +942,10 @@
 
   .cover {
     min-height: 274px;
+  }
+
+  .glassworks {
+    min-height: 318px;
   }
 
   .mercuryRail {
@@ -924,6 +975,12 @@
     max-width: 19rem;
   }
 
+  .glassworksVisual::before {
+    right: -4%;
+    width: 58%;
+    opacity: 0.74;
+  }
+
   .practiceMascot {
     right: 12px;
   }
@@ -932,6 +989,7 @@
 @media (prefers-reduced-motion: reduce) {
   .cover,
   .coverAction svg,
+  .glassworksVisual::before,
   .practiceInstruments,
   .karaokeVisual,
   .jamVisual,

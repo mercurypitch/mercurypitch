@@ -1,0 +1,9 @@
+# Mystery muse source prompt
+
+Generated with the built-in ChatGPT image-generation tool on 2026-09-21. Original output: `exec-e96cd693-e4d8-4bc7-8c2b-477448819e2b.png`. Full-resolution master preserved alongside this prompt; runtime derivative is `apps/beside-cue/public/games/journey-map-v5/mystery-muse.webp`.
+
+Use case: stylized-concept
+Asset type: final flat 2:3 portrait artwork texture for a gilded arched mystery portrait in the Glassworks floating marble museum game.
+Primary request: a beautiful mysterious unrevealed musical muse, made entirely of luminous layered stained glass, pearl crystal and subtle liquid gold. An elegant softly suggested singing face in three-quarter profile, facial identity concealed behind translucent opalescent glass and light, a graceful neck and flowing glass ribbons. The feeling is gentle wonder and an undiscovered voice, never spooky.
+Composition: one single flat artwork filling a vertical 2:3 rectangular canvas, straight-on orthographic view with no perspective. Central face and glass halo readable at small size, main subject safely inside central 65 percent of width, full head and upper torso. Rich deep peacock teal background softly layered with delicate luminous botanical filigree; a restrained gold sunburst halo above the muse, soft celadon and ivory highlights with faint lavender iridescence. Beautiful polished illustration with exquisite glass depth, confident large shapes and fine gold lines, art nouveau museum collection quality.
+Constraints: This is the IMAGE INSERT ONLY; absolutely no physical frame, no border, no pedestal, no room scene, no 3D statue or gold bust, no UI, no letters, no numbers, no question marks, no watermark. No specific real person's likeness. Dark teal outer corners and edges so artwork sits naturally inside an existing gold arched frame. Luminous center, restrained and refined, avoid excess glitter.

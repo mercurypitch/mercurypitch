@@ -1,0 +1,117 @@
+{
+  "schema": 1,
+  "asset": "cypress",
+  "purpose": "Receipt-matched same-camera clay and finish-readiness review; no runtime export.",
+  "order": [
+    "dense-pre-remesh",
+    "textured-donor-as-clay",
+    "current-v4-as-clay",
+    "v9-remesh-candidate"
+  ],
+  "assets": [
+    {
+      "name": "dense-pre-remesh",
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
+      "bytes": 11942508,
+      "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+      "meshObjects": 1,
+      "vertices": 331413,
+      "triangles": 663730,
+      "displayHeightMetres": 3.1,
+      "displayX": -2.0250000000000004
+    },
+    {
+      "name": "textured-donor-as-clay",
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3.glb",
+      "bytes": 14166912,
+      "sha256": "2d19cf0cf1c29c69c1143c3a3d6221b4e9a32487c9944a7fa54f540cb60ade65",
+      "meshObjects": 1,
+      "vertices": 12276,
+      "triangles": 7136,
+      "displayHeightMetres": 3.1,
+      "displayX": -0.675
+    },
+    {
+      "name": "current-v4-as-clay",
+      "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "bytes": 5642860,
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+      "meshObjects": 1,
+      "vertices": 3079,
+      "triangles": 1192,
+      "displayHeightMetres": 3.1,
+      "displayX": 0.675
+    },
+    {
+      "name": "v9-remesh-candidate",
+      "file": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k.glb",
+      "bytes": 1134492,
+      "sha256": "45b23c602602c8e491ede05c5b42c7aaca08b7d82851b3e53a7b713b6b6d4627",
+      "meshObjects": 1,
+      "vertices": 31557,
+      "triangles": 20605,
+      "displayHeightMetres": 3.1,
+      "displayX": 2.0250000000000004
+    }
+  ],
+  "candidateAudit": {
+    "v9-remesh-candidate-00": {
+      "topology": {
+        "vertices": 31557,
+        "triangles": 20605,
+        "boundaryEdges": 30503,
+        "nonManifoldEdges": 30503,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      },
+      "shading": {
+        "cornerNormals": 61815,
+        "allNormalsFinite": true,
+        "allNormalsNonZero": true,
+        "maximumNormalUnitError": 1.903254075452665e-07,
+        "smoothPolygons": 20605,
+        "totalPolygons": 20605,
+        "uvLayers": [
+          "UVMap"
+        ],
+        "activeUv": "UVMap",
+        "tangentBasisComputable": false,
+        "tangentError": null
+      }
+    }
+  },
+  "proofs": [
+    {
+      "file": "proofs/cypress-remesh-clay-front-v9.png",
+      "bytes": 2088596,
+      "sha256": "f5d209a6f78e56ea735380d3cdc7db371e136cf6749bfa5dd6207d1f7bf21b99"
+    },
+    {
+      "file": "proofs/cypress-remesh-clay-angle-v9.png",
+      "bytes": 2111043,
+      "sha256": "263fefc06a70a77c4304fd924a0da79b1df5a37600c2af30cfb9c3a6fd6c0a6c"
+    }
+  ],
+  "finishGates": {
+    "silhouetteApproval": "pending-manual-review",
+    "finalUvApproval": "required",
+    "tangentBasisComputable": false,
+    "denseToLowTangentNormalBake": "not-performed",
+    "denseToLowAmbientOcclusionBake": "not-performed",
+    "pbrTextureFinish": "not-performed",
+    "freshExportAndReimport": "not-performed",
+    "runtimeIntegration": "not-performed"
+  },
+  "runtimeContract": {
+    "requiredNodes": [
+      "map_cypress",
+      "map_cypress_geometry"
+    ],
+    "instancing": "One finished cypress geometry reused by every runtime placement.",
+    "normalRule": "Keep the reviewed smooth/split normal and tangent basis unchanged."
+  },
+  "renderEngine": "CYCLES CPU",
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/review_museum_remesh_candidate.py -- --asset cypress"
+}

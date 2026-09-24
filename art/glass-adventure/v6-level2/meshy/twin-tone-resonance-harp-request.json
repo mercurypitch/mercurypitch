@@ -1,0 +1,17 @@
+{
+  "ai_model": "meshy-6",
+  "file_path": "art/glass-adventure/v6-level2/concepts/twin-tone-resonance-harp.png",
+  "should_texture": true,
+  "enable_pbr": true,
+  "should_remesh": true,
+  "target_polycount": 10000,
+  "topology": "triangle",
+  "target_formats": ["glb"],
+  "texture_prompt": "Ivory Carrara marble base, thick lightly hammered champagne-gold arcs, deep polished jade ribbons, one warm amber crystal disc and one cool celadon-opal disc. Preserve one connected sturdy sculptural silhouette with no strings or ground plane.",
+  "remove_lighting": true,
+  "save_pre_remeshed_model": true,
+  "image_enhancement": false,
+  "multi_view_thumbnails": true,
+  "origin_at": "bottom",
+  "response_format": "json"
+}

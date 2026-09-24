@@ -1,0 +1,165 @@
+{
+  "schema": 1,
+  "assetId": "opaline-echo-amphora",
+  "status": "V2 geometry/GLB gates passed and V2 proofs approved; runtime integration validation remains external",
+  "immutableLineage": [
+    {
+      "file": "concepts/opaline-echo-amphora.png",
+      "bytes": 1917293,
+      "sha256": "d141e8e2cf198a102b7f5993586579cc281224007c12d5ea5bf9e254b4d39972"
+    },
+    {
+      "file": "meshy/opaline-echo-amphora-donor.glb",
+      "bytes": 10618916,
+      "sha256": "dc09fcefb94170c71e54b3bbe48a2f005fa4ea7332589daa05a38ef4634381c8"
+    },
+    {
+      "file": "sources/opaline-echo-amphora-normalized-v1.blend",
+      "bytes": 10773606,
+      "sha256": "b0cf3a97b3f2368f97df82362f0012435f4519a566a0af38e97826a4eb1c54a1"
+    },
+    {
+      "file": "exports/opaline-echo-amphora-game-v1.glb",
+      "bytes": 2321568,
+      "sha256": "b133d496578e13cce56a3ead67f4811fdce4d1cf3643e786ec6c560d6835984f"
+    },
+    {
+      "file": "proofs/opaline-echo-amphora-normalized.png",
+      "bytes": 647445,
+      "sha256": "55569e3dcd1e2486256bf728adc04a055ad9cc280dc2fa5df1a930647c665342"
+    }
+  ],
+  "rejectedV1": {
+    "status": "preserved provenance; do not integrate because visual material gate failed",
+    "files": [
+      {
+        "file": "sources/opaline-echo-amphora-cavity-v1.blend",
+        "bytes": 10736582,
+        "sha256": "74a1bbd369aaf9d77161c956932dd91bb99ccbac986aed5a23430dd24ca58da1"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-v1.blend",
+        "bytes": 11260348,
+        "sha256": "d499a272a937d8f0bdce5acd184a3982b346f7d1091c5362b7a1f3f28c29add6"
+      },
+      {
+        "file": "exports/opaline-echo-amphora-fracture-v1.glb",
+        "bytes": 3418020,
+        "sha256": "95c45f7c675c9efb8f77886943859c51b2f37d6a708620b4713b33c54f2b96ba"
+      },
+      {
+        "file": "proofs/opaline-echo-amphora-intact-v1.png",
+        "bytes": 990543,
+        "sha256": "20b9ca04e8d440db836d22cae8fa74e7549269a589ed98b0d497c358bc956ca2"
+      },
+      {
+        "file": "proofs/opaline-echo-amphora-shards-v1.png",
+        "bytes": 1005918,
+        "sha256": "5e048833ad99c3a93868a71f79c5cee4cc5e43c6fd6000e1a4d3f4ff1e2d182f"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v1/cavity-input.npz",
+        "bytes": 345625,
+        "sha256": "4c3710d8c20dae9cdf137afc63b22977c90162f7d503eef5c76c43bfe03a8c2c"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v1/cavity-output.npz",
+        "bytes": 254692,
+        "sha256": "121ca982f720c0d6464cfceb97536fc1e9a49c0bc5567783f42988762da462e6"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v1/cut-input.npz",
+        "bytes": 346311,
+        "sha256": "532de581f27211d3c9c1b09350e02ffdac1bda2b6d5bac52bd59710531d29e97"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v1/cut-output.npz",
+        "bytes": 398391,
+        "sha256": "eaaca62e5cab4e92ad99015528b8db634350ae70ae2ced5672d569bc0d448789"
+      }
+    ]
+  },
+  "approvedV2": {
+    "status": "proof-approved production derivative; gameplay behavior remains an integration concern",
+    "files": [
+      {
+        "file": "sources/opaline-echo-amphora-cavity-v2.blend",
+        "bytes": 12084925,
+        "sha256": "726bd19eb0e506cea2307008e14e33c654821495d60f51da4a798eaef94e6982"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-v2.blend",
+        "bytes": 12609758,
+        "sha256": "169aa9e27e5dab371fec360a4124255f35bdaa480fb97b939452b65f789238c6"
+      },
+      {
+        "file": "exports/opaline-echo-amphora-fracture-v2.glb",
+        "bytes": 3817112,
+        "sha256": "676b769793eb0ec39f78557dfbb98a45261ede0384ccd15cdc7be6c013247ee4"
+      },
+      {
+        "file": "proofs/opaline-echo-amphora-intact-v2.png",
+        "bytes": 1009988,
+        "sha256": "7eb8acbfe7df847e17100ff78fa70edbdd5b5837b215598a70f265c9e057df6e"
+      },
+      {
+        "file": "proofs/opaline-echo-amphora-mouth-v2.png",
+        "bytes": 1191854,
+        "sha256": "f1eedb8552ad40e45a68222e4497d4c1b8550c22a82761d2cecd39fb56d168b4"
+      },
+      {
+        "file": "proofs/opaline-echo-amphora-shards-v2.png",
+        "bytes": 1029177,
+        "sha256": "b0a3662def351565d998039efd7a71ad7c0deaad2b74a5787d88aadccda61c86"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v2/cavity-input.npz",
+        "bytes": 329616,
+        "sha256": "022f15f109a6cecebe1de105bf5f0b1af65d8787c52b112c52ed89e043302d68"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v2/cavity-output.npz",
+        "bytes": 229320,
+        "sha256": "f2a63ada885ba44e1edfa19f858f70f64c13e062bf4f68887779b966d84b6f9c"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v2/cut-input.npz",
+        "bytes": 328774,
+        "sha256": "70ef76566e56ac0024f604bc60b8a9946c87a7115899bec0894797de3449ec99"
+      },
+      {
+        "file": "sources/opaline-echo-amphora-fracture-work-v2/cut-output.npz",
+        "bytes": 387713,
+        "sha256": "d3ef42e648b801b8137f13cd6a37574579dcff9b259b662bb73a0bca12d33d6c"
+      }
+    ]
+  },
+  "textSourcesAndReceipts": [
+    "concepts/opaline-echo-amphora.prompt.txt",
+    "meshy/opaline-echo-amphora-request.json",
+    "exports/opaline-echo-amphora-inventory.json",
+    "exports/opaline-echo-amphora-cavity-v1.json",
+    "exports/opaline-echo-amphora-fracture-v1.json",
+    "exports/opaline-echo-amphora-fracture-validation-v1.json",
+    "exports/opaline-echo-amphora-cavity-v2.json",
+    "exports/opaline-echo-amphora-fracture-v2.json",
+    "exports/opaline-echo-amphora-fracture-validation-v2.json",
+    "exports/vessel-topology-audit.json",
+    "finalize_vessels.py",
+    "vessel_cavity_backend.py",
+    "inspect_vessels.py",
+    "sources/opaline-echo-amphora-fracture-work-v1/cavity-output.json",
+    "sources/opaline-echo-amphora-fracture-work-v1/cut-output.json",
+    "sources/opaline-echo-amphora-fracture-work-v2/cavity-output.json",
+    "sources/opaline-echo-amphora-fracture-work-v2/cut-output.json"
+  ],
+  "excludedScratch": [
+    "sources/opaline-echo-amphora-normalized-v1.blend1",
+    "__pycache__/**",
+    "*.pyc",
+    "*.log"
+  ],
+  "creditSpend": {
+    "thisFinishingPass": 0
+  }
+}

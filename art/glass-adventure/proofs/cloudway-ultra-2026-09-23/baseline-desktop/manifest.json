@@ -1,0 +1,64 @@
+{
+  "url": "http://127.0.0.1:5341/glass-game/?layout=cloudway",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "deviceScope": "Local desktop hardware",
+  "renderer": "ANGLE (AMD, Vulkan 1.4.359 (AMD Radeon RX 9070 XT (RADV GFX1201) (0x00007550)), radv)",
+  "rasterization": "Actual WebGL, no suppressed draws",
+  "candidateOverride": null,
+  "screenshots": [
+    {
+      "file": "arrival.png",
+      "sha256": "23a4b8d716b6c582cf163eaf5ffb49edb97e8dd6f0d56f9fcfb9e2b382fb1bbb",
+      "action": "Unmodified arrival camera; no movement or seeded progress.",
+      "cameraYaw": "3.141592653589793"
+    },
+    {
+      "file": "marble-close.png",
+      "sha256": "c061f024a24da947ca3444d74cca818289de4fb941cc021e0d341405cd43d14e",
+      "action": "Real wheel zoom and mouse orbit; same inputs on each candidate.",
+      "cameraYaw": "2.4165926535897935"
+    },
+    {
+      "file": "marble-side.png",
+      "sha256": "972e99dcf4e6b6947543a7314c1e32db76863da26e8995800e22913214982a3c",
+      "action": "Real upward mouse drag lowers the camera to inspect grazing top and edge shading.",
+      "cameraYaw": "2.4165926535897935"
+    }
+  ],
+  "assets": [
+    {
+      "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16",
+      "status": 200
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure/legend-slab.glb",
+      "bytes": 709632,
+      "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+      "status": 200
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v2/vessels.glb",
+      "bytes": 3391920,
+      "sha256": "40c58723fea8c6d60b7b00393a3d9264a741e96b546deb7e5e43cb9f4544432b",
+      "status": 200
+    },
+    {
+      "file": "apps/beside-cue/public/games/cloudway-v3/cloudway-platform-kit-v3.glb",
+      "bytes": 10338088,
+      "sha256": "e96bb26369cb037dffcfab3d0c71911dc7e872c2b8f766db8cb73599a6d51c62",
+      "status": 200
+    }
+  ],
+  "cadence": {
+    "medianMs": 16.69999999999891,
+    "p95Ms": 16.800000000000182,
+    "maximumMs": 16.80000000000109
+  },
+  "cadenceMethod": "120 browser animation-frame intervals, not GPU time or physical-tablet performance",
+  "errors": []
+}

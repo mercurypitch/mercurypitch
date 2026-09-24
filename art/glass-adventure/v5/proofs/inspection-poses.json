@@ -1,0 +1,84 @@
+[
+  {
+    "name": "garden-art",
+    "x": 12.096037511825562,
+    "z": 12.096037511825562,
+    "yaw": 1.5707963267948966,
+    "distance": 3.1,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe",
+      "glassworks-journey/journey/portrait/encounter/portrait-finale"
+    ],
+    "pitch": 0.14
+  },
+  {
+    "name": "archive-art",
+    "x": 21.345872707366944,
+    "z": 36.28811253547668,
+    "yaw": 1.5707963267948966,
+    "distance": 3.1,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe",
+      "glassworks-journey/journey/portrait/encounter/portrait-finale"
+    ],
+    "pitch": 0.14
+  },
+  {
+    "name": "portrait-art",
+    "x": 21.345872707366944,
+    "z": 51.23035236358642,
+    "yaw": 1.5707963267948966,
+    "distance": 3.1,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe",
+      "glassworks-journey/journey/portrait/encounter/portrait-finale"
+    ],
+    "pitch": 0.14
+  },
+  {
+    "name": "salon-mirror",
+    "x": 21.345872707366944,
+    "z": 51.23035236358642,
+    "yaw": -1.5707963267948966,
+    "distance": 3.1,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe",
+      "glassworks-journey/journey/portrait/encounter/portrait-finale"
+    ],
+    "pitch": 0.14
+  },
+  {
+    "name": "window-passage",
+    "x": 7.4,
+    "z": 0,
+    "yaw": 3.141592653589793,
+    "distance": 6,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe",
+      "glassworks-journey/journey/portrait/encounter/portrait-finale"
+    ]
+  },
+  {
+    "name": "garden-doorway",
+    "x": 12.096037511825562,
+    "z": 16.45,
+    "yaw": 3.141592653589793,
+    "distance": 6,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe",
+      "glassworks-journey/journey/portrait/encounter/portrait-finale"
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "revision": "merc-voice-selection-v3-2026-09-20",
+  "selected_at": "2026-09-20",
+  "selection_status": "owner-selected-for-enrollment",
+  "owner_choice": "D for now; preserve the whimsical nature.",
+  "voice_name": "Merc V1 Gentle Whimsical D2",
+  "source": {
+    "audition_revision": "merc-voice-auditions-v1-2026-09-20",
+    "manifest": "../v1/review-manifest.json",
+    "raw_manifest": "../v1/raw/manifest-d.json",
+    "batch": "../v1/batch.json",
+    "direction": "d",
+    "label": "Gentle Whimsical",
+    "take": "d2",
+    "generated_voice_id": "B4fBPRmasEsTgd6YlSok",
+    "raw_file": "../v1/raw/merc-d2.pcm",
+    "raw_bytes": 1735776,
+    "raw_sha256": "18ef65ad51174c15a14b5da154102bc6e54e9c43b033cb995dbd374310c3c3e8",
+    "voice_description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate register, gentle warmth, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative."
+  },
+  "regeneration_allowed": false,
+  "runtime_integration_in_enrollment_scope": false,
+  "production_line_generation_in_enrollment_scope": false
+}

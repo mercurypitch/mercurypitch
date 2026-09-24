@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "assetVersion": 4,
+  "sourcePolicy": "Preserved Meshy donor geometry and packed 2K Blender sources; export-only 1K atlas derivatives. Opaque color JPEG95, data maps lossless PNG.",
+  "scope": "Runtime copies of two reusable wall modules; complete chamber device performance measured separately.",
+  "totalBytes": 9733424,
+  "uniqueTriangles": 41683,
+  "estimatedAtlasGpuBytesWithMipmaps": 33554432,
+  "assets": [
+    {
+      "id": "museum-window-v4",
+      "file": "museum-window-bay.glb",
+      "bytes": 5047156,
+      "sha256": "cb3da19d36c5869fb22341b465eb26e2c1b5119ede7e9348c55aa41a126bdd69",
+      "source": "art/glass-adventure/v4/architecture/sources/museum-window-bay-01-final-v1.blend",
+      "node": "meshy_museum_window_bay",
+      "validation": "art/glass-adventure/v4/architecture/reports/playable-glb-validation-v1.json"
+    },
+    {
+      "id": "museum-screen-v4",
+      "file": "museum-screen-bay.glb",
+      "bytes": 4686268,
+      "sha256": "486c5debde3f9d8d36ca97b6e6a82fd72836cfe28d72e04d291d263cf33d122f",
+      "source": "art/glass-adventure/v4/architecture/sources/museum-screen-bay-01-final-v1.blend",
+      "node": "meshy_museum_screen_bay",
+      "validation": "art/glass-adventure/v4/architecture/reports/playable-glb-validation-v1.json"
+    }
+  ]
+}

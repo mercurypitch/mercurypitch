@@ -1,0 +1,106 @@
+{
+  "url": "http://127.0.0.1:5908/glass-game/?campaign=1",
+  "viewport": {
+    "width": 1000,
+    "height": 1200
+  },
+  "deviceScope": "Portrait-sized desktop Chromium capture; visual evidence only, not a physical-device performance profile.",
+  "renderer": "ANGLE (AMD, Vulkan 1.4.359 (AMD Radeon RX 9070 XT (RADV GFX1201) (0x00007550)), radv)",
+  "rasterization": "Actual WebGL drawing with the live museum geometry; only overlapping HTML controls are hidden during each canvas screenshot.",
+  "assets": [
+    {
+      "url": "http://127.0.0.1:5908/games/glass3d/merc.glb",
+      "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+      "status": 200,
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16"
+    },
+    {
+      "url": "http://127.0.0.1:5908/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+      "file": "apps/beside-cue/public/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+      "status": 200,
+      "bytes": 6831200,
+      "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709"
+    },
+    {
+      "url": "http://127.0.0.1:5908/games/journey-map-v10/floating-museum-botanical-kit-v10.glb",
+      "file": "apps/beside-cue/public/games/journey-map-v10/floating-museum-botanical-kit-v10.glb",
+      "status": 200,
+      "bytes": 25596100,
+      "sha256": "bac1a83183a86397d1c46e1cc1cda1802d664739edfdfbe326eddbcfbd75498f"
+    },
+    {
+      "url": "http://127.0.0.1:5908/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+      "file": "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+      "status": 200,
+      "bytes": 25448308,
+      "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "glassworks-falls.png",
+      "waterfall": "glassworks-falls",
+      "selectedStage": "first-light-isle",
+      "framing": "Shared First Light landmass focus keeps the Glassworks source pond and complete lower fade in frame.",
+      "camera": {
+        "yaw": "-0.580",
+        "pitch": "0.640",
+        "zoom": "0.200"
+      },
+      "sha256": "e6eb731697ca7df1e86b65a70d54ebb4c7cbb5e307929e0076e87ff6f63db82e",
+      "rendererMetrics": {
+        "drawCalls": 150,
+        "triangles": 2826997,
+        "geometries": 47,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "twin-falls.png",
+      "waterfall": "twin-falls",
+      "selectedStage": "twin-galleries-isle",
+      "framing": "The wider stage overview contains the full Twin curtain and particle dissolve.",
+      "camera": {
+        "yaw": "0.080",
+        "pitch": "0.580",
+        "zoom": "0.000"
+      },
+      "sha256": "2944c6cf53115e9ecf0b208f338fece14c364d7b7a53defebfcd3ea13339c5fc",
+      "rendererMetrics": {
+        "drawCalls": 150,
+        "triangles": 2826997,
+        "geometries": 47,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "conservatory-east-falls.png",
+      "waterfall": "conservatory-east-falls",
+      "selectedStage": "resonance-conservatory-isle",
+      "framing": "The eastward side view exposes the conservatory pond, lip, curtain, and particle dissolve.",
+      "camera": {
+        "yaw": "0.318",
+        "pitch": "0.640",
+        "zoom": "0.200"
+      },
+      "sha256": "1f24ad976048b2545960d1a7e0970e8bd8b879ba8a2b7a4ba45d5f2ca0e3f2f1",
+      "rendererMetrics": {
+        "drawCalls": 150,
+        "triangles": 2826997,
+        "geometries": 47,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    }
+  ],
+  "errors": []
+}

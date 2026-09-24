@@ -1,0 +1,471 @@
+{
+  "schema": 1,
+  "status": "prepared cavity shell; fracture/export validation pending",
+  "assetId": "amber-cadence-urn",
+  "donor": {
+    "file": "meshy/amber-cadence-urn-donor.glb",
+    "bytes": 11374392,
+    "sha256": "b7330a45eadbd08918be00441aa7c1f4aace0438a4b04b40eac0a1bcf3481dc2"
+  },
+  "normalization": {
+    "uniformScale": 0.49094984214499265,
+    "sourceFootCentre": [
+      -0.0009929835796356201,
+      0.0009014606475830078,
+      -0.7305649518966675
+    ],
+    "boundsMetres": {
+      "min": [
+        -0.46577394008636475,
+        -0.46577417850494385,
+        0.0
+      ],
+      "max": [
+        0.46577394008636475,
+        0.46577417850494385,
+        0.7200000286102295
+      ]
+    },
+    "dimensionsMetres": [
+      0.9315478801727295,
+      0.9315483570098877,
+      0.7200000286102295
+    ]
+  },
+  "cleanup": {
+    "weld": {
+      "vertices": 10006,
+      "faces": 9340,
+      "weldedVertices": 4672,
+      "weldedFaces": 9340
+    },
+    "localRepair": {
+      "method": "exact self-union followed by two bounded local face-fan patches",
+      "exactSelfUnion": {
+        "method": "Blender exact self-union",
+        "before": {
+          "triangles": 9340,
+          "vertices": 4672,
+          "nonManifoldEdges": 0,
+          "nonManifoldVertices": 0,
+          "nonContiguousEdges": 0,
+          "selfIntersectionPairs": 9,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.2562703865825123
+        },
+        "after": {
+          "triangles": 9366,
+          "vertices": 4684,
+          "nonManifoldEdges": 3,
+          "nonManifoldVertices": 5,
+          "nonContiguousEdges": 3,
+          "selfIntersectionPairs": 0,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.2562703685298584
+        }
+      },
+      "unionResidue": {
+        "nonManifoldEdges": 3,
+        "vertices": 4,
+        "boundsMetres": {
+          "min": [
+            -0.20116081833839417,
+            0.29401201009750366,
+            0.5236814022064209
+          ],
+          "max": [
+            -0.17161937057971954,
+            0.32208696007728577,
+            0.5346221923828125
+          ],
+          "dimensions": [
+            0.02954144775867462,
+            0.028074949979782104,
+            0.010940790176391602
+          ]
+        },
+        "deletedIncidentFaces": 8,
+        "patchBoundaryEdges": 6
+      },
+      "bowTieResidue": {
+        "vertexMetres": [
+          0.2720372974872589,
+          -0.1294691115617752,
+          0.19337581098079681
+        ],
+        "faceFanSizes": [
+          5,
+          3
+        ],
+        "deletedSmallerFanFaces": 3,
+        "patchBoundaryEdges": 3
+      },
+      "after": {
+        "triangles": 9356,
+        "vertices": 4682,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.25627170777844566
+      }
+    }
+  },
+  "lod": {
+    "requested": 10000,
+    "before": 9356,
+    "after": 9356,
+    "applied": false
+  },
+  "exteriorCheck": {
+    "triangles": 9356,
+    "vertices": 4682,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.25627170777844566
+  },
+  "exteriorFidelityBeforeCavity": {
+    "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+    "finalToSourceMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 1.4901161193847656e-08
+    },
+    "sourceToFinalMetres": {
+      "min": 0.0,
+      "p05": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0015188269317150116
+    },
+    "sourceSampleCount": 10006
+  },
+  "materialRegions": {
+    "method": "single coherent opaque donor PBR atlas across the exterior",
+    "surfaceMaterial": "amber_shell",
+    "sourceTextureDimensions": {
+      "baseColor": [
+        2048,
+        2048
+      ],
+      "metallicRoughness": [
+        2048,
+        2048
+      ]
+    },
+    "faceAssignments": {
+      "amber_shell": 9356
+    },
+    "transmission": 0.0,
+    "normalMapStrength": 0.35,
+    "reason": "Preserves the approved peach ceramic body and donor-authored gold, ivory, and jewel cues without triangle-level material boundaries.",
+    "geometryChanged": false
+  },
+  "cavityProfile": {
+    "method": "32 radial donor-surface rays at 12 elevations; fifth-percentile radius minus fixed wall allowance",
+    "floorZMetres": 0.1152,
+    "targetWallMetres": 0.022,
+    "rows": [
+      {
+        "zMetres": 0.1512,
+        "outerRayMetres": {
+          "min": 0.2857607901096344,
+          "p05": 0.2859398379921913,
+          "p50": 0.2868940085172653,
+          "p95": 0.28747848272323606,
+          "p99": 0.2876588487625122,
+          "max": 0.28773564100265503
+        },
+        "innerRadiusMetres": 0.2639398379921913
+      },
+      {
+        "zMetres": 0.20040909090909093,
+        "outerRayMetres": {
+          "min": 0.30009588599205017,
+          "p05": 0.30051227658987045,
+          "p50": 0.3620280921459198,
+          "p95": 0.3681707814335823,
+          "p99": 0.3685535290837288,
+          "max": 0.36869263648986816
+        },
+        "innerRadiusMetres": 0.27851227658987043
+      },
+      {
+        "zMetres": 0.24961818181818182,
+        "outerRayMetres": {
+          "min": 0.3550087809562683,
+          "p05": 0.3557606503367424,
+          "p50": 0.4123341292142868,
+          "p95": 0.41516243368387223,
+          "p99": 0.41602758258581163,
+          "max": 0.4160688519477844
+        },
+        "innerRadiusMetres": 0.3337606503367424
+      },
+      {
+        "zMetres": 0.2988272727272727,
+        "outerRayMetres": {
+          "min": 0.39319702982902527,
+          "p05": 0.39425338953733446,
+          "p50": 0.4394742399454117,
+          "p95": 0.44306679964065554,
+          "p99": 0.44317924469709397,
+          "max": 0.44318392872810364
+        },
+        "innerRadiusMetres": 0.37225338953733444
+      },
+      {
+        "zMetres": 0.34803636363636364,
+        "outerRayMetres": {
+          "min": 0.41552868485450745,
+          "p05": 0.41591445207595823,
+          "p50": 0.4550577402114868,
+          "p95": 0.45873532593250277,
+          "p99": 0.45926795929670333,
+          "max": 0.45941466093063354
+        },
+        "innerRadiusMetres": 0.3939144520759582
+      },
+      {
+        "zMetres": 0.39724545454545457,
+        "outerRayMetres": {
+          "min": 0.42319393157958984,
+          "p05": 0.42399719804525376,
+          "p50": 0.462553933262825,
+          "p95": 0.4651640996336937,
+          "p99": 0.46531403332948684,
+          "max": 0.46535247564315796
+        },
+        "innerRadiusMetres": 0.40199719804525375
+      },
+      {
+        "zMetres": 0.44645454545454544,
+        "outerRayMetres": {
+          "min": 0.05849548801779747,
+          "p05": 0.0596847390756011,
+          "p50": 0.06378451734781265,
+          "p95": 0.0651617206633091,
+          "p99": 0.06577352285385132,
+          "max": 0.06600800156593323
+        },
+        "innerRadiusMetres": 0.037684739075601104
+      },
+      {
+        "zMetres": 0.49566363636363636,
+        "outerRayMetres": {
+          "min": 0.18745167553424835,
+          "p05": 0.18767210766673087,
+          "p50": 0.18840567022562027,
+          "p95": 0.18910613432526588,
+          "p99": 0.189191597700119,
+          "max": 0.18921691179275513
+        },
+        "innerRadiusMetres": 0.16567210766673088
+      },
+      {
+        "zMetres": 0.5448727272727273,
+        "outerRayMetres": {
+          "min": 0.19916965067386627,
+          "p05": 0.19932943359017372,
+          "p50": 0.2002493143081665,
+          "p95": 0.20085464194417,
+          "p99": 0.20096874341368676,
+          "max": 0.20098446309566498
+        },
+        "innerRadiusMetres": 0.17732943359017372
+      },
+      {
+        "zMetres": 0.5940818181818182,
+        "outerRayMetres": {
+          "min": 0.17988067865371704,
+          "p05": 0.18010618314146995,
+          "p50": 0.18088731914758682,
+          "p95": 0.18189098909497262,
+          "p99": 0.1819624163210392,
+          "max": 0.1819847971200943
+        },
+        "innerRadiusMetres": 0.15810618314146996
+      },
+      {
+        "zMetres": 0.6432909090909091,
+        "outerRayMetres": {
+          "min": 0.16920001804828644,
+          "p05": 0.1697140857577324,
+          "p50": 0.17083879560232162,
+          "p95": 0.17212951332330703,
+          "p99": 0.17233272194862365,
+          "max": 0.17241069674491882
+        },
+        "innerRadiusMetres": 0.1477140857577324
+      },
+      {
+        "zMetres": 0.6925,
+        "outerRayMetres": {
+          "min": 0.18725287914276123,
+          "p05": 0.18758856728672982,
+          "p50": 0.1887933313846588,
+          "p95": 0.18971924632787704,
+          "p99": 0.18984531581401826,
+          "max": 0.18984989821910858
+        },
+        "innerRadiusMetres": 0.16558856728672983
+      }
+    ],
+    "profileMetres": [
+      [
+        0.1152,
+        0.042230374078750604
+      ],
+      [
+        0.13319999999999999,
+        0.17156089469492433
+      ],
+      [
+        0.1512,
+        0.2639398379921913
+      ],
+      [
+        0.20040909090909093,
+        0.27851227658987043
+      ],
+      [
+        0.24961818181818182,
+        0.3281754388213158
+      ],
+      [
+        0.2988272727272727,
+        0.36664283065001174
+      ],
+      [
+        0.34803636363636364,
+        0.38938834655284876
+      ],
+      [
+        0.39724545454545457,
+        0.2778654630656044
+      ],
+      [
+        0.44645454545454544,
+        0.037684739075601104
+      ],
+      [
+        0.49566363636363636,
+        0.1268954267775019
+      ],
+      [
+        0.5448727272727273,
+        0.16703590813279154
+      ],
+      [
+        0.5940818181818182,
+        0.15810618314146996
+      ],
+      [
+        0.6432909090909091,
+        0.1477140857577324
+      ],
+      [
+        0.6925,
+        0.15665132652223113
+      ],
+      [
+        0.7776,
+        0.15665132652223113
+      ]
+    ],
+    "segments": 24
+  },
+  "cavityBackend": {
+    "backend": "manifold3d 3.5.3",
+    "exteriorInputVolumeCubicMetres": 0.2562717077784466,
+    "cutterVolumeCubicMetres": 0.11286792329269427,
+    "shellVolumeCubicMetres": 0.16555166302960705,
+    "removedCavityVolumeCubicMetres": 0.09072004474883955,
+    "exteriorInputTriangles": 9356,
+    "cutterTriangles": 720,
+    "shellTriangles": 9864,
+    "materialFaceCounts": {
+      "0": 9413,
+      "1": 451,
+      "2": 0
+    }
+  },
+  "cavityThickness": {
+    "sampledFaces": 451,
+    "rimSeamFacesUnder3mm": 1,
+    "nearestExteriorDistanceMetres": {
+      "min": 3.3747469387890305e-06,
+      "p05": 0.01897263340651989,
+      "p50": 0.06574620306491852,
+      "p95": 0.12677555531263351,
+      "p99": 0.14323536306619644,
+      "max": 0.14910061657428741
+    },
+    "interpretation": "The minimum includes the intentional cavity/exterior seam at the open mouth; p05 gates the measurable inner wall away from that seam."
+  },
+  "centralMouthRayZMetres": [
+    0.1151999831199646,
+    0.0004916712641716003
+  ],
+  "shellCheck": {
+    "triangles": 9864,
+    "vertices": 4936,
+    "nonManifoldEdges": 0,
+    "nonManifoldVertices": 0,
+    "nonContiguousEdges": 0,
+    "selfIntersectionPairs": 0,
+    "blenderMeshInvalid": false,
+    "signedVolume": 0.1655516631974598
+  },
+  "exteriorBoundsMaxDeltaMetres": 0.0,
+  "nodes": {
+    "root": "breakable_l2_low_amber_urn",
+    "intact": "breakable_l2_low_amber_urn_intact",
+    "collider": "COLLIDER_breakable_l2_low_amber_urn"
+  },
+  "packedBlenderSource": {
+    "file": "sources/amber-cadence-urn-cavity-v2.blend",
+    "bytes": 11476854,
+    "sha256": "f1a5d20a27c822639d43746be5acba2b7b58610509581a077e6f434a858c3eb1"
+  },
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "toolchain": {
+      "blender": "5.2.2 LTS (d13f752e3b9c)",
+      "backendPython": "3.14.7",
+      "manifold3d": "3.5.3",
+      "backendNumpy": "2.5.3",
+      "scratchPythonPath": "/tmp/glass-museum-manifold",
+      "scratchPathCommitted": false,
+      "solidFractureBackend": {
+        "file": "art/glass-adventure/v3/solid_fracture.py",
+        "sha256": "1adef949624b5bc2a25e74cdf316f260956ade6083a2c68a756fa1bdfb189b39"
+      }
+    },
+    "commands": {
+      "installScratchBackend": "rtk proxy /usr/bin/python3 -m pip install --target /tmp/glass-museum-manifold manifold3d==3.5.3 numpy==2.5.3",
+      "topologyAudit": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/inspect_vessels.py",
+      "prepare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase prepare",
+      "fractureExport": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase fracture",
+      "freshGlbValidation": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase validate",
+      "proofs": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase render"
+    },
+    "archivedIntermediateInputs": [
+      "sources/amber-cadence-urn-fracture-work-v2/cavity-input.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cavity-output.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cavity-output.json",
+      "sources/amber-cadence-urn-fracture-work-v2/cut-input.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cut-output.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cut-output.json"
+    ]
+  },
+  "gameplayReadiness": "Prepared production shell only; matched shards and fresh GLB validation are still required."
+}

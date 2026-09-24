@@ -1,0 +1,270 @@
+{
+  "schema": 1,
+  "asset": "frost",
+  "status": "review-only fitted derivative; runtime integration not authorized",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/dense-donor.glb",
+    "bytes": 46738536,
+    "sha256": "5f1c6fe3ebafc293283841527392ffe0972b28b50bdaaba293bfaaeaa0bec67c",
+    "receipt": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/receipt.json",
+    "receiptSha256": "b716fd1aa54d61abcffd62b3acc2636a693765db02aeae03442c3bccb1f5ae25",
+    "taskId": "01a0d008-eb11-7661-bca6-4fb4f1986fff"
+  },
+  "fit": {
+    "method": "Uniformly preserve the 1.80m donor silhouette, align its sampled landing to Z=0, and fill only the missing area with a separate glass/ice frame.",
+    "axisWiseStretching": false,
+    "donorDecimation": false,
+    "donorVertexMutation": "uniform scale and translation only",
+    "uniformScale": 0.946983124,
+    "rawDimensionsBlenderZUpMetres": [
+      1.900773048,
+      1.025704026,
+      0.530512989
+    ],
+    "landingRawZ": 0.231700658,
+    "landingBinSizeRaw": 0.002652565,
+    "landingPatchPolygons": 169592,
+    "landingPatchAfterFitMetres": [
+      1.672956486,
+      0.873925279
+    ],
+    "authoredInnerOpeningMetres": [
+      1.644956486,
+      0.843925279
+    ],
+    "authoritativeLandingEnvelopeMetres": [
+      1.7,
+      1.3
+    ],
+    "landingTopBlenderZMetres": 0.0,
+    "landingTopGlTfYMetres": 0.0
+  },
+  "topology": {
+    "sourceBeforeFit": {
+      "vertices": 339884,
+      "triangles": 632256,
+      "degenerateTriangles": 0,
+      "nonfinitePositions": 0,
+      "uvLayers": [
+        {
+          "name": "UVMap",
+          "loops": 1896768,
+          "finite": true
+        }
+      ],
+      "vertexPositionsFloat32Sha256": "1b655397f4b925883687e3b0d2f00d1a9eb31b23f8c725b4d267110edbdfb2cf",
+      "triangleIndicesInt32Sha256": "561a6e4145248a01a28a54d3420ebda132cb9ab14c43af23a60602638147e432"
+    },
+    "donorAfterFit": {
+      "vertices": 339884,
+      "triangles": 632256,
+      "degenerateTriangles": 0,
+      "nonfinitePositions": 0,
+      "uvLayers": [
+        {
+          "name": "UVMap",
+          "loops": 1896768,
+          "finite": true
+        }
+      ],
+      "vertexPositionsFloat32Sha256": "3956de7861b8dad953684d61486e52c7b119f3a8dbfe99737a836ceb01ba4a39",
+      "triangleIndicesInt32Sha256": "561a6e4145248a01a28a54d3420ebda132cb9ab14c43af23a60602638147e432"
+    },
+    "donorTriangleIndicesPreserved": true,
+    "authoredMeshObjects": 12,
+    "authoredTriangles": 2256,
+    "exportTotalTriangles": 634512
+  },
+  "materials": {
+    "donor": {
+      "strategy": "single fused atlas with explicit gold metallic/opaque and glass/ice transmission masks",
+      "ior": 1.31,
+      "glassTransmissionMaximum": 0.86,
+      "providerBaseColorAndNormalPreserved": true
+    },
+    "landingFrame": {
+      "strategy": "separate bevelled transmissive glass/ice frame with authored texture",
+      "ior": 1.31,
+      "transmission": 0.94
+    },
+    "goldBoundary": "separate opaque metallic gold material"
+  },
+  "textures": [
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-base_color.png",
+      "bytes": 26526561,
+      "sha256": "59be1a4ece7ad4a9ae04aef836facf28b176686017d9fdb1e3c09718acd09ca3",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-normal.png",
+      "bytes": 22643007,
+      "sha256": "03db4c421f5dc6e623b8e19c68b4ce6ccbd62010e9d8bfa318bedc53b1cd2a80",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-metallic.png",
+      "bytes": 970239,
+      "sha256": "307f2634681b3d9fe8ca0ad35bc66df1edff5045eeeb6cfd910fffbc2ba3f7fa",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-roughness.png",
+      "bytes": 1839044,
+      "sha256": "02bdf2d4b28a260836eca38a9b817dc8d252ee6e7c0e66601f6efb75d3c42ecd",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/frost/frost-gold-mask-2k.png",
+      "bytes": 193786,
+      "sha256": "c83b68a0fa2ee4c7631cd64b910cfa136c3a7450740e5668f9be8f072afa26fb",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/frost/frost-metallic-2k.png",
+      "bytes": 333906,
+      "sha256": "e6bd3cabcdf256b755c8c756b58d1d0a6244c4eff0c9b0a74c228fa472643a00",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/frost/frost-roughness-2k.png",
+      "bytes": 973457,
+      "sha256": "dceb444a1c536c739adb2b26e5cf0bfe66f7e9ce23a75866d8611a2502da0be8",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/frost/frost-transmission-2k.png",
+      "bytes": 206986,
+      "sha256": "023897aa627a805e67ce4b157513a753e94cacc17b349bbf8ca64bc61054b0c3",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/frost/frost-frame-base-1k.png",
+      "bytes": 53978,
+      "sha256": "3f452de6abdeaea4d272db2251afb965a454a6d213a4a455dc612036fc7c6a54",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/frost/frost-frame-normal-1k.png",
+      "bytes": 234523,
+      "sha256": "f32a364da226cc9b8a59c4a8f17c248024b88128077d16f88d25ea5fd0e9e0af",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    }
+  ],
+  "packedBlend": {
+    "file": "art/glass-adventure/platform-trials/v6/sources/frost-v6-derivative.blend",
+    "bytes": 80488630,
+    "sha256": "31fba88e6315aa1cdaed378be1ccce312b54562abc6744a5abc7f64898e86725"
+  },
+  "export": {
+    "file": "art/glass-adventure/platform-trials/v6/exports/cloudway-frost-v6-derivative.glb",
+    "bytes": 76266516,
+    "sha256": "fcf290ba39b78e5f8f58344eb63e2f16d6fb8632be554cebd59abbb7ecdefd77"
+  },
+  "freshImport": {
+    "root": "Cloudway_Frost",
+    "ownedMeshObjects": 13,
+    "donor": {
+      "name": "frost_dense_donor",
+      "vertices": 340208,
+      "triangles": 632256,
+      "authoringVertices": 339884,
+      "attributeSeamVertexSplits": 324
+    },
+    "totalTriangles": 634512,
+    "boundsBlenderZUpMetres": {
+      "min": [
+        -0.899999976,
+        -0.650000036,
+        -0.469731688
+      ],
+      "max": [
+        0.899999976,
+        0.650000036,
+        0.032655146
+      ]
+    },
+    "dimensionsBlenderZUpMetres": [
+      1.799999952,
+      1.300000072,
+      0.502386808
+    ],
+    "rootExtras": {
+      "assetId": "cloudway-frost-v6-review",
+      "status": "review-only",
+      "coordinates": "Blender Z-up; glTF +Y up; metres",
+      "landingWidthMetres": 1.7,
+      "landingDepthMetres": 1.3,
+      "landingTopGlTfYMetres": 0.0,
+      "colliderSizeMetres": [
+        1.7,
+        0.24,
+        1.3
+      ],
+      "sourceTopologyMutation": false,
+      "fitMethod": "uniform donor fit plus authored non-overlapping landing frame"
+    },
+    "glb": {
+      "extensionsUsed": [
+        "KHR_materials_clearcoat",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+        "KHR_materials_volume"
+      ],
+      "materials": [
+        "frost_glass_ice_gold",
+        "frost_opaque_gold_boundary",
+        "frost_landing_glass"
+      ],
+      "images": 6,
+      "textures": 6,
+      "meshes": 13,
+      "nodes": 14
+    }
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/build_fitted_derivative.py -- --asset frost"
+}

@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "assetId": "twin-tone-resonance-harp",
+  "kind": "reusable-decoration",
+  "galleryFamily": "shared-court",
+  "intendedUse": "Nonblocking court landmark expressing the taught low/high pair.",
+  "rootNode": "decor_l2_twin_tone_resonance_harp",
+  "units": "metres",
+  "origin": "bottom-centre",
+  "dimensionsMetres": [
+    1.5003591775894165,
+    0.6857956647872925,
+    1.6500000953674316
+  ],
+  "donor": {
+    "file": "meshy/twin-tone-resonance-harp-donor.glb",
+    "bytes": 12119988,
+    "sha256": "cbf93040cd04b8b83564ee7582817e99c62369d913a72d9283f2ce1c6ebd1706",
+    "boundsBeforeNormalization": {
+      "min": [
+        -0.8634099364280701,
+        -0.3935750722885132,
+        -0.9507639408111572
+      ],
+      "max": [
+        0.8633660078048706,
+        0.3957129120826721,
+        0.9482349157333374
+      ],
+      "dimensions": [
+        1.7267759442329407,
+        0.7892879843711853,
+        1.8989988565444946
+      ]
+    },
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 11663,
+      "edges": 20159,
+      "triangles": 9837,
+      "boundaryEdges": 10807,
+      "nonManifoldEdges": 10807,
+      "looseEdges": 0
+    }
+  },
+  "packedBlenderSource": {
+    "file": "sources/twin-tone-resonance-harp-normalized-v1.blend",
+    "bytes": 12220409,
+    "sha256": "33a05eda61d19526130b47fba62796b173ab6cf8e2cfa54a7e5af827066f492e",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ]
+  },
+  "gameDerivative": {
+    "file": "exports/twin-tone-resonance-harp-game-v1.glb",
+    "bytes": 2812836,
+    "sha256": "cf921bad281220fb9ecac9f797fbc696e23a8a0fd57144b27ccca765c8d4dda9",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ],
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 11663,
+      "edges": 20159,
+      "triangles": 9837,
+      "boundaryEdges": 10807,
+      "nonManifoldEdges": 10807,
+      "looseEdges": 0
+    },
+    "targetTriangleRange": [
+      3000,
+      10000
+    ],
+    "reimport": {
+      "rootPresent": true,
+      "colliderPresent": true,
+      "dimensionsMetres": [
+        1.5003591775894165,
+        0.6857956647872925,
+        1.6500000953674316
+      ],
+      "topologyIncludingCollider": {
+        "meshObjects": 2,
+        "vertices": 11693,
+        "edges": 20189,
+        "triangles": 9849,
+        "boundaryEdges": 10831,
+        "nonManifoldEdges": 10831,
+        "looseEdges": 0
+      },
+      "materialNames": [
+        "twin_tone_resonance_harp_atlas_01"
+      ]
+    }
+  },
+  "proof": {
+    "status": "rendered",
+    "file": "proofs/twin-tone-resonance-harp-normalized.png",
+    "bytes": 709940,
+    "sha256": "4baa328b63537a73152a35df755b1ce7f8b7abada930145e64fb76081e2c08f3"
+  },
+  "materials": [
+    "twin_tone_resonance_harp_atlas_01"
+  ],
+  "collisionProxy": {
+    "name": "COLLIDER_decor_l2_twin_tone_resonance_harp",
+    "shape": "box",
+    "dimensionsMetres": [
+      1.3203160762786865,
+      0.6035001850128174,
+      0.2805000162124634
+    ],
+    "locationMetres": [
+      0.0,
+      0.0,
+      0.14025001227855682
+    ],
+    "authoredForReview": true
+  },
+  "insetReadiness": {
+    "status": "not-applicable",
+    "surface": null,
+    "reason": "This asset has no replaceable painting or mirror inset."
+  },
+  "fractureReadiness": {
+    "status": "not-applicable-decoration",
+    "isBreakableCandidate": false,
+    "boundaryEdgesObserved": 10807,
+    "nonManifoldEdgesObserved": 10807,
+    "requirementsBeforeGameplay": [
+      "Review the base-only proxy in the final court layout."
+    ]
+  },
+  "lodReadiness": {
+    "currentDerivative": "Meshy remesh at requested art-review target",
+    "additionalLods": "not-authored",
+    "required": "Validate screen-space quality and add LODs only from measured need."
+  },
+  "gameplayReadiness": "Art-review derivative only; not integrated or gameplay-ready."
+}

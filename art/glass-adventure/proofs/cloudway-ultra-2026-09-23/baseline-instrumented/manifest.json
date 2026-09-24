@@ -1,0 +1,120 @@
+{
+  "url": "http://127.0.0.1:5341/glass-game/?layout=cloudway",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "deviceScope": "Local desktop hardware",
+  "renderer": "ANGLE (AMD, Vulkan 1.4.359 (AMD Radeon RX 9070 XT (RADV GFX1201) (0x00007550)), radv)",
+  "rasterization": "Actual WebGL, no suppressed draws",
+  "candidateOverride": null,
+  "screenshots": [
+    {
+      "file": "arrival.png",
+      "sha256": "46b77b6143f315b1860f8d841fc436ad032cd17a7e8ac0b0882d0b3bd3baa186",
+      "action": "Unmodified arrival camera; no movement or seeded progress.",
+      "cameraYaw": "3.141592653589793"
+    },
+    {
+      "file": "marble-close.png",
+      "sha256": "252d8d6706e132af0a5c6a05aa993e5e3324ea13c8949f439a8b7e154b9b70b3",
+      "action": "Real wheel zoom and mouse orbit; same inputs on each candidate.",
+      "cameraYaw": "2.4165926535897935"
+    },
+    {
+      "file": "marble-side.png",
+      "sha256": "30c39383a5e69651723e9edfb05ed448ff09a9984a915cd1f7360af0043c6fb9",
+      "action": "Real upward mouse drag lowers the camera to inspect grazing top and edge shading.",
+      "cameraYaw": "2.4165926535897935"
+    }
+  ],
+  "assets": [
+    {
+      "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16",
+      "status": 200
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure/legend-slab.glb",
+      "bytes": 709632,
+      "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+      "status": 200
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v2/vessels.glb",
+      "bytes": 3391920,
+      "sha256": "40c58723fea8c6d60b7b00393a3d9264a741e96b546deb7e5e43cb9f4544432b",
+      "status": 200
+    },
+    {
+      "file": "apps/beside-cue/public/games/cloudway-v3/cloudway-platform-kit-v3.glb",
+      "bytes": 10338088,
+      "sha256": "e96bb26369cb037dffcfab3d0c71911dc7e872c2b8f766db8cb73599a6d51c62",
+      "status": 200
+    }
+  ],
+  "cadence": {
+    "medianMs": 16.699999999999818,
+    "p95Ms": 16.700000000000728,
+    "maximumMs": 16.800000000000182
+  },
+  "cadenceMethod": "120 browser animation-frame intervals, not GPU time or physical-tablet performance",
+  "renderWork": {
+    "frameIntervals": 120,
+    "drawCalls": 7560,
+    "passInclusiveTriangles": 135050880,
+    "byMethod": {
+      "drawArrays": {
+        "drawCalls": 0,
+        "triangles": 0
+      },
+      "drawElements": {
+        "drawCalls": 4680,
+        "triangles": 8967360
+      },
+      "drawArraysInstanced": {
+        "drawCalls": 0,
+        "triangles": 0
+      },
+      "drawElementsInstanced": {
+        "drawCalls": 2880,
+        "triangles": 126083520
+      }
+    },
+    "byMode": {
+      "TRIANGLES": {
+        "drawCalls": 7560,
+        "triangles": 135050880
+      }
+    },
+    "installedWrappers": [
+      "WebGLRenderingContext.drawArrays",
+      "WebGLRenderingContext.drawElements",
+      "WebGL2RenderingContext.drawArrays",
+      "WebGL2RenderingContext.drawElements",
+      "WebGL2RenderingContext.drawArraysInstanced",
+      "WebGL2RenderingContext.drawElementsInstanced"
+    ],
+    "installedExtensionObservers": [
+      "WebGLRenderingContext.getExtension(WEBGL_multi_draw)",
+      "WebGL2RenderingContext.getExtension(WEBGL_multi_draw)"
+    ],
+    "installErrors": [],
+    "counterErrors": 0,
+    "multiDraw": {
+      "lifetimeExtensionRequests": 0,
+      "sampleExtensionRequests": 0,
+      "extensionAvailableWhenRequested": null,
+      "lifetimeDrawCalls": 0,
+      "sampleDrawCalls": 0,
+      "sampleByMethod": {}
+    },
+    "meanDrawCallsPerFrameInterval": 63,
+    "meanPassInclusiveTrianglesPerFrameInterval": 1125424,
+    "sampleView": "Final marble-side grazing view after the recorded upward mouse drag."
+  },
+  "renderWorkMethod": "Page-init prototype wrappers count one post-native-call delta for drawArrays, drawElements and their WebGL2 instanced variants over the same 120 requestAnimationFrame intervals; all contexts and render passes are included.",
+  "renderWorkLimits": "Triangles are derived from submitted vertex or index counts for TRIANGLES, TRIANGLE_STRIP and TRIANGLE_FAN. They are not GPU timing and do not account for primitive restart, degenerates, clipping, occlusion, discarded fragments or whether submitted primitives produced pixels. WEBGL_multi_draw entry points are observed separately and must remain unused; WebGL1 ANGLE instancing entry points are outside this WebGL2 capture.",
+  "errors": []
+}

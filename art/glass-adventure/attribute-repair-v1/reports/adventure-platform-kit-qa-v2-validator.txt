@@ -1,0 +1,41 @@
+ERROR
+ ────────────────────────────────────────────
+info: No errors found.
+
+
+
+ WARNING
+ ────────────────────────────────────────────
+info: No warnings found.
+
+
+
+ INFO
+ ────────────────────────────────────────────
+┌───────────────┬────────────────────────────┬──────────┬───────────────────────────────────────────────┐
+│ code          │ message                    │ severity │ pointer                                       │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/0/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/2/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/3/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/5/primitives/0/attributes/TEXCOORD_1  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/9/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/14/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/19/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/24/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/31/primitives/0/attributes/TEXCOORD_0 │
+└───────────────┴────────────────────────────┴──────────┴───────────────────────────────────────────────┘
+
+
+
+ HINT
+ ────────────────────────────────────────────
+info: No hints found.

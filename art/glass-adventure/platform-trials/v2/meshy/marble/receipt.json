@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "cloudway-marble-platform-v1",
+  "taskType": "image-to-3d",
+  "state": "raw-source-archived",
+  "authorization": "Owner approved the Cloudway platform family for production and explicitly authorized generous Meshy use at best quality without another cost confirmation.",
+  "taskId": "01a0c572-cca5-7296-85a6-44921eb9cee2",
+  "submittedSettings": {
+    "ai_model": "latest",
+    "resolvedSchemaAtSubmission": "Meshy 6",
+    "model_type": "standard",
+    "enable_pbr": true,
+    "hd_texture": true,
+    "remove_lighting": true,
+    "image_enhancement": true,
+    "should_texture": true,
+    "should_remesh": true,
+    "decimation_mode": 1,
+    "topology": "triangle",
+    "save_pre_remeshed_model": true,
+    "multi_view_thumbnails": true,
+    "alpha_thumbnail": true,
+    "origin_at": "center",
+    "auto_size": false,
+    "target_formats": [
+      "glb"
+    ]
+  },
+  "texturePrompt": "Warm ivory Carrara marble shell with subtle grey veining, matte teal stone inlay, restrained aged gold trim and corner caps. Preserve readable material separation, remove baked lighting, broad clean landing top.",
+  "guide": {
+    "file": "guides/marble-platform-guide.png",
+    "bytes": 1399723,
+    "sha256": "75af2163d0387f36f4d2a0b1dbb79e4428c2311dc8f3429a72a2490b109b4d33"
+  },
+  "finalStatus": {
+    "task_id": "01a0c572-cca5-7296-85a6-44921eb9cee2",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T19:38:53.026708+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "files": [
+    {
+      "role": "remeshed_glb",
+      "file": "meshy/marble/donor.glb",
+      "bytes": 44985716,
+      "sha256": "b415c9287dff10444ebe7ba55935163fa7632ba60e8ad7babd30528565b6c3db"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/marble/pre-remeshed.glb",
+      "bytes": 70961276,
+      "sha256": "0fb253d06820c52f424d901bf2b4ad8861e0f11c990fc98b188629fe50923833",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/marble/donor_textures/base_color.png",
+      "bytes": 21224221,
+      "sha256": "ef96260df27082161acf422391ce2d541d41cc61513f234c87ccda9b851b6821",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/marble/donor_textures/metallic.png",
+      "bytes": 534202,
+      "sha256": "ed57f3da39f9a83698cdfa3bed7d57d91356e3ba53bd0df8fc2c77c6a69d2c1f",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/marble/donor_textures/normal.png",
+      "bytes": 21938726,
+      "sha256": "67136eb64be02517fd2866741303ae558db08b6f886308f46d0303cc7e669cbf",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/marble/donor_textures/roughness.png",
+      "bytes": 1606339,
+      "sha256": "1ccf6f158fc9c8312c44fb8215bf360bf389d1aae62e438d2b50b29922c48ccc",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    }
+  ],
+  "readiness": "Raw source archive; Blender normalization, landing-plane repair, LOD, fracture, export validation, and proof remain separate gates."
+}

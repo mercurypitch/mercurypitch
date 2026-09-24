@@ -1,0 +1,295 @@
+{
+  "schema": 1,
+  "purpose": "Read-only topology and source-fidelity audit for the review-only V7 connector candidate.",
+  "assets": {
+    "archivedPreRemesh": {
+      "file": "glass-adventure/journey-map/v7/meshy/raw/twin-connector-pre-remesh-v6.glb",
+      "bytes": 20461604,
+      "sha256": "77bbff7370682ed153e290af7c267e2bbf49ad87dfa63fe20dba32b5e2828e4d",
+      "meshObjects": 1,
+      "triangles": 1137356,
+      "vertices": 567712,
+      "boundsBlenderZUp": {
+        "min": [
+          -0.5923863053321838,
+          -0.34167176485061646,
+          -0.9508216381072998
+        ],
+        "max": [
+          0.5905764102935791,
+          0.3445649743080139,
+          0.948474645614624
+        ]
+      },
+      "dimensionsGlTfYUp": [
+        1.1829626560211182,
+        1.8992962837219238,
+        0.6862367391586304
+      ],
+      "uvLayers": {
+        "mesh_node": []
+      },
+      "materials": [],
+      "images": {},
+      "topology": {
+        "mesh_node": {
+          "vertices": 567712,
+          "triangles": 1137356,
+          "boundaryEdges": 0,
+          "nonManifoldEdges": 0,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      }
+    },
+    "v6TexturedFinal": {
+      "file": "glass-adventure/journey-map/v6/meshy/twin-connector-final.glb",
+      "bytes": 17720364,
+      "sha256": "e889e129074dafc7e31723005399e14c23cedbbb33394be2fa5986ec90b8d221",
+      "meshObjects": 1,
+      "triangles": 18259,
+      "vertices": 36240,
+      "boundsBlenderZUp": {
+        "min": [
+          -0.5889919996261597,
+          -0.3405229449272156,
+          -0.9504419565200806
+        ],
+        "max": [
+          0.5868509411811829,
+          0.3415360152721405,
+          0.947344958782196
+        ]
+      },
+      "dimensionsGlTfYUp": [
+        1.1758430004119873,
+        1.8977868556976318,
+        0.6820589303970337
+      ],
+      "uvLayers": {
+        "Mesh_0": [
+          "UVMap"
+        ]
+      },
+      "materials": [
+        "Material_0"
+      ],
+      "images": {
+        "Image_0": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        },
+        "Image_1": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        },
+        "Image_3": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        },
+        "normal": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        }
+      },
+      "topology": {
+        "Mesh_0": {
+          "vertices": 36240,
+          "triangles": 18259,
+          "boundaryEdges": 36051,
+          "nonManifoldEdges": 36051,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      }
+    },
+    "v7Remesh100k": {
+      "file": "glass-adventure/journey-map/v7/meshy/twin-connector-remesh-100k.glb",
+      "bytes": 7046796,
+      "sha256": "862ff6575fdd69bf2da46f65f51b85519b6d65304eaaaf2e2f2990161f468f91",
+      "meshObjects": 1,
+      "triangles": 102607,
+      "vertices": 181702,
+      "boundsBlenderZUp": {
+        "min": [
+          -0.6222779750823975,
+          -0.36061397194862366,
+          0.0
+        ],
+        "max": [
+          0.6208060383796692,
+          0.36131104826927185,
+          1.9990830421447754
+        ]
+      },
+      "dimensionsGlTfYUp": [
+        1.2430839538574219,
+        1.9990830421447754,
+        0.7219250202178955
+      ],
+      "uvLayers": {
+        "output_unwrapped": [
+          "UVMap"
+        ]
+      },
+      "materials": [],
+      "images": {},
+      "topology": {
+        "output_unwrapped": {
+          "vertices": 181702,
+          "triangles": 102607,
+          "boundaryEdges": 180197,
+          "nonManifoldEdges": 180197,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      }
+    },
+    "v7RetexturePbr": {
+      "file": "glass-adventure/journey-map/v7/meshy/twin-connector-remesh-100k-retexture-pbr.glb",
+      "bytes": 18749744,
+      "sha256": "3e3011719a7b5599f2dde35a4f5685cbc1cc68c136509a0ba498409c1689f459",
+      "meshObjects": 1,
+      "triangles": 102607,
+      "vertices": 181702,
+      "boundsBlenderZUp": {
+        "min": [
+          -0.6222779750823975,
+          -0.36061397194862366,
+          0.0
+        ],
+        "max": [
+          0.6208060383796692,
+          0.36131104826927185,
+          1.9990830421447754
+        ]
+      },
+      "dimensionsGlTfYUp": [
+        1.2430839538574219,
+        1.9990830421447754,
+        0.7219250202178955
+      ],
+      "uvLayers": {
+        "Mesh_0": [
+          "UVMap"
+        ]
+      },
+      "materials": [
+        "Material_0"
+      ],
+      "images": {
+        "Image_0": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        },
+        "Image_1": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        },
+        "Image_2": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        },
+        "Image_3": {
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true,
+          "source": "FILE"
+        }
+      },
+      "topology": {
+        "Mesh_0": {
+          "vertices": 181702,
+          "triangles": 102607,
+          "boundaryEdges": 180197,
+          "nonManifoldEdges": 180197,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      }
+    }
+  },
+  "normalizedSurfaceComparisons": {
+    "v6TexturedFinal": {
+      "candidateVerticesToArchivedSurface": {
+        "sampleCount": 12080,
+        "normalizedMean": 0.0011824944521386413,
+        "normalizedP95": 0.002956925891339779,
+        "normalizedMax": 0.0044011338613927364
+      },
+      "archivedVerticesToCandidateSurface": {
+        "sampleCount": 10138,
+        "normalizedMean": 0.0020814196663625772,
+        "normalizedP95": 0.005781070329248905,
+        "normalizedMax": 0.03347822651267052
+      },
+      "note": "Distances use independently normalized axis-aligned bounds and a deterministic sample of at most about 10k vertices in each direction."
+    },
+    "v7Remesh100k": {
+      "candidateVerticesToArchivedSurface": {
+        "sampleCount": 10095,
+        "normalizedMean": 0.00047817185792022076,
+        "normalizedP95": 0.0012595909647643566,
+        "normalizedMax": 0.0016853342531248927
+      },
+      "archivedVerticesToCandidateSurface": {
+        "sampleCount": 10138,
+        "normalizedMean": 0.0007665224385529798,
+        "normalizedP95": 0.002104060025885701,
+        "normalizedMax": 0.02801203355193138
+      },
+      "note": "Distances use independently normalized axis-aligned bounds and a deterministic sample of at most about 10k vertices in each direction."
+    },
+    "v7RetexturePbr": {
+      "candidateVerticesToArchivedSurface": {
+        "sampleCount": 10095,
+        "normalizedMean": 0.00047817185792022076,
+        "normalizedP95": 0.0012595909647643566,
+        "normalizedMax": 0.0016853342531248927
+      },
+      "archivedVerticesToCandidateSurface": {
+        "sampleCount": 10138,
+        "normalizedMean": 0.0007665224385529798,
+        "normalizedP95": 0.002104060025885701,
+        "normalizedMax": 0.02801203355193138
+      },
+      "note": "Distances use independently normalized axis-aligned bounds and a deterministic sample of at most about 10k vertices in each direction."
+    }
+  },
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v7/production/audit_connector_candidates.py"
+}

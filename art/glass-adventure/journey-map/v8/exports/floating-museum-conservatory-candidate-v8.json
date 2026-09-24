@@ -1,0 +1,778 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-conservatory-candidate-v8",
+  "status": "review-only; normal-map choice and runtime integration pending",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "source": {
+    "file": "meshy/conservatory-remesh-110k-retexture-pbr.glb",
+    "bytes": 20430664,
+    "sha256": "e82ced33f896eb4468af828006eaed8231e7bb2a8a9eee19cc0b64013ef9e0f6",
+    "receipt": "meshy/conservatory-remesh-110k-retexture-pbr-receipt.json",
+    "receiptContext": {
+      "remeshTaskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+      "retextureTaskId": "01a0cebe-365f-7743-8e07-98ea3f53c7b3",
+      "sourceSha256": "e82ced33f896eb4468af828006eaed8231e7bb2a8a9eee19cc0b64013ef9e0f6",
+      "denseDonorSha256": "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4"
+    },
+    "providerPbr": {
+      "baseColor": {
+        "imageIndex": 0,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 4393023,
+        "sha256": "e8f66e1c4824a27ac678911b8359ad4700257b2aafb7b17f313b1751ac9d784e"
+      },
+      "normal": {
+        "imageIndex": 2,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2955102,
+        "sha256": "41efe01eb74067b3a37d4d26dc97c8b950f667f9ae586f2dfb841f646b1bb92e"
+      },
+      "metallicRoughness": {
+        "imageIndex": 1,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 3319685,
+        "sha256": "8dd082592610f4da3ec5573d5f90a326f91faedaa5b3c69715d0ed2074c9fe49"
+      },
+      "providerOcclusionBinding": null
+    },
+    "providerTextureFiles": {
+      "baseColor": {
+        "file": "sources/conservatory-bake-v8/provider-base-color.png",
+        "bytes": 7498034,
+        "sha256": "e70c3eb9e2b935a5ad5923382278149087cb4f7f016d73f0b0abb39ae8248707",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "normal": {
+        "file": "sources/conservatory-bake-v8/provider-normal.png",
+        "bytes": 5278389,
+        "sha256": "9c0ab873a2aa0f7fca13dc7c1fec97bc1fa9c9f4e717d3523d65aa5f0a8bb731",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "metallicRoughness": {
+        "file": "sources/conservatory-bake-v8/provider-metallic-roughness.png",
+        "bytes": 4637894,
+        "sha256": "e1bd11433c8749d491a8826e786c0613f8a3607c6e193db04594a776514a2c19",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    },
+    "topology": {
+      "vertices": 214753,
+      "triangles": 109636,
+      "boundaryEdges": 213874,
+      "nonManifoldEdges": 213874,
+      "looseEdges": 0,
+      "zeroAreaFaces": 0,
+      "blenderMeshInvalid": false
+    }
+  },
+  "denseDonor": {
+    "file": "meshy/raw/conservatory-pre-remesh-v6.glb",
+    "bytes": 21519992,
+    "sha256": "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4",
+    "topology": {
+      "mesh_node": {
+        "vertices": 591793,
+        "triangles": 1201474,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      }
+    }
+  },
+  "boundingBoxNormalization": {
+    "candidate": {
+      "sourceDimensionsGlTfYUp": [
+        1.9925827980041504,
+        1.997135877609253,
+        1.9913289546966553
+      ],
+      "scaleBlenderXYZ": [
+        1.1542807817459106,
+        1.1550076007843018,
+        1.3269002437591553
+      ],
+      "dimensionsGlTfYUpMetres": [
+        2.3000000715255737,
+        2.6500000953674316,
+        2.3000000715255737
+      ],
+      "anchorErrorMetres": 0.0
+    },
+    "denseDonor": {
+      "sourceDimensionsGlTfYUp": [
+        1.8931964635849,
+        1.8990674018859863,
+        1.8939604759216309
+      ],
+      "scaleBlenderXYZ": [
+        1.2148765325546265,
+        1.2143864631652832,
+        1.3954217433929443
+      ],
+      "dimensionsGlTfYUpMetres": [
+        2.299999952316284,
+        2.6499998569488525,
+        2.299999952316284
+      ],
+      "anchorErrorMetres": 0.0
+    },
+    "sameTargetBoundsAndGroundAnchor": true,
+    "surfaceRegistration": "unverified; equal bounding boxes do not prove remeshed surface correspondence",
+    "requiredReview": "inspect donor/low overlap, ray misses, cage coverage, and bake artifacts before choosing either normal variant"
+  },
+  "selectedToActiveBake": {
+    "engine": "Cycles CPU",
+    "resolution": [
+      2048,
+      2048
+    ],
+    "marginPixels": 24,
+    "samples": 64,
+    "cpuThreads": 8,
+    "cageExtrusionMetres": 0.012,
+    "maximumRayDistanceMetres": 0.045,
+    "normal": {
+      "file": "sources/conservatory-bake-v8/dense-donor-normal.png",
+      "bytes": 7961069,
+      "sha256": "ef8197d1f2804dbe5babff5da29bc2fab7340707e1aa4a51b1088749c03657eb",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "channelRange": [
+        0,
+        255
+      ],
+      "maximumChannelStandardDeviation": 64.421
+    },
+    "ambientOcclusion": {
+      "file": "sources/conservatory-bake-v8/dense-donor-ao.png",
+      "bytes": 3998770,
+      "sha256": "831e351de661760af8517b05119eef17875a9a4576c8e010a5cbf24de90b378f",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "channelRange": [
+        0,
+        255
+      ],
+      "maximumChannelStandardDeviation": 80.7876
+    },
+    "derivedRuntimeMaps": {
+      "orm": {
+        "file": "sources/conservatory-bake-v8/runtime-orm-with-dense-ao.png",
+        "bytes": 5983340,
+        "sha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "transmission": {
+        "file": "sources/conservatory-bake-v8/runtime-transmission.png",
+        "bytes": 213738,
+        "sha256": "b4e4373c7fa44cc8642be0f4659fc80b6b12980199aa1595af40098e19a08138",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "method": "V6 celadon texture-space mask applied to the provider PBR base color",
+        "range": [
+          0.0,
+          0.41999998688697815
+        ]
+      }
+    },
+    "normalComparison": {
+      "method": "per-texel angular difference after resizing the Meshy normal to the dense-bake resolution",
+      "meanDegrees": 36.0293,
+      "medianDegrees": 23.1309,
+      "p95Degrees": 164.1353,
+      "maximumDegrees": 180.0,
+      "selection": "none; both variants must be reviewed at the same camera"
+    },
+    "normalSelection": "pending same-camera visual review",
+    "surfaceRegistration": "pending donor/low overlap review",
+    "cageAndBakeCoverage": "pending visual review"
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-conservatory-candidate-v8.blend",
+    "bytes": 62329283,
+    "sha256": "bd47184b3c0174e01d721e573d1ec533f4585013e218bda2e03508c821991d6a",
+    "imagesPacked": true,
+    "denseDonorRetained": true,
+    "missingExternalFiles": []
+  },
+  "variants": {
+    "meshy": {
+      "file": "exports/floating-museum-conservatory-candidate-v8-meshy-normal.glb",
+      "bytes": 30606544,
+      "sha256": "4295d8a324f86048f9832306b3a1c74e15d601a0ea07dfa1ee33f593b223f697",
+      "triangles": 109636,
+      "dimensionsGlTfYUpMetres": [
+        2.3000000715255737,
+        2.6500000953674316,
+        2.3000000715255737
+      ],
+      "anchorErrorMetres": 0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "materialBindings": {
+        "baseColor": {
+          "index": 2
+        },
+        "normal": {
+          "index": 1
+        },
+        "metallicRoughness": {
+          "index": 3
+        },
+        "occlusion": {
+          "index": 3,
+          "strength": 1
+        },
+        "transmission": {
+          "index": 0
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 7498034,
+          "sha256": "e70c3eb9e2b935a5ad5923382278149087cb4f7f016d73f0b0abb39ae8248707"
+        },
+        "normal": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5278389,
+          "sha256": "9c0ab873a2aa0f7fca13dc7c1fec97bc1fa9c9f4e717d3523d65aa5f0a8bb731"
+        },
+        "metallicRoughness": {
+          "imageIndex": 3,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5983340,
+          "sha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d"
+        },
+        "occlusion": {
+          "imageIndex": 3,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5983340,
+          "sha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d"
+        },
+        "transmission": {
+          "imageIndex": 0,
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "bytes": 213738,
+          "sha256": "b4e4373c7fa44cc8642be0f4659fc80b6b12980199aa1595af40098e19a08138"
+        }
+      },
+      "extensionsUsed": [
+        "KHR_materials_transmission",
+        "KHR_materials_ior"
+      ],
+      "normalUvTangentPbrPassed": true,
+      "tangentValidation": {
+        "accessors": [
+          {
+            "accessor": 3,
+            "count": 214889,
+            "minimumLength": 0.9999175754884555,
+            "maximumLength": 1.0000804537885688,
+            "handednessPassed": true
+          }
+        ],
+        "allFiniteUnitTangents": true
+      },
+      "tangentRepair": {
+        "method": "post-export per-triangle UV derivative, Gram-Schmidt against exported split normal",
+        "repairedCount": 3,
+        "repairs": [
+          {
+            "vertex": 36434,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.7865029263173255e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.2925259470939636,
+              -0.10300911962985992,
+              0.9506932497024536,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 143188,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 2.4266912035386667e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": 1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.6318249106407166,
+              0.2775973677635193,
+              -0.7236967086791992,
+              1.0
+            ],
+            "handednessRetained": true,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 150705,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.593399590329227e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.26351428031921387,
+              0.30844491720199585,
+              0.9140141606330872,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          }
+        ],
+        "geometryUvPositionNormalUnchanged": true
+      }
+    },
+    "dense-bake": {
+      "file": "exports/floating-museum-conservatory-candidate-v8-dense-bake-normal.glb",
+      "bytes": 33289232,
+      "sha256": "8b3465883aea800de84c3d9237d2752af405e049d64a3bece4052f283772530f",
+      "triangles": 109636,
+      "dimensionsGlTfYUpMetres": [
+        2.3000000715255737,
+        2.6500000953674316,
+        2.3000000715255737
+      ],
+      "anchorErrorMetres": 0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "materialBindings": {
+        "baseColor": {
+          "index": 2
+        },
+        "normal": {
+          "index": 1
+        },
+        "metallicRoughness": {
+          "index": 3
+        },
+        "occlusion": {
+          "index": 3,
+          "strength": 1
+        },
+        "transmission": {
+          "index": 0
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 7498034,
+          "sha256": "e70c3eb9e2b935a5ad5923382278149087cb4f7f016d73f0b0abb39ae8248707"
+        },
+        "normal": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 7961069,
+          "sha256": "ef8197d1f2804dbe5babff5da29bc2fab7340707e1aa4a51b1088749c03657eb"
+        },
+        "metallicRoughness": {
+          "imageIndex": 3,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5983340,
+          "sha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d"
+        },
+        "occlusion": {
+          "imageIndex": 3,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5983340,
+          "sha256": "a8c8f48c1e22952281a48e85aedf4e9a294946b188edca424538d6d96716193d"
+        },
+        "transmission": {
+          "imageIndex": 0,
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "bytes": 213738,
+          "sha256": "b4e4373c7fa44cc8642be0f4659fc80b6b12980199aa1595af40098e19a08138"
+        }
+      },
+      "extensionsUsed": [
+        "KHR_materials_transmission",
+        "KHR_materials_ior"
+      ],
+      "normalUvTangentPbrPassed": true,
+      "tangentValidation": {
+        "accessors": [
+          {
+            "accessor": 3,
+            "count": 214889,
+            "minimumLength": 0.9999175754884555,
+            "maximumLength": 1.0000804537885688,
+            "handednessPassed": true
+          }
+        ],
+        "allFiniteUnitTangents": true
+      },
+      "tangentRepair": {
+        "method": "post-export per-triangle UV derivative, Gram-Schmidt against exported split normal",
+        "repairedCount": 3,
+        "repairs": [
+          {
+            "vertex": 36434,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.7865029263173255e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.2925259470939636,
+              -0.10300911962985992,
+              0.9506932497024536,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 143188,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 2.4266912035386667e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": 1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.6318249106407166,
+              0.2775973677635193,
+              -0.7236967086791992,
+              1.0
+            ],
+            "handednessRetained": true,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 150705,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.593399590329227e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.26351428031921387,
+              0.30844491720199585,
+              0.9140141606330872,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          }
+        ],
+        "geometryUvPositionNormalUnchanged": true
+      }
+    }
+  },
+  "validation": {
+    "archivedProviderReceiptsMatched": true,
+    "preservedDenseDonorMatched": true,
+    "candidateAndDonorBoundingBoxesNormalized": true,
+    "surfaceRegistration": "pending visual review",
+    "cageAndBakeCoverage": "pending visual review",
+    "providerNormalRetainedSeparately": true,
+    "denseBakeNormalRetainedSeparately": true,
+    "denseBakeAoChannelPacked": true,
+    "packedEditableSource": true,
+    "dimensionsAndGroundAnchorPassed": true,
+    "uv0NormalAndTangentPassed": true,
+    "pbrBindingsPassed": true,
+    "visualApproval": "pending",
+    "runtimeIntegration": "not performed",
+    "allTangentsFiniteAndUnit": true,
+    "tangentFallback": {
+      "meshy": {
+        "method": "post-export per-triangle UV derivative, Gram-Schmidt against exported split normal",
+        "repairedCount": 3,
+        "repairs": [
+          {
+            "vertex": 36434,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.7865029263173255e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.2925259470939636,
+              -0.10300911962985992,
+              0.9506932497024536,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 143188,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 2.4266912035386667e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": 1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.6318249106407166,
+              0.2775973677635193,
+              -0.7236967086791992,
+              1.0
+            ],
+            "handednessRetained": true,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 150705,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.593399590329227e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.26351428031921387,
+              0.30844491720199585,
+              0.9140141606330872,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          }
+        ],
+        "geometryUvPositionNormalUnchanged": true
+      },
+      "dense-bake": {
+        "method": "post-export per-triangle UV derivative, Gram-Schmidt against exported split normal",
+        "repairedCount": 3,
+        "repairs": [
+          {
+            "vertex": 36434,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.7865029263173255e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.2925259470939636,
+              -0.10300911962985992,
+              0.9506932497024536,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 143188,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 2.4266912035386667e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": 1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.6318249106407166,
+              0.2775973677635193,
+              -0.7236967086791992,
+              1.0
+            ],
+            "handednessRetained": true,
+            "handednessParityVerified": true
+          },
+          {
+            "vertex": 150705,
+            "referencedTriangles": 1,
+            "usableUvDerivativeTriangles": 1,
+            "minimumAbsoluteUvDeterminant": 3.593399590329227e-06,
+            "method": "triangle-uv-derivative-gram-schmidt",
+            "uvDerivativeHandedness": -1.0,
+            "mesh": 0,
+            "primitive": 0,
+            "old": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "new": [
+              0.26351428031921387,
+              0.30844491720199585,
+              0.9140141606330872,
+              -1.0
+            ],
+            "handednessRetained": false,
+            "handednessParityVerified": true
+          }
+        ],
+        "geometryUvPositionNormalUnchanged": true
+      }
+    },
+    "tangentRepairPreservedGeometryUvPositionNormalAndMaps": true
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/finish_conservatory_candidate.py",
+    "blender": "5.2.2 LTS",
+    "tangentRepairCommand": "rtk proxy timeout 300 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v8/production/repair_conservatory_candidate_tangents.py"
+  },
+  "proofs": []
+}

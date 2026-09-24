@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-cypress-v9-candidate",
+  "operation": "remesh",
+  "parentTaskId": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+  "sourceVariant": "pre_remeshed_glb",
+  "source": {
+    "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
+    "bytes": 11942508,
+    "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+    "providerTaskType": "image-to-3d"
+  },
+  "request": {
+    "topology": "triangle",
+    "target_polycount": 20000,
+    "target_formats": [
+      "glb"
+    ],
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "authorization": {
+    "sourceTransferApproval": "asserted-by-operator-after-specific-user-confirmation",
+    "assertedBySubmitFlag": true,
+    "assertedAtUtc": "2026-09-23T14:48:14.677201+00:00"
+  },
+  "estimatedCredits": 5,
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "archived",
+  "providerReconciliation": {
+    "checkedAtUtc": "2026-09-23T14:48:14.007873+00:00",
+    "purpose": "Prevent an unreceipted or duplicate submission before cypress V9.",
+    "taskLists": {
+      "remesh": [
+        {
+          "taskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790174775688
+        },
+        {
+          "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790174384249
+        },
+        {
+          "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790082668648
+        },
+        {
+          "taskId": "01a0c57f-b423-77b4-a2cd-0e4648510e29",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019875918
+        },
+        {
+          "taskId": "01a0c57f-a8a7-72ee-8557-126f8ec28e78",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019872982
+        },
+        {
+          "taskId": "01a0c57f-9917-734f-9c03-ea200ea04a4b",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019868992
+        },
+        {
+          "taskId": "01a0c104-1de9-73fb-8209-ba38f8260ced",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789944667664
+        },
+        {
+          "taskId": "01a0c090-4b93-76b7-a17d-49e24fcb356e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789937077359
+        }
+      ],
+      "retexture": [
+        {
+          "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790083241392
+        }
+      ]
+    },
+    "balance": 3870,
+    "conclusion": "Every task newer than the V7 baseline has a local receipt."
+  },
+  "balanceBefore": 3870,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0c1f0-927c-76c7-8338-df243b4faa9f",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 30
+  },
+  "submittedAtUtc": "2026-09-23T14:48:14.910860+00:00",
+  "taskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+  "balanceAfterSubmit": 3865,
+  "observedBalanceDeltaAtSubmit": 5,
+  "lastStatus": {
+    "taskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "lastCheckedAtUtc": "2026-09-23T14:48:50.168645+00:00",
+  "archiveDownloadTaskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+  "archiveDownloadStartedAtUtc": "2026-09-23T14:48:50.169304+00:00",
+  "finalStatus": {
+    "taskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "balanceAfterArchiveCheck": 3865,
+  "observedBalanceDeltaFinal": 5,
+  "archivedAtUtc": "2026-09-23T14:48:50.850235+00:00",
+  "archiveDownload": {
+    "method": "bounded CDN byte ranges or authenticated MCP download",
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlPersisted": false
+  },
+  "file": {
+    "path": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k.glb",
+    "bytes": 1134492,
+    "sha256": "45b23c602602c8e491ede05c5b42c7aaca08b7d82851b3e53a7b713b6b6d4627"
+  },
+  "readiness": "Review-only untextured geometry candidate. Compare the continuous tree silhouette, rounded foliage masses, branch and trunk reads, planter, and vines against the dense archive before any UV, bake, texture, or runtime work."
+}

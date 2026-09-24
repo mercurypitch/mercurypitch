@@ -105,6 +105,8 @@ export const STANDALONE_DOCUMENT_PATHS: ReadonlySet<string> = new Set([
   '/vocal-range-test',
   '/vocal-range-test.html',
   '/tone-deaf-test',
+  '/glass-game',
+  '/glass-game.html',
   '/glass',
   '/glass.html',
   '/break-glass-with-your-voice',

@@ -1,0 +1,213 @@
+{
+  "schema": 1,
+  "assetId": "amber-cadence-urn",
+  "kind": "breakable-vessel",
+  "galleryFamily": "lower-warm-amber",
+  "intendedUse": "Low-note hero vessel; broad silhouette at a lower display height.",
+  "rootNode": "breakable_l2_low_amber_urn",
+  "units": "metres",
+  "origin": "bottom-centre",
+  "dimensionsMetres": [
+    0.9315478801727295,
+    0.9315483570098877,
+    0.7200000286102295
+  ],
+  "donor": {
+    "file": "meshy/amber-cadence-urn-donor.glb",
+    "bytes": 11374392,
+    "sha256": "b7330a45eadbd08918be00441aa7c1f4aace0438a4b04b40eac0a1bcf3481dc2",
+    "boundsBeforeNormalization": {
+      "min": [
+        -0.9497129917144775,
+        -0.9478190541267395,
+        -0.7305649518966675
+      ],
+      "max": [
+        0.9477270245552063,
+        0.9496219754219055,
+        0.7359799742698669
+      ],
+      "dimensions": [
+        1.8974400162696838,
+        1.897441029548645,
+        1.4665449261665344
+      ]
+    },
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 10006,
+      "edges": 18337,
+      "triangles": 9340,
+      "boundaryEdges": 8654,
+      "nonManifoldEdges": 8654,
+      "looseEdges": 0
+    }
+  },
+  "packedBlenderSource": {
+    "file": "sources/amber-cadence-urn-normalized-v1.blend",
+    "bytes": 11533302,
+    "sha256": "21d1cdc45bbbb493fa7a09c6c7f79d74b85ff3e46fe039bf5d5ab86c378bbdbe",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ]
+  },
+  "gameDerivative": {
+    "file": "exports/amber-cadence-urn-game-v1.glb",
+    "bytes": 2593732,
+    "sha256": "85158f98c8677e82cad4813255cbe88817b6ac20f0a5ce9cdfc3fc82fb8df707",
+    "textureImages": [
+      {
+        "name": "Image_0",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "Image_1",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      },
+      {
+        "name": "Image_3",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "sRGB",
+        "packed": true
+      },
+      {
+        "name": "normal",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "colorSpace": "Non-Color",
+        "packed": true
+      }
+    ],
+    "topology": {
+      "meshObjects": 1,
+      "vertices": 10006,
+      "edges": 18337,
+      "triangles": 9340,
+      "boundaryEdges": 8654,
+      "nonManifoldEdges": 8654,
+      "looseEdges": 0
+    },
+    "targetTriangleRange": [
+      3000,
+      10000
+    ],
+    "reimport": {
+      "rootPresent": true,
+      "colliderPresent": true,
+      "dimensionsMetres": [
+        0.9315478801727295,
+        0.9315483570098877,
+        0.7200000286102295
+      ],
+      "topologyIncludingCollider": {
+        "meshObjects": 2,
+        "vertices": 10108,
+        "edges": 18476,
+        "triangles": 9400,
+        "boundaryEdges": 8752,
+        "nonManifoldEdges": 8752,
+        "looseEdges": 0
+      },
+      "materialNames": [
+        "amber_cadence_urn_atlas_01"
+      ]
+    }
+  },
+  "proof": {
+    "status": "rendered",
+    "file": "proofs/amber-cadence-urn-normalized.png",
+    "bytes": 650711,
+    "sha256": "d81dab4f825b95e54c14fdf4bf157fe18732aa2fd095816a9fd82a1a200f897d"
+  },
+  "materials": [
+    "amber_cadence_urn_atlas_01"
+  ],
+  "collisionProxy": {
+    "name": "COLLIDER_breakable_l2_low_amber_urn",
+    "shape": "16-sided-cylinder",
+    "dimensionsMetres": [
+      0.7638692855834961,
+      0.7638692855834961,
+      0.5184000134468079
+    ],
+    "locationMetres": [
+      0.0,
+      0.0,
+      0.25920000672340393
+    ],
+    "authoredForReview": true
+  },
+  "insetReadiness": {
+    "status": "not-applicable",
+    "surface": null,
+    "reason": "This asset has no replaceable painting or mirror inset."
+  },
+  "fractureReadiness": {
+    "status": "requires-solid-and-shard-validation",
+    "isBreakableCandidate": true,
+    "boundaryEdgesObserved": 8654,
+    "nonManifoldEdgesObserved": 8654,
+    "requirementsBeforeGameplay": [
+      "Inspect and repair the authored cavity and wall thickness.",
+      "Author matched intact and closed named shard geometry.",
+      "Validate reconstruction, intersections, GLB reimport, materials, and volume.",
+      "Review the collision proxy against the final mount and camera distance."
+    ]
+  },
+  "lodReadiness": {
+    "currentDerivative": "Meshy remesh at requested art-review target",
+    "additionalLods": "not-authored",
+    "required": "Validate screen-space quality and add LODs only from measured need."
+  },
+  "gameplayReadiness": "Art-review derivative only; not integrated or gameplay-ready."
+}

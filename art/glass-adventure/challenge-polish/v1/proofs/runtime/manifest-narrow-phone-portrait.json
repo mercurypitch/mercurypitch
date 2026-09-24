@@ -1,0 +1,94 @@
+{
+  "capturedAt": "2026-09-21T17:49:10.287Z",
+  "url": "https://127.0.0.1:5298/glass-game/?campaign=1",
+  "proofs": [
+    {
+      "case": "narrow-phone-portrait",
+      "evidence": "Compiled campaign host, real keyboard entry on desktop and real tap on touch contexts. Saved earlier checkpoint only; PCM settles the wave first step but never completes this target. During the approach only, the harness replaced WebGL2 clear, drawArrays, drawArraysInstanced, drawElements and drawElementsInstanced with no-ops, then restored each original property descriptor before the viewport resize, camera assertions and full-raster screenshots. Software rendering, not physical-device performance.",
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "before": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+        "completed": "3",
+        "playerX": "12.38307744238108",
+        "playerY": "0",
+        "playerZ": "51.230352363586434",
+        "cameraYaw": "1.5707963267948966",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0,\"position\":{\"x\":16.349804464247875,\"y\":2.0404614730654136,\"z\":51.230352363586434},\"target\":{\"x\":12.044679075329373,\"y\":0.42,\"z\":51.230352363586434},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "singing": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+        "completed": "3",
+        "playerX": "12.38307744238108",
+        "playerY": "0",
+        "playerZ": "51.230352363586434",
+        "cameraYaw": "-0.8961369186425765",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-resonance-conservatory/resonance-conservatory/wave-salon/encounter/keeper-finale\",\"progress\":1,\"settled\":true,\"safeBottomFraction\":0.429443359375,\"position\":{\"x\":9.010957892760203,\"y\":0.24089794385978736,\"z\":53.46744277565909},\"target\":{\"x\":11.807788353158546,\"y\":-0.08869236704883281,\"z\":51.230352363586434},\"mercFrame\":{\"minX\":0.03800268604611568,\"maxX\":0.6316161497861064,\"minY\":0.05883332955855798,\"maxY\":0.33545913469691535},\"targetFrame\":{\"minX\":-0.848182855361318,\"maxX\":0.08557946074776623,\"minY\":0.1490525808173568,\"maxY\":0.762962474554188},\"combinedFrame\":{\"minX\":-0.848182855361318,\"maxX\":0.6316161497861064,\"minY\":0.05883332955855798,\"maxY\":0.762962474554188},\"safeBottomNdc\":-0.07111328125,\"side\":-1,\"clearance\":0.9893814720487065,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/encounter/keeper-finale"
+      },
+      "help": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+        "completed": "3",
+        "playerX": "12.38307744238108",
+        "playerY": "0",
+        "playerZ": "51.230352363586434",
+        "cameraYaw": "-0.8961369186425772",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-resonance-conservatory/resonance-conservatory/wave-salon/encounter/keeper-finale\",\"progress\":1,\"settled\":true,\"safeBottomFraction\":0.5521484375,\"position\":{\"x\":8.736581129096113,\"y\":0.2408185733114821,\"z\":53.68690750045368},\"target\":{\"x\":11.807788353158546,\"y\":-0.4120311910658701,\"z\":51.230352363586434},\"mercFrame\":{\"minX\":0.03518605689305981,\"maxX\":0.589138307717419,\"minY\":0.20309805736845332,\"maxY\":0.46113975506918414},\"targetFrame\":{\"minX\":-0.7836377423165053,\"maxX\":0.07906978597765109,\"minY\":0.28728993160955796,\"maxY\":0.8527606977586064},\"combinedFrame\":{\"minX\":-0.7836377423165053,\"maxX\":0.589138307717419,\"minY\":0.20309805736845332,\"maxY\":0.8527606977586064},\"safeBottomNdc\":0.17429687499999996,\"side\":-1,\"clearance\":0.9889407359889854,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/encounter/keeper-finale"
+      },
+      "helpPanelBounds": {
+        "x": 10,
+        "y": 302.625,
+        "width": 300,
+        "height": 317.375
+      },
+      "returned": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+        "completed": "3",
+        "playerX": "12.38307744238108",
+        "playerY": "0",
+        "playerZ": "51.230352363586434",
+        "cameraYaw": "1.5707963267948966",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0.429443359375,\"position\":{\"x\":16.288328623098707,\"y\":2.0404614730654136,\"z\":51.230352363586434},\"target\":{\"x\":11.983203234180207,\"y\":0.42,\"z\":51.230352363586434},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "panelBounds": {
+        "x": 10,
+        "y": 381.15625,
+        "width": 300,
+        "height": 238.84375
+      },
+      "files": [
+        "narrow-phone-portrait-singing.png",
+        "narrow-phone-portrait-help.png",
+        "narrow-phone-portrait-returned.png"
+      ],
+      "errors": []
+    }
+  ]
+}

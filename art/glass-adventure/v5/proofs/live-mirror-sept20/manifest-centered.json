@@ -1,0 +1,40 @@
+[
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "salon-mirror-centered",
+      "x": 23.35,
+      "z": 51.23035236358642,
+      "yaw": -1.5707963267948966,
+      "pitch": 0.3,
+      "distance": 3.4,
+      "completed": [
+        "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+        "glassworks-journey/journey/garden/encounter/garden-decanter",
+        "glassworks-journey/journey/archive/encounter/archive-carafe"
+      ]
+    },
+    "file": "800-salon-mirror-centered.png",
+    "allRoomsVisible": false,
+    "metrics": {
+      "drawCalls": 92,
+      "triangles": 641792,
+      "textures": 41,
+      "geometries": 168,
+      "reflectionCaptures": 61,
+      "reflectionTargetPixels": 110592
+    },
+    "yaw": -1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pageErrors": []
+  }
+]

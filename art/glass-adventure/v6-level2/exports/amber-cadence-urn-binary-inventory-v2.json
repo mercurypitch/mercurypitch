@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "assetId": "amber-cadence-urn",
+  "status": "V2 geometry/GLB gates passed and Blender proofs approved; runtime integration remains external",
+  "runtimeContract": {
+    "bundle": {
+      "file": "exports/amber-cadence-urn-fracture-v2.glb",
+      "bytes": 3744152,
+      "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353"
+    },
+    "displayHeightMetres": 0.72,
+    "root": "breakable_l2_low_amber_urn",
+    "intact": "breakable_l2_low_amber_urn_intact",
+    "shardPrefix": "breakable_l2_low_amber_urn_shard_",
+    "shardCount": 16,
+    "collider": "COLLIDER_breakable_l2_low_amber_urn",
+    "materials": {
+      "exterior": "amber_shell",
+      "cavity": "cavity_surface",
+      "fractureCuts": "glass_cut",
+      "normalMapStrength": 0.35,
+      "strategy": "coherent opaque donor PBR atlas; no triangle-level glass/opaque split"
+    }
+  },
+  "immutableLineage": [
+    {
+      "file": "concepts/amber-cadence-urn.png",
+      "bytes": 2043017,
+      "sha256": "720bf5ebc1818bdc6eea182077296d832fb70be87f7f73475d0d978f24c2fefd"
+    },
+    {
+      "file": "meshy/amber-cadence-urn-donor.glb",
+      "bytes": 11374392,
+      "sha256": "b7330a45eadbd08918be00441aa7c1f4aace0438a4b04b40eac0a1bcf3481dc2"
+    },
+    {
+      "file": "sources/amber-cadence-urn-normalized-v1.blend",
+      "bytes": 11533302,
+      "sha256": "21d1cdc45bbbb493fa7a09c6c7f79d74b85ff3e46fe039bf5d5ab86c378bbdbe"
+    },
+    {
+      "file": "exports/amber-cadence-urn-game-v1.glb",
+      "bytes": 2593732,
+      "sha256": "85158f98c8677e82cad4813255cbe88817b6ac20f0a5ce9cdfc3fc82fb8df707"
+    },
+    {
+      "file": "proofs/amber-cadence-urn-normalized.png",
+      "bytes": 650711,
+      "sha256": "d81dab4f825b95e54c14fdf4bf157fe18732aa2fd095816a9fd82a1a200f897d"
+    }
+  ],
+  "approvedV2": {
+    "status": "proof-approved production derivative; gameplay behavior remains an integration concern",
+    "files": [
+      {
+        "file": "sources/amber-cadence-urn-cavity-v2.blend",
+        "bytes": 11476854,
+        "sha256": "f1a5d20a27c822639d43746be5acba2b7b58610509581a077e6f434a858c3eb1"
+      },
+      {
+        "file": "sources/amber-cadence-urn-fracture-v2.blend",
+        "bytes": 12085039,
+        "sha256": "461ac348fc0197cf3bb4ef105505d2752382e08152aa2b93072048bd60810ab7"
+      },
+      {
+        "file": "exports/amber-cadence-urn-fracture-v2.glb",
+        "bytes": 3744152,
+        "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353"
+      },
+      {
+        "file": "proofs/amber-cadence-urn-intact-v2.png",
+        "bytes": 996743,
+        "sha256": "521cf8cedaa5211ee7392bc161d2217a4b8713779485f5df390507c696eeb321"
+      },
+      {
+        "file": "proofs/amber-cadence-urn-mouth-v2.png",
+        "bytes": 1123561,
+        "sha256": "a86a5bf07c737692d9d0b6b3bd3eaaa28d0533667237968615f90b097afb93fa"
+      },
+      {
+        "file": "proofs/amber-cadence-urn-shards-v2.png",
+        "bytes": 1016945,
+        "sha256": "4391ffeeab0a78a8efc15d38875e4cf4f9684d19cfd4cb78c48651b1cfed398d"
+      },
+      {
+        "file": "proofs/amber-cadence-urn-soft-v2.png",
+        "bytes": 1139522,
+        "sha256": "3e33fd67c208d67c3ce2c090d89fb978be1824634ed2f3fea4a810bb56fdad57"
+      },
+      {
+        "file": "sources/amber-cadence-urn-fracture-work-v2/cavity-input.npz",
+        "bytes": 384995,
+        "sha256": "191ffae29ff4a54ad5ba344ef3171ac70ac5461c41d2434041a073bd158a7bbf"
+      },
+      {
+        "file": "sources/amber-cadence-urn-fracture-work-v2/cavity-output.npz",
+        "bytes": 269277,
+        "sha256": "a2ff93d4fecf549c78ff233b634b5bacc30e96e941d837f6b07b31ab87d66ce6"
+      },
+      {
+        "file": "sources/amber-cadence-urn-fracture-work-v2/cut-input.npz",
+        "bytes": 383835,
+        "sha256": "8061f702a0754830fa1c9f1d47cccd95a36a049fcd59fce0bfb8e9d6db3b94f6"
+      },
+      {
+        "file": "sources/amber-cadence-urn-fracture-work-v2/cut-output.npz",
+        "bytes": 446590,
+        "sha256": "2791144eab1586a19e515dab9e942a7381c658952e6868613f839dce4776ccf0"
+      }
+    ]
+  },
+  "textSourcesAndReceipts": [
+    "concepts/amber-cadence-urn.prompt.txt",
+    "meshy/amber-cadence-urn-request.json",
+    "exports/amber-cadence-urn-inventory.json",
+    "exports/amber-cadence-urn-cavity-v2.json",
+    "exports/amber-cadence-urn-fracture-v2.json",
+    "exports/amber-cadence-urn-fracture-validation-v2.json",
+    "production/amber-repair-probe.json",
+    "production/amber-normal-audit.json",
+    "production/amber_repair_probe.py",
+    "production/amber_normal_audit.py",
+    "production/render_amber_soft_review.py",
+    "production/finalize_amber_receipt.py",
+    "finalize_vessels.py",
+    "vessel_cavity_backend.py",
+    "inspect_vessels.py",
+    "sources/amber-cadence-urn-fracture-work-v2/cavity-output.json",
+    "sources/amber-cadence-urn-fracture-work-v2/cut-output.json"
+  ],
+  "excludedScratch": [
+    "sources/amber-cadence-urn-normalized-v1.blend1",
+    "__pycache__/**",
+    "*.pyc",
+    "*.log",
+    "/tmp/amber-cadence-urn-soft-no-normal-v2.png"
+  ],
+  "creditSpend": {
+    "thisFinishingPass": 0
+  }
+}

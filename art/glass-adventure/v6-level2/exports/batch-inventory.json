@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "collection": "MercuryPitch Glassworks \u2014 Level 2 Twin Galleries",
+  "assetCount": 4,
+  "assets": [
+    {
+      "assetId": "amber-cadence-urn",
+      "kind": "breakable-vessel",
+      "galleryFamily": "lower-warm-amber",
+      "dimensionsMetres": [
+        0.9315478801727295,
+        0.9315483570098877,
+        0.7200000286102295
+      ],
+      "triangles": 9340,
+      "fractureStatus": "requires-solid-and-shard-validation",
+      "inventory": "exports/amber-cadence-urn-inventory.json"
+    },
+    {
+      "assetId": "celadon-lark-decanter",
+      "kind": "breakable-vessel",
+      "galleryFamily": "upper-cool-celadon",
+      "dimensionsMetres": [
+        0.3807224780321121,
+        0.3825160562992096,
+        1.1499998569488525
+      ],
+      "triangles": 9186,
+      "fractureStatus": "requires-solid-and-shard-validation",
+      "inventory": "exports/celadon-lark-decanter-inventory.json"
+    },
+    {
+      "assetId": "twin-tone-resonance-harp",
+      "kind": "reusable-decoration",
+      "galleryFamily": "shared-court",
+      "dimensionsMetres": [
+        1.5003591775894165,
+        0.6857956647872925,
+        1.6500000953674316
+      ],
+      "triangles": 9837,
+      "fractureStatus": "not-applicable-decoration",
+      "inventory": "exports/twin-tone-resonance-harp-inventory.json"
+    },
+    {
+      "assetId": "opaline-echo-amphora",
+      "kind": "breakable-vessel",
+      "galleryFamily": "optional-side-exhibit",
+      "dimensionsMetres": [
+        0.6186075806617737,
+        0.568110316991806,
+        0.9200000166893005
+      ],
+      "triangles": 8168,
+      "fractureStatus": "requires-solid-and-shard-validation",
+      "inventory": "exports/opaline-echo-amphora-inventory.json"
+    }
+  ],
+  "scope": "Source art only; no runtime/public integration."
+}

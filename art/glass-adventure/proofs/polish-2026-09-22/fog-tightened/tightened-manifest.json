@@ -1,0 +1,151 @@
+{
+  "capturedAt": "2026-09-23T12:31:29.441Z",
+  "url": "http://127.0.0.1:5340/glass-game/?layout=cloudway",
+  "rendering": "Real WebGL2 raster through SwiftShader at devicePixelRatio 1.5; no draw suppression or canvas resizing.",
+  "proofScope": "Cloudway exploration reveal-distance comparison at arrival, seeded raft and warning approaches, and both exploration zoom limits.",
+  "limitations": "Appearance evidence from the direct development layout; the midroute frame uses a seeded checkpoint and is not a traversal claim.",
+  "fogPolicy": {
+    "near": 9,
+    "far": 14,
+    "distance": "radial camera-space distance"
+  },
+  "assetBaseline": {
+    "platformKit": {
+      "assetId": "cloudway-platform-kit-v1",
+      "file": "apps/beside-cue/public/games/cloudway-v3/cloudway-platform-kit-v3.glb",
+      "manifestPath": "apps/beside-cue/public/games/cloudway-v3/manifest.json",
+      "manifestVersion": 3,
+      "sha256": "e96bb26369cb037dffcfab3d0c71911dc7e872c2b8f766db8cb73599a6d51c62"
+    },
+    "skyBackdrop": {
+      "assetId": "floating-museum-cloudscape-v3",
+      "file": "apps/beside-cue/public/games/journey-map-v3/cloudscape.webp",
+      "manifestPath": "apps/beside-cue/public/games/journey-map-v3/manifest.json",
+      "manifestVersion": 1,
+      "sha256": "3cab6e70611c1166e536e4c1de78a063abc7bc51030eb1026c2caab82db5b75c"
+    }
+  },
+  "evidence": [
+    {
+      "id": "arrival",
+      "checkpoint": "cloudway-checkpoint-arrival",
+      "player": {
+        "x": 0,
+        "y": 0,
+        "z": 0.8
+      },
+      "action": {
+        "kind": "authored-camera"
+      },
+      "authoredYaw": 3.141592653589793,
+      "capturedYaw": 3.141592653589793,
+      "raster": {
+        "cssWidth": 1440,
+        "cssHeight": 900,
+        "pixelWidth": 2160,
+        "pixelHeight": 1350,
+        "devicePixelRatio": 1.5
+      },
+      "file": "tightened-arrival.png",
+      "errors": []
+    },
+    {
+      "id": "raft-approach",
+      "checkpoint": "cloudway-checkpoint-frost-catch",
+      "player": {
+        "x": 0.7,
+        "y": 0,
+        "z": 9.5
+      },
+      "action": {
+        "kind": "authored-camera"
+      },
+      "authoredYaw": 3.141592653589793,
+      "capturedYaw": 3.141592653589793,
+      "raster": {
+        "cssWidth": 1440,
+        "cssHeight": 900,
+        "pixelWidth": 2160,
+        "pixelHeight": 1350,
+        "devicePixelRatio": 1.5
+      },
+      "file": "tightened-raft-approach.png",
+      "errors": []
+    },
+    {
+      "id": "midroute",
+      "checkpoint": "cloudway-checkpoint-glide-east",
+      "player": {
+        "x": 0.7,
+        "y": 0,
+        "z": 18.45
+      },
+      "action": {
+        "kind": "authored-camera"
+      },
+      "authoredYaw": 3.141592653589793,
+      "capturedYaw": 3.141592653589793,
+      "raster": {
+        "cssWidth": 1440,
+        "cssHeight": 900,
+        "pixelWidth": 2160,
+        "pixelHeight": 1350,
+        "devicePixelRatio": 1.5
+      },
+      "file": "tightened-midroute.png",
+      "errors": []
+    },
+    {
+      "id": "arrival-orbit-zoom-out",
+      "checkpoint": "cloudway-checkpoint-arrival",
+      "player": {
+        "x": 0,
+        "y": 0,
+        "z": 0.8
+      },
+      "action": {
+        "kind": "real-mouse-orbit-and-wheel",
+        "yawOffset": -0.58,
+        "wheelDeltaY": 2000,
+        "expectedBoomDistance": 6.5
+      },
+      "authoredYaw": 3.141592653589793,
+      "capturedYaw": 2.561592653589795,
+      "raster": {
+        "cssWidth": 1440,
+        "cssHeight": 900,
+        "pixelWidth": 2160,
+        "pixelHeight": 1350,
+        "devicePixelRatio": 1.5
+      },
+      "file": "tightened-arrival-orbit-zoom-out.png",
+      "errors": []
+    },
+    {
+      "id": "arrival-orbit-zoom-in",
+      "checkpoint": "cloudway-checkpoint-arrival",
+      "player": {
+        "x": 0,
+        "y": 0,
+        "z": 0.8
+      },
+      "action": {
+        "kind": "real-mouse-orbit-and-wheel",
+        "yawOffset": 0.58,
+        "wheelDeltaY": -2000,
+        "expectedBoomDistance": 1.8
+      },
+      "authoredYaw": 3.141592653589793,
+      "capturedYaw": 3.7215926535897914,
+      "raster": {
+        "cssWidth": 1440,
+        "cssHeight": 900,
+        "pixelWidth": 2160,
+        "pixelHeight": 1350,
+        "devicePixelRatio": 1.5
+      },
+      "file": "tightened-arrival-orbit-zoom-in.png",
+      "errors": []
+    }
+  ]
+}

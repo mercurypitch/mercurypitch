@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-conservatory-v8-candidate",
+  "operation": "remesh",
+  "parentTaskId": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
+  "sourceVariant": "pre_remeshed_glb",
+  "source": {
+    "file": "meshy/raw/conservatory-pre-remesh-v6.glb",
+    "bytes": 21519992,
+    "sha256": "7f9eefd963e7fdb7b4d9863a4588ad293d3f8a17c27a68fd359306d647b5b6f4",
+    "providerTaskType": "image-to-3d"
+  },
+  "request": {
+    "topology": "triangle",
+    "target_polycount": 110000,
+    "target_formats": [
+      "glb"
+    ],
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "authorization": "Owner explicitly authorized Meshy credits needed for the V8 conservatory repair.",
+  "estimatedCredits": 5,
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "archived",
+  "providerReconciliation": {
+    "checkedAtUtc": "2026-09-23T14:39:42.631152+00:00",
+    "purpose": "Confirm the interrupted V8 attempt created no unreceipted paid task.",
+    "taskLists": {
+      "remesh": [
+        {
+          "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790082668648
+        },
+        {
+          "taskId": "01a0c57f-b423-77b4-a2cd-0e4648510e29",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019875918
+        },
+        {
+          "taskId": "01a0c57f-a8a7-72ee-8557-126f8ec28e78",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019872982
+        },
+        {
+          "taskId": "01a0c57f-9917-734f-9c03-ea200ea04a4b",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019868992
+        },
+        {
+          "taskId": "01a0c104-1de9-73fb-8209-ba38f8260ced",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789944667664
+        },
+        {
+          "taskId": "01a0c090-4b93-76b7-a17d-49e24fcb356e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789937077359
+        }
+      ],
+      "retexture": [
+        {
+          "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790083241392
+        }
+      ]
+    },
+    "balance": 3880,
+    "conclusion": "No remesh or retexture task exists after the archived V7 tasks."
+  },
+  "balanceBefore": 3880,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 30
+  },
+  "submittedAtUtc": "2026-09-23T14:39:43.477322+00:00",
+  "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+  "balanceAfterSubmit": 3875,
+  "observedBalanceDeltaAtSubmit": 5,
+  "lastStatus": {
+    "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "lastCheckedAtUtc": "2026-09-23T14:41:44.684523+00:00",
+  "finalStatus": {
+    "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "balanceAfterArchiveCheck": 3875,
+  "observedBalanceDeltaFinal": 5,
+  "archivedAtUtc": "2026-09-23T14:41:47.365477+00:00",
+  "archiveDownload": {
+    "method": "bounded CDN byte ranges or authenticated MCP download",
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlPersisted": false
+  },
+  "file": {
+    "path": "meshy/conservatory-remesh-110k.glb",
+    "bytes": 8188772,
+    "sha256": "f936106d6eed572666b21b511efcbec35c342ae6be0c2402ea94aac6f133febf"
+  },
+  "readiness": "Review-only untextured geometry candidate. Inspect ribs, bays, foliage silhouette, circular plinth, primary openings, and finial before retexture."
+}

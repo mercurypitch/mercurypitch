@@ -1,0 +1,48 @@
+{
+  "revision": "merc-voice-auditions-v1-2026-09-20",
+  "direction": "c",
+  "label": "Grounded Wry",
+  "status": "complete",
+  "started_at": "2026-09-20T10:52:20.515Z",
+  "model": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "seed": 11092026,
+  "voice_library_saved": false,
+  "previews": [
+    {
+      "take": "c1",
+      "file": "merc-c1.pcm",
+      "generated_voice_id": "FlMxNEUIc7h9ZMa6xHh3",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 19.92,
+      "bytes": 1756944,
+      "sha256": "70e67a7ce3d9d4dab52e3f4a2fc255af51f11c1b94aa615ed4bc7527b2f52447"
+    },
+    {
+      "take": "c2",
+      "file": "merc-c2.pcm",
+      "generated_voice_id": "Y7aUBOrlrSzDMCD2mkIW",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 21.6,
+      "bytes": 1905120,
+      "sha256": "2e25c95c11f48c0aec1c32d6d8d8fb463aac54a67a9788bac70decc5839da1f7"
+    },
+    {
+      "take": "c3",
+      "file": "merc-c3.pcm",
+      "generated_voice_id": "tfXWVZRQ7tJmIFe9sTuq",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 20.24,
+      "bytes": 1785168,
+      "sha256": "a28fcc29bb07912f0ed8d10a259cffeb91b876dbc060dfd2ecd4fc15475b60b9"
+    }
+  ],
+  "http_status": 200,
+  "provider_request_id": null,
+  "provider_character_cost": null,
+  "returned_text_matches": true,
+  "completed_at": "2026-09-20T10:52:31.162Z"
+}

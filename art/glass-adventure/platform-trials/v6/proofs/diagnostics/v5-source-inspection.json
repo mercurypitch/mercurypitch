@@ -1,0 +1,322 @@
+{
+  "schema": 1,
+  "purpose": "Immutable V5 donor measurements and provider-map gold-mask preflight before V6 authoring",
+  "constraints": {
+    "landingMetres": [
+      1.7,
+      1.3
+    ],
+    "landingTopBlenderZ": 0.0,
+    "visualEnvelopeMetres": [
+      1.8,
+      1.4
+    ],
+    "sourceTopologyMutation": false,
+    "wholeShellDecimation": false,
+    "contactFlattening": false
+  },
+  "assets": [
+    {
+      "asset": "frost",
+      "source": {
+        "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/dense-donor.glb",
+        "bytes": 46738536,
+        "sha256": "5f1c6fe3ebafc293283841527392ffe0972b28b50bdaaba293bfaaeaa0bec67c",
+        "receipt": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/receipt.json",
+        "receiptSha256": "b716fd1aa54d61abcffd62b3acc2636a693765db02aeae03442c3bccb1f5ae25",
+        "taskId": "01a0d008-eb11-7661-bca6-4fb4f1986fff"
+      },
+      "mesh": {
+        "objects": 1,
+        "vertices": 339884,
+        "referencedVertices": 339884,
+        "unusedVertices": 0,
+        "triangles": 632256,
+        "degenerateTriangles": 0,
+        "nonfinitePositions": 0,
+        "uvLayers": [
+          {
+            "name": "UVMap",
+            "loops": 1896768,
+            "finite": true
+          }
+        ]
+      },
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.95065701,
+          -0.512574017,
+          -0.264328986
+        ],
+        "max": [
+          0.950115979,
+          0.513130009,
+          0.266184002
+        ]
+      },
+      "rawDimensionsBlenderZUp": [
+        1.900773048,
+        1.025704026,
+        0.530512989
+      ],
+      "uniformVisualFit": {
+        "method": "uniform scale to the established 1.80m V3 decorative width; centre X/Y; translate sampled source landing to Z=0",
+        "scale": 0.946983124,
+        "dimensionsMetres": [
+          1.799999952,
+          0.971324384,
+          0.502386808
+        ],
+        "axisWiseStretching": false,
+        "landingRawZ": 0.231700658,
+        "landingBlenderZ": 0.0,
+        "landingBins": [
+          {
+            "height": 0.231700658,
+            "area": 1.017941825,
+            "polygons": 144591
+          },
+          {
+            "height": 0.244963483,
+            "area": 0.122506773,
+            "polygons": 390
+          },
+          {
+            "height": 0.242310918,
+            "area": 0.00609773,
+            "polygons": 377
+          },
+          {
+            "height": 0.263531437,
+            "area": 0.005026509,
+            "polygons": 55
+          },
+          {
+            "height": 0.260878872,
+            "area": 0.003434189,
+            "polygons": 117
+          },
+          {
+            "height": 0.234353223,
+            "area": 0.002421227,
+            "polygons": 986
+          },
+          {
+            "height": 0.237005788,
+            "area": 0.001283588,
+            "polygons": 503
+          },
+          {
+            "height": 0.239658353,
+            "area": 0.001106264,
+            "polygons": 351
+          }
+        ],
+        "landingPatch": {
+          "toleranceRawUnits": 0.006631412,
+          "polygons": 169592,
+          "vertices": 116368,
+          "areaRawSquareUnits": 1.076782112,
+          "boundsRaw": {
+            "min": [
+              -0.883562982,
+              -0.460649014,
+              0.224590003
+            ],
+            "max": [
+              0.883054018,
+              0.462202996,
+              0.239216
+            ]
+          },
+          "dimensionsRaw": [
+            1.76661706,
+            0.922852039,
+            0.014625996
+          ],
+          "dimensionsAfterUniformFitMetres": [
+            1.672956467,
+            0.873925269,
+            0.013850572
+          ]
+        }
+      },
+      "materialMaskDiagnostic": {
+        "baseColor": {
+          "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-base_color.png",
+          "bytes": 26526561,
+          "sha256": "59be1a4ece7ad4a9ae04aef836facf28b176686017d9fdb1e3c09718acd09ca3",
+          "dimensions": [
+            4096,
+            4096
+          ]
+        },
+        "providerMetallic": {
+          "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/textures/set-0-metallic.png",
+          "bytes": 970239,
+          "sha256": "307f2634681b3d9fe8ca0ad35bc66df1edff5045eeeb6cfd910fffbc2ba3f7fa",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "fractionAbove038": 0.157711029
+        },
+        "candidateGoldMask": {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/diagnostics/frost-gold-mask-candidate.png",
+          "bytes": 56012,
+          "sha256": "719b2465b0c07eb789bd53958af16a1a5a339974e47c5d330192dd74352d05f7",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "fractionWarmAndMetallic": 0.135168791,
+          "fractionAfterOneTexelClose": 0.136402845,
+          "threshold": {
+            "providerMetallicGreaterThan": 0.38,
+            "redGreenRatioGreaterThan": 1.035,
+            "greenBlueRatioGreaterThan": 1.12,
+            "redBlueRatioGreaterThan": 1.24,
+            "saturationGreaterThan": 0.16,
+            "valueGreaterThan": 0.2
+          }
+        }
+      }
+    },
+    {
+      "asset": "glide",
+      "source": {
+        "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+        "bytes": 30284496,
+        "sha256": "394507ad969b53c88bf007edca9d4cc013adf3bab377c10dc3867a606276e36f",
+        "receipt": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/receipt.json",
+        "receiptSha256": "b77320f9b3c6e4ba65c69d8785db0e45b88391cde6e8cb3f8c04c5c35f36f6a3",
+        "taskId": "01a0d009-7173-7142-8f57-0c4c8be24adf"
+      },
+      "mesh": {
+        "objects": 1,
+        "vertices": 82069,
+        "referencedVertices": 82069,
+        "unusedVertices": 0,
+        "triangles": 145370,
+        "degenerateTriangles": 0,
+        "nonfinitePositions": 0,
+        "uvLayers": [
+          {
+            "name": "UVMap",
+            "loops": 436110,
+            "finite": true
+          }
+        ]
+      },
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.950618982,
+          -0.441208988,
+          -0.159890994
+        ],
+        "max": [
+          0.948642015,
+          0.442544013,
+          0.181277007
+        ]
+      },
+      "rawDimensionsBlenderZUp": [
+        1.899260998,
+        0.883753002,
+        0.341167986
+      ],
+      "uniformVisualFit": {
+        "method": "uniform scale to the established 1.80m V3 decorative width; centre X/Y; translate sampled source landing to Z=0",
+        "scale": 0.947737042,
+        "dimensionsMetres": [
+          1.799999952,
+          0.837565482,
+          0.323337525
+        ],
+        "axisWiseStretching": false,
+        "landingRawZ": 0.160806913,
+        "landingBlenderZ": 0.0,
+        "landingBins": [
+          {
+            "height": 0.160806913,
+            "area": 1.123378083,
+            "polygons": 156
+          }
+        ],
+        "landingPatch": {
+          "toleranceRawUnits": 0.0042646,
+          "polygons": 2775,
+          "vertices": 2762,
+          "areaRawSquareUnits": 1.319515168,
+          "boundsRaw": {
+            "min": [
+              -0.916773975,
+              -0.422405988,
+              0.154789001
+            ],
+            "max": [
+              0.943296015,
+              0.412945002,
+              0.165748999
+            ]
+          },
+          "dimensionsRaw": [
+            1.86006999,
+            0.83535099,
+            0.010959998
+          ],
+          "dimensionsAfterUniformFitMetres": [
+            1.762857199,
+            0.791693091,
+            0.010387196
+          ]
+        }
+      },
+      "materialMaskDiagnostic": {
+        "baseColor": {
+          "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-base_color.png",
+          "bytes": 24047218,
+          "sha256": "a8db4ac044c85030b633053f8520497c5f5d730b3f951f19bc61465ec6d2e14d",
+          "dimensions": [
+            4096,
+            4096
+          ]
+        },
+        "providerMetallic": {
+          "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-metallic.png",
+          "bytes": 1031749,
+          "sha256": "70c0f773e280188fa93148a900ddf3b536eaea6989837758dcc54ee7ce0f6923",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "fractionAbove038": 0.483145237
+        },
+        "candidateGoldMask": {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/diagnostics/glide-gold-mask-candidate.png",
+          "bytes": 72888,
+          "sha256": "cfd5b67e677e7b35898a8707079ac82c555fc3accdaffddb76ae7becdb8e14b0",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "fractionWarmAndMetallic": 0.464166164,
+          "fractionAfterOneTexelClose": 0.468254089,
+          "threshold": {
+            "providerMetallicGreaterThan": 0.38,
+            "redGreenRatioGreaterThan": 1.035,
+            "greenBlueRatioGreaterThan": 1.12,
+            "redBlueRatioGreaterThan": 1.24,
+            "saturationGreaterThan": 0.16,
+            "valueGreaterThan": 0.2
+          }
+        }
+      }
+    }
+  ],
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 900 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/inspect_v5_sources.py"
+}

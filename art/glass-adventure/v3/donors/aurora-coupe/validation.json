@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "glbSha256": "61e0c2d373204eb6929df3e4834ccca1ae1d2f9d27d9ee55d398e2cb6d70e024",
+  "geometryValidation": "geometry-validation.json",
+  "sourceAndRepairEvidence": [
+    "clean-voxel-trial.json",
+    "clean-surface-lod.json",
+    "coupe-lod-50k-repaired.json",
+    "ready-intact.json"
+  ],
+  "visualReview": {
+    "status": "passed for candidate inspection; game integration remains separate",
+    "reviewer": "coordinating agent",
+    "observations": [
+      "Actual Meshy fluted bowl, open interior, shaped stem, foot and laurel trim retained",
+      "Physical clear glass and gold finish inspected in intact and expanded23-fragment renders",
+      "Gold continues across matching cut fragments; each piece is above the proof floor",
+      "Original generated surface waviness remains visible at macro distance"
+    ],
+    "proofs": [
+      {
+        "file": "finalized-intact.png",
+        "sha256": "21247dcb4f81721cf2cc525f79b4956f812ffe2a82d2fc9edffc90752728ad50"
+      },
+      {
+        "file": "finalized-fracture.png",
+        "sha256": "f53736e3da7e2ca8864394389fb4b9981c1aa6b16f012d96329cb6b04b73d839"
+      }
+    ]
+  },
+  "runtimeActivated": false
+}

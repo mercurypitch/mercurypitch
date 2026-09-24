@@ -1,0 +1,30 @@
+{
+  "revision": "merc-coda-singing-v5-2026-09-24",
+  "id": "light-a",
+  "text": "[sings gently] Let light sing.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "[sings gently] Let light sing.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 2092401
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-23T23:32:33.974Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "sYgLqMVNFQWb93qaejNk",
+  "character_cost": "16",
+  "bytes": 88320,
+  "sha256": "29a3f45f0767e643fe37f9f160023da08c32be385dbc0109b3c64b546c1933d1",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 1.84,
+  "completed_at": "2026-09-23T23:32:36.401Z"
+}

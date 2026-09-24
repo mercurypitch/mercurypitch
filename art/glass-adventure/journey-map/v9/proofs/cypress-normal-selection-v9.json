@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-cypress-candidate-v9",
+  "decision": "accepted-for-runtime-packing",
+  "reviewedAtUtc": "2026-09-23T15:29:20Z",
+  "selectedVariant": "meshy",
+  "selectedNormalSource": "meshy",
+  "candidateManifest": {
+    "file": "exports/floating-museum-cypress-candidate-v9.json",
+    "bytes": 12300,
+    "sha256": "e586ec1bff80c2d2de2f662c7ade350f3a70346eb741cda25aabd9a5dbcbf923"
+  },
+  "selectedCandidate": {
+    "file": "exports/floating-museum-cypress-candidate-v9-meshy-normal.glb",
+    "bytes": 19736348,
+    "sha256": "f322d7f5cfb9f099a143dac1b110cc8efbf3762ca46b67d264d73c373f3486e4",
+    "triangles": 20605,
+    "dimensionsGlTfYUpMetres": [
+      0.38449329137802124,
+      1.7999999523162842,
+      0.45893892645835876
+    ],
+    "groundAnchorErrorMetres": 0
+  },
+  "rejectedCandidate": {
+    "file": "exports/floating-museum-cypress-candidate-v9-dense-bake-normal.glb",
+    "bytes": 22491296,
+    "sha256": "b0d35e79f0bc36407b3d768602439dbf6d8c29937530977065fbfcc3b6b424de",
+    "disposition": "retained as audit source; not approved for runtime packing"
+  },
+  "proofs": [
+    {
+      "file": "proofs/cypress-normal-comparison-v9.json",
+      "bytes": 2565,
+      "sha256": "ce47e4103156f5357262ce97200973d2a7119552abe9c293ff10f8669635542a"
+    },
+    {
+      "file": "proofs/cypress-normal-comparison-front-v9.png",
+      "bytes": 1910605,
+      "sha256": "4d7dfe19cb5f569ca007cbcc3e7b491a107a3b731e8c9b8abb9f2bc8ac55fbbb"
+    },
+    {
+      "file": "proofs/cypress-normal-comparison-angle-v9.png",
+      "bytes": 1942613,
+      "sha256": "b1457ebbd4acf7514c26d649a5a60ba27b6af72f0c71e7c863c9ed85e62cb1a1"
+    }
+  ],
+  "review": {
+    "finding": "Select the Meshy-normal variant. At identical geometry, material, lighting and cameras it keeps coherent directional foliage grooves and the accepted rounded clump silhouette. The dense-donor normal adds dark high-frequency ripples and crusty surface noise across the crown.",
+    "knownLimitations": [
+      "The cypress is a 20,605-triangle review-budget remesh, not hand-authored retopology.",
+      "The selected candidate retains the shared dense-donor ambient-occlusion transfer in its ORM texture; only the dense-donor normal map is rejected.",
+      "The dense-donor normal variant remains archived for audit evidence."
+    ]
+  },
+  "geometryContinuity": {
+    "positionsByteExactToAcceptedRemesh": true,
+    "indexValuesExactToAcceptedRemesh": true,
+    "indexValueCount": 61815,
+    "providerIndexRepresentationChange": "componentType widened from UNSIGNED_SHORT (5123) to UNSIGNED_INT (5125); values and topology unchanged"
+  },
+  "exportValidation": {
+    "finiteUnitNormals": true,
+    "maximumNormalUnitError": 1.394819799660496e-7,
+    "finiteUnitTangents": true,
+    "maximumTangentUnitError": 0.00008088193485522588,
+    "tangentHandednessPlusOrMinusOne": true,
+    "uv0AndPbrBindingsPresent": true
+  },
+  "runtimeIntegration": "authorized by this receipt but not performed by the candidate finisher"
+}

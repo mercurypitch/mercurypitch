@@ -1,0 +1,73 @@
+[
+  {
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "pose": {
+      "name": "twin-exit-front",
+      "x": 0,
+      "z": 46.537947731018065,
+      "yaw": 3.141592653589793,
+      "pitch": 0.27,
+      "distance": 3.1,
+      "completed": [
+        "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+        "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+        "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+        "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+      ]
+    },
+    "file": "1024-twin-exit-front.png",
+    "allRoomsVisible": false,
+    "metrics": {
+      "drawCalls": 60,
+      "triangles": 248944,
+      "textures": 43,
+      "geometries": 169,
+      "reflectionCaptures": 0,
+      "reflectionTargetPixels": 0
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "pose": {
+      "name": "twin-exit-three-quarter",
+      "x": -2.25,
+      "z": 47.787947731018065,
+      "yaw": -2.0778948311872334,
+      "pitch": 0.25,
+      "distance": 3.3,
+      "completed": [
+        "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+        "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+        "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+        "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+      ]
+    },
+    "file": "1024-twin-exit-three-quarter.png",
+    "allRoomsVisible": false,
+    "metrics": {
+      "drawCalls": 46,
+      "triangles": 223528,
+      "textures": 43,
+      "geometries": 169,
+      "reflectionCaptures": 0,
+      "reflectionTargetPixels": 0
+    },
+    "yaw": -2.0778948311872334,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    },
+    "pageErrors": []
+  }
+]

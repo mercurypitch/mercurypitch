@@ -1,0 +1,104 @@
+{
+  "taskId": "01a0a50c-a548-77e0-ae7b-04a264ef258d",
+  "sourceReference": "references/aurora-coupe-geometry.png",
+  "inputSha256": "f3aada297a70421a633f0bfc67345dc98af5c22f00216348003bf791452d8568",
+  "parameters": {
+    "ai_model": "latest",
+    "model_type": "standard",
+    "should_texture": true,
+    "enable_pbr": true,
+    "should_remesh": true,
+    "target_polycount": 20000,
+    "topology": "triangle",
+    "save_pre_remeshed_model": true,
+    "image_enhancement": false,
+    "remove_lighting": false,
+    "target_formats": [
+      "glb"
+    ],
+    "multi_view_thumbnails": true,
+    "response_format": "json"
+  },
+  "files": [
+    {
+      "role": "glb",
+      "file": "donor.glb",
+      "bytes": 7957896,
+      "sha256": "cc78471e673f2c26a4dc86b0c70130c26a38a47e23ca0af78fe00ec903631879",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "pre-remeshed.glb",
+      "bytes": 35124992,
+      "sha256": "7d943707eff4cbfe362c5f654f599d93bbf27f690db39bdeea9aa01c9810a894",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-base_color",
+      "file": "texture_urls-0-base_color.png",
+      "bytes": 1524316,
+      "sha256": "08fb4eefe79637a8eb7f0639c5029518b92faa71192156e4209f83493da74ffb",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-metallic",
+      "file": "texture_urls-0-metallic.png",
+      "bytes": 588953,
+      "sha256": "ccaf3dd6c8c11bab822fe009d803d8e4bbb66dcb4a5dfa0fd161fef525432bac",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-roughness",
+      "file": "texture_urls-0-roughness.png",
+      "bytes": 1355631,
+      "sha256": "8da7b1de8228b29fa5f06ffc31ea0fcd89f68e251f42702f425d85683a9e25a1",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "texture_urls-0-normal",
+      "file": "texture_urls-0-normal.png",
+      "bytes": 4028063,
+      "sha256": "70bed7f16fb17231e7974f7ae390469feac01641a776dfd8ad45c7e65f9241fc",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_url",
+      "file": "thumbnail_url.png",
+      "bytes": 153002,
+      "sha256": "c22708cee659468f667bbedd25ba7df9a253d40c36108db2501902c01f63ffa5",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-back",
+      "file": "thumbnail_urls-back.png",
+      "bytes": 133634,
+      "sha256": "03a41d54aaf5024c8c73cf370713e98fc861fbfb517ffc58c06aaa588fa2f78c",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-front",
+      "file": "thumbnail_urls-front.png",
+      "bytes": 153002,
+      "sha256": "c22708cee659468f667bbedd25ba7df9a253d40c36108db2501902c01f63ffa5",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-left",
+      "file": "thumbnail_urls-left.png",
+      "bytes": 144388,
+      "sha256": "c424a06913c04417ebc32f0869f9e272ec8070d6ac827e7e175b0cacc08fc455",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "thumbnail_urls-right",
+      "file": "thumbnail_urls-right.png",
+      "bytes": 144300,
+      "sha256": "42b1a91849bc35834c73bc317aa7ebfe2ee88be442b3aa66812fa87a27225c73",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "archivedAt": "2026-09-15T12:38:19.819440+00:00",
+  "complete": true,
+  "preRemeshedAvailable": true
+}

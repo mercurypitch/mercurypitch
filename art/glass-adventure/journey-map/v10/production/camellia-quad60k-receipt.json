@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "provider": "Meshy image-to-3d",
+  "status": "downloaded",
+  "source": {
+    "file": "guides/camellia-crescent-planter.png",
+    "bytes": 1634847,
+    "sha256": "fa4bbfca9ca689aa4bdd6db93a5771b75fa7d3719b11aeb54352bf8f32e2d95b"
+  },
+  "request": {
+    "input_task_id": "01a0d0ad-1f73-77fe-bef9-539183653513",
+    "topology": "quad",
+    "target_polycount": 60000,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "authorization": "Owner authorized prepared guide uploads and Meshy production for current museum polish.",
+  "endpoint": "https://api.meshy.ai/openapi/v1/remesh",
+  "variant": "quad60k",
+  "beforeBalance": {
+    "balance": 3690
+  },
+  "submittedAt": 1790207982.937461,
+  "taskId": "01a0d0b5-ff4c-73c2-bdf6-c0c8a8e83b5c",
+  "providerStatus": {
+    "id": "01a0d0b5-ff4c-73c2-bdf6-c0c8a8e83b5c",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790207983473,
+    "finished_at": 1790208167383,
+    "consumed_credits": 5
+  },
+  "donor": {
+    "file": "sources/camellia-crescent-quad60k.glb",
+    "bytes": 44952708,
+    "sha256": "c83654c1384c7d8e5b7b06ca1e67fa8e5e779c3bafeb804deef4963c5b36b8f5"
+  },
+  "afterBalance": {
+    "balance": 3685
+  }
+}

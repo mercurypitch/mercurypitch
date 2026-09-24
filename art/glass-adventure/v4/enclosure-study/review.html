@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Glassworks enclosure studies</title>
+    <style>
+      :root {
+        font:
+          17px/1.55 Arial,
+          sans-serif;
+        color: #173c43;
+        background: #f6f3eb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        max-width: 1360px;
+        padding: 32px;
+        margin: auto;
+      }
+      h1 {
+        font:
+          clamp(38px, 5vw, 66px)/1.05 Georgia,
+          serif;
+        margin: 22px 0;
+      }
+      h2 {
+        font:
+          30px/1.15 Georgia,
+          serif;
+      }
+      p {
+        max-width: 78ch;
+      }
+      a {
+        color: #165d69;
+        text-underline-offset: 4px;
+      }
+      .hero {
+        width: 100%;
+        display: block;
+        border: 1px solid #c5cdc7;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin: 36px 0;
+      }
+      .card {
+        background: #fff;
+        padding: 20px;
+        border: 1px solid #d4d9d1;
+      }
+      .card img {
+        width: 100%;
+        display: block;
+      }
+      .links {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin: 18px 0;
+      }
+      .tag {
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 13px;
+        color: #65736a;
+      }
+      .note {
+        padding: 18px;
+        border-left: 3px solid #bc9b54;
+        background: #eeeade;
+      }
+      @media (max-width: 700px) {
+        main {
+          padding: 18px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="../../v3/review.html">Glass and architecture gallery</a>
+      <p class="tag">V4 · separate spatial study</p>
+      <h1>A quiet room<br />above the clouds.</h1>
+      <p>
+        Nine repeated Meshy marble bays form an open-roof museum room. Solid
+        screens conceal the next view; genuine windows reveal selected glimpses
+        outside. The live adventure layout remains separate.
+      </p>
+      <img
+        class="hero"
+        src="proofs/interior.png"
+        alt="Actual Blender render of the marble room, open windows and glass exhibits"
+      />
+      <div class="links">
+        <a href="viewer.html?asset=room">Explore the room in 3D</a
+        ><a href="enclosure-study-v1.blend">Editable Blender room</a
+        ><a href="enclosure-study-v1.glb">Room GLB</a
+        ><a href="proofs/room-overview.png">Room overview</a>
+      </div>
+      <p class="note">
+        The study is 8.89 × 6.05 m, with 3.6 m bays and a deliberate 2.49 m
+        entrance. It has no gameplay collision. The 0.95 m window sill needs a
+        follow-camera and scale review with Merc before adopting this enclosure
+        in a level.
+      </p>
+      <div class="grid">
+        <article class="card">
+          <h2>The open window</h2>
+          <img
+            src="../architecture/proofs/museum-window-bay-01-final-three-quarter.png"
+            alt="Actual finalized open window donor"
+          />
+          <p>
+            22,204 original triangles. Open center verified by geometric rays:
+            about 1.31 m wide, sill 0.95 m. No generated fill covers the
+            opening.
+          </p>
+          <div class="links">
+            <a href="viewer.html?asset=window">Inspect in 3D</a
+            ><a
+              href="../architecture/sources/museum-window-bay-01-final-v1.blend"
+              >Blender source</a
+            >
+          </div>
+        </article>
+        <article class="card">
+          <h2>The marble screen</h2>
+          <img
+            src="../architecture/proofs/museum-screen-bay-01-final-three-quarter.png"
+            alt="Actual finalized solid marble screen donor"
+          />
+          <p>
+            19,479 original triangles. Blind arched panel with continuous
+            central geometry; the matching sightline probes are blocked.
+          </p>
+          <div class="links">
+            <a href="viewer.html?asset=screen">Inspect in 3D</a
+            ><a
+              href="../architecture/sources/museum-screen-bay-01-final-v1.blend"
+              >Blender source</a
+            >
+          </div>
+        </article>
+      </div>
+      <p>
+        These are actual Blender renders and exported Meshy models, not
+        generated concept pictures. Editable bay sources preserve original
+        packed 2K maps; each staged GLB uses three verified 1K maps.
+      </p>
+      <div class="links">
+        <a href="README.md">Study notes and limits</a
+        ><a href="../architecture/README.md"
+          >Source receipts and opening measurements</a
+        ><a href="manifest.json">Placement manifest</a>
+      </div>
+    </main>
+  </body>
+</html>

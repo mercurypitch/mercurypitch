@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Melodies in glass — Glassworks audition</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <a href="/glass-game/?campaign=1">Glassworks</a
+        ><span>Reference audition</span>
+      </header>
+      <h1>Melodies in glass</h1>
+      <p class="intro">
+        A little rise, a gentle return. Listen to the shape of each phrase.
+      </p>
+      <div id="melodies" role="radiogroup" aria-label="Choose a melody"></div>
+      <section class="exhibit" aria-labelledby="melody-title">
+        <div class="exhibit-heading">
+          <h2 id="melody-title"></h2>
+          <span id="range"></span>
+        </div>
+        <svg
+          id="ribbon"
+          viewBox="0 0 960 330"
+          role="img"
+          aria-labelledby="ribbon-title ribbon-desc"
+        >
+          <title id="ribbon-title">Melody pitch contour</title>
+          <desc id="ribbon-desc">
+            The line rises for higher notes and falls for lower notes. Gold
+            follows the reference sound.
+          </desc>
+          <g id="grid"></g>
+          <g id="paths"></g>
+          <g id="fills"></g>
+          <g id="dots"></g>
+          <circle id="cursor" r="9" hidden></circle>
+        </svg>
+        <div class="exhibit-foot">
+          <p id="description"></p>
+          <span id="playback-state" role="status">Ready to listen</span>
+        </div>
+      </section>
+      <div class="controls">
+        <button id="play" type="button">Hear melody</button>
+        <label
+          >Starting note<select id="root">
+            <option value="48">C3 — lower</option>
+            <option value="52">E3</option>
+            <option value="55" selected>G3 — middle</option>
+            <option value="60">C4</option>
+            <option value="64">E4 — higher</option>
+          </select></label
+        >
+        <label
+          >Pace<select id="pace">
+            <option value="1.3">Slower</option>
+            <option value="1" selected>Gentle</option>
+            <option value="0.82">Flowing</option>
+          </select></label
+        >
+      </div>
+      <p class="notice">
+        The gold line follows the example. Your microphone is off; singing is
+        not scored here.
+      </p>
+      <details>
+        <summary>How this could play in the gallery</summary>
+        <p>
+          Merc stops at a special vase or portrait. You hear its melody, then
+          sing along the curve. Your voice fills the ribbon from the first note
+          to the last, and the glass breaks. We start with three notes; longer
+          phrases and gentle vibrato come later.
+        </p>
+        <p>
+          These are original melody sketches. Try a few starting notes and
+          paces, then tell us which phrases feel inviting to sing.
+        </p>
+      </details>
+    </main>
+    <script type="module" src="./player.mjs"></script>
+  </body>
+</html>

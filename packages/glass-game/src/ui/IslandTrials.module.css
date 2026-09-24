@@ -1,0 +1,139 @@
+/* Cloudway cards share the museum's ivory, jade and engraved gold palette. */
+.trials {
+  padding: 12px max(24px, env(safe-area-inset-right))
+    max(48px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
+.heading {
+  margin-bottom: 24px;
+}
+.heading > span,
+.island {
+  color: #806335;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.heading h2 {
+  margin: 8px 0;
+  font-family: 'Iowan Old Style', Georgia, serif;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+.heading p,
+.copy p {
+  color: #53695e;
+  line-height: 1.5;
+}
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  max-width: 1050px;
+  overflow: hidden;
+  border: 1px solid #b3bea9;
+  border-radius: 22px;
+  background: #fffaf0;
+  box-shadow: 0 13px 34px #29493b12;
+}
+.art {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  object-fit: cover;
+  background: #d7e8e3;
+}
+.copy {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 32px);
+}
+.copy h3 {
+  margin: 9px 0 12px;
+  font-family: 'Iowan Old Style', Georgia, serif;
+  font-size: 32px;
+  font-weight: 400;
+}
+.copy p {
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+.requirements {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+.requirements li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: 7px;
+  color: #53695e;
+  font-size: 13px;
+}
+.requirements svg {
+  grid-row: 1 / 3;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #9b8256;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.requirements li[data-ready='true'] svg {
+  stroke: #286358;
+}
+.requirements strong {
+  grid-column: 2;
+  margin-top: 3px;
+  color: #224943;
+  font-size: 12px;
+}
+.enter {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 16px;
+  border: 1px solid #ae873d;
+  border-radius: 7px 24px 24px 7px;
+  color: #fff8e8;
+  background: #224943;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.enter:disabled {
+  color: #5d695f;
+  background: #e7e7d9;
+  border-color: #b4bca9;
+  cursor: default;
+}
+.enter:focus-visible {
+  outline: 3px solid #bd8e43;
+  outline-offset: 3px;
+}
+.copy > small {
+  display: block;
+  margin-top: 12px;
+  color: #617268;
+  font-size: 12px;
+  line-height: 1.4;
+}
+@media (width < 700px) {
+  .trials {
+    padding-inline: max(14px, env(safe-area-inset-left))
+      max(14px, env(safe-area-inset-right));
+  }
+  .card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .art {
+    height: 190px;
+    min-height: 0;
+  }
+  .copy h3 {
+    font-size: 28px;
+  }
+}

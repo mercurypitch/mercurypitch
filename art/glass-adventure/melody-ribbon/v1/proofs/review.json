@@ -1,0 +1,155 @@
+{
+  "scope": "Local reference audition, not live microphone judging or physical-device validation",
+  "reports": [
+    {
+      "name": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "input": "Real mouse and keyboard",
+      "measurements": {
+        "viewport": 1440,
+        "contentWidth": 1440,
+        "controls": [
+          {
+            "label": "First arc3 notes",
+            "width": 151.515625,
+            "height": 46
+          },
+          {
+            "label": "Sunlit steps5 notes",
+            "width": 176.453125,
+            "height": 46
+          },
+          {
+            "label": "Gallery arch7 notes",
+            "width": 179.984375,
+            "height": 46
+          },
+          {
+            "label": "Two windows10 notes",
+            "width": 196.296875,
+            "height": 46
+          },
+          {
+            "label": "Hear melody",
+            "width": 178,
+            "height": 46
+          },
+          {
+            "label": "C3 — lower\n            E3\n            G3 — middle\n            C4\n            E4 — higher",
+            "width": 150,
+            "height": 46
+          },
+          {
+            "label": "Slower\n            Gentle\n            Flowing",
+            "width": 117,
+            "height": 46
+          }
+        ]
+      },
+      "errors": []
+    },
+    {
+      "name": "tablet",
+      "viewport": {
+        "width": 820,
+        "height": 1180
+      },
+      "input": "Chromium emulated touch and keyboard",
+      "measurements": {
+        "viewport": 820,
+        "contentWidth": 820,
+        "controls": [
+          {
+            "label": "First arc3 notes",
+            "width": 151.515625,
+            "height": 46
+          },
+          {
+            "label": "Sunlit steps5 notes",
+            "width": 176.453125,
+            "height": 46
+          },
+          {
+            "label": "Gallery arch7 notes",
+            "width": 179.984375,
+            "height": 46
+          },
+          {
+            "label": "Two windows10 notes",
+            "width": 196.296875,
+            "height": 46
+          },
+          {
+            "label": "Hear melody",
+            "width": 178,
+            "height": 46
+          },
+          {
+            "label": "C3 — lower\n            E3\n            G3 — middle\n            C4\n            E4 — higher",
+            "width": 150,
+            "height": 46
+          },
+          {
+            "label": "Slower\n            Gentle\n            Flowing",
+            "width": 117,
+            "height": 46
+          }
+        ]
+      },
+      "errors": []
+    },
+    {
+      "name": "phone",
+      "viewport": {
+        "width": 320,
+        "height": 780
+      },
+      "input": "Chromium emulated touch and keyboard",
+      "measurements": {
+        "viewport": 320,
+        "contentWidth": 320,
+        "controls": [
+          {
+            "label": "First arc3 notes",
+            "width": 140,
+            "height": 63.984375
+          },
+          {
+            "label": "Sunlit steps5 notes",
+            "width": 140,
+            "height": 63.984375
+          },
+          {
+            "label": "Gallery arch7 notes",
+            "width": 140,
+            "height": 63.984375
+          },
+          {
+            "label": "Two windows10 notes",
+            "width": 140,
+            "height": 63.984375
+          },
+          {
+            "label": "Hear melody",
+            "width": 288,
+            "height": 46
+          },
+          {
+            "label": "C3 — lower\n            E3\n            G3 — middle\n            C4\n            E4 — higher",
+            "width": 138,
+            "height": 46
+          },
+          {
+            "label": "Slower\n            Gentle\n            Flowing",
+            "width": 138,
+            "height": 46
+          }
+        ]
+      },
+      "errors": []
+    }
+  ]
+}

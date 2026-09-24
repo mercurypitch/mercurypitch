@@ -1,0 +1,105 @@
+[
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "warm-low-gallery",
+      "x": 0,
+      "z": 0,
+      "yaw": 1.5707963267948966,
+      "distance": 3.1,
+      "pitch": 0.14,
+      "completed": [
+        "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+        "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+        "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+        "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+      ]
+    },
+    "file": "800-warm-low-gallery.png",
+    "allRoomsVisible": false,
+    "metrics": {
+      "drawCalls": 93,
+      "triangles": 830899,
+      "textures": 40,
+      "geometries": 166,
+      "reflectionCaptures": 0,
+      "reflectionTargetPixels": 0
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "cool-high-gallery",
+      "x": 12.096037511825562,
+      "z": 12.096037511825562,
+      "yaw": 3.141592653589793,
+      "distance": 3.1,
+      "pitch": 0.14,
+      "completed": [
+        "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+        "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+        "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+        "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+      ]
+    },
+    "file": "800-cool-high-gallery.png",
+    "allRoomsVisible": false,
+    "metrics": {
+      "drawCalls": 405,
+      "triangles": 3068140,
+      "textures": 42,
+      "geometries": 175,
+      "reflectionCaptures": 61,
+      "reflectionTargetPixels": 110592
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "listening-court",
+      "x": 24.192075023651125,
+      "z": 24.192075023651125,
+      "yaw": 1.5707963267948966,
+      "distance": 3.1,
+      "pitch": 0.14,
+      "completed": [
+        "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+        "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+        "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+        "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+      ]
+    },
+    "file": "800-listening-court.png",
+    "allRoomsVisible": false,
+    "metrics": {
+      "drawCalls": 373,
+      "triangles": 3002075,
+      "textures": 42,
+      "geometries": 175,
+      "reflectionCaptures": 61,
+      "reflectionTargetPixels": 110592
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pageErrors": []
+  }
+]

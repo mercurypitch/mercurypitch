@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-temple-v3",
+  "taskType": "image-to-3d",
+  "state": "archived",
+  "authorization": "User requested concept fidelity modeling and authorized broad Meshy spending. Exact guide files generated from selected concept A.",
+  "taskId": "01a0c1ef-9a17-7153-b8b2-384093df5d82",
+  "guide": {
+    "file": "concepts/temple-guide.png",
+    "bytes": 1859031,
+    "sha256": "a4c58ee7e579f9e3fe655eb7228d8a17bcf64e35c79ba906b3f0fd38dca72062"
+  },
+  "finalStatus": {
+    "task_id": "01a0c1ef-9a17-7153-b8b2-384093df5d82",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T03:17:34.059794+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "files": [
+    {
+      "role": "glb",
+      "file": "meshy/floating-museum-temple-v3.glb",
+      "bytes": 13592912,
+      "sha256": "bfc6be24ea860df8ca04a9d8bc269a2552f932cb5726c817b9071fa2b1d37c8c"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/floating-museum-temple-v3-pre-remesh.glb",
+      "bytes": 32205248,
+      "sha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "balanceBeforeBatch": 4150,
+  "balanceAfterArchiveCheck": 4060,
+  "readiness": "Raw source archive only; Blender normalization, LOD, material sizing, fresh-export validation, and visual proof remain separate gates."
+}

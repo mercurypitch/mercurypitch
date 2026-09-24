@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-cliff-v3",
+  "taskType": "image-to-3d",
+  "state": "archived",
+  "authorization": "User requested concept fidelity modeling and authorized broad Meshy spending. Exact guide files generated from selected concept A.",
+  "taskId": "01a0c1ef-fb0b-7173-9943-cb904a0e8df7",
+  "guide": {
+    "file": "concepts/cliff-guide.png",
+    "bytes": 2215417,
+    "sha256": "21b70135639b6cbeefb567af19bd9abe2e1a31db952c1ab60d95fe8e6a7c4a38"
+  },
+  "finalStatus": {
+    "task_id": "01a0c1ef-fb0b-7173-9943-cb904a0e8df7",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T03:17:34.059794+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "files": [
+    {
+      "role": "glb",
+      "file": "meshy/floating-museum-cliff-v3.glb",
+      "bytes": 16458528,
+      "sha256": "8792c90d6d45d7ca15a3feeab9fb3c34263023810f5fada41f73c3abbed3cc4c"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/floating-museum-cliff-v3-pre-remesh.glb",
+      "bytes": 19092356,
+      "sha256": "6d72a57e2305bce261c40ad42303e5c75666993e9da68531cc3f7abbe73504bb",
+      "sourceHost": "assets.meshy.ai"
+    }
+  ],
+  "balanceBeforeBatch": 4150,
+  "balanceAfterArchiveCheck": 4060,
+  "readiness": "Raw source archive only; Blender normalization, LOD, material sizing, fresh-export validation, and visual proof remain separate gates."
+}

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "reviewSource": {
+    "file": "exports/floating-museum-twin-connector-candidate-v7.glb",
+    "sha256": "2553d7d038a1da33e050f75c0f959548c919d957936be315c75e4e6a99fcc0b0"
+  },
+  "runtimeSource": {
+    "file": "exports/floating-museum-architecture-kit-v7.glb",
+    "sha256": "b427dd61cd5da0c68cd9831d2524e6d7452888d21bcb3219c0671182b1002cd4"
+  },
+  "proof": {
+    "file": "proofs/twin-connector-runtime-texture-comparison-v7.png",
+    "bytes": 1040736,
+    "sha256": "3274e973ba898e03e0b3be78cfdac1b101864a15d2309b89f093279398ae5b19"
+  },
+  "metrics": {
+    "comparedForegroundPixels": 297619,
+    "foregroundMeanAbsoluteChannelDelta": 3.0377,
+    "foregroundP95AbsoluteChannelDelta": 11.0,
+    "foregroundChannelsAboveEight": 0.077382,
+    "foregroundPsnrDb": 33.7584
+  },
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 24,
+    "seed": 17,
+    "resolution": [
+      1000,
+      1000
+    ],
+    "blender": "5.2.2 LTS"
+  }
+}

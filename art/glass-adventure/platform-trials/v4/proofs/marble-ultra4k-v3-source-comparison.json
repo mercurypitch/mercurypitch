@@ -1,0 +1,527 @@
+{
+  "schema": 1,
+  "asset": "cloudway-marble-platform-source-audition-v4",
+  "purpose": "Source-only same-scale comparison of the current V3 marble platform and the archived Meshy 7.1 Ultra 4K dense donor. This is audition evidence only: no remesh, bake, generation, runtime export or public integration is performed.",
+  "decision": {
+    "state": "accepted-as-high-detail-source-donor",
+    "selectedSource": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+    "scope": "dense source donor for a later professional high-to-low workflow",
+    "runtimeIntegrationAuthorized": false,
+    "basis": [
+      "Neutral clay shows cleaner and more coherent apron arches, corner blocks, feet, flower medallions, framed top inlay and foliage than the current V3 source.",
+      "Textured views preserve legible marble, teal and gold regions while the V3 source still exposes dark top-surface tears and jagged foliage.",
+      "The dense archive carries 4K base color and normal plus 2K metallic and roughness maps, suitable as high-detail bake inputs."
+    ],
+    "fitRiskAtMatchedWidth": {
+      "v3DepthMetres": 1.400053,
+      "ultraDepthMetres": 0.970874,
+      "ultraDepthDeltaPercent": -30.65,
+      "v3HeightMetres": 0.572171,
+      "ultraHeightMetres": 0.650717,
+      "ultraHeightDeltaPercent": 13.73
+    },
+    "remainingGates": [
+      "Fit a low mesh to the V3 1.801668 x 1.400053 metre landing envelope and collider contract.",
+      "Retopologize and unwrap without changing the accepted silhouette or landing surface.",
+      "Bake normal and AO from this dense donor, then validate UVs, finite unit normals and tangents.",
+      "Review texture memory and runtime performance before any asset integration."
+    ],
+    "reviewEvidence": [
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-clay-front.png",
+        "bytes": 1864355,
+        "sha256": "d4646b67bb54b79f42028ec089fdfa52fdabceaa77cf76a28b82d36043e0680a",
+        "dimensions": [
+          1800,
+          1000
+        ]
+      },
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-clay-three-quarter.png",
+        "bytes": 1890942,
+        "sha256": "007e210a61d5145882143cd158a18fb1fddc433c3ebd7a04d53a20df48dc480c",
+        "dimensions": [
+          1800,
+          1000
+        ]
+      },
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-textured-front.png",
+        "bytes": 2005717,
+        "sha256": "3c69d1a76ed2b674ac8cfcd43bcc8cd834c757fd6a24c2a40aab487744a4b9d3",
+        "dimensions": [
+          1800,
+          1000
+        ]
+      },
+      {
+        "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-textured-three-quarter.png",
+        "bytes": 2059570,
+        "sha256": "bb3fba8eca731d412d24c475ba40e4ee92150d49c0d84fa99fe72f3378ead773",
+        "dimensions": [
+          1800,
+          1000
+        ]
+      }
+    ]
+  },
+  "normalization": {
+    "method": "Uniformly scale each source to the current V3 marble visual X width, preserve aspect ratio, center in X/Y, then ground its minimum Blender Z at zero.",
+    "targetWidthMetres": 1.801668,
+    "why": "Width is the stable V3 runtime-space authority. Uniform scaling exposes depth and height proportion changes instead of hiding them with axis-wise stretching."
+  },
+  "order": [
+    "Current V3 source platform",
+    "Meshy 7.1 Ultra 4K dense donor"
+  ],
+  "sourceMeasurements": [
+    {
+      "label": "Current V3 source platform",
+      "file": "art/glass-adventure/platform-trials/v3/exports/cloudway-platform-kit-v3.glb",
+      "selectedRoot": "Cloudway_Marble",
+      "meshObjects": 2,
+      "verticesAfterImport": 67896,
+      "trianglesAfterImport": 40032,
+      "rawBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "rawDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "rawDimensionsGlTfYUpMetres": [
+        1.801668,
+        0.572171,
+        1.400053
+      ],
+      "uniformDisplayScale": 1.000000106,
+      "displayWidthAuthority": "Current V3 source visual X width",
+      "displayCentreXMetres": -1.12,
+      "displayGroundAnchorZMetres": 0.0,
+      "displayDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ]
+    },
+    {
+      "label": "Meshy 7.1 Ultra 4K dense donor",
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+      "selectedRoot": null,
+      "meshObjects": 1,
+      "verticesAfterImport": 702537,
+      "trianglesAfterImport": 1256556,
+      "rawBoundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "rawDimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "rawDimensionsGlTfYUpMetres": [
+        1.893368,
+        0.683837,
+        1.020289
+      ],
+      "uniformDisplayScale": 0.951567785,
+      "displayWidthAuthority": "Current V3 source visual X width",
+      "displayCentreXMetres": 1.12,
+      "displayGroundAnchorZMetres": 0.0,
+      "displayDimensionsBlenderZUpMetres": [
+        1.801668,
+        0.970874,
+        0.650717
+      ]
+    }
+  ],
+  "sourceArchives": {
+    "v3Manifest": {
+      "file": "art/glass-adventure/platform-trials/v3/exports/manifest.json",
+      "bytes": 12517,
+      "sha256": "d3f5c1c136c4964f2cc8b3e1d7ed34a3664c861fd7c8d0b831e0c193894d76f0"
+    },
+    "ultraReceipt": {
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/receipt.json",
+      "bytes": 5862,
+      "sha256": "eda46fffe201c8a673f469ae4fec8c7b89dfca5742d61b366d4ec00004710a04",
+      "taskId": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+      "credits": 35,
+      "providerConfirmation": {
+        "requestedAiModel": "meshy-7.1",
+        "returnedAiModel": null,
+        "requestedGeometryResolution": "4k",
+        "returnedGeometryResolution": "4k",
+        "explicitRequestRecorded": true
+      }
+    }
+  },
+  "glbInventories": {
+    "currentV3": {
+      "file": "art/glass-adventure/platform-trials/v3/exports/cloudway-platform-kit-v3.glb",
+      "bytes": 42929408,
+      "sha256": "5daf655fd51f8c4ac93342c20024d3df803ecef0cbc6d2a4c48bcb85bedf25fe",
+      "selectedRoot": "Cloudway_Marble",
+      "selectedNodeCount": 3,
+      "meshIndices": [
+        10,
+        12
+      ],
+      "materialIndices": [
+        0,
+        5
+      ],
+      "referencedVertices": 67896,
+      "triangles": 40032,
+      "textureBindings": [
+        {
+          "role": "baseColor",
+          "channels": "RGB color; A alpha when present",
+          "materialIndex": 5,
+          "materialName": "Cloudway_Marble__DonorAtlas_01_2K",
+          "textureIndex": 6,
+          "texCoord": 0,
+          "imageIndex": 7,
+          "sourceContract": "EXT_texture_webp"
+        },
+        {
+          "role": "metallicRoughness",
+          "channels": "B metallic; G roughness",
+          "materialIndex": 5,
+          "materialName": "Cloudway_Marble__DonorAtlas_01_2K",
+          "textureIndex": 8,
+          "texCoord": 0,
+          "imageIndex": 8,
+          "sourceContract": "EXT_texture_webp"
+        },
+        {
+          "role": "normal",
+          "channels": "RGB tangent-space normal",
+          "materialIndex": 5,
+          "materialName": "Cloudway_Marble__DonorAtlas_01_2K",
+          "textureIndex": 7,
+          "texCoord": 0,
+          "imageIndex": 6,
+          "sourceContract": "EXT_texture_webp"
+        }
+      ],
+      "embeddedImages": [
+        {
+          "imageIndex": 6,
+          "name": "cloudway_marble-atlas-03-2k",
+          "mimeType": "image/webp",
+          "bytes": 5102574,
+          "sha256": "42ada2b6c8cc28e5849b2a83588edabb081a0fe04a14404fbdaf3d22c97e5326",
+          "format": "WEBP",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 7,
+          "name": "cloudway_marble-atlas-01-2k",
+          "mimeType": "image/webp",
+          "bytes": 4579242,
+          "sha256": "44a52cac1bb67d497bb0bdb43133a4cc291138b28349c1c5309a691a91a12832",
+          "format": "WEBP",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 8,
+          "name": "cloudway_marble-atlas-02-2k",
+          "mimeType": "image/webp",
+          "bytes": 2905416,
+          "sha256": "9a64a83f728eb438e01e46d5093a758d19df181f841fc840aa15569e7097ede4",
+          "format": "WEBP",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        }
+      ]
+    },
+    "ultra4kDense": {
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+      "bytes": 65096584,
+      "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+      "selectedRoot": null,
+      "selectedNodeCount": 1,
+      "meshIndices": [
+        0
+      ],
+      "materialIndices": [
+        0
+      ],
+      "referencedVertices": 702537,
+      "triangles": 1256556,
+      "textureBindings": [
+        {
+          "role": "baseColor",
+          "channels": "RGB color; A alpha when present",
+          "materialIndex": 0,
+          "materialName": null,
+          "textureIndex": 0,
+          "texCoord": 0,
+          "imageIndex": 0,
+          "sourceContract": "core"
+        },
+        {
+          "role": "metallicRoughness",
+          "channels": "B metallic; G roughness",
+          "materialIndex": 0,
+          "materialName": null,
+          "textureIndex": 1,
+          "texCoord": 0,
+          "imageIndex": 1,
+          "sourceContract": "core"
+        },
+        {
+          "role": "normal",
+          "channels": "RGB tangent-space normal",
+          "materialIndex": 0,
+          "materialName": null,
+          "textureIndex": 2,
+          "texCoord": 0,
+          "imageIndex": 2,
+          "sourceContract": "core"
+        }
+      ],
+      "embeddedImages": [
+        {
+          "imageIndex": 0,
+          "name": null,
+          "mimeType": "image/jpeg",
+          "bytes": 14430247,
+          "sha256": "99840c8f8e7e567b8b77df9a17dd0d38062c49536613d58eb6b9cab4d14630f8",
+          "format": "JPEG",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 1,
+          "name": null,
+          "mimeType": "image/jpeg",
+          "bytes": 2801895,
+          "sha256": "811b3d09cbe42f514027f0debfa79f1ecb12e760728cb4e8a6cb771ab7eb44cd",
+          "format": "JPEG",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "mode": "RGB"
+        },
+        {
+          "imageIndex": 2,
+          "name": null,
+          "mimeType": "image/jpeg",
+          "bytes": 10302327,
+          "sha256": "67ea9b4eb616ae82f91c673db534ed1ce4f4f8d4412ae5c9cef3db4be2cf21db",
+          "format": "JPEG",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "mode": "RGB"
+        }
+      ]
+    }
+  },
+  "ultraExternalPbrMaps": [
+    {
+      "role": "base_color",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-base_color.png",
+      "bytes": 24712264,
+      "sha256": "f010c48c9377c99f46ddc89025f7b3e830e53e377b908227575bd79e442e05ba",
+      "format": "PNG",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "role": "metallic",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-metallic.png",
+      "bytes": 781869,
+      "sha256": "1fbcf8ae5a16f5be6f4c34f5a034c8802fb695f9cae720dadbeba8e267f459d1",
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "role": "normal",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-normal.png",
+      "bytes": 20798487,
+      "sha256": "56bfd319cca2e1f84e3aa750bb7e21ca49a112766b4962549a1a45f2fe85a64a",
+      "format": "PNG",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "role": "roughness",
+      "setIndex": 0,
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-roughness.png",
+      "bytes": 1761714,
+      "sha256": "446bc4c73aa2b9ebee7e00deaba1c79ea1c13be1b5bc70f6f2fb350dcd9d78dd",
+      "format": "PNG",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    }
+  ],
+  "groups": [
+    {
+      "mode": "clay",
+      "order": [
+        "Current V3 source platform",
+        "Meshy 7.1 Ultra 4K dense donor"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-clay-front.png",
+          "bytes": 1864355,
+          "sha256": "d4646b67bb54b79f42028ec089fdfa52fdabceaa77cf76a28b82d36043e0680a",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-clay-three-quarter.png",
+          "bytes": 1890942,
+          "sha256": "007e210a61d5145882143cd158a18fb1fddc433c3ebd7a04d53a20df48dc480c",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "textured",
+      "order": [
+        "Current V3 source platform",
+        "Meshy 7.1 Ultra 4K dense donor"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-textured-front.png",
+          "bytes": 2005717,
+          "sha256": "3c69d1a76ed2b674ac8cfcd43bcc8cd834c757fd6a24c2a40aab487744a4b9d3",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-textured-three-quarter.png",
+          "bytes": 2059570,
+          "sha256": "bb3fba8eca731d412d24c475ba40e4ee92150d49c0d84fa99fe72f3378ead773",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    }
+  ],
+  "proofFiles": [
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-clay-front.png",
+      "bytes": 1864355,
+      "sha256": "d4646b67bb54b79f42028ec089fdfa52fdabceaa77cf76a28b82d36043e0680a",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-clay-three-quarter.png",
+      "bytes": 1890942,
+      "sha256": "007e210a61d5145882143cd158a18fb1fddc433c3ebd7a04d53a20df48dc480c",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-textured-front.png",
+      "bytes": 2005717,
+      "sha256": "3c69d1a76ed2b674ac8cfcd43bcc8cd834c757fd6a24c2a40aab487744a4b9d3",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-ultra4k-v3-textured-three-quarter.png",
+      "bytes": 2059570,
+      "sha256": "bb3fba8eca731d412d24c475ba40e4ee92150d49c0d84fa99fe72f3378ead773",
+      "dimensions": [
+        1800,
+        1000
+      ]
+    }
+  ],
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 16,
+    "seed": 23,
+    "cpuThreads": 8,
+    "resolution": [
+      1800,
+      1000
+    ],
+    "camera": "orthographic",
+    "orthoScale": {
+      "front": 4.8,
+      "threeQuarter": 5.2
+    },
+    "blender": "5.2.2 LTS"
+  },
+  "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/render_ultra4k_v3_comparison.py"
+}

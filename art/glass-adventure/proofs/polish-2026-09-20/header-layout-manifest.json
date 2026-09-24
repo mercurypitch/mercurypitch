@@ -1,0 +1,305 @@
+{
+  "records": [
+    {
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "elements": {
+        "View nearby artwork": {
+          "x": 114,
+          "y": 16,
+          "width": 92,
+          "height": 44,
+          "font": "600 12px / 17.4px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "12px",
+          "background": "rgb(244, 239, 223)"
+        },
+        "Pause game": {
+          "x": 266,
+          "y": 18,
+          "width": 40,
+          "height": 40,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "Leave museum": {
+          "x": 14,
+          "y": 18,
+          "width": 40,
+          "height": 40,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "How to play": {
+          "x": 260,
+          "y": 134,
+          "width": 38,
+          "height": 38,
+          "font": "500 22px / 31.9px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "22px",
+          "background": "rgba(234, 244, 240, 0.85)"
+        }
+      },
+      "title": {
+        "display": "none",
+        "x": 0,
+        "width": 0
+      },
+      "hmr": false
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 740
+      },
+      "elements": {
+        "View nearby artwork": {
+          "x": 149,
+          "y": 16,
+          "width": 92,
+          "height": 44,
+          "font": "600 12px / 17.4px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "12px",
+          "background": "rgb(244, 239, 223)"
+        },
+        "Pause game": {
+          "x": 336,
+          "y": 18,
+          "width": 40,
+          "height": 40,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "Leave museum": {
+          "x": 14,
+          "y": 18,
+          "width": 40,
+          "height": 40,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "How to play": {
+          "x": 330,
+          "y": 134,
+          "width": 38,
+          "height": 38,
+          "font": "500 22px / 31.9px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "22px",
+          "background": "rgba(234, 244, 240, 0.85)"
+        }
+      },
+      "title": {
+        "display": "none",
+        "x": 0,
+        "width": 0
+      },
+      "hmr": false
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "elements": {
+        "View nearby artwork": {
+          "x": 315,
+          "y": 18,
+          "width": 138,
+          "height": 46,
+          "font": "600 13px / 18.85px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "13px",
+          "background": "rgb(244, 239, 223)"
+        },
+        "Pause game": {
+          "x": 702,
+          "y": 18,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "Leave museum": {
+          "x": 20,
+          "y": 18,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "How to play": {
+          "x": 708,
+          "y": 134,
+          "width": 38,
+          "height": 38,
+          "font": "500 22px / 31.9px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "22px",
+          "background": "rgba(234, 244, 240, 0.85)"
+        }
+      },
+      "title": {
+        "display": "none",
+        "x": 0,
+        "width": 0
+      },
+      "hmr": false
+    },
+    {
+      "viewport": {
+        "width": 901,
+        "height": 600
+      },
+      "elements": {
+        "View nearby artwork": {
+          "x": 381.5,
+          "y": 21.359375,
+          "width": 138,
+          "height": 46,
+          "font": "600 13px / 18.85px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "13px",
+          "background": "rgb(244, 239, 223)"
+        },
+        "Pause game": {
+          "x": 835,
+          "y": 21.359375,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "Leave museum": {
+          "x": 20,
+          "y": 21.359375,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "How to play": {
+          "x": 841,
+          "y": 134,
+          "width": 38,
+          "height": 38,
+          "font": "500 22px / 31.9px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "22px",
+          "background": "rgba(234, 244, 240, 0.85)"
+        }
+      },
+      "title": {
+        "display": "block",
+        "x": 82,
+        "width": 243.40625
+      },
+      "hmr": false
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "elements": {
+        "View nearby artwork": {
+          "x": 443,
+          "y": 21.359375,
+          "width": 138,
+          "height": 46,
+          "font": "600 13px / 18.85px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "13px",
+          "background": "rgb(244, 239, 223)"
+        },
+        "Pause game": {
+          "x": 958,
+          "y": 21.359375,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "Leave museum": {
+          "x": 20,
+          "y": 21.359375,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "How to play": {
+          "x": 964,
+          "y": 134,
+          "width": 38,
+          "height": 38,
+          "font": "500 22px / 31.9px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "22px",
+          "background": "rgba(234, 244, 240, 0.85)"
+        }
+      },
+      "title": {
+        "display": "block",
+        "x": 82,
+        "width": 243.40625
+      },
+      "hmr": false
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "elements": {
+        "View nearby artwork": {
+          "x": 651,
+          "y": 21.359375,
+          "width": 138,
+          "height": 46,
+          "font": "600 13px / 18.85px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "13px",
+          "background": "rgb(244, 239, 223)"
+        },
+        "Pause game": {
+          "x": 1374,
+          "y": 21.359375,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "Leave museum": {
+          "x": 20,
+          "y": 21.359375,
+          "width": 46,
+          "height": 46,
+          "font": "500 16px / 23.2px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "16px",
+          "background": "rgba(234, 244, 240, 0.875)"
+        },
+        "How to play": {
+          "x": 1380,
+          "y": 134,
+          "width": 38,
+          "height": 38,
+          "font": "500 22px / 31.9px \"Gabarito Variable\", system-ui, sans-serif",
+          "fontSize": "22px",
+          "background": "rgba(234, 244, 240, 0.85)"
+        }
+      },
+      "title": {
+        "display": "block",
+        "x": 82,
+        "width": 243.40625
+      },
+      "hmr": false
+    }
+  ],
+  "errors": []
+}

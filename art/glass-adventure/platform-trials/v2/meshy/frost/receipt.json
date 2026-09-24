@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "cloudway-frost-platform-v1",
+  "taskType": "image-to-3d",
+  "state": "raw-source-archived",
+  "authorization": "Owner approved the Cloudway platform family for production and explicitly authorized generous Meshy use at best quality without another cost confirmation.",
+  "taskId": "01a0c572-b148-7412-ad45-1539df1cd824",
+  "submittedSettings": {
+    "ai_model": "latest",
+    "resolvedSchemaAtSubmission": "Meshy 6",
+    "model_type": "standard",
+    "enable_pbr": true,
+    "hd_texture": true,
+    "remove_lighting": true,
+    "image_enhancement": true,
+    "should_texture": true,
+    "should_remesh": true,
+    "decimation_mode": 1,
+    "topology": "triangle",
+    "save_pre_remeshed_model": true,
+    "multi_view_thumbnails": true,
+    "alpha_thumbnail": true,
+    "origin_at": "center",
+    "auto_size": false,
+    "target_formats": [
+      "glb"
+    ]
+  },
+  "texturePrompt": "Pale aquamarine translucent ice-glass, frosted bevels, subtle trapped bubbles and crystalline underside, compact aged gold corner clasps. Preserve bright readable edges and a clean broad landing top; remove baked lighting.",
+  "guide": {
+    "file": "guides/frost-platform-guide.png",
+    "bytes": 1126005,
+    "sha256": "f79a6e0de0bf2fe87c66443aa7abd87911d0377b59e872ff4fd91c9c3c525f45"
+  },
+  "finalStatus": {
+    "task_id": "01a0c572-b148-7412-ad45-1539df1cd824",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T19:38:53.026708+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "files": [
+    {
+      "role": "remeshed_glb",
+      "file": "meshy/frost/donor.glb",
+      "bytes": 40814788,
+      "sha256": "a7a1ca61f5f927ce4d96a758947ce914cc5fe66e3c5efef6a6a05a86a95863b8"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/frost/pre-remeshed.glb",
+      "bytes": 15153012,
+      "sha256": "3c21cd35d51529681d5f0e31fee226dfd7b4760d8d8c28db9f0ec266dbf9c38f",
+      "sourceHost": "assets.meshy.ai"
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/frost/donor_textures/base_color.png",
+      "bytes": 24409005,
+      "sha256": "cfb31beb1453d996267f30c7f18810bf62d79bd475522e4f08bd85119067b2a2",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/frost/donor_textures/metallic.png",
+      "bytes": 480483,
+      "sha256": "e0dd3a18f82248e188557bbe161e78a9f1593a68cf0f546423a8704fc9312362",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/frost/donor_textures/normal.png",
+      "bytes": 19338131,
+      "sha256": "58d7e1ee52c7db3600b4d0e45c7a828438b368f69d6e3c00b54d9cfd0bc3bdea",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/frost/donor_textures/roughness.png",
+      "bytes": 1643226,
+      "sha256": "686395b624de5e89b1949620a20312ffee07773eba2747eabbfe120e4b62517e",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    }
+  ],
+  "readiness": "Raw source archive; Blender normalization, landing-plane repair, LOD, fracture, export validation, and proof remain separate gates."
+}

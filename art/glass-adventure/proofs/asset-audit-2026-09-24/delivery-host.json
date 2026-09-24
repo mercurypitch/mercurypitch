@@ -1,0 +1,59 @@
+{
+  "stagedFiles": 87,
+  "allStagedHashesMatch": true,
+  "largestStagedFile": {
+    "file": "journey-map-v10/floating-museum-botanical-kit-v10.glb",
+    "bytes": 25596100
+  },
+  "requests": [
+    {
+      "path": "cloudway-v7/cloudway-platform-kit-v7.gltf",
+      "status": 200,
+      "type": "model/gltf+json",
+      "bytes": 60583,
+      "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1"
+    },
+    {
+      "path": "cloudway-v7/cloudway-platform-kit-v7-part-01.bin",
+      "status": 200,
+      "type": "application/octet-stream",
+      "bytes": 24483552,
+      "sha256": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9"
+    },
+    {
+      "path": "cloudway-v7/cloudway-platform-kit-v7-part-02.bin",
+      "status": 200,
+      "type": "application/octet-stream",
+      "bytes": 11976384,
+      "sha256": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96"
+    },
+    {
+      "path": "cloudway-v7/cloudway-platform-kit-v7-part-03.bin",
+      "status": 200,
+      "type": "application/octet-stream",
+      "bytes": 23520812,
+      "sha256": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe"
+    },
+    {
+      "path": "cloudway-v7/cloudway-platform-kit-v7-part-04.bin",
+      "status": 200,
+      "type": "application/octet-stream",
+      "bytes": 17393098,
+      "sha256": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065"
+    },
+    {
+      "path": "adventure-voice/merc-encore-light-v5.mp3",
+      "status": 200,
+      "type": "audio/mpeg",
+      "bytes": 49196,
+      "sha256": "22eb0a1fdf8816a989630b7a3f22ba615d2e77492e0037ead386834f337b899c"
+    },
+    {
+      "path": "adventure-voice/merc-encore-home-v5.mp3",
+      "status": 200,
+      "type": "audio/mpeg",
+      "bytes": 82604,
+      "sha256": "ad984f5e4021d66bd957b9359944da7e278a7fcce971b2ca52ceb2a506be766d"
+    }
+  ]
+}

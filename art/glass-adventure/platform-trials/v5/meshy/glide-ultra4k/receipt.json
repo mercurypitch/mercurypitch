@@ -1,0 +1,254 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "cloudway-glide-platform-meshy71-ultra4k-v5",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v2/guides/glide-platform-guide.png",
+    "bytes": 1269012,
+    "sha256": "70acf421f63536dc18ca09f507fcf22b736647c7d92878bd3130b8b567f830c4",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mimeType": "image/png",
+    "authorityReceipt": {
+      "file": "art/glass-adventure/platform-trials/v2/meshy/glide/receipt.json",
+      "sha256": "e073f699bdaf379eded5a10f56319000094d2877a6404cebc7dbbfa4ef6695a4"
+    }
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "4k",
+    "enable_pbr": true,
+    "texture_prompt": "Teal-celadon opaline glass moving platform with watery translucent depth, a broad perfectly flat landing top, narrow restrained aged-gold edge trim, four compact gold corner caps, a crisp inlaid moon-and-orbit motif, and shallow carved glass facets below. Preserve the shallow 1.5:1 raft proportions. Clean PBR without baked light, route rails, endpoint posts, wheels, machinery, glow, debris, text or scene.",
+    "image_enhancement": true,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-23",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d",
+    "officialPricing": "https://docs.meshy.ai/en/api/pricing"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWithPbr4k": 30,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 35,
+    "actualSourceOfTruth": "provider consumed_credits and balance delta"
+  },
+  "authorization": {
+    "requiredFlags": [
+      "--submit",
+      "--authorized-source-transfer"
+    ],
+    "asserted": true,
+    "assertedAtUtc": "2026-09-23T20:51:14.323545+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source archive only. Clay comparison, contact-surface review, Blender normal/AO bake, runtime LOD, texture-memory audition and integration remain pending.",
+  "providerReconciliation": {
+    "checkedAtUtc": "2026-09-23T20:51:13.734627+00:00",
+    "purpose": "Prevent an unreceipted or duplicate image-to-3D submission before glide V5.",
+    "baselineTaskId": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+    "tasksAtOrAfterBaseline": [
+      {
+        "id": "01a0d008-eb11-7661-bca6-4fb4f1986fff",
+        "type": "image-to-3d",
+        "status": "IN_PROGRESS",
+        "progress": 10,
+        "created_at": 1790196643794,
+        "started_at": 1790196643808,
+        "finished_at": 0,
+        "expires_at": 0,
+        "consumed_credits": 35,
+        "geometry_resolution": "4k"
+      },
+      {
+        "id": "01a0cef2-fffb-726e-8659-b4e06c21149a",
+        "type": "image-to-3d",
+        "status": "SUCCEEDED",
+        "progress": 100,
+        "created_at": 1790178430560,
+        "started_at": 1790178430576,
+        "finished_at": 1790178665987,
+        "expires_at": 1790437865987,
+        "consumed_credits": 35,
+        "geometry_resolution": "4k"
+      }
+    ],
+    "conclusion": "Every image-to-3D task newer than the V4 baseline has a local receipt."
+  },
+  "balanceBefore": 3760,
+  "submissionStartedAtUtc": "2026-09-23T20:51:14.323557+00:00",
+  "taskId": "01a0d009-7173-7142-8f57-0c4c8be24adf",
+  "submittedAtUtc": "2026-09-23T20:51:18.846741+00:00",
+  "balanceAfterSubmit": 3725,
+  "observedBalanceDeltaAtSubmit": 35,
+  "lastStatus": {
+    "id": "01a0d009-7173-7142-8f57-0c4c8be24adf",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790196678688,
+    "started_at": 1790196678693,
+    "finished_at": 1790196835066,
+    "expires_at": 1790456035066,
+    "consumed_credits": 35,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-23T21:09:36.081209+00:00",
+  "archiveDownloadTaskId": "01a0d009-7173-7142-8f57-0c4c8be24adf",
+  "archiveDownloadStartedAtUtc": "2026-09-23T21:09:36.084225+00:00",
+  "rejectedDownloads": [
+    {
+      "schema": 1,
+      "kind": "quarantined-existing-invalid-archive",
+      "recordedAtUtc": "2026-09-23T21:09:36.083525+00:00",
+      "taskId": "01a0d009-7173-7142-8f57-0c4c8be24adf",
+      "sourceHost": "assets.meshy.ai",
+      "signedUrlPersisted": false,
+      "originalFile": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+      "quarantinedFile": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/rejected-downloads/dense-donor-existing-4b3d2da84faf.glb",
+      "metadataFile": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/rejected-downloads/dense-donor-existing-4b3d2da84faf.glb.json",
+      "bytesPersisted": true,
+      "reasonCode": "format-validation-failed",
+      "reason": "Archived GLB header or declared length is invalid",
+      "bytes": 1183024,
+      "sha256": "4b3d2da84faf183756023635f39b5a54e66a2db66ce5587fa5dcd4bafabf430c",
+      "glbHeader": {
+        "magicHex": "676c5446",
+        "version": 2,
+        "declaredLength": 30284496
+      }
+    },
+    {
+      "schema": 1,
+      "kind": "rejected-download-attempt",
+      "recordedAtUtc": "2026-09-23T21:09:49.714555+00:00",
+      "artifact": "set-0-normal",
+      "attempt": 1,
+      "maximumAttempts": 3,
+      "sourceHost": "assets.meshy.ai",
+      "signedUrlPersisted": false,
+      "partialBytesPersisted": false,
+      "httpStatus": 200,
+      "contentType": "image/png",
+      "contentLength": "20142133",
+      "expectedBytes": 20142133,
+      "receivedBytes": 1128687,
+      "reasonCode": "content-length-mismatch",
+      "reason": "Artifact stream length did not match Content-Length",
+      "bytes": 1128687,
+      "sha256": "63dcf3c28dcd4f38e0e7fdec2319f581c39d84638566460fb64f4b5743f0fcd1",
+      "metadataFile": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/rejected-downloads/set-0-normal-attempt-1-63dcf3c28dcd.json"
+    }
+  ],
+  "finalStatus": {
+    "id": "01a0d009-7173-7142-8f57-0c4c8be24adf",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790196678688,
+    "started_at": 1790196678693,
+    "finished_at": 1790196835066,
+    "expires_at": 1790456035066,
+    "consumed_credits": 35,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+      "bytes": 30284496,
+      "sha256": "394507ad969b53c88bf007edca9d4cc013adf3bab377c10dc3867a606276e36f",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 82069,
+      "triangles": 145370
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-base_color.png",
+        "bytes": 24047218,
+        "sha256": "a8db4ac044c85030b633053f8520497c5f5d730b3f951f19bc61465ec6d2e14d",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-metallic.png",
+        "bytes": 1031749,
+        "sha256": "70c0f773e280188fa93148a900ddf3b536eaea6989837758dcc54ee7ce0f6923",
+        "format": "PNG",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "mode": "L"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-normal.png",
+        "bytes": 20142133,
+        "sha256": "eae4cdf11fc56b6d52a045f7511b0152812c525085f196c0642c2b690771ef4a",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-roughness.png",
+        "bytes": 1427366,
+        "sha256": "297fd50e7322bd7faaa631520e1b64ac7b99f64941b9a21bb2149477bfa119b3",
+        "format": "PNG",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "mode": "L"
+      }
+    ],
+    "missingRequestedPbrMaps": []
+  },
+  "archivedAtUtc": "2026-09-23T21:09:51.437509+00:00",
+  "balanceAfterArchive": 3725,
+  "observedBalanceDeltaFinal": 35
+}

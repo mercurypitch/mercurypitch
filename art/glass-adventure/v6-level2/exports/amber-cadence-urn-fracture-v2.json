@@ -1,0 +1,447 @@
+{
+  "schema": 1,
+  "status": "geometry and GLB reimport gates passed; Blender proofs approved; runtime integration pending",
+  "assetId": "amber-cadence-urn",
+  "preparedInput": "sources/amber-cadence-urn-cavity-v2.blend",
+  "preparedSha256": "f1a5d20a27c822639d43746be5acba2b7b58610509581a077e6f434a858c3eb1",
+  "units": "metres",
+  "up": "+Y in GLB; +Z in Blender source",
+  "root": "breakable_l2_low_amber_urn",
+  "intact": "breakable_l2_low_amber_urn_intact",
+  "shards": [
+    "breakable_l2_low_amber_urn_shard_000",
+    "breakable_l2_low_amber_urn_shard_001",
+    "breakable_l2_low_amber_urn_shard_002",
+    "breakable_l2_low_amber_urn_shard_003",
+    "breakable_l2_low_amber_urn_shard_004",
+    "breakable_l2_low_amber_urn_shard_005",
+    "breakable_l2_low_amber_urn_shard_006",
+    "breakable_l2_low_amber_urn_shard_007",
+    "breakable_l2_low_amber_urn_shard_008",
+    "breakable_l2_low_amber_urn_shard_009",
+    "breakable_l2_low_amber_urn_shard_010",
+    "breakable_l2_low_amber_urn_shard_011",
+    "breakable_l2_low_amber_urn_shard_012",
+    "breakable_l2_low_amber_urn_shard_013",
+    "breakable_l2_low_amber_urn_shard_014",
+    "breakable_l2_low_amber_urn_shard_015"
+  ],
+  "collider": "COLLIDER_breakable_l2_low_amber_urn",
+  "meshChecks": [
+    {
+      "triangles": 9864,
+      "vertices": 4936,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.1655516631974598
+    },
+    {
+      "triangles": 1168,
+      "vertices": 588,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.011165821121440779
+    },
+    {
+      "triangles": 860,
+      "vertices": 432,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.01223592944358411
+    },
+    {
+      "triangles": 1402,
+      "vertices": 701,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.005987570726908553
+    },
+    {
+      "triangles": 830,
+      "vertices": 417,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.012766485197911286
+    },
+    {
+      "triangles": 846,
+      "vertices": 425,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.010682686815771055
+    },
+    {
+      "triangles": 918,
+      "vertices": 461,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.008287826137224336
+    },
+    {
+      "triangles": 1344,
+      "vertices": 674,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.019130395942082636
+    },
+    {
+      "triangles": 1068,
+      "vertices": 536,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.015274337216255507
+    },
+    {
+      "triangles": 812,
+      "vertices": 406,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.009517052209911721
+    },
+    {
+      "triangles": 942,
+      "vertices": 473,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.010675606942076424
+    },
+    {
+      "triangles": 966,
+      "vertices": 485,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.008373616760648355
+    },
+    {
+      "triangles": 1074,
+      "vertices": 539,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.009979705988139891
+    },
+    {
+      "triangles": 1666,
+      "vertices": 835,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.01538542144213135
+    },
+    {
+      "triangles": 942,
+      "vertices": 473,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.003245870098223241
+    },
+    {
+      "triangles": 848,
+      "vertices": 426,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0028202065562521203
+    },
+    {
+      "triangles": 938,
+      "vertices": 471,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.010023129912386386
+    }
+  ],
+  "fracture": {
+    "method": "Manifold3D convex Voronoi clipping of the measured Meshy-derived cavity shell",
+    "seedCoordinatesBlenderZUp": [
+      [
+        0.2753458023071289,
+        -0.010458948090672493,
+        0.11119323968887329
+      ],
+      [
+        -0.43533116579055786,
+        0.035868577659130096,
+        0.494183212518692
+      ],
+      [
+        0.11126396805047989,
+        -0.20588740706443787,
+        0.7195974588394165
+      ],
+      [
+        0.024063408374786377,
+        0.446265310049057,
+        0.4782037138938904
+      ],
+      [
+        -0.12646573781967163,
+        -0.38384100794792175,
+        0.25380831956863403
+      ],
+      [
+        -0.24475127458572388,
+        0.194595068693161,
+        0.012473493814468384
+      ],
+      [
+        0.3715238571166992,
+        0.17908747494220734,
+        0.4946397542953491
+      ],
+      [
+        0.3097343444824219,
+        -0.3498010039329529,
+        0.39476245641708374
+      ],
+      [
+        -0.033849216997623444,
+        0.040001921355724335,
+        0.44335904717445374
+      ],
+      [
+        -0.3089812695980072,
+        0.34927573800086975,
+        0.383595734834671
+      ],
+      [
+        -0.26559650897979736,
+        -0.16518034040927887,
+        0.011495083570480347
+      ],
+      [
+        0.10054554045200348,
+        0.2924119234085083,
+        0.05148094892501831
+      ],
+      [
+        -0.226703479886055,
+        -0.22518564760684967,
+        0.55843186378479
+      ],
+      [
+        0.09179288893938065,
+        0.22044216096401215,
+        0.7164813280105591
+      ],
+      [
+        -0.1901596188545227,
+        0.06816720962524414,
+        0.7176719307899475
+      ],
+      [
+        0.10246319323778152,
+        -0.2498902827501297,
+        0.08335298299789429
+      ]
+    ],
+    "volumeRelativeError": 4.146814525445065e-09,
+    "backend": {
+      "backend": "manifold3d 3.5.3",
+      "inputVolume": 0.16555166319746029,
+      "inputTriangles": 9864,
+      "meshes": [
+        {
+          "key": "shard_000",
+          "triangles": 1168,
+          "volume": 0.011165821183500345
+        },
+        {
+          "key": "shard_001",
+          "triangles": 860,
+          "volume": 0.012235929447726265
+        },
+        {
+          "key": "shard_002",
+          "triangles": 1402,
+          "volume": 0.005987570806781014
+        },
+        {
+          "key": "shard_003",
+          "triangles": 830,
+          "volume": 0.012766485117788513
+        },
+        {
+          "key": "shard_004",
+          "triangles": 846,
+          "volume": 0.01068268674768897
+        },
+        {
+          "key": "shard_005",
+          "triangles": 918,
+          "volume": 0.008287826060573924
+        },
+        {
+          "key": "shard_006",
+          "triangles": 1344,
+          "volume": 0.01913039596080683
+        },
+        {
+          "key": "shard_007",
+          "triangles": 1068,
+          "volume": 0.015274337466656364
+        },
+        {
+          "key": "shard_008",
+          "triangles": 812,
+          "volume": 0.009517052279892831
+        },
+        {
+          "key": "shard_009",
+          "triangles": 942,
+          "volume": 0.010675606957663883
+        },
+        {
+          "key": "shard_010",
+          "triangles": 966,
+          "volume": 0.008373616663350826
+        },
+        {
+          "key": "shard_011",
+          "triangles": 1074,
+          "volume": 0.009979706090353377
+        },
+        {
+          "key": "shard_012",
+          "triangles": 1666,
+          "volume": 0.01538542147210363
+        },
+        {
+          "key": "shard_013",
+          "triangles": 942,
+          "volume": 0.0032458701186642487
+        },
+        {
+          "key": "shard_014",
+          "triangles": 848,
+          "volume": 0.002820206742506574
+        },
+        {
+          "key": "shard_015",
+          "triangles": 938,
+          "volume": 0.010023130080911545
+        }
+      ],
+      "relativeVolumeError": 2.9666564565573513e-12
+    }
+  },
+  "packedBlenderSource": {
+    "file": "sources/amber-cadence-urn-fracture-v2.blend",
+    "bytes": 12085039,
+    "sha256": "461ac348fc0197cf3bb4ef105505d2752382e08152aa2b93072048bd60810ab7"
+  },
+  "bundle": {
+    "file": "exports/amber-cadence-urn-fracture-v2.glb",
+    "bytes": 3744152,
+    "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353"
+  },
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "toolchain": {
+      "blender": "5.2.2 LTS (d13f752e3b9c)",
+      "backendPython": "3.14.7",
+      "manifold3d": "3.5.3",
+      "backendNumpy": "2.5.3",
+      "scratchPythonPath": "/tmp/glass-museum-manifold",
+      "scratchPathCommitted": false,
+      "solidFractureBackend": {
+        "file": "art/glass-adventure/v3/solid_fracture.py",
+        "sha256": "1adef949624b5bc2a25e74cdf316f260956ade6083a2c68a756fa1bdfb189b39"
+      }
+    },
+    "commands": {
+      "installScratchBackend": "rtk proxy /usr/bin/python3 -m pip install --target /tmp/glass-museum-manifold manifold3d==3.5.3 numpy==2.5.3",
+      "topologyAudit": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/inspect_vessels.py",
+      "prepare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase prepare",
+      "fractureExport": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase fracture",
+      "freshGlbValidation": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase validate",
+      "proofs": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/finalize_vessels.py -- --asset amber-cadence-urn --phase render"
+    },
+    "archivedIntermediateInputs": [
+      "sources/amber-cadence-urn-fracture-work-v2/cavity-input.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cavity-output.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cavity-output.json",
+      "sources/amber-cadence-urn-fracture-work-v2/cut-input.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cut-output.npz",
+      "sources/amber-cadence-urn-fracture-work-v2/cut-output.json"
+    ]
+  },
+  "gameplayReadiness": "Geometry-authored candidate; runtime collider/placement and gameplay fracture behavior still require integration review.",
+  "validationReport": "exports/amber-cadence-urn-fracture-validation-v2.json",
+  "proofs": {
+    "status": "rendered from packed final Blender source on CPU/headless Eevee",
+    "intact": {
+      "file": "proofs/amber-cadence-urn-intact-v2.png",
+      "bytes": 996743,
+      "sha256": "521cf8cedaa5211ee7392bc161d2217a4b8713779485f5df390507c696eeb321"
+    },
+    "mouth": {
+      "file": "proofs/amber-cadence-urn-mouth-v2.png",
+      "bytes": 1123561,
+      "sha256": "a86a5bf07c737692d9d0b6b3bd3eaaa28d0533667237968615f90b097afb93fa"
+    },
+    "shards": {
+      "file": "proofs/amber-cadence-urn-shards-v2.png",
+      "bytes": 1016945,
+      "sha256": "4391ffeeab0a78a8efc15d38875e4cf4f9684d19cfd4cb78c48651b1cfed398d"
+    },
+    "softIntactReview": {
+      "file": "proofs/amber-cadence-urn-soft-v2.png",
+      "bytes": 1139522,
+      "sha256": "3e33fd67c208d67c3ce2c090d89fb978be1824634ed2f3fea4a810bb56fdad57"
+    },
+    "visualReview": {
+      "status": "approved",
+      "decision": "The standard cavity/shard proofs and softer-light intact proof were approved for runtime integration with the coherent donor atlas normal-map strength fixed at 0.35.",
+      "reviewScope": "Silhouette, open mouth, cavity read, fragment read, coherent materials, and absence of objectionable normal-map faceting under representative softer light."
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "pilot": "glassworks-journey-rewards-v1",
+  "capturedAt": "2026-09-21T00:44:32+02:00",
+  "host": {
+    "route": "/glass-game?campaign=1",
+    "server": "isolated Vite HTTPS on port 5224",
+    "playwrightVersion": "1.60.0",
+    "reducedMotion": true
+  },
+  "seed": {
+    "savedProgressVersion": 2,
+    "requiredExhibitsCompleted": 4,
+    "discoveriesFound": 3,
+    "discoveriesTotal": 5,
+    "portraitId": "glassworks-awakened-muse",
+    "quality": {
+      "grade": 3,
+      "reliableSeconds": 1.2,
+      "meanAbsoluteCents": 21.4,
+      "policyRevision": 1,
+      "challengeRevision": 1,
+      "contentRevision": 3
+    }
+  },
+  "proofs": [
+    {
+      "file": "glassworks-journey-rewards-phone.png",
+      "viewport": { "width": 390, "height": 844 },
+      "bytes": 77783,
+      "sha256": "2afb30f28bb023230085c01be4d11adb3a73fc7934fad0932a1147f410533286",
+      "assertions": {
+        "rootFitsViewport": true,
+        "dialogLeft": 20,
+        "dialogRight": 370,
+        "portraitLoaded": true,
+        "qualityRowVisible": true,
+        "discoveriesRowVisible": true,
+        "portraitRowVisible": true
+      }
+    },
+    {
+      "file": "glassworks-journey-rewards-tablet.png",
+      "viewport": { "width": 1024, "height": 768 },
+      "bytes": 213979,
+      "sha256": "32b33e8e97299ed3ac4d50609fd851d42508e5e1607bf92f4fecbd06b59a8034",
+      "assertions": {
+        "rootFitsViewport": true,
+        "dialogLeft": 267,
+        "dialogRight": 757,
+        "thresholdDisclosureHeight": 44,
+        "finalActionFocused": true,
+        "finalActionVisibleAfterScroll": true,
+        "dialogScrollTop": 180,
+        "focusTrapWrappedToThresholdDisclosure": true
+      }
+    }
+  ],
+  "runtimeAssertions": {
+    "completionPortalReached": true,
+    "currentThresholdsDisclosed": true,
+    "completionIndependentOfStarsTextVisible": true,
+    "consoleErrors": [],
+    "failedResponses": []
+  }
+}

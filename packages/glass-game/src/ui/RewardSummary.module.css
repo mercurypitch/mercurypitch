@@ -1,0 +1,147 @@
+.summary {
+  display: grid;
+  gap: 9px;
+  width: 100%;
+  margin: 18px 0;
+  text-align: left;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 13px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #afbea9;
+  border-radius: 16px;
+  background: #fbfaed;
+}
+
+.icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #dfeadf;
+  color: #2f6f69;
+}
+
+.icon svg {
+  width: 25px;
+  height: 25px;
+}
+
+.copy {
+  min-width: 0;
+}
+
+.copy strong {
+  display: block;
+  color: #1e4647;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.copy p {
+  margin: 3px 0 0;
+  color: #557069;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: #6b7768;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.stars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.stars svg {
+  width: 18px;
+  height: 18px;
+  fill: transparent;
+  color: #a2afa1;
+}
+
+.stars svg.earned {
+  fill: #c8962f;
+  color: #9a6f1a;
+}
+
+.stars strong {
+  margin-left: 5px;
+}
+
+.details {
+  margin-top: 7px;
+  color: #41655e;
+  font-size: 11px;
+}
+
+.details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  touch-action: manipulation;
+}
+
+.details p {
+  margin-top: 4px;
+}
+
+.portrait {
+  width: 46px;
+  height: 54px;
+  overflow: hidden;
+  border: 3px solid #b78d42;
+  background: #dfe7da;
+  box-shadow: inset 0 0 0 1px #715522;
+}
+
+.portrait img,
+.portrait span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 420px) {
+  .summary {
+    margin: 14px 0;
+  }
+
+  .row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px 11px;
+  }
+
+  .icon,
+  .portrait {
+    width: 40px;
+  }
+
+  .icon {
+    height: 40px;
+  }
+
+  .portrait {
+    height: 48px;
+  }
+}

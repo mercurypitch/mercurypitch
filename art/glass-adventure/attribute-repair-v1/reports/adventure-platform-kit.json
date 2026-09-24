@@ -1,0 +1,22 @@
+{
+  "edits": [
+    {
+      "mesh": 27,
+      "primitive": 0,
+      "change": "dominant-normal metre UVs for ramp",
+      "vertices": 24
+    },
+    {
+      "material": 1,
+      "change": "replace invalid negative UV reference with authored UV0"
+    }
+  ],
+  "removedUnusedTangentAccessors": 0,
+  "protectedStreams": 114,
+  "geometrySignatureUnchanged": true,
+  "source": "art/glass-adventure/attribute-repair-v1/sources/adventure-platform-kit.glb",
+  "output": "apps/beside-cue/public/games/adventure/platform-kit-qa-v2.glb",
+  "sourceSha256": "dd64110ede5f283b0eadf28ed02c5a8ff7ee957d844928ff10907f1b8c9ef83b",
+  "outputSha256": "66f8f57a2d1f13b5f83af186745f3972950ca6c42302cc6274d0d21a1ffbe149",
+  "bytes": 944596
+}

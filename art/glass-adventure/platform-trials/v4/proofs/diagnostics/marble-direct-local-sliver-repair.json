@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "status": "rejected before mutation",
+  "attemptLimit": 1,
+  "sourceDiagnostic": {
+    "path": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-direct-residual-tangent-singularities.json",
+    "sha256": "1d63749b4f8bf4e3a0a157000f6845ecbcb6b2dcd5306b31b3564b25ad319027",
+    "residualLoops": 7,
+    "residualPolygons": 6
+  },
+  "proposedMethod": "Collapse one disjoint, manifold, same-material, provider-atlas-contiguous edge no longer than 5 mm per diagnosed geometric sliver.",
+  "mutationStarted": false,
+  "failure": {
+    "polygon": 182387,
+    "message": "Geometric sliver 182387 has no disjoint manifold, UV-contiguous, same-material collapse edge at or below 5 mm"
+  },
+  "decision": "Do not widen the distance, seam, manifold, material, or disjointness bounds and do not retry topology tuning. Preserve the 238000-triangle geometry and use the separately validated analytic UV-derivative tangent construction only for the seven exported zero tangent rows."
+}

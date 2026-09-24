@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-conservatory-candidate-v8",
+  "decision": "accepted-for-runtime-assembly",
+  "reviewedAtUtc": "2026-09-23T15:26:57Z",
+  "selectedNormalSource": "meshy",
+  "candidateManifest": {
+    "file": "exports/floating-museum-conservatory-candidate-v8.json",
+    "bytes": 23142,
+    "sha256": "d085ebace84ca91df0b337320451153112f2c5ffbd04d38d6c71156c7b44db44"
+  },
+  "candidate": {
+    "file": "exports/floating-museum-conservatory-candidate-v8-meshy-normal.glb",
+    "bytes": 30606544,
+    "sha256": "4295d8a324f86048f9832306b3a1c74e15d601a0ea07dfa1ee33f593b223f697",
+    "triangles": 109636,
+    "dimensionsGlTfYUpMetres": [
+      2.3000000715255737,
+      2.6500000953674316,
+      2.3000000715255737
+    ],
+    "anchorErrorMetres": 0
+  },
+  "rejectedCandidate": {
+    "file": "exports/floating-museum-conservatory-candidate-v8-dense-bake-normal.glb",
+    "bytes": 33289232,
+    "sha256": "8b3465883aea800de84c3d9237d2752af405e049d64a3bece4052f283772530f",
+    "disposition": "retained as audit source; not approved for runtime assembly"
+  },
+  "bakeProjectionAudit": {
+    "file": "proofs/conservatory-pbr-bake-projection-v8.json",
+    "bytes": 1405,
+    "sha256": "0faa4b9e30c412fd6dd90b199bf37272b39cf24b675dca1795c98bfe07dee766",
+    "decision": "accepted"
+  },
+  "proofs": [
+    {
+      "file": "proofs/conservatory-normal-comparison-v8.json",
+      "bytes": 2181,
+      "sha256": "039f49053dbdcab96b08671c55d1a5dbfd05c2dc4ced81fea501d22431947c7b"
+    },
+    {
+      "file": "proofs/conservatory-normal-comparison-front-v8.png",
+      "bytes": 2802368,
+      "sha256": "497d8dae4774455b918bb902bc1cd13515939df7745b5be388919afcd097403f"
+    },
+    {
+      "file": "proofs/conservatory-normal-comparison-angle-v8.png",
+      "bytes": 2771119,
+      "sha256": "1ec127bdb229c22f638a3c567f0fe270e3c242097e5206c14ac4deb79821338e"
+    },
+    {
+      "file": "proofs/conservatory-normal-comparison-close-v8.png",
+      "bytes": 2451515,
+      "sha256": "3c5fc6baa0d353c89ccf6481941094b75e244e98c6856a801ba5890674396e91"
+    }
+  ],
+  "review": {
+    "finding": "Accept the Meshy-normal variant. At identical geometry, material, lighting, and cameras it keeps coherent relief on the roof ribs, fascia, columns, foliage, and planters. Reject the dense-donor normal for runtime because it creates dark roof-panel halos and harsher patching on ribs and columns.",
+    "knownLimitations": [
+      "The source retains fused and crumpled foliage in several garlands and planters.",
+      "The translucent roof panels retain visible surface-texture variation and are not pristine architectural glass.",
+      "The projection audit measures normalized surface proximity and approximate cage-ray coverage; it does not prove a clean tangent-space texture bake.",
+      "The dense-donor bake is retained for audit evidence, but its visible artifacts make it unsuitable for the runtime candidate."
+    ]
+  },
+  "tangentCorrection": {
+    "reason": "The original Blender export contained three referenced zero-length tangent rows.",
+    "vertices": [
+      36434,
+      143188,
+      150705
+    ],
+    "method": "Per-triangle UV derivative followed by Gram-Schmidt projection against the preserved exported split normal.",
+    "derivedHandedness": [
+      -1,
+      1,
+      -1
+    ],
+    "positionNormalUvIndicesAndImagesByteExactToReviewedCandidate": true,
+    "allExportedTangentsFiniteAndUnit": true,
+    "sameCameraReviewDecisionUnchanged": true
+  },
+  "runtimeIntegration": "authorized by this receipt but not performed by the candidate finisher"
+}

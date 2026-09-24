@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:5340/glass-game/?campaign=1",
+  "selectedStage": "twin-galleries-isle",
+  "camera": {
+    "yaw": "-0.140",
+    "pitch": "0.450",
+    "zoom": "1.000"
+  },
+  "renderer": "ANGLE (AMD, Vulkan 1.4.359 (AMD Radeon RX 9070 XT (RADV GFX1201) (0x00007550)), radv)",
+  "rendererMetrics": {
+    "drawCalls": 265,
+    "triangles": 867371,
+    "geometries": 50,
+    "textures": 49,
+    "waterTriangles": 2136,
+    "waterDrawCalls": 5,
+    "secondaryRenderPasses": 1
+  },
+  "assetResponse": {
+    "url": "http://127.0.0.1:5340/games/journey-map-v7/floating-museum-architecture-kit-v7.glb",
+    "status": 200,
+    "contentType": "model/gltf-binary",
+    "bytes": 12263920,
+    "sha256": "b427dd61cd5da0c68cd9831d2524e6d7452888d21bcb3219c0671182b1002cd4"
+  },
+  "screenshot": {
+    "file": "proofs/floating-museum-architecture-kit-v7-live-map-close.png",
+    "bytes": 2169982,
+    "sha256": "c3f74b751689eb362eb961a9638ddd099903bbd46104ac94d109e970a7d0eb65",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  "errors": []
+}

@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "decision": "Reviewed V7 runtime inputs and accepted 1K runtime delivery. Production commands verify this receipt and never update it.",
+  "gltfTransformVersion": "4.4.2",
+  "files": {
+    "art/glass-adventure/platform-trials/v6/runtime/archive/cloudway-platform-kit-v6.glb": {
+      "bytes": 44046324,
+      "sha256": "1c18c7a5e818346551fdadef6a091b848f19d0242092a14bf366d85a90b7930c"
+    },
+    "art/glass-adventure/platform-trials/v6/runtime/archive/manifest.json": {
+      "bytes": 1910,
+      "sha256": "c0cc00e599ff927ebb86c6c15765c0ef91cc592d04354fedff8a8eeca512d829"
+    },
+    "art/glass-adventure/platform-trials/v7/exports/cloudway-marble-v7-dense-baseline-2k.glb": {
+      "bytes": 63686476,
+      "sha256": "2d6efa7f2a6561546041eb56ba7f13eec2daaad74caff6757a1a655dd6255a6b"
+    },
+    "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb": {
+      "bytes": 44277888,
+      "sha256": "6d87455f6ccc901595dc00db0ca400c36ba643bfd1fdb12206a6a43a416bc030"
+    }
+  },
+  "outputs": {
+    "1024": {
+      "file": "art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb",
+      "bytes": 77414948,
+      "sha256": "0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9"
+    }
+  }
+}

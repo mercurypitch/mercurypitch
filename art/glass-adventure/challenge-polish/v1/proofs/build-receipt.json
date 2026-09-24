@@ -1,0 +1,27 @@
+{
+  "sourceCommit": "44d2ad5cef0101f74d7823ba295679dbc37429bd",
+  "method": "Both production builds used the frozen final-copy source committed here. The source hash below was checked before builds and after commit. Desktop shatter captures retain their earlier, separate receipt.",
+  "copySourceSha256": "368591c6ea49a530995baf155979b9c446548ffed806a0cdf72ce8dbff61a661",
+  "hosts": {
+    "besidecue": {
+      "buildDirectory": "/tmp/glass-challenge-polish-v1",
+      "challengeBundles": [
+        {
+          "path": "assets/AdventureScreen-hLe8LHB2.js",
+          "bytes": 1023777,
+          "sha256": "47f025834fc217d097f2d6fa92157d0cd6ecd0ea118f85153f3d77a716fa075c"
+        }
+      ]
+    },
+    "mercurypitch": {
+      "buildDirectory": "/tmp/glass-challenge-web-v1",
+      "challengeBundles": [
+        {
+          "path": "assets/glassGame-Dh_NWorC.js",
+          "bytes": 307413,
+          "sha256": "90f14e0c4f1cc0b39403b4562ce91810d44d82bc4e7f9bd9ed1fcfe739d154a1"
+        }
+      ]
+    }
+  }
+}

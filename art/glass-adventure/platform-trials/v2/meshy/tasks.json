@@ -1,0 +1,89 @@
+{
+  "provider": "Meshy",
+  "submitted": "2026-09-21",
+  "authorization": "Owner approved the Cloudway platform family for production and explicitly authorized generous Meshy use at best quality without another cost confirmation.",
+  "balanceBefore": 4000,
+  "workflow": "image-to-3d",
+  "sharedRequest": {
+    "ai_model": "latest",
+    "resolvedSchemaAtSubmission": "Meshy 6",
+    "model_type": "standard",
+    "enable_pbr": true,
+    "hd_texture": true,
+    "remove_lighting": true,
+    "image_enhancement": true,
+    "should_texture": true,
+    "should_remesh": true,
+    "decimation_mode": 1,
+    "topology": "triangle",
+    "save_pre_remeshed_model": true,
+    "multi_view_thumbnails": true,
+    "alpha_thumbnail": true,
+    "origin_at": "center",
+    "auto_size": false,
+    "target_formats": [
+      "glb"
+    ]
+  },
+  "runtimeRemeshRequest": {
+    "target_polycount": 7000,
+    "topology": "triangle",
+    "resize_longest_side": 1.8,
+    "origin_at": "center",
+    "target_formats": [
+      "glb"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "marble",
+      "taskId": "01a0c572-cca5-7296-85a6-44921eb9cee2",
+      "runtimeRemeshTaskId": "01a0c57f-9917-734f-9c03-ea200ea04a4b",
+      "guide": "../guides/marble-platform-guide.png",
+      "guideSha256": "75af2163d0387f36f4d2a0b1dbb79e4428c2311dc8f3429a72a2490b109b4d33",
+      "texturePrompt": "Warm ivory Carrara marble shell with subtle grey veining, matte teal stone inlay, restrained aged gold trim and corner caps. Preserve readable material separation, remove baked lighting, broad clean landing top.",
+      "status": "raw-source-archived",
+      "consumedCredits": 30,
+      "receipt": "marble/receipt.json",
+      "runtimeRemeshStatus": "runtime-source-archived",
+      "runtimeRemeshConsumedCredits": 5,
+      "runtimeRemeshReceipt": "marble/runtime-remesh-receipt.json"
+    },
+    {
+      "id": "frost",
+      "taskId": "01a0c572-b148-7412-ad45-1539df1cd824",
+      "runtimeRemeshTaskId": "01a0c57f-b423-77b4-a2cd-0e4648510e29",
+      "guide": "../guides/frost-platform-guide.png",
+      "guideSha256": "f79a6e0de0bf2fe87c66443aa7abd87911d0377b59e872ff4fd91c9c3c525f45",
+      "texturePrompt": "Pale aquamarine translucent ice-glass, frosted bevels, subtle trapped bubbles and crystalline underside, compact aged gold corner clasps. Preserve bright readable edges and a clean broad landing top; remove baked lighting.",
+      "status": "raw-source-archived",
+      "consumedCredits": 30,
+      "receipt": "frost/receipt.json",
+      "runtimeRemeshStatus": "runtime-source-archived",
+      "runtimeRemeshConsumedCredits": 5,
+      "runtimeRemeshReceipt": "frost/runtime-remesh-receipt.json"
+    },
+    {
+      "id": "glide",
+      "taskId": "01a0c572-e3da-748b-adbe-267d3ea85f59",
+      "runtimeRemeshTaskId": "01a0c57f-a8a7-72ee-8557-126f8ec28e78",
+      "guide": "../guides/glide-platform-guide.png",
+      "guideSha256": "70acf421f63536dc18ca09f507fcf22b736647c7d92878bd3130b8b567f830c4",
+      "texturePrompt": "Deep celadon-teal opaline glass raft, pearly internal depth, narrow aged gold trim and corner caps, restrained moon-orbit inlay. No rails or wheels. Broad clean landing top; remove baked lighting.",
+      "status": "raw-source-archived",
+      "consumedCredits": 30,
+      "receipt": "glide/receipt.json",
+      "runtimeRemeshStatus": "runtime-source-archived",
+      "runtimeRemeshConsumedCredits": 5,
+      "runtimeRemeshReceipt": "glide/runtime-remesh-receipt.json"
+    }
+  ],
+  "state": "all-provider-sources-archived",
+  "archivedAtUtc": "2026-09-21T19:38:53.026708+00:00",
+  "balanceAfterArchiveCheck": 3910,
+  "consumedCreditsTotal": 105,
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "runtimeRemeshArchivedAtUtc": "2026-09-21T21:07:44.167043+00:00",
+  "balanceAfterRuntimeRemeshArchiveCheck": 3895
+}

@@ -1,0 +1,29 @@
+{
+  "scope": "Actual GlassAdventure UI and reference playback, synthetic steady microphone observations to wave phase; no physical-microphone or FPS claim.",
+  "layouts": [
+    {
+      "width": 390,
+      "height": 844,
+      "left": 16,
+      "right": 374,
+      "top": 446.34375,
+      "bottom": 824,
+      "scrollWidth": 356,
+      "clientWidth": 356,
+      "text": "The first gentle waveCancelNow let it sway gently above and below.1Settle your note2Let it sway twiceFollow a small, smooth wave twice. Take a breath and try again whenever you need.A3A3 · 50%Hear the gentle wave againFind my note again"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "left": 292,
+      "right": 732,
+      "top": 375.03125,
+      "bottom": 740,
+      "scrollWidth": 438,
+      "clientWidth": 438,
+      "text": "The first gentle waveCancelNow let it sway gently above and below.1Settle your note2Let it sway twiceFollow a small, smooth wave twice. Take a breath and try again whenever you need.A3A3 · 50%Hear the gentle wave againFind my note again"
+    }
+  ],
+  "cancelRemovedPanel": true,
+  "errors": []
+}

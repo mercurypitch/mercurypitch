@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07100f" />
+    <meta name="color-scheme" content="dark" />
+    <title>Merc voice auditions — close variations</title>
+    <style>
+      :root {
+        --ink: #f5f1e7;
+        --muted: #a7b2ae;
+        --faint: #71807a;
+        --line: rgba(221, 235, 228, 0.14);
+        --panel: rgba(14, 25, 23, 0.9);
+        --accent: #dfc3ff;
+        --accent-rgb: 223, 195, 255;
+        color: var(--ink);
+        background: #07100f;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        font-synthesis: none;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        min-width: 320px;
+      }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(
+            circle at 14% 5%,
+            rgba(var(--accent-rgb), 0.12),
+            transparent 31rem
+          ),
+          radial-gradient(
+            circle at 88% 34%,
+            rgba(88, 204, 184, 0.08),
+            transparent 28rem
+          ),
+          linear-gradient(155deg, #07100f 0%, #0a1714 55%, #07100f 100%);
+      }
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.018) 1px,
+            transparent 1px
+          );
+        background-size: 48px 48px;
+        content: '';
+        mask-image: linear-gradient(to bottom, black, transparent 82%);
+      }
+      button,
+      audio {
+        font: inherit;
+      }
+      button {
+        -webkit-tap-highlight-color: transparent;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      .shell {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 44px 0 64px;
+      }
+      .masthead {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px;
+        gap: 34px;
+        align-items: end;
+        margin-bottom: 30px;
+      }
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+      h1 {
+        max-width: 780px;
+        margin: 0;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(2.55rem, 7vw, 5.4rem);
+        font-weight: 400;
+        letter-spacing: -0.055em;
+        line-height: 0.94;
+      }
+      .lede {
+        max-width: 720px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 1.03rem;
+        line-height: 1.62;
+      }
+      .batch-note {
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        color: var(--muted);
+        background: rgba(10, 20, 18, 0.62);
+        font-size: 0.76rem;
+        line-height: 1.55;
+      }
+      .batch-note strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--ink);
+        font-size: 0.9rem;
+      }
+
+      .direction-nav {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .direction-tab {
+        position: relative;
+        min-height: 78px;
+        padding: 13px 14px 13px 48px;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        color: var(--muted);
+        background: rgba(13, 24, 21, 0.7);
+        cursor: pointer;
+        text-align: left;
+        transition: 160ms ease;
+      }
+      .direction-tab:hover {
+        color: var(--ink);
+        transform: translateY(-1px);
+      }
+      .direction-tab[aria-selected='true'] {
+        border-color: rgba(var(--accent-rgb), 0.52);
+        color: var(--ink);
+        background: rgba(var(--accent-rgb), 0.11);
+      }
+      .direction-letter {
+        position: absolute;
+        top: 16px;
+        left: 15px;
+        display: grid;
+        width: 25px;
+        height: 25px;
+        place-items: center;
+        border: 1px solid rgba(var(--accent-rgb), 0.4);
+        border-radius: 999px;
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 850;
+      }
+      .direction-tab strong,
+      .direction-tab small {
+        display: block;
+      }
+      .direction-tab strong {
+        font-size: 0.9rem;
+      }
+      .direction-tab small {
+        margin-top: 4px;
+        color: var(--faint);
+        font-size: 0.7rem;
+        line-height: 1.25;
+      }
+
+      .audition {
+        overflow: hidden;
+        border: 1px solid rgba(var(--accent-rgb), 0.25);
+        border-radius: 24px;
+        background:
+          linear-gradient(
+            145deg,
+            rgba(var(--accent-rgb), 0.075),
+            transparent 30%
+          ),
+          var(--panel);
+        box-shadow: 0 26px 80px rgba(0, 0, 0, 0.34);
+      }
+      .candidate-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+        gap: 42px;
+        align-items: center;
+        padding: clamp(26px, 5vw, 50px);
+        border-bottom: 1px solid var(--line);
+      }
+      .candidate-index {
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+      h2 {
+        margin: 12px 0 0;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(2.3rem, 5vw, 4.2rem);
+        font-weight: 400;
+        letter-spacing: -0.045em;
+        line-height: 1;
+      }
+      .summary {
+        margin: 12px 0 0;
+        color: var(--accent);
+        font-size: 1rem;
+        font-weight: 700;
+      }
+      .note {
+        max-width: 610px;
+        margin: 16px 0 0;
+        color: var(--muted);
+        line-height: 1.62;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 21px;
+      }
+      .chip {
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: #cbd3d0;
+        background: rgba(255, 255, 255, 0.025);
+        font-size: 0.69rem;
+        font-weight: 700;
+      }
+      .chip--baseline {
+        border-color: rgba(var(--accent-rgb), 0.42);
+        color: var(--accent);
+      }
+
+      .reel-card {
+        padding: 20px;
+        border: 1px solid rgba(var(--accent-rgb), 0.26);
+        border-radius: 18px;
+        background: rgba(15, 27, 24, 0.96);
+      }
+      .reel-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: baseline;
+      }
+      .reel-label strong {
+        font-size: 0.86rem;
+      }
+      .reel-label span {
+        color: var(--faint);
+        font-size: 0.7rem;
+      }
+      audio {
+        display: block;
+        width: 100%;
+        height: 42px;
+        margin-top: 14px;
+        accent-color: var(--accent);
+      }
+      .reel-hint {
+        margin: 12px 0 0;
+        color: var(--faint);
+        font-size: 0.72rem;
+        line-height: 1.45;
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 270px;
+        gap: 34px;
+        padding: clamp(26px, 5vw, 50px);
+      }
+      .section-title {
+        margin: 0 0 17px;
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+      .line-list {
+        display: grid;
+        gap: 9px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .line-card {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) minmax(170px, 230px);
+        gap: 14px;
+        align-items: center;
+        min-height: 88px;
+        padding: 14px 15px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.018);
+      }
+      .line-number {
+        color: var(--faint);
+        font-size: 0.7rem;
+        font-weight: 800;
+      }
+      blockquote {
+        margin: 0;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1.03rem;
+        line-height: 1.35;
+      }
+      .line-card audio {
+        height: 36px;
+        margin: 0;
+      }
+
+      .sidebar {
+        display: grid;
+        align-content: start;
+        gap: 12px;
+      }
+      .side-card,
+      details {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.018);
+      }
+      .side-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.55;
+      }
+      .pick-button {
+        width: 100%;
+        margin-top: 14px;
+        padding: 11px 13px;
+        border: 1px solid rgba(var(--accent-rgb), 0.45);
+        border-radius: 10px;
+        color: #07100f;
+        background: var(--accent);
+        cursor: pointer;
+        font-size: 0.76rem;
+        font-weight: 850;
+      }
+      .pick-button[data-picked='true'] {
+        color: var(--accent);
+        background: rgba(var(--accent-rgb), 0.08);
+      }
+      .pick-state {
+        margin-top: 10px !important;
+        color: var(--accent) !important;
+        font-size: 0.7rem !important;
+      }
+      details {
+        padding: 0;
+      }
+      summary {
+        padding: 16px 18px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 0.76rem;
+        font-weight: 750;
+      }
+      .technical {
+        display: grid;
+        gap: 9px;
+        padding: 0 18px 18px;
+      }
+      .technical-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--faint);
+        font-size: 0.68rem;
+      }
+      .technical-row span:last-child {
+        color: #c7cfcc;
+        font-family: ui-monospace, monospace;
+        text-align: right;
+      }
+
+      .candidate-controls {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px clamp(26px, 5vw, 50px);
+        border-top: 1px solid var(--line);
+      }
+      .nav-button {
+        min-width: 130px;
+        padding: 10px 15px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--muted);
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.74rem;
+        font-weight: 750;
+      }
+      .nav-button:hover {
+        border-color: rgba(var(--accent-rgb), 0.42);
+        color: var(--ink);
+      }
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        margin-top: 18px;
+        color: var(--faint);
+        font-size: 0.7rem;
+        line-height: 1.5;
+      }
+      .loading,
+      .error {
+        padding: 44px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        color: var(--muted);
+        background: var(--panel);
+      }
+      .error {
+        color: #efb3a8;
+      }
+
+      @media (max-width: 860px) {
+        .masthead,
+        .candidate-hero,
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+        .candidate-hero,
+        .content-grid {
+          gap: 27px;
+        }
+        .sidebar {
+          grid-template-columns: 1fr 1fr;
+        }
+        .sidebar details {
+          grid-column: 1 / -1;
+        }
+        .line-card {
+          grid-template-columns: 30px minmax(0, 1fr);
+        }
+        .line-card audio {
+          grid-column: 2;
+        }
+      }
+      @media (max-width: 650px) {
+        .shell {
+          width: calc(100% - 24px);
+          padding: 28px 0 38px;
+        }
+        .direction-nav {
+          grid-template-columns: 1fr 1fr;
+        }
+        .candidate-hero,
+        .content-grid {
+          padding: 24px 18px;
+        }
+        .audition {
+          border-radius: 19px;
+        }
+        .line-card {
+          grid-template-columns: 24px minmax(0, 1fr);
+          padding: 13px 12px;
+        }
+        .line-card audio {
+          grid-column: 1 / -1;
+        }
+        .sidebar {
+          grid-template-columns: 1fr;
+        }
+        .sidebar details {
+          grid-column: auto;
+        }
+        .candidate-controls {
+          padding: 15px 18px;
+        }
+        .nav-button {
+          min-width: 0;
+          flex: 1;
+        }
+        .footer {
+          flex-direction: column;
+          gap: 6px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">Merc casting room · close variations</p>
+          <h1>Stay near the favorite. Listen closer.</h1>
+          <p class="lede">
+            D2 is the original favorite baseline. E, F and G make one small
+            change each—warmer and grounded, brighter and clear, or quietly
+            playful. The same five lines are provided for every direction; none
+            is ranked as objectively better.
+          </p>
+        </div>
+        <div class="batch-note">
+          <strong>Audition batch v2</strong>
+          D2 unchanged from v1<br />3 new directions · 9 raw takes<br />
+          Selected: original D2, saved as Merc V1 Gentle Whimsical D2
+        </div>
+      </header>
+
+      <nav
+        id="directionNav"
+        class="direction-nav"
+        role="tablist"
+        aria-label="Voice directions"
+      ></nav>
+      <section id="audition" aria-live="polite">
+        <div class="loading">Preparing the casting room…</div>
+      </section>
+
+      <footer class="footer">
+        <span
+          >For owner listening only. A browser marker is a shortlist note, not a
+          final selection.</span
+        >
+        <span
+          >All new raw previews, generated IDs, settings and quality records are
+          retained.</span
+        >
+      </footer>
+    </main>
+
+    <script type="module">
+      const palette = {
+        d: { accent: '#dfc3ff', rgb: '223, 195, 255' },
+        e: { accent: '#efbd87', rgb: '239, 189, 135' },
+        f: { accent: '#8ce6d5', rgb: '140, 230, 213' },
+        g: { accent: '#f0d88a', rgb: '240, 216, 138' },
+      }
+      const nav = document.querySelector('#directionNav')
+      const audition = document.querySelector('#audition')
+      let manifest
+      let currentIndex = 0
+
+      const escapeHtml = (value) =>
+        String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;')
+      const allAudio = () => [...document.querySelectorAll('audio')]
+      const pauseAll = (except) =>
+        allAudio().forEach((audio) => {
+          if (audio !== except) audio.pause()
+        })
+      const pickedId = () => localStorage.getItem('merc-voice-v2-shortlist')
+      const formatDuration = (seconds) => `${Number(seconds).toFixed(1)} sec`
+
+      function lineMarkup(line, index) {
+        return `<li class="line-card">
+          <span class="line-number">${String(index + 1).padStart(2, '0')}</span>
+          <blockquote>${escapeHtml(line.text)}</blockquote>
+          <audio controls preload="metadata" aria-label="Play line ${index + 1}">
+            <source src="${escapeHtml(line.audition.file)}" type="audio/mpeg" />
+          </audio>
+        </li>`
+      }
+
+      function technicalMarkup(candidate) {
+        return `<details>
+          <summary>Quality record</summary>
+          <div class="technical">
+            <div class="technical-row"><span>Audition take</span><span>${escapeHtml(candidate.selected_take.toUpperCase())}</span></div>
+            <div class="technical-row"><span>Duration</span><span>${formatDuration(candidate.source.provider_duration_seconds)}</span></div>
+            <div class="technical-row"><span>True peak</span><span>${candidate.qa.true_peak_dbfs.toFixed(1)} dBFS</span></div>
+            <div class="technical-row"><span>Clipped samples</span><span>${candidate.qa.pcm.clipped_samples}</span></div>
+            <div class="technical-row"><span>Independent ASR</span><span>${candidate.qa.independent_asr.normalized_exact_match ? 'Exact words' : 'Review needed'}</span></div>
+          </div>
+        </details>`
+      }
+
+      function render(index, updateHash = true) {
+        currentIndex =
+          (index + manifest.candidates.length) % manifest.candidates.length
+        const candidate = manifest.candidates[currentIndex]
+        const color = palette[candidate.id]
+        document.documentElement.style.setProperty('--accent', color.accent)
+        document.documentElement.style.setProperty('--accent-rgb', color.rgb)
+        document.title = `${candidate.id.toUpperCase()} · ${candidate.label} | Merc close variations`
+        if (updateHash) history.replaceState(null, '', `#${candidate.id}`)
+        nav.querySelectorAll('[role="tab"]').forEach((tab, tabIndex) => {
+          const active = tabIndex === currentIndex
+          tab.setAttribute('aria-selected', String(active))
+          tab.tabIndex = active ? 0 : -1
+        })
+
+        const baseline = candidate.favorite_baseline === true
+        const picked = pickedId() === candidate.id
+        audition.innerHTML = `<article class="audition" role="tabpanel" aria-labelledby="tab-${candidate.id}">
+          <div class="candidate-hero">
+            <div>
+              <span class="candidate-index">Direction ${candidate.id.toUpperCase()} of 4</span>
+              <h2>${escapeHtml(candidate.label)}</h2>
+              <p class="summary">${escapeHtml(candidate.summary)}</p>
+              <p class="note">${escapeHtml(candidate.audition_note)}</p>
+              <div class="chips">
+                ${baseline ? '<span class="chip chip--baseline">Favorite baseline</span><span class="chip">Original v1 D2</span>' : '<span class="chip">New v2 direction</span><span class="chip">Close variation on D</span>'}
+                <span class="chip">Original Voice Design</span>
+              </div>
+            </div>
+            <div class="reel-card">
+              <div class="reel-label"><strong>Full five-line reel</strong><span>${formatDuration(candidate.reel.mp3.duration_seconds)}</span></div>
+              <audio controls preload="metadata" aria-label="Play the full ${escapeHtml(candidate.label)} reel">
+                <source src="${escapeHtml(candidate.reel.mp3.file)}" type="audio/mpeg" />
+              </audio>
+              <p class="reel-hint">Start with the reel, then compare the same isolated line across D, E, F and G.</p>
+            </div>
+          </div>
+          <div class="content-grid">
+            <section>
+              <h3 class="section-title">Same five lines</h3>
+              <ol class="line-list">${candidate.lines.map(lineMarkup).join('')}</ol>
+            </section>
+            <aside class="sidebar">
+              <div class="side-card">
+                <h3 class="section-title">What changed</h3>
+                <p>${baseline ? 'Nothing. This is the unchanged D2 reference and current favorite baseline.' : escapeHtml(candidate.difference_from_d)}</p>
+              </div>
+              <div class="side-card">
+                <h3 class="section-title">Private shortlist</h3>
+                <p>Keep one local marker while listening. This does not enroll or activate a voice.</p>
+                <button class="pick-button" type="button" data-pick="${candidate.id}" data-picked="${picked}">${picked ? `${candidate.id.toUpperCase()} is marked` : `Mark ${candidate.id.toUpperCase()}`}</button>
+                <p class="pick-state">${pickedId() ? `Current marker: ${pickedId().toUpperCase()}` : 'No direction marked yet.'}</p>
+              </div>
+              ${technicalMarkup(candidate)}
+            </aside>
+          </div>
+          <div class="candidate-controls">
+            <button class="nav-button" type="button" data-move="-1">Previous direction</button>
+            <button class="nav-button" type="button" data-move="1">Next direction</button>
+          </div>
+        </article>`
+
+        allAudio().forEach((audio) =>
+          audio.addEventListener('play', () => pauseAll(audio)),
+        )
+        audition
+          .querySelector('[data-pick]')
+          .addEventListener('click', (event) => {
+            const id = event.currentTarget.dataset.pick
+            if (pickedId() === id)
+              localStorage.removeItem('merc-voice-v2-shortlist')
+            else localStorage.setItem('merc-voice-v2-shortlist', id)
+            render(currentIndex, false)
+          })
+        audition.querySelectorAll('[data-move]').forEach((button) =>
+          button.addEventListener('click', () => {
+            pauseAll()
+            render(currentIndex + Number(button.dataset.move))
+            nav
+              .querySelector('[aria-selected="true"]')
+              .focus({ preventScroll: true })
+          }),
+        )
+      }
+
+      try {
+        const response = await fetch('./review-manifest.json', {
+          cache: 'no-store',
+        })
+        if (!response.ok)
+          throw new Error(`Manifest request failed with ${response.status}.`)
+        manifest = await response.json()
+        nav.innerHTML = manifest.candidates
+          .map(
+            (
+              candidate,
+              index,
+            ) => `<button id="tab-${candidate.id}" class="direction-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-index="${index}">
+          <span class="direction-letter">${candidate.id.toUpperCase()}</span>
+          <strong>${escapeHtml(candidate.label)}</strong>
+          <small>${candidate.favorite_baseline ? 'Favorite baseline · D2' : escapeHtml(candidate.summary)}</small>
+        </button>`,
+          )
+          .join('')
+        nav.querySelectorAll('[role="tab"]').forEach((tab) =>
+          tab.addEventListener('click', () => {
+            pauseAll()
+            render(Number(tab.dataset.index))
+          }),
+        )
+        nav.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+            return
+          event.preventDefault()
+          const next =
+            event.key === 'Home'
+              ? 0
+              : event.key === 'End'
+                ? manifest.candidates.length - 1
+                : currentIndex + (event.key === 'ArrowRight' ? 1 : -1)
+          pauseAll()
+          render(next)
+          nav.querySelector('[aria-selected="true"]').focus()
+        })
+        const hashId = location.hash.slice(1).toLowerCase()
+        const hashIndex = manifest.candidates.findIndex(
+          (candidate) => candidate.id === hashId,
+        )
+        render(hashIndex >= 0 ? hashIndex : 0, hashIndex < 0)
+      } catch (error) {
+        audition.innerHTML = `<div class="error"><strong>The audition package could not load.</strong><br />${escapeHtml(error.message)}</div>`
+      }
+    </script>
+  </body>
+</html>

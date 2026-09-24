@@ -1,0 +1,49 @@
+{
+  "scope": "Actual renderer scene proof at the authored court placement; not a gameplay or FPS acceptance result.",
+  "viewport": {
+    "width": 800,
+    "height": 600
+  },
+  "file": "800-court-harp.png",
+  "levelId": "glassworks-twin-galleries/twin-galleries",
+  "harp": {
+    "id": "glassworks-twin-galleries/twin-galleries/court/decoration/resonance-harp",
+    "roomId": "glassworks-twin-galleries/twin-galleries/court/room/twin-galleries-court",
+    "recipeId": "twin-tone-harp-v6",
+    "position": {
+      "x": 27.142075023651124,
+      "y": 0,
+      "z": 23.992075023651125
+    },
+    "yaw": -1.5707963267948966,
+    "scale": 1,
+    "coveredSolidIds": [
+      "glassworks-twin-galleries/twin-galleries/court/solid/resonance-harp-base"
+    ]
+  },
+  "player": {
+    "position": {
+      "x": 24.692075023651125,
+      "y": 0,
+      "z": 23.992075023651125
+    },
+    "velocity": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "grounded": true,
+    "facingYaw": -1.5707963267948966
+  },
+  "activeSolid": "glassworks-twin-galleries/twin-galleries/court/solid/resonance-harp-base",
+  "metrics": {
+    "drawCalls": 97,
+    "triangles": 982323,
+    "textures": 44,
+    "geometries": 168,
+    "reflectionCaptures": 0,
+    "reflectionTargetPixels": 0
+  },
+  "errors": [],
+  "pageErrors": []
+}

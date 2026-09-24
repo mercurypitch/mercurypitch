@@ -1,0 +1,154 @@
+{
+  "schema": 1,
+  "purpose": "Meshy 7k runtime remesh audit before authored normalization and kit assembly.",
+  "blender": "5.2.2 LTS",
+  "assets": {
+    "marble": {
+      "source": "meshy/marble/runtime-remesh.glb",
+      "bytes": 7052396,
+      "sha256": "ee5fbe3abe0a5cd9bf552d615ead18ab659107d0b69d07ed1e9599866f5770f1",
+      "sourceMeshCount": 1,
+      "materials": [
+        "BakedMaterial"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.8997630476951599,
+          -0.443526953458786,
+          -0.28530076146125793
+        ],
+        "max": [
+          0.9002369046211243,
+          0.43887513875961304,
+          0.2853007912635803
+        ]
+      },
+      "rawDimensions": [
+        1.7999999523162842,
+        0.8824020624160767,
+        0.5706015825271606
+      ],
+      "landingPlaneCandidate": {
+        "z": 0.13908416554331776,
+        "weightedArea": 0.5634960227907868,
+        "faceCount": 65,
+        "binSize": 0.003566259890794754
+      },
+      "topology": {
+        "vertices": 14353,
+        "triangles": 6969,
+        "boundaryEdges": 14265,
+        "nonManifoldEdges": 14265,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "invalid": false
+      },
+      "proof": {
+        "file": "proofs/meshy-marble-runtime-remesh-donor.png",
+        "bytes": 1086255,
+        "sha256": "2fda608baa1a06748b72b8de571317f3585fb8254e3f05f9017ee9d84380ac25"
+      }
+    },
+    "frost": {
+      "source": "meshy/frost/runtime-remesh.glb",
+      "bytes": 48061304,
+      "sha256": "25108cd697518b86b133ce6d23b130a244372bd0cbc87d4ad7d102565ef362a6",
+      "sourceMeshCount": 1,
+      "materials": [
+        "BakedMaterial"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.8999247550964355,
+          -0.4799330532550812,
+          -0.26841604709625244
+        ],
+        "max": [
+          0.9000752568244934,
+          0.4793016314506531,
+          0.26841607689857483
+        ]
+      },
+      "rawDimensions": [
+        1.7999999523162842,
+        0.9592347145080566,
+        0.5368320941925049
+      ],
+      "landingPlaneCandidate": {
+        "z": 0.24828484356403357,
+        "weightedArea": 0.9415730922482908,
+        "faceCount": 26,
+        "binSize": 0.0033552005887031557
+      },
+      "topology": {
+        "vertices": 9900,
+        "triangles": 7149,
+        "boundaryEdges": 9481,
+        "nonManifoldEdges": 9481,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "invalid": false
+      },
+      "proof": {
+        "file": "proofs/meshy-frost-runtime-remesh-donor.png",
+        "bytes": 1079130,
+        "sha256": "62b8b54a91ba94740dd9192b38585012a01901743d416d171a4f5a3998a950eb"
+      }
+    },
+    "glide": {
+      "source": "meshy/glide/runtime-remesh.glb",
+      "bytes": 46399036,
+      "sha256": "9d2b6f3c9774f5fc9b2e0b30cf81da3d0bc53a0a3fafa575f821726104a28693",
+      "sourceMeshCount": 1,
+      "materials": [
+        "BakedMaterial"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.9003589153289795,
+          -0.4097231328487396,
+          -0.14466945827007294
+        ],
+        "max": [
+          0.8996410369873047,
+          0.4104817807674408,
+          0.14466944336891174
+        ]
+      },
+      "rawDimensions": [
+        1.7999999523162842,
+        0.8202049136161804,
+        0.2893388867378235
+      ],
+      "landingPlaneCandidate": {
+        "z": 0.12296901196241378,
+        "weightedArea": 0.8189790146061569,
+        "faceCount": 281,
+        "binSize": 0.0018083680421113967
+      },
+      "topology": {
+        "vertices": 10238,
+        "triangles": 7068,
+        "boundaryEdges": 9810,
+        "nonManifoldEdges": 9810,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "invalid": false
+      },
+      "proof": {
+        "file": "proofs/meshy-glide-runtime-remesh-donor.png",
+        "bytes": 1069571,
+        "sha256": "b823b8e7ee372fb32b80690d853c78d5deed1e259871e4980c38eb80037e16ba"
+      }
+    }
+  }
+}

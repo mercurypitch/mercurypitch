@@ -1,0 +1,522 @@
+{
+  "source": "prepared.blend",
+  "epsilonMetres": 1e-09,
+  "bvhPairs": 64,
+  "counts": {
+    "crossing": 64
+  },
+  "pairs": [
+    {
+      "pair": [
+        46231,
+        46545
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 8.344612384042494e-05
+    },
+    {
+      "pair": [
+        46242,
+        46545
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00043949013391367253
+    },
+    {
+      "pair": [
+        19560,
+        21395
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00018470213205432073
+    },
+    {
+      "pair": [
+        19561,
+        21395
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 7.055316828612213e-05
+    },
+    {
+      "pair": [
+        48802,
+        48971
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00036236747940954217
+    },
+    {
+      "pair": [
+        8291,
+        8698
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 9.882185413959133e-05
+    },
+    {
+      "pair": [
+        9501,
+        9851
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 1.668178000588383e-05
+    },
+    {
+      "pair": [
+        4565,
+        5267
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.000590907642189567
+    },
+    {
+      "pair": [
+        4565,
+        4978
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00020330317829921063
+    },
+    {
+      "pair": [
+        4764,
+        5267
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0004147162440413521
+    },
+    {
+      "pair": [
+        45200,
+        45492
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 3.267785180433025e-05
+    },
+    {
+      "pair": [
+        40129,
+        40180
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0002477290509241628
+    },
+    {
+      "pair": [
+        18028,
+        18439
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 2.9154397978431446e-05
+    },
+    {
+      "pair": [
+        32946,
+        34486
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00036404956603680594
+    },
+    {
+      "pair": [
+        29318,
+        29369
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0016793214950387436
+    },
+    {
+      "pair": [
+        33051,
+        34486
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0001581128052629277
+    },
+    {
+      "pair": [
+        33039,
+        34486
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00033485178019823647
+    },
+    {
+      "pair": [
+        19912,
+        20622
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00011901672828695808
+    },
+    {
+      "pair": [
+        20262,
+        20847
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.000659147347945116
+    },
+    {
+      "pair": [
+        20124,
+        20847
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00027379596282628427
+    },
+    {
+      "pair": [
+        20124,
+        20622
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00015420684534685897
+    },
+    {
+      "pair": [
+        20257,
+        20847
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0009017665749489756
+    },
+    {
+      "pair": [
+        20163,
+        20847
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 6.22681290284588e-05
+    },
+    {
+      "pair": [
+        43402,
+        43549
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0012023261530950957
+    },
+    {
+      "pair": [
+        43402,
+        43679
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0011804676256955693
+    },
+    {
+      "pair": [
+        12502,
+        12685
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00013687302708315086
+    },
+    {
+      "pair": [
+        23252,
+        23578
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00027532310897127044
+    },
+    {
+      "pair": [
+        11807,
+        11928
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0004869154944377452
+    },
+    {
+      "pair": [
+        44490,
+        44846
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 9.730794110751617e-05
+    },
+    {
+      "pair": [
+        36641,
+        36833
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 5.766360434605877e-05
+    },
+    {
+      "pair": [
+        38719,
+        38919
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0009824144393963397
+    },
+    {
+      "pair": [
+        12860,
+        13436
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0002129733165802672
+    },
+    {
+      "pair": [
+        12549,
+        12812
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00013195622793168993
+    },
+    {
+      "pair": [
+        12154,
+        12361
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0001069771160212285
+    },
+    {
+      "pair": [
+        43369,
+        43810
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 1.2934755699134382e-05
+    },
+    {
+      "pair": [
+        43216,
+        43810
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0005980820556662769
+    },
+    {
+      "pair": [
+        43216,
+        43632
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 6.523881017658772e-05
+    },
+    {
+      "pair": [
+        9943,
+        10152
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0005087920292266013
+    },
+    {
+      "pair": [
+        10152,
+        10404
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.000934008336802572
+    },
+    {
+      "pair": [
+        10085,
+        10870
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0004391247803788856
+    },
+    {
+      "pair": [
+        10085,
+        10684
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0010162341170849576
+    },
+    {
+      "pair": [
+        26823,
+        27231
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0007392921082968185
+    },
+    {
+      "pair": [
+        26689,
+        27231
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00032870157355424645
+    },
+    {
+      "pair": [
+        22409,
+        23080
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00017084484222418261
+    },
+    {
+      "pair": [
+        22409,
+        23140
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0003968439929427081
+    },
+    {
+      "pair": [
+        22409,
+        22996
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 6.190729904687053e-05
+    },
+    {
+      "pair": [
+        22409,
+        22962
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0010521382396458945
+    },
+    {
+      "pair": [
+        22409,
+        22990
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 1.3626336084537893e-05
+    },
+    {
+      "pair": [
+        22409,
+        22989
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0003216357475770426
+    },
+    {
+      "pair": [
+        22990,
+        23080
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00010210184084896712
+    },
+    {
+      "pair": [
+        22990,
+        23140
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 7.098448822023817e-05
+    },
+    {
+      "pair": [
+        22990,
+        23088
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 3.961402707058914e-05
+    },
+    {
+      "pair": [
+        22989,
+        23140
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00023002145501316296
+    },
+    {
+      "pair": [
+        22867,
+        23140
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00023571195516081112
+    },
+    {
+      "pair": [
+        22866,
+        22990
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 2.49505695178176e-05
+    },
+    {
+      "pair": [
+        22695,
+        22996
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 6.374400987907425e-05
+    },
+    {
+      "pair": [
+        22695,
+        22990
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 9.181749752895652e-06
+    },
+    {
+      "pair": [
+        22695,
+        22989
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00030315095214594745
+    },
+    {
+      "pair": [
+        15601,
+        16260
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0010431577587736718
+    },
+    {
+      "pair": [
+        34987,
+        35467
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.000689823640018572
+    },
+    {
+      "pair": [
+        14585,
+        14607
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.000196554956981189
+    },
+    {
+      "pair": [
+        45870,
+        46614
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.0005707357590846035
+    },
+    {
+      "pair": [
+        6643,
+        6816
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 3.13593596532602e-05
+    },
+    {
+      "pair": [
+        13132,
+        13361
+      ],
+      "kind": "crossing",
+      "intersectionSegmentMetres": 0.00013998746046306465
+    }
+  ]
+}

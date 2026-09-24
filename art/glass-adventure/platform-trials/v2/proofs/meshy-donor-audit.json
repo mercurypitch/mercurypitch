@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "purpose": "Raw Meshy donor audit before authored landing repair and LOD finishing.",
+  "blender": "5.2.2 LTS",
+  "assets": {
+    "marble": {
+      "source": "meshy/marble/donor.glb",
+      "bytes": 44985716,
+      "sha256": "b415c9287dff10444ebe7ba55935163fa7632ba60e8ad7babd30528565b6c3db",
+      "materials": [
+        "Material_0"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.9520350694656372,
+          -0.4698910415172577,
+          -0.3059999942779541
+        ],
+        "max": [
+          0.9521390199661255,
+          0.4696190357208252,
+          0.30032801628112793
+        ]
+      },
+      "rawDimensions": [
+        1.9041740894317627,
+        0.9395101070404053,
+        0.606328010559082
+      ],
+      "landingPlaneCandidate": {
+        "z": 0.14495646357536313,
+        "weightedArea": 1.1056959088948588,
+        "faceCount": 824,
+        "binSize": 0.0037895500659942626
+      },
+      "topology": {
+        "vertices": 119755,
+        "triangles": 90378,
+        "boundaryEdges": 114014,
+        "nonManifoldEdges": 114014,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "invalid": false
+      },
+      "proof": {
+        "file": "proofs/meshy-marble-donor.png",
+        "bytes": 1092736,
+        "sha256": "e36e991957695043a23186573fa61d407ab19d9b0d24c2b0a87dd1932555ced9"
+      }
+    },
+    "frost": {
+      "source": "meshy/frost/donor.glb",
+      "bytes": 40814788,
+      "sha256": "a7a1ca61f5f927ce4d96a758947ce914cc5fe66e3c5efef6a6a05a86a95863b8",
+      "materials": [
+        "Material_0"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.9518629908561707,
+          -0.5076209902763367,
+          -0.2834739685058594
+        ],
+        "max": [
+          0.951339066028595,
+          0.5069400072097778,
+          0.2845659554004669
+        ]
+      },
+      "rawDimensions": [
+        1.9032020568847656,
+        1.0145609378814697,
+        0.5680398941040039
+      ],
+      "landingPlaneCandidate": {
+        "z": 0.26326442956924445,
+        "weightedArea": 0.9626319693120422,
+        "faceCount": 69,
+        "binSize": 0.0035502493381500246
+      },
+      "topology": {
+        "vertices": 77278,
+        "triangles": 79445,
+        "boundaryEdges": 61477,
+        "nonManifoldEdges": 61477,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "invalid": false
+      },
+      "proof": {
+        "file": "proofs/meshy-frost-donor.png",
+        "bytes": 1084146,
+        "sha256": "cbe6d8aaf0176ad2f80c15d2fa0488c07ac9bad7b2a8abc43e0f66531cc76002"
+      }
+    },
+    "glide": {
+      "source": "meshy/glide/donor.glb",
+      "bytes": 38636140,
+      "sha256": "87c555d358064841b09b38e8f671c18c37eb97ae2c2130f4cd0da50894a5acb9",
+      "materials": [
+        "Material_0"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.9518499970436096,
+          -0.4332680106163025,
+          -0.14434503018856049
+        ],
+        "max": [
+          0.9511319994926453,
+          0.433957040309906,
+          0.1619960218667984
+        ]
+      },
+      "rawDimensions": [
+        1.9029819965362549,
+        0.8672250509262085,
+        0.3063410520553589
+      ],
+      "landingPlaneCandidate": {
+        "z": 0.14093507453799248,
+        "weightedArea": 0.675242155999257,
+        "faceCount": 944,
+        "binSize": 0.001914631575345993
+      },
+      "topology": {
+        "vertices": 80784,
+        "triangles": 83606,
+        "boundaryEdges": 63624,
+        "nonManifoldEdges": 63624,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "invalid": false
+      },
+      "proof": {
+        "file": "proofs/meshy-glide-donor.png",
+        "bytes": 1073379,
+        "sha256": "33a1704b788e92ffa74c9aa308a5ab104c974b8987254f1389f32a622dca2699"
+      }
+    }
+  }
+}

@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Glassworks — Meshy source and Blender studies</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #183b42;
+        --muted: #526c72;
+        --page: #e7f0f0;
+        --paper: #fff;
+        --gold: #886321;
+        --line: #b9cccf;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--page);
+        font:
+          16px/1.55 'Trebuchet MS',
+          Arial,
+          sans-serif;
+      }
+      a {
+        color: #145866;
+        text-underline-offset: 4px;
+      }
+      a:hover {
+        color: #784f16;
+      }
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid #86601a;
+        outline-offset: 5px;
+      }
+      main {
+        max-width: 1460px;
+        margin: auto;
+        padding: 42px 36px 80px;
+      }
+      header {
+        display: grid;
+        grid-template-columns: 1fr minmax(260px, 31%);
+        gap: 42px;
+        align-items: center;
+      }
+      h1 {
+        font-size: clamp(36px, 4.4vw, 62px);
+        line-height: 1.08;
+        letter-spacing: -0.04em;
+        margin: 12px 0 20px;
+        max-width: 720px;
+      }
+      h2 {
+        font-size: 32px;
+        line-height: 1.15;
+        margin: 0 0 7px;
+        letter-spacing: -0.025em;
+      }
+      h3 {
+        font-size: 19px;
+        margin: 0 0 6px;
+      }
+      p {
+        margin: 0 0 14px;
+        max-width: 76ch;
+      }
+      .intro {
+        font-size: 18px;
+        color: var(--muted);
+        max-width: 67ch;
+      }
+      .direction {
+        margin: 0;
+      }
+      .direction img {
+        width: 100%;
+        display: block;
+        aspect-ratio: 1.35;
+        object-fit: cover;
+      }
+      .direction figcaption {
+        font-size: 13px;
+        color: var(--muted);
+        padding-top: 7px;
+      }
+      .status {
+        background: #d4e5e7;
+        border-left: 4px solid #386872;
+        padding: 16px 20px;
+        margin: 28px 0 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 28px;
+      }
+      .status strong {
+        display: block;
+      }
+      .status span {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 25px;
+        margin-bottom: 40px;
+      }
+      section {
+        background: var(--paper);
+        padding: 28px;
+        margin: 0 0 30px;
+        scroll-margin-top: 18px;
+      }
+      .section-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: start;
+        margin-bottom: 20px;
+      }
+      .section-head p {
+        color: var(--muted);
+        margin: 0;
+        font-size: 14px;
+      }
+      .stage {
+        max-width: 300px;
+        font-size: 13px;
+        color: #66511e;
+        background: #f0ebd8;
+        padding: 7px 11px;
+      }
+      .comparison {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+      }
+      figure {
+        margin: 0;
+        min-width: 0;
+      }
+      .image-link {
+        display: block;
+        background: #ecf0f0;
+      }
+      .image-link img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3/4;
+        object-fit: contain;
+      }
+      figcaption {
+        padding: 14px 2px 8px;
+      }
+      figcaption p {
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .pending {
+        aspect-ratio: 3/4;
+        background: #edf2f3;
+        border: 1px dashed var(--line);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        text-align: center;
+        padding: 24px;
+        color: var(--muted);
+      }
+      .pending span {
+        font-size: 19px;
+        color: #3d5c63;
+      }
+      .pending small {
+        margin-top: 7px;
+        max-width: 22ch;
+      }
+      details {
+        margin-top: 16px;
+        padding-top: 17px;
+        border-top: 1px solid var(--line);
+      }
+      summary {
+        cursor: pointer;
+        width: fit-content;
+        font-weight: bold;
+      }
+      .archive {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 24px;
+        margin: 17px 0;
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .fracture {
+        max-width: 680px;
+        margin: 12px auto;
+      }
+      .fracture img {
+        aspect-ratio: 4/3;
+      }
+      footer {
+        color: var(--muted);
+        padding-top: 8px;
+        font-size: 14px;
+      }
+      footer a {
+        margin-right: 20px;
+      }
+      @media (max-width: 850px) {
+        main {
+          padding: 28px 18px 60px;
+        }
+        header {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        .direction {
+          display: none;
+        }
+        section {
+          padding: 20px;
+        }
+        .comparison {
+          gap: 13px;
+        }
+        h2 {
+          font-size: 27px;
+        }
+        .stage {
+          max-width: none;
+        }
+      }
+      @media (max-width: 620px) {
+        .comparison {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+        .image-link img,
+        .pending {
+          aspect-ratio: 1;
+        }
+        .pending {
+          min-height: 200px;
+        }
+        .section-head {
+          gap: 14px;
+        }
+        nav {
+          gap: 9px 19px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <a href="../v2/review.html">View the current v2 artwork</a>
+          <h1>From Meshy donor<br />to museum glass.</h1>
+          <p class="intro">
+            Compare the design reference, untouched source model and Blender
+            finish. These seven studies are separate from the version you are
+            currently playing.
+          </p>
+        </div>
+        <figure class="direction">
+          <a href="../concepts/floating-museum-direction.png"
+            ><img
+              src="../concepts/floating-museum-direction.png"
+              alt="The floating glass museum visual direction"
+          /></a>
+          <figcaption>
+            The museum direction. Model fidelity is reviewed below.
+          </figcaption>
+        </figure>
+      </header>
+      <div class="status">
+        <div>
+          <strong>Current game remains on v2</strong
+          ><span>No v3 visual replacements are activated.</span>
+        </div>
+        <div>
+          <strong>7 of 7 raw donors archived</strong
+          ><span>7 Blender study images available for review.</span>
+        </div>
+        <div>
+          <strong>Snapshot 2026-09-15</strong
+          ><span
+            >Updated 13:50:34 UTC; reload after the gallery is refreshed.</span
+          >
+        </div>
+      </div>
+      <nav aria-label="Asset families">
+        <a href="#fluted-carafe">Fluted carafe</a
+        ><a href="#moon-amphora">Moon amphora</a
+        ><a href="#cut-crystal-decanter">Cut-crystal decanter</a
+        ><a href="#aurora-coupe">Aurora coupe</a
+        ><a href="#gilded-column">Gilded column</a
+        ><a href="#garden-arcade">Garden arcade</a
+        ><a href="#observatory-canopy">Observatory pavilion</a>
+      </nav>
+      <section id="fluted-carafe">
+        <div class="section-head">
+          <div>
+            <h2>Fluted carafe</h2>
+            <p>Intended use: The fluted treasure.</p>
+          </div>
+          <span class="stage">Blender image ready for review</span>
+        </div>
+        <div class="comparison">
+          <figure>
+            <a
+              class="image-link"
+              href="../v2/references/fluted-carafe.png"
+              aria-label="Open full-size Visual reference"
+              ><img
+                src="../v2/references/fluted-carafe.png"
+                alt="Visual reference"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Visual reference</h3>
+              <p>
+                Generated design target; not a 3D model or gameplay screenshot.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/fluted-carafe/inspection-three-quarter.png"
+              aria-label="Open full-size Raw Meshy donor"
+              ><img
+                src="donors/fluted-carafe/inspection-three-quarter.png"
+                alt="Raw Meshy donor"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Raw Meshy donor</h3>
+              <p>
+                Actual donor geometry, before glass and fracture finalization.
+                Neutral inspection materials may be used to make the shape
+                readable; the linked source GLB is unchanged.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/fluted-carafe/finalized-intact.png"
+              aria-label="Open full-size Blender-final study"
+              ><img
+                src="donors/fluted-carafe/finalized-intact.png"
+                alt="Blender-final study"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Blender-final study</h3>
+              <p>
+                Actual Blender render, available for visual review. This is not
+                an in-game capture or an integration approval.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="fracture">
+          <figure>
+            <a
+              class="image-link"
+              href="donors/fluted-carafe/finalized-fracture.png"
+              aria-label="Open full-size Fluted carafe fracture"
+              ><img
+                src="donors/fluted-carafe/finalized-fracture.png"
+                alt="Fluted carafe fracture"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Fluted carafe fracture</h3>
+              <p>
+                Actual finalized geometry. Check the silhouette, cut faces and
+                matching trim.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>Source archive and inspection evidence</summary>
+          <div class="archive">
+            <a href="model-viewer.html?asset=fluted-carafe"
+              >Inspect the model in 3D</a
+            ><a href="../v2/references/fluted-carafe.png">Beauty reference</a
+            ><a href="../v2/references/fluted-carafe-geometry.png"
+              >Geometry guide</a
+            ><a href="../v2/meshy/fluted-carafe-01/donor.glb"
+              >Unchanged Meshy GLB</a
+            ><a href="donors/fluted-carafe/raw-import.blend"
+              >Original import .blend</a
+            ><a href="donors/fluted-carafe/prepared.blend">Prepared .blend</a
+            ><a href="donors/fluted-carafe/finalized.blend">Finalized .blend</a
+            ><a href="exports/fluted-carafe.glb">Staged GLB</a
+            ><a href="donors/fluted-carafe/inspection-mouth.png"
+              >Donor mouth detail</a
+            ><a href="donors/fluted-carafe/inspection.json">Inspection report</a
+            ><a href="donors/fluted-carafe/finalization.json"
+              >Finalization report</a
+            ><a href="donors/fluted-carafe/validation.json">Validation report</a
+            ><a href="../v2/meshy/fluted-carafe-01/archive.json"
+              >Source archive and hashes</a
+            ><a href="../v2/meshy/fluted-carafe-01/provider-task.json"
+              >Provider provenance</a
+            ><a href="donors/fluted-carafe/source.json">Source hash</a>
+          </div>
+          <p class="small">
+            Raw files remain preserved separately from prepared and finalized
+            sources. No v3 asset on this page is activated in the current game.
+          </p>
+        </details>
+      </section>
+      <section id="moon-amphora">
+        <div class="section-head">
+          <div>
+            <h2>Moon amphora</h2>
+            <p>Intended use: The moon amphora.</p>
+          </div>
+          <span class="stage">Blender image ready for review</span>
+        </div>
+        <div class="comparison">
+          <figure>
+            <a
+              class="image-link"
+              href="../v2/references/moon-amphora.png"
+              aria-label="Open full-size Visual reference"
+              ><img
+                src="../v2/references/moon-amphora.png"
+                alt="Visual reference"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Visual reference</h3>
+              <p>
+                Generated design target; not a 3D model or gameplay screenshot.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/moon-amphora/inspection-three-quarter.png"
+              aria-label="Open full-size Raw Meshy donor"
+              ><img
+                src="donors/moon-amphora/inspection-three-quarter.png"
+                alt="Raw Meshy donor"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Raw Meshy donor</h3>
+              <p>
+                Actual donor geometry, before glass and fracture finalization.
+                Neutral inspection materials may be used to make the shape
+                readable; the linked source GLB is unchanged.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/moon-amphora/finalized-intact.png"
+              aria-label="Open full-size Blender-final study"
+              ><img
+                src="donors/moon-amphora/finalized-intact.png"
+                alt="Blender-final study"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Blender-final study</h3>
+              <p>
+                Actual Blender render, available for visual review. This is not
+                an in-game capture or an integration approval.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="fracture">
+          <figure>
+            <a
+              class="image-link"
+              href="donors/moon-amphora/finalized-fracture.png"
+              aria-label="Open full-size Moon amphora fracture"
+              ><img
+                src="donors/moon-amphora/finalized-fracture.png"
+                alt="Moon amphora fracture"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Moon amphora fracture</h3>
+              <p>
+                Actual finalized geometry. Check the silhouette, cut faces and
+                matching trim.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>Source archive and inspection evidence</summary>
+          <div class="archive">
+            <a href="model-viewer.html?asset=moon-amphora"
+              >Inspect the model in 3D</a
+            ><a href="../v2/references/moon-amphora.png">Beauty reference</a
+            ><a href="../v2/references/moon-amphora-geometry.png"
+              >Geometry guide</a
+            ><a href="../v2/meshy/moon-amphora-01/donor.glb"
+              >Unchanged Meshy GLB</a
+            ><a href="donors/moon-amphora/raw-import.blend"
+              >Original import .blend</a
+            ><a href="donors/moon-amphora/prepared.blend">Prepared .blend</a
+            ><a href="donors/moon-amphora/finalized.blend">Finalized .blend</a
+            ><a href="exports/moon-amphora.glb">Staged GLB</a
+            ><a href="donors/moon-amphora/inspection-mouth.png"
+              >Donor mouth detail</a
+            ><a href="donors/moon-amphora/inspection.json">Inspection report</a
+            ><a href="donors/moon-amphora/finalization.json"
+              >Finalization report</a
+            ><a href="donors/moon-amphora/validation.json">Validation report</a
+            ><a href="../v2/meshy/moon-amphora-01/archive.json"
+              >Source archive and hashes</a
+            ><a href="../v2/meshy/moon-amphora-01/provider-task.json"
+              >Provider provenance</a
+            ><a href="donors/moon-amphora/source.json">Source hash</a>
+          </div>
+          <p class="small">
+            Raw files remain preserved separately from prepared and finalized
+            sources. No v3 asset on this page is activated in the current game.
+          </p>
+        </details>
+      </section>
+      <section id="cut-crystal-decanter">
+        <div class="section-head">
+          <div>
+            <h2>Cut-crystal decanter</h2>
+            <p>Intended use: Asset gallery only; placement not chosen.</p>
+          </div>
+          <span class="stage">Blender image ready for review</span>
+        </div>
+        <div class="comparison">
+          <figure>
+            <a
+              class="image-link"
+              href="../v2/references/cut-crystal-decanter.png"
+              aria-label="Open full-size Visual reference"
+              ><img
+                src="../v2/references/cut-crystal-decanter.png"
+                alt="Visual reference"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Visual reference</h3>
+              <p>
+                Generated design target; not a 3D model or gameplay screenshot.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/cut-crystal-decanter/inspection-three-quarter.png"
+              aria-label="Open full-size Raw Meshy donor"
+              ><img
+                src="donors/cut-crystal-decanter/inspection-three-quarter.png"
+                alt="Raw Meshy donor"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Raw Meshy donor</h3>
+              <p>
+                Actual donor geometry, before glass and fracture finalization.
+                Neutral inspection materials may be used to make the shape
+                readable; the linked source GLB is unchanged.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/cut-crystal-decanter/finalized-intact.png"
+              aria-label="Open full-size Blender-final study"
+              ><img
+                src="donors/cut-crystal-decanter/finalized-intact.png"
+                alt="Blender-final study"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Blender-final study</h3>
+              <p>
+                Actual Blender render, available for visual review. This is not
+                an in-game capture or an integration approval.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="fracture">
+          <figure>
+            <a
+              class="image-link"
+              href="donors/cut-crystal-decanter/finalized-fracture.png"
+              aria-label="Open full-size Cut-crystal decanter fracture"
+              ><img
+                src="donors/cut-crystal-decanter/finalized-fracture.png"
+                alt="Cut-crystal decanter fracture"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Cut-crystal decanter fracture</h3>
+              <p>
+                Actual finalized geometry. Check the silhouette, cut faces and
+                matching trim.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>Source archive and inspection evidence</summary>
+          <div class="archive">
+            <a href="model-viewer.html?asset=cut-crystal-decanter"
+              >Inspect the model in 3D</a
+            ><a href="../v2/references/cut-crystal-decanter.png"
+              >Beauty reference</a
+            ><a href="../v2/references/cut-crystal-decanter-geometry-v2.png"
+              >Geometry guide</a
+            ><a href="../v2/meshy/cut-crystal-decanter-01/donor.glb"
+              >Unchanged Meshy GLB</a
+            ><a href="donors/cut-crystal-decanter/raw-import.blend"
+              >Original import .blend</a
+            ><a href="donors/cut-crystal-decanter/finalized.blend"
+              >Finalized .blend</a
+            ><a href="exports/cut-crystal-decanter.glb">Staged GLB</a
+            ><a href="donors/cut-crystal-decanter/inspection-mouth.png"
+              >Donor mouth detail</a
+            ><a href="donors/cut-crystal-decanter/inspection.json"
+              >Inspection report</a
+            ><a href="donors/cut-crystal-decanter/finalization.json"
+              >Finalization report</a
+            ><a href="donors/cut-crystal-decanter/validation.json"
+              >Validation report</a
+            ><a href="../v2/meshy/cut-crystal-decanter-01/archive.json"
+              >Source archive and hashes</a
+            ><a href="../v2/meshy/cut-crystal-decanter-01/provider-task.json"
+              >Provider provenance</a
+            ><a href="donors/cut-crystal-decanter/source.json">Source hash</a>
+          </div>
+          <p class="small">
+            Raw files remain preserved separately from prepared and finalized
+            sources. No v3 asset on this page is activated in the current game.
+          </p>
+        </details>
+      </section>
+      <section id="aurora-coupe">
+        <div class="section-head">
+          <div>
+            <h2>Aurora coupe</h2>
+            <p>Intended use: Asset gallery only; placement not chosen.</p>
+          </div>
+          <span class="stage">Blender image ready for review</span>
+        </div>
+        <div class="comparison">
+          <figure>
+            <a
+              class="image-link"
+              href="../v2/references/aurora-coupe.png"
+              aria-label="Open full-size Visual reference"
+              ><img
+                src="../v2/references/aurora-coupe.png"
+                alt="Visual reference"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Visual reference</h3>
+              <p>
+                Generated design target; not a 3D model or gameplay screenshot.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/aurora-coupe/inspection-three-quarter.png"
+              aria-label="Open full-size Raw Meshy donor"
+              ><img
+                src="donors/aurora-coupe/inspection-three-quarter.png"
+                alt="Raw Meshy donor"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Raw Meshy donor</h3>
+              <p>
+                Actual donor geometry, before glass and fracture finalization.
+                Neutral inspection materials may be used to make the shape
+                readable; the linked source GLB is unchanged.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="donors/aurora-coupe/finalized-intact.png"
+              aria-label="Open full-size Blender-final study"
+              ><img
+                src="donors/aurora-coupe/finalized-intact.png"
+                alt="Blender-final study"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Blender-final study</h3>
+              <p>
+                Actual Blender render, available for visual review. This is not
+                an in-game capture or an integration approval.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="fracture">
+          <figure>
+            <a
+              class="image-link"
+              href="donors/aurora-coupe/finalized-fracture.png"
+              aria-label="Open full-size Aurora coupe fracture"
+              ><img
+                src="donors/aurora-coupe/finalized-fracture.png"
+                alt="Aurora coupe fracture"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Aurora coupe fracture</h3>
+              <p>
+                Actual finalized geometry. Check the silhouette, cut faces and
+                matching trim.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>Source archive and inspection evidence</summary>
+          <div class="archive">
+            <a href="model-viewer.html?asset=aurora-coupe"
+              >Inspect the model in 3D</a
+            ><a href="../v2/references/aurora-coupe.png">Beauty reference</a
+            ><a href="../v2/references/aurora-coupe-geometry.png"
+              >Geometry guide</a
+            ><a href="../v2/meshy/aurora-coupe-01/donor.glb"
+              >Unchanged Meshy GLB</a
+            ><a href="donors/aurora-coupe/raw-import.blend"
+              >Original import .blend</a
+            ><a href="donors/aurora-coupe/prepared.blend">Prepared .blend</a
+            ><a href="donors/aurora-coupe/finalized.blend">Finalized .blend</a
+            ><a href="exports/aurora-coupe.glb">Staged GLB</a
+            ><a href="donors/aurora-coupe/inspection-mouth.png"
+              >Donor mouth detail</a
+            ><a href="donors/aurora-coupe/inspection.json">Inspection report</a
+            ><a href="donors/aurora-coupe/finalization.json"
+              >Finalization report</a
+            ><a href="donors/aurora-coupe/validation.json">Validation report</a
+            ><a href="../v2/meshy/aurora-coupe-01/archive.json"
+              >Source archive and hashes</a
+            ><a href="../v2/meshy/aurora-coupe-01/provider-task.json"
+              >Provider provenance</a
+            ><a href="donors/aurora-coupe/source.json">Source hash</a>
+          </div>
+          <p class="small">
+            Raw files remain preserved separately from prepared and finalized
+            sources. No v3 asset on this page is activated in the current game.
+          </p>
+        </details>
+      </section>
+      <section id="gilded-column">
+        <div class="section-head">
+          <div>
+            <h2>Gilded column</h2>
+            <p>Intended use: Architectural study; placement not chosen.</p>
+          </div>
+          <span class="stage">Blender image ready for review</span>
+        </div>
+        <div class="comparison">
+          <figure>
+            <a
+              class="image-link"
+              href="../v2/references/gilded-column.png"
+              aria-label="Open full-size Visual reference"
+              ><img
+                src="../v2/references/gilded-column.png"
+                alt="Visual reference"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Visual reference</h3>
+              <p>
+                Generated design target; not a 3D model or gameplay screenshot.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="architecture/proofs/gilded-column-01-raw-three-quarter.png"
+              aria-label="Open full-size Raw Meshy donor"
+              ><img
+                src="architecture/proofs/gilded-column-01-raw-three-quarter.png"
+                alt="Raw Meshy donor"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Raw Meshy donor</h3>
+              <p>
+                Actual donor geometry, before glass and fracture finalization.
+                Neutral inspection materials may be used to make the shape
+                readable; the linked source GLB is unchanged.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="architecture/proofs/gilded-column-01-final-v2-three-quarter.png"
+              aria-label="Open full-size Blender-final study"
+              ><img
+                src="architecture/proofs/gilded-column-01-final-v2-three-quarter.png"
+                alt="Blender-final study"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Blender-final study</h3>
+              <p>
+                Actual Blender render, available for visual review. This is not
+                an in-game capture or an integration approval.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>Source archive and inspection evidence</summary>
+          <div class="archive">
+            <a href="model-viewer.html?asset=gilded-column"
+              >Inspect the model in 3D</a
+            ><a href="../v2/references/gilded-column.png">Beauty reference</a
+            ><a href="../v2/meshy/gilded-column-01/donor.glb"
+              >Unchanged Meshy GLB</a
+            ><a href="architecture/sources/gilded-column-01-imported.blend"
+              >Original import .blend</a
+            ><a href="architecture/sources/gilded-column-01-final-v2.blend"
+              >Finalized .blend</a
+            ><a href="architecture/exports/gilded-column-01-final-v2.glb"
+              >Staged GLB</a
+            ><a href="architecture/proofs/gilded-column-01-raw-back.png"
+              >Donor back view</a
+            ><a href="architecture/proofs/gilded-column-01-raw-capital.png"
+              >Donor capital detail</a
+            ><a href="architecture/proofs/gilded-column-01-final-v2-back.png"
+              >Final back view</a
+            ><a href="architecture/proofs/gilded-column-01-final-v2-capital.png"
+              >Final capital detail</a
+            ><a href="architecture/reports/gilded-column-01-intake.json"
+              >Inspection report</a
+            ><a href="architecture/reports/gilded-column-01-final-v2.json"
+              >Finalization report</a
+            ><a
+              href="architecture/reports/gilded-column-01-final-v2-validation.json"
+              >Validation report</a
+            ><a href="../v2/meshy/gilded-column-01/archive.json"
+              >Source archive and hashes</a
+            ><a href="../v2/meshy/gilded-column-01/provider-task.json"
+              >Provider provenance</a
+            >
+          </div>
+          <p class="small">
+            Raw files remain preserved separately from prepared and finalized
+            sources. No v3 asset on this page is activated in the current game.
+          </p>
+        </details>
+      </section>
+      <section id="garden-arcade">
+        <div class="section-head">
+          <div>
+            <h2>Garden arcade</h2>
+            <p>Intended use: Backdrop and boundary dressing; low sills.</p>
+          </div>
+          <span class="stage">Blender image ready for review</span>
+        </div>
+        <div class="comparison">
+          <figure>
+            <a
+              class="image-link"
+              href="../v2/references/garden-arcade.png"
+              aria-label="Open full-size Visual reference"
+              ><img
+                src="../v2/references/garden-arcade.png"
+                alt="Visual reference"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Visual reference</h3>
+              <p>
+                Generated design target; not a 3D model or gameplay screenshot.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="architecture/proofs/garden-arcade-01-raw-three-quarter.png"
+              aria-label="Open full-size Raw Meshy donor"
+              ><img
+                src="architecture/proofs/garden-arcade-01-raw-three-quarter.png"
+                alt="Raw Meshy donor"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Raw Meshy donor</h3>
+              <p>
+                Actual donor geometry, before glass and fracture finalization.
+                Neutral inspection materials may be used to make the shape
+                readable; the linked source GLB is unchanged.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="architecture/proofs/garden-arcade-01-final-v1-three-quarter.png"
+              aria-label="Open full-size Blender-final study"
+              ><img
+                src="architecture/proofs/garden-arcade-01-final-v1-three-quarter.png"
+                alt="Blender-final study"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Blender-final study</h3>
+              <p>
+                Actual Blender render, available for visual review. This is not
+                an in-game capture or an integration approval. Backdrop
+                audition: the donor retains low sills and an end planter; rear
+                trim is softer close up.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>Source archive and inspection evidence</summary>
+          <div class="archive">
+            <a href="model-viewer.html?asset=garden-arcade"
+              >Inspect the model in 3D</a
+            ><a href="../v2/references/garden-arcade.png">Beauty reference</a
+            ><a href="../v2/meshy/garden-arcade-01/donor.glb"
+              >Unchanged Meshy GLB</a
+            ><a href="architecture/sources/garden-arcade-01-imported.blend"
+              >Original import .blend</a
+            ><a href="architecture/sources/garden-arcade-01-final-v1.blend"
+              >Finalized .blend</a
+            ><a href="architecture/exports/garden-arcade-01-final-v1.glb"
+              >Staged GLB</a
+            ><a href="architecture/proofs/garden-arcade-01-raw-back.png"
+              >Donor back view</a
+            ><a href="architecture/proofs/garden-arcade-01-final-v1-back.png"
+              >Final back view</a
+            ><a href="architecture/reports/garden-arcade-01-intake.json"
+              >Inspection report</a
+            ><a href="architecture/reports/garden-arcade-01-final-v1.json"
+              >Finalization report</a
+            ><a
+              href="architecture/reports/garden-arcade-01-final-v1-validation.json"
+              >Validation report</a
+            ><a href="../v2/meshy/garden-arcade-01/archive.json"
+              >Source archive and hashes</a
+            ><a href="../v2/meshy/garden-arcade-01/provider-task.json"
+              >Provider provenance</a
+            >
+          </div>
+          <p class="small">
+            Raw files remain preserved separately from prepared and finalized
+            sources. No v3 asset on this page is activated in the current game.
+          </p>
+        </details>
+      </section>
+      <section id="observatory-canopy">
+        <div class="section-head">
+          <div>
+            <h2>Observatory pavilion</h2>
+            <p>Intended use: Skyline landmark; scene clearance pending.</p>
+          </div>
+          <span class="stage">Blender image ready for review</span>
+        </div>
+        <div class="comparison">
+          <figure>
+            <a
+              class="image-link"
+              href="../v2/references/observatory-canopy.png"
+              aria-label="Open full-size Visual reference"
+              ><img
+                src="../v2/references/observatory-canopy.png"
+                alt="Visual reference"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Visual reference</h3>
+              <p>
+                Generated design target; not a 3D model or gameplay screenshot.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="architecture/proofs/observatory-canopy-01-raw-three-quarter.png"
+              aria-label="Open full-size Raw Meshy donor"
+              ><img
+                src="architecture/proofs/observatory-canopy-01-raw-three-quarter.png"
+                alt="Raw Meshy donor"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Raw Meshy donor</h3>
+              <p>
+                Actual donor geometry, before glass and fracture finalization.
+                Neutral inspection materials may be used to make the shape
+                readable; the linked source GLB is unchanged.
+              </p>
+            </figcaption>
+          </figure>
+          <figure>
+            <a
+              class="image-link"
+              href="architecture/proofs/observatory-canopy-01-final-v1-three-quarter.png"
+              aria-label="Open full-size Blender-final study"
+              ><img
+                src="architecture/proofs/observatory-canopy-01-final-v1-three-quarter.png"
+                alt="Blender-final study"
+                loading="lazy"
+            /></a>
+            <figcaption>
+              <h3>Blender-final study</h3>
+              <p>
+                Actual Blender render, available for visual review. This is not
+                an in-game capture or an integration approval. The crown is
+                open; the white center in the top view is the podium below.
+                Original rib waviness remains.
+              </p>
+            </figcaption>
+          </figure>
+        </div>
+        <details>
+          <summary>Source archive and inspection evidence</summary>
+          <div class="archive">
+            <a href="model-viewer.html?asset=observatory-canopy"
+              >Inspect the model in 3D</a
+            ><a href="../v2/references/observatory-canopy.png"
+              >Beauty reference</a
+            ><a href="../v2/meshy/observatory-canopy-01/donor.glb"
+              >Unchanged Meshy GLB</a
+            ><a href="architecture/sources/observatory-canopy-01-imported.blend"
+              >Original import .blend</a
+            ><a href="architecture/sources/observatory-canopy-01-final-v1.blend"
+              >Finalized .blend</a
+            ><a href="architecture/exports/observatory-canopy-01-final-v1.glb"
+              >Staged GLB</a
+            ><a href="architecture/proofs/observatory-canopy-01-raw-back.png"
+              >Donor back view</a
+            ><a
+              href="architecture/proofs/observatory-canopy-01-final-v1-back.png"
+              >Final back view</a
+            ><a
+              href="architecture/proofs/observatory-canopy-01-final-v1-top.png"
+              >Final top view</a
+            ><a href="architecture/reports/observatory-canopy-01-intake.json"
+              >Inspection report</a
+            ><a href="architecture/reports/observatory-canopy-01-final-v1.json"
+              >Finalization report</a
+            ><a
+              href="architecture/reports/observatory-canopy-01-final-v1-validation.json"
+              >Validation report</a
+            ><a href="../v2/meshy/observatory-canopy-01/archive.json"
+              >Source archive and hashes</a
+            ><a href="../v2/meshy/observatory-canopy-01/provider-task.json"
+              >Provider provenance</a
+            >
+          </div>
+          <p class="small">
+            Raw files remain preserved separately from prepared and finalized
+            sources. No v3 asset on this page is activated in the current game.
+          </p>
+        </details>
+      </section>
+      <footer>
+        <p>
+          Generated reference pictures show the intended design. Raw inspection
+          and Blender study pictures show actual geometry with their stated
+          materials and lighting. Final appearance and performance still need an
+          in-game review before activation.
+        </p>
+        <p>
+          <a href="../v2/review.html">V2 artwork review</a
+          ><a href="../audio/v1/review.html">Music and ambience auditions</a
+          ><a href="README.md">V3 production notes</a
+          ><a href="review-evidence.json">Gallery file snapshot</a>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

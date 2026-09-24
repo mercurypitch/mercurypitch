@@ -1,0 +1,44 @@
+[
+  {
+    "name": "arrival",
+    "x": 0,
+    "z": -2.8,
+    "yaw": 3.141592653589793,
+    "distance": 4
+  },
+  {
+    "name": "garden",
+    "x": 12.096037511825562,
+    "z": 9.296037511825563,
+    "yaw": 3.141592653589793,
+    "distance": 4,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet"
+    ]
+  },
+  {
+    "name": "portrait",
+    "x": 21.345872707366944,
+    "z": 48.42995924347689,
+    "yaw": 3.141592653589793,
+    "distance": 4,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe"
+    ]
+  },
+  {
+    "name": "panorama",
+    "x": 21.345872707366944,
+    "z": 65.42599675530244,
+    "yaw": 0,
+    "distance": 4,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe",
+      "glassworks-journey/journey/portrait/encounter/portrait-finale"
+    ]
+  }
+]

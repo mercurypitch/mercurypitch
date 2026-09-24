@@ -1,0 +1,655 @@
+{
+  "revision": "merc-voice-auditions-v2-2026-09-20",
+  "audited_at": "2026-09-20T11:33:36.786Z",
+  "expected_text": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+  "all_raw_hashes_match": true,
+  "all_takes_zero_clipping": true,
+  "exact_asr_takes": [
+    "e1",
+    "e2",
+    "e3",
+    "f1",
+    "f2",
+    "f3",
+    "g1",
+    "g2",
+    "g3"
+  ],
+  "takes": [
+    {
+      "direction": "e",
+      "label": "Warmer Grounded",
+      "take": "e1",
+      "source": {
+        "file": "raw/merc-e1.pcm",
+        "bytes": 1799280,
+        "sha256": "4d110b92385f5d852d8b93941870c5c87380f03964b11a9727dc8e82a4831dce",
+        "generated_voice_id": "b2SKcEVwu3P6LOYWD7BP",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 20.4
+      },
+      "pcm": {
+        "samples": 899640,
+        "duration_seconds": 20.4,
+        "peak_sample": 16109,
+        "peak_dbfs": -6.17,
+        "rms_dbfs": -26.68,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -24.92,
+        "loudness_range_lu": 6,
+        "true_peak_dbfs": -6.16,
+        "threshold_lufs": -35.63
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.951076,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 3.24,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 3.24,
+            "end_seconds": 5.64,
+            "text": "Hum a comfortable note."
+          },
+          {
+            "start_seconds": 5.64,
+            "end_seconds": 6.96,
+            "text": "Beautiful."
+          },
+          {
+            "start_seconds": 6.96,
+            "end_seconds": 10.28,
+            "text": "A new path is open."
+          },
+          {
+            "start_seconds": 10.28,
+            "end_seconds": 14,
+            "text": "Gorgeous, absolutely gorgeous."
+          },
+          {
+            "start_seconds": 14,
+            "end_seconds": 17.2,
+            "text": "You broke that with your voice."
+          },
+          {
+            "start_seconds": 17.2,
+            "end_seconds": 19.16,
+            "text": "I need to sit down."
+          },
+          {
+            "start_seconds": 19.16,
+            "end_seconds": 20.24,
+            "text": "I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "e",
+      "label": "Warmer Grounded",
+      "take": "e2",
+      "source": {
+        "file": "raw/merc-e2.pcm",
+        "bytes": 1891008,
+        "sha256": "4a8a2b1a6a626307939009c85e752db08f9ed63c4778855d40bfd0c4edddfed3",
+        "generated_voice_id": "s3G6Uoh8mMebuvQcHdkR",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 21.44
+      },
+      "pcm": {
+        "samples": 945504,
+        "duration_seconds": 21.44,
+        "peak_sample": 12960,
+        "peak_dbfs": -8.06,
+        "rms_dbfs": -25.66,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -24.59,
+        "loudness_range_lu": 2.6,
+        "true_peak_dbfs": -7.99,
+        "threshold_lufs": -35.04
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum a comfortable note, beautiful, a new path is open, gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down, I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.891289,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 4.16,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 4.16,
+            "end_seconds": 14.72,
+            "text": "Hum a comfortable note, beautiful, a new path is open, gorgeous, absolutely gorgeous."
+          },
+          {
+            "start_seconds": 14.72,
+            "end_seconds": 17.92,
+            "text": "You broke that with your voice."
+          },
+          {
+            "start_seconds": 17.92,
+            "end_seconds": 21.46,
+            "text": "I need to sit down, I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "e",
+      "label": "Warmer Grounded",
+      "take": "e3",
+      "source": {
+        "file": "raw/merc-e3.pcm",
+        "bytes": 1989792,
+        "sha256": "4bef7507617b8139c8b966452968acd17ea60a44ad06d96f5a69e230dae35641",
+        "generated_voice_id": "8DJ82K5MbHWgl7bKajjc",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 22.56
+      },
+      "pcm": {
+        "samples": 994896,
+        "duration_seconds": 22.56,
+        "peak_sample": 12538,
+        "peak_dbfs": -8.34,
+        "rms_dbfs": -28.73,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -27.47,
+        "loudness_range_lu": 4.1,
+        "true_peak_dbfs": -8.29,
+        "threshold_lufs": -37.93
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.932507,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 3,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 3.5,
+            "end_seconds": 6,
+            "text": "Hum a comfortable note."
+          },
+          {
+            "start_seconds": 7,
+            "end_seconds": 11,
+            "text": "Beautiful. A new path is open."
+          },
+          {
+            "start_seconds": 12,
+            "end_seconds": 16,
+            "text": "Gorgeous, absolutely gorgeous."
+          },
+          {
+            "start_seconds": 16,
+            "end_seconds": 19,
+            "text": "You broke that with your voice."
+          },
+          {
+            "start_seconds": 19,
+            "end_seconds": 23,
+            "text": "I need to sit down. I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "f",
+      "label": "Brighter Clear",
+      "take": "f1",
+      "source": {
+        "file": "raw/merc-f1.pcm",
+        "bytes": 1806336,
+        "sha256": "af57f40e7d102c24b7d8334e483ee469a313e7612d5e875bb1df715823fcd7e2",
+        "generated_voice_id": "6m5v9TmkzjJiZADUm7nl",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 20.48
+      },
+      "pcm": {
+        "samples": 903168,
+        "duration_seconds": 20.48,
+        "peak_sample": 14007,
+        "peak_dbfs": -7.38,
+        "rms_dbfs": -25.71,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -25.02,
+        "loudness_range_lu": 4.7,
+        "true_peak_dbfs": -7.36,
+        "threshold_lufs": -35.67
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.938562,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 2.9,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 2.9,
+            "end_seconds": 5.9,
+            "text": "Hum a comfortable note."
+          },
+          {
+            "start_seconds": 5.9,
+            "end_seconds": 7.2,
+            "text": "Beautiful."
+          },
+          {
+            "start_seconds": 7.2,
+            "end_seconds": 9.9,
+            "text": "A new path is open."
+          },
+          {
+            "start_seconds": 9.9,
+            "end_seconds": 11.1,
+            "text": "Gorgeous."
+          },
+          {
+            "start_seconds": 11.1,
+            "end_seconds": 13.6,
+            "text": "Absolutely gorgeous."
+          },
+          {
+            "start_seconds": 13.6,
+            "end_seconds": 16.5,
+            "text": "You broke that with your voice."
+          },
+          {
+            "start_seconds": 16.5,
+            "end_seconds": 18.9,
+            "text": "I need to sit down."
+          },
+          {
+            "start_seconds": 18.9,
+            "end_seconds": 20.9,
+            "text": "I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "f",
+      "label": "Brighter Clear",
+      "take": "f2",
+      "source": {
+        "file": "raw/merc-f2.pcm",
+        "bytes": 1721664,
+        "sha256": "77c6a1c442cae43b59dfb4a7cacd516399aa948e575b59e2922d11046db3823a",
+        "generated_voice_id": "fe3rCUvJyASDA8G5RGLd",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 19.52
+      },
+      "pcm": {
+        "samples": 860832,
+        "duration_seconds": 19.52,
+        "peak_sample": 23719,
+        "peak_dbfs": -2.81,
+        "rms_dbfs": -24.38,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -22.8,
+        "loudness_range_lu": 4.3,
+        "true_peak_dbfs": -2.8,
+        "threshold_lufs": -33.55
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "a little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.877067,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 8.96,
+            "text": "a little note can break glass. Hum a comfortable note. Beautiful. A new path is open."
+          },
+          {
+            "start_seconds": 10.16,
+            "end_seconds": 19.36,
+            "text": "Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "f",
+      "label": "Brighter Clear",
+      "take": "f3",
+      "source": {
+        "file": "raw/merc-f3.pcm",
+        "bytes": 1785168,
+        "sha256": "023be2f4ae59914c11fc00368e5fa7745e38f2cf0f6c3651c845abe9b889039a",
+        "generated_voice_id": "bbgi8887any8MTyYR2t3",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 20.24
+      },
+      "pcm": {
+        "samples": 892584,
+        "duration_seconds": 20.24,
+        "peak_sample": 19481,
+        "peak_dbfs": -4.52,
+        "rms_dbfs": -24.67,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -23.54,
+        "loudness_range_lu": 3.4,
+        "true_peak_dbfs": -4.52,
+        "threshold_lufs": -34.09
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum, a comfortable note. Beautiful, a new path is open. Gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down, I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.926123,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 3.48,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 3.48,
+            "end_seconds": 6.38,
+            "text": "Hum, a comfortable note."
+          },
+          {
+            "start_seconds": 6.38,
+            "end_seconds": 10.68,
+            "text": "Beautiful, a new path is open."
+          },
+          {
+            "start_seconds": 10.68,
+            "end_seconds": 14.44,
+            "text": "Gorgeous, absolutely gorgeous."
+          },
+          {
+            "start_seconds": 14.44,
+            "end_seconds": 16.92,
+            "text": "You broke that with your voice."
+          },
+          {
+            "start_seconds": 16.92,
+            "end_seconds": 20.28,
+            "text": "I need to sit down, I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "g",
+      "label": "Quiet Playful",
+      "take": "g1",
+      "source": {
+        "file": "raw/merc-g1.pcm",
+        "bytes": 1728720,
+        "sha256": "8d2405d6081dde7270d10760830952185cc39fbed0488482102ab921e5997e6d",
+        "generated_voice_id": "geIXjHNV0PseCcVw7vI1",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 19.6
+      },
+      "pcm": {
+        "samples": 864360,
+        "duration_seconds": 19.6,
+        "peak_sample": 25234,
+        "peak_dbfs": -2.27,
+        "rms_dbfs": -24.78,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -23.93,
+        "loudness_range_lu": 4.6,
+        "true_peak_dbfs": -2.24,
+        "threshold_lufs": -34.67
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.956289,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 3.16,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 3.16,
+            "end_seconds": 5.88,
+            "text": "Hum a comfortable note."
+          },
+          {
+            "start_seconds": 5.88,
+            "end_seconds": 7.2,
+            "text": "Beautiful."
+          },
+          {
+            "start_seconds": 7.2,
+            "end_seconds": 9.92,
+            "text": "A new path is open."
+          },
+          {
+            "start_seconds": 9.92,
+            "end_seconds": 13.56,
+            "text": "Gorgeous, absolutely gorgeous."
+          },
+          {
+            "start_seconds": 13.56,
+            "end_seconds": 16.48,
+            "text": "You broke that with your voice."
+          },
+          {
+            "start_seconds": 16.48,
+            "end_seconds": 18.36,
+            "text": "I need to sit down."
+          },
+          {
+            "start_seconds": 18.36,
+            "end_seconds": 19.64,
+            "text": "I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "g",
+      "label": "Quiet Playful",
+      "take": "g2",
+      "source": {
+        "file": "raw/merc-g2.pcm",
+        "bytes": 1728720,
+        "sha256": "856d99be109a4eb027a478a519ba826abe81ef4133bc9d393258e5ca3abd016c",
+        "generated_voice_id": "tp3uMnt05oa0kJUFt8NN",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 19.6
+      },
+      "pcm": {
+        "samples": 864360,
+        "duration_seconds": 19.6,
+        "peak_sample": 17927,
+        "peak_dbfs": -5.24,
+        "rms_dbfs": -23.72,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -22.53,
+        "loudness_range_lu": 3.9,
+        "true_peak_dbfs": -5.24,
+        "threshold_lufs": -33.15
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.945628,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 3.32,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 3.32,
+            "end_seconds": 6,
+            "text": "Hum a comfortable note."
+          },
+          {
+            "start_seconds": 6,
+            "end_seconds": 7.2,
+            "text": "Beautiful."
+          },
+          {
+            "start_seconds": 7.2,
+            "end_seconds": 9.92,
+            "text": "A new path is open."
+          },
+          {
+            "start_seconds": 9.92,
+            "end_seconds": 13.68,
+            "text": "Gorgeous, absolutely gorgeous."
+          },
+          {
+            "start_seconds": 13.68,
+            "end_seconds": 16.4,
+            "text": "You broke that with your voice."
+          },
+          {
+            "start_seconds": 16.4,
+            "end_seconds": 18.2,
+            "text": "I need to sit down."
+          },
+          {
+            "start_seconds": 18.2,
+            "end_seconds": 19.48,
+            "text": "I don't have legs."
+          }
+        ]
+      }
+    },
+    {
+      "direction": "g",
+      "label": "Quiet Playful",
+      "take": "g3",
+      "source": {
+        "file": "raw/merc-g3.pcm",
+        "bytes": 1855728,
+        "sha256": "9e6fbedcaa35250d714468b116db183d9dc156b6047ffc0a9874b87be7f82731",
+        "generated_voice_id": "Q8DjBfikwt3ddvDpuimW",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 21.04
+      },
+      "pcm": {
+        "samples": 927864,
+        "duration_seconds": 21.04,
+        "peak_sample": 20260,
+        "peak_dbfs": -4.18,
+        "rms_dbfs": -25.3,
+        "clipped_samples": 0
+      },
+      "loudness": {
+        "integrated_lufs": -23.89,
+        "loudness_range_lu": 2.4,
+        "true_peak_dbfs": -4.16,
+        "threshold_lufs": -34.63
+      },
+      "independent_asr": {
+        "engine": "whisper.cpp",
+        "model": "base.en",
+        "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+        "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+        "language": "en",
+        "expected_text_supplied": false,
+        "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+        "normalized_exact_match": true,
+        "mean_token_probability": 0.917886,
+        "segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 2.72,
+            "text": "A little note can break glass."
+          },
+          {
+            "start_seconds": 4.32,
+            "end_seconds": 9.84,
+            "text": "Hum a comfortable note. Beautiful. A new path is open."
+          },
+          {
+            "start_seconds": 11.2,
+            "end_seconds": 16.8,
+            "text": "Gorgeous. Absolutely gorgeous. You broke that with your voice."
+          },
+          {
+            "start_seconds": 17.52,
+            "end_seconds": 20.88,
+            "text": "I need to sit down. I don't have legs."
+          }
+        ]
+      }
+    }
+  ]
+}

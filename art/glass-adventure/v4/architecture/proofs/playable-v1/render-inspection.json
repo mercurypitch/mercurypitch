@@ -1,0 +1,534 @@
+[
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "arrival",
+      "x": 0,
+      "z": -2.8,
+      "yaw": 3.141592653589793,
+      "distance": 4
+    },
+    "file": "800-arrival.png",
+    "metrics": {
+      "drawCalls": 132,
+      "triangles": 1119586,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "north-wall-near",
+      "x": 0,
+      "z": 3.9,
+      "yaw": 0,
+      "distance": 1.8
+    },
+    "file": "800-north-wall-near.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 623583,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "north-wall-default",
+      "x": 0,
+      "z": 3.9,
+      "yaw": 0,
+      "distance": 4
+    },
+    "file": "800-north-wall-default.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 623583,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "north-wall-far",
+      "x": 0,
+      "z": 3.9,
+      "yaw": 0,
+      "distance": 6.5
+    },
+    "file": "800-north-wall-far.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 623583,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "corner",
+      "x": 3.8,
+      "z": 3.8,
+      "yaw": 0.7853981633974483,
+      "distance": 4
+    },
+    "file": "800-corner.png",
+    "metrics": {
+      "drawCalls": 83,
+      "triangles": 697390,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0.7853981633974483,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "doorway-closed",
+      "x": 3.7,
+      "z": 0,
+      "yaw": 1.5707963267948966,
+      "distance": 4
+    },
+    "file": "800-doorway-closed.png",
+    "metrics": {
+      "drawCalls": 82,
+      "triangles": 672461,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "doorway-open",
+      "x": 3.7,
+      "z": 0,
+      "yaw": 1.5707963267948966,
+      "distance": 6.5,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      ]
+    },
+    "file": "800-doorway-open.png",
+    "metrics": {
+      "drawCalls": 132,
+      "triangles": 1272313,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "turn",
+      "x": 12.096037511825562,
+      "z": 0,
+      "yaw": 3.141592653589793,
+      "distance": 4,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      ]
+    },
+    "file": "800-turn.png",
+    "metrics": {
+      "drawCalls": 150,
+      "triangles": 993819,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "reveal-gate",
+      "x": 12.096037511825562,
+      "z": 6.95,
+      "yaw": 0,
+      "distance": 4,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      ]
+    },
+    "file": "800-reveal-gate.png",
+    "metrics": {
+      "drawCalls": 128,
+      "triangles": 932509,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "panorama",
+      "x": 12.096037511825562,
+      "z": 12.1,
+      "yaw": 3.141592653589793,
+      "distance": 6.5,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ]
+    },
+    "file": "800-panorama.png",
+    "metrics": {
+      "drawCalls": 80,
+      "triangles": 595100,
+      "textures": 27,
+      "geometries": 104
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "panorama-orbit",
+      "x": 12.096037511825562,
+      "z": 12.1,
+      "yaw": 1.5707963267948966,
+      "distance": 6.5,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ]
+    },
+    "file": "800-panorama-orbit.png",
+    "metrics": {
+      "drawCalls": 132,
+      "triangles": 1083578,
+      "textures": 27,
+      "geometries": 104
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pageErrors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "arrival",
+      "x": 0,
+      "z": -2.8,
+      "yaw": 3.141592653589793,
+      "distance": 4
+    },
+    "file": "390-arrival.png",
+    "metrics": {
+      "drawCalls": 101,
+      "triangles": 812278,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "north-wall-near",
+      "x": 0,
+      "z": 3.9,
+      "yaw": 0,
+      "distance": 1.8
+    },
+    "file": "390-north-wall-near.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 623583,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "north-wall-default",
+      "x": 0,
+      "z": 3.9,
+      "yaw": 0,
+      "distance": 4
+    },
+    "file": "390-north-wall-default.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 623583,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "north-wall-far",
+      "x": 0,
+      "z": 3.9,
+      "yaw": 0,
+      "distance": 6.5
+    },
+    "file": "390-north-wall-far.png",
+    "metrics": {
+      "drawCalls": 76,
+      "triangles": 623583,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "corner",
+      "x": 3.8,
+      "z": 3.8,
+      "yaw": 0.7853981633974483,
+      "distance": 4
+    },
+    "file": "390-corner.png",
+    "metrics": {
+      "drawCalls": 77,
+      "triangles": 648512,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0.7853981633974483,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "doorway-closed",
+      "x": 3.7,
+      "z": 0,
+      "yaw": 1.5707963267948966,
+      "distance": 4
+    },
+    "file": "390-doorway-closed.png",
+    "metrics": {
+      "drawCalls": 82,
+      "triangles": 672461,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "doorway-open",
+      "x": 3.7,
+      "z": 0,
+      "yaw": 1.5707963267948966,
+      "distance": 6.5,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      ]
+    },
+    "file": "390-doorway-open.png",
+    "metrics": {
+      "drawCalls": 130,
+      "triangles": 1183521,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "turn",
+      "x": 12.096037511825562,
+      "z": 0,
+      "yaw": 3.141592653589793,
+      "distance": 4,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      ]
+    },
+    "file": "390-turn.png",
+    "metrics": {
+      "drawCalls": 146,
+      "triangles": 993427,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "reveal-gate",
+      "x": 12.096037511825562,
+      "z": 6.95,
+      "yaw": 0,
+      "distance": 4,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      ]
+    },
+    "file": "390-reveal-gate.png",
+    "metrics": {
+      "drawCalls": 128,
+      "triangles": 932509,
+      "textures": 27,
+      "geometries": 103
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "panorama",
+      "x": 12.096037511825562,
+      "z": 12.1,
+      "yaw": 3.141592653589793,
+      "distance": 6.5,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ]
+    },
+    "file": "390-panorama.png",
+    "metrics": {
+      "drawCalls": 80,
+      "triangles": 595100,
+      "textures": 27,
+      "geometries": 104
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "panorama-orbit",
+      "x": 12.096037511825562,
+      "z": 12.1,
+      "yaw": 1.5707963267948966,
+      "distance": 6.5,
+      "completed": [
+        "glassworks-chamber/chamber/chamber/encounter/threshold-goblet",
+        "glassworks-chamber/chamber/reveal/encounter/passage-decanter"
+      ]
+    },
+    "file": "390-panorama-orbit.png",
+    "metrics": {
+      "drawCalls": 74,
+      "triangles": 562964,
+      "textures": 27,
+      "geometries": 104
+    },
+    "yaw": 1.5707963267948966,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pageErrors": []
+  }
+]

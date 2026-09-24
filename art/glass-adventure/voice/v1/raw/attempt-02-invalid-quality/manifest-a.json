@@ -1,0 +1,18 @@
+{
+  "revision": "merc-voice-auditions-v1-2026-09-20",
+  "direction": "a",
+  "label": "Warm Nimble",
+  "status": "rejected-no-automatic-retry",
+  "started_at": "2026-09-20T10:51:20.362Z",
+  "model": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "seed": 17092026,
+  "voice_library_saved": false,
+  "previews": [],
+  "http_status": 400,
+  "provider_request_id": null,
+  "provider_character_cost": null,
+  "provider_status": "invalid_parameters",
+  "provider_message": "Quality parameter is only supported for eleven_multilingual_ttv_v2.",
+  "completed_at": "2026-09-20T10:51:21.085Z"
+}

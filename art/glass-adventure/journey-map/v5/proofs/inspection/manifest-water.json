@@ -1,0 +1,22 @@
+{
+  "url": "https://127.0.0.1:5295/glass-game/?campaign=1",
+  "capturedAt": "2026-09-21T09:04:44.619Z",
+  "evidence": "Actual compiled scene; real wheel and mouse drag. SwiftShader, not device performance acceptance.",
+  "proofs": [
+    {
+      "id": "water-motion-0",
+      "screenshot": "water-motion-0.png",
+      "errors": []
+    },
+    {
+      "id": "water-motion-1",
+      "screenshot": "water-motion-1.png",
+      "errors": []
+    },
+    {
+      "id": "water-motion-2",
+      "screenshot": "water-motion-2.png",
+      "errors": []
+    }
+  ]
+}

@@ -40,7 +40,7 @@ export const loadGlass = async (base = 'games/glass3d'): Promise<Object3D> =>
 
 export interface MercAsset {
   scene: Object3D
-  /** sing, listen, celebrate, fall, move — node-transform clips, no rig. */
+  /** Named facial and five-joint skeletal clips, including loader one-shots. */
   clips: AnimationClip[]
 }
 

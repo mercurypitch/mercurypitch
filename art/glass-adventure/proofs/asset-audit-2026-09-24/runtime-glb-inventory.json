@@ -1,0 +1,7179 @@
+{
+  "schema": 1,
+  "scope": "Static GLB resource inventory, not a winding/contact/visual/performance certificate",
+  "assets": [
+    {
+      "file": "apps/beside-cue/public/games/adventure-v2/garden-kit.glb",
+      "bytes": 813920,
+      "sha256": "64e7e44d4d6fe7ffa743f5fdc5eda4dcb5be7fa6b65945a3c0a1af3c95366685",
+      "uniqueMeshTriangles": 9440,
+      "nodeReferencedTriangles": 9440,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "garden_foliage_leaf_0_0",
+          "triangles": 2812,
+          "exportedVertices": 3266,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "COLOR_0",
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Cube.008",
+          "triangles": 540,
+          "exportedVertices": 1320,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "garden_perimeter_flower_0_petal_0",
+          "triangles": 4012,
+          "exportedVertices": 4903,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "COLOR_0",
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "Cube.002",
+          "triangles": 540,
+          "exportedVertices": 1320,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "Icosphere.010",
+          "triangles": 480,
+          "exportedVertices": 1440,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "ivy_leaf_0_0",
+          "triangles": 1056,
+          "exportedVertices": 1120,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "COLOR_0",
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v2/platform-kit.glb",
+      "bytes": 3622720,
+      "sha256": "61fce0a0b314e0e8aff649ea07dcfc070d56e053a9d7096fbc94bca8802ccf28",
+      "uniqueMeshTriangles": 54224,
+      "nodeReferencedTriangles": 54224,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "museum_arcade_bay_arch_bead_-0.135",
+          "triangles": 244,
+          "exportedVertices": 324,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Cube.210",
+          "triangles": 88,
+          "exportedVertices": 192,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "Cube.209",
+          "triangles": 196,
+          "exportedVertices": 408,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "museum_arch_arch_bead_-0.155",
+          "triangles": 372,
+          "exportedVertices": 396,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "Cube.205",
+          "triangles": 88,
+          "exportedVertices": 192,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "Cube.204",
+          "triangles": 244,
+          "exportedVertices": 504,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "baluster_0",
+          "triangles": 1960,
+          "exportedVertices": 1323,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "Cube.214",
+          "triangles": 88,
+          "exportedVertices": 192,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "museum_column_bead_0",
+          "triangles": 800,
+          "exportedVertices": 744,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "museum_column_capital_leaf_0",
+          "triangles": 640,
+          "exportedVertices": 688,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "Cube.203",
+          "triangles": 944,
+          "exportedVertices": 874,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "rotunda_column_0_bead_0",
+          "triangles": 8752,
+          "exportedVertices": 8348,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "rotunda_column_0_capital_leaf_0",
+          "triangles": 5632,
+          "exportedVertices": 5972,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "Cube.219",
+          "triangles": 7552,
+          "exportedVertices": 6992,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "platform_bridge_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 1996,
+          "exportedVertices": 2624,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "Cube.134",
+          "triangles": 748,
+          "exportedVertices": 1632,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "Cube.133",
+          "triangles": 1744,
+          "exportedVertices": 3654,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "platform_bridge_teal_border",
+          "triangles": 8,
+          "exportedVertices": 8,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "platform_island_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 2716,
+          "exportedVertices": 2920,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "Cube.072",
+          "triangles": 396,
+          "exportedVertices": 864,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "Cube.071",
+          "triangles": 960,
+          "exportedVertices": 2016,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "platform_island_inlaid_petal_0",
+          "triangles": 184,
+          "exportedVertices": 200,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "platform_ledge_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 1508,
+          "exportedVertices": 1960,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "Cube.098",
+          "triangles": 572,
+          "exportedVertices": 1248,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 24,
+          "name": "Cube.097",
+          "triangles": 1352,
+          "exportedVertices": 2836,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 25,
+          "name": "platform_ledge_teal_border",
+          "triangles": 8,
+          "exportedVertices": 8,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 26,
+          "name": "platform_plinth_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 2972,
+          "exportedVertices": 3112,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 27,
+          "name": "Cube.180",
+          "triangles": 396,
+          "exportedVertices": 864,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 28,
+          "name": "Cube.179",
+          "triangles": 960,
+          "exportedVertices": 2016,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 29,
+          "name": "platform_plinth_inlaid_petal_0",
+          "triangles": 184,
+          "exportedVertices": 200,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 30,
+          "name": "platform_terrace_arcade_x-1_0_arch_bead_-0.095",
+          "triangles": 6108,
+          "exportedVertices": 6942,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 31,
+          "name": "Cube.006",
+          "triangles": 1100,
+          "exportedVertices": 2400,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 32,
+          "name": "Cube.005",
+          "triangles": 2528,
+          "exportedVertices": 5286,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 33,
+          "name": "platform_terrace_inlaid_petal_0",
+          "triangles": 184,
+          "exportedVertices": 200,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 4,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v2/vessels.glb",
+      "bytes": 3391920,
+      "sha256": "40c58723fea8c6d60b7b00393a3d9264a741e96b546deb7e5e43cb9f4544432b",
+      "uniqueMeshTriangles": 62552,
+      "nodeReferencedTriangles": 62552,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "goblet_laurel_intact",
+          "triangles": 8304,
+          "exportedVertices": 6958,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "goblet_laurel_intact.062",
+          "triangles": 576,
+          "exportedVertices": 586,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "goblet_laurel_intact.067",
+          "triangles": 576,
+          "exportedVertices": 596,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "goblet_laurel_intact.072",
+          "triangles": 576,
+          "exportedVertices": 579,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "goblet_laurel_intact.077",
+          "triangles": 576,
+          "exportedVertices": 599,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "goblet_laurel_intact.082",
+          "triangles": 870,
+          "exportedVertices": 995,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "goblet_laurel_intact.083",
+          "triangles": 716,
+          "exportedVertices": 1072,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "goblet_laurel_intact.084",
+          "triangles": 1754,
+          "exportedVertices": 1696,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "goblet_laurel_intact.085",
+          "triangles": 434,
+          "exportedVertices": 396,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "goblet_laurel_intact.086",
+          "triangles": 1196,
+          "exportedVertices": 1262,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "goblet_laurel_intact.099",
+          "triangles": 378,
+          "exportedVertices": 357,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "goblet_laurel_intact.100",
+          "triangles": 386,
+          "exportedVertices": 385,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "goblet_laurel_intact.101",
+          "triangles": 782,
+          "exportedVertices": 797,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "goblet_laurel_intact.109",
+          "triangles": 726,
+          "exportedVertices": 775,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "goblet_laurel_intact.117",
+          "triangles": 442,
+          "exportedVertices": 401,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "goblet_laurel_intact.118",
+          "triangles": 408,
+          "exportedVertices": 454,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "goblet_laurel_intact.122",
+          "triangles": 986,
+          "exportedVertices": 1093,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "goblet_laurel_intact.134",
+          "triangles": 394,
+          "exportedVertices": 444,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "goblet_laurel_intact.138",
+          "triangles": 404,
+          "exportedVertices": 411,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "goblet_laurel_intact.141",
+          "triangles": 424,
+          "exportedVertices": 430,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "goblet_laurel_intact.144",
+          "triangles": 878,
+          "exportedVertices": 997,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "goblet_laurel_intact.155",
+          "triangles": 748,
+          "exportedVertices": 851,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "goblet_laurel_intact.165",
+          "triangles": 418,
+          "exportedVertices": 451,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "goblet_laurel_intact.168",
+          "triangles": 400,
+          "exportedVertices": 419,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 24,
+          "name": "vase_amphora_base",
+          "triangles": 192,
+          "exportedVertices": 196,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 25,
+          "name": "vase_amphora_intact",
+          "triangles": 2520,
+          "exportedVertices": 1712,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 26,
+          "name": "vase_amphora_shard_000",
+          "triangles": 126,
+          "exportedVertices": 121,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 27,
+          "name": "vase_amphora_shard_001",
+          "triangles": 512,
+          "exportedVertices": 433,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 28,
+          "name": "vase_amphora_shard_002",
+          "triangles": 126,
+          "exportedVertices": 121,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 29,
+          "name": "vase_amphora_shard_003",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 30,
+          "name": "vase_amphora_shard_004",
+          "triangles": 126,
+          "exportedVertices": 123,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 31,
+          "name": "vase_amphora_shard_005",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 32,
+          "name": "vase_amphora_shard_006",
+          "triangles": 126,
+          "exportedVertices": 123,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 33,
+          "name": "vase_amphora_shard_007",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 34,
+          "name": "vase_amphora_shard_008",
+          "triangles": 126,
+          "exportedVertices": 123,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 35,
+          "name": "vase_amphora_shard_009",
+          "triangles": 512,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 36,
+          "name": "vase_amphora_shard_010",
+          "triangles": 126,
+          "exportedVertices": 123,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 37,
+          "name": "vase_amphora_shard_011",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 38,
+          "name": "vase_amphora_shard_012",
+          "triangles": 126,
+          "exportedVertices": 122,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 39,
+          "name": "vase_amphora_shard_013",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 40,
+          "name": "vase_amphora_shard_014",
+          "triangles": 126,
+          "exportedVertices": 121,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 41,
+          "name": "vase_amphora_shard_015",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 42,
+          "name": "vase_fluted_base",
+          "triangles": 192,
+          "exportedVertices": 196,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 43,
+          "name": "vase_fluted_intact",
+          "triangles": 2176,
+          "exportedVertices": 1363,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 44,
+          "name": "vase_fluted_shard_000",
+          "triangles": 162,
+          "exportedVertices": 143,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 45,
+          "name": "vase_fluted_shard_001",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 46,
+          "name": "vase_fluted_shard_002",
+          "triangles": 162,
+          "exportedVertices": 143,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 47,
+          "name": "vase_fluted_shard_003",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 48,
+          "name": "vase_fluted_shard_004",
+          "triangles": 162,
+          "exportedVertices": 145,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 49,
+          "name": "vase_fluted_shard_005",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 50,
+          "name": "vase_fluted_shard_006",
+          "triangles": 162,
+          "exportedVertices": 145,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 51,
+          "name": "vase_fluted_shard_007",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 52,
+          "name": "vase_fluted_shard_008",
+          "triangles": 126,
+          "exportedVertices": 121,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 53,
+          "name": "vase_fluted_shard_009",
+          "triangles": 248,
+          "exportedVertices": 190,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 54,
+          "name": "vase_fluted_shard_010",
+          "triangles": 162,
+          "exportedVertices": 145,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 55,
+          "name": "vase_fluted_shard_011",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 56,
+          "name": "vase_fluted_shard_012",
+          "triangles": 162,
+          "exportedVertices": 145,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 57,
+          "name": "vase_fluted_shard_013",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 58,
+          "name": "vase_fluted_shard_014",
+          "triangles": 162,
+          "exportedVertices": 143,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 59,
+          "name": "vase_fluted_shard_015",
+          "triangles": 212,
+          "exportedVertices": 168,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 60,
+          "name": "vase_rounded_intact",
+          "triangles": 10224,
+          "exportedVertices": 9015,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 61,
+          "name": "vase_rounded_intact.098",
+          "triangles": 404,
+          "exportedVertices": 377,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 62,
+          "name": "vase_rounded_intact.100",
+          "triangles": 1122,
+          "exportedVertices": 1105,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 63,
+          "name": "vase_rounded_intact.106",
+          "triangles": 418,
+          "exportedVertices": 404,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 64,
+          "name": "vase_rounded_intact.108",
+          "triangles": 730,
+          "exportedVertices": 692,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 65,
+          "name": "vase_rounded_intact.113",
+          "triangles": 530,
+          "exportedVertices": 496,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 66,
+          "name": "vase_rounded_intact.116",
+          "triangles": 822,
+          "exportedVertices": 817,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 67,
+          "name": "vase_rounded_intact.121",
+          "triangles": 738,
+          "exportedVertices": 722,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 68,
+          "name": "vase_rounded_intact.125",
+          "triangles": 452,
+          "exportedVertices": 521,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 69,
+          "name": "vase_rounded_intact.130",
+          "triangles": 868,
+          "exportedVertices": 951,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 70,
+          "name": "vase_rounded_intact.141",
+          "triangles": 716,
+          "exportedVertices": 870,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 71,
+          "name": "vase_rounded_intact.151",
+          "triangles": 612,
+          "exportedVertices": 681,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 72,
+          "name": "vase_rounded_intact.158",
+          "triangles": 1106,
+          "exportedVertices": 1193,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 73,
+          "name": "vase_rounded_intact.172",
+          "triangles": 620,
+          "exportedVertices": 695,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 74,
+          "name": "vase_rounded_intact.177",
+          "triangles": 970,
+          "exportedVertices": 1095,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 75,
+          "name": "vase_rounded_intact.190",
+          "triangles": 272,
+          "exportedVertices": 248,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 76,
+          "name": "vase_rounded_intact.191",
+          "triangles": 1100,
+          "exportedVertices": 1156,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 77,
+          "name": "vase_rounded_intact.204",
+          "triangles": 670,
+          "exportedVertices": 736,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 78,
+          "name": "vase_rounded_intact.209",
+          "triangles": 960,
+          "exportedVertices": 1020,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 79,
+          "name": "vase_rounded_intact.218",
+          "triangles": 622,
+          "exportedVertices": 687,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 80,
+          "name": "vase_rounded_intact.223",
+          "triangles": 1064,
+          "exportedVertices": 1126,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 81,
+          "name": "vase_rounded_intact.234",
+          "triangles": 1038,
+          "exportedVertices": 1069,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 82,
+          "name": "vase_rounded_intact.243",
+          "triangles": 676,
+          "exportedVertices": 748,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 83,
+          "name": "vase_rounded_intact.248",
+          "triangles": 1090,
+          "exportedVertices": 1119,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission",
+        "KHR_materials_ior"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v3/aurora-coupe.glb",
+      "bytes": 7218784,
+      "sha256": "61e0c2d373204eb6929df3e4834ccca1ae1d2f9d27d9ee55d398e2cb6d70e024",
+      "uniqueMeshTriangles": 113630,
+      "nodeReferencedTriangles": 113630,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "mesh",
+          "triangles": 50000,
+          "exportedVertices": 52939,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0",
+            "TEXCOORD_1",
+            "TEXCOORD_2"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "coupe_aurora_shard_000",
+          "triangles": 3544,
+          "exportedVertices": 3579,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "coupe_aurora_shard_001",
+          "triangles": 3486,
+          "exportedVertices": 3330,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "coupe_aurora_shard_002",
+          "triangles": 2000,
+          "exportedVertices": 2252,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "coupe_aurora_shard_003",
+          "triangles": 3214,
+          "exportedVertices": 3484,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "coupe_aurora_shard_004",
+          "triangles": 2040,
+          "exportedVertices": 2380,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "coupe_aurora_shard_005",
+          "triangles": 2454,
+          "exportedVertices": 2329,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "coupe_aurora_shard_006",
+          "triangles": 2660,
+          "exportedVertices": 2708,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "coupe_aurora_shard_007",
+          "triangles": 2916,
+          "exportedVertices": 2773,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "coupe_aurora_shard_008",
+          "triangles": 3090,
+          "exportedVertices": 2892,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "coupe_aurora_shard_009",
+          "triangles": 1826,
+          "exportedVertices": 1667,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "coupe_aurora_shard_010",
+          "triangles": 2304,
+          "exportedVertices": 2116,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "coupe_aurora_shard_011",
+          "triangles": 2542,
+          "exportedVertices": 2265,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "coupe_aurora_shard_012",
+          "triangles": 2896,
+          "exportedVertices": 3217,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "coupe_aurora_shard_013",
+          "triangles": 2588,
+          "exportedVertices": 3122,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "coupe_aurora_shard_014",
+          "triangles": 3060,
+          "exportedVertices": 2848,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "coupe_aurora_shard_015",
+          "triangles": 6050,
+          "exportedVertices": 5541,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "coupe_aurora_shard_016",
+          "triangles": 2390,
+          "exportedVertices": 2944,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "coupe_aurora_shard_017",
+          "triangles": 2480,
+          "exportedVertices": 3001,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "coupe_aurora_shard_018",
+          "triangles": 3860,
+          "exportedVertices": 3639,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "coupe_aurora_shard_019",
+          "triangles": 1584,
+          "exportedVertices": 1443,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "coupe_aurora_shard_020",
+          "triangles": 2162,
+          "exportedVertices": 2306,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "coupe_aurora_shard_021",
+          "triangles": 2694,
+          "exportedVertices": 2620,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "coupe_aurora_shard_022",
+          "triangles": 1790,
+          "exportedVertices": 1757,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v3/cut-crystal-decanter.glb",
+      "bytes": 8264408,
+      "sha256": "2fb379b4effb24169d0181764735481313a1e53c71e23d85e575d77d54244533",
+      "uniqueMeshTriangles": 116838,
+      "nodeReferencedTriangles": 116838,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Meshy body with donor-derived inner shell",
+          "triangles": 46264,
+          "exportedVertices": 47609,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "mesh.002",
+          "triangles": 3734,
+          "exportedVertices": 3564,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "decanter_cut_shard_000",
+          "triangles": 3020,
+          "exportedVertices": 5270,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "decanter_cut_shard_001",
+          "triangles": 2330,
+          "exportedVertices": 3929,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "decanter_cut_shard_002",
+          "triangles": 4414,
+          "exportedVertices": 6862,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "decanter_cut_shard_003",
+          "triangles": 2524,
+          "exportedVertices": 4133,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "decanter_cut_shard_004",
+          "triangles": 4310,
+          "exportedVertices": 6883,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "decanter_cut_shard_005",
+          "triangles": 2036,
+          "exportedVertices": 3211,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "decanter_cut_shard_006",
+          "triangles": 1698,
+          "exportedVertices": 2908,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "decanter_cut_shard_007",
+          "triangles": 3660,
+          "exportedVertices": 5917,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "decanter_cut_shard_008",
+          "triangles": 1036,
+          "exportedVertices": 1697,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "decanter_cut_shard_009",
+          "triangles": 2248,
+          "exportedVertices": 3534,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "decanter_cut_shard_010",
+          "triangles": 2614,
+          "exportedVertices": 4102,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "decanter_cut_shard_011",
+          "triangles": 4748,
+          "exportedVertices": 7635,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "decanter_cut_shard_012",
+          "triangles": 2116,
+          "exportedVertices": 3509,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "decanter_cut_shard_013",
+          "triangles": 2106,
+          "exportedVertices": 3578,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "decanter_cut_shard_014",
+          "triangles": 4004,
+          "exportedVertices": 6467,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "decanter_cut_shard_015",
+          "triangles": 3168,
+          "exportedVertices": 5038,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "decanter_cut_shard_016",
+          "triangles": 3444,
+          "exportedVertices": 5652,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "decanter_cut_shard_017",
+          "triangles": 2616,
+          "exportedVertices": 4044,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "decanter_cut_shard_018",
+          "triangles": 3736,
+          "exportedVertices": 5840,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "decanter_cut_shard_019",
+          "triangles": 1524,
+          "exportedVertices": 2420,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "decanter_cut_shard_020",
+          "triangles": 1802,
+          "exportedVertices": 2897,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "decanter_cut_shard_021",
+          "triangles": 3952,
+          "exportedVertices": 6557,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 24,
+          "name": "mesh.001",
+          "triangles": 3734,
+          "exportedVertices": 3564,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v3/fluted-carafe.glb",
+      "bytes": 9121856,
+      "sha256": "a23ffab3b2e37ef38a5c9cc5648241b47fcca55775c46863ed1726940f4862fa",
+      "uniqueMeshTriangles": 119708,
+      "nodeReferencedTriangles": 119708,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "mesh",
+          "triangles": 49930,
+          "exportedVertices": 67390,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0",
+            "TEXCOORD_1",
+            "TEXCOORD_2"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "vase_fluted_shard_000",
+          "triangles": 3546,
+          "exportedVertices": 4239,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "vase_fluted_shard_001",
+          "triangles": 1888,
+          "exportedVertices": 2340,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "vase_fluted_shard_002",
+          "triangles": 5926,
+          "exportedVertices": 6997,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "vase_fluted_shard_003",
+          "triangles": 1374,
+          "exportedVertices": 1755,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "vase_fluted_shard_004",
+          "triangles": 2922,
+          "exportedVertices": 3259,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "vase_fluted_shard_005",
+          "triangles": 2236,
+          "exportedVertices": 2466,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "vase_fluted_shard_006",
+          "triangles": 2344,
+          "exportedVertices": 2788,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "vase_fluted_shard_007",
+          "triangles": 7548,
+          "exportedVertices": 9119,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "vase_fluted_shard_008",
+          "triangles": 1084,
+          "exportedVertices": 1349,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "vase_fluted_shard_009",
+          "triangles": 1930,
+          "exportedVertices": 2379,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "vase_fluted_shard_010",
+          "triangles": 2792,
+          "exportedVertices": 3503,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "vase_fluted_shard_011",
+          "triangles": 3078,
+          "exportedVertices": 3490,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "vase_fluted_shard_012",
+          "triangles": 3306,
+          "exportedVertices": 3663,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "vase_fluted_shard_013",
+          "triangles": 3690,
+          "exportedVertices": 4405,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "vase_fluted_shard_014",
+          "triangles": 3992,
+          "exportedVertices": 4765,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "vase_fluted_shard_015",
+          "triangles": 2154,
+          "exportedVertices": 2375,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "vase_fluted_shard_016",
+          "triangles": 3716,
+          "exportedVertices": 4584,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "vase_fluted_shard_017",
+          "triangles": 4470,
+          "exportedVertices": 5755,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "vase_fluted_shard_018",
+          "triangles": 3304,
+          "exportedVertices": 4178,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "vase_fluted_shard_019",
+          "triangles": 2458,
+          "exportedVertices": 2752,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "vase_fluted_shard_020",
+          "triangles": 2550,
+          "exportedVertices": 3372,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "vase_fluted_shard_021",
+          "triangles": 754,
+          "exportedVertices": 940,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "vase_fluted_shard_022",
+          "triangles": 2716,
+          "exportedVertices": 3516,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v3/garden-arcade.glb",
+      "bytes": 6829416,
+      "sha256": "72714424b213c2d4d9c094f9b55f5257f7ee18163f7bcbd096f4066d1c872885",
+      "uniqueMeshTriangles": 28161,
+      "nodeReferencedTriangles": 28161,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Mesh_0",
+          "triangles": 28161,
+          "exportedVertices": 31600,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 1,
+      "images": [
+        {
+          "index": 0,
+          "name": "atlas-2",
+          "mimeType": "image/png",
+          "encodedBytes": 1683616,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "atlas-0",
+          "mimeType": "image/png",
+          "encodedBytes": 2011357,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "atlas-1",
+          "mimeType": "image/png",
+          "encodedBytes": 1446774,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 16777215,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v3/gilded-column.glb",
+      "bytes": 6031316,
+      "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946",
+      "uniqueMeshTriangles": 23148,
+      "nodeReferencedTriangles": 23148,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Mesh_0",
+          "triangles": 23148,
+          "exportedVertices": 28790,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 1,
+      "images": [
+        {
+          "index": 0,
+          "name": "atlas-2",
+          "mimeType": "image/png",
+          "encodedBytes": 1541141,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "atlas-0",
+          "mimeType": "image/png",
+          "encodedBytes": 1754470,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "atlas-1",
+          "mimeType": "image/png",
+          "encodedBytes": 1212999,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 16777215,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v3/moon-amphora.glb",
+      "bytes": 11461724,
+      "sha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251",
+      "uniqueMeshTriangles": 223688,
+      "nodeReferencedTriangles": 223688,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "mesh",
+          "triangles": 99976,
+          "exportedVertices": 81867,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0",
+            "TEXCOORD_1"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "vase_amphora_shard_000",
+          "triangles": 5576,
+          "exportedVertices": 5252,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "vase_amphora_shard_001",
+          "triangles": 3594,
+          "exportedVertices": 3289,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "vase_amphora_shard_002",
+          "triangles": 2410,
+          "exportedVertices": 1992,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "vase_amphora_shard_003",
+          "triangles": 3418,
+          "exportedVertices": 2859,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "vase_amphora_shard_004",
+          "triangles": 3770,
+          "exportedVertices": 3204,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "vase_amphora_shard_005",
+          "triangles": 5458,
+          "exportedVertices": 4610,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "vase_amphora_shard_006",
+          "triangles": 9462,
+          "exportedVertices": 9458,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "vase_amphora_shard_007",
+          "triangles": 4302,
+          "exportedVertices": 3370,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "vase_amphora_shard_008",
+          "triangles": 3214,
+          "exportedVertices": 2715,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "vase_amphora_shard_009",
+          "triangles": 3192,
+          "exportedVertices": 2983,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "vase_amphora_shard_010",
+          "triangles": 6500,
+          "exportedVertices": 6267,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "vase_amphora_shard_011",
+          "triangles": 13498,
+          "exportedVertices": 12491,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "vase_amphora_shard_012",
+          "triangles": 4490,
+          "exportedVertices": 3703,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "vase_amphora_shard_013",
+          "triangles": 3936,
+          "exportedVertices": 3636,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "vase_amphora_shard_014",
+          "triangles": 4316,
+          "exportedVertices": 3666,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "vase_amphora_shard_015",
+          "triangles": 3290,
+          "exportedVertices": 2731,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "vase_amphora_shard_016",
+          "triangles": 3674,
+          "exportedVertices": 2977,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "vase_amphora_shard_017",
+          "triangles": 4978,
+          "exportedVertices": 4306,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "vase_amphora_shard_018",
+          "triangles": 2124,
+          "exportedVertices": 1734,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "vase_amphora_shard_019",
+          "triangles": 7330,
+          "exportedVertices": 7512,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "vase_amphora_shard_020",
+          "triangles": 8126,
+          "exportedVertices": 7552,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "vase_amphora_shard_021",
+          "triangles": 10786,
+          "exportedVertices": 11136,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "vase_amphora_shard_022",
+          "triangles": 6268,
+          "exportedVertices": 6524,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v3/observatory-canopy.glb",
+      "bytes": 7545096,
+      "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+      "uniqueMeshTriangles": 40424,
+      "nodeReferencedTriangles": 40424,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Mesh_0",
+          "triangles": 40424,
+          "exportedVertices": 53177,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 1,
+      "images": [
+        {
+          "index": 0,
+          "name": "atlas-2",
+          "mimeType": "image/png",
+          "encodedBytes": 1485142,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "atlas-0",
+          "mimeType": "image/png",
+          "encodedBytes": 1756240,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "atlas-1",
+          "mimeType": "image/png",
+          "encodedBytes": 1506757,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 16777215,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v4/museum-screen-bay.glb",
+      "bytes": 4686268,
+      "sha256": "486c5debde3f9d8d36ca97b6e6a82fd72836cfe28d72e04d291d263cf33d122f",
+      "uniqueMeshTriangles": 19479,
+      "nodeReferencedTriangles": 19479,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Mesh_0",
+          "triangles": 19479,
+          "exportedVertices": 24398,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 1,
+      "images": [
+        {
+          "index": 0,
+          "name": "atlas-2",
+          "mimeType": "image/png",
+          "encodedBytes": 1726511,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "atlas-0",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 434497,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "atlas-1",
+          "mimeType": "image/png",
+          "encodedBytes": 1235350,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 16777215,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v4/museum-window-bay.glb",
+      "bytes": 5047156,
+      "sha256": "cb3da19d36c5869fb22341b465eb26e2c1b5119ede7e9348c55aa41a126bdd69",
+      "uniqueMeshTriangles": 22204,
+      "nodeReferencedTriangles": 22204,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Mesh_0",
+          "triangles": 22204,
+          "exportedVertices": 29167,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 1,
+      "images": [
+        {
+          "index": 0,
+          "name": "atlas-2",
+          "mimeType": "image/png",
+          "encodedBytes": 1882660,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "atlas-0",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 435787,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "atlas-1",
+          "mimeType": "image/png",
+          "encodedBytes": 1193544,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 16777215,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v5/museum-decor.glb",
+      "bytes": 9240644,
+      "sha256": "998d3026a7393cab3bae36c7e1d8ef9b13ea586230713e0089ba81f29068540a",
+      "uniqueMeshTriangles": 16201,
+      "nodeReferencedTriangles": 16201,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "decor_crystal_planter_mesh",
+          "triangles": 9236,
+          "exportedVertices": 15899,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Mesh_0",
+          "triangles": 6910,
+          "exportedVertices": 9888,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "Mesh_0.001",
+          "triangles": 55,
+          "exportedVertices": 48,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [
+        {
+          "index": 0,
+          "name": "atlas-4",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 257984,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "atlas-6",
+          "mimeType": "image/png",
+          "encodedBytes": 2161195,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "atlas-0",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 623252,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 3,
+          "name": "atlas-2",
+          "mimeType": "image/png",
+          "encodedBytes": 1333312,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 4,
+          "name": "atlas-5",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 20318,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 5,
+          "name": "atlas-7",
+          "mimeType": "image/png",
+          "encodedBytes": 1737972,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 6,
+          "name": "atlas-1",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 502022,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 7,
+          "name": "atlas-3",
+          "mimeType": "image/png",
+          "encodedBytes": 1262314,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 44739240,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v6/amber-cadence-urn.glb",
+      "bytes": 3744152,
+      "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353",
+      "uniqueMeshTriangles": 26548,
+      "nodeReferencedTriangles": 26548,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "breakable_l2_low_amber_urn_intact_geometry",
+          "triangles": 9864,
+          "exportedVertices": 10873,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "breakable_l2_low_amber_urn_shard_000",
+          "triangles": 1168,
+          "exportedVertices": 1473,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "breakable_l2_low_amber_urn_shard_001",
+          "triangles": 860,
+          "exportedVertices": 993,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "breakable_l2_low_amber_urn_shard_002",
+          "triangles": 1402,
+          "exportedVertices": 1657,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "breakable_l2_low_amber_urn_shard_003",
+          "triangles": 830,
+          "exportedVertices": 1018,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "breakable_l2_low_amber_urn_shard_004",
+          "triangles": 846,
+          "exportedVertices": 963,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "breakable_l2_low_amber_urn_shard_005",
+          "triangles": 918,
+          "exportedVertices": 1208,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "breakable_l2_low_amber_urn_shard_006",
+          "triangles": 1344,
+          "exportedVertices": 1638,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "breakable_l2_low_amber_urn_shard_007",
+          "triangles": 1068,
+          "exportedVertices": 1176,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "breakable_l2_low_amber_urn_shard_008",
+          "triangles": 812,
+          "exportedVertices": 968,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "breakable_l2_low_amber_urn_shard_009",
+          "triangles": 942,
+          "exportedVertices": 1077,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "breakable_l2_low_amber_urn_shard_010",
+          "triangles": 966,
+          "exportedVertices": 1213,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "breakable_l2_low_amber_urn_shard_011",
+          "triangles": 1074,
+          "exportedVertices": 1301,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "breakable_l2_low_amber_urn_shard_012",
+          "triangles": 1666,
+          "exportedVertices": 2006,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "breakable_l2_low_amber_urn_shard_013",
+          "triangles": 942,
+          "exportedVertices": 1195,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "breakable_l2_low_amber_urn_shard_014",
+          "triangles": 848,
+          "exportedVertices": 979,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "breakable_l2_low_amber_urn_shard_015",
+          "triangles": 938,
+          "exportedVertices": 1146,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "COLLIDER_breakable_l2_low_amber_urn_geometry",
+          "triangles": 60,
+          "exportedVertices": 96,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [
+        {
+          "index": 0,
+          "name": "Image_3",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 21433,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "normal",
+          "mimeType": "image/png",
+          "encodedBytes": 1728697,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "Image_0",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 197778,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 3,
+          "name": "Image_1",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 102567,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 22369620,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v6/opaline-echo-amphora.glb",
+      "bytes": 3817112,
+      "sha256": "676b769793eb0ec39f78557dfbb98a45261ede0384ccd15cdc7be6c013247ee4",
+      "uniqueMeshTriangles": 23442,
+      "nodeReferencedTriangles": 23442,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "breakable_l2_opaline_echo_amphora_intact_geometry",
+          "triangles": 8728,
+          "exportedVertices": 8958,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "breakable_l2_opaline_echo_amphora_shard_000",
+          "triangles": 1238,
+          "exportedVertices": 1440,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "breakable_l2_opaline_echo_amphora_shard_001",
+          "triangles": 812,
+          "exportedVertices": 984,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "breakable_l2_opaline_echo_amphora_shard_002",
+          "triangles": 1464,
+          "exportedVertices": 1647,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "breakable_l2_opaline_echo_amphora_shard_003",
+          "triangles": 454,
+          "exportedVertices": 538,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "breakable_l2_opaline_echo_amphora_shard_004",
+          "triangles": 482,
+          "exportedVertices": 563,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "breakable_l2_opaline_echo_amphora_shard_005",
+          "triangles": 846,
+          "exportedVertices": 924,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "breakable_l2_opaline_echo_amphora_shard_006",
+          "triangles": 1044,
+          "exportedVertices": 1227,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "breakable_l2_opaline_echo_amphora_shard_007",
+          "triangles": 590,
+          "exportedVertices": 696,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "breakable_l2_opaline_echo_amphora_shard_008",
+          "triangles": 1062,
+          "exportedVertices": 1196,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "breakable_l2_opaline_echo_amphora_shard_009",
+          "triangles": 766,
+          "exportedVertices": 901,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "breakable_l2_opaline_echo_amphora_shard_010",
+          "triangles": 748,
+          "exportedVertices": 922,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "breakable_l2_opaline_echo_amphora_shard_011",
+          "triangles": 684,
+          "exportedVertices": 846,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "breakable_l2_opaline_echo_amphora_shard_012",
+          "triangles": 790,
+          "exportedVertices": 1019,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "breakable_l2_opaline_echo_amphora_shard_013",
+          "triangles": 666,
+          "exportedVertices": 785,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "breakable_l2_opaline_echo_amphora_shard_014",
+          "triangles": 388,
+          "exportedVertices": 429,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "breakable_l2_opaline_echo_amphora_shard_015",
+          "triangles": 768,
+          "exportedVertices": 885,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "breakable_l2_opaline_echo_amphora_shard_016",
+          "triangles": 480,
+          "exportedVertices": 569,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "breakable_l2_opaline_echo_amphora_shard_017",
+          "triangles": 1372,
+          "exportedVertices": 1433,
+          "primitives": 3,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "COLLIDER_breakable_l2_opaline_echo_amphora_geometry",
+          "triangles": 60,
+          "exportedVertices": 96,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 3,
+      "images": [
+        {
+          "index": 0,
+          "name": "Image_3",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 19889,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "opaline_transmission_mask_v2",
+          "mimeType": "image/png",
+          "encodedBytes": 483459,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "normal",
+          "mimeType": "image/png",
+          "encodedBytes": 1616537,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 3,
+          "name": "Image_0",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 156833,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 4,
+          "name": "Image_1",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 94793,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 27962025,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission",
+        "KHR_materials_ior"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure-v6/twin-tone-resonance-harp.glb",
+      "bytes": 2810588,
+      "sha256": "43805c83bd0f54937cb2b709b66d3c03fbf245fbcdb377e92c29a035df96d438",
+      "uniqueMeshTriangles": 9837,
+      "nodeReferencedTriangles": 9837,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "twin_tone_resonance_harp_mesh_01_geometry",
+          "triangles": 9837,
+          "exportedVertices": 11669,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 1,
+      "images": [
+        {
+          "index": 0,
+          "name": "Image_3",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 17025,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "normal",
+          "mimeType": "image/png",
+          "encodedBytes": 1823600,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "Image_0",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 224475,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 3,
+          "name": "Image_1",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 124016,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 22369620,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure/legend-slab.glb",
+      "bytes": 709632,
+      "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+      "uniqueMeshTriangles": 816,
+      "nodeReferencedTriangles": 816,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Cube.021",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Cube.020",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "Cube.019",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "Cube.018",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "Cube.017",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "legend_cash_intact",
+          "triangles": 12,
+          "exportedVertices": 24,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "legend_cash_shard_000",
+          "triangles": 12,
+          "exportedVertices": 24,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "legend_cash_shard_001",
+          "triangles": 20,
+          "exportedVertices": 36,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "legend_cash_shard_002",
+          "triangles": 16,
+          "exportedVertices": 30,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "legend_cash_shard_003",
+          "triangles": 12,
+          "exportedVertices": 24,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "legend_cash_shard_004",
+          "triangles": 16,
+          "exportedVertices": 30,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "legend_cash_shard_005",
+          "triangles": 20,
+          "exportedVertices": 36,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "legend_cash_shard_006",
+          "triangles": 20,
+          "exportedVertices": 36,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "legend_cash_shard_007",
+          "triangles": 16,
+          "exportedVertices": 30,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "legend_cash_shard_008",
+          "triangles": 20,
+          "exportedVertices": 36,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "legend_cash_shard_009",
+          "triangles": 12,
+          "exportedVertices": 24,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "legend_cash_shard_010",
+          "triangles": 24,
+          "exportedVertices": 42,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "legend_cash_shard_011",
+          "triangles": 16,
+          "exportedVertices": 30,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "legend_cash_shard_012",
+          "triangles": 12,
+          "exportedVertices": 24,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "legend_cash_shard_013",
+          "triangles": 20,
+          "exportedVertices": 36,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "legend_cash_shard_014",
+          "triangles": 12,
+          "exportedVertices": 24,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "legend_cash_shard_015",
+          "triangles": 16,
+          "exportedVertices": 30,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 4,
+      "images": [
+        {
+          "index": 0,
+          "name": "legend-johnny-cash-runtime",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 625203,
+          "width": 1024,
+          "height": 1536,
+          "estimatedRgbaMipBytes": 8388608
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 8388608,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission",
+        "KHR_materials_ior"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure/platform-kit.glb",
+      "bytes": 944260,
+      "sha256": "dd64110ede5f283b0eadf28ed02c5a8ff7ee957d844928ff10907f1b8c9ef83b",
+      "uniqueMeshTriangles": 23089,
+      "nodeReferencedTriangles": 23089,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Cube.013",
+          "triangles": 1192,
+          "exportedVertices": 924,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "museum_arch_ivory_vault",
+          "triangles": 868,
+          "exportedVertices": 760,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "Cube.016",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "output_unwrapped",
+          "triangles": 6167,
+          "exportedVertices": 9830,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "museum_column_gilt_00",
+          "triangles": 2880,
+          "exportedVertices": 1440,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "Cube.011",
+          "triangles": 888,
+          "exportedVertices": 770,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0",
+            "TEXCOORD_1"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "platform_bridge_floor_inner",
+          "triangles": 2192,
+          "exportedVertices": 1132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "platform_bridge_light_seam",
+          "triangles": 96,
+          "exportedVertices": 48,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "Cube.007",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "Cube.006",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "platform_bridge_suspended_hull",
+          "triangles": 22,
+          "exportedVertices": 40,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "platform_island_floor_inner",
+          "triangles": 1600,
+          "exportedVertices": 832,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "platform_island_light_seam",
+          "triangles": 96,
+          "exportedVertices": 48,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "Cube.003",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "Cube.002",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "platform_island_suspended_hull",
+          "triangles": 22,
+          "exportedVertices": 40,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "platform_ledge_floor_inner",
+          "triangles": 1600,
+          "exportedVertices": 832,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "platform_ledge_light_seam",
+          "triangles": 96,
+          "exportedVertices": 48,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "Cube.005",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "Cube.004",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "platform_ledge_suspended_hull",
+          "triangles": 22,
+          "exportedVertices": 40,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "platform_plinth_floor_inner",
+          "triangles": 1600,
+          "exportedVertices": 832,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "platform_plinth_levitation_ring",
+          "triangles": 672,
+          "exportedVertices": 336,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "Cube.009",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 24,
+          "name": "Cube.008",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 25,
+          "name": "platform_plinth_suspended_hull",
+          "triangles": 22,
+          "exportedVertices": 40,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 26,
+          "name": "platform_ramp_gold_rail_-1",
+          "triangles": 136,
+          "exportedVertices": 88,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 27,
+          "name": "platform_ramp_stone",
+          "triangles": 12,
+          "exportedVertices": 24,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 28,
+          "name": "platform_terrace_floor_inner",
+          "triangles": 1600,
+          "exportedVertices": 832,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 29,
+          "name": "platform_terrace_light_seam",
+          "triangles": 96,
+          "exportedVertices": 48,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 30,
+          "name": "Cube.001",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 31,
+          "name": "Cube",
+          "triangles": 108,
+          "exportedVertices": 216,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 32,
+          "name": "platform_terrace_suspended_hull",
+          "triangles": 22,
+          "exportedVertices": 40,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        }
+      ],
+      "materials": 6,
+      "images": [
+        {
+          "index": 0,
+          "name": "floor-marble-runtime",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 180220,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 5592405,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_emissive_strength"
+      ],
+      "reviewFlags": [
+        "mesh 27: textured primitive lacks TEXCOORD_0"
+      ]
+    },
+    {
+      "file": "apps/beside-cue/public/games/adventure/vessels.glb",
+      "bytes": 442928,
+      "sha256": "ab521342177578aeb8aa13932ded620790203946f1c32d6f267bb094a4077f71",
+      "uniqueMeshTriangles": 16192,
+      "nodeReferencedTriangles": 16192,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "vase_amphora_base",
+          "triangles": 192,
+          "exportedVertices": 98,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "vase_amphora_intact",
+          "triangles": 2520,
+          "exportedVertices": 1266,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "vase_amphora_shard_000",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "vase_amphora_shard_001",
+          "triangles": 512,
+          "exportedVertices": 284,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "vase_amphora_shard_002",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "vase_amphora_shard_003",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "vase_amphora_shard_004",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "vase_amphora_shard_005",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "vase_amphora_shard_006",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "vase_amphora_shard_007",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "vase_amphora_shard_008",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "vase_amphora_shard_009",
+          "triangles": 512,
+          "exportedVertices": 284,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "vase_amphora_shard_010",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "vase_amphora_shard_011",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "vase_amphora_shard_012",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "vase_amphora_shard_013",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "vase_amphora_shard_014",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "vase_amphora_shard_015",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "vase_fluted_base",
+          "triangles": 192,
+          "exportedVertices": 98,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "vase_fluted_intact",
+          "triangles": 2176,
+          "exportedVertices": 1090,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "vase_fluted_shard_000",
+          "triangles": 162,
+          "exportedVertices": 105,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "vase_fluted_shard_001",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "vase_fluted_shard_002",
+          "triangles": 162,
+          "exportedVertices": 105,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "vase_fluted_shard_003",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 24,
+          "name": "vase_fluted_shard_004",
+          "triangles": 162,
+          "exportedVertices": 105,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 25,
+          "name": "vase_fluted_shard_005",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 26,
+          "name": "vase_fluted_shard_006",
+          "triangles": 162,
+          "exportedVertices": 105,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 27,
+          "name": "vase_fluted_shard_007",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 28,
+          "name": "vase_fluted_shard_008",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 29,
+          "name": "vase_fluted_shard_009",
+          "triangles": 248,
+          "exportedVertices": 154,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 30,
+          "name": "vase_fluted_shard_010",
+          "triangles": 162,
+          "exportedVertices": 105,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 31,
+          "name": "vase_fluted_shard_011",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 32,
+          "name": "vase_fluted_shard_012",
+          "triangles": 162,
+          "exportedVertices": 105,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 33,
+          "name": "vase_fluted_shard_013",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 34,
+          "name": "vase_fluted_shard_014",
+          "triangles": 162,
+          "exportedVertices": 105,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 35,
+          "name": "vase_fluted_shard_015",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 36,
+          "name": "vase_rounded_base",
+          "triangles": 192,
+          "exportedVertices": 98,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 37,
+          "name": "vase_rounded_intact",
+          "triangles": 1920,
+          "exportedVertices": 962,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 38,
+          "name": "vase_rounded_shard_000",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 39,
+          "name": "vase_rounded_shard_001",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 40,
+          "name": "vase_rounded_shard_002",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 41,
+          "name": "vase_rounded_shard_003",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 42,
+          "name": "vase_rounded_shard_004",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 43,
+          "name": "vase_rounded_shard_005",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 44,
+          "name": "vase_rounded_shard_006",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 45,
+          "name": "vase_rounded_shard_007",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 46,
+          "name": "vase_rounded_shard_008",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 47,
+          "name": "vase_rounded_shard_009",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 48,
+          "name": "vase_rounded_shard_010",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 49,
+          "name": "vase_rounded_shard_011",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 50,
+          "name": "vase_rounded_shard_012",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 51,
+          "name": "vase_rounded_shard_013",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 52,
+          "name": "vase_rounded_shard_014",
+          "triangles": 126,
+          "exportedVertices": 83,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 53,
+          "name": "vase_rounded_shard_015",
+          "triangles": 212,
+          "exportedVertices": 132,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 4,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_transmission",
+        "KHR_materials_ior"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/cloudway-v6/cloudway-platform-kit-v6.glb",
+      "bytes": 44046324,
+      "sha256": "1c18c7a5e818346551fdadef6a091b848f19d0242092a14bf366d85a90b7930c",
+      "uniqueMeshTriangles": 824494,
+      "nodeReferencedTriangles": 827190,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "Cloudway_Crackle_Intact__FrameGold__Mesh",
+          "triangles": 224,
+          "exportedVertices": 432,
+          "primitives": 1,
+          "nodeReferences": 3,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Cloudway_Crackle_Intact__Slab__Mesh",
+          "triangles": 2248,
+          "exportedVertices": 1518,
+          "primitives": 1,
+          "nodeReferences": 2,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "Cloudway_Crackle_Release__Shard_01__Mesh",
+          "triangles": 14,
+          "exportedVertices": 30,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "Cloudway_Crackle_Release__Shard_02__Mesh",
+          "triangles": 14,
+          "exportedVertices": 30,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "Cloudway_Crackle_Release__Shard_03__Mesh",
+          "triangles": 14,
+          "exportedVertices": 30,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "Cloudway_Crackle_Release__Shard_04__Mesh",
+          "triangles": 14,
+          "exportedVertices": 30,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "Cloudway_Crackle_Release__Shard_05__Mesh",
+          "triangles": 14,
+          "exportedVertices": 30,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "Cloudway_Crackle_Release__Shard_06__Mesh",
+          "triangles": 14,
+          "exportedVertices": 30,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "Cloudway_Crackle_Warning__CrackGlow__Mesh",
+          "triangles": 144,
+          "exportedVertices": 111,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 9,
+          "name": "Cloudway_Frost__LandingBoundary__Mesh",
+          "triangles": 32,
+          "exportedVertices": 48,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION"
+          ]
+        },
+        {
+          "index": 10,
+          "name": "Cloudway_Marble__DonorShell__Mesh",
+          "triangles": 40000,
+          "exportedVertices": 66403,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 11,
+          "name": "frost_dense_donor_mesh",
+          "triangles": 632256,
+          "exportedVertices": 340208,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 12,
+          "name": "frost_donor_seam_front_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 13,
+          "name": "frost_donor_seam_left_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 14,
+          "name": "frost_donor_seam_rear_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 15,
+          "name": "frost_donor_seam_right_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 16,
+          "name": "frost_landing_front_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 17,
+          "name": "frost_landing_left_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 18,
+          "name": "frost_landing_rear_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 19,
+          "name": "frost_landing_right_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 20,
+          "name": "frost_outer_gold_front_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 21,
+          "name": "frost_outer_gold_left_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 22,
+          "name": "frost_outer_gold_rear_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 23,
+          "name": "frost_outer_gold_right_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 24,
+          "name": "glide_dense_donor_mesh",
+          "triangles": 145370,
+          "exportedVertices": 82144,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 25,
+          "name": "glide_donor_seam_front_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 26,
+          "name": "glide_donor_seam_rear_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 27,
+          "name": "glide_landing_front_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 28,
+          "name": "glide_landing_left_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 29,
+          "name": "glide_landing_rear_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 30,
+          "name": "glide_landing_right_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 31,
+          "name": "glide_outer_gold_front_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 32,
+          "name": "glide_outer_gold_left_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 33,
+          "name": "glide_outer_gold_rear_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 34,
+          "name": "glide_outer_gold_right_mesh",
+          "triangles": 188,
+          "exportedVertices": 384,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 12,
+      "images": [
+        {
+          "index": 0,
+          "name": "cloudway_marble-atlas-03-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 374620,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "cloudway_marble-atlas-01-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1166378,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 2,
+          "name": "cloudway_marble-atlas-02-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 96484,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 3,
+          "name": "frost-transmission-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 135702,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 4,
+          "name": "set-0-normal",
+          "mimeType": "image/webp",
+          "encodedBytes": 3697524,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 5,
+          "name": "set-0-base_color",
+          "mimeType": "image/webp",
+          "encodedBytes": 4481282,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 6,
+          "name": "frost-metallic-2k-frost-roughness-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1140162,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 7,
+          "name": "frost-frame-normal-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 132230,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 8,
+          "name": "frost-frame-base-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 31234,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 9,
+          "name": "glide-transmission-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 188104,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 10,
+          "name": "set-0-normal",
+          "mimeType": "image/webp",
+          "encodedBytes": 3270906,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 11,
+          "name": "set-0-base_color",
+          "mimeType": "image/webp",
+          "encodedBytes": 4119166,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 12,
+          "name": "glide-metallic-2k-glide-roughness-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1009368,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 13,
+          "name": "glide-frame-normal-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 134974,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 14,
+          "name": "glide-frame-base-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 39352,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 234881019,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsUsed": [
+        "EXT_texture_webp",
+        "KHR_materials_clearcoat",
+        "KHR_materials_emissive_strength",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+        "KHR_materials_volume",
+        "KHR_mesh_quantization"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16",
+      "uniqueMeshTriangles": 12178,
+      "nodeReferencedTriangles": 12178,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "merc_body",
+          "triangles": 9522,
+          "exportedVertices": 4763,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "JOINTS_0",
+            "NORMAL",
+            "POSITION",
+            "WEIGHTS_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "merc_face",
+          "triangles": 1080,
+          "exportedVertices": 546,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "JOINTS_0",
+            "NORMAL",
+            "POSITION",
+            "WEIGHTS_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "merc_hand_l",
+          "triangles": 790,
+          "exportedVertices": 397,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "JOINTS_0",
+            "NORMAL",
+            "POSITION",
+            "WEIGHTS_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "merc_hand_r",
+          "triangles": 786,
+          "exportedVertices": 395,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "JOINTS_0",
+            "NORMAL",
+            "POSITION",
+            "WEIGHTS_0"
+          ]
+        }
+      ],
+      "materials": 1,
+      "images": [],
+      "approximateDecodedRgbaMipBytes": 0,
+      "animations": [
+        "sing",
+        "listen",
+        "welcome",
+        "laugh",
+        "celebrate",
+        "move",
+        "fall"
+      ],
+      "skins": 1,
+      "extensionsRequired": [],
+      "extensionsUsed": [
+        "KHR_materials_ior",
+        "KHR_materials_specular"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+      "bytes": 6831200,
+      "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709",
+      "uniqueMeshTriangles": 21722,
+      "nodeReferencedTriangles": 21722,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "map_bridge_mesh",
+          "triangles": 2502,
+          "exportedVertices": 1700,
+          "primitives": 5,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "map_canopy_mesh",
+          "triangles": 6500,
+          "exportedVertices": 11433,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "map_column_mesh",
+          "triangles": 1800,
+          "exportedVertices": 3426,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "map_frame_mesh",
+          "triangles": 1000,
+          "exportedVertices": 1975,
+          "primitives": 2,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "map_island_root_mesh",
+          "triangles": 480,
+          "exportedVertices": 1440,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "map_planter_mesh",
+          "triangles": 1800,
+          "exportedVertices": 3611,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "map_platform_mesh",
+          "triangles": 7640,
+          "exportedVertices": 5737,
+          "primitives": 5,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 11,
+      "images": [
+        {
+          "index": 0,
+          "name": "map_canopy_texture_02",
+          "mimeType": "image/png",
+          "encodedBytes": 371738,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 1,
+          "name": "map_canopy_texture_00",
+          "mimeType": "image/png",
+          "encodedBytes": 483098,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 2,
+          "name": "map_canopy_texture_01",
+          "mimeType": "image/png",
+          "encodedBytes": 433157,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 3,
+          "name": "map_column_texture_02",
+          "mimeType": "image/png",
+          "encodedBytes": 387188,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 4,
+          "name": "map_column_texture_00",
+          "mimeType": "image/png",
+          "encodedBytes": 480027,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 5,
+          "name": "map_column_texture_01",
+          "mimeType": "image/png",
+          "encodedBytes": 349747,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 6,
+          "name": "map_frame_texture_02",
+          "mimeType": "image/png",
+          "encodedBytes": 12767,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 7,
+          "name": "map_frame_texture_03",
+          "mimeType": "image/png",
+          "encodedBytes": 477647,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 8,
+          "name": "map_frame_texture_00",
+          "mimeType": "image/png",
+          "encodedBytes": 515396,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 9,
+          "name": "map_frame_texture_01",
+          "mimeType": "image/png",
+          "encodedBytes": 374947,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 10,
+          "name": "map_planter_texture_01",
+          "mimeType": "image/png",
+          "encodedBytes": 295006,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 11,
+          "name": "map_planter_texture_02",
+          "mimeType": "image/png",
+          "encodedBytes": 583683,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 12,
+          "name": "map_planter_texture_00",
+          "mimeType": "image/png",
+          "encodedBytes": 594706,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 13,
+          "name": "map_planter_texture_03",
+          "mimeType": "image/png",
+          "encodedBytes": 385766,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 19573414,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [],
+      "extensionsUsed": [],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+      "bytes": 25448308,
+      "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615",
+      "uniqueMeshTriangles": 212243,
+      "nodeReferencedTriangles": 212243,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "map_conservatory_geometry_mesh",
+          "triangles": 109636,
+          "exportedVertices": 214889,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "map_twin_connector_geometry_mesh",
+          "triangles": 102607,
+          "exportedVertices": 181728,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 2,
+      "images": [
+        {
+          "index": 0,
+          "name": "conservatory-v8-transmission-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 86598,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "conservatory-v8-meshy-normal-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1293408,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 2,
+          "name": "conservatory-v8-base-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1503000,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 3,
+          "name": "conservatory-v8-orm-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1626260,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 4,
+          "name": "twin-connector-v7-normal-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 293578,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 5,
+          "name": "twin-connector-v7-base-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1726448,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 6,
+          "name": "twin-connector-v7-orm-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 237338,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 72701267,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [
+        "EXT_texture_webp"
+      ],
+      "extensionsUsed": [
+        "EXT_texture_webp",
+        "KHR_materials_ior",
+        "KHR_materials_transmission"
+      ],
+      "reviewFlags": []
+    },
+    {
+      "file": "apps/beside-cue/public/games/journey-map-v9/floating-museum-twin-finish-kit-v9.glb",
+      "bytes": 19481064,
+      "sha256": "04da964628212b243ca5b4afd327a1e52d43388929de2057be02bec44a495d74",
+      "uniqueMeshTriangles": 144531,
+      "nodeReferencedTriangles": 212312,
+      "meshes": [
+        {
+          "index": 0,
+          "name": "map_cliff_geometry_mesh_v4",
+          "triangles": 7975,
+          "exportedVertices": 16462,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "map_cypress_geometry_mesh_v9",
+          "triangles": 20605,
+          "exportedVertices": 31563,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "map_flower_cluster_shared_mesh",
+          "triangles": 1800,
+          "exportedVertices": 3613,
+          "primitives": 1,
+          "nodeReferences": 3,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "map_temple_dome_amber_mesh",
+          "triangles": 24985,
+          "exportedVertices": 117854,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "map_temple_structure_mesh",
+          "triangles": 64181,
+          "exportedVertices": 117854,
+          "primitives": 1,
+          "nodeReferences": 2,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "map_temple_dome_teal_mesh",
+          "triangles": 24985,
+          "exportedVertices": 117854,
+          "primitives": 1,
+          "nodeReferences": 1,
+          "attributes": [
+            "NORMAL",
+            "POSITION",
+            "TANGENT",
+            "TEXCOORD_0"
+          ]
+        }
+      ],
+      "materials": 6,
+      "images": [
+        {
+          "index": 0,
+          "name": "map_cliff_texture_02",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 9188,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 1,
+          "name": "map_cliff_texture_03",
+          "mimeType": "image/png",
+          "encodedBytes": 607995,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 2,
+          "name": "map_cliff_texture_00",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 432318,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 3,
+          "name": "map_cliff_texture_01",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 138549,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 4,
+          "name": "cypress-v9-meshy-normal-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1266934,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 5,
+          "name": "cypress-v9-base-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1408534,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 6,
+          "name": "cypress-v9-orm-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1310360,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 7,
+          "name": "temple-v9-meshy-normal-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 968184,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 8,
+          "name": "map_planter_texture_01",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 54189,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 9,
+          "name": "map_planter_texture_02",
+          "mimeType": "image/png",
+          "encodedBytes": 583683,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 10,
+          "name": "map_planter_texture_00",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 113055,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 11,
+          "name": "map_planter_texture_03",
+          "mimeType": "image/jpeg",
+          "encodedBytes": 68319,
+          "width": 512,
+          "height": 512,
+          "estimatedRgbaMipBytes": 1398101
+        },
+        {
+          "index": 12,
+          "name": "temple-v9-dome-amber-base-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 531056,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 13,
+          "name": "temple-v9-structure-base-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 867690,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        },
+        {
+          "index": 14,
+          "name": "temple-v9-orm-1k",
+          "mimeType": "image/webp",
+          "encodedBytes": 1457876,
+          "width": 1024,
+          "height": 1024,
+          "estimatedRgbaMipBytes": 5592405
+        },
+        {
+          "index": 15,
+          "name": "temple-v9-dome-teal-base-2k",
+          "mimeType": "image/webp",
+          "encodedBytes": 585804,
+          "width": 2048,
+          "height": 2048,
+          "estimatedRgbaMipBytes": 22369621
+        }
+      ],
+      "approximateDecodedRgbaMipBytes": 135615824,
+      "animations": [],
+      "skins": 0,
+      "extensionsRequired": [
+        "EXT_texture_webp"
+      ],
+      "extensionsUsed": [
+        "EXT_texture_webp"
+      ],
+      "reviewFlags": []
+    }
+  ],
+  "errors": []
+}

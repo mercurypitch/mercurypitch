@@ -1,0 +1,418 @@
+{
+  "schema": 1,
+  "status": "review-only exact dense baseline; runtime integration not authorized",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+    "bytes": 65096584,
+    "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+    "topologyBeforeFit": {
+      "vertices": 702537,
+      "triangles": 1256556,
+      "vertexPositionsFloat32Sha256": "f1872e5a2ab482359ea291692721e103d8f6fcc18d36fca866e4ca3eed13d36a",
+      "triangleIndicesInt32Sha256": "23039e153bc1bf97eaf0bb605bf6ca80ae729a1a4f15c0cdf8d7557c65f90d96"
+    }
+  },
+  "fit": {
+    "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+    "sourceBoundsBlenderZUpMetres": {
+      "min": [
+        -0.943821,
+        -0.507165,
+        -0.344755
+      ],
+      "max": [
+        0.949547,
+        0.513124,
+        0.339082
+      ]
+    },
+    "sourceDimensionsBlenderZUpMetres": [
+      1.893368,
+      1.020289,
+      0.683837
+    ],
+    "sourceLandingBlenderZ": 0.139629545,
+    "targetBoundsBlenderZUpMetres": {
+      "min": [
+        -0.899768,
+        -0.700478,
+        -0.425646
+      ],
+      "max": [
+        0.9019,
+        0.699575,
+        0.146525
+      ]
+    },
+    "targetDimensionsBlenderZUpMetres": [
+      1.801668,
+      1.400053,
+      0.572171
+    ],
+    "contactPlaneBlenderZ": 0.0,
+    "widthScale": 0.951567748,
+    "depthFit": {
+      "negativeHalf": {
+        "linear": 1.153272379,
+        "cubic": -0.153272379,
+        "edgeDerivative": 0.951567748
+      },
+      "positiveHalf": {
+        "linear": 1.153272379,
+        "cubic": -0.153272379,
+        "edgeDerivative": 0.951567748
+      }
+    },
+    "verticalScale": {
+      "belowContact": 0.878735741,
+      "aboveContact": 0.734636201
+    }
+  },
+  "geometry": {
+    "method": "exact fitted donor; no decimation, remesh, flatten, face replacement, or authored shell",
+    "topologyAfterFit": {
+      "vertices": 702537,
+      "triangles": 1256556,
+      "vertexPositionsFloat32Sha256": "66cab3f386d66afa353180ade5b9ed3d818f74431ad4501671dda821fb463bc1",
+      "triangleIndicesInt32Sha256": "23039e153bc1bf97eaf0bb605bf6ca80ae729a1a4f15c0cdf8d7557c65f90d96"
+    },
+    "integrity": {
+      "vertices": 702537,
+      "triangles": 1256556,
+      "boundaryEdges": 142826,
+      "nonManifoldEdges": 142826,
+      "looseEdges": 0,
+      "zeroAreaFaces": 0,
+      "uv0": "UVMap",
+      "uvCorners": 3769668,
+      "uvFinite": true,
+      "uvRange": {
+        "min": [
+          3.999999989900971e-06,
+          1.0013580322265625e-05
+        ],
+        "max": [
+          0.9999960064888,
+          0.999987006187439
+        ]
+      },
+      "tangentCoverage": true,
+      "validTangentCorners": 3769668,
+      "invalidTangentCorners": 0,
+      "minimumTangentLength": 0.9999998100101767,
+      "maximumTangentUnitError": 1.8998982331819292e-07
+    },
+    "triangleIndexShaPreserved": true,
+    "oneMeshPrototype": true
+  },
+  "textures": {
+    "method": "Lanczos3 base resize; Lanczos3 normal resize with per-texel vector renormalization; provider 2K roughness and metallic packed into ORM",
+    "base": {
+      "file": "art/glass-adventure/platform-trials/v7/textures/dense-baseline/cloudway-marble-v7-base-2k.png",
+      "bytes": 7322602,
+      "sha256": "c5cd7902866c339320ad71ef51979939356c3cccf617d516058e1d0a54c0f4ff",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    "normal": {
+      "file": "art/glass-adventure/platform-trials/v7/textures/dense-baseline/cloudway-marble-v7-normal-2k.png",
+      "bytes": 5009005,
+      "sha256": "1cd0c38bed3e37b836011149b1ddcaf0d2123f9c2661b689c5355e0acaf7a074",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    "orm": {
+      "file": "art/glass-adventure/platform-trials/v7/textures/dense-baseline/cloudway-marble-v7-orm-2k.png",
+      "bytes": 2523050,
+      "sha256": "cb03a51adca90a202e9100c475156e6063e4bbe6284f20f20ed9aaac1fe0c6ea",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    }
+  },
+  "matchedProof": {
+    "geometry": "the same fitted mesh is rendered on both sides; clay differs by no inputs and PBR differs only by provider 4K versus delivery 2K maps",
+    "views": {
+      "clay": {
+        "front": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-clay-front.png",
+            "bytes": 1200311,
+            "sha256": "1a7d68bf00a520efb68a7a3f4cb2991d7d7815bf400fb633256036a5c8c0c8ae"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-clay-front.png",
+            "bytes": 1200311,
+            "sha256": "5f2124bf19a6c86e53865c40e625b3d3db25d997768bc2dfa01fff03c58a1764"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-front.png",
+            "bytes": 186770,
+            "sha256": "2a7bab6c1d0ac4cd67b880ec9365085a0be6ac1afebd2f4a3f349760e7724ab1"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 689134,
+            "meanAbsoluteRgbDeltaInOverlap": 0.0,
+            "p95AbsoluteRgbDeltaInOverlap": 0.0
+          }
+        },
+        "three-quarter": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-clay-three-quarter.png",
+            "bytes": 1446858,
+            "sha256": "9c62c42f015777c5c44a94ea75ce9bd7b87e865a1415e2fb26c43876e4ff5f66"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-clay-three-quarter.png",
+            "bytes": 1446858,
+            "sha256": "d9486d6ba13960a181e3e7ce6434b401637f04e9984516f0807a3784f4b6de93"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-three-quarter.png",
+            "bytes": 249017,
+            "sha256": "f7f265e16d586122e3106bdbb30c13c5c335a05fd59fa036a05b8c124e9e6583"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 831301,
+            "meanAbsoluteRgbDeltaInOverlap": 0.0,
+            "p95AbsoluteRgbDeltaInOverlap": 0.0
+          }
+        },
+        "gameplay": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-clay-gameplay.png",
+            "bytes": 1417361,
+            "sha256": "90036aa961dda7219548e8ee0a537e2349eb217a9d69b5218419e570ab64d0c2"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-clay-gameplay.png",
+            "bytes": 1417361,
+            "sha256": "acc0606cfa2a274b9e508abfe24a6f2126954166326dda0e2cd29fe9d5ba6023"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-gameplay.png",
+            "bytes": 240229,
+            "sha256": "1fa8a48a0d5ab436172549cf93c3f5ee92bdb10d04c04ea8cc3041c6b2663b58"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 822789,
+            "meanAbsoluteRgbDeltaInOverlap": 0.0,
+            "p95AbsoluteRgbDeltaInOverlap": 0.0
+          }
+        },
+        "top": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-clay-top.png",
+            "bytes": 1852577,
+            "sha256": "0d73c198996c6e3396260c0dc919e4440cb07f49d5560b0318562796ed9c6f81"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-clay-top.png",
+            "bytes": 1852577,
+            "sha256": "6ae965039489158ea6d0c799b333c481ab5838fa0eefb056cc8ab731bf5fd1ff"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-top.png",
+            "bytes": 292970,
+            "sha256": "5c15e0199bd1b1e4d22a6c92e02731800dd067e4a0406b151ace2ed60fd02ab4"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 1552914,
+            "meanAbsoluteRgbDeltaInOverlap": 0.0,
+            "p95AbsoluteRgbDeltaInOverlap": 0.0
+          }
+        },
+        "side": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-clay-side.png",
+            "bytes": 1625336,
+            "sha256": "afbcf7da0be070705dc89be1fd74699e9ea9d11e0f54e5efaeb6f6864893800b"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-clay-side.png",
+            "bytes": 1625336,
+            "sha256": "4cef392dfce18e58fe8ef26a767872b5a05a24882b8a3407fe84bcf285f687f1"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-side.png",
+            "bytes": 312649,
+            "sha256": "fce946d39c21ee120b514a162bac43197b87ca9eda44b0ec29489e877e9149ca"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 731834,
+            "meanAbsoluteRgbDeltaInOverlap": 0.0,
+            "p95AbsoluteRgbDeltaInOverlap": 0.0
+          }
+        }
+      },
+      "pbr": {
+        "front": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-pbr-front.png",
+            "bytes": 1422916,
+            "sha256": "3bc2b65d646fbcc4dab655ff00c996c98c984c970b659ce70cdfef9f9dbc753f"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-pbr-front.png",
+            "bytes": 1376931,
+            "sha256": "8be7582aad7749f4fe63e8d73c569aaf8d5deabdda36896c22d74a1ccfe59785"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-front.png",
+            "bytes": 473093,
+            "sha256": "e118588fc1661c8b86edd004f6dde475edc8784daab5dd7f1e0928efc1d21627"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 689134,
+            "meanAbsoluteRgbDeltaInOverlap": 0.005909061059355736,
+            "p95AbsoluteRgbDeltaInOverlap": 0.024836605414748192
+          }
+        },
+        "three-quarter": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-pbr-three-quarter.png",
+            "bytes": 2081840,
+            "sha256": "6b6d871123e687ea818cbbd5aaca17562ad9292a0fac439af321394740905de5"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-pbr-three-quarter.png",
+            "bytes": 2008502,
+            "sha256": "21c2be92b2aeb6312dbc6acb362d1073ea0af855cc4cfea9117f520d94266f6b"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-three-quarter.png",
+            "bytes": 781782,
+            "sha256": "035df0720223de74b8382c772e038c67223f00226399e94f1d3a2f4862f55a9a"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 831301,
+            "meanAbsoluteRgbDeltaInOverlap": 0.006748063489794731,
+            "p95AbsoluteRgbDeltaInOverlap": 0.03006535768508911
+          }
+        },
+        "gameplay": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-pbr-gameplay.png",
+            "bytes": 2106550,
+            "sha256": "5c65935cc5964dedde20cac45755ec3ce5c10d428502948e1b7af80398555e61"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-pbr-gameplay.png",
+            "bytes": 2030210,
+            "sha256": "a99d60138f9285375a4af199dc44ec205834f9291d58ae67207c93dff39d484e"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-gameplay.png",
+            "bytes": 787561,
+            "sha256": "457d13be440a222aaf7ffdd109093da169b86a486226eb657be24cb95a948507"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 822789,
+            "meanAbsoluteRgbDeltaInOverlap": 0.007455036509782076,
+            "p95AbsoluteRgbDeltaInOverlap": 0.03398692607879639
+          }
+        },
+        "top": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-pbr-top.png",
+            "bytes": 3047568,
+            "sha256": "bb65f9f89d46be4b3640713dbc8ef4413aa8efc4d5993fd2024bec2798703a0d"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-pbr-top.png",
+            "bytes": 2774371,
+            "sha256": "20d9e48d86b0a0c18022b1852f07a6ca3a6d1ed8ae205c5f52994634e4c61797"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-top.png",
+            "bytes": 1219249,
+            "sha256": "88d28904e62f3f29227ed415d73b6571cd945ffec7e92d66b7188f521a34081a"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 1552914,
+            "meanAbsoluteRgbDeltaInOverlap": 0.012913597747683525,
+            "p95AbsoluteRgbDeltaInOverlap": 0.05620914697647095
+          }
+        },
+        "side": {
+          "source": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/donor-pbr-side.png",
+            "bytes": 1799809,
+            "sha256": "b3b6b45bbee8b8a42a07df90bd230c06c12ca57aba99bf5cd9b3ccb6847d62c9"
+          },
+          "candidate": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/baseline-pbr-side.png",
+            "bytes": 1765909,
+            "sha256": "a986e005c1c65595ae94233aef004addc9212b37bfb52ae681efcc69fd48b5f5"
+          },
+          "contactSheet": {
+            "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-side.png",
+            "bytes": 634683,
+            "sha256": "49d0533dd264856aefb826ef522752b26be1ce04940f373250d61d7adc8dcf88"
+          },
+          "pixelComparison": {
+            "silhouetteIntersectionOverUnion": 1.0,
+            "overlapPixels": 731834,
+            "meanAbsoluteRgbDeltaInOverlap": 0.003949583508074284,
+            "p95AbsoluteRgbDeltaInOverlap": 0.0156862735748291
+          }
+        }
+      }
+    },
+    "render": {
+      "engine": "Blender Eevee",
+      "resolution": [
+        1800,
+        1100
+      ],
+      "blender": "5.2.2 LTS"
+    }
+  },
+  "artifacts": {
+    "packedBlend": {
+      "file": "art/glass-adventure/platform-trials/v7/sources/cloudway-marble-dense-baseline-v7.blend",
+      "bytes": 151673792,
+      "sha256": "dfeb0b8747fe4545a1510a3dcf25a813c119933ded71b0b8fe342059f3dc59c9"
+    },
+    "raw2kGlb": {
+      "file": "art/glass-adventure/platform-trials/v7/exports/cloudway-marble-v7-dense-baseline-2k.glb",
+      "bytes": 63686476,
+      "sha256": "2d6efa7f2a6561546041eb56ba7f13eec2daaad74caff6757a1a655dd6255a6b"
+    }
+  },
+  "rawGlb": {
+    "extensionsUsed": [
+      "KHR_materials_clearcoat"
+    ],
+    "materials": [
+      "Cloudway Marble V7 Delivery 2K"
+    ],
+    "images": 3,
+    "textures": 3,
+    "meshes": 1,
+    "nodes": 2
+  },
+  "excluded": [
+    "authored reconstruction rejected at clay review",
+    "whole-shell reduction",
+    "visible-surface flatten",
+    "provider call or credit use",
+    "runtime/public installation",
+    "commit or push"
+  ],
+  "rebuild": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v7/production/build_marble_dense_baseline_v7.py"
+}

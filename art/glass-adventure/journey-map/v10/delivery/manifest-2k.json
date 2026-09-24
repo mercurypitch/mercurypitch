@@ -1,0 +1,18 @@
+{
+  "gltfTransformVersion": "4.4.2",
+  "scriptSha256": "fc891150ab2bb35a199467bd5424ee8575d417f6a4ea24a1ef50f6419dc531a8",
+  "inputHashes": {
+    "baked/camellia-crescent-rebaked.glb": "123256c902dd06eda6d2373cc9bd7ec4a8810e6c12d9e07fb842b686e75cd781",
+    "sources/floating-museum-twin-finish-kit-v9.glb": "04da964628212b243ca5b4afd327a1e52d43388929de2057be02bec44a495d74",
+    "baked/camellia-crescent-rebaked-valid.glb": "6e2447a19cc74c506d440ad860c6f57e3b82866c89d361903a2fa77d549cb411"
+  },
+  "sourceBundleSha256": "04da964628212b243ca5b4afd327a1e52d43388929de2057be02bec44a495d74",
+  "outputSha256": "c97c8789cc6d8d2793934a22c87167f13c760587e12636c33e87bd2b218820d3",
+  "bytes": 30852972,
+  "unchangedRoots": [
+    "map_twin_finish_kit_root"
+  ],
+  "replacedRoot": "map_flower_cluster",
+  "botanicalResolution": 2048,
+  "method": "Replace one instanced flower prototype, preserving every existing destination, arch, cliff, cypress, UV and material."
+}

@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "decision": "Reviewed Camellia production inputs and equal-camera accepted deliveries. Changes require another visual review and an explicit edit of this receipt; production commands do not update it.",
+  "gltfTransformVersion": "4.4.2",
+  "blenderVersion": "5.2.2 LTS",
+  "files": {
+    "sources/camellia-crescent-dense.glb": {
+      "bytes": 83321304,
+      "sha256": "6487c4bd8876175f02a9b13aece51023de59f3b049e23f1868078529e4e10d8f"
+    },
+    "sources/camellia-crescent-quad60k.glb": {
+      "bytes": 44952708,
+      "sha256": "c83654c1384c7d8e5b7b06ca1e67fa8e5e779c3bafeb804deef4963c5b36b8f5"
+    },
+    "sources/floating-museum-twin-finish-kit-v9.glb": {
+      "bytes": 19481064,
+      "sha256": "04da964628212b243ca5b4afd327a1e52d43388929de2057be02bec44a495d74"
+    },
+    "baked/camellia-crescent-rebaked.glb": {
+      "bytes": 20719944,
+      "sha256": "123256c902dd06eda6d2373cc9bd7ec4a8810e6c12d9e07fb842b686e75cd781"
+    },
+    "baked/camellia-crescent-rebaked-valid.glb": {
+      "bytes": 20719944,
+      "sha256": "6e2447a19cc74c506d440ad860c6f57e3b82866c89d361903a2fa77d549cb411"
+    },
+    "baked/camellia-crescent-rebaked.blend": {
+      "bytes": 182114779,
+      "sha256": "69002de1c6101816a93af69908fab24fbb155dc8b94ca01a4c2513c4dfb21bdd"
+    },
+    "baked/camellia-base-2k.png": {
+      "bytes": 5140547,
+      "sha256": "065d02675915c87c7ad5d3418a8864c31c3f6e9d90593669a1424c67a836b30b"
+    },
+    "baked/camellia-orm-2k.png": {
+      "bytes": 2973355,
+      "sha256": "dd5f75c6175c0b98fbd6945376147703d6da2d3fcf6cfa475cdaa172a1ac2deb"
+    },
+    "baked/camellia-normal-2k.png": {
+      "bytes": 6010677,
+      "sha256": "ca9027c376d32339900d04f71e867d884f31f3d8b11ad24c4eaea369688dd987"
+    }
+  },
+  "deliveries": {
+    "1k": {
+      "bytes": 25596100,
+      "sha256": "bac1a83183a86397d1c46e1cc1cda1802d664739edfdfbe326eddbcfbd75498f"
+    },
+    "2k": {
+      "bytes": 30852972,
+      "sha256": "c97c8789cc6d8d2793934a22c87167f13c760587e12636c33e87bd2b218820d3"
+    }
+  },
+  "originalProductionScripts": {
+    "production/archive/audit_bundle.py": {
+      "sha256": "696e2fbf09eb2bb9ae63cdd6b4b1da0029c31be75240ce26812bf5c31fba0649"
+    },
+    "production/archive/bake_botanical.py": {
+      "sha256": "0866cd757c9153b713753f1773ef4ecc03795a4ff0e6e1c2fae27ddec65d94e4"
+    },
+    "production/archive/package_botanical.mjs": {
+      "sha256": "5065bf4e96362aeea940a7e7031bb392b1b394091917b928f188f62b8ae5d864"
+    },
+    "production/archive/repair_bake_tangents.py": {
+      "sha256": "0e5f5498294c155d986efde3c21be97cd90f53c707f0b72d7a39541b097d1995"
+    }
+  }
+}

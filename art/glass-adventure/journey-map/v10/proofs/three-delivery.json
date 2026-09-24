@@ -1,0 +1,44 @@
+{
+  "results": [
+    {
+      "size": "2k",
+      "close": {
+        "drawCalls": 2,
+        "triangles": 117802,
+        "textures": 6,
+        "width": 0.9997766017913818,
+        "bottom": -0.0003712580761238149,
+        "height": 0.3955840828341095
+      },
+      "normal": {
+        "drawCalls": 2,
+        "triangles": 117802,
+        "textures": 6,
+        "width": 0.34992181062698363,
+        "bottom": -0.00012994032664334632,
+        "height": 0.13845442899193833
+      }
+    },
+    {
+      "size": "1k",
+      "close": {
+        "drawCalls": 2,
+        "triangles": 117802,
+        "textures": 6,
+        "width": 0.9997766017913818,
+        "bottom": -0.0003712580761238149,
+        "height": 0.3955840828341095
+      },
+      "normal": {
+        "drawCalls": 2,
+        "triangles": 117802,
+        "textures": 6,
+        "width": 0.34992181062698363,
+        "bottom": -0.00012994032664334632,
+        "height": 0.13845442899193833
+      }
+    }
+  ],
+  "errors": [],
+  "renderer": "Three.js r185 in Chromium, SwiftShader; visual/export proof, not device performance"
+}

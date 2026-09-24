@@ -1,0 +1,49 @@
+{
+  "revision": "merc-voice-auditions-v2-2026-09-20",
+  "direction": "e",
+  "label": "Warmer Grounded",
+  "status": "complete",
+  "started_at": "2026-09-20T11:30:26.736Z",
+  "model": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "seed": 20092027,
+  "voice_library_saved": false,
+  "previews": [
+    {
+      "take": "e1",
+      "file": "merc-e1.pcm",
+      "generated_voice_id": "b2SKcEVwu3P6LOYWD7BP",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 20.4,
+      "bytes": 1799280,
+      "sha256": "4d110b92385f5d852d8b93941870c5c87380f03964b11a9727dc8e82a4831dce"
+    },
+    {
+      "take": "e2",
+      "file": "merc-e2.pcm",
+      "generated_voice_id": "s3G6Uoh8mMebuvQcHdkR",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 21.44,
+      "bytes": 1891008,
+      "sha256": "4a8a2b1a6a626307939009c85e752db08f9ed63c4778855d40bfd0c4edddfed3"
+    },
+    {
+      "take": "e3",
+      "file": "merc-e3.pcm",
+      "generated_voice_id": "8DJ82K5MbHWgl7bKajjc",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 22.56,
+      "bytes": 1989792,
+      "sha256": "4bef7507617b8139c8b966452968acd17ea60a44ad06d96f5a69e230dae35641"
+    }
+  ],
+  "http_status": 200,
+  "provider_request_id": null,
+  "provider_character_cost": null,
+  "returned_text_matches": true,
+  "previews_returned": 3,
+  "completed_at": "2026-09-20T11:30:39.191Z"
+}

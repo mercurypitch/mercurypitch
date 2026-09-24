@@ -1,0 +1,90 @@
+{
+  "note": "Current reviewed evidence only. Historical failures and superseded captures are retained separately. The reproduction harness hash describes the saved script; build receipts identify the runtime source used for each capture set. Software WebGL images are appearance evidence, not device performance.",
+  "files": [
+    {
+      "path": "proofs/runtime/manifest-narrow-phone-portrait.json",
+      "bytes": 6433,
+      "sha256": "7a80986ad1d279a015b544f803ffe62686afe84e6a677f15e6c9601b790d0145"
+    },
+    {
+      "path": "proofs/runtime/manifest-phone-portrait.json",
+      "bytes": 4664,
+      "sha256": "ea74afd8102135bd78b05a9436641b11b17c8c9ce7fb09a8e1e6a45915cb9a6f"
+    },
+    {
+      "path": "proofs/runtime/manifest-tablet-fern.json",
+      "bytes": 4849,
+      "sha256": "b1b3a59389979008032e42904d40e44394c4f3f329e4f050e783bca022804b60"
+    },
+    {
+      "path": "proofs/runtime/narrow-phone-portrait-help.png",
+      "bytes": 191500,
+      "sha256": "2ff39f1497d4457236e35cf6204a3897df54317f949ebf0f2d33b20220fc294a"
+    },
+    {
+      "path": "proofs/runtime/narrow-phone-portrait-returned.png",
+      "bytes": 237281,
+      "sha256": "14dae4098e55985ca4f3f1db61b2d19181e2f5746f9d73de907eb9d6743d8297"
+    },
+    {
+      "path": "proofs/runtime/narrow-phone-portrait-singing.png",
+      "bytes": 208868,
+      "sha256": "ebec4916e2417c08e7153bfdb1d5cda108ba0b59212fb3ec033be13e56ed3fb7"
+    },
+    {
+      "path": "proofs/runtime/phone-portrait-returned.png",
+      "bytes": 372388,
+      "sha256": "7551e5957a80859033650b11b9e8cda9519d8319684773b08883d6a0b6546048"
+    },
+    {
+      "path": "proofs/runtime/phone-portrait-singing.png",
+      "bytes": 329761,
+      "sha256": "0740d3a4041b58f15e5744c3ae42d6a26c6266dbdf88080954346032f1ca960f"
+    },
+    {
+      "path": "proofs/runtime/tablet-fern-returned.png",
+      "bytes": 883272,
+      "sha256": "a02ba73bcb5839d368290384df7cd3ad838fb073cba6248f44a50190b9070911"
+    },
+    {
+      "path": "proofs/runtime/tablet-fern-singing.png",
+      "bytes": 738502,
+      "sha256": "8bc91fb9d699731cd7679d84599273d85099289f9457dd7aa0bc88fcdbe0ff49"
+    },
+    {
+      "path": "proofs/shatter/build-receipt.json",
+      "bytes": 850,
+      "sha256": "c509c62d6cf09b43f733c186a7ef3ee1ecaf6c0f4958dc6f29909cabec0a21fe"
+    },
+    {
+      "path": "proofs/shatter/desktop-goblet-returned.png",
+      "bytes": 1449613,
+      "sha256": "09d19c5c866716daa496690d9240c6d424bccbd4f99e61f5b846adf24de116f7"
+    },
+    {
+      "path": "proofs/shatter/desktop-goblet-shattering.png",
+      "bytes": 1263896,
+      "sha256": "27534da54e451dde1a7c4c84949c36ef5ecd5960d2f96ca19a163e0cdf089e40"
+    },
+    {
+      "path": "proofs/shatter/desktop-goblet-singing.png",
+      "bytes": 1276105,
+      "sha256": "782a9871f01b00a74c01c2409a3fd9b028e789dcce7a833dcbb841797faf6179"
+    },
+    {
+      "path": "proofs/shatter/manifest-desktop-goblet.json",
+      "bytes": 6687,
+      "sha256": "138b90eac98b9ce8d2c1e3909611e9bd24ce443d119d7c620ec2e5802662468d"
+    },
+    {
+      "path": "proofs/build-receipt.json",
+      "bytes": 1006,
+      "sha256": "5379b36fdd6232759554fd5f116b5135e1228363566bdb59b30730753e50dc7b"
+    },
+    {
+      "path": "production/capture-runtime.mjs",
+      "bytes": 20407,
+      "sha256": "3bfcc08eb82cec0d6b5f078832c4695ddb332e93930b993c16f75184e32ff210"
+    }
+  ]
+}

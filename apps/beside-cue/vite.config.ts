@@ -1,8 +1,8 @@
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
-import basicSsl from '@vitejs/plugin-basic-ssl'
 import { defineConfig, loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
 import { gameAssetsPlugin } from './scripts/game-assets'
@@ -41,8 +41,7 @@ const pkgVersion = (): string => {
 // is the merge commit rather than anything `git rev-parse` would report.
 const commit = (): string =>
   (process.env.GITHUB_SHA ?? '').slice(0, 7) ||
-  git('rev-parse', '--short=7', 'HEAD') ||
-  'unknown'
+  (git('rev-parse', '--short=7', 'HEAD') ?? 'unknown')
 
 const dirty = (): boolean => {
   if (process.env.GITHUB_SHA !== undefined) return false
@@ -113,6 +112,9 @@ export default defineConfig(({ mode, command }) => {
   const https = mode === 'https' ? devCert() : undefined
   return {
     base: './',
+    // Store and games dev servers have different module graphs. Sharing Vite's
+    // optimizer cache makes the concurrent browser gates invalidate each other.
+    cacheDir: `node_modules/.vite/${gamesEnabled ? 'games' : 'store'}`,
     server: { port: DEV_PORT, strictPort: true, ...(https && { https }) },
     plugins: [
       ...(mode === 'https' && https === undefined ? [basicSsl()] : []),
@@ -149,6 +151,16 @@ export default defineConfig(({ mode, command }) => {
     },
     build: {
       target: 'es2022',
+      rollupOptions: {
+        input: gamesEnabled
+          ? {
+              app: fileURLToPath(new URL('./index.html', import.meta.url)),
+              museum: fileURLToPath(
+                new URL('./glass-game/index.html', import.meta.url),
+              ),
+            }
+          : fileURLToPath(new URL('./index.html', import.meta.url)),
+      },
     },
     // The pitch stream's detector worker imports the detector, which is big
     // enough that Rollup splits it into a chunk — and Vite's default `iife`

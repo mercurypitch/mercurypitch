@@ -1,0 +1,312 @@
+{
+  "status": "Reviewed material boundaries applied; intact and fracture optical proofs inspected",
+  "input": "donors/cut-crystal-decanter/prepared-cavity-v10.blend",
+  "inputSha256": "a124421396438bec812eefcb0250dd666b1e61393fc4c751b86c31590da1c9d0",
+  "preparedSha256": "e16b401d330b72700d5bbc764e1944a9ee813d58e0ddc0a94be918847943c0e5",
+  "materialDecisions": [
+    {
+      "object": "decanter_cut_body",
+      "face": 265,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.013570214621722698,
+        0.03223990648984909,
+        0.4118543863296509
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 1802,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.021867401897907257,
+        -0.025633901357650757,
+        0.3875381350517273
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 16907,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.019061630591750145,
+        0.029392024502158165,
+        0.4115537405014038
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 17929,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.02469443343579769,
+        0.022948166355490685,
+        0.38755089044570923
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 17166,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.01127923559397459,
+        0.03328785300254822,
+        0.41167473793029785
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 407,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.029302215203642845,
+        -0.019056249409914017,
+        0.41157111525535583
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 30360,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.08151423931121826,
+        -0.059696268290281296,
+        0.008619792759418488
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 416,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.034384313970804214,
+        -0.0043831393122673035,
+        0.41159236431121826
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 17314,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.032204024493694305,
+        -0.013574020937085152,
+        0.41177400946617126
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 2470,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.03269413113594055,
+        0.007607024163007736,
+        0.3875380754470825
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 20009,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.03338627144694328,
+        -0.0032523523550480604,
+        0.38739150762557983
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 17200,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.03218492120504379,
+        0.01358333881944418,
+        0.41172724962234497
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 17203,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.03293004259467125,
+        0.012123409658670425,
+        0.41154855489730835
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 1588,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.03280787169933319,
+        -0.006099163554608822,
+        0.387429803609848
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 17076,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.030585400760173798,
+        -0.016543515026569366,
+        0.4115937650203705
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 950,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.03260856866836548,
+        0.00768666248768568,
+        0.38749217987060547
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 10039,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.05860207602381706,
+        0.09394006431102753,
+        0.008400766178965569
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 18618,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.014672304503619671,
+        -0.0301462821662426,
+        0.38744431734085083
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 190,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.03396487981081009,
+        -0.006748122163116932,
+        0.4116036891937256
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 16973,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.03290587663650513,
+        0.01164748053997755,
+        0.41154345870018005
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 17105,
+      "material": "gold_trim",
+      "centreMetres": [
+        0.014819863252341747,
+        -0.030864611268043518,
+        0.39203864336013794
+      ],
+      "reason": "Within reviewed original neck/base paint band"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 24022,
+      "material": "gold_trim",
+      "centreMetres": [
+        -0.01929488033056259,
+        0.09575240314006805,
+        0.001997531158849597
+      ],
+      "reason": "Within reviewed original neck/base paint band"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 13282,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.09018562734127045,
+        -0.046896737068891525,
+        0.00863575842231512
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 10088,
+      "material": "glass_shell",
+      "centreMetres": [
+        -0.0743279904127121,
+        0.0706457644701004,
+        0.008615665137767792
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    },
+    {
+      "object": "decanter_cut_body",
+      "face": 123,
+      "material": "glass_shell",
+      "centreMetres": [
+        0.012219364754855633,
+        -0.03291798382997513,
+        0.4116083085536957
+      ],
+      "reason": "Inspected antialiased edge of existing paint band; retain crisp glass-side boundary"
+    }
+  ],
+  "interiorPaintedGold": false,
+  "geometryChanged": false,
+  "shading": "Smooth normals within 20 degrees; original geometric cut edges retained",
+  "uv0": "Metre-based planar UV0 on donor without UVs; exterior UV0 preserved through clipping",
+  "originalAtlasUsage": "Reviewed source paint labels only; no baked donor lighting used as glass color",
+  "checks": [
+    {
+      "triangles": 46264,
+      "vertices": 23136,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0022432275839183147,
+      "name": "decanter_cut_body"
+    },
+    {
+      "triangles": 3734,
+      "vertices": 1869,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0005976466785708324,
+      "name": "decanter_cut_stopper"
+    }
+  ]
+}

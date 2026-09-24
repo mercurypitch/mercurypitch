@@ -1,0 +1,390 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "source": {
+    "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+    "bytes": 7283672,
+    "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45"
+  },
+  "method": "Blender voxel remesh at two fixed physical resolutions from the preserved clean Meshy pre-remesh surface; smooth shading; bounded collapse to 34K; one exact self-union with no local repair loop; fresh strict topology checks before and after temporary GLB export; bidirectional surface distance, volume, bounds, and 192-pixel ray-cast silhouettes.",
+  "candidates": [
+    {
+      "voxelSizeMetres": 0.004,
+      "triangleTarget": 34000,
+      "normalization": {
+        "uniformScale": 0.6057656912504278,
+        "sourceFootCentre": [
+          -0.0009541362524032593,
+          0.0009124279022216797,
+          -0.950843095779419
+        ],
+        "boundsMetres": {
+          "min": [
+            -0.1889037787914276,
+            -0.18885940313339233,
+            0.0
+          ],
+          "max": [
+            0.1889037936925888,
+            0.18885940313339233,
+            1.149999976158142
+          ]
+        },
+        "dimensionsMetres": [
+          0.3778075575828552,
+          0.37771880626678467,
+          1.149999976158142
+        ]
+      },
+      "sourceTopology": {
+        "triangles": 404658,
+        "vertices": 202249,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.0027637152015113995
+      },
+      "voxelTopology": {
+        "triangles": 466948,
+        "vertices": 231916,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 7141,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.002833691857182904
+      },
+      "decimation": {
+        "requested": 34000,
+        "before": 466948,
+        "after": 34000,
+        "applied": true
+      },
+      "decimatedTopology": {
+        "triangles": 34000,
+        "vertices": 15442,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 2791,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.002819283503358721
+      },
+      "exactSelfUnion": {
+        "method": "Blender exact self-union",
+        "before": {
+          "triangles": 34000,
+          "vertices": 15442,
+          "nonManifoldEdges": 0,
+          "nonManifoldVertices": 0,
+          "nonContiguousEdges": 0,
+          "selfIntersectionPairs": 2791,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.002819283503358721
+        },
+        "after": {
+          "triangles": 45746,
+          "vertices": 18638,
+          "nonManifoldEdges": 2845,
+          "nonManifoldVertices": 2816,
+          "nonContiguousEdges": 2913,
+          "selfIntersectionPairs": 0,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.002870017653226778
+        }
+      },
+      "collapsedComponents": {
+        "removedComponents": 0,
+        "removedFaces": 0,
+        "components": []
+      },
+      "topology": {
+        "triangles": 45746,
+        "vertices": 18638,
+        "nonManifoldEdges": 2845,
+        "nonManifoldVertices": 2816,
+        "nonContiguousEdges": 2913,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.002870017653226778
+      },
+      "topologyPassed": false,
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 8.252364466443396e-07,
+          "p50": 7.899101910879835e-05,
+          "p95": 0.0015008975926320853,
+          "p99": 0.003579045655205851,
+          "max": 0.007281513884663582
+        },
+        "sourceToFinalMetres": {
+          "min": 3.725290298461914e-09,
+          "p05": 1.0804093471961096e-05,
+          "p50": 0.00014272295811679214,
+          "p95": 0.0017319562146440135,
+          "p99": 0.003195327520370467,
+          "max": 0.00704631581902504
+        },
+        "sourceSampleCount": 10113
+      },
+      "boundsMetres": {
+        "min": [
+          -0.1883217990398407,
+          -0.18832792341709137,
+          -4.8774186325317714e-06
+        ],
+        "max": [
+          0.18822678923606873,
+          0.18846815824508667,
+          1.1502739191055298
+        ]
+      },
+      "sourceBoundsMaxDeltaMetres": 0.0006770044565200806,
+      "volumeRelativeDelta": 0.038463605677330544,
+      "silhouette": {
+        "front": {
+          "resolution": 192,
+          "referencePixels": 15534,
+          "candidatePixels": 15561,
+          "intersectionOverUnion": 0.9905895909352794,
+          "referenceMissingFraction": 0.003862495171881035,
+          "candidateExcessFraction": 0.005600617999227501,
+          "candidateToReferenceBoundaryP95Metres": 0.0022672265768051147,
+          "referenceToCandidateBoundaryP95Metres": 0.006801694631576538,
+          "symmetricBoundaryMaxMetres": 0.04129205271601677
+        },
+        "side": {
+          "resolution": 192,
+          "referencePixels": 15548,
+          "candidatePixels": 15573,
+          "intersectionOverUnion": 0.9904700991365526,
+          "referenceMissingFraction": 0.00398765114484178,
+          "candidateExcessFraction": 0.005595574993568305,
+          "candidateToReferenceBoundaryP95Metres": 0.0022667646408081055,
+          "referenceToCandidateBoundaryP95Metres": 0.006800293922424316,
+          "symmetricBoundaryMaxMetres": 0.04128383472561836
+        },
+        "top": {
+          "resolution": 192,
+          "referencePixels": 20712,
+          "candidatePixels": 20721,
+          "intersectionOverUnion": 0.9986011287443924,
+          "referenceMissingFraction": 0.0004828118964851294,
+          "candidateExcessFraction": 0.0009173426033217459,
+          "candidateToReferenceBoundaryP95Metres": 0.0,
+          "referenceToCandidateBoundaryP95Metres": 0.0022667646408081055,
+          "symmetricBoundaryMaxMetres": 0.0022667646408081055
+        }
+      },
+      "temporaryGlb": {
+        "bytes": 722680,
+        "sha256": "38fcd75d73b017de24ae8b23b3129bfadc417e0b0927dd4a529ae9b2aa064658",
+        "committed": false
+      },
+      "freshGlbReimportTopology": {
+        "triangles": 45746,
+        "vertices": 18638,
+        "nonManifoldEdges": 2845,
+        "nonManifoldVertices": 2816,
+        "nonContiguousEdges": 2913,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.0028700176486129046
+      },
+      "freshGlbReimportPassed": false
+    },
+    {
+      "voxelSizeMetres": 0.005,
+      "triangleTarget": 34000,
+      "normalization": {
+        "uniformScale": 0.6057656912504278,
+        "sourceFootCentre": [
+          -0.0009541362524032593,
+          0.0009124279022216797,
+          -0.950843095779419
+        ],
+        "boundsMetres": {
+          "min": [
+            -0.1889037787914276,
+            -0.18885940313339233,
+            0.0
+          ],
+          "max": [
+            0.1889037936925888,
+            0.18885940313339233,
+            1.149999976158142
+          ]
+        },
+        "dimensionsMetres": [
+          0.3778075575828552,
+          0.37771880626678467,
+          1.149999976158142
+        ]
+      },
+      "sourceTopology": {
+        "triangles": 404658,
+        "vertices": 202249,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.0027637152015113995
+      },
+      "voxelTopology": {
+        "triangles": 291248,
+        "vertices": 144468,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 10935,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.0031300521908850538
+      },
+      "decimation": {
+        "requested": 34000,
+        "before": 291248,
+        "after": 34000,
+        "applied": true
+      },
+      "decimatedTopology": {
+        "triangles": 34000,
+        "vertices": 15844,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "selfIntersectionPairs": 5903,
+        "blenderMeshInvalid": true,
+        "signedVolume": 0.003113764337680717
+      },
+      "exactSelfUnion": {
+        "method": "Blender exact self-union",
+        "before": {
+          "triangles": 34000,
+          "vertices": 15844,
+          "nonManifoldEdges": 0,
+          "nonManifoldVertices": 0,
+          "nonContiguousEdges": 0,
+          "selfIntersectionPairs": 5903,
+          "blenderMeshInvalid": true,
+          "signedVolume": 0.003113764337680717
+        },
+        "after": {
+          "triangles": 55999,
+          "vertices": 22232,
+          "nonManifoldEdges": 4602,
+          "nonManifoldVertices": 4516,
+          "nonContiguousEdges": 4651,
+          "selfIntersectionPairs": 0,
+          "blenderMeshInvalid": false,
+          "signedVolume": 0.003133880205515979
+        }
+      },
+      "collapsedComponents": {
+        "removedComponents": 0,
+        "removedFaces": 0,
+        "components": []
+      },
+      "topology": {
+        "triangles": 55999,
+        "vertices": 22232,
+        "nonManifoldEdges": 4602,
+        "nonManifoldVertices": 4516,
+        "nonContiguousEdges": 4651,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.003133880205515979
+      },
+      "topologyPassed": false,
+      "fidelity": {
+        "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+        "finalToSourceMetres": {
+          "min": 0.0,
+          "p05": 7.508562660518692e-09,
+          "p50": 9.042468082043342e-05,
+          "p95": 0.0037241477868519726,
+          "p99": 0.0051890916051342975,
+          "max": 0.007541700266301632
+        },
+        "sourceToFinalMetres": {
+          "min": 8.122420069867076e-08,
+          "p05": 1.334722874162253e-05,
+          "p50": 0.0001780991442501545,
+          "p95": 0.0027452240698039518,
+          "p99": 0.003512284522876142,
+          "max": 0.0050841583870351315
+        },
+        "sourceSampleCount": 10113
+      },
+      "boundsMetres": {
+        "min": [
+          -0.18855179846286774,
+          -0.18872050940990448,
+          -0.00013966928236186504
+        ],
+        "max": [
+          0.18879970908164978,
+          0.18867787718772888,
+          1.1499570608139038
+        ]
+      },
+      "sourceBoundsMaxDeltaMetres": 0.0003519803285598755,
+      "volumeRelativeDelta": 0.13393746352813293,
+      "silhouette": {
+        "front": {
+          "resolution": 192,
+          "referencePixels": 15540,
+          "candidatePixels": 15589,
+          "intersectionOverUnion": 0.9903452685421995,
+          "referenceMissingFraction": 0.003281853281853282,
+          "candidateExcessFraction": 0.006435006435006435,
+          "candidateToReferenceBoundaryP95Metres": 0.0022672265768051147,
+          "referenceToCandidateBoundaryP95Metres": 0.009068906307220459,
+          "symmetricBoundaryMaxMetres": 0.012964164838194847
+        },
+        "side": {
+          "resolution": 192,
+          "referencePixels": 15555,
+          "candidatePixels": 15602,
+          "intersectionOverUnion": 0.9909898396063647,
+          "referenceMissingFraction": 0.003021536483445837,
+          "candidateExcessFraction": 0.006043072966891674,
+          "candidateToReferenceBoundaryP95Metres": 0.0022667646408081055,
+          "referenceToCandidateBoundaryP95Metres": 0.006800293922424316,
+          "symmetricBoundaryMaxMetres": 0.012962140142917633
+        },
+        "top": {
+          "resolution": 192,
+          "referencePixels": 20712,
+          "candidatePixels": 20698,
+          "intersectionOverUnion": 0.9980699638118214,
+          "referenceMissingFraction": 0.0013035921205098494,
+          "candidateExcessFraction": 0.0006276554654306683,
+          "candidateToReferenceBoundaryP95Metres": 0.0022667646408081055,
+          "referenceToCandidateBoundaryP95Metres": 0.0022667646408081055,
+          "symmetricBoundaryMaxMetres": 0.0022667646408081055
+        }
+      },
+      "temporaryGlb": {
+        "bytes": 870456,
+        "sha256": "b9c64c6d16af236391ee08c427523fd7e8eeb81de40a55cd7cb18ce13ba75be8",
+        "committed": false
+      },
+      "freshGlbReimportTopology": {
+        "triangles": 55999,
+        "vertices": 22232,
+        "nonManifoldEdges": 4602,
+        "nonManifoldVertices": 4516,
+        "nonContiguousEdges": 4651,
+        "selfIntersectionPairs": 0,
+        "blenderMeshInvalid": false,
+        "signedVolume": 0.003133880210281247
+      },
+      "freshGlbReimportPassed": false
+    }
+  ]
+}

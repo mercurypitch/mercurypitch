@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "method": "One bounded trial: normalize and weld the Meshy 50k remesh, fill its small boundary loops, then apply Blender's exact self-union.",
+  "before": {
+    "vertices": 25398,
+    "edges": 76565,
+    "triangles": 51040,
+    "boundaryEdges": 68,
+    "nonManifoldEdges": 116,
+    "nonManifoldVertices": 97,
+    "nonContiguousEdges": 116,
+    "selfIntersectionPairs": 62,
+    "signedVolumeCubicMetres": 0.02111258975173455,
+    "passed": false
+  },
+  "boundaryFill": {
+    "boundaryEdgesBefore": 68,
+    "createdFaces": 2,
+    "createdAreaSquareMetres": 1.2451452676032204e-05,
+    "maximumCreatedFaceAreaSquareMetres": 6.950669558136724e-06
+  },
+  "afterBoundaryFill": {
+    "vertices": 25398,
+    "edges": 76566,
+    "triangles": 51044,
+    "boundaryEdges": 60,
+    "nonManifoldEdges": 109,
+    "nonManifoldVertices": 99,
+    "nonContiguousEdges": 109,
+    "selfIntersectionPairs": 62,
+    "signedVolumeCubicMetres": 0.021112342545396567,
+    "passed": false
+  },
+  "afterExactSelfUnion": {
+    "vertices": 25487,
+    "edges": 76986,
+    "triangles": 51401,
+    "boundaryEdges": 62,
+    "nonManifoldEdges": 228,
+    "nonManifoldVertices": 236,
+    "nonContiguousEdges": 228,
+    "selfIntersectionPairs": 0,
+    "signedVolumeCubicMetres": 0.02112344136044442,
+    "passed": false
+  },
+  "fidelityToUnrepairedRemesh": {
+    "repairedToRemesh": {
+      "samples": 12744,
+      "meanMetres": 6.9525426690134234e-12,
+      "rmsMetres": 2.384939264485647e-10,
+      "p95Metres": 0.0,
+      "p99Metres": 0.0,
+      "maxMetres": 1.666000493116826e-08
+    },
+    "remeshToRepaired": {
+      "samples": 12699,
+      "meanMetres": 0.0,
+      "rmsMetres": 0.0,
+      "p95Metres": 0.0,
+      "p99Metres": 0.0,
+      "maxMetres": 0.0
+    }
+  },
+  "outputWritten": false
+}

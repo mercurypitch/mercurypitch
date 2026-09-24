@@ -1,0 +1,44 @@
+{
+  "source": "light-a",
+  "melody": "first-arc",
+  "rootMidi": 50,
+  "method": "WORLD source spectral/aperiodic envelopes, consonant-preserving word time map, exact game contour resynthesis; MP3 independently reanalysed",
+  "leadingSeconds": 0.12,
+  "phraseSeconds": 2.7,
+  "trailingSeconds": 0.16,
+  "sourceSha256": "ccbf4583c27986d2946ebce0a455ed6509527fe349fa16a11862c96735eaff9f",
+  "deliverySha256": "22eb0a1fdf8816a989630b7a3f22ba615d2e77492e0037ead386834f337b899c",
+  "deliveryBytes": 49196,
+  "durationSeconds": 2.985,
+  "sampleRate": 24000,
+  "peakDb": -4.759106506974119,
+  "measuredVoicedFrames": 484,
+  "medianAbsoluteCents": 4.229458985809487,
+  "p95AbsoluteCents": 142.3722193181094,
+  "maps": {
+    "sourceSeconds": [
+      0,
+      0.14,
+      0.5000000000000001,
+      0.6000000000000001,
+      0.7375,
+      1.051,
+      1.15,
+      1.29,
+      1.74,
+      1.84
+    ],
+    "targetSeconds": [
+      0,
+      0.14,
+      0.9500000000000001,
+      1.05,
+      1.1875,
+      2.0010000000000003,
+      2.1,
+      2.24,
+      2.6,
+      2.7
+    ]
+  }
+}

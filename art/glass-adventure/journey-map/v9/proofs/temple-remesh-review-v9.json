@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "asset": "temple",
+  "purpose": "Receipt-matched same-camera clay and finish-readiness review; no runtime export.",
+  "order": [
+    "dense-pre-remesh",
+    "textured-donor-as-clay",
+    "current-v4-as-clay",
+    "v9-remesh-candidate"
+  ],
+  "assets": [
+    {
+      "name": "dense-pre-remesh",
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3-pre-remesh.glb",
+      "bytes": 32205248,
+      "sha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+      "meshObjects": 1,
+      "vertices": 894355,
+      "triangles": 1789350,
+      "displayHeightMetres": 3.1,
+      "displayX": -4.875
+    },
+    {
+      "name": "textured-donor-as-clay",
+      "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3.glb",
+      "bytes": 13592912,
+      "sha256": "bfc6be24ea860df8ca04a9d8bc269a2552f932cb5726c817b9071fa2b1d37c8c",
+      "meshObjects": 1,
+      "vertices": 36057,
+      "triangles": 21839,
+      "displayHeightMetres": 3.1,
+      "displayX": -1.625
+    },
+    {
+      "name": "current-v4-as-clay",
+      "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+      "bytes": 5642860,
+      "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+      "meshObjects": 2,
+      "vertices": 19537,
+      "triangles": 9993,
+      "displayHeightMetres": 3.1,
+      "displayX": 1.625
+    },
+    {
+      "name": "v9-remesh-candidate",
+      "file": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k.glb",
+      "bytes": 4841948,
+      "sha256": "157548ec5501305cb23ac2fce88df22ae6c5127b447c760c93a81bcadab1eb7f",
+      "meshObjects": 1,
+      "vertices": 117841,
+      "triangles": 89166,
+      "displayHeightMetres": 3.1,
+      "displayX": 4.875
+    }
+  ],
+  "candidateAudit": {
+    "v9-remesh-candidate-00": {
+      "topology": {
+        "vertices": 117841,
+        "triangles": 89166,
+        "boundaryEdges": 113124,
+        "nonManifoldEdges": 113124,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      },
+      "shading": {
+        "cornerNormals": 267498,
+        "allNormalsFinite": true,
+        "allNormalsNonZero": true,
+        "maximumNormalUnitError": 1.9680203000582708e-07,
+        "smoothPolygons": 89166,
+        "totalPolygons": 89166,
+        "uvLayers": [
+          "UVMap"
+        ],
+        "activeUv": "UVMap",
+        "tangentBasisComputable": false,
+        "tangentError": null
+      }
+    }
+  },
+  "proofs": [
+    {
+      "file": "proofs/temple-remesh-clay-front-v9.png",
+      "bytes": 2125517,
+      "sha256": "f0bbcc924f38b7b4c69220e92b46976d98162a0134a0a1039e5de7e6781cc741"
+    },
+    {
+      "file": "proofs/temple-remesh-clay-angle-v9.png",
+      "bytes": 2143625,
+      "sha256": "6f4e1c1768a5b768d71185fba30e95c96468db3fdd04d369addedd0c20657911"
+    }
+  ],
+  "finishGates": {
+    "silhouetteApproval": "pending-manual-review",
+    "finalUvApproval": "required",
+    "tangentBasisComputable": false,
+    "denseToLowTangentNormalBake": "not-performed",
+    "denseToLowAmbientOcclusionBake": "not-performed",
+    "pbrTextureFinish": "not-performed",
+    "freshExportAndReimport": "not-performed",
+    "runtimeIntegration": "not-performed"
+  },
+  "runtimeContract": {
+    "requiredNodes": [
+      "map_temple_amber",
+      "map_temple_amber_structure",
+      "map_temple_amber_dome",
+      "map_temple_teal",
+      "map_temple_teal_structure",
+      "map_temple_teal_dome"
+    ],
+    "instancing": "One finished geometry source shared by amber and teal variants.",
+    "normalRule": "Preserve source loop normals through the dome material split."
+  },
+  "renderEngine": "CYCLES CPU",
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/review_museum_remesh_candidate.py -- --asset temple"
+}

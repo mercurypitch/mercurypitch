@@ -1,0 +1,230 @@
+{
+  "schema": 1,
+  "purpose": "Same-scale, same-camera local source comparison. Clay proofs test silhouette; textured proofs compare the accepted donor with the current V4 runtime source.",
+  "groups": [
+    {
+      "asset": "temple",
+      "mode": "clay",
+      "order": [
+        "temple-dense-pre-remesh",
+        "temple-textured-donor-as-clay",
+        "temple-current-v4-as-clay"
+      ],
+      "assets": [
+        {
+          "name": "temple-dense-pre-remesh",
+          "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3-pre-remesh.glb",
+          "bytes": 32205248,
+          "sha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+          "selectedNode": null,
+          "meshObjects": 1,
+          "verticesAfterImport": 894355,
+          "trianglesAfterImport": 1789350,
+          "displayHeightMetres": 3.1,
+          "displayX": -3.35
+        },
+        {
+          "name": "temple-textured-donor-as-clay",
+          "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3.glb",
+          "bytes": 13592912,
+          "sha256": "bfc6be24ea860df8ca04a9d8bc269a2552f932cb5726c817b9071fa2b1d37c8c",
+          "selectedNode": null,
+          "meshObjects": 1,
+          "verticesAfterImport": 36057,
+          "trianglesAfterImport": 21839,
+          "displayHeightMetres": 3.1,
+          "displayX": 0.0
+        },
+        {
+          "name": "temple-current-v4-as-clay",
+          "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+          "bytes": 5642860,
+          "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+          "selectedNode": "map_temple_amber",
+          "meshObjects": 2,
+          "verticesAfterImport": 19537,
+          "trianglesAfterImport": 9993,
+          "displayHeightMetres": 3.1,
+          "displayX": 3.35
+        }
+      ],
+      "proofs": [
+        "proofs/temple-clay-front-v9.png",
+        "proofs/temple-clay-angle-v9.png"
+      ]
+    },
+    {
+      "asset": "temple",
+      "mode": "textured",
+      "order": [
+        "temple-textured-donor",
+        "temple-current-v4"
+      ],
+      "assets": [
+        {
+          "name": "temple-textured-donor",
+          "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3.glb",
+          "bytes": 13592912,
+          "sha256": "bfc6be24ea860df8ca04a9d8bc269a2552f932cb5726c817b9071fa2b1d37c8c",
+          "selectedNode": null,
+          "meshObjects": 1,
+          "verticesAfterImport": 36057,
+          "trianglesAfterImport": 21839,
+          "displayHeightMetres": 3.1,
+          "displayX": -1.75
+        },
+        {
+          "name": "temple-current-v4",
+          "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+          "bytes": 5642860,
+          "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+          "selectedNode": "map_temple_amber",
+          "meshObjects": 2,
+          "verticesAfterImport": 19537,
+          "trianglesAfterImport": 9993,
+          "displayHeightMetres": 3.1,
+          "displayX": 1.75
+        }
+      ],
+      "proofs": [
+        "proofs/temple-textured-front-v9.png",
+        "proofs/temple-textured-angle-v9.png"
+      ]
+    },
+    {
+      "asset": "cypress",
+      "mode": "clay",
+      "order": [
+        "cypress-dense-pre-remesh",
+        "cypress-textured-donor-as-clay",
+        "cypress-current-v4-as-clay"
+      ],
+      "assets": [
+        {
+          "name": "cypress-dense-pre-remesh",
+          "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
+          "bytes": 11942508,
+          "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+          "selectedNode": null,
+          "meshObjects": 1,
+          "verticesAfterImport": 331413,
+          "trianglesAfterImport": 663730,
+          "displayHeightMetres": 3.1,
+          "displayX": -1.2
+        },
+        {
+          "name": "cypress-textured-donor-as-clay",
+          "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3.glb",
+          "bytes": 14166912,
+          "sha256": "2d19cf0cf1c29c69c1143c3a3d6221b4e9a32487c9944a7fa54f540cb60ade65",
+          "selectedNode": null,
+          "meshObjects": 1,
+          "verticesAfterImport": 12276,
+          "trianglesAfterImport": 7136,
+          "displayHeightMetres": 3.1,
+          "displayX": 0.0
+        },
+        {
+          "name": "cypress-current-v4-as-clay",
+          "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+          "bytes": 5642860,
+          "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+          "selectedNode": "map_cypress",
+          "meshObjects": 1,
+          "verticesAfterImport": 3079,
+          "trianglesAfterImport": 1192,
+          "displayHeightMetres": 3.1,
+          "displayX": 1.2
+        }
+      ],
+      "proofs": [
+        "proofs/cypress-clay-front-v9.png",
+        "proofs/cypress-clay-angle-v9.png"
+      ]
+    },
+    {
+      "asset": "cypress",
+      "mode": "textured",
+      "order": [
+        "cypress-textured-donor",
+        "cypress-current-v4"
+      ],
+      "assets": [
+        {
+          "name": "cypress-textured-donor",
+          "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3.glb",
+          "bytes": 14166912,
+          "sha256": "2d19cf0cf1c29c69c1143c3a3d6221b4e9a32487c9944a7fa54f540cb60ade65",
+          "selectedNode": null,
+          "meshObjects": 1,
+          "verticesAfterImport": 12276,
+          "trianglesAfterImport": 7136,
+          "displayHeightMetres": 3.1,
+          "displayX": -0.75
+        },
+        {
+          "name": "cypress-current-v4",
+          "file": "art/glass-adventure/journey-map/v4/exports/floating-museum-twin-finish-kit-v4.glb",
+          "bytes": 5642860,
+          "sha256": "3c356e39746551ea1afb5d5cdecca784eb9e520acafafe81b31a6aedccad7991",
+          "selectedNode": "map_cypress",
+          "meshObjects": 1,
+          "verticesAfterImport": 3079,
+          "trianglesAfterImport": 1192,
+          "displayHeightMetres": 3.1,
+          "displayX": 0.75
+        }
+      ],
+      "proofs": [
+        "proofs/cypress-textured-front-v9.png",
+        "proofs/cypress-textured-angle-v9.png"
+      ]
+    }
+  ],
+  "proofFiles": [
+    {
+      "file": "proofs/temple-clay-front-v9.png",
+      "bytes": 1715767,
+      "sha256": "10d3a26122d11a5d1e21f0d26962c0e6b08ec989b014ebf98055c503d6491d38"
+    },
+    {
+      "file": "proofs/temple-clay-angle-v9.png",
+      "bytes": 1734371,
+      "sha256": "57c7be49e90e5ed3ab225fa5b124f0bb8427f8f6ed26f4be8326dcedca5bd80a"
+    },
+    {
+      "file": "proofs/temple-textured-front-v9.png",
+      "bytes": 2066158,
+      "sha256": "a52730610a017e9d79652d4d4ddfed447ad4dc71b2ae45db74268602ea8679f8"
+    },
+    {
+      "file": "proofs/temple-textured-angle-v9.png",
+      "bytes": 2083723,
+      "sha256": "5652aa12e18e991143f2026b2e8da9dd5b8864dbe48f971689a7090648e408ff"
+    },
+    {
+      "file": "proofs/cypress-clay-front-v9.png",
+      "bytes": 1684993,
+      "sha256": "1562108cd73ee38071852457c4eeefa0292e350087a9b34875aaf44f5f5f8536"
+    },
+    {
+      "file": "proofs/cypress-clay-angle-v9.png",
+      "bytes": 1688531,
+      "sha256": "ca18ac7c09dcd5162ee55696435175e7ea3f0dc01e2e8a31fcaf18b125b2ae73"
+    },
+    {
+      "file": "proofs/cypress-textured-front-v9.png",
+      "bytes": 1697268,
+      "sha256": "dacdf935dd0e7edd7e071cbc0e4d6df4be4ef5f3358f6b6bcf590d638add1341"
+    },
+    {
+      "file": "proofs/cypress-textured-angle-v9.png",
+      "bytes": 1694359,
+      "sha256": "75f8a7a8b078e9cc7037cfd71e5536e701b8c314bbce39d28435206c407c2a4d"
+    }
+  ],
+  "renderEngine": "CYCLES CPU",
+  "samples": 8,
+  "blender": "5.2.2 LTS",
+  "command": "rtk proxy timeout 7200 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/render_source_shape_comparison.py"
+}

@@ -1,0 +1,71 @@
+{
+  "scope": "Actual Twin Galleries renderer proof of the public Opaline V2 intact and authored-fracture states; not an FPS or gameplay acceptance result.",
+  "viewport": {
+    "width": 1024,
+    "height": 768
+  },
+  "files": {
+    "intact": "1024-opaline-intact.png",
+    "shattering": "1024-opaline-shattering.png"
+  },
+  "asset": {
+    "id": "opaline-v6",
+    "file": "opaline-echo-amphora.glb",
+    "sha256": "676b769793eb0ec39f78557dfbb98a45261ede0384ccd15cdc7be6c013247ee4",
+    "intactNode": "breakable_l2_opaline_echo_amphora_intact",
+    "shardPrefix": "breakable_l2_opaline_echo_amphora_shard_",
+    "shardCount": 18
+  },
+  "setup": {
+    "levelId": "glassworks-twin-galleries/twin-galleries",
+    "target": {
+      "id": "glassworks-twin-galleries/twin-galleries/court/encounter/court-echo",
+      "variant": "opaline-v6",
+      "position": {
+        "x": 21.542075023651126,
+        "y": 0,
+        "z": 25.992075023651125
+      },
+      "anchor": {
+        "x": 22.392075023651124,
+        "y": 0,
+        "z": 25.342075023651123
+      }
+    },
+    "player": {
+      "position": {
+        "x": 22.392075023651124,
+        "y": 0,
+        "z": 25.342075023651123
+      },
+      "velocity": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "grounded": true,
+      "facingYaw": 2.223642957895674
+    },
+    "metrics": {
+      "drawCalls": 347,
+      "triangles": 2344297,
+      "textures": 52,
+      "geometries": 177,
+      "reflectionCaptures": 62,
+      "reflectionTargetPixels": 110592
+    },
+    "errors": []
+  },
+  "shattering": {
+    "metrics": {
+      "drawCalls": 496,
+      "triangles": 2362331,
+      "textures": 52,
+      "geometries": 196,
+      "reflectionCaptures": 64,
+      "reflectionTargetPixels": 110592
+    },
+    "errors": []
+  },
+  "pageErrors": []
+}

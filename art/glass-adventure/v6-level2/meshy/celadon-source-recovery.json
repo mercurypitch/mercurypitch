@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "celadon-lark-decanter",
+  "taskId": "01a0c007-b204-7787-8ec8-0bf557db9114",
+  "recoveredAtUtc": "2026-09-20 20:40:52 UTC",
+  "variant": "pre_remeshed_glb",
+  "file": "celadon-lark-decanter-pre-remesh.glb",
+  "bytes": 8511692,
+  "sha256": "34e4883dd62c2f1bdd09e7b899e6cd624ba51592e5da0358a1f8c72344f96f24",
+  "newCreditsConsumed": 0,
+  "reason": "Recover the original generated surface for comparison after the 9k remesh showed non-manifold edges and overlapping internal faces.",
+  "providerUrlsPersisted": false,
+  "credentialsPersisted": false,
+  "readiness": "Raw source only; topology and hollow-glass preparation are not yet approved."
+}

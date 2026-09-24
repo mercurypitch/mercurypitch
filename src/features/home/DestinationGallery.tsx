@@ -21,6 +21,7 @@ import styles from './DestinationGallery.module.css'
 
 export type DestinationVisual =
   | 'practice'
+  | 'glassworks'
   | 'karaoke'
   | 'pianoNight'
   | 'guitarNight'
@@ -61,6 +62,15 @@ export const HOME_DESTINATIONS: readonly HomeDestination[] = [
     description:
       'Shape every note with live pitch guidance and an instrument-grade practice stage.',
     action: 'Open live practice',
+  },
+  {
+    target: { kind: 'page', href: '/glass-game' },
+    visual: 'glassworks',
+    eyebrow: 'A museum that listens',
+    title: 'Glassworks',
+    description:
+      'Explore four galleries with Merc, learn the notes that fit your voice, and sing each glass exhibit open.',
+    action: 'Play Glassworks',
   },
   {
     target: { kind: 'page', href: '/karaoke' },
@@ -720,6 +730,10 @@ function JamVisual(): JSX.Element {
   )
 }
 
+function GlassworksVisual(): JSX.Element {
+  return <div class={styles.glassworksVisual} aria-hidden="true" />
+}
+
 /**
  * The cover artwork on its own, so surfaces other than this gallery can
  * show the same rooms without a second set of drawings. The onboarding
@@ -743,6 +757,9 @@ export function DestinationArtwork(props: {
       <Switch>
         <Match when={props.visual === 'practice'}>
           <PracticeVisual />
+        </Match>
+        <Match when={props.visual === 'glassworks'}>
+          <GlassworksVisual />
         </Match>
         <Match when={props.visual === 'karaoke'}>
           <KaraokeVisual />
@@ -852,6 +869,11 @@ function DestinationCover(props: {
           type="button"
           class={`${styles.cover} ${styles[props.destination.visual]}`}
           data-destination={props.destination.visual}
+          data-tour={
+            props.destination.visual === 'glassworks'
+              ? 'home.glassworks'
+              : undefined
+          }
           aria-label={`${props.destination.action}: ${props.destination.title}`}
           onClick={() => {
             const target = props.destination.target
@@ -870,6 +892,11 @@ function DestinationCover(props: {
         }
         class={`${styles.cover} ${styles[props.destination.visual]}`}
         data-destination={props.destination.visual}
+        data-tour={
+          props.destination.visual === 'glassworks'
+            ? 'home.glassworks'
+            : undefined
+        }
         aria-busy={navigation.pending() ? 'true' : undefined}
         aria-label={`${props.destination.action}: ${props.destination.title}`}
         onClick={(event) => {

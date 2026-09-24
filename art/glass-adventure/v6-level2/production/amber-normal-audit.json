@@ -1,0 +1,197 @@
+{
+  "schema": 1,
+  "assetId": "amber-cadence-urn",
+  "donor": {
+    "file": "meshy/amber-cadence-urn-donor.glb",
+    "sha256": "b7330a45eadbd08918be00441aa7c1f4aace0438a4b04b40eac0a1bcf3481dc2",
+    "mesh": {
+      "object": "Mesh_0",
+      "triangles": 9340,
+      "surfaceTriangles": 9340,
+      "surfaceSmoothTriangles": 9026,
+      "surfaceFlatTriangles": 314,
+      "cornerToFaceNormalAngleDegrees": {
+        "p05": 0.0,
+        "p50": 6.453240011358695,
+        "p95": 20.352317033163114,
+        "max": 61.60382498558402
+      },
+      "materials": [
+        "Material_0"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "normalMap": {
+        "linked": true,
+        "sourceNodeType": "NORMAL_MAP",
+        "sourceNodeName": "Normal Map",
+        "strength": 1.0,
+        "images": [
+          {
+            "name": "Image_3",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "sRGB"
+          },
+          {
+            "name": "Image_0",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "sRGB"
+          },
+          {
+            "name": "Image_1",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "Non-Color"
+          },
+          {
+            "name": "normal",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "Non-Color"
+          }
+        ]
+      }
+    }
+  },
+  "packedFinalBlend": {
+    "file": "sources/amber-cadence-urn-fracture-v2.blend",
+    "sha256": "461ac348fc0197cf3bb4ef105505d2752382e08152aa2b93072048bd60810ab7",
+    "mesh": {
+      "object": "breakable_l2_low_amber_urn_intact",
+      "triangles": 9864,
+      "surfaceTriangles": 9413,
+      "surfaceSmoothTriangles": 9413,
+      "surfaceFlatTriangles": 0,
+      "cornerToFaceNormalAngleDegrees": {
+        "p05": 2.563609459897477,
+        "p50": 13.258320135611683,
+        "p95": 42.07204628015049,
+        "max": 167.00103460908875
+      },
+      "materials": [
+        "amber_shell",
+        "cavity_surface",
+        "glass_cut"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "normalMap": {
+        "linked": true,
+        "sourceNodeType": "NORMAL_MAP",
+        "sourceNodeName": "Normal Map",
+        "strength": 0.3499999940395355,
+        "images": [
+          {
+            "name": "Image_3",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "sRGB"
+          },
+          {
+            "name": "Image_0",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "sRGB"
+          },
+          {
+            "name": "Image_1",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "Non-Color"
+          },
+          {
+            "name": "normal",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorspace": "Non-Color"
+          }
+        ]
+      }
+    }
+  },
+  "runtimeGlbReimport": {
+    "file": "exports/amber-cadence-urn-fracture-v2.glb",
+    "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353",
+    "mesh": {
+      "object": "breakable_l2_low_amber_urn_intact",
+      "triangles": 9864,
+      "surfaceTriangles": 9413,
+      "surfaceSmoothTriangles": 9124,
+      "surfaceFlatTriangles": 289,
+      "cornerToFaceNormalAngleDegrees": {
+        "p05": 2.5628944690334126,
+        "p50": 13.257581854745261,
+        "p95": 42.07331342942204,
+        "max": 166.99924649396183
+      },
+      "materials": [
+        "amber_shell",
+        "cavity_surface"
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "normalMap": {
+        "linked": true,
+        "sourceNodeType": "NORMAL_MAP",
+        "sourceNodeName": "Normal Map",
+        "strength": 0.3499999940395355,
+        "images": [
+          {
+            "name": "Image_3",
+            "dimensions": [
+              1024,
+              1024
+            ],
+            "colorspace": "sRGB"
+          },
+          {
+            "name": "Image_0",
+            "dimensions": [
+              1024,
+              1024
+            ],
+            "colorspace": "sRGB"
+          },
+          {
+            "name": "Image_1",
+            "dimensions": [
+              1024,
+              1024
+            ],
+            "colorspace": "Non-Color"
+          },
+          {
+            "name": "normal",
+            "dimensions": [
+              1024,
+              1024
+            ],
+            "colorspace": "Non-Color"
+          }
+        ]
+      }
+    }
+  },
+  "finding": "The exported GLB preserves the donor's authored flat/smooth split and linked normal map. A separate fixed-view soft-light comparison isolated the strong lower-body facets to the donor normal map; the production material reduces its strength while retaining the donor atlas and geometry."
+}

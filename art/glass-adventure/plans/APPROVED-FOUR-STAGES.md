@@ -1,0 +1,221 @@
+# Glassworks — approved production pass
+
+Updated 2026-09-21. Owner authorized stages 1–4, review and commits/pushes between
+stages to existing draft PR #807. The order below is the working sequence;
+independent production and audits can run in parallel. No merge or publication.
+Existing static playtest builds remain unchanged until a new build is ready.
+
+## Baseline
+
+- Owner accepted First Light, Glassworks Journey, Twin Galleries and the latest
+  mirror, artwork-header and exit-floor polish.
+- Baseline `20caf8cc`: 34 successful PR checks, zero failures when checked for
+  this pass. Physical-device sustained FPS/thermal measurements remain separate.
+- Owner accepted the V3 Floating Museum composition. The active map work is
+  [FLOATING-MUSEUM-POLISH-BATCH-2.md](./FLOATING-MUSEUM-POLISH-BATCH-2.md).
+  Its prior documentation head `4f109ab0` was not green: heading, map-kit
+  inventory and projected-label readiness checks failed and are being fixed.
+- The four stages below are not complete merely because this plan exists.
+
+## 1. Finish Twin Galleries production
+
+- [x] Amber Cadence Urn: valid donor, hollow cavity, fracture, packed Blender
+      project, materials, dimensions, topology and reconstruction receipts.
+- [ ] Celadon Lark Decanter: same production gates; preserve rejected remeshes.
+- [x] Integrate the approved Amber derivative with catalog/native mappings,
+      exact source/public checksums and unchanged encounter/save identities.
+- [ ] Integrate Celadon only after its replacement passes the same gates.
+- [x] Amber intact/shatter renders, focused tests and bounded render-cost
+      evidence; software versus physical-device evidence is labeled.
+- [ ] Repeat the production/render gates for the replacement Celadon.
+- [ ] Commit and push this stage; record commit and CI result here.
+
+Meshy produces modeled donors; Blender prepares production forms. Do not weaken
+topology checks just to finish an asset. Keep sources and derivative provenance.
+The upload/spending approval is resolved: the owner explicitly approved the
+exact Celadon guide and as many further Meshy attempts as needed. The 30-credit
+opaque V3 trial completed, failed geometry review and is archived; acceptable
+replacement production remains open.
+
+## 2. Rewards and portrait pilot
+
+Pilot: Glassworks Journey. Singing quality and exploration are separate.
+
+- [x] Data-owned reward configuration, finite once-per-exhibit discovery coins.
+- [x] Confidence/freshness-aware, capture-time-weighted 1–3 singing stars;
+      insufficient reliable evidence is ungraded. No loudness or callback-count
+      scoring. Document and test thresholds.
+- [x] One original collectible portrait, earned on successful final required
+      exhibit and persisted before departure. Stars never gate the route or
+      portrait. Replay preserves personal bests and cannot duplicate coins.
+- [x] Backward-compatible save parsing; old completions never invent grades.
+- [x] One optional glazed artwork/window pilot with safe approach, retained
+      artwork/frame and consistent visible/collision state after breaking.
+- [x] End card shows stars, discoveries and portrait separately; phone/tablet
+      layout, reload, replay and cancellation evidence.
+- [x] Commit and push this stage; record commit and CI result here.
+
+Checkpoint: `25dbb403`, pushed to PR #807. Focused tests 25/25; phone/tablet
+UI proofs in `../rewards-pilot/v1/proofs/manifest.json`. CI remains authoritative.
+
+No microphone recording, playback of recorded voice, cloud sharing, spending
+economy or journey-map implementation belongs to this pilot.
+
+## 3. Resonance Conservatory
+
+- [x] A typed settle-then-gentle-wave lesson with a capture-clock judge.
+      A steady hold, silence, stale observations, abrupt jumps and tracker
+      jitter must not count as a pitch wave.
+- [x] One encounter verified before extending the route. Comfortable calibrated
+      pitch, clear demonstration, resting/retry with no lives or forced speed.
+- [x] A handcrafted garden wing assembled from reusable rooms and exhibits,
+      distinct pacing/decor, checkpointed lesson progression and optional finds.
+- [x] Shared campaign entry, tutorial and host mappings; no level-ID branches
+      in gameplay. Test traversal, voice lifecycle and independent saves.
+- [x] Commit/push and provide device singing test instructions. Automated
+      evidence is not a substitute for owner microphone acceptance.
+
+Checkpoint: `d2c6af3d`, pushed to PR #807. Reviewed judge/authoring/course
+suite 43/43; synthetic-microphone UI proofs at phone/tablet sizes are saved
+under `../v7-conservatory/proofs/`. Physical microphone acceptance remains open.
+
+## 4. Shared web/native delivery
+
+- [x] Audit and finish MercuryPitch entry/CTA into the shared campaign.
+- [x] Verify selected-gallery loading, asset failure/retry, durable saves,
+      background/resume and audio ownership across hosts.
+- [x] Verify offline/native asset packaging and games-enabled Android/iOS build
+      routes while preserving the intentional games-off store profile.
+- [x] Exercise available build/browser gates; name actual SDK/device limitations
+      and provide install/test artifacts where the environment supports them.
+- [ ] Final PR review, relevant CI, stage commit/push and handoff.
+
+Implementation checkpoint: `35637b54`, pushed to PR #807. Root/browser delivery
+proofs are in `../delivery/v1/proofs/manifest.json`. Native CI produced the
+Android debug/instrumentation APKs and unsigned iOS Simulator app at `fa214b25`;
+exact artifact IDs, hashes and limitations are in
+`../delivery/v1/proofs/native-ci-checkpoint.json`. Both native jobs completed
+successfully. Final-head CI and Batch 2 map-integration checks remain open.
+
+## Backlog: the museum journey map
+
+See [JOURNEY-MAP-AUDITION.md](./JOURNEY-MAP-AUDITION.md). The owner selected A,
+Floating Museum, and authorized the live 3D map with modeled islands, animated
+waterfalls and ambient sound; B/C stay archived. V3 was implemented and its
+composition accepted. Its remaining polish is the active
+[second batch](./FLOATING-MUSEUM-POLISH-BATCH-2.md); do not substitute a static
+image backdrop.
+
+## Progress log
+
+- 2026-09-21: production, reward implementation and delivery audit started in
+  parallel; map concepts requested with built-in image generation.
+- 2026-09-21: three map auditions saved and pushed in `732c2455`; A selected.
+  User authorized live map production as the next follow-up after stages 1–4.
+
+## Resume rule
+
+Read this checklist, current Git status and the stage evidence before resuming.
+Only mark completed work with its source paths/tests/commit. Preserve owner
+changes and active agents' ownership; root owns review and Git operations.
+
+- 2026-09-21 checkpoint `e2279942`: Amber runtime/source/16-shard production
+  and shared neutral asset catalog pushed. Celadon rejected donors remain
+  preserved; a clearer opaque modeling guide is being tried as a new input.
+- 2026-09-21 checkpoint `25dbb403`: rewards pilot pushed; no physical voice
+  recording or sharing was introduced.
+- 2026-09-21 checkpoint `d2c6af3d`: Conservatory lesson and route pushed.
+  Final review corrected exact two-wave completion and impossible authored
+  speed/period bounds.
+- Shared delivery browser/build checks pass. Review found and fixed LFS-pointer
+  and per-file native sync integrity gaps: staging rejects pointers, schema 3
+  stamps all required hashes, Capacitor sync verifies copied bytes, and Android
+  verifies them again during asset merging. Focused staging/native tests 13/13.
+  Selective CI hydration excludes raw art and Blender sources. No games-enabled
+  Android/Xcode build success is claimed until the new CI jobs run.
+- Latest Conservatory CI passes Beside Cue/typecheck and mobile store builds.
+  Follow-ups are pushed: proof-script formatting in `35637b54`, and four-chapter
+  catalogue/durable replay-save assertions in `b0bcc9c9` (browser specs 9/9).
+- Earlier in this pass, automatic approval review blocked the prepared Celadon
+  opaque guide pending exact-payload confirmation, so no job or credit was
+  submitted at that checkpoint. The owner later explicitly approved that exact
+  upload and further Meshy attempts; the resolved approval is recorded below.
+  Keep the currently integrated fluted decanter until a replacement passes the
+  same production gates.
+- At that earlier checkpoint, the approved live-map follow-up proceeded from
+  the existing local model kit independently of Celadon production. This did
+  not mark the outstanding Celadon production gate complete.
+- `ce2841bd` fixes repeated HTML formatting failure at its source: the museum
+  entry is generated by Vite like the other SEO entries and must stay untracked.
+  Entry-model tests 10/10. `fa214b25` preserves the reviewed live-water module,
+  6/6 focused tests and real-render motion/reduced-motion evidence. Map assembly,
+  lifecycle review and full-host visual acceptance are still in progress.
+
+- `2b550a71` preserves the packed map kit, seven named reusable model groups,
+  6.83 MB GLB and matching source/public hashes. Existing approved Meshy models
+  were simplified and assembled in Blender; rejected Celadon inputs were not
+  substituted into production.
+- `d398b3e0` fixes the optional Conservatory wave guidance lint gate. Its
+  games-enabled Android and iOS Simulator jobs also succeeded. The remaining
+  Home destination-order browser assertion was fixed in `69a25078` and its
+  focused real-browser check passed. Live-map integration gets its own CI.
+
+- `f0d0c68a`: shared live map integrated, with compiled phone/tablet/desktop
+  proofs, 421 package tests, focused mouse/touch/recovery browser cases and
+  construction rollback. A static HTTPS preview is available without HMR.
+  This completes the first map implementation, not the outstanding Celadon
+  production replacement or physical-device acceptance. Its CI was still
+  running at that checkpoint; no merge or release occurred.
+
+- Current map runtime `afa9a62e` passes its journey browser gate, package/unit
+  and type checks, web/mobile builds and both games-enabled native packages.
+  CI found one old Twin court assertion still expecting a v1 persisted save;
+  the exact expectation now includes v2 and empty reward fields. Its focused
+  real-browser voice/order/replay/save case passes (23.6 seconds). This is a
+  test-only follow-up: the static preview's gameplay bytes remain unchanged.
+  Final cloud checks for the follow-up must still be inspected.
+
+- 2026-09-21: owner explicitly approved the exact Celadon opaque guide upload
+  and further Meshy spending as needed. Task `01a0c1e6-c597-7073-8d77-3cce7a8201bf`
+  is submitted for the 16K textured donor (30 credits). The earlier upload
+  approval block is resolved; geometry and runtime acceptance remain open.
+- Baseline `57268b5c` is fully green: PR Gate, all adventure/browser shards,
+  web/mobile checks and games-enabled Android/iOS Simulator packages passed.
+  The next Celadon commit needs its own changed-asset validation and cloud checks.
+
+- Celadon opaque V3 completed for 30 credits; source files and audit receipts are
+  preserved. The textured donor has 177 nonmanifold edges and 554 geometric
+  intersections. The 530,232-triangle pre-remesh source has one intersection
+  and no production UV atlas. This candidate is rejected; no live recipe was
+  changed. The map fidelity pass now proceeds independently using static donors.
+
+- `340b8139`: three new map-specific Meshy donors (temple, limestone cliff and
+  cypress) finalized in a packed Blender source and 3.93 MB runtime kit. All
+  guides, raw/pre-remesh donors, sanitized receipts and isolated renders are
+  retained. The three tasks cost 90 credits. CI at this asset checkpoint passed
+  native Android/iOS, lint/typecheck, unit and journey checks; two general web
+  browser shards were still running at the recorded review.
+- `8fa38d83`: concept-fidelity runtime pass pushed and visually reviewed in its
+  compiled desktop/tablet/phone host. The owner accepted this V3 composition.
+  Three landmasses retain four stable
+  destinations. Bright clouds, authored camera, new halls/cliffs/gardens,
+  projected cartouches and a compact illustrated gallery card replace the first
+  prototype composition. Final scoped unit tests: 31/31; journey browser cases:
+  6/6 plus two final exact-center mouse/touch checks. Runtime screenshots and
+  shadow-inclusive counts are archived in `journey-map/v3/proofs/runtime/`.
+  See `FLOATING-MUSEUM-FIDELITY-PASS.md` for remaining art/device acceptance.
+  This does not close the Celadon production gate or authorize merge/release.
+- `4f109ab0`: documentation checkpoint after the accepted V3 composition. Its CI
+  run failed the root web heading, new map-kit inventory and projected-label
+  readiness checks. Those regressions are being fixed in
+  [FLOATING-MUSEUM-POLISH-BATCH-2.md](./FLOATING-MUSEUM-POLISH-BATCH-2.md); do
+  not report this head as fully green.
+- `619e41e4`: amber/teal temple domes and the botanical finish kit were pushed
+  with packed Blender source, runtime GLB, exact textures, manifests and proof
+  renders. Runtime integration, the Batch 2 visual review and final-head CI are
+  still open.
+
+- Batch 2 runtime and compiled visual review are complete: precise Merc marker
+  placement, V4 domes/foliage/ornament, saved stars and the visible earned
+  portrait. Focused regressions and both host builds pass. Current-head CI and
+  owner tablet playtest remain open; see `FLOATING-MUSEUM-POLISH-BATCH-2.md`.

@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "decision": "accepted-for-pbr-retexture",
+  "reviewedAtUtc": "2026-09-23T16:56:30Z",
+  "source": {
+    "file": "meshy/temple-remesh-90k.glb",
+    "sha256": "157548ec5501305cb23ac2fce88df22ae6c5127b447c760c93a81bcadab1eb7f",
+    "triangles": 89166
+  },
+  "comparisonManifest": {
+    "file": "proofs/temple-remesh-review-v9.json",
+    "sha256": "ffeb1fb6894cbf36dfcb3357a005270abe92780f0d3dec0091660976a59711ba"
+  },
+  "proofs": [
+    {
+      "file": "proofs/temple-remesh-clay-front-v9.png",
+      "sha256": "f0bbcc924f38b7b4c69220e92b46976d98162a0134a0a1039e5de7e6781cc741"
+    },
+    {
+      "file": "proofs/temple-remesh-clay-angle-v9.png",
+      "sha256": "6f4e1c1768a5b768d71185fba30e95c96468db3fdd04d369addedd0c20657911"
+    }
+  ],
+  "uvAudit": {
+    "file": "proofs/museum-remesh-uv-audit-v9.json",
+    "sha256": "b0a72ed9af97eb500e9855ef5d4926ee9144f2b592369f06f19892455ae8cf2c",
+    "tangentCoverage": 0.9999962616542928
+  },
+  "review": {
+    "finding": "The 89,166-triangle candidate preserves the dense dome ribs and curvature, column and arch profiles, statue silhouette and drapery, banners, steps and rear rotunda far better than V4.",
+    "knownLimitation": "Micro-relief belongs in the dense-donor bake; the starting UV has one zero-length tangent corner that must be repaired or excluded and revalidated after export.",
+    "nextGate": "Meshy PBR retexture on the accepted geometry, then dense-donor normal/AO bake and fresh Blender export/reimport validation."
+  }
+}

@@ -1,0 +1,28 @@
+[
+  {
+    "name": "salon-mirror-centered",
+    "x": 23.35,
+    "z": 51.23035236358642,
+    "yaw": -1.5707963267948966,
+    "pitch": 0.3,
+    "distance": 3.4,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe"
+    ]
+  },
+  {
+    "name": "salon-mirror-angled",
+    "x": 21.5,
+    "z": 51.23035236358642,
+    "yaw": -1.42,
+    "pitch": 0.35,
+    "distance": 3,
+    "completed": [
+      "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+      "glassworks-journey/journey/garden/encounter/garden-decanter",
+      "glassworks-journey/journey/archive/encounter/archive-carafe"
+    ]
+  }
+]

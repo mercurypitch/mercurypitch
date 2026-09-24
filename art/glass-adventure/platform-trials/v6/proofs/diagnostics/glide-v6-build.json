@@ -1,0 +1,270 @@
+{
+  "schema": 1,
+  "asset": "glide",
+  "status": "review-only fitted derivative; runtime integration not authorized",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+    "bytes": 30284496,
+    "sha256": "394507ad969b53c88bf007edca9d4cc013adf3bab377c10dc3867a606276e36f",
+    "receipt": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/receipt.json",
+    "receiptSha256": "b77320f9b3c6e4ba65c69d8785db0e45b88391cde6e8cb3f8c04c5c35f36f6a3",
+    "taskId": "01a0d009-7173-7142-8f57-0c4c8be24adf"
+  },
+  "fit": {
+    "method": "Uniformly preserve the 1.80m donor silhouette, align its sampled landing to Z=0, and fill only the missing area with a separate glass/ice frame.",
+    "axisWiseStretching": false,
+    "donorDecimation": false,
+    "donorVertexMutation": "uniform scale and translation only",
+    "uniformScale": 0.947737042,
+    "rawDimensionsBlenderZUpMetres": [
+      1.899260998,
+      0.883753002,
+      0.341167986
+    ],
+    "landingRawZ": 0.160806913,
+    "landingBinSizeRaw": 0.00170584,
+    "landingPatchPolygons": 2775,
+    "landingPatchAfterFitMetres": [
+      1.76285723,
+      0.791693077
+    ],
+    "authoredInnerOpeningMetres": [
+      1.682,
+      0.761693077
+    ],
+    "authoritativeLandingEnvelopeMetres": [
+      1.7,
+      1.3
+    ],
+    "landingTopBlenderZMetres": 0.0,
+    "landingTopGlTfYMetres": 0.0
+  },
+  "topology": {
+    "sourceBeforeFit": {
+      "vertices": 82069,
+      "triangles": 145370,
+      "degenerateTriangles": 0,
+      "nonfinitePositions": 0,
+      "uvLayers": [
+        {
+          "name": "UVMap",
+          "loops": 436110,
+          "finite": true
+        }
+      ],
+      "vertexPositionsFloat32Sha256": "6a9a47a8eeaf7795d3615c3aede0eab948a0c7575b863446cc4b0f46fa47ba42",
+      "triangleIndicesInt32Sha256": "58eada68683dcbcbde66a7b835819bf7d85b60d537e59323c7ea58c23379faab"
+    },
+    "donorAfterFit": {
+      "vertices": 82069,
+      "triangles": 145370,
+      "degenerateTriangles": 0,
+      "nonfinitePositions": 0,
+      "uvLayers": [
+        {
+          "name": "UVMap",
+          "loops": 436110,
+          "finite": true
+        }
+      ],
+      "vertexPositionsFloat32Sha256": "2298d16e98f68c441c4a7474f9dc6104373e0beffef40513181b0d16242733e7",
+      "triangleIndicesInt32Sha256": "58eada68683dcbcbde66a7b835819bf7d85b60d537e59323c7ea58c23379faab"
+    },
+    "donorTriangleIndicesPreserved": true,
+    "authoredMeshObjects": 10,
+    "authoredTriangles": 1880,
+    "exportTotalTriangles": 147250
+  },
+  "materials": {
+    "donor": {
+      "strategy": "single fused atlas with explicit gold metallic/opaque and glass/ice transmission masks",
+      "ior": 1.46,
+      "glassTransmissionMaximum": 0.74,
+      "providerBaseColorAndNormalPreserved": true
+    },
+    "landingFrame": {
+      "strategy": "separate bevelled transmissive glass/ice frame with authored texture",
+      "ior": 1.46,
+      "transmission": 0.91
+    },
+    "goldBoundary": "separate opaque metallic gold material"
+  },
+  "textures": [
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-base_color.png",
+      "bytes": 24047218,
+      "sha256": "a8db4ac044c85030b633053f8520497c5f5d730b3f951f19bc61465ec6d2e14d",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-normal.png",
+      "bytes": 20142133,
+      "sha256": "eae4cdf11fc56b6d52a045f7511b0152812c525085f196c0642c2b690771ef4a",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-metallic.png",
+      "bytes": 1031749,
+      "sha256": "70c0f773e280188fa93148a900ddf3b536eaea6989837758dcc54ee7ce0f6923",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/textures/set-0-roughness.png",
+      "bytes": 1427366,
+      "sha256": "297fd50e7322bd7faaa631520e1b64ac7b99f64941b9a21bb2149477bfa119b3",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/glide/glide-gold-mask-2k.png",
+      "bytes": 268464,
+      "sha256": "37296e5299e9250de469ed86d033165646aeabe06f7708d452a25220f3d335f5",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/glide/glide-metallic-2k.png",
+      "bytes": 581635,
+      "sha256": "824c51bde357408b2be1fd417e96b80b7bec8429eac9886abd791a9091e6020f",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/glide/glide-roughness-2k.png",
+      "bytes": 628557,
+      "sha256": "abfff334f7823d6a9d43163f2ef09bfbca84a881953376f4ea24ae26e0abb9c6",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/glide/glide-transmission-2k.png",
+      "bytes": 274361,
+      "sha256": "439325c8474fe9e3d8553d12cf25e2728b91d3855f65f45566c2fc0dd9cf2d37",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "mode": "L"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/glide/glide-frame-base-1k.png",
+      "bytes": 66690,
+      "sha256": "8e2616cbdd3897d47e0ea4a3e65b1ae65de30767f37192e49898fd7d0c2e967a",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/textures/glide/glide-frame-normal-1k.png",
+      "bytes": 235107,
+      "sha256": "96633a3f15c58570b2b988ade94b376ace3a009b30e9604548b05dcfea116873",
+      "dimensions": [
+        1024,
+        1024
+      ],
+      "mode": "RGB"
+    }
+  ],
+  "packedBlend": {
+    "file": "art/glass-adventure/platform-trials/v6/sources/glide-v6-derivative.blend",
+    "bytes": 52707372,
+    "sha256": "0852f97cc6640bf1ef08f2f4d61bd8bc78f3f12020ec827ec4f569583b79cba8"
+  },
+  "export": {
+    "file": "art/glass-adventure/platform-trials/v6/exports/cloudway-glide-v6-derivative.glb",
+    "bytes": 52829172,
+    "sha256": "a4c7008e133a7b6162ea223c955323a441592e43d214cb8d5c3bed4cde626915"
+  },
+  "freshImport": {
+    "root": "Cloudway_Glide",
+    "ownedMeshObjects": 11,
+    "donor": {
+      "name": "glide_dense_donor",
+      "vertices": 82144,
+      "triangles": 145370,
+      "authoringVertices": 82069,
+      "attributeSeamVertexSplits": 75
+    },
+    "totalTriangles": 147250,
+    "boundsBlenderZUpMetres": {
+      "min": [
+        -0.899999976,
+        -0.649999976,
+        -0.303937286
+      ],
+      "max": [
+        0.899999976,
+        0.649999976,
+        0.019400267
+      ]
+    },
+    "dimensionsBlenderZUpMetres": [
+      1.799999952,
+      1.299999952,
+      0.323337555
+    ],
+    "rootExtras": {
+      "assetId": "cloudway-glide-v6-review",
+      "status": "review-only",
+      "coordinates": "Blender Z-up; glTF +Y up; metres",
+      "landingWidthMetres": 1.7,
+      "landingDepthMetres": 1.3,
+      "landingTopGlTfYMetres": 0.0,
+      "colliderSizeMetres": [
+        1.7,
+        0.24,
+        1.3
+      ],
+      "sourceTopologyMutation": false,
+      "fitMethod": "uniform donor fit plus authored non-overlapping landing frame"
+    },
+    "glb": {
+      "extensionsUsed": [
+        "KHR_materials_clearcoat",
+        "KHR_materials_ior",
+        "KHR_materials_transmission",
+        "KHR_materials_volume"
+      ],
+      "materials": [
+        "glide_glass_ice_gold",
+        "glide_opaque_gold_boundary",
+        "glide_landing_glass"
+      ],
+      "images": 6,
+      "textures": 6,
+      "meshes": 11,
+      "nodes": 12
+    }
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/build_fitted_derivative.py -- --asset glide"
+}

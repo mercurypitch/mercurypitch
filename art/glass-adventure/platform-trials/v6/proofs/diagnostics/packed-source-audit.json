@@ -1,0 +1,257 @@
+{
+  "schema": 1,
+  "purpose": "Fresh reopen audit of packed V6 authoring projects",
+  "status": "passed",
+  "assets": [
+    {
+      "asset": "frost",
+      "file": "art/glass-adventure/platform-trials/v6/sources/frost-v6-derivative.blend",
+      "bytes": 80488630,
+      "sha256": "31fba88e6315aa1cdaed378be1ccce312b54562abc6744a5abc7f64898e86725",
+      "root": "Cloudway_Frost",
+      "ownedMeshObjects": 13,
+      "topology": {
+        "donorVertices": 339884,
+        "donorTriangles": 632256,
+        "donorHashes": {
+          "vertexPositionsFloat32Sha256": "3956de7861b8dad953684d61486e52c7b119f3a8dbfe99737a836ceb01ba4a39",
+          "triangleIndicesInt32Sha256": "561a6e4145248a01a28a54d3420ebda132cb9ab14c43af23a60602638147e432"
+        },
+        "totalTriangles": 634512,
+        "nonfinitePositions": 0
+      },
+      "packedImages": [
+        {
+          "name": "frost-frame-base-1k",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true
+        },
+        {
+          "name": "frost-frame-normal-1k",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true
+        },
+        {
+          "name": "frost-metallic-2k",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        },
+        {
+          "name": "frost-provider-base-4k",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "packed": true
+        },
+        {
+          "name": "frost-provider-normal-4k",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "packed": true
+        },
+        {
+          "name": "frost-roughness-2k",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        },
+        {
+          "name": "frost-transmission-2k",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        }
+      ],
+      "materials": [
+        "frost_glass_ice_gold",
+        "frost_landing_glass",
+        "frost_opaque_gold_boundary"
+      ],
+      "authoredGeometry": {
+        "landingExtensionObjects": 4,
+        "landingBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850000024,
+            -0.650000036,
+            -0.07
+          ],
+          "max": [
+            0.850000024,
+            0.650000036,
+            0.0
+          ]
+        },
+        "boundaryObjects": 4,
+        "boundaryBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850000024,
+            -0.649999976,
+            -0.01
+          ],
+          "max": [
+            0.850000024,
+            0.649999976,
+            0.004
+          ]
+        },
+        "seamObjects": 4
+      },
+      "fullBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899999976,
+          -0.650000036,
+          -0.469731688
+        ],
+        "max": [
+          0.899999976,
+          0.650000036,
+          0.032655146
+        ]
+      },
+      "reopenMutatedFile": false
+    },
+    {
+      "asset": "glide",
+      "file": "art/glass-adventure/platform-trials/v6/sources/glide-v6-derivative.blend",
+      "bytes": 52707372,
+      "sha256": "0852f97cc6640bf1ef08f2f4d61bd8bc78f3f12020ec827ec4f569583b79cba8",
+      "root": "Cloudway_Glide",
+      "ownedMeshObjects": 11,
+      "topology": {
+        "donorVertices": 82069,
+        "donorTriangles": 145370,
+        "donorHashes": {
+          "vertexPositionsFloat32Sha256": "2298d16e98f68c441c4a7474f9dc6104373e0beffef40513181b0d16242733e7",
+          "triangleIndicesInt32Sha256": "58eada68683dcbcbde66a7b835819bf7d85b60d537e59323c7ea58c23379faab"
+        },
+        "totalTriangles": 147250,
+        "nonfinitePositions": 0
+      },
+      "packedImages": [
+        {
+          "name": "glide-frame-base-1k",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true
+        },
+        {
+          "name": "glide-frame-normal-1k",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "packed": true
+        },
+        {
+          "name": "glide-metallic-2k",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        },
+        {
+          "name": "glide-provider-base-4k",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "packed": true
+        },
+        {
+          "name": "glide-provider-normal-4k",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "packed": true
+        },
+        {
+          "name": "glide-roughness-2k",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        },
+        {
+          "name": "glide-transmission-2k",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "packed": true
+        }
+      ],
+      "materials": [
+        "glide_glass_ice_gold",
+        "glide_landing_glass",
+        "glide_opaque_gold_boundary"
+      ],
+      "authoredGeometry": {
+        "landingExtensionObjects": 4,
+        "landingBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850000024,
+            -0.649999976,
+            -0.07
+          ],
+          "max": [
+            0.850000024,
+            0.649999976,
+            0.0
+          ]
+        },
+        "boundaryObjects": 4,
+        "boundaryBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850000024,
+            -0.649999976,
+            -0.01
+          ],
+          "max": [
+            0.850000024,
+            0.649999976,
+            0.004
+          ]
+        },
+        "seamObjects": 2
+      },
+      "fullBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899999976,
+          -0.649999976,
+          -0.303937286
+        ],
+        "max": [
+          0.899999976,
+          0.649999976,
+          0.019400267
+        ]
+      },
+      "reopenMutatedFile": false
+    }
+  ],
+  "tool": {
+    "blender": "5.2.2 LTS"
+  },
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/audit_packed_sources.py"
+}

@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "asset": "glide",
+  "purpose": "Matched gameplay-distance visual proof that 2K/WebP and high-precision quantization preserve the master while the authored glass/gold border reads as a continuous landing frame.",
+  "decision": "accepted",
+  "visualReview": "Accepted: the emerald glass extension reads as one continuous landing frame under the gold perimeter and corner housings. The lunar inlay, water veining, crystalline underside, and silhouette match the master without visible delivery artifacts.",
+  "comparisonOrder": [
+    "4K master dev audition",
+    "2K WebP delivery candidate"
+  ],
+  "sameCameraScaleGeometryAndLighting": true,
+  "sources": [
+    {
+      "file": "art/glass-adventure/platform-trials/v6/exports/cloudway-glide-v6-derivative.glb",
+      "bytes": 52829172,
+      "sha256": "a4c7008e133a7b6162ea223c955323a441592e43d214cb8d5c3bed4cde626915",
+      "root": "Cloudway_Glide",
+      "meshObjects": 11,
+      "triangles": 147250
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-glide-v6-delivery-2k.glb",
+      "bytes": 12889480,
+      "sha256": "68eefd6f006a0d2b0d6c8fdad658974432a8fb2bf936b9830904be8d50e50a23",
+      "root": "Cloudway_Glide",
+      "meshObjects": 11,
+      "triangles": 147250
+    }
+  ],
+  "proof": {
+    "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/glide-master-delivery-gameplay.png",
+    "bytes": 803364,
+    "sha256": "e222b9988c6f5ceaeed4d46cf5cd8d6288dd5fa26fe512823cebc548bc9a9d74",
+    "dimensions": [
+      1800,
+      1000
+    ],
+    "meanAbsoluteRgbError8Bit": 0.120856,
+    "psnrDb": 49.2583
+  },
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 24,
+    "seed": 71,
+    "halfResolution": [
+      900,
+      1000
+    ],
+    "camera": {
+      "type": "perspective",
+      "verticalFovDegrees": 48,
+      "positionBlenderZUpMetres": [
+        2.26,
+        -3.72,
+        1.58
+      ],
+      "targetBlenderZUpMetres": [
+        0.0,
+        0.0,
+        -0.08
+      ],
+      "basis": "Adventure camera FOV and portrait-distance envelope"
+    },
+    "blender": "5.2.2 LTS"
+  },
+  "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/render_delivery_comparison.py -- --asset glide"
+}

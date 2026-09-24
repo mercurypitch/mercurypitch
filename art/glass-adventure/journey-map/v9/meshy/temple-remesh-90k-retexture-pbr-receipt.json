@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "floating-museum-temple-v9-candidate",
+  "operation": "retexture",
+  "parentTaskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+  "source": {
+    "file": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k.glb",
+    "bytes": 4841948,
+    "sha256": "157548ec5501305cb23ac2fce88df22ae6c5127b447c760c93a81bcadab1eb7f",
+    "triangles": 89166
+  },
+  "request": {
+    "text_style_prompt": "Magical floating-museum circular neoclassical temple. Ivory Carrara rotunda, stairs, fluted columns, arches and classical statue; restrained warm gold ribs, capitals, trim and finial; deep emerald banners with gold celestial ornament; pale neutral opaline dome for later amber and teal tint variants; statue holds a small teal orb. Preserve openings, stairs, dome ribs, statue, drapery and carving as geometry. Clean PBR, no baked shadows, dirt, opaque painted dome or painted-on geometry.",
+    "ai_model": "meshy-6",
+    "enable_original_uv": true,
+    "enable_pbr": true,
+    "hd_texture": false,
+    "remove_lighting": true,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true,
+    "response_format": "json"
+  },
+  "authorization": {
+    "chargedPbrApproval": "asserted-after-hash-bound-clay-acceptance",
+    "assertedBySubmitFlag": true,
+    "assertedAtUtc": "2026-09-23T15:03:54.495562+00:00"
+  },
+  "clayReview": {
+    "file": "art/glass-adventure/journey-map/v9/proofs/temple-remesh-clay-review-v9.json",
+    "sha256": "3e2d1f3cd569484783d1dbc454862b9f00d978e4c187c7d363f887d5fd86bb89",
+    "decision": "accepted-for-pbr-retexture",
+    "comparisonManifest": {
+      "file": "art/glass-adventure/journey-map/v9/proofs/temple-remesh-review-v9.json",
+      "sha256": "ffeb1fb6894cbf36dfcb3357a005270abe92780f0d3dec0091660976a59711ba"
+    },
+    "proofs": [
+      {
+        "file": "proofs/temple-remesh-clay-front-v9.png",
+        "sha256": "f0bbcc924f38b7b4c69220e92b46976d98162a0134a0a1039e5de7e6781cc741"
+      },
+      {
+        "file": "proofs/temple-remesh-clay-angle-v9.png",
+        "sha256": "6f4e1c1768a5b768d71185fba30e95c96468db3fdd04d369addedd0c20657911"
+      }
+    ]
+  },
+  "estimatedCredits": 10,
+  "expectedTextureResolution": "2K base color and PBR maps",
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "state": "archived",
+  "providerReconciliation": {
+    "checkedAtUtc": "2026-09-23T15:03:53.869184+00:00",
+    "purpose": "Prevent an unreceipted or duplicate PBR submission before temple V9.",
+    "taskLists": {
+      "remesh": [
+        {
+          "taskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790174895434
+        },
+        {
+          "taskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790174775688
+        },
+        {
+          "taskId": "01a0ceb5-4dd4-7530-a1d0-6e920c57b326",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790174384249
+        },
+        {
+          "taskId": "01a0c93d-d575-745f-9f91-c7206c4bab5d",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790082668648
+        },
+        {
+          "taskId": "01a0c57f-b423-77b4-a2cd-0e4648510e29",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019875918
+        },
+        {
+          "taskId": "01a0c57f-a8a7-72ee-8557-126f8ec28e78",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019872982
+        },
+        {
+          "taskId": "01a0c57f-9917-734f-9c03-ea200ea04a4b",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790019868992
+        },
+        {
+          "taskId": "01a0c104-1de9-73fb-8209-ba38f8260ced",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789944667664
+        },
+        {
+          "taskId": "01a0c090-4b93-76b7-a17d-49e24fcb356e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1789937077359
+        }
+      ],
+      "retexture": [
+        {
+          "taskId": "01a0cebe-365f-7743-8e07-98ea3f53c7b3",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790174968036
+        },
+        {
+          "taskId": "01a0c946-928b-70b7-b8e0-7019de0d936e",
+          "status": "SUCCEEDED",
+          "progress": 100,
+          "createdAt": 1790083241392
+        }
+      ]
+    },
+    "balance": 3855,
+    "conclusion": "Every task newer than the V7 baseline has a local receipt."
+  },
+  "preProviderValidationRejections": [
+    {
+      "rejectedAtUtc": "2026-09-23T15:03:03.004115+00:00",
+      "stage": "local-mcp-schema-validation-before-provider-request",
+      "reasonCode": "text-style-prompt-over-600-characters",
+      "providerTaskCreated": false,
+      "creditsCharged": 0,
+      "previousPromptCharacters": 630,
+      "previousPromptSha256": "4bf463681fef0bd9d66911cce05cd3b0f1ce71d7b43990e1d2d6b806215f36a3",
+      "evidence": "Root operator observed MCP validation rejection before any provider task ID or charge."
+    }
+  ],
+  "balanceBefore": 3855,
+  "parentStatusAtSubmission": {
+    "taskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "submittedAtUtc": "2026-09-23T15:03:54.679183+00:00",
+  "taskId": "01a0cecb-7295-70bd-be93-a214e8d5225c",
+  "balanceAfterSubmit": 3845,
+  "observedBalanceDeltaAtSubmit": 10,
+  "lastStatus": {
+    "taskId": "01a0cecb-7295-70bd-be93-a214e8d5225c",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 10
+  },
+  "lastCheckedAtUtc": "2026-09-23T15:10:46.529175+00:00",
+  "archiveDownloadTaskId": "01a0cecb-7295-70bd-be93-a214e8d5225c",
+  "archiveDownloadStartedAtUtc": "2026-09-23T15:10:46.529535+00:00",
+  "finalStatus": {
+    "taskId": "01a0cecb-7295-70bd-be93-a214e8d5225c",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 10
+  },
+  "balanceAfterArchiveCheck": 3845,
+  "observedBalanceDeltaFinal": 10,
+  "archivedAtUtc": "2026-09-23T15:11:10.588374+00:00",
+  "archiveDownload": {
+    "method": "bounded CDN byte ranges from authenticated task status",
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlPersisted": false
+  },
+  "file": {
+    "path": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k-retexture-pbr.glb",
+    "bytes": 13110040,
+    "sha256": "00450f65f8594c912520eefeaa55475914987ea11bd06bb2739eaebe20362162"
+  },
+  "readiness": "Review-only PBR candidate. Dense-donor normal/AO bake, Blender finish, fresh export/reimport, and runtime integration remain separate gates."
+}

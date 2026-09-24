@@ -1,0 +1,2268 @@
+{
+  "status": "passed",
+  "purpose": "Fresh-import audit of the public external-buffer V7 kit, accepted source lineage and current crescent submission cost.",
+  "runtimeFile": {
+    "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf",
+    "bytes": 60583,
+    "gzipBytes": 6135,
+    "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1"
+  },
+  "runtimeDependencies": [
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-01.bin",
+      "bytes": 24483552,
+      "gzipBytes": 11032663,
+      "sha256": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9"
+    },
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-02.bin",
+      "bytes": 11976384,
+      "gzipBytes": 10083790,
+      "sha256": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96"
+    },
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-03.bin",
+      "bytes": 23520812,
+      "gzipBytes": 20618098,
+      "sha256": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe"
+    },
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-04.bin",
+      "bytes": 17393098,
+      "gzipBytes": 17372881,
+      "sha256": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065"
+    }
+  ],
+  "acceptedMaster": {
+    "path": "art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb",
+    "bytes": 77414948,
+    "gzipBytes": 59115775,
+    "sha256": "0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9"
+  },
+  "externalDelivery": {
+    "byteIdenticalBufferViews": true,
+    "bufferViewCount": 49,
+    "bufferViewBytes": 77373828,
+    "limitBytes": 25165824
+  },
+  "manifestHashVerified": true,
+  "logicalAssetId": "cloudway-platform-kit-v1",
+  "roots": [
+    "Cloudway_Crackle_Intact",
+    "Cloudway_Crackle_Release",
+    "Cloudway_Crackle_Warning",
+    "Cloudway_Frost",
+    "Cloudway_Glide",
+    "Cloudway_Marble"
+  ],
+  "preservedV6": {
+    "Cloudway_Crackle_Intact": {
+      "triangles": 2472,
+      "geometryAndMaterialsSha256": "f2cd1f61a570a24fd3451bc6130862bead579e3ef7a1c192bd2dca91d5352c5a"
+    },
+    "Cloudway_Crackle_Release": {
+      "triangles": 308,
+      "geometryAndMaterialsSha256": "e7d674789a03639db4a75120f2103a7590775493bbfd37ea6f948eb0a048698c"
+    },
+    "Cloudway_Crackle_Warning": {
+      "triangles": 2616,
+      "geometryAndMaterialsSha256": "10cce8b33ee47da63086430bfce4fbf2d1c7e0804109b3b5e955d6ae3dd2259c"
+    },
+    "Cloudway_Frost": {
+      "triangles": 634512,
+      "geometryAndMaterialsSha256": "e90a05ae3ce59b4d1ff6e6a401cc9116a93e729c5e40b05b97181fa5a1b7ddb0"
+    },
+    "Cloudway_Glide": {
+      "triangles": 147250,
+      "geometryAndMaterialsSha256": "c5925ba9458ac29d529bf231d12ae7bb49561a140c4e25ff3a22f6040fd4f8e9"
+    }
+  },
+  "upgradedV7": {
+    "Cloudway_Marble": {
+      "source": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb",
+      "triangles": 1256556,
+      "bounds": {
+        "min": [
+          -0.8997679948806763,
+          -0.425643401130455,
+          -0.6995800886202344
+        ],
+        "max": [
+          0.9018999338150024,
+          0.1465223896348648,
+          0.7004830989885815
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0,
+        "center": [
+          0,
+          -0.12,
+          0
+        ]
+      },
+      "geometrySha256": "5da1e3ecd45d01b40ce123477faaf34601883b78345492afc833bce1c2e225e1",
+      "acceptedGeometrySha256": "5da1e3ecd45d01b40ce123477faaf34601883b78345492afc833bce1c2e225e1",
+      "quantizedNormalBasisPreserved": true,
+      "materialContract": [
+        {
+          "name": "Cloudway Marble V7 Runtime 1K",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": true,
+          "clearcoat": true
+        }
+      ],
+      "textures": [
+        {
+          "name": "cloudway-marble-v7-normal-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 819500,
+          "sha256": "e6fea6e80150370f5b7da09e611362d8c223cdb2a5dab99df590d2f866c05d85",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "cloudway-marble-v7-base-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 1350790,
+          "sha256": "65260099e309245732b32be0e68f62352bae41f024956b1ef08a9c5d536fb408",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "cloudway-marble-v7-orm-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 676014,
+          "sha256": "2dc06b8c0ac1754baf66eabf149740fef22fdeaa0e2273f5c85eb69081f6b59d",
+          "decodedRgbaMipBytes": 5592404
+        }
+      ]
+    }
+  },
+  "uniqueRuntimeResources": {
+    "triangles": 2041018,
+    "geometry": {
+      "bytes": 51628704,
+      "accessorCount": 100,
+      "accessors": [
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 672,
+          "payloadBytes": 1344,
+          "min": [
+            0
+          ],
+          "max": [
+            431
+          ],
+          "sha256": "c277fd149c846c5d578662131b42ac50e0dd333546f7bb6b9afe01f66b61ad50"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 6744,
+          "payloadBytes": 13488,
+          "min": [
+            0
+          ],
+          "max": [
+            1517
+          ],
+          "sha256": "376f010eb9f8a3b5fac934bc253ddfe427062c3032c890ed98a32b068fcbb8df"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 42,
+          "payloadBytes": 84,
+          "min": [
+            0
+          ],
+          "max": [
+            29
+          ],
+          "sha256": "3eeeff259c5cc4dc2f8484627b0ab4087db2a0e32bf2aa0031c2bb618889a4ad"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 42,
+          "payloadBytes": 84,
+          "min": [
+            0
+          ],
+          "max": [
+            29
+          ],
+          "sha256": "3eeeff259c5cc4dc2f8484627b0ab4087db2a0e32bf2aa0031c2bb618889a4ad"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 42,
+          "payloadBytes": 84,
+          "min": [
+            0
+          ],
+          "max": [
+            29
+          ],
+          "sha256": "3eeeff259c5cc4dc2f8484627b0ab4087db2a0e32bf2aa0031c2bb618889a4ad"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 42,
+          "payloadBytes": 84,
+          "min": [
+            0
+          ],
+          "max": [
+            29
+          ],
+          "sha256": "3eeeff259c5cc4dc2f8484627b0ab4087db2a0e32bf2aa0031c2bb618889a4ad"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 42,
+          "payloadBytes": 84,
+          "min": [
+            0
+          ],
+          "max": [
+            29
+          ],
+          "sha256": "3eeeff259c5cc4dc2f8484627b0ab4087db2a0e32bf2aa0031c2bb618889a4ad"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 42,
+          "payloadBytes": 84,
+          "min": [
+            0
+          ],
+          "max": [
+            29
+          ],
+          "sha256": "3eeeff259c5cc4dc2f8484627b0ab4087db2a0e32bf2aa0031c2bb618889a4ad"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 432,
+          "payloadBytes": 864,
+          "min": [
+            0
+          ],
+          "max": [
+            110
+          ],
+          "sha256": "62f1b7b5fdc2f63b2fe3c4767c54aeeb46466878e2e1e927fec52a5e3e022ed7"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5125,
+          "normalized": false,
+          "count": 1896768,
+          "payloadBytes": 7587072,
+          "min": [
+            0
+          ],
+          "max": [
+            340207
+          ],
+          "sha256": "5f90d3005d41151401c586cc4359d1f6e3317458a031a5f10fc4ef28c9400dc2"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 564,
+          "payloadBytes": 1128,
+          "min": [
+            0
+          ],
+          "max": [
+            383
+          ],
+          "sha256": "57b7176eb71dd9cae9528216f2aa22cda8efb8e1c74a01add8725c36b8951ad0"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 564,
+          "payloadBytes": 1128,
+          "min": [
+            0
+          ],
+          "max": [
+            383
+          ],
+          "sha256": "80b5640c93616cc2192838fd40b79dfecfc26cae803e90adceb814188660e787"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5125,
+          "normalized": false,
+          "count": 436110,
+          "payloadBytes": 1744440,
+          "min": [
+            0
+          ],
+          "max": [
+            82143
+          ],
+          "sha256": "f6841e1da4d11d236cc206ff75802592b8741b955ce6c16fd37574dd375007a4"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5123,
+          "normalized": false,
+          "count": 564,
+          "payloadBytes": 1128,
+          "min": [
+            0
+          ],
+          "max": [
+            383
+          ],
+          "sha256": "57b7176eb71dd9cae9528216f2aa22cda8efb8e1c74a01add8725c36b8951ad0"
+        },
+        {
+          "name": "",
+          "type": "SCALAR",
+          "componentType": 5125,
+          "normalized": false,
+          "count": 3769668,
+          "payloadBytes": 15078672,
+          "min": [
+            0
+          ],
+          "max": [
+            703127
+          ],
+          "sha256": "55ba228aecc7a94b8f128a6bb72d0124eb1cd9f5a14a8f9df42010a0c7074043"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 432,
+          "payloadBytes": 5184,
+          "min": [
+            -0.8999999761581421,
+            -0.0949999988079071,
+            -0.699999988079071
+          ],
+          "max": [
+            0.8999999761581421,
+            0.026000000536441803,
+            0.699999988079071
+          ],
+          "sha256": "495b55f44ceea86a153c02192faef1782f800726c9552087a6f6c144167ac6a2"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 432,
+          "payloadBytes": 5184,
+          "min": [
+            -1,
+            -1,
+            -1
+          ],
+          "max": [
+            1,
+            1,
+            1
+          ],
+          "sha256": "eb8a0a76fea552adc8b406520a81aba0724f7536b9a0da361da5d50eff285bcf"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 1518,
+          "payloadBytes": 18216,
+          "min": [
+            -0.8500000238418579,
+            -0.08500000089406967,
+            -0.6499999761581421
+          ],
+          "max": [
+            0.8500000238418579,
+            0,
+            0.6499999761581421
+          ],
+          "sha256": "0035ec66a2e5c515f63fd7cb0f1c35c23c0d8618cb604caa66a99da0999764d1"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 1518,
+          "payloadBytes": 18216,
+          "min": [
+            -1,
+            -1,
+            -1
+          ],
+          "max": [
+            1,
+            1,
+            1
+          ],
+          "sha256": "939c7cf48030c86c6d428ac78566cba0627286d2a334af72a0e39583f7969aae"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.6466666460037231,
+            -0.08500000089406967,
+            -0.4533333480358124
+          ],
+          "max": [
+            0.3633333444595337,
+            0,
+            0.2266666740179062
+          ],
+          "sha256": "7f3b77211fa7afe3d221ee1d0ff3dcd75c6d91bff7478a8db6021d2d187e6e08"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.5902271866798401,
+            -1,
+            -0.8072372078895569
+          ],
+          "max": [
+            0.9931560754776001,
+            1,
+            1
+          ],
+          "sha256": "8fa86ef8aab384d88be6b5d0a6baed48977001518cacfc6a372868d83f96e711"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.28333333134651184,
+            -0.08500000089406967,
+            -0.4533333480358124
+          ],
+          "max": [
+            0.4866666793823242,
+            0,
+            0.2266666740179062
+          ],
+          "sha256": "4f717e522587cd8b09da1f8da9aa2b3938cdf41fe079e1e9b7bfb84ae90ead0b"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.9931560754776001,
+            -1,
+            -0.7495956420898438
+          ],
+          "max": [
+            0.6618961095809937,
+            1,
+            1
+          ],
+          "sha256": "9f6474f41242526ee2ef1c28f5a034f53070e29d3c6d394d32a9a5a209e82d86"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.5133333206176758,
+            -0.08500000089406967,
+            -0.6399999856948853
+          ],
+          "max": [
+            0.2566666603088379,
+            0,
+            0.6600000262260437
+          ],
+          "sha256": "c91fa913f9576119a8c8adf61ca6880ba7b3263d0e07c565cacc570c83627458"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.6618961095809937,
+            -1,
+            -0.7788746953010559
+          ],
+          "max": [
+            1,
+            1,
+            0.7495956420898438
+          ],
+          "sha256": "a1c86f7c09cb857227932c6ad0500d0b723ce89682caf283578a48877ac16497"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.4300000071525574,
+            -0.08500000089406967,
+            -0.20666666328907013
+          ],
+          "max": [
+            0.6000000238418579,
+            0,
+            0.41333332657814026
+          ],
+          "sha256": "19da71f7e9c3de1ea0ea9b0a071b632b826a611ac97b02c3ad2f158a5ae280f9"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.9222047328948975,
+            -1,
+            -1
+          ],
+          "max": [
+            0.6271796226501465,
+            1,
+            0.7788746953010559
+          ],
+          "sha256": "442570af43d98380465154f8e398ebd1d30d91bd7499041b3343776bd5a52f55"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.5333333611488342,
+            -0.08500000089406967,
+            -0.20666666328907013
+          ],
+          "max": [
+            0.39666667580604553,
+            0,
+            0.41333332657814026
+          ],
+          "sha256": "8142ff04b0ea476e3f554ae62a3a62b8b7a64de8f79d6b85688b80257e672939"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.5546771287918091,
+            -1,
+            -1
+          ],
+          "max": [
+            0.9222047328948975,
+            1,
+            0.8320656418800354
+          ],
+          "sha256": "006a64b50030bdcb2ff67e325ddc2585d73e9ef2721f62afb23170a5552a7f69"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -0.3100000023841858,
+            -0.08500000089406967,
+            -0.6399999856948853
+          ],
+          "max": [
+            0.6200000047683716,
+            0,
+            0.6600000262260437
+          ],
+          "sha256": "f3038d905e2f00128f93277a131463bb4e0ec21501a91c57b4bbaa1e34c4b66c"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 30,
+          "payloadBytes": 360,
+          "min": [
+            -1,
+            -1,
+            -0.8320656418800354
+          ],
+          "max": [
+            0.5902271866798401,
+            1,
+            0.8072372078895569
+          ],
+          "sha256": "fb5e739e945f13abe01052ec07ba6969d5d3ab55bcc025f6fa56ad93b37d1921"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 111,
+          "payloadBytes": 1332,
+          "min": [
+            -0.8300626277923584,
+            0.0024999985471367836,
+            -0.6235324740409851
+          ],
+          "max": [
+            0.8211776614189148,
+            0.015500001609325409,
+            0.6332394480705261
+          ],
+          "sha256": "57fa1fc3fe96d43aa52527ee13c1fab13c7cd4ebbc23037d4d56983ebaf0a428"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5126,
+          "normalized": false,
+          "count": 111,
+          "payloadBytes": 1332,
+          "min": [
+            -0.9221691489219666,
+            -1,
+            -0.9999539852142334
+          ],
+          "max": [
+            0.9221184253692627,
+            1,
+            0.9999539852142334
+          ],
+          "sha256": "9159a12ace475172a0494f34533a617fa571af9e8a08221efdc578eea05b9a59"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 340208,
+          "payloadBytes": 2041248,
+          "min": [
+            -32767,
+            -9145,
+            -17682
+          ],
+          "max": [
+            32767,
+            9145,
+            17682
+          ],
+          "sha256": "f2688d07b5f0999272a05351d42306e1a1cf20dc1e7aa49380ed8456cb49c51c"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 340208,
+          "payloadBytes": 2041248,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "7902d646d4622360b28f09f1724a812bfd9c8864eaf7edabd267b123a60ff502"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 340208,
+          "payloadBytes": 1360832,
+          "min": [
+            1,
+            1
+          ],
+          "max": [
+            65534,
+            65535
+          ],
+          "sha256": "331e47ec552a9844555e6a5b7addec23275e09f2f079f5735c7f589926c394cc"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 340208,
+          "payloadBytes": 2721664,
+          "min": [
+            -32767,
+            -32767,
+            -32767,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "a76c63ec83caba76ba782ed188861a7b18bc5b1c07c9b896fd2e3b119245fe2b"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -199,
+            -357
+          ],
+          "max": [
+            32767,
+            199,
+            357
+          ],
+          "sha256": "6790b476222cb3e1cd78f397f7727609ca1f3beb692c282651c23f8028ff04f6"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "94f1b6cfbe23d43c96c895e864372b1ff9da76d6fe4bcb6e0eb3d353aaa41f67"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "b799ceca750e00269b786720c0f8cf538b99660b1b0e6aad21f03e0077f65f2b"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23173,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "f7691653b7641e6217593fd75b250a9a6377a2738b4b3660c64342907e0eaeb6"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -699,
+            -388,
+            -32767
+          ],
+          "max": [
+            699,
+            388,
+            32767
+          ],
+          "sha256": "09dba46643db3915ab4871bd38800858d4d295ce43f0ae1835e89dcb0dbcd416"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "ae0ac0d3201a21961e58fceec59f1191bad4a088411cffe4062b29833df5db49"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "1fada6df1bc8b25ab93e37135ac1d29b024c78d0bf38679b022439502cabd836"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -31705,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31823,
+            32767
+          ],
+          "sha256": "a104486cd05a282173e6b739edd48d64808b11a3a53204d8434dcce3bc452fdf"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23173,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "dab3c8c73f1b3b4c88454eba20fd68f0d43be51d3019c3918c9794b452b2ff85"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -31705,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31823,
+            32767
+          ],
+          "sha256": "3bebe99b10bfc0ae7204cabd69d194a2361456c747c7c771337772d0d15a8352"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -1349,
+            -4704
+          ],
+          "max": [
+            32767,
+            1349,
+            4704
+          ],
+          "sha256": "dfa2cc286f5f3b43607ea9c012a18097e924526a5553272e7602c8b46d657c5c"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "c049f551b083a384cde1bed27f3bf984495fb6b29ddd43c86a1372fa779d7bc6"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "3e4e10a3a44bbea45bb151b3204f1c5397c078d83724275ad4d3079839cb5f89"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23170,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "4cb9ecd1a362d3618be9dbbcce23a6eca85894555cac1792553ea1b77c65c631"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -1690,
+            -2718,
+            -32767
+          ],
+          "max": [
+            1690,
+            2718,
+            32767
+          ],
+          "sha256": "7da14755d02722e262c0e5d10d42d44356c542c44fa035249497128f183c317c"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "9759594987540d2d02ded3309cbaa0221a2c3718121a0316e95a13728668cf91"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "9563eceae9584ba3db43bd14a2901ee5195e7cdeda6c9c9354c40f3d949684ec"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -31473,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31971,
+            32767
+          ],
+          "sha256": "f452647b78d69d5201de1530678c4b398187424f4d699405b527ae7e2d089461"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23170,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "2d343e266fc68f0c31975297fa48ee02366b16898709a6853c285e0f11f26469"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "2579ab8988c5aa6c1fde0e6a5a714732fc11dda8a81eca725e3e696179e36919"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -31473,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31971,
+            32767
+          ],
+          "sha256": "83dcee4288addd3a69d2bf0a42640603abc4d18af557910d88348557b329d935"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -270,
+            -424
+          ],
+          "max": [
+            32767,
+            270,
+            424
+          ],
+          "sha256": "dd0b57da3ea2c977cc808d8eaf66fa8a3779df4185a72b59d21f6384228e6561"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "7adc7d6c383a6c4a4f227143033fc01fdf9879b50c02e9c4b5e2b9694c96a5fb"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "0dcada62d357d20f03a8f7c724135b2d7681467fed86c36dc9537e340d609d74"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23170,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "4fc2e17c099d2e783962e36dff0fa5e56dcd6880ab2415c4e8a0442e84f15fec"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -574,
+            -365,
+            -32767
+          ],
+          "max": [
+            574,
+            365,
+            32767
+          ],
+          "sha256": "29332d88e5db2f9524eee9134f479d88bd4267d271f669787de2023a7a2ac8e9"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "112a24a4b51c86233f4f056e68a0a42eb5fdea2fee396dc48f741f8d8e3cb500"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "433f4d62f45d7db0216d1984de7d0bb7ceb4affeb13c5cb065bfdf0bc62d80ca"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23173,
+            -31732,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31791,
+            32767
+          ],
+          "sha256": "5472c071fe7382d38bed123287b63dee962c87a6f965fc5ec936517d3b1e75b9"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23173,
+            -31732,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31791,
+            32767
+          ],
+          "sha256": "4f59f7896fa2a177e624123f464e5126991694237b45a70877a2204be374d3a8"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 82144,
+          "payloadBytes": 492864,
+          "min": [
+            -32767,
+            -5886,
+            -15247
+          ],
+          "max": [
+            32767,
+            5886,
+            15247
+          ],
+          "sha256": "fd13655abdd6f76bb0a4376be170655a5bc3572f89a2645b7ad38171691d002d"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 82144,
+          "payloadBytes": 492864,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "c8e5e7fa58b5fc98ec437bb21c8eae2e953496bc90ff960e3e27a75c8b4ac1a3"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 82144,
+          "payloadBytes": 328576,
+          "min": [
+            1,
+            0
+          ],
+          "max": [
+            65527,
+            65530
+          ],
+          "sha256": "5223a74ee17ce51216a606c85cb24d24ff0e65c1ed706f31e088d5977a62d96b"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 82144,
+          "payloadBytes": 657152,
+          "min": [
+            -32767,
+            -32767,
+            -32767,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "fa7e19fcd3f205ed2bd894ec2b611d8b7a2abda498a2889585d0df13a35c54f5"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -199,
+            -357
+          ],
+          "max": [
+            32767,
+            199,
+            357
+          ],
+          "sha256": "6790b476222cb3e1cd78f397f7727609ca1f3beb692c282651c23f8028ff04f6"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "94f1b6cfbe23d43c96c895e864372b1ff9da76d6fe4bcb6e0eb3d353aaa41f67"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "b799ceca750e00269b786720c0f8cf538b99660b1b0e6aad21f03e0077f65f2b"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23173,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "dab3c8c73f1b3b4c88454eba20fd68f0d43be51d3019c3918c9794b452b2ff85"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23173,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "1f8b8a0dbaa23f9d99fed4ad4f377b3168e3b8e18f3a37d837bcd19ac5795fc4"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -1349,
+            -5496
+          ],
+          "max": [
+            32767,
+            1349,
+            5496
+          ],
+          "sha256": "fdfd3086f56398169b98ee45bfa56518e2c0f9beb4a52334bd720a5355ecbd04"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "ec3a3bd7935e3e0f27e5c52faeba97e9589b8220a4d334a8ba666f85e4d42b92"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "ac8cbaff9c0e49916a00c8bf71aa34cf3734be47fc990f2fb33424bf2b6d7dfd"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23170,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "456d6a7cb22af0b09d8a08c3a3d4a7d809912a7b0a7ad31fe29116498209e9cd"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -1075,
+            -3011,
+            -32767
+          ],
+          "max": [
+            1075,
+            3011,
+            32767
+          ],
+          "sha256": "ebd88f1a661d53d904a477bfcb52e7ed94723267ba2de4e8d259de8aba5da765"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "710dcfbc4bb094ff245acfa918d501c3010d21e30d956a6784970016fc13e0a3"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "12cd8467a94cc7f3245810b6c8c6c65acc61f66f051c1af6d779481c4fc4e006"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -31620,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31902,
+            32767
+          ],
+          "sha256": "13722955dee8361dd5117d971148c0a5f9a23ae963bc909ce929c49c5a833127"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23170,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "0ba782371d6e37a234d7c1fca15276d0dc666ab5f94cdf94e553e97f136be8f6"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -31620,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31902,
+            32767
+          ],
+          "sha256": "75c228a459410b91afbb543164371be94d777de503c5b6d534c50090be4e7a71"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -270,
+            -424
+          ],
+          "max": [
+            32767,
+            270,
+            424
+          ],
+          "sha256": "dd0b57da3ea2c977cc808d8eaf66fa8a3779df4185a72b59d21f6384228e6561"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "7adc7d6c383a6c4a4f227143033fc01fdf9879b50c02e9c4b5e2b9694c96a5fb"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "0dcada62d357d20f03a8f7c724135b2d7681467fed86c36dc9537e340d609d74"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23170,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "4fc2e17c099d2e783962e36dff0fa5e56dcd6880ab2415c4e8a0442e84f15fec"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -574,
+            -365,
+            -32767
+          ],
+          "max": [
+            574,
+            365,
+            32767
+          ],
+          "sha256": "29332d88e5db2f9524eee9134f479d88bd4267d271f669787de2023a7a2ac8e9"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 2304,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "112a24a4b51c86233f4f056e68a0a42eb5fdea2fee396dc48f741f8d8e3cb500"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 1536,
+          "min": [
+            8192,
+            0
+          ],
+          "max": [
+            57343,
+            65535
+          ],
+          "sha256": "433f4d62f45d7db0216d1984de7d0bb7ceb4affeb13c5cb065bfdf0bc62d80ca"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23173,
+            -31732,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31791,
+            32767
+          ],
+          "sha256": "4f59f7896fa2a177e624123f464e5126991694237b45a70877a2204be374d3a8"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23170,
+            -23170,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            23170,
+            32767
+          ],
+          "sha256": "860df37063ebf1306a5045c71fab22a8a1bd5058c3897ea2905eb50a20f094db"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 384,
+          "payloadBytes": 3072,
+          "min": [
+            -32767,
+            -23173,
+            -31732,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            31791,
+            32767
+          ],
+          "sha256": "5472c071fe7382d38bed123287b63dee962c87a6f965fc5ec936517d3b1e75b9"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 703128,
+          "payloadBytes": 4218768,
+          "min": [
+            -32767,
+            -10406,
+            -25463
+          ],
+          "max": [
+            32767,
+            10406,
+            25463
+          ],
+          "sha256": "859bb8877efdd3141063f3d3b554351e4a5a59ebee4a287a3774c96f96d91e8c"
+        },
+        {
+          "name": "",
+          "type": "VEC3",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 703128,
+          "payloadBytes": 4218768,
+          "min": [
+            -32767,
+            -32767,
+            -32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "38501b02f3affae718cf9735d969c7fb00d358a42eb1d1fba4551480977e9213"
+        },
+        {
+          "name": "",
+          "type": "VEC2",
+          "componentType": 5123,
+          "normalized": true,
+          "count": 703128,
+          "payloadBytes": 2812512,
+          "min": [
+            0,
+            1
+          ],
+          "max": [
+            65535,
+            65534
+          ],
+          "sha256": "7d3e6d235627f262a5283e54c596693fe7b26eb9388e1e5f2fd10864975ba812"
+        },
+        {
+          "name": "",
+          "type": "VEC4",
+          "componentType": 5122,
+          "normalized": true,
+          "count": 703128,
+          "payloadBytes": 5625024,
+          "min": [
+            -32767,
+            -32767,
+            -32767,
+            32767
+          ],
+          "max": [
+            32767,
+            32767,
+            32767,
+            32767
+          ],
+          "sha256": "1596e85c4d8c04282017076168476143db55776b3f8781c585f7c8142841150b"
+        }
+      ]
+    },
+    "textures": {
+      "bytes": 218103788,
+      "textureCount": 15,
+      "textures": [
+        {
+          "name": "frost-transmission-2k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 135702,
+          "sha256": "c073e5ef9a48f93ed4b83dcb33c5fbfc1387a1b525f7cab25d3688d7f0706804",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "set-0-normal",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 3697524,
+          "sha256": "8c26ae1c91996871a354dfc47b7618c859a4854f7535323b7c18a4f940c3a3f2",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "set-0-base_color",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 4481282,
+          "sha256": "dde1f3b15290676c5182412e5b98c26ebb3a0848ef62295c05511f2363ac6d8a",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "frost-metallic-2k-frost-roughness-2k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 1140162,
+          "sha256": "5460f08685869235a5068067dd1833008587e89136b15ee66d2ed514a19a2fea",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "frost-frame-normal-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 132230,
+          "sha256": "13fc85c2e772e15fa052780709e021b1006e65492a2be922ee35b25c20faf53e",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "frost-frame-base-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 31234,
+          "sha256": "b096bb46abb5d37759ae3274f60907082dc1bcb7ba48b8d09d08ade3887d5b71",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "glide-transmission-2k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 188104,
+          "sha256": "7b8a5253ade50a3b749c866b57d0b4ac432938a9be921941fe994bb0495b7d92",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "set-0-normal",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 3270906,
+          "sha256": "5825e564334e45bebf4dd28ddc9f4ba34a83ba019df88722d7993aa7be82c01b",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "set-0-base_color",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 4119166,
+          "sha256": "5c5db1016d08bd89ba88d9dfed35e46c455876bf74f12ab314d976c747d61e3f",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "glide-metallic-2k-glide-roughness-2k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "encodedBytes": 1009368,
+          "sha256": "73b07bace8d94bddfd8678859b57b0d8315e9d722cd1d9d49cbe707872d0ecdf",
+          "decodedRgbaMipBytes": 22369620
+        },
+        {
+          "name": "glide-frame-normal-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 134974,
+          "sha256": "50914610226e844e1d307a814b04e48e5a6fb09bf9751bae7dc9285dc858c074",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "glide-frame-base-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 39352,
+          "sha256": "2e90f0803e85e6d14e3b639d145600d974093183232eee1393cebb146071ddb1",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "cloudway-marble-v7-normal-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 819500,
+          "sha256": "e6fea6e80150370f5b7da09e611362d8c223cdb2a5dab99df590d2f866c05d85",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "cloudway-marble-v7-base-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 1350790,
+          "sha256": "65260099e309245732b32be0e68f62352bae41f024956b1ef08a9c5d536fb408",
+          "decodedRgbaMipBytes": 5592404
+        },
+        {
+          "name": "cloudway-marble-v7-orm-1k",
+          "mimeType": "image/webp",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "encodedBytes": 676014,
+          "sha256": "2dc06b8c0ac1754baf66eabf149740fef22fdeaa0e2273f5c85eb69081f6b59d",
+          "decodedRgbaMipBytes": 5592404
+        }
+      ]
+    },
+    "combinedGeometryAndTexturesBytes": 269732492
+  },
+  "currentCrescentCost": {
+    "note": "Static unculled maximum for the current crescent. The renderer compacts complete transformed donor bounds beyond the fully opaque radial fog plus its shadow margin; actual colour, shadow and transmission submissions are measured in the browser proof.",
+    "instanceCounts": {
+      "Cloudway_Marble": 6,
+      "Cloudway_Frost": 2,
+      "Cloudway_Glide": 1,
+      "Cloudway_Crackle_Intact": 2
+    },
+    "rootTriangles": {
+      "Cloudway_Crackle_Intact": 2472,
+      "Cloudway_Crackle_Release": 308,
+      "Cloudway_Crackle_Warning": 2616,
+      "Cloudway_Frost": 634512,
+      "Cloudway_Glide": 147250,
+      "Cloudway_Marble": 1256556
+    },
+    "runtimeCulling": {
+      "fogNearMetres": 9,
+      "fogFarMetres": 14,
+      "shadowMarginMetres": 2,
+      "cullDistanceMetres": 16,
+      "proof": "art/glass-adventure/platform-trials/v7/runtime/proofs/browser/cloudway-v7-platform-submissions.json"
+    },
+    "maximumUnculledMainPassTriangles": 8960554,
+    "maximumUnculledMarbleMainPassTriangles": 7539336,
+    "maximumUnculledWarningPhaseTriangles": 8960842,
+    "maximumUnculledReleasePhaseTriangles": 8956226
+  },
+  "extensionsUsed": [
+    {
+      "name": "EXT_texture_webp",
+      "required": true
+    },
+    {
+      "name": "KHR_materials_clearcoat",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_emissive_strength",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_ior",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_transmission",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_volume",
+      "required": false
+    },
+    {
+      "name": "KHR_mesh_quantization",
+      "required": true
+    }
+  ],
+  "sources": [
+    {
+      "path": "art/glass-adventure/platform-trials/v6/runtime/archive/cloudway-platform-kit-v6.glb",
+      "bytes": 44046324,
+      "gzipBytes": 36090287,
+      "sha256": "1c18c7a5e818346551fdadef6a091b848f19d0242092a14bf366d85a90b7930c"
+    },
+    {
+      "path": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb",
+      "bytes": 44277888,
+      "gzipBytes": 33335385,
+      "sha256": "6d87455f6ccc901595dc00db0ca400c36ba643bfd1fdb12206a6a43a416bc030"
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "capturedAt": "2026-09-20T23:30:03.217Z",
+  "source": "packages/glass-game/src/journey/water.ts",
+  "origin": "http://127.0.0.1:5224",
+  "viewport": {
+    "width": 800,
+    "height": 600
+  },
+  "renderer": "Chromium SwiftShader through the repo Vite server",
+  "motionComparisonMistEnabled": false,
+  "frames": [
+    {
+      "filename": "water-flow-0000ms.png",
+      "seconds": 0,
+      "reducedMotion": false,
+      "mistEnabled": false,
+      "metrics": {
+        "water": {
+          "spillways": 2,
+          "drawCalls": 3,
+          "triangles": 1440,
+          "geometries": 3,
+          "materials": 2,
+          "mistParticles": 0,
+          "secondaryRenderPasses": 0
+        },
+        "renderer": {
+          "calls": 8,
+          "triangles": 1604,
+          "points": 0
+        }
+      },
+      "sha256": "6224101ba1678c003dfc2f3d15bd7eb06800e97e408d8e04d79f022d5984b287"
+    },
+    {
+      "filename": "water-flow-1400ms.png",
+      "seconds": 1.4,
+      "reducedMotion": false,
+      "mistEnabled": false,
+      "metrics": {
+        "water": {
+          "spillways": 2,
+          "drawCalls": 3,
+          "triangles": 1440,
+          "geometries": 3,
+          "materials": 2,
+          "mistParticles": 0,
+          "secondaryRenderPasses": 0
+        },
+        "renderer": {
+          "calls": 8,
+          "triangles": 1604,
+          "points": 0
+        }
+      },
+      "sha256": "c41fc49cbee47714aa4e31f9f568d8ab5fc01ccb4a8298f7855a94ae412b497d"
+    },
+    {
+      "filename": "water-reduced-2000ms.png",
+      "seconds": 2,
+      "reducedMotion": true,
+      "mistEnabled": false,
+      "metrics": {
+        "water": {
+          "spillways": 2,
+          "drawCalls": 3,
+          "triangles": 1440,
+          "geometries": 3,
+          "materials": 2,
+          "mistParticles": 0,
+          "secondaryRenderPasses": 0
+        },
+        "renderer": {
+          "calls": 8,
+          "triangles": 1604,
+          "points": 0
+        }
+      },
+      "sha256": "535f9089c9810b13295ba10a8ea6d3fcbdfb789e98a80b11e4322d296f3c3a23"
+    },
+    {
+      "filename": "water-reduced-3200ms.png",
+      "seconds": 3.2,
+      "reducedMotion": true,
+      "mistEnabled": false,
+      "metrics": {
+        "water": {
+          "spillways": 2,
+          "drawCalls": 3,
+          "triangles": 1440,
+          "geometries": 3,
+          "materials": 2,
+          "mistParticles": 0,
+          "secondaryRenderPasses": 0
+        },
+        "renderer": {
+          "calls": 8,
+          "triangles": 1604,
+          "points": 0
+        }
+      },
+      "sha256": "535f9089c9810b13295ba10a8ea6d3fcbdfb789e98a80b11e4322d296f3c3a23"
+    },
+    {
+      "filename": "water-with-mist-1400ms.png",
+      "seconds": 1.4,
+      "reducedMotion": false,
+      "mistEnabled": true,
+      "metrics": {
+        "water": {
+          "spillways": 2,
+          "drawCalls": 4,
+          "triangles": 1440,
+          "geometries": 4,
+          "materials": 3,
+          "mistParticles": 36,
+          "secondaryRenderPasses": 0
+        },
+        "renderer": {
+          "calls": 9,
+          "triangles": 1604,
+          "points": 36
+        }
+      },
+      "sha256": "85e5c6138db38f6ba3bb96f76962e7c77832257aed4b1ab2b83f723612aa4274"
+    }
+  ],
+  "movingDifference": {
+    "changed": 32903,
+    "total": 480000,
+    "ratio": 0.06854791666666667
+  },
+  "reducedDifference": {
+    "changed": 0,
+    "total": 480000,
+    "ratio": 0
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "limitations": [
+    "Software rendering verifies shader execution and deterministic motion, not device FPS.",
+    "This isolated proof does not measure the future complete journey-map scene."
+  ]
+}

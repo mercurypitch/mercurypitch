@@ -127,6 +127,7 @@ These are the rules that break things when ignored.
 | `practice-timer` | [PracticeTimerPill.tsx](../../src/features/practice-timer/PracticeTimerPill.tsx) | 100 | PracticeTimerPill — the ambient voice-rest readout Deliberately quiet: it only appears once the timer has something to say, and the phase... |
 | `tours` | [usePageTourOffer.ts](../../src/features/tours/usePageTourOffer.ts) | 100 | Offer a page's spotlight tour once, the first time the user visits a tab that has one. |
 | `events` | [usePianoRollEvents.ts](../../src/features/events/usePianoRollEvents.ts) | 50 | usePianoRollEvents — bridges eventBus messages into app state The canvas piano roll is not a Solid component, so it cannot call stores di... |
+| `glass-adventure` | [main.tsx](../../src/features/glass-adventure/main.tsx) | 50 | Glassworks campaign entry — MercuryPitch's standalone museum front door |
 
 #### Library subsystems (`src/lib/<dir>/`) — algorithm packages
 
@@ -168,9 +169,9 @@ These are the rules that break things when ignored.
 | [playback-runtime.ts](../../src/lib/playback-runtime.ts) | 700 | PlaybackRuntime - Unified playback orchestrator Manages audio timing and syncs with PianoRollEditor |
 | [practice-engine.ts](../../src/lib/practice-engine.ts) | 700 | Practice Engine — Mic, pitch detection, accuracy scoring |
 | [useWhisperTranscription.ts](../../src/lib/useWhisperTranscription.ts) | 700 | Shared Whisper transcription controller hook. |
+| [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 650 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [effect-renderer.ts](../../src/lib/effect-renderer.ts) | 600 | Shared Effect Renderer Pure canvas drawing functions for slide, ease, and vibrato effects. |
 | [preview-player.ts](../../src/lib/preview-player.ts) | 600 | Preview player — pop-free HTMLAudioElement playback HOW TO NOT POP, the house rules (see .claude/memory/ audio-pop-free-playback.md): A b... |
-| [sw-runtime.ts](../../src/lib/sw-runtime.ts) | 600 | sw-runtime — every caching rule src/sw.ts follows src/sw.ts is the worker: it owns the globals (`self`, `clients`, `skipWaiting`, `__WB_M... |
 | [device-tier.ts](../../src/lib/device-tier.ts) | 550 | Device tier — one answer to "how much frame budget does this machine have?" TV browsers (Google TV / Android TV, Tizen, webOS, Fire TV) a... |
 | [mic-manager.ts](../../src/lib/mic-manager.ts) | 550 | ── MicManager Single, reference-counted owner of the capture microphone for the app's analysis features (pitch detection, scoring, live v... |
 | [pitch-algorithm-tester.ts](../../src/lib/pitch-algorithm-tester.ts) | 550 | Pitch Algorithm Tester — Compare pitch detection algorithms |
@@ -482,8 +483,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm verify:opening` | `node scripts/verify-opening.mjs` |
 | `pnpm beside-cue:dev` | `pnpm --filter @irchiinnuss/beside-cue-app dev` |
 | `pnpm beside-cue:build` | `pnpm --filter @irchiinnuss/beside-cue-app build` |
-| `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app check` |
-| `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app test:run` |
+| `pnpm beside-cue:check` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app check` |
+| `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app test:run` |
 | `pnpm beside-cue:android` | `pnpm --filter @irchiinnuss/beside-cue-app cap:run:android` |
 | `pnpm serve` | `pnpm dlx http-server dist -p 4173 -c-1` |
 | `pnpm typecheck` | `tsc --noEmit` |
@@ -515,7 +516,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
 | `pnpm check:syntax` | `pnpm run check:ci` |
 | `pnpm check` | `run-s typecheck lint:fix fmt:write` |
-| `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
+| `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
 | `pnpm mercurypitch:dev` | `pnpm --filter @irchiinnuss/mercury-pitch-app dev` |
 | `pnpm mercurypitch:build` | `pnpm --filter @irchiinnuss/mercury-pitch-app build` |
 | `pnpm mercurypitch:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/mercury-pitch-app test:run` |

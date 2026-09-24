@@ -1,0 +1,96 @@
+{
+  "capturedAt": "2026-09-21T17:12:50.124Z",
+  "url": "https://127.0.0.1:5298/glass-game/?campaign=1",
+  "proofs": [
+    {
+      "case": "desktop-goblet",
+      "evidence": "Compiled campaign host with real keyboard entry and actual PCM completion. The completion increment was observed while the cinematic camera remained holding, and the camera then returned to exploration. This historical post-break screenshot was late enough to catch restoration beginning and is retained only as lifecycle evidence; it does not claim visible fragment appearance. During the approach only, the harness replaced WebGL2 clear, drawArrays, drawArraysInstanced, drawElements and drawElementsInstanced with no-ops, then restored each original property descriptor before the viewport resize, camera assertions and full-raster screenshots. Software rendering, not physical-device performance.",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "before": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0,\"position\":{\"x\":1.0472473438932546e-16,\"y\":1.7699910109714414,\"z\":-3.6551423517559534},\"target\":{\"x\":-3.345020576638306e-16,\"y\":0.42,\"z\":-0.06858341607782265},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "singing": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "-1.2794160820958267",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-chamber/chamber/chamber/encounter/threshold-goblet\",\"progress\":1,\"settled\":true,\"safeBottomFraction\":0.3381423611111111,\"position\":{\"x\":-2.1851361698611713,\"y\":0.24095963383897823,\"z\":0.907271585823344},\"target\":{\"x\":0.0000887688371925266,\"y\":0.2151189373913825,\"z\":0.2518864335763999},\"mercFrame\":{\"minX\":-0.5207402826081351,\"maxX\":-0.17725660682306288,\"minY\":-0.20306308879805607,\"maxY\":0.36316353147856506},\"targetFrame\":{\"minX\":0.15756055050822096,\"maxX\":0.5342205470285213,\"minY\":0.0242550627346154,\"maxY\":0.8427527333394913},\"combinedFrame\":{\"minX\":-0.5207402826081351,\"maxX\":0.5342205470285213,\"minY\":-0.20306308879805607,\"maxY\":0.8427527333394913},\"safeBottomNdc\":-0.25371527777777775,\"side\":1,\"clearance\":0.9241693701525223,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      },
+      "action": {
+        "kind": "actual-pcm-post-break-return",
+        "amplitude": 0.1,
+        "completedBefore": 0,
+        "completedAfter": 1,
+        "cameraModeAtCompletion": "holding",
+        "renderedFramesBeforeCapture": 4
+      },
+      "postBreakReturnStart": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "1",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "-1.4390677085956525",
+        "challengeCameraMode": "restoring",
+        "challengeCameraProgress": "0.2777777777777778",
+        "challengeCamera": "{\"mode\":\"restoring\",\"encounterId\":\"glassworks-chamber/chamber/chamber/encounter/threshold-goblet\",\"progress\":0.2777777777777778,\"settled\":false,\"safeBottomFraction\":0.3381423611111111,\"position\":{\"x\":-2.378367592119504,\"y\":0.3742883735866276,\"z\":0.548129412777614},\"target\":{\"x\":0.00008115834017667669,\"y\":0.2326841862432873,\"z\":0.23299474934032416},\"mercFrame\":{\"minX\":-0.5063382997091298,\"maxX\":-0.1915950228610314,\"minY\":-0.2265556193268202,\"maxY\":0.3286179886253466},\"targetFrame\":{\"minX\":0.1894889379981521,\"maxX\":0.5383423256745254,\"minY\":-0.014538641554115524,\"maxY\":0.7195455622925271},\"combinedFrame\":{\"minX\":-0.5063382997091298,\"maxX\":0.5383423256745254,\"minY\":-0.2265556193268202,\"maxY\":0.7195455622925271},\"safeBottomNdc\":-0.25371527777777775,\"side\":1,\"clearance\":0.9241693701525223,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      },
+      "returned": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "1",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0.3381423611111111,\"position\":{\"x\":1.0275707895616821e-16,\"y\":1.82265305128672,\"z\":-3.6390752258341994},\"target\":{\"x\":-3.5360358942851195e-16,\"y\":0.42,\"z\":0.0873924275530154},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "panelBounds": {
+        "x": 500,
+        "y": 611.671875,
+        "width": 440,
+        "height": 260.328125
+      },
+      "files": [
+        "desktop-goblet-singing.png",
+        "desktop-goblet-post-break-return-start.png",
+        "desktop-goblet-returned.png"
+      ],
+      "errors": []
+    }
+  ]
+}

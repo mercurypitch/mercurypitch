@@ -215,6 +215,39 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
       'Karaoke Night needs JavaScript — the mixing, lyrics and scoring all run right here in your browser.',
   },
   {
+    slug: 'glass-game',
+    paths: ['/glass-game'],
+    navLabel: 'Glassworks',
+    boot: '/src/features/glass-adventure/main.tsx',
+    title: 'Glassworks — Explore a Museum With Your Voice | MercuryPitch',
+    description:
+      'Explore a floating glass museum, discover your comfortable notes, and open each gallery by singing. Free, with microphone audio processed on your device.',
+    keywords:
+      'singing game, voice controlled game, pitch game, vocal training game, browser adventure game, singing practice',
+    og: {
+      title: 'Glassworks — A Museum That Opens to Your Voice',
+      description:
+        'Walk the galleries, listen for the note, and sing the glass open. A free voice-controlled museum adventure.',
+      imageAlt:
+        'MercuryPitch Glassworks, a floating museum whose glass exhibits open when you sing their notes.',
+    },
+    twitter: {
+      title: 'Glassworks — A Museum That Opens to Your Voice',
+      description:
+        'Explore the galleries and sing the glass open. Free in your browser, with audio processed on your device.',
+    },
+    h1: 'Glassworks — a museum that listens',
+    lede: 'Walk through a floating museum with Merc, listen to each glass exhibit, and answer with your own voice. Every gallery teaches one small musical idea, saves independently, and lets you return at your own pace.',
+    app: {
+      name: 'Glassworks',
+      category: 'GameApplication',
+      description:
+        'A browser museum adventure controlled by movement and sung notes, with microphone audio processed on the player’s device.',
+    },
+    noscript:
+      'Glassworks needs JavaScript for its museum, movement and on-device voice analysis.',
+  },
+  {
     slug: 'glass',
     paths: [
       '/glass',

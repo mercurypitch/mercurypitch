@@ -1,0 +1,46 @@
+{
+  "capturedAt": "2026-09-22T13:57:48.685Z",
+  "url": "http://127.0.0.1:5340/glass-game/?layout=cloudway",
+  "rendering": "Real WebGL2 raster through SwiftShader at devicePixelRatio 1.5; no draw suppression or canvas resizing.",
+  "proofScope": "Fresh Cloudway development arrival after a real mouse left orbit and wheel zoom out.",
+  "limitations": "Appearance evidence only; this does not prove route traversal or physical-device performance.",
+  "assetBaseline": {
+    "platformKit": {
+      "assetId": "cloudway-platform-kit-v1",
+      "historicalServedFile": "apps/beside-cue/public/games/cloudway-v1/cloudway-platform-kit-v1.glb",
+      "historicalServedManifest": "apps/beside-cue/public/games/cloudway-v1/manifest.json",
+      "historicalServedPathStatus": "Removed after byte-identical archival; paths record what the capture served.",
+      "archiveFile": "art/glass-adventure/platform-trials/v2/exports/cloudway-platform-kit-v1.glb",
+      "archiveManifest": "art/glass-adventure/platform-trials/v2/exports/manifest.json",
+      "manifestVersion": 1,
+      "sha256": "05deefa049031550b3aa7897a6d7a3345718b2e10a7595a272ea513195bb9e3e"
+    },
+    "skyBackdrop": {
+      "assetId": "floating-museum-cloudscape-v3",
+      "file": "apps/beside-cue/public/games/journey-map-v3/cloudscape.webp",
+      "manifestPath": "apps/beside-cue/public/games/journey-map-v3/manifest.json",
+      "manifestVersion": 1,
+      "sha256": "3cab6e70611c1166e536e4c1de78a063abc7bc51030eb1026c2caab82db5b75c"
+    }
+  },
+  "evidence": [
+    {
+      "id": "cloudway-fog-arrival-left-zoom-out",
+      "action": {
+        "kind": "real-mouse-orbit-and-wheel",
+        "yawOffset": -0.58,
+        "wheelDeltaY": 1000
+      },
+      "yaw": 2.561592653589795,
+      "raster": {
+        "cssWidth": 1440,
+        "cssHeight": 900,
+        "pixelWidth": 2160,
+        "pixelHeight": 1350,
+        "devicePixelRatio": 1.5
+      },
+      "file": "cloudway-fog-arrival-left-zoom-out.png"
+    }
+  ],
+  "errors": []
+}

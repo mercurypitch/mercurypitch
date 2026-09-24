@@ -54,9 +54,21 @@ optimize () {
     "$(gzip -c "$out" | wc -c | awk '{print $1/1024}')"
 }
 
-optimize art/glass/glass-preview.glb  art/glass/glass.opt.glb
+if [[ "${1:-}" == "--merc-only" ]]; then
+  optimize art/merc/merc-preview.glb art/merc/merc.opt.glb
+  mkdir -p public/games/glass3d
+  cp art/merc/merc.opt.glb public/games/glass3d/merc.glb
+  echo "copied Merc to public/games/glass3d/"
+  exit 0
+fi
+if [[ $# -ne 0 ]]; then
+  echo "usage: $0 [--merc-only]" >&2
+  exit 2
+fi
+
+optimize art/glass/glass-preview.glb art/glass/glass.opt.glb
 optimize art/glass/shards-preview.glb art/glass/shards.opt.glb
-optimize art/merc/merc-preview.glb    art/merc/merc.opt.glb
+optimize art/merc/merc-preview.glb art/merc/merc.opt.glb
 optimize art/pane/pane-shards-preview.glb art/pane/pane-shards.opt.glb
 
 # The runtime loads these from public/. Copying is part of the build

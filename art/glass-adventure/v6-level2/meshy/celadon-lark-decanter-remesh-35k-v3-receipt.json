@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "assetId": "celadon-lark-decanter",
+  "operation": "remesh",
+  "parentTaskId": "01a0c0f0-c362-771c-8463-87ce304b2d9b",
+  "taskId": "01a0c104-1de9-73fb-8209-ba38f8260ced",
+  "sourceVariant": "provider-owned parent task",
+  "request": {
+    "input_task_id": "01a0c0f0-c362-771c-8463-87ce304b2d9b",
+    "topology": "triangle",
+    "target_polycount": 35000,
+    "target_formats": [
+      "glb"
+    ],
+    "origin_at": "bottom",
+    "response_format": "json"
+  },
+  "authorization": "Standing user authorization for this bounded Meshy finishing stage; one 5-credit remesh attempt was explicitly authorized after local strict-topology reductions failed.",
+  "state": "archived",
+  "finalStatus": {
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumedCredits": 5
+  },
+  "balanceAfterArchiveCheck": 4180,
+  "file": {
+    "path": "meshy/celadon-lark-decanter-remesh-35k-v3.glb",
+    "bytes": 20748440,
+    "sha256": "ff2f356074f0383da8321ed1e69210f4b4bf93973dd91f1d19dc44d4df35cb90"
+  },
+  "credentialsPersisted": false,
+  "providerUrlsPersisted": false,
+  "readiness": "Raw provider-native remesh archived; strict topology, material projection, cavity, fracture, export, and proof gates remain pending."
+}

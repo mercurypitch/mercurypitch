@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-09-20T23:44:00Z",
+  "repository": "mercurypitch/mercurypitch",
+  "headCommit": "fa214b2519581292d96744cd99e4dc3b00905238",
+  "runId": 35545070294,
+  "runUrl": "https://github.com/mercurypitch/mercurypitch/actions/runs/35545070294",
+  "runConclusion": "success",
+  "note": "Both native jobs completed successfully. This checkpoint includes the four galleries, rewards pilot and shared delivery; the later live-map integration is outside its scope. Earlier run 35544723513 also produced artifacts but was superseded during final iOS cleanup.",
+  "artifacts": [
+    {
+      "id": 10616322294,
+      "name": "beside-cue-games-android-debug",
+      "sizeBytes": 203167242,
+      "digest": "sha256:2dabbf20ea3ef7552b55ce47637ce3cc36615593c863f635bf7fa7ebf5d6fa90",
+      "expiresAt": "2026-09-27T23:38:07Z",
+      "contents": "Debug app APK and instrumentation APK, produced after native asset-hash verification, Android tests and lint."
+    },
+    {
+      "id": 10616806197,
+      "name": "beside-cue-games-ios-simulator",
+      "sizeBytes": 209794983,
+      "digest": "sha256:7b71ffd20bb064228e9085a992314c844c918ec22373af193e630e1656feaacc",
+      "expiresAt": "2026-09-27T23:40:03Z",
+      "contents": "Unsigned iOS Simulator App.app archive built with the games-enabled Info.plist. It cannot be installed on a physical iPhone or used as a TestFlight build."
+    }
+  ],
+  "notVerified": [
+    "Physical Android/iOS microphone and audio-session behavior",
+    "Physical-device frame rate, thermal behavior and sustained memory",
+    "Any map changes committed after this checkpoint"
+  ]
+}

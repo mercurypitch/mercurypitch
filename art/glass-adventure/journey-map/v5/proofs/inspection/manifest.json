@@ -1,0 +1,81 @@
+{
+  "evidence": "Compiled scene, four real wheel/orbit close views and three normally animated full-overview water frames. Separate bounded SwiftShader captures; not physical-device performance acceptance.",
+  "proofs": [
+    {
+      "id": "first-light-isle",
+      "screenshot": "first-light-isle-close.png",
+      "camera": {
+        "zoom": "1.000",
+        "yaw": "-0.140",
+        "pitch": "0.450"
+      },
+      "errors": [],
+      "capturedAt": "2026-09-21T09:01:35.203Z",
+      "bytes": 1496191,
+      "sha256": "ebb2aa104d1def7661da14c893970925a7363574cec2fe75a975221b9a7c3149"
+    },
+    {
+      "id": "glassworks-isle",
+      "screenshot": "glassworks-isle-close.png",
+      "camera": {
+        "zoom": "1.000",
+        "yaw": "-0.780",
+        "pitch": "0.450"
+      },
+      "errors": [],
+      "capturedAt": "2026-09-21T09:01:35.203Z",
+      "bytes": 1690167,
+      "sha256": "582605d643603da5b0fb7a7934ccb4a8753207ed266d0d04eae95e08e6f29cd8"
+    },
+    {
+      "id": "resonance-conservatory-isle",
+      "screenshot": "resonance-conservatory-isle-close.png",
+      "camera": {
+        "zoom": "1.000",
+        "yaw": "-0.860",
+        "pitch": "0.450"
+      },
+      "errors": [],
+      "capturedAt": "2026-09-21T09:06:03.627Z",
+      "bytes": 1505800,
+      "sha256": "5b65b823d4bdcd49d4fc0617fcc0096c55433a65059c4a89fe979dd899bf384b"
+    },
+    {
+      "id": "twin-galleries-isle",
+      "screenshot": "twin-galleries-isle-close.png",
+      "camera": {
+        "zoom": "1.000",
+        "yaw": "0.660",
+        "pitch": "0.450"
+      },
+      "errors": [],
+      "capturedAt": "2026-09-21T09:09:38.026Z",
+      "bytes": 1544959,
+      "sha256": "25954262f2ff344e0df7a9448c94f526f71a79759a173cd4acb640330450c3f0"
+    },
+    {
+      "id": "water-motion-0",
+      "screenshot": "water-motion-0.png",
+      "errors": [],
+      "capturedAt": "2026-09-21T09:04:44.619Z",
+      "bytes": 1524166,
+      "sha256": "f2a2e7629cd7252c13b90abc44b9d198351739c346fb971038f9c1918016d66a"
+    },
+    {
+      "id": "water-motion-1",
+      "screenshot": "water-motion-1.png",
+      "errors": [],
+      "capturedAt": "2026-09-21T09:04:44.619Z",
+      "bytes": 1524461,
+      "sha256": "d9605da80d97bae02bd1c5bb472ad33620c271afa942e209fbde102ed8223dbc"
+    },
+    {
+      "id": "water-motion-2",
+      "screenshot": "water-motion-2.png",
+      "errors": [],
+      "capturedAt": "2026-09-21T09:04:44.619Z",
+      "bytes": 1524412,
+      "sha256": "bd4cfd861922ec184e2d6a28e32b495f1fb5ee4dcfdd088780d62a6e45923ad9"
+    }
+  ]
+}

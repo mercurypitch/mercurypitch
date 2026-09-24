@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "decision": "accepted-for-pbr-retexture",
+  "reviewedAtUtc": "2026-09-23T14:43:00Z",
+  "source": {
+    "file": "meshy/conservatory-remesh-110k.glb",
+    "sha256": "f936106d6eed572666b21b511efcbec35c342ae6be0c2402ea94aac6f133febf",
+    "triangles": 109636
+  },
+  "comparisonManifest": {
+    "file": "proofs/conservatory-geometry-comparison-v8.json",
+    "sha256": "dd4204a5cbc869e6396e90b0a982bdf9004f631952307f01846b86270ac7319e"
+  },
+  "proofs": [
+    {
+      "file": "proofs/conservatory-geometry-front-v8.png",
+      "sha256": "61c64af3745818790ec0dd62f2201929ec4169abd07459ba5b3e85199f405223"
+    },
+    {
+      "file": "proofs/conservatory-geometry-angle-v8.png",
+      "sha256": "77cd23b1434ad9a240b8751e66772b611de7a2460b4504de16a764e821807bd2"
+    }
+  ],
+  "review": {
+    "finding": "The V8 candidate restores roof roundness, column fluting, leaf clumps and architectural detail over V6 while preserving open bays and the platform profile.",
+    "knownLimitation": "Residual rough foliage inherited from the dense source remains; this gate does not claim pristine micro-geometry.",
+    "nextGate": "PBR retexture followed by separate Meshy-normal and dense-donor-bake review."
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "engine": "whisper.cpp base.en",
+  "expected_text_supplied": false,
+  "lines": [
+    {
+      "id": "beautiful-mess",
+      "expected": "Another beautiful mess.",
+      "independent_transcript": "Another beautiful mass.",
+      "normalized_exact_match": false,
+      "duration_seconds": 2.16,
+      "sample_rate_hz": 24000,
+      "peak_dbfs": -1.57,
+      "rms_dbfs": -16.11,
+      "clipped_samples": 0,
+      "raw_sha256": "97be1e32b2add1e2292198917b74d30529b64a3a2240a0310e2fce79ddc2302d",
+      "asr_model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "accepted_transcript_match": true,
+      "secondary": {
+        "engine": "whisper.cpp medium",
+        "independent_transcript": "Another beautiful mess.",
+        "asr_model_sha256": "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208",
+        "expected_text_supplied": false
+      }
+    },
+    {
+      "id": "little-disaster",
+      "expected": "A little note. A lovely little disaster.",
+      "independent_transcript": "A little note, a lovely little disaster.",
+      "normalized_exact_match": true,
+      "duration_seconds": 3.2,
+      "sample_rate_hz": 24000,
+      "peak_dbfs": -1.47,
+      "rms_dbfs": -17.32,
+      "clipped_samples": 0,
+      "raw_sha256": "9b6434953843795dedf61b3c3f7ebf68fc420d51d23f81dcfb67b3551ef13c18",
+      "asr_model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "accepted_transcript_match": true
+    },
+    {
+      "id": "sparkling",
+      "expected": "That was positively sparkling.",
+      "independent_transcript": "That was positively sparkling.",
+      "normalized_exact_match": true,
+      "duration_seconds": 2.4,
+      "sample_rate_hz": 24000,
+      "peak_dbfs": -1.46,
+      "rms_dbfs": -17.2,
+      "clipped_samples": 0,
+      "raw_sha256": "b7fbaf0f00983e4e2d747210277cf5beed4054cf6d9fcf6a518229932fe161fc",
+      "asr_model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "accepted_transcript_match": true
+    },
+    {
+      "id": "glass-had-plans",
+      "expected": "That glass had plans. So did you.",
+      "independent_transcript": "That glass had plans, so did you.",
+      "normalized_exact_match": true,
+      "duration_seconds": 3.12,
+      "sample_rate_hz": 24000,
+      "peak_dbfs": -1.46,
+      "rms_dbfs": -16.36,
+      "clipped_samples": 0,
+      "raw_sha256": "52b3c24f3adcf9eaac69c3c97e9c8e1745a82c4040d21fff3dc2cc79de717179",
+      "asr_model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "accepted_transcript_match": true
+    },
+    {
+      "id": "music-to-my-ears",
+      "expected": "Music to my ears. Confetti to my feet.",
+      "independent_transcript": "Music to my ears, confetti to my feet.",
+      "normalized_exact_match": true,
+      "duration_seconds": 3.2,
+      "sample_rate_hz": 24000,
+      "peak_dbfs": -0.75,
+      "rms_dbfs": -16.05,
+      "clipped_samples": 0,
+      "raw_sha256": "867e8c158addf0d3bfdd84dc7d632a2aece6d8232edce6945422921220745085",
+      "asr_model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "accepted_transcript_match": true
+    },
+    {
+      "id": "cracking-performance",
+      "expected": "Now that was a cracking performance.",
+      "independent_transcript": "Now that was a cracking performance.",
+      "normalized_exact_match": true,
+      "duration_seconds": 2.72,
+      "sample_rate_hz": 24000,
+      "peak_dbfs": -2.23,
+      "rms_dbfs": -18.54,
+      "clipped_samples": 0,
+      "raw_sha256": "ac27ed842aa146d10dfba4498da33845b48731d27ad9ab018c77afa43fc8ac1b",
+      "asr_model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "accepted_transcript_match": true
+    }
+  ]
+}

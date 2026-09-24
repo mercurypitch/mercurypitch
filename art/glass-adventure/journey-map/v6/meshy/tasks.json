@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "authorization": "Owner approved unrestricted Meshy use for Glassworks asset production in this conversation; initial batch estimates 60 credits for two PBR guides.",
+  "balanceBefore": 4060,
+  "createdAt": "2026-09-21T13:35:55.313646+00:00",
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "tasks": [
+    {
+      "asset": "conservatory",
+      "status": "archived",
+      "guide": "sources/conservatory-guide.png",
+      "guideSha256": "5ff42286d3b1a0ac4f82f60c3cb31b1d9fe0f8b5b4d1b2fbd03ed32e11804dc1",
+      "model": "meshy-6",
+      "formats": [
+        "glb"
+      ],
+      "targetTriangles": 24000,
+      "expectedCredits": 30,
+      "taskId": "01a0c42e-51f6-77d1-85d5-1167fe7e5324",
+      "consumedCredits": 30,
+      "receipt": "meshy/conservatory-receipt.json"
+    },
+    {
+      "asset": "twin-connector",
+      "status": "archived",
+      "guide": "sources/twin-connector-guide-opaque.png",
+      "guideSha256": "0274f17d5b011e5d52c2c9d21c50a3031c1ac356f298a8f711e1d94c80f44a7f",
+      "model": "meshy-6",
+      "formats": [
+        "glb"
+      ],
+      "targetTriangles": 18000,
+      "expectedCredits": 30,
+      "taskId": "01a0c42f-a362-7199-a2f8-50dc99efb112",
+      "consumedCredits": 30,
+      "receipt": "meshy/twin-connector-receipt.json"
+    }
+  ],
+  "state": "archived",
+  "archivedAtUtc": "2026-09-21T13:50:50.867793+00:00",
+  "balanceAfterArchiveCheck": 4000,
+  "consumedCreditsTotal": 60,
+  "downloadRecovery": "Conservatory native download timed out with partial bytes. Final models and requested pre-remesh sources were recovered using bounded CDN ranges from fresh authenticated MCP status. Native Twin download completed and matched its independently archived final; duplicate removed."
+}

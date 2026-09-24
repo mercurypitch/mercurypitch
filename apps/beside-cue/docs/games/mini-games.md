@@ -19,12 +19,11 @@ build: App Review guideline 2.3.1 forbids hidden features turned on later.
   App unit tests cover the off entry while game unit tests still run directly.
   Playwright uses separate servers: the existing suite enables games, and a
   store smoke test checks their absence.
-- The microphone declarations left the native projects with them, and come
-  back together when the games do: `RECORD_AUDIO` _and_
-  `MODIFY_AUDIO_SETTINGS` plus the optional `android.hardware.microphone`
-  feature in `AndroidManifest.xml` (the comment there says why both), and
-  `NSMicrophoneUsageDescription` in `ios/App/App/Info.plist`. Flip
-  `src/games/glass/mic-permissions.test.ts` in the same change.
+- The canonical store projects still declare no microphone access. The
+  explicit `native:games` profile selects the Android games manifest and
+  generates a separate iOS Info.plist containing the microphone purpose; it
+  never rewrites either store source. `src/games/glass/mic-permissions.test.ts`
+  keeps the default profile honest.
 - The store texts, the privacy notice and the App Store privacy answers then
   describe on-device microphone use again.
 
@@ -64,6 +63,47 @@ the original scaffold and docs.
   `NSMicrophoneUsageDescription` (iOS), both removed while the games are out
   (see Not in v1); the mic is acquired only while a game is open and released
   on leave.
+
+## Native test profile
+
+`pnpm native:games --platform android --build` and the equivalent `ios`
+command build the games-enabled web app, stamp the exact offline asset
+allowlist into a provenance marker, run Capacitor sync, and verify every
+declared byte in the copied native tree. Android debug builds additionally use
+`-PbesideCueGames=1`; iOS simulator builds point
+`BESIDE_CUE_INFO_PLIST_PATH` at the generated games plist. The dedicated
+`beside-cue-games-native.yml` workflow compiles both profiles without signing,
+uploading, or changing the games-off store workflow.
+
+The iOS target validates that pairing on every build. `App/App/public` is an
+ignored Capacitor output, so a games playtest can leave its web bundle there
+after the test ends. Before a normal store archive, replace that output with a
+games-off build:
+
+```bash
+VITE_BESIDE_CUE_GAMES=0 pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
+cd apps/beside-cue/ios/App
+xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+  -archivePath build/BesideCue.xcarchive archive
+```
+
+That archive uses the canonical `App/Info.plist`. The build fails if the copied
+web tree still contains any game, model, runtime, or games-profile marker. The
+unsigned games test profile stays a separate command and plist:
+
+```bash
+pnpm --filter @irchiinnuss/beside-cue-app native:games -- --platform ios --build
+cd apps/beside-cue/ios/App
+xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  BESIDE_CUE_INFO_PLIST_PATH=build/games/Info.plist \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
+The games build also checks the stamped SHA-256 manifest immediately before
+Xcode copies resources, so changing or dropping a declared offline asset after
+Capacitor sync stops the package.
 
 ## Art pipeline
 

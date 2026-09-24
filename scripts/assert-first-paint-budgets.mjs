@@ -65,6 +65,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Measured 331 (was 3050).
   'glass.html': 420,
 
+  // The 3D museum campaign is a separate entry from the legacy glass page.
+  // Measured 1159 KB including Three.js; unrelated rooms must not inherit it.
+  'glass-game.html': 1450,
+
   // Karaoke Night and its two other doors. Measured 352 (was 3063).
   'karaoke-night.html': 440,
   'karaoke.html': 440,
@@ -102,6 +106,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   'voice-type-test.html': 40,
   'which-singer-has-my-vocal-range.html': 40,
   'glass.html': 40,
+
+  // The separate 3D museum campaign. Measured 46 across its page-scoped
+  // sheet, the entry prelude and vendor CSS.
+  'glass-game.html': 60,
 
   // Karaoke Night and its two other doors. Measured 67.
   'karaoke-night.html': 90,

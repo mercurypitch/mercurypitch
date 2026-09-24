@@ -1,0 +1,69 @@
+{
+  "reason": "GitHub stopped scheduling PR checks because current main conflicted in the PR Gate dependency list. Rebased the owned feature branch onto origin/main and retained both main metrics and feature browser jobs.",
+  "mainCommit": "06767fbdc5d387a0d139843f271d37d1f8dd8650",
+  "beforeRebase": "07c1dc3aec8db1a59a1ce5f8f03d586383ea8d89",
+  "afterRebase": "44ceab057e9848e0c66bcbe4476ce86cee101df1",
+  "manualConflictPaths": [
+    ".github/workflows/pr-gate.yml"
+  ],
+  "verifiedUnchangedBeforeThisReceipt": [
+    {
+      "path": "packages/glass-game",
+      "tree": "30a414eb8f6637b07940e5ea5e47ed3a229d6dfc",
+      "identical": true
+    },
+    {
+      "path": "apps/beside-cue",
+      "tree": "ae59dc9aa47d6ca831247b62d77fd024b8466d5f",
+      "identical": true
+    },
+    {
+      "path": "art/glass-adventure",
+      "tree": "947c6a8482c20037a46f67a76cd530875312901c",
+      "identical": true
+    }
+  ],
+  "sourceMappings": {
+    "2fe9f8f5fc00e466cc0e8a13233c1de5fa025faa": "42f931ed",
+    "44d2ad5cef0101f74d7823ba295679dbc37429bd": "e049b0d8"
+  },
+  "note": "Build receipts retain the commits actually used for the screenshots. No game source was changed or snapshot rebuilt during rebase. The saved pre-rebase local branch retains original commit objects.",
+  "mainCommitVerification": "Original base corrected to the actual merge-base; a subsequently advanced origin/main ref had been recorded instead.",
+  "subsequentRebases": [
+    {
+      "reason": "CI tested an earlier main merge containing a valid absence test misclassified by the textual presence-only metric. Rebase onto newer main incorporates its upstream null-and-control-count assertion correction.",
+      "mainCommit": "6791eb219cb2fb97aef602499571c342ab913735",
+      "beforeRebase": "65b9d30d2ccc02342bd9eb5f6971248772d973c1",
+      "afterRebase": "d06ec1a7b1fb30ca499c81006f2208fa53bdb024",
+      "manualConflictPaths": [],
+      "verifiedUnchangedBeforeThisReceipt": [
+        {
+          "path": "packages/glass-game",
+          "tree": "f8bc1dbee57dbceecd714ac62723a7a95636e26a",
+          "identical": true
+        },
+        {
+          "path": "apps/beside-cue",
+          "tree": "ae59dc9aa47d6ca831247b62d77fd024b8466d5f",
+          "identical": true
+        },
+        {
+          "path": "art/glass-adventure",
+          "tree": "7e213a2e688b1cfed48b60b124568db4524ee6fd",
+          "identical": true
+        }
+      ],
+      "sourceMappings": {
+        "42f931ed": "21ec7b02",
+        "e049b0d8": "35798077",
+        "44ceab05": "9b8761fe",
+        "8286a7b2": "fe64db71",
+        "65b9d30d": "d06ec1a7"
+      },
+      "preservedGeneratedHtml": "/tmp/glass-game-generated-before-gate-rebase-20260921.html",
+      "generatedHtmlSha256": "153e951c20e34df155140aab18974d9cd9c304d1ac9b6063a5f461da17049354",
+      "upstreamRegressionCommit": "259d7b605560196b5ab083e1ec45d7311b32a372",
+      "upstreamCorrectionCommit": "3a62eee0"
+    }
+  ]
+}

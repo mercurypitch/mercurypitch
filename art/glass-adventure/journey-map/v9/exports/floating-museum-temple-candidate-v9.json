@@ -1,0 +1,529 @@
+{
+  "schema": 1,
+  "asset": "temple",
+  "assetId": "floating-museum-temple-candidate-v9",
+  "status": "review-only; normal-map selection and runtime integration pending",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "source": {
+    "file": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k-retexture-pbr.glb",
+    "bytes": 13110040,
+    "sha256": "00450f65f8594c912520eefeaa55475914987ea11bd06bb2739eaebe20362162",
+    "receipt": "art/glass-adventure/journey-map/v9/meshy/temple-remesh-90k-retexture-pbr-receipt.json",
+    "receiptContext": {
+      "remeshTaskId": "01a0cebb-46e1-72a2-a44b-0c419eeafc82",
+      "retextureTaskId": "01a0cecb-7295-70bd-be93-a214e8d5225c",
+      "sourceSha256": "00450f65f8594c912520eefeaa55475914987ea11bd06bb2739eaebe20362162",
+      "denseDonorSha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+      "clayReview": {
+        "file": "art/glass-adventure/journey-map/v9/proofs/temple-remesh-clay-review-v9.json",
+        "sha256": "3e2d1f3cd569484783d1dbc454862b9f00d978e4c187c7d363f887d5fd86bb89"
+      }
+    },
+    "providerPbr": {
+      "baseColor": {
+        "imageIndex": 0,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 3365643,
+        "sha256": "c2167d0487bdbd42fc89232893fc7dc9bf9ad5d2f0267379809731d9a0e268bc"
+      },
+      "normal": {
+        "imageIndex": 2,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2211623,
+        "sha256": "ec8ce107186d739bd2933ae51f536bbd9f20cc5eb627d08879c7f882ce46aad9"
+      },
+      "metallicRoughness": {
+        "imageIndex": 1,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2565491,
+        "sha256": "dea666c4677c8cb668716f78ad6f21ccef574451ddafac4f4d05fae143df9312"
+      },
+      "providerOcclusionBinding": null
+    },
+    "providerTextureFiles": {
+      "baseColor": {
+        "file": "sources/temple-bake-v9/provider-base-color.png",
+        "bytes": 5625779,
+        "sha256": "34162564fdc4d6f6b6b9c2a756f7e916a01c763eda2813afd377af11593ab736",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "normal": {
+        "file": "sources/temple-bake-v9/provider-normal.png",
+        "bytes": 3913964,
+        "sha256": "f06d8935533fce7ce37b57d5b850ea6763ab3ebd5f204609cf32f9eba67a9cbb",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "metallicRoughness": {
+        "file": "sources/temple-bake-v9/provider-metallic-roughness.png",
+        "bytes": 3737667,
+        "sha256": "fcad1b67a2a146012bda7a7634c9295f63b22dfdab68c73e46fac3139021aba8",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    },
+    "topology": {
+      "vertices": 117841,
+      "triangles": 89166,
+      "boundaryEdges": 113124,
+      "nonManifoldEdges": 113124,
+      "looseEdges": 0,
+      "zeroAreaFaces": 0,
+      "blenderMeshInvalid": false
+    }
+  },
+  "denseDonor": {
+    "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-temple-v3-pre-remesh.glb",
+    "bytes": 32205248,
+    "sha256": "9081197e97545d873eca2773ccebfeeadb919acc4e2f96e62ac99a6faa929023",
+    "topology": {
+      "mesh_node": {
+        "vertices": 894355,
+        "triangles": 1789350,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      }
+    }
+  },
+  "boundingBoxNormalization": {
+    "candidate": {
+      "sourceDimensionsGlTfYUp": [
+        1.7994627952575684,
+        1.999031901359558,
+        1.9980548620224
+      ],
+      "scaleBlenderXYZ": [
+        1.3337314128875732,
+        1.3325072526931763,
+        1.3344894647598267
+      ],
+      "dimensionsGlTfYUpMetres": [
+        2.400000214576721,
+        2.667686939239502,
+        2.66242253780365
+      ],
+      "anchorErrorMetres": 0.0
+    },
+    "denseDonor": {
+      "sourceDimensionsGlTfYUp": [
+        1.7100298404693604,
+        1.8991165161132812,
+        1.8980331420898438
+      ],
+      "scaleBlenderXYZ": [
+        1.4034843444824219,
+        1.4027271270751953,
+        1.4046989679336548
+      ],
+      "dimensionsGlTfYUpMetres": [
+        2.4000000953674316,
+        2.667686939239502,
+        2.6624226570129395
+      ],
+      "anchorErrorMetres": 0.0
+    },
+    "sameTargetBoundsAndGroundAnchor": true,
+    "surfaceRegistration": "unverified; equal bounding boxes do not prove remeshed surface correspondence"
+  },
+  "uvAndTangent": {
+    "activeUv": "UVMap",
+    "tangentRepair": {
+      "method": "Replace only each singular corner normal with its polygon normal, leaving positions, indices and UVs unchanged; then regenerate tangent space.",
+      "repairedCorners": [
+        {
+          "loop": 33348,
+          "polygon": 11116,
+          "normalBefore": [
+            -0.8988687992095947,
+            0.4308411478996277,
+            -0.08006703853607178
+          ],
+          "normalAfter": [
+            0.42341139912605286,
+            0.8105216026306152,
+            -0.4046943485736847
+          ]
+        },
+        {
+          "loop": 48000,
+          "polygon": 16000,
+          "normalBefore": [
+            -0.934802234172821,
+            0.35508084297180176,
+            0.0078987255692482
+          ],
+          "normalAfter": [
+            0.35555294156074524,
+            0.9341456890106201,
+            0.030885254964232445
+          ]
+        },
+        {
+          "loop": 56827,
+          "polygon": 18942,
+          "normalBefore": [
+            -0.017939604818820953,
+            -0.5264921188354492,
+            0.849990725517273
+          ],
+          "normalAfter": [
+            -0.9958784580230713,
+            0.08498474210500717,
+            0.03168141096830368
+          ]
+        },
+        {
+          "loop": 110658,
+          "polygon": 36886,
+          "normalBefore": [
+            0.4102413058280945,
+            -0.01748943328857422,
+            0.9118093252182007
+          ],
+          "normalAfter": [
+            0.872373104095459,
+            0.2995705306529999,
+            -0.3862936496734619
+          ]
+        },
+        {
+          "loop": 233132,
+          "polygon": 77710,
+          "normalBefore": [
+            0.9878665804862976,
+            0.030261937528848648,
+            0.15232867002487183
+          ],
+          "normalAfter": [
+            -0.15457282960414886,
+            0.13820549845695496,
+            0.9782670736312866
+          ]
+        },
+        {
+          "loop": 265936,
+          "polygon": 88645,
+          "normalBefore": [
+            0.13350853323936462,
+            -0.2865784466266632,
+            -0.9487087726593018
+          ],
+          "normalAfter": [
+            0.9450989365577698,
+            0.3249373733997345,
+            0.03469265252351761
+          ]
+        }
+      ],
+      "remainingZeroTangents": 0,
+      "maximumTangentUnitError": 1.678708800856299e-07
+    },
+    "positionsIndicesAndUvsChangedByRepair": false
+  },
+  "selectedToActiveBake": {
+    "engine": "Cycles CPU",
+    "resolution": [
+      2048,
+      2048
+    ],
+    "marginPixels": 24,
+    "samples": 64,
+    "cpuThreads": 8,
+    "cageExtrusionMetres": 0.008,
+    "maximumRayDistanceMetres": 0.04,
+    "normal": {
+      "file": "sources/temple-bake-v9/dense-donor-normal.png",
+      "bytes": 6425903,
+      "sha256": "cb03cc4afa69058527da66eded10e4f1bf161c5efa66bd83e40a1c96e144b939",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "channelRange": [
+        0,
+        255
+      ],
+      "maximumChannelStandardDeviation": 27.6623
+    },
+    "ambientOcclusion": {
+      "file": "sources/temple-bake-v9/dense-donor-ao.png",
+      "bytes": 3922764,
+      "sha256": "c5cf75abc54c55854cb6db1311d87210c4618cdea3495694d337f0e501e39bcf",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "channelRange": [
+        0,
+        255
+      ],
+      "maximumChannelStandardDeviation": 88.1819
+    },
+    "runtimeOrm": {
+      "file": "sources/temple-bake-v9/runtime-orm-with-dense-ao.png",
+      "bytes": 5332189,
+      "sha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    "normalComparison": {
+      "method": "per-texel angular difference after resizing the Meshy normal to the dense-bake resolution",
+      "meanDegrees": 15.5621,
+      "medianDegrees": 11.3684,
+      "p95Degrees": 40.0291,
+      "maximumDegrees": 180.0,
+      "selection": "none; both variants must be reviewed at the same camera"
+    },
+    "normalSelection": "pending same-camera visual review",
+    "surfaceRegistration": "pending donor/low overlap review",
+    "cageAndBakeCoverage": "pending visual review"
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-temple-candidate-v9.blend",
+    "bytes": 73331598,
+    "sha256": "6e26be7833d97755b6468d3d472aac0a4d6adf9b49af70497d719da9af1ee079",
+    "imagesPacked": true,
+    "denseDonorRetained": true,
+    "missingExternalFiles": []
+  },
+  "variants": {
+    "meshy": {
+      "file": "exports/floating-museum-temple-candidate-v9-meshy-normal.glb",
+      "bytes": 21601268,
+      "sha256": "b31cdf876f601b510ee8910a144ec9258b592d355f088b0097e5a04fd5770360",
+      "triangles": 89166,
+      "dimensionsGlTfYUpMetres": [
+        2.400000214576721,
+        2.667686939239502,
+        2.66242253780365
+      ],
+      "anchorErrorMetres": 0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "normalCount": 117854,
+      "minimumNormalLength": 0.9999999090529877,
+      "maximumNormalUnitError": 1.5096508310108447e-07,
+      "tangentCount": 117854,
+      "minimumTangentLength": 0.9999211547444296,
+      "maximumTangentUnitError": 8.062679687648178e-05,
+      "materialBindings": {
+        "baseColor": {
+          "index": 1
+        },
+        "normal": {
+          "index": 0
+        },
+        "metallicRoughness": {
+          "index": 2
+        },
+        "occlusion": {
+          "index": 2,
+          "strength": 1
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5625779,
+          "sha256": "34162564fdc4d6f6b6b9c2a756f7e916a01c763eda2813afd377af11593ab736"
+        },
+        "normal": {
+          "imageIndex": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 3913964,
+          "sha256": "f06d8935533fce7ce37b57d5b850ea6763ab3ebd5f204609cf32f9eba67a9cbb"
+        },
+        "metallicRoughness": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5332189,
+          "sha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d"
+        },
+        "occlusion": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5332189,
+          "sha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d"
+        }
+      },
+      "normalUvTangentPbrPassed": true
+    },
+    "dense-bake": {
+      "file": "exports/floating-museum-temple-candidate-v9-dense-bake-normal.glb",
+      "bytes": 24113216,
+      "sha256": "d17f0ac9c5c66baafc5904cafd430aadd4f5f3ef25f69294ff111ca3b8533194",
+      "triangles": 89166,
+      "dimensionsGlTfYUpMetres": [
+        2.400000214576721,
+        2.667686939239502,
+        2.66242253780365
+      ],
+      "anchorErrorMetres": 0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "normalCount": 117854,
+      "minimumNormalLength": 0.9999999090529877,
+      "maximumNormalUnitError": 1.5096508310108447e-07,
+      "tangentCount": 117854,
+      "minimumTangentLength": 0.9999211547444296,
+      "maximumTangentUnitError": 8.062679687648178e-05,
+      "materialBindings": {
+        "baseColor": {
+          "index": 1
+        },
+        "normal": {
+          "index": 0
+        },
+        "metallicRoughness": {
+          "index": 2
+        },
+        "occlusion": {
+          "index": 2,
+          "strength": 1
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5625779,
+          "sha256": "34162564fdc4d6f6b6b9c2a756f7e916a01c763eda2813afd377af11593ab736"
+        },
+        "normal": {
+          "imageIndex": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 6425903,
+          "sha256": "cb03cc4afa69058527da66eded10e4f1bf161c5efa66bd83e40a1c96e144b939"
+        },
+        "metallicRoughness": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5332189,
+          "sha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d"
+        },
+        "occlusion": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5332189,
+          "sha256": "24470dbe04355719d5f146ee145b59c9a7a282f1726d3b2ebb0797eb2bf7db0d"
+        }
+      },
+      "normalUvTangentPbrPassed": true
+    }
+  },
+  "runtimeContract": {
+    "requiredNodes": [
+      "map_temple_amber",
+      "map_temple_amber_structure",
+      "map_temple_amber_dome",
+      "map_temple_teal",
+      "map_temple_teal_structure",
+      "map_temple_teal_dome"
+    ],
+    "sharedGeometry": "map_temple_geometry",
+    "domeFaceThresholdBlenderZMetres": 1.65,
+    "materialVariants": {
+      "amber": {
+        "file": "sources/temple-bake-v9/temple-dome-amber-base.png",
+        "bytes": 3651003,
+        "sha256": "d12adb6c614ee0fb3821cf7845e24bc2c2383a8fc34a4a2bb1fe0b8d61e7fe03",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      },
+      "teal": {
+        "file": "sources/temple-bake-v9/temple-dome-teal-base.png",
+        "bytes": 4103517,
+        "sha256": "d305559cfbe9be04cabe0799964e724b994d43b47a5334277681cf973afa2168",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      }
+    },
+    "normalPartitionRule": "Partition by face-centre Z without moving vertices or recalculating loop normals/tangents; both colour variants share the same structure/dome geometry."
+  },
+  "validation": {
+    "archivedProviderReceiptsMatched": true,
+    "preservedDenseDonorMatched": true,
+    "candidateAndDonorBoundingBoxesNormalized": true,
+    "providerNormalRetainedSeparately": true,
+    "denseBakeNormalRetainedSeparately": true,
+    "denseBakeAoChannelPacked": true,
+    "packedEditableSource": true,
+    "dimensionsAndGroundAnchorPassed": true,
+    "uv0NormalAndFullTangentCoveragePassed": true,
+    "pbrBindingsPassed": true,
+    "visualApproval": "pending",
+    "runtimeIntegration": "not performed"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/finish_museum_candidate.py -- --asset temple",
+    "blender": "5.2.2 LTS"
+  },
+  "proofs": []
+}

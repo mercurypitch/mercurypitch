@@ -1,0 +1,98 @@
+{
+  "capturedAt": "2026-09-21T17:38:08.436Z",
+  "url": "https://127.0.0.1:5298/glass-game/?campaign=1",
+  "proofs": [
+    {
+      "case": "desktop-goblet",
+      "evidence": "Compiled campaign host with real keyboard entry and actual PCM completion. The completion increment was observed while the cinematic camera remained holding. After real completion, the harness advanced the requestAnimationFrame presentation timestamp by 0.2 seconds and held it for the full-raster shard screenshot, then restored the native requestAnimationFrame descriptor before observing the natural return to exploration. This is deterministic appearance evidence, not real-time timing or video evidence. During the approach only, the harness replaced WebGL2 clear, drawArrays, drawArraysInstanced, drawElements and drawElementsInstanced with no-ops, then restored each original property descriptor before the viewport resize, camera assertions and full-raster screenshots. Software rendering, not physical-device performance.",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "before": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0,\"position\":{\"x\":1.024441288581227e-16,\"y\":1.783443671177839,\"z\":-3.636519794355806},\"target\":{\"x\":-3.4115955810693754e-16,\"y\":0.42,\"z\":-0.014220799462630662},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "singing": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "0",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "-1.2794160473372878",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-chamber/chamber/chamber/encounter/threshold-goblet\",\"progress\":1,\"settled\":true,\"safeBottomFraction\":0.3073784722222222,\"position\":{\"x\":-2.035964868372347,\"y\":0.24103138748425662,\"z\":0.862326948559281},\"target\":{\"x\":0.0000887688371925821,\"y\":0.26723313670549487,\"z\":0.2516806631659178},\"mercFrame\":{\"minX\":-0.5592673007474284,\"maxX\":-0.1884000079579401,\"minY\":-0.2734847909340458,\"maxY\":0.33442967627786435},\"targetFrame\":{\"minX\":0.17055772793607293,\"maxX\":0.5820478283984004,\"minY\":-0.029078856770688093,\"maxY\":0.8581241382470478},\"combinedFrame\":{\"minX\":-0.5592673007474284,\"maxX\":0.5820478283984004,\"minY\":-0.2734847909340458,\"maxY\":0.8581241382470478},\"safeBottomNdc\":-0.3152430555555556,\"side\":1,\"clearance\":0.9288995555356884,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      },
+      "action": {
+        "kind": "actual-pcm-shatter",
+        "amplitude": 0.1,
+        "completedBefore": 0,
+        "completedAfter": 1,
+        "cameraModeAtCompletion": "holding",
+        "cameraModeAtCapture": "holding",
+        "controlledPresentationSecondsAtCapture": 0.2,
+        "animationClockRestoredBeforeReturn": true
+      },
+      "shattering": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "1",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "-1.2794160473372878",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-chamber/chamber/chamber/encounter/threshold-goblet\",\"progress\":1,\"settled\":true,\"safeBottomFraction\":0.3073784722222222,\"position\":{\"x\":-2.035964868372347,\"y\":0.24103138748425662,\"z\":0.862326948559281},\"target\":{\"x\":0.0000887688371925821,\"y\":0.26723313670549487,\"z\":0.2516806631659178},\"mercFrame\":{\"minX\":-0.5592673007474284,\"maxX\":-0.1884000079579401,\"minY\":-0.2734847909340458,\"maxY\":0.33442967627786435},\"targetFrame\":{\"minX\":0.17055772793607293,\"maxX\":0.5820478283984004,\"minY\":-0.029078856770688093,\"maxY\":0.8581241382470478},\"combinedFrame\":{\"minX\":-0.5592673007474284,\"maxX\":0.5820478283984004,\"minY\":-0.2734847909340458,\"maxY\":0.8581241382470478},\"safeBottomNdc\":-0.3152430555555556,\"side\":1,\"clearance\":0.9288995555356884,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-chamber/chamber/chamber/encounter/threshold-goblet"
+      },
+      "returned": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-chamber/chamber",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-chamber/chamber/chamber/checkpoint/arrival",
+        "completed": "1",
+        "playerX": "-2.9893758971880247e-16",
+        "playerY": "0",
+        "playerZ": "-0.3589893353174716",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0.3073784722222222,\"position\":{\"x\":1.0128738431514507e-16,\"y\":1.7929361547840355,\"z\":-3.6270742583548707},\"target\":{\"x\":-3.4540473293506684e-16,\"y\":0.42,\"z\":0.020443683644539246},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "panelBounds": {
+        "x": 500,
+        "y": 639.359375,
+        "width": 440,
+        "height": 232.640625
+      },
+      "files": [
+        "desktop-goblet-singing.png",
+        "desktop-goblet-shattering.png",
+        "desktop-goblet-returned.png"
+      ],
+      "errors": []
+    }
+  ]
+}

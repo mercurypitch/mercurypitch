@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "sourceCommit": "a6bf3140",
+  "status": "passed",
+  "capturedAt": "2026-09-21",
+  "rendering": "Chromium SwiftShader with actual GL draws",
+  "images": [
+    {
+      "file": "cloudway-arrival-tablet.png",
+      "bytes": 648416,
+      "sha256": "130780df440713426e8adb094e28df1b5d564fb21153ab11d325784affd364f2"
+    },
+    {
+      "file": "trial-card-1024.png",
+      "bytes": 389907,
+      "sha256": "7be58917fd4c209efc685f08ebab7f3ea5f398c00f5d01e044f1b7cfcc75e867"
+    },
+    {
+      "file": "trial-card-1440.png",
+      "bytes": 422460,
+      "sha256": "6e915f5d05bd750a811b8d5767dafb6feddfe6f8e7b70414dd17a7aa6b9fafa6"
+    },
+    {
+      "file": "trial-card-320.png",
+      "bytes": 150442,
+      "sha256": "1fbd37ececfd4cc55dc1508e74e7a49ec61d2dc0b3df2bc28133833146cb098c"
+    }
+  ],
+  "finalBuild": [
+    {
+      "file": "glass-game/index.html",
+      "bytes": 964,
+      "sha256": "6b8692d126b63098b1b8bf6641b7cab92123cb700ca44fd53545412559dada13"
+    },
+    {
+      "file": "assets/AdventureScreen-DoqUeIAG.js",
+      "bytes": 1048623,
+      "sha256": "a42f811478ff56c6240165f1f19c072c16287ac932d31d6e386189a02a7bf610"
+    },
+    {
+      "file": "assets/AdventureScreen-CA_ucmwM.css",
+      "bytes": 45886,
+      "sha256": "130a53d257419823702c44f9121dc21d07d436d96b3fc72849e34610df0d34ed"
+    },
+    {
+      "file": "games/cloudway-v1/cloudway-platform-kit-v1.glb",
+      "bytes": 7921368,
+      "sha256": "05deefa049031550b3aa7897a6d7a3345718b2e10a7595a272ea513195bb9e3e"
+    }
+  ],
+  "cases": {
+    "compiledRequirementsAndDeclinedEntry": {
+      "passed": 2,
+      "sourceCommit": "9946caba"
+    },
+    "compiledEarnedEntryFinalCaptions": {
+      "passed": 1,
+      "sourceCommit": "a6bf3140",
+      "seconds": 31.1
+    }
+  },
+  "physicalDeviceAcceptance": "pending owner playtest"
+}

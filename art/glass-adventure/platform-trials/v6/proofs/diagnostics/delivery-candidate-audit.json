@@ -1,0 +1,1372 @@
+{
+  "schema": 1,
+  "purpose": "Measure source-preserving 2K/WebP/KHR_mesh_quantization delivery candidates against the 4K audition masters.",
+  "status": "passed",
+  "policy": {
+    "masterUse": "Dev audition and archival authoring reference",
+    "deliveryUse": "Candidate for root runtime integration after visual acceptance",
+    "topologyReduction": false,
+    "wholeMeshDecimation": false,
+    "configuredRuntimeDecodersRequired": false
+  },
+  "assets": [
+    {
+      "asset": "frost",
+      "status": "passed",
+      "master": {
+        "file": "art/glass-adventure/platform-trials/v6/exports/cloudway-frost-v6-derivative.glb",
+        "bytes": 76266516,
+        "gzipBytes": 68294219,
+        "sha256": "fcf290ba39b78e5f8f58344eb63e2f16d6fb8632be554cebd59abbb7ecdefd77",
+        "geometryAccessorBytes": 24140496,
+        "estimatedMipmappedRgbaTextureBytes": 234881016
+      },
+      "delivery": {
+        "file": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-frost-v6-delivery-2k.glb",
+        "bytes": 26829112,
+        "gzipBytes": 21017149,
+        "sha256": "6a63fb71fc80319e13a8d783c0bb7788216615aefbb6690f28c3df7f6c72e0a0",
+        "sizeReductionPercent": 64.82,
+        "geometryAccessorBytes": 15826512,
+        "estimatedMipmappedRgbaTextureBytes": 100663288,
+        "extensionsUsed": [
+          "EXT_texture_webp",
+          "KHR_materials_clearcoat",
+          "KHR_materials_ior",
+          "KHR_materials_transmission",
+          "KHR_materials_volume",
+          "KHR_mesh_quantization"
+        ],
+        "extensionsRequired": [
+          "EXT_texture_webp",
+          "KHR_mesh_quantization"
+        ],
+        "unconfiguredDecoderExtensions": []
+      },
+      "geometry": {
+        "meshObjects": 13,
+        "triangles": 634512,
+        "triangleIndicesExactlyPreserved": true,
+        "maxWorldPositionDeltaMetres": 2.3669e-05,
+        "rmsWorldPositionDeltaMetres": 1.3706e-05,
+        "maxCornerNormalDeltaDegrees": 0.490794,
+        "rmsCornerNormalDeltaDegrees": 0.002878,
+        "maxUvDelta": 7.629e-06,
+        "rmsUvDelta": 4.402e-06,
+        "normalValidityChanges": 0,
+        "normalValidityLosses": 0,
+        "normalValidityGains": 0,
+        "deliveryBoundaryBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850001055,
+            -0.64999887,
+            -0.010003998
+          ],
+          "max": [
+            0.850001055,
+            0.64999887,
+            0.004003998
+          ]
+        },
+        "deliveryLandingExtensionBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850002408,
+            -0.650006552,
+            -0.070001511
+          ],
+          "max": [
+            0.850002408,
+            0.650006552,
+            1.511e-06
+          ]
+        },
+        "objects": [
+          {
+            "object": "frost_dense_donor",
+            "vertices": 340208,
+            "triangles": 632256,
+            "triangleIndicesInt32Sha256": "5f90d3005d41151401c586cc4359d1f6e3317458a031a5f10fc4ef28c9400dc2",
+            "maxWorldPositionDeltaMetres": 2.3669e-05,
+            "rmsWorldPositionDeltaMetres": 1.3741e-05,
+            "maxCornerNormalDeltaDegrees": 0.490794,
+            "rmsCornerNormalDeltaDegrees": 0.002866,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.403e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.899999976,
+                -0.485662192,
+                -0.469731688
+              ],
+              "max": [
+                0.899999976,
+                0.485662192,
+                0.032655146
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.899999976,
+                -0.485665428,
+                -0.469720861
+              ],
+              "max": [
+                0.899999976,
+                0.485665428,
+                0.032644322
+              ]
+            }
+          },
+          {
+            "object": "frost_donor_seam_front",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.8024e-05,
+            "rmsWorldPositionDeltaMetres": 1.2985e-05,
+            "maxCornerNormalDeltaDegrees": 0.017106,
+            "rmsCornerNormalDeltaDegrees": 0.003309,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.392e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                -0.430962648,
+                -0.007
+              ],
+              "max": [
+                0.824999988,
+                -0.412962649,
+                0.003
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                -0.430951112,
+                -0.007010376
+              ],
+              "max": [
+                0.824999988,
+                -0.412974185,
+                0.003010376
+              ]
+            }
+          },
+          {
+            "object": "frost_donor_seam_left",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e83ded0a89439b4633879def58062b12ab8ec83dfe9170bfac435aaac366fedd",
+            "maxWorldPositionDeltaMetres": 9.193e-06,
+            "rmsWorldPositionDeltaMetres": 7.086e-06,
+            "maxCornerNormalDeltaDegrees": 0.023277,
+            "rmsCornerNormalDeltaDegrees": 0.005929,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.06e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.831478234,
+                -0.421962649,
+                -0.007
+              ],
+              "max": [
+                -0.813478235,
+                0.421962649,
+                0.003
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.831479727,
+                -0.421962649,
+                -0.006996536
+              ],
+              "max": [
+                -0.813476742,
+                0.421962649,
+                0.002996536
+              ]
+            }
+          },
+          {
+            "object": "frost_donor_seam_rear",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.8024e-05,
+            "rmsWorldPositionDeltaMetres": 1.2985e-05,
+            "maxCornerNormalDeltaDegrees": 0.017106,
+            "rmsCornerNormalDeltaDegrees": 0.003309,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.392e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                0.412962649,
+                -0.007
+              ],
+              "max": [
+                0.824999988,
+                0.430962648,
+                0.003
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                0.412974185,
+                -0.007010376
+              ],
+              "max": [
+                0.824999988,
+                0.430951112,
+                0.003010376
+              ]
+            }
+          },
+          {
+            "object": "frost_donor_seam_right",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e83ded0a89439b4633879def58062b12ab8ec83dfe9170bfac435aaac366fedd",
+            "maxWorldPositionDeltaMetres": 9.193e-06,
+            "rmsWorldPositionDeltaMetres": 7.086e-06,
+            "maxCornerNormalDeltaDegrees": 0.023277,
+            "rmsCornerNormalDeltaDegrees": 0.005929,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.06e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                0.813478235,
+                -0.421962649,
+                -0.007
+              ],
+              "max": [
+                0.831478234,
+                0.421962649,
+                0.003
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                0.813476742,
+                -0.421962649,
+                -0.006996536
+              ],
+              "max": [
+                0.831479727,
+                0.421962649,
+                0.002996536
+              ]
+            }
+          },
+          {
+            "object": "frost_landing_front",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.716e-05,
+            "rmsWorldPositionDeltaMetres": 1.357e-05,
+            "maxCornerNormalDeltaDegrees": 0.009747,
+            "rmsCornerNormalDeltaDegrees": 0.003407,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.265e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.650000021,
+                -0.07
+              ],
+              "max": [
+                0.850000024,
+                -0.405962661,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.650006552,
+                -0.069994049
+              ],
+              "max": [
+                0.850000024,
+                -0.405956129,
+                -5.951e-06
+              ]
+            }
+          },
+          {
+            "object": "frost_landing_left",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 8.842e-06,
+            "rmsWorldPositionDeltaMetres": 6.441e-06,
+            "maxCornerNormalDeltaDegrees": 0.026662,
+            "rmsCornerNormalDeltaDegrees": 0.007147,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.291e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000022,
+                -0.421962649,
+                -0.07
+              ],
+              "max": [
+                -0.806478264,
+                0.421962649,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850002408,
+                -0.421962649,
+                -0.070001511
+              ],
+              "max": [
+                -0.806475878,
+                0.421962649,
+                1.511e-06
+              ]
+            }
+          },
+          {
+            "object": "frost_landing_rear",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.716e-05,
+            "rmsWorldPositionDeltaMetres": 1.357e-05,
+            "maxCornerNormalDeltaDegrees": 0.009747,
+            "rmsCornerNormalDeltaDegrees": 0.003407,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.265e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.405962661,
+                -0.07
+              ],
+              "max": [
+                0.850000024,
+                0.650000021,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.405956129,
+                -0.069994049
+              ],
+              "max": [
+                0.850000024,
+                0.650006552,
+                -5.951e-06
+              ]
+            }
+          },
+          {
+            "object": "frost_landing_right",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 8.842e-06,
+            "rmsWorldPositionDeltaMetres": 6.441e-06,
+            "maxCornerNormalDeltaDegrees": 0.026662,
+            "rmsCornerNormalDeltaDegrees": 0.007147,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.291e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                0.806478264,
+                -0.421962649,
+                -0.07
+              ],
+              "max": [
+                0.850000022,
+                0.421962649,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                0.806475878,
+                -0.421962649,
+                -0.070001511
+              ],
+              "max": [
+                0.850002408,
+                0.421962649,
+                1.511e-06
+              ]
+            }
+          },
+          {
+            "object": "frost_outer_gold_front",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.6581e-05,
+            "rmsWorldPositionDeltaMetres": 1.3455e-05,
+            "maxCornerNormalDeltaDegrees": 0.026278,
+            "rmsCornerNormalDeltaDegrees": 0.006085,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.023e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.649999999,
+                -0.01
+              ],
+              "max": [
+                0.850000024,
+                -0.627999999,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.64999887,
+                -0.010003998
+              ],
+              "max": [
+                0.850000024,
+                -0.628001127,
+                0.004003998
+              ]
+            }
+          },
+          {
+            "object": "frost_outer_gold_left",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.0517e-05,
+            "rmsWorldPositionDeltaMetres": 8.336e-06,
+            "maxCornerNormalDeltaDegrees": 0.021115,
+            "rmsCornerNormalDeltaDegrees": 0.004175,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 3.875e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.849999987,
+                -0.628000021,
+                -0.01
+              ],
+              "max": [
+                -0.827999987,
+                0.628000021,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850001055,
+                -0.628000021,
+                -0.009995453
+              ],
+              "max": [
+                -0.827998918,
+                0.628000021,
+                0.003995453
+              ]
+            }
+          },
+          {
+            "object": "frost_outer_gold_rear",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.6581e-05,
+            "rmsWorldPositionDeltaMetres": 1.3455e-05,
+            "maxCornerNormalDeltaDegrees": 0.026278,
+            "rmsCornerNormalDeltaDegrees": 0.006085,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.023e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.627999999,
+                -0.01
+              ],
+              "max": [
+                0.850000024,
+                0.649999999,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.628001127,
+                -0.010003998
+              ],
+              "max": [
+                0.850000024,
+                0.64999887,
+                0.004003998
+              ]
+            }
+          },
+          {
+            "object": "frost_outer_gold_right",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.0517e-05,
+            "rmsWorldPositionDeltaMetres": 8.336e-06,
+            "maxCornerNormalDeltaDegrees": 0.021115,
+            "rmsCornerNormalDeltaDegrees": 0.004175,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 3.876e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                0.827999987,
+                -0.628000021,
+                -0.01
+              ],
+              "max": [
+                0.849999987,
+                0.628000021,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                0.827998918,
+                -0.628000021,
+                -0.009995453
+              ],
+              "max": [
+                0.850001055,
+                0.628000021,
+                0.003995453
+              ]
+            }
+          }
+        ]
+      },
+      "textures": [
+        {
+          "name": "frost-frame-base-1k",
+          "masterDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 31234,
+          "meanAbsoluteChannelError8Bit": 0.0,
+          "maxAbsoluteChannelError8Bit": 0,
+          "psnrDbAgainstLanczosMatchedMaster": "lossless"
+        },
+        {
+          "name": "frost-frame-normal-1k",
+          "masterDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 132230,
+          "meanAbsoluteChannelError8Bit": 0.0,
+          "maxAbsoluteChannelError8Bit": 0,
+          "psnrDbAgainstLanczosMatchedMaster": "lossless"
+        },
+        {
+          "name": "frost-metallic-2k-frost-roughness-2k",
+          "masterDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 1140162,
+          "meanAbsoluteChannelError8Bit": 0.025444,
+          "maxAbsoluteChannelError8Bit": 1,
+          "psnrDbAgainstLanczosMatchedMaster": 64.0749
+        },
+        {
+          "name": "frost-transmission-2k",
+          "masterDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 135702,
+          "meanAbsoluteChannelError8Bit": 0.0,
+          "maxAbsoluteChannelError8Bit": 0,
+          "psnrDbAgainstLanczosMatchedMaster": "lossless"
+        },
+        {
+          "name": "set-0-base_color",
+          "masterDimensions": [
+            4096,
+            4096
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 4481282,
+          "meanAbsoluteChannelError8Bit": 0.404722,
+          "maxAbsoluteChannelError8Bit": 15,
+          "psnrDbAgainstLanczosMatchedMaster": 51.3604
+        },
+        {
+          "name": "set-0-normal",
+          "masterDimensions": [
+            4096,
+            4096
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 3697524,
+          "meanAbsoluteChannelError8Bit": 0.311016,
+          "maxAbsoluteChannelError8Bit": 3,
+          "psnrDbAgainstLanczosMatchedMaster": 52.5587
+        }
+      ],
+      "validator": {
+        "file": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-frost-v6-delivery-2k-validator.txt",
+        "errors": 0,
+        "warnings": 0,
+        "infoOnly": true
+      }
+    },
+    {
+      "asset": "glide",
+      "status": "passed",
+      "master": {
+        "file": "art/glass-adventure/platform-trials/v6/exports/cloudway-glide-v6-derivative.glb",
+        "bytes": 52829172,
+        "gzipBytes": 50763900,
+        "sha256": "a4c7008e133a7b6162ea223c955323a441592e43d214cb8d5c3bed4cde626915",
+        "geometryAccessorBytes": 5872800,
+        "estimatedMipmappedRgbaTextureBytes": 234881016
+      },
+      "delivery": {
+        "file": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-glide-v6-delivery-2k.glb",
+        "bytes": 12889480,
+        "gzipBytes": 11405986,
+        "sha256": "68eefd6f006a0d2b0d6c8fdad658974432a8fb2bf936b9830904be8d50e50a23",
+        "sizeReductionPercent": 75.6,
+        "geometryAccessorBytes": 3778464,
+        "estimatedMipmappedRgbaTextureBytes": 100663288,
+        "extensionsUsed": [
+          "EXT_texture_webp",
+          "KHR_materials_clearcoat",
+          "KHR_materials_ior",
+          "KHR_materials_transmission",
+          "KHR_materials_volume",
+          "KHR_mesh_quantization"
+        ],
+        "extensionsRequired": [
+          "EXT_texture_webp",
+          "KHR_mesh_quantization"
+        ],
+        "unconfiguredDecoderExtensions": []
+      },
+      "geometry": {
+        "meshObjects": 11,
+        "triangles": 147250,
+        "triangleIndicesExactlyPreserved": true,
+        "maxWorldPositionDeltaMetres": 2.3344e-05,
+        "rmsWorldPositionDeltaMetres": 1.367e-05,
+        "maxCornerNormalDeltaDegrees": 0.229943,
+        "rmsCornerNormalDeltaDegrees": 0.003095,
+        "maxUvDelta": 7.629e-06,
+        "rmsUvDelta": 4.398e-06,
+        "normalValidityChanges": 3,
+        "normalValidityLosses": 0,
+        "normalValidityGains": 3,
+        "deliveryBoundaryBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850001055,
+            -0.64999887,
+            -0.010003998
+          ],
+          "max": [
+            0.850001055,
+            0.64999887,
+            0.004003998
+          ]
+        },
+        "deliveryLandingExtensionBoundsBlenderZUpMetres": {
+          "min": [
+            -0.850000024,
+            -0.649993561,
+            -0.069996456
+          ],
+          "max": [
+            0.850000024,
+            0.649993561,
+            -3.544e-06
+          ]
+        },
+        "objects": [
+          {
+            "object": "glide_dense_donor",
+            "vertices": 82144,
+            "triangles": 145370,
+            "triangleIndicesInt32Sha256": "f6841e1da4d11d236cc206ff75802592b8741b955ce6c16fd37574dd375007a4",
+            "maxWorldPositionDeltaMetres": 2.3344e-05,
+            "rmsWorldPositionDeltaMetres": 1.3753e-05,
+            "maxCornerNormalDeltaDegrees": 0.229943,
+            "rmsCornerNormalDeltaDegrees": 0.003061,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.401e-06,
+            "masterInvalidCornerNormals": 3,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 3,
+            "normalValidityLost": 0,
+            "normalValidityGained": 3,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.899999976,
+                -0.418782741,
+                -0.303937286
+              ],
+              "max": [
+                0.899999976,
+                0.418782741,
+                0.019400267
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.899999976,
+                -0.418784119,
+                -0.303937258
+              ],
+              "max": [
+                0.899999976,
+                0.418784119,
+                0.019400241
+              ]
+            }
+          },
+          {
+            "object": "glide_donor_seam_front",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.8024e-05,
+            "rmsWorldPositionDeltaMetres": 1.2985e-05,
+            "maxCornerNormalDeltaDegrees": 0.017106,
+            "rmsCornerNormalDeltaDegrees": 0.003309,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.392e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                -0.38984653,
+                -0.007
+              ],
+              "max": [
+                0.824999988,
+                -0.371846531,
+                0.003
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                -0.389834994,
+                -0.007010376
+              ],
+              "max": [
+                0.824999988,
+                -0.371858066,
+                0.003010376
+              ]
+            }
+          },
+          {
+            "object": "glide_donor_seam_rear",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.8024e-05,
+            "rmsWorldPositionDeltaMetres": 1.2985e-05,
+            "maxCornerNormalDeltaDegrees": 0.017106,
+            "rmsCornerNormalDeltaDegrees": 0.003309,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.393e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                0.371846531,
+                -0.007
+              ],
+              "max": [
+                0.824999988,
+                0.38984653,
+                0.003
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.824999988,
+                0.371858066,
+                -0.007010376
+              ],
+              "max": [
+                0.824999988,
+                0.389834994,
+                0.003010376
+              ]
+            }
+          },
+          {
+            "object": "glide_landing_front",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.8388e-05,
+            "rmsWorldPositionDeltaMetres": 1.5308e-05,
+            "maxCornerNormalDeltaDegrees": 0.018479,
+            "rmsCornerNormalDeltaDegrees": 0.004919,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.299e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.650000006,
+                -0.07
+              ],
+              "max": [
+                0.850000024,
+                -0.364846557,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.649993561,
+                -0.069994049
+              ],
+              "max": [
+                0.850000024,
+                -0.364853003,
+                -5.951e-06
+              ]
+            }
+          },
+          {
+            "object": "glide_landing_left",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 8.723e-06,
+            "rmsWorldPositionDeltaMetres": 6.113e-06,
+            "maxCornerNormalDeltaDegrees": 0.028166,
+            "rmsCornerNormalDeltaDegrees": 0.006249,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.204e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.849999976,
+                -0.38084653,
+                -0.07
+              ],
+              "max": [
+                -0.824999976,
+                0.38084653,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.84999456,
+                -0.38084653,
+                -0.069996456
+              ],
+              "max": [
+                -0.825005392,
+                0.38084653,
+                -3.544e-06
+              ]
+            }
+          },
+          {
+            "object": "glide_landing_rear",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.8388e-05,
+            "rmsWorldPositionDeltaMetres": 1.5308e-05,
+            "maxCornerNormalDeltaDegrees": 0.018479,
+            "rmsCornerNormalDeltaDegrees": 0.004919,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.299e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.364846557,
+                -0.07
+              ],
+              "max": [
+                0.850000024,
+                0.650000006,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.364853003,
+                -0.069994049
+              ],
+              "max": [
+                0.850000024,
+                0.649993561,
+                -5.951e-06
+              ]
+            }
+          },
+          {
+            "object": "glide_landing_right",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 8.723e-06,
+            "rmsWorldPositionDeltaMetres": 6.113e-06,
+            "maxCornerNormalDeltaDegrees": 0.028166,
+            "rmsCornerNormalDeltaDegrees": 0.006249,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.204e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                0.824999976,
+                -0.38084653,
+                -0.07
+              ],
+              "max": [
+                0.849999976,
+                0.38084653,
+                0.0
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                0.825005392,
+                -0.38084653,
+                -0.069996456
+              ],
+              "max": [
+                0.84999456,
+                0.38084653,
+                -3.544e-06
+              ]
+            }
+          },
+          {
+            "object": "glide_outer_gold_front",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.6581e-05,
+            "rmsWorldPositionDeltaMetres": 1.3455e-05,
+            "maxCornerNormalDeltaDegrees": 0.026278,
+            "rmsCornerNormalDeltaDegrees": 0.006085,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.023e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.649999999,
+                -0.01
+              ],
+              "max": [
+                0.850000024,
+                -0.627999999,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                -0.64999887,
+                -0.010003998
+              ],
+              "max": [
+                0.850000024,
+                -0.628001127,
+                0.004003998
+              ]
+            }
+          },
+          {
+            "object": "glide_outer_gold_left",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.0517e-05,
+            "rmsWorldPositionDeltaMetres": 8.336e-06,
+            "maxCornerNormalDeltaDegrees": 0.021115,
+            "rmsCornerNormalDeltaDegrees": 0.004175,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 3.876e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.849999987,
+                -0.628000021,
+                -0.01
+              ],
+              "max": [
+                -0.827999987,
+                0.628000021,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850001055,
+                -0.628000021,
+                -0.009995453
+              ],
+              "max": [
+                -0.827998918,
+                0.628000021,
+                0.003995453
+              ]
+            }
+          },
+          {
+            "object": "glide_outer_gold_rear",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.6581e-05,
+            "rmsWorldPositionDeltaMetres": 1.3455e-05,
+            "maxCornerNormalDeltaDegrees": 0.026278,
+            "rmsCornerNormalDeltaDegrees": 0.006085,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 4.023e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.627999999,
+                -0.01
+              ],
+              "max": [
+                0.850000024,
+                0.649999999,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                -0.850000024,
+                0.628001127,
+                -0.010003998
+              ],
+              "max": [
+                0.850000024,
+                0.64999887,
+                0.004003998
+              ]
+            }
+          },
+          {
+            "object": "glide_outer_gold_right",
+            "vertices": 384,
+            "triangles": 188,
+            "triangleIndicesInt32Sha256": "e9ad2ac931c72e003cf6c1af959836a59101a711bbef41585d521a09a3f248bb",
+            "maxWorldPositionDeltaMetres": 1.0517e-05,
+            "rmsWorldPositionDeltaMetres": 8.336e-06,
+            "maxCornerNormalDeltaDegrees": 0.021115,
+            "rmsCornerNormalDeltaDegrees": 0.004175,
+            "maxUvDelta": 7.629e-06,
+            "rmsUvDelta": 3.875e-06,
+            "masterInvalidCornerNormals": 0,
+            "deliveryInvalidCornerNormals": 0,
+            "normalValidityChanged": 0,
+            "normalValidityLost": 0,
+            "normalValidityGained": 0,
+            "masterBoundsBlenderZUpMetres": {
+              "min": [
+                0.827999987,
+                -0.628000021,
+                -0.01
+              ],
+              "max": [
+                0.849999987,
+                0.628000021,
+                0.004
+              ]
+            },
+            "deliveryBoundsBlenderZUpMetres": {
+              "min": [
+                0.827998918,
+                -0.628000021,
+                -0.009995453
+              ],
+              "max": [
+                0.850001055,
+                0.628000021,
+                0.003995453
+              ]
+            }
+          }
+        ]
+      },
+      "textures": [
+        {
+          "name": "glide-frame-base-1k",
+          "masterDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 39352,
+          "meanAbsoluteChannelError8Bit": 0.0,
+          "maxAbsoluteChannelError8Bit": 0,
+          "psnrDbAgainstLanczosMatchedMaster": "lossless"
+        },
+        {
+          "name": "glide-frame-normal-1k",
+          "masterDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryDimensions": [
+            1024,
+            1024
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 134974,
+          "meanAbsoluteChannelError8Bit": 0.0,
+          "maxAbsoluteChannelError8Bit": 0,
+          "psnrDbAgainstLanczosMatchedMaster": "lossless"
+        },
+        {
+          "name": "glide-metallic-2k-glide-roughness-2k",
+          "masterDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 1009368,
+          "meanAbsoluteChannelError8Bit": 0.025864,
+          "maxAbsoluteChannelError8Bit": 1,
+          "psnrDbAgainstLanczosMatchedMaster": 64.0039
+        },
+        {
+          "name": "glide-transmission-2k",
+          "masterDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 188104,
+          "meanAbsoluteChannelError8Bit": 0.0,
+          "maxAbsoluteChannelError8Bit": 0,
+          "psnrDbAgainstLanczosMatchedMaster": "lossless"
+        },
+        {
+          "name": "set-0-base_color",
+          "masterDimensions": [
+            4096,
+            4096
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 4119166,
+          "meanAbsoluteChannelError8Bit": 0.393225,
+          "maxAbsoluteChannelError8Bit": 17,
+          "psnrDbAgainstLanczosMatchedMaster": 51.5377
+        },
+        {
+          "name": "set-0-normal",
+          "masterDimensions": [
+            4096,
+            4096
+          ],
+          "deliveryDimensions": [
+            2048,
+            2048
+          ],
+          "deliveryMimeType": "image/webp",
+          "deliveryBytes": 3270906,
+          "meanAbsoluteChannelError8Bit": 0.29314,
+          "maxAbsoluteChannelError8Bit": 3,
+          "psnrDbAgainstLanczosMatchedMaster": 52.8447
+        }
+      ],
+      "validator": {
+        "file": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-glide-v6-delivery-2k-validator.txt",
+        "errors": 0,
+        "warnings": 0,
+        "infoOnly": true
+      }
+    }
+  ],
+  "combined": {
+    "masterBytes": 129095688,
+    "deliveryBytes": 39718592,
+    "deliveryReductionPercent": 69.23,
+    "estimatedDeliveryMipmappedRgbaTextureBytes": 201326576,
+    "deliveryGeometryAccessorBytes": 19604976
+  },
+  "thresholds": {
+    "maxWorldPositionDeltaMetres": 5e-05,
+    "maxCornerNormalDeltaDegrees": 1.0,
+    "maxUvDelta": 5e-05,
+    "minimumTexturePsnrDb": 40.0,
+    "maxTextureDimension": 2048
+  },
+  "tool": {
+    "blender": "5.2.2 LTS"
+  },
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/audit_delivery_candidates.py"
+}

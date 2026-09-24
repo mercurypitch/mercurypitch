@@ -1,0 +1,30 @@
+{
+  "revision": "merc-break-reactions-v4-2026-09-20",
+  "id": "beautiful-mess",
+  "text": "Another beautiful mess.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "Another beautiful mess.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 209201
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-20T13:57:53.567Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "IyelpsCse7JVTMb8Zxdm",
+  "character_cost": "13",
+  "bytes": 103680,
+  "sha256": "97be1e32b2add1e2292198917b74d30529b64a3a2240a0310e2fce79ddc2302d",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 2.16,
+  "completed_at": "2026-09-20T13:57:56.236Z"
+}

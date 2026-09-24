@@ -1,0 +1,118 @@
+{
+  "id": "light-a",
+  "text": "Let light sing.",
+  "sha256": "ccbf4583c27986d2946ebce0a455ed6509527fe349fa16a11862c96735eaff9f",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": null,
+  "words": [
+    {
+      "text": "Let",
+      "start": 0.24,
+      "end": 0.52,
+      "loss": 1.177319844563802
+    },
+    {
+      "text": " ",
+      "start": 0.52,
+      "end": 0.68,
+      "loss": 1.3585796356201172
+    },
+    {
+      "text": "light",
+      "start": 0.68,
+      "end": 1.08,
+      "loss": 0.9008102416992188
+    },
+    {
+      "text": " ",
+      "start": 1.08,
+      "end": 1.16,
+      "loss": 1.3577842712402344
+    },
+    {
+      "text": "sing.",
+      "start": 1.22,
+      "end": 1.6,
+      "loss": 1.519771194458008
+    }
+  ],
+  "characters": [
+    {
+      "text": "L",
+      "start": 0.24,
+      "end": 0.3
+    },
+    {
+      "text": "e",
+      "start": 0.32,
+      "end": 0.4
+    },
+    {
+      "text": "t",
+      "start": 0.4,
+      "end": 0.52
+    },
+    {
+      "text": " ",
+      "start": 0.52,
+      "end": 0.68
+    },
+    {
+      "text": "l",
+      "start": 0.68,
+      "end": 0.82
+    },
+    {
+      "text": "i",
+      "start": 0.82,
+      "end": 0.9
+    },
+    {
+      "text": "g",
+      "start": 0.9,
+      "end": 0.92
+    },
+    {
+      "text": "h",
+      "start": 0.92,
+      "end": 0.98
+    },
+    {
+      "text": "t",
+      "start": 0.98,
+      "end": 1.08
+    },
+    {
+      "text": " ",
+      "start": 1.08,
+      "end": 1.16
+    },
+    {
+      "text": "s",
+      "start": 1.22,
+      "end": 1.26
+    },
+    {
+      "text": "i",
+      "start": 1.32,
+      "end": 1.4
+    },
+    {
+      "text": "n",
+      "start": 1.4,
+      "end": 1.48
+    },
+    {
+      "text": "g",
+      "start": 1.58,
+      "end": 1.6
+    },
+    {
+      "text": ".",
+      "start": 1.6,
+      "end": 1.6
+    }
+  ],
+  "loss": 1.2234153747558594
+}

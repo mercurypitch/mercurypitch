@@ -1,0 +1,5485 @@
+{
+  "source": "light-a",
+  "contour": {
+    "id": "first-arc",
+    "version": 1,
+    "rootMidi": 50,
+    "transposeSemitones": 0,
+    "pace": 1,
+    "durationSeconds": 2.7,
+    "singingSeconds": 2.7,
+    "minimumMidi": 50,
+    "maximumMidi": 52,
+    "phrases": [
+      {
+        "id": "first-arc-phrase",
+        "index": 0,
+        "startSeconds": 0,
+        "endSeconds": 2.7,
+        "phaseStart": 0,
+        "phaseEnd": 1,
+        "allowBreathAfter": false,
+        "anchors": [
+          {
+            "id": "first-arc-home",
+            "phraseId": "first-arc-phrase",
+            "phraseIndex": 0,
+            "anchorIndex": 0,
+            "midi": 50,
+            "startSeconds": 0,
+            "completedAtSeconds": 0.4,
+            "completedPhase": 0.14814814814814814
+          },
+          {
+            "id": "first-arc-rise",
+            "phraseId": "first-arc-phrase",
+            "phraseIndex": 0,
+            "anchorIndex": 1,
+            "midi": 52,
+            "startSeconds": 1.05,
+            "completedAtSeconds": 1.4500000000000002,
+            "completedPhase": 0.5370370370370371
+          },
+          {
+            "id": "first-arc-return",
+            "phraseId": "first-arc-phrase",
+            "phraseIndex": 0,
+            "anchorIndex": 2,
+            "midi": 50,
+            "startSeconds": 2.1,
+            "completedAtSeconds": 2.7,
+            "completedPhase": 1
+          }
+        ],
+        "segments": [
+          {
+            "id": "first-arc-phrase:first-arc-home:landing",
+            "kind": "landing",
+            "phraseIndex": 0,
+            "startSeconds": 0,
+            "endSeconds": 0.4,
+            "fromMidi": 50,
+            "toMidi": 50,
+            "fromAnchorId": "first-arc-home",
+            "toAnchorId": "first-arc-home",
+            "phaseStart": 0,
+            "phaseEnd": 0.14814814814814814
+          },
+          {
+            "id": "first-arc-phrase:first-arc-home:first-arc-rise:glide",
+            "kind": "glide",
+            "phraseIndex": 0,
+            "startSeconds": 0.4,
+            "endSeconds": 1.05,
+            "fromMidi": 50,
+            "toMidi": 52,
+            "fromAnchorId": "first-arc-home",
+            "toAnchorId": "first-arc-rise",
+            "phaseStart": 0.14814814814814814,
+            "phaseEnd": 0.3888888888888889
+          },
+          {
+            "id": "first-arc-phrase:first-arc-rise:landing",
+            "kind": "landing",
+            "phraseIndex": 0,
+            "startSeconds": 1.05,
+            "endSeconds": 1.4500000000000002,
+            "fromMidi": 52,
+            "toMidi": 52,
+            "fromAnchorId": "first-arc-rise",
+            "toAnchorId": "first-arc-rise",
+            "phaseStart": 0.3888888888888889,
+            "phaseEnd": 0.5370370370370371
+          },
+          {
+            "id": "first-arc-phrase:first-arc-rise:first-arc-return:glide",
+            "kind": "glide",
+            "phraseIndex": 0,
+            "startSeconds": 1.4500000000000002,
+            "endSeconds": 2.1,
+            "fromMidi": 52,
+            "toMidi": 50,
+            "fromAnchorId": "first-arc-rise",
+            "toAnchorId": "first-arc-return",
+            "phaseStart": 0.5370370370370371,
+            "phaseEnd": 0.7777777777777778
+          },
+          {
+            "id": "first-arc-phrase:first-arc-return:landing",
+            "kind": "landing",
+            "phraseIndex": 0,
+            "startSeconds": 2.1,
+            "endSeconds": 2.7,
+            "fromMidi": 50,
+            "toMidi": 50,
+            "fromAnchorId": "first-arc-return",
+            "toAnchorId": "first-arc-return",
+            "phaseStart": 0.7777777777777778,
+            "phaseEnd": 1
+          }
+        ]
+      }
+    ],
+    "anchors": [
+      {
+        "id": "first-arc-home",
+        "phraseId": "first-arc-phrase",
+        "phraseIndex": 0,
+        "anchorIndex": 0,
+        "midi": 50,
+        "startSeconds": 0,
+        "completedAtSeconds": 0.4,
+        "completedPhase": 0.14814814814814814
+      },
+      {
+        "id": "first-arc-rise",
+        "phraseId": "first-arc-phrase",
+        "phraseIndex": 0,
+        "anchorIndex": 1,
+        "midi": 52,
+        "startSeconds": 1.05,
+        "completedAtSeconds": 1.4500000000000002,
+        "completedPhase": 0.5370370370370371
+      },
+      {
+        "id": "first-arc-return",
+        "phraseId": "first-arc-phrase",
+        "phraseIndex": 0,
+        "anchorIndex": 2,
+        "midi": 50,
+        "startSeconds": 2.1,
+        "completedAtSeconds": 2.7,
+        "completedPhase": 1
+      }
+    ],
+    "segments": [
+      {
+        "id": "first-arc-phrase:first-arc-home:landing",
+        "kind": "landing",
+        "phraseIndex": 0,
+        "startSeconds": 0,
+        "endSeconds": 0.4,
+        "fromMidi": 50,
+        "toMidi": 50,
+        "fromAnchorId": "first-arc-home",
+        "toAnchorId": "first-arc-home",
+        "phaseStart": 0,
+        "phaseEnd": 0.14814814814814814
+      },
+      {
+        "id": "first-arc-phrase:first-arc-home:first-arc-rise:glide",
+        "kind": "glide",
+        "phraseIndex": 0,
+        "startSeconds": 0.4,
+        "endSeconds": 1.05,
+        "fromMidi": 50,
+        "toMidi": 52,
+        "fromAnchorId": "first-arc-home",
+        "toAnchorId": "first-arc-rise",
+        "phaseStart": 0.14814814814814814,
+        "phaseEnd": 0.3888888888888889
+      },
+      {
+        "id": "first-arc-phrase:first-arc-rise:landing",
+        "kind": "landing",
+        "phraseIndex": 0,
+        "startSeconds": 1.05,
+        "endSeconds": 1.4500000000000002,
+        "fromMidi": 52,
+        "toMidi": 52,
+        "fromAnchorId": "first-arc-rise",
+        "toAnchorId": "first-arc-rise",
+        "phaseStart": 0.3888888888888889,
+        "phaseEnd": 0.5370370370370371
+      },
+      {
+        "id": "first-arc-phrase:first-arc-rise:first-arc-return:glide",
+        "kind": "glide",
+        "phraseIndex": 0,
+        "startSeconds": 1.4500000000000002,
+        "endSeconds": 2.1,
+        "fromMidi": 52,
+        "toMidi": 50,
+        "fromAnchorId": "first-arc-rise",
+        "toAnchorId": "first-arc-return",
+        "phaseStart": 0.5370370370370371,
+        "phaseEnd": 0.7777777777777778
+      },
+      {
+        "id": "first-arc-phrase:first-arc-return:landing",
+        "kind": "landing",
+        "phraseIndex": 0,
+        "startSeconds": 2.1,
+        "endSeconds": 2.7,
+        "fromMidi": 50,
+        "toMidi": 50,
+        "fromAnchorId": "first-arc-return",
+        "toAnchorId": "first-arc-return",
+        "phaseStart": 0.7777777777777778,
+        "phaseEnd": 1
+      }
+    ],
+    "samples": [
+      {
+        "timeSeconds": 0,
+        "phase": 0,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.008333333333333333,
+        "phase": 0.0030864197530864196,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.016666666666666666,
+        "phase": 0.006172839506172839,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.025,
+        "phase": 0.009259259259259259,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.03333333333333333,
+        "phase": 0.012345679012345678,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.041666666666666664,
+        "phase": 0.015432098765432096,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.05,
+        "phase": 0.018518518518518517,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.058333333333333334,
+        "phase": 0.021604938271604934,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.06666666666666667,
+        "phase": 0.024691358024691357,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.075,
+        "phase": 0.027777777777777773,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.08333333333333333,
+        "phase": 0.030864197530864192,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.09166666666666667,
+        "phase": 0.033950617283950615,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.1,
+        "phase": 0.037037037037037035,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.10833333333333334,
+        "phase": 0.040123456790123455,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.11666666666666667,
+        "phase": 0.04320987654320987,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.125,
+        "phase": 0.046296296296296294,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.13333333333333333,
+        "phase": 0.04938271604938271,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.14166666666666666,
+        "phase": 0.052469135802469126,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.15,
+        "phase": 0.055555555555555546,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.15833333333333333,
+        "phase": 0.05864197530864197,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.16666666666666666,
+        "phase": 0.061728395061728385,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.175,
+        "phase": 0.0648148148148148,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.18333333333333335,
+        "phase": 0.06790123456790123,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.19166666666666668,
+        "phase": 0.07098765432098765,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.2,
+        "phase": 0.07407407407407407,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.20833333333333334,
+        "phase": 0.07716049382716049,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.21666666666666667,
+        "phase": 0.08024691358024691,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.225,
+        "phase": 0.08333333333333333,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.23333333333333334,
+        "phase": 0.08641975308641973,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.24166666666666667,
+        "phase": 0.08950617283950617,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.25,
+        "phase": 0.09259259259259259,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.25833333333333336,
+        "phase": 0.09567901234567901,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.26666666666666666,
+        "phase": 0.09876543209876543,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.275,
+        "phase": 0.10185185185185185,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.2833333333333333,
+        "phase": 0.10493827160493825,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.2916666666666667,
+        "phase": 0.10802469135802469,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.3,
+        "phase": 0.11111111111111109,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.30833333333333335,
+        "phase": 0.11419753086419752,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.31666666666666665,
+        "phase": 0.11728395061728394,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.325,
+        "phase": 0.12037037037037036,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.3333333333333333,
+        "phase": 0.12345679012345677,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.34166666666666673,
+        "phase": 0.12654320987654322,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.35,
+        "phase": 0.1296296296296296,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.3583333333333334,
+        "phase": 0.13271604938271606,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.3666666666666667,
+        "phase": 0.13580246913580246,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.37500000000000006,
+        "phase": 0.1388888888888889,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.38333333333333336,
+        "phase": 0.1419753086419753,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.3916666666666667,
+        "phase": 0.14506172839506173,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:landing",
+        "anchorId": "first-arc-home"
+      },
+      {
+        "timeSeconds": 0.4,
+        "phase": 0.14814814814814814,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.4083333333333334,
+        "phase": 0.15123456790123457,
+        "midi": 50.00097776429137,
+        "baseMidi": 50.00097776429137,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.4166666666666667,
+        "phase": 0.15432098765432098,
+        "midi": 50.003877341155444,
+        "baseMidi": 50.003877341155444,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.42500000000000004,
+        "phase": 0.1574074074074074,
+        "midi": 50.00864815657715,
+        "baseMidi": 50.00864815657715,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.43333333333333335,
+        "phase": 0.16049382716049382,
+        "midi": 50.01523963654141,
+        "baseMidi": 50.01523963654141,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.4416666666666667,
+        "phase": 0.16358024691358025,
+        "midi": 50.02360120703316,
+        "baseMidi": 50.02360120703316,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.45,
+        "phase": 0.16666666666666666,
+        "midi": 50.03368229403733,
+        "baseMidi": 50.03368229403733,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.45833333333333337,
+        "phase": 0.1697530864197531,
+        "midi": 50.04543232353883,
+        "baseMidi": 50.04543232353883,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.4666666666666667,
+        "phase": 0.1728395061728395,
+        "midi": 50.058800721522616,
+        "baseMidi": 50.058800721522616,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.47500000000000003,
+        "phase": 0.17592592592592593,
+        "midi": 50.0737369139736,
+        "baseMidi": 50.0737369139736,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.48333333333333334,
+        "phase": 0.17901234567901234,
+        "midi": 50.090190326876716,
+        "baseMidi": 50.090190326876716,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.4916666666666667,
+        "phase": 0.18209876543209877,
+        "midi": 50.10811038621689,
+        "baseMidi": 50.10811038621689,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5,
+        "phase": 0.18518518518518517,
+        "midi": 50.12744651797906,
+        "baseMidi": 50.12744651797906,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5083333333333334,
+        "phase": 0.1882716049382716,
+        "midi": 50.148148148148145,
+        "baseMidi": 50.148148148148145,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5166666666666667,
+        "phase": 0.19135802469135804,
+        "midi": 50.17016470270908,
+        "baseMidi": 50.17016470270908,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.525,
+        "phase": 0.19444444444444442,
+        "midi": 50.193445607646794,
+        "baseMidi": 50.193445607646794,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5333333333333333,
+        "phase": 0.19753086419753085,
+        "midi": 50.2179402889462,
+        "baseMidi": 50.2179402889462,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5416666666666667,
+        "phase": 0.2006172839506173,
+        "midi": 50.24359817259226,
+        "baseMidi": 50.24359817259226,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.55,
+        "phase": 0.2037037037037037,
+        "midi": 50.27036868456987,
+        "baseMidi": 50.27036868456987,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5583333333333333,
+        "phase": 0.2067901234567901,
+        "midi": 50.298201250863976,
+        "baseMidi": 50.298201250863976,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5666666666666667,
+        "phase": 0.20987654320987653,
+        "midi": 50.3270452974595,
+        "baseMidi": 50.3270452974595,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5750000000000001,
+        "phase": 0.21296296296296297,
+        "midi": 50.356850250341374,
+        "baseMidi": 50.356850250341374,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5833333333333334,
+        "phase": 0.2160493827160494,
+        "midi": 50.38756553549453,
+        "baseMidi": 50.38756553549453,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.5916666666666667,
+        "phase": 0.21913580246913578,
+        "midi": 50.41914057890389,
+        "baseMidi": 50.41914057890389,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6,
+        "phase": 0.2222222222222222,
+        "midi": 50.45152480655439,
+        "baseMidi": 50.45152480655439,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6083333333333334,
+        "phase": 0.22530864197530864,
+        "midi": 50.48466764443096,
+        "baseMidi": 50.48466764443096,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6166666666666667,
+        "phase": 0.22839506172839505,
+        "midi": 50.51851851851852,
+        "baseMidi": 50.51851851851852,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.625,
+        "phase": 0.23148148148148145,
+        "midi": 50.553026854802006,
+        "baseMidi": 50.553026854802006,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6333333333333333,
+        "phase": 0.2345679012345679,
+        "midi": 50.58814207926634,
+        "baseMidi": 50.58814207926634,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6416666666666667,
+        "phase": 0.23765432098765432,
+        "midi": 50.62381361789646,
+        "baseMidi": 50.62381361789646,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.65,
+        "phase": 0.24074074074074073,
+        "midi": 50.659990896677286,
+        "baseMidi": 50.659990896677286,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6583333333333333,
+        "phase": 0.24382716049382713,
+        "midi": 50.69662334159376,
+        "baseMidi": 50.69662334159376,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6666666666666666,
+        "phase": 0.24691358024691357,
+        "midi": 50.733660378630795,
+        "baseMidi": 50.733660378630795,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.675,
+        "phase": 0.25,
+        "midi": 50.77105143377333,
+        "baseMidi": 50.77105143377333,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6833333333333335,
+        "phase": 0.25308641975308643,
+        "midi": 50.808745933006286,
+        "baseMidi": 50.808745933006286,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.6916666666666668,
+        "phase": 0.25617283950617287,
+        "midi": 50.846693302314605,
+        "baseMidi": 50.846693302314605,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7,
+        "phase": 0.2592592592592592,
+        "midi": 50.884842967683205,
+        "baseMidi": 50.884842967683205,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7083333333333334,
+        "phase": 0.2623456790123457,
+        "midi": 50.923144355097016,
+        "baseMidi": 50.923144355097016,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7166666666666668,
+        "phase": 0.26543209876543217,
+        "midi": 50.96154689054097,
+        "baseMidi": 50.96154689054097,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7250000000000001,
+        "phase": 0.26851851851851855,
+        "midi": 51,
+        "baseMidi": 51,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7333333333333334,
+        "phase": 0.2716049382716049,
+        "midi": 51.03845310945903,
+        "baseMidi": 51.03845310945903,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7416666666666667,
+        "phase": 0.27469135802469136,
+        "midi": 51.076855644902984,
+        "baseMidi": 51.076855644902984,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7500000000000001,
+        "phase": 0.2777777777777778,
+        "midi": 51.115157032316795,
+        "baseMidi": 51.115157032316795,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7583333333333334,
+        "phase": 0.2808641975308642,
+        "midi": 51.153306697685395,
+        "baseMidi": 51.153306697685395,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7666666666666667,
+        "phase": 0.28395061728395066,
+        "midi": 51.191254066993714,
+        "baseMidi": 51.191254066993714,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.775,
+        "phase": 0.28703703703703703,
+        "midi": 51.22894856622667,
+        "baseMidi": 51.22894856622667,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7833333333333334,
+        "phase": 0.2901234567901235,
+        "midi": 51.266339621369205,
+        "baseMidi": 51.266339621369205,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.7916666666666667,
+        "phase": 0.2932098765432099,
+        "midi": 51.30337665840624,
+        "baseMidi": 51.30337665840624,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8,
+        "phase": 0.2962962962962963,
+        "midi": 51.340009103322714,
+        "baseMidi": 51.340009103322714,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8083333333333333,
+        "phase": 0.2993827160493827,
+        "midi": 51.37618638210354,
+        "baseMidi": 51.37618638210354,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8166666666666668,
+        "phase": 0.30246913580246915,
+        "midi": 51.41185792073366,
+        "baseMidi": 51.41185792073366,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8250000000000001,
+        "phase": 0.3055555555555556,
+        "midi": 51.446973145197994,
+        "baseMidi": 51.446973145197994,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8333333333333334,
+        "phase": 0.30864197530864196,
+        "midi": 51.48148148148148,
+        "baseMidi": 51.48148148148148,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8416666666666667,
+        "phase": 0.31172839506172834,
+        "midi": 51.51533235556904,
+        "baseMidi": 51.51533235556904,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8500000000000001,
+        "phase": 0.3148148148148149,
+        "midi": 51.54847519344561,
+        "baseMidi": 51.54847519344561,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8583333333333335,
+        "phase": 0.3179012345679013,
+        "midi": 51.58085942109611,
+        "baseMidi": 51.58085942109611,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8666666666666667,
+        "phase": 0.32098765432098764,
+        "midi": 51.61243446450547,
+        "baseMidi": 51.61243446450547,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.875,
+        "phase": 0.32407407407407407,
+        "midi": 51.643149749658626,
+        "baseMidi": 51.643149749658626,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8833333333333334,
+        "phase": 0.3271604938271605,
+        "midi": 51.6729547025405,
+        "baseMidi": 51.6729547025405,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.8916666666666668,
+        "phase": 0.33024691358024694,
+        "midi": 51.701798749136024,
+        "baseMidi": 51.701798749136024,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9,
+        "phase": 0.3333333333333333,
+        "midi": 51.72963131543013,
+        "baseMidi": 51.72963131543013,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9083333333333333,
+        "phase": 0.3364197530864197,
+        "midi": 51.75640182740774,
+        "baseMidi": 51.75640182740774,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9166666666666667,
+        "phase": 0.3395061728395062,
+        "midi": 51.78205971105379,
+        "baseMidi": 51.78205971105379,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9250000000000002,
+        "phase": 0.3425925925925926,
+        "midi": 51.806554392353206,
+        "baseMidi": 51.806554392353206,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9333333333333333,
+        "phase": 0.345679012345679,
+        "midi": 51.82983529729092,
+        "baseMidi": 51.82983529729092,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9416666666666668,
+        "phase": 0.3487654320987654,
+        "midi": 51.851851851851855,
+        "baseMidi": 51.851851851851855,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9500000000000001,
+        "phase": 0.35185185185185186,
+        "midi": 51.87255348202094,
+        "baseMidi": 51.87255348202094,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9583333333333335,
+        "phase": 0.3549382716049383,
+        "midi": 51.89188961378311,
+        "baseMidi": 51.89188961378311,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9666666666666667,
+        "phase": 0.35802469135802467,
+        "midi": 51.909809673123284,
+        "baseMidi": 51.909809673123284,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9750000000000001,
+        "phase": 0.36111111111111116,
+        "midi": 51.9262630860264,
+        "baseMidi": 51.9262630860264,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9833333333333334,
+        "phase": 0.36419753086419754,
+        "midi": 51.941199278477384,
+        "baseMidi": 51.941199278477384,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 0.9916666666666668,
+        "phase": 0.36728395061728397,
+        "midi": 51.95456767646117,
+        "baseMidi": 51.95456767646117,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 1,
+        "phase": 0.37037037037037035,
+        "midi": 51.96631770596267,
+        "baseMidi": 51.96631770596267,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 1.0083333333333333,
+        "phase": 0.3734567901234568,
+        "midi": 51.97639879296684,
+        "baseMidi": 51.97639879296684,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 1.0166666666666668,
+        "phase": 0.37654320987654327,
+        "midi": 51.98476036345859,
+        "baseMidi": 51.98476036345859,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 1.0250000000000001,
+        "phase": 0.37962962962962965,
+        "midi": 51.99135184342285,
+        "baseMidi": 51.99135184342285,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 1.0333333333333334,
+        "phase": 0.3827160493827161,
+        "midi": 51.996122658844556,
+        "baseMidi": 51.996122658844556,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 1.0416666666666667,
+        "phase": 0.3858024691358025,
+        "midi": 51.99902223570863,
+        "baseMidi": 51.99902223570863,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-home:first-arc-rise:glide"
+      },
+      {
+        "timeSeconds": 1.05,
+        "phase": 0.3888888888888889,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.0583333333333333,
+        "phase": 0.39197530864197533,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.0666666666666667,
+        "phase": 0.3950617283950617,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.075,
+        "phase": 0.39814814814814814,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.0833333333333335,
+        "phase": 0.40123456790123463,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.0916666666666668,
+        "phase": 0.404320987654321,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1,
+        "phase": 0.40740740740740744,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1083333333333334,
+        "phase": 0.4104938271604938,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1166666666666667,
+        "phase": 0.41358024691358025,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1250000000000002,
+        "phase": 0.41666666666666674,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1333333333333333,
+        "phase": 0.41975308641975306,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1416666666666666,
+        "phase": 0.4228395061728395,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1500000000000001,
+        "phase": 0.42592592592592593,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1583333333333334,
+        "phase": 0.42901234567901236,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1666666666666667,
+        "phase": 0.4320987654320988,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.175,
+        "phase": 0.4351851851851852,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1833333333333333,
+        "phase": 0.4382716049382716,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.1916666666666669,
+        "phase": 0.4413580246913581,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2,
+        "phase": 0.4444444444444444,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2083333333333335,
+        "phase": 0.4475308641975309,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2166666666666668,
+        "phase": 0.4506172839506173,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.225,
+        "phase": 0.4537037037037037,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2333333333333334,
+        "phase": 0.45679012345679015,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2416666666666667,
+        "phase": 0.45987654320987653,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.25,
+        "phase": 0.46296296296296297,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2583333333333335,
+        "phase": 0.46604938271604945,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2666666666666666,
+        "phase": 0.4691358024691358,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2750000000000001,
+        "phase": 0.47222222222222227,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2833333333333334,
+        "phase": 0.47530864197530864,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.2916666666666667,
+        "phase": 0.4783950617283951,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3,
+        "phase": 0.4814814814814815,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3083333333333333,
+        "phase": 0.4845679012345679,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3166666666666667,
+        "phase": 0.4876543209876543,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3250000000000002,
+        "phase": 0.4907407407407408,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3333333333333333,
+        "phase": 0.49382716049382713,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3416666666666668,
+        "phase": 0.4969135802469136,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.35,
+        "phase": 0.5,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3583333333333334,
+        "phase": 0.5030864197530864,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.366666666666667,
+        "phase": 0.5061728395061729,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3750000000000002,
+        "phase": 0.5092592592592593,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3833333333333335,
+        "phase": 0.5123456790123457,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.3916666666666666,
+        "phase": 0.5154320987654321,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.4,
+        "phase": 0.5185185185185185,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.4083333333333334,
+        "phase": 0.5216049382716049,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.4166666666666667,
+        "phase": 0.5246913580246914,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.425,
+        "phase": 0.5277777777777778,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.4333333333333336,
+        "phase": 0.5308641975308643,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.4416666666666669,
+        "phase": 0.5339506172839507,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:landing",
+        "anchorId": "first-arc-rise"
+      },
+      {
+        "timeSeconds": 1.4500000000000002,
+        "phase": 0.5370370370370371,
+        "midi": 52,
+        "baseMidi": 52,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.4583333333333333,
+        "phase": 0.5401234567901234,
+        "midi": 51.99902223570863,
+        "baseMidi": 51.99902223570863,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.4666666666666668,
+        "phase": 0.54320987654321,
+        "midi": 51.996122658844556,
+        "baseMidi": 51.996122658844556,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.475,
+        "phase": 0.5462962962962963,
+        "midi": 51.99135184342285,
+        "baseMidi": 51.99135184342285,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.4833333333333334,
+        "phase": 0.5493827160493827,
+        "midi": 51.98476036345859,
+        "baseMidi": 51.98476036345859,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.4916666666666667,
+        "phase": 0.5524691358024691,
+        "midi": 51.97639879296684,
+        "baseMidi": 51.97639879296684,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5000000000000002,
+        "phase": 0.5555555555555556,
+        "midi": 51.96631770596267,
+        "baseMidi": 51.96631770596267,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5083333333333335,
+        "phase": 0.558641975308642,
+        "midi": 51.95456767646117,
+        "baseMidi": 51.95456767646117,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5166666666666668,
+        "phase": 0.5617283950617284,
+        "midi": 51.941199278477384,
+        "baseMidi": 51.941199278477384,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.525,
+        "phase": 0.5648148148148148,
+        "midi": 51.9262630860264,
+        "baseMidi": 51.9262630860264,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5333333333333334,
+        "phase": 0.5679012345679013,
+        "midi": 51.909809673123284,
+        "baseMidi": 51.909809673123284,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5416666666666667,
+        "phase": 0.5709876543209876,
+        "midi": 51.89188961378311,
+        "baseMidi": 51.89188961378311,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.55,
+        "phase": 0.5740740740740741,
+        "midi": 51.87255348202094,
+        "baseMidi": 51.87255348202094,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5583333333333336,
+        "phase": 0.5771604938271606,
+        "midi": 51.851851851851855,
+        "baseMidi": 51.851851851851855,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5666666666666669,
+        "phase": 0.5802469135802469,
+        "midi": 51.82983529729092,
+        "baseMidi": 51.82983529729092,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5750000000000002,
+        "phase": 0.5833333333333334,
+        "midi": 51.806554392353206,
+        "baseMidi": 51.806554392353206,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5833333333333335,
+        "phase": 0.5864197530864198,
+        "midi": 51.78205971105379,
+        "baseMidi": 51.78205971105379,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.5916666666666666,
+        "phase": 0.5895061728395061,
+        "midi": 51.75640182740774,
+        "baseMidi": 51.75640182740774,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6,
+        "phase": 0.5925925925925926,
+        "midi": 51.72963131543013,
+        "baseMidi": 51.72963131543013,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6083333333333334,
+        "phase": 0.595679012345679,
+        "midi": 51.701798749136024,
+        "baseMidi": 51.701798749136024,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6166666666666667,
+        "phase": 0.5987654320987654,
+        "midi": 51.6729547025405,
+        "baseMidi": 51.6729547025405,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6250000000000002,
+        "phase": 0.6018518518518519,
+        "midi": 51.643149749658626,
+        "baseMidi": 51.643149749658626,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6333333333333335,
+        "phase": 0.6049382716049383,
+        "midi": 51.61243446450547,
+        "baseMidi": 51.61243446450547,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6416666666666668,
+        "phase": 0.6080246913580247,
+        "midi": 51.58085942109611,
+        "baseMidi": 51.58085942109611,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6500000000000001,
+        "phase": 0.6111111111111112,
+        "midi": 51.54847519344561,
+        "baseMidi": 51.54847519344561,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6583333333333332,
+        "phase": 0.6141975308641975,
+        "midi": 51.51533235556904,
+        "baseMidi": 51.51533235556904,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6666666666666667,
+        "phase": 0.6172839506172839,
+        "midi": 51.48148148148148,
+        "baseMidi": 51.48148148148148,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.675,
+        "phase": 0.6203703703703703,
+        "midi": 51.446973145198,
+        "baseMidi": 51.446973145198,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6833333333333333,
+        "phase": 0.6234567901234568,
+        "midi": 51.41185792073366,
+        "baseMidi": 51.41185792073366,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.6916666666666669,
+        "phase": 0.6265432098765433,
+        "midi": 51.37618638210354,
+        "baseMidi": 51.37618638210354,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7000000000000002,
+        "phase": 0.6296296296296297,
+        "midi": 51.340009103322714,
+        "baseMidi": 51.340009103322714,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7083333333333335,
+        "phase": 0.6327160493827161,
+        "midi": 51.30337665840624,
+        "baseMidi": 51.30337665840624,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.716666666666667,
+        "phase": 0.6358024691358026,
+        "midi": 51.266339621369205,
+        "baseMidi": 51.266339621369205,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.725,
+        "phase": 0.638888888888889,
+        "midi": 51.22894856622667,
+        "baseMidi": 51.22894856622667,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7333333333333334,
+        "phase": 0.6419753086419753,
+        "midi": 51.191254066993714,
+        "baseMidi": 51.191254066993714,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7416666666666667,
+        "phase": 0.6450617283950617,
+        "midi": 51.153306697685395,
+        "baseMidi": 51.153306697685395,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.75,
+        "phase": 0.6481481481481481,
+        "midi": 51.115157032316795,
+        "baseMidi": 51.115157032316795,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7583333333333335,
+        "phase": 0.6512345679012346,
+        "midi": 51.076855644902984,
+        "baseMidi": 51.076855644902984,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7666666666666668,
+        "phase": 0.654320987654321,
+        "midi": 51.03845310945903,
+        "baseMidi": 51.03845310945903,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7750000000000001,
+        "phase": 0.6574074074074074,
+        "midi": 51,
+        "baseMidi": 51,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7833333333333337,
+        "phase": 0.6604938271604939,
+        "midi": 50.96154689054097,
+        "baseMidi": 50.96154689054097,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.7916666666666667,
+        "phase": 0.6635802469135803,
+        "midi": 50.923144355097016,
+        "baseMidi": 50.923144355097016,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8,
+        "phase": 0.6666666666666666,
+        "midi": 50.884842967683205,
+        "baseMidi": 50.884842967683205,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8083333333333333,
+        "phase": 0.6697530864197531,
+        "midi": 50.846693302314605,
+        "baseMidi": 50.846693302314605,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8166666666666667,
+        "phase": 0.6728395061728395,
+        "midi": 50.808745933006286,
+        "baseMidi": 50.808745933006286,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8250000000000002,
+        "phase": 0.6759259259259259,
+        "midi": 50.77105143377333,
+        "baseMidi": 50.77105143377333,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8333333333333335,
+        "phase": 0.6790123456790124,
+        "midi": 50.733660378630795,
+        "baseMidi": 50.733660378630795,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8416666666666668,
+        "phase": 0.6820987654320988,
+        "midi": 50.69662334159376,
+        "baseMidi": 50.69662334159376,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8500000000000003,
+        "phase": 0.6851851851851853,
+        "midi": 50.659990896677286,
+        "baseMidi": 50.659990896677286,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8583333333333334,
+        "phase": 0.6882716049382716,
+        "midi": 50.62381361789646,
+        "baseMidi": 50.62381361789646,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8666666666666667,
+        "phase": 0.691358024691358,
+        "midi": 50.58814207926634,
+        "baseMidi": 50.58814207926634,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.875,
+        "phase": 0.6944444444444444,
+        "midi": 50.553026854802006,
+        "baseMidi": 50.553026854802006,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8833333333333335,
+        "phase": 0.6975308641975309,
+        "midi": 50.51851851851852,
+        "baseMidi": 50.51851851851852,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.8916666666666668,
+        "phase": 0.7006172839506173,
+        "midi": 50.48466764443096,
+        "baseMidi": 50.48466764443096,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9000000000000001,
+        "phase": 0.7037037037037037,
+        "midi": 50.451524806554396,
+        "baseMidi": 50.451524806554396,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9083333333333334,
+        "phase": 0.7067901234567902,
+        "midi": 50.41914057890389,
+        "baseMidi": 50.41914057890389,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.916666666666667,
+        "phase": 0.7098765432098766,
+        "midi": 50.38756553549453,
+        "baseMidi": 50.38756553549453,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.925,
+        "phase": 0.7129629629629629,
+        "midi": 50.356850250341374,
+        "baseMidi": 50.356850250341374,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9333333333333333,
+        "phase": 0.7160493827160493,
+        "midi": 50.3270452974595,
+        "baseMidi": 50.3270452974595,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9416666666666667,
+        "phase": 0.7191358024691358,
+        "midi": 50.298201250863976,
+        "baseMidi": 50.298201250863976,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9500000000000002,
+        "phase": 0.7222222222222223,
+        "midi": 50.27036868456987,
+        "baseMidi": 50.27036868456987,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9583333333333335,
+        "phase": 0.7253086419753088,
+        "midi": 50.24359817259226,
+        "baseMidi": 50.24359817259226,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9666666666666668,
+        "phase": 0.7283950617283951,
+        "midi": 50.21794028894621,
+        "baseMidi": 50.21794028894621,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9750000000000003,
+        "phase": 0.7314814814814816,
+        "midi": 50.193445607646794,
+        "baseMidi": 50.193445607646794,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9833333333333336,
+        "phase": 0.734567901234568,
+        "midi": 50.17016470270908,
+        "baseMidi": 50.17016470270908,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 1.9916666666666667,
+        "phase": 0.7376543209876543,
+        "midi": 50.148148148148145,
+        "baseMidi": 50.148148148148145,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2,
+        "phase": 0.7407407407407407,
+        "midi": 50.12744651797906,
+        "baseMidi": 50.12744651797906,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.0083333333333333,
+        "phase": 0.7438271604938271,
+        "midi": 50.10811038621689,
+        "baseMidi": 50.10811038621689,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.0166666666666666,
+        "phase": 0.7469135802469136,
+        "midi": 50.090190326876716,
+        "baseMidi": 50.090190326876716,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.0250000000000004,
+        "phase": 0.7500000000000001,
+        "midi": 50.0737369139736,
+        "baseMidi": 50.0737369139736,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.0333333333333337,
+        "phase": 0.7530864197530865,
+        "midi": 50.058800721522616,
+        "baseMidi": 50.058800721522616,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.041666666666667,
+        "phase": 0.7561728395061729,
+        "midi": 50.04543232353883,
+        "baseMidi": 50.04543232353883,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.0500000000000003,
+        "phase": 0.7592592592592593,
+        "midi": 50.03368229403733,
+        "baseMidi": 50.03368229403733,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.0583333333333336,
+        "phase": 0.7623456790123457,
+        "midi": 50.02360120703316,
+        "baseMidi": 50.02360120703316,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.066666666666667,
+        "phase": 0.7654320987654322,
+        "midi": 50.01523963654141,
+        "baseMidi": 50.01523963654141,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.075,
+        "phase": 0.7685185185185186,
+        "midi": 50.00864815657715,
+        "baseMidi": 50.00864815657715,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.0833333333333335,
+        "phase": 0.771604938271605,
+        "midi": 50.003877341155444,
+        "baseMidi": 50.003877341155444,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.091666666666667,
+        "phase": 0.7746913580246914,
+        "midi": 50.00097776429137,
+        "baseMidi": 50.00097776429137,
+        "kind": "glide",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-rise:first-arc-return:glide"
+      },
+      {
+        "timeSeconds": 2.1,
+        "phase": 0.7777777777777778,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1083333333333334,
+        "phase": 0.7808641975308642,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1166666666666667,
+        "phase": 0.7839506172839507,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1250000000000004,
+        "phase": 0.7870370370370372,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1333333333333333,
+        "phase": 0.7901234567901234,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1416666666666666,
+        "phase": 0.7932098765432098,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.15,
+        "phase": 0.7962962962962963,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1583333333333337,
+        "phase": 0.7993827160493828,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.166666666666667,
+        "phase": 0.8024691358024693,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1750000000000003,
+        "phase": 0.8055555555555556,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.1833333333333336,
+        "phase": 0.808641975308642,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.191666666666667,
+        "phase": 0.8117283950617284,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.2,
+        "phase": 0.8148148148148149,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.2083333333333335,
+        "phase": 0.8179012345679013,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.216666666666667,
+        "phase": 0.8209876543209876,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.225,
+        "phase": 0.8240740740740741,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.2333333333333334,
+        "phase": 0.8271604938271605,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.2416666666666667,
+        "phase": 0.8302469135802469,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.2500000000000004,
+        "phase": 0.8333333333333335,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.2583333333333337,
+        "phase": 0.8364197530864199,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.2666666666666666,
+        "phase": 0.8395061728395061,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.275,
+        "phase": 0.8425925925925926,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.283333333333333,
+        "phase": 0.845679012345679,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.291666666666667,
+        "phase": 0.8487654320987655,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.3000000000000003,
+        "phase": 0.8518518518518519,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.3083333333333336,
+        "phase": 0.8549382716049383,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.316666666666667,
+        "phase": 0.8580246913580247,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.325,
+        "phase": 0.8611111111111112,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.3333333333333335,
+        "phase": 0.8641975308641976,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.341666666666667,
+        "phase": 0.8672839506172839,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.35,
+        "phase": 0.8703703703703703,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.3583333333333334,
+        "phase": 0.8734567901234568,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.3666666666666667,
+        "phase": 0.8765432098765432,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.375,
+        "phase": 0.8796296296296295,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.3833333333333337,
+        "phase": 0.8827160493827162,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.391666666666667,
+        "phase": 0.8858024691358026,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.4,
+        "phase": 0.8888888888888888,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.408333333333333,
+        "phase": 0.8919753086419753,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.416666666666667,
+        "phase": 0.8950617283950618,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.4250000000000003,
+        "phase": 0.8981481481481481,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.4333333333333336,
+        "phase": 0.9012345679012346,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.441666666666667,
+        "phase": 0.904320987654321,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.45,
+        "phase": 0.9074074074074074,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.4583333333333335,
+        "phase": 0.9104938271604939,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.466666666666667,
+        "phase": 0.9135802469135803,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.475,
+        "phase": 0.9166666666666666,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.4833333333333334,
+        "phase": 0.9197530864197531,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.4916666666666667,
+        "phase": 0.9228395061728395,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.5,
+        "phase": 0.9259259259259258,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.5083333333333337,
+        "phase": 0.9290123456790125,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.516666666666667,
+        "phase": 0.9320987654320989,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.5250000000000004,
+        "phase": 0.9351851851851852,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.533333333333333,
+        "phase": 0.9382716049382716,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.5416666666666665,
+        "phase": 0.9413580246913579,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.5500000000000003,
+        "phase": 0.9444444444444445,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.5583333333333336,
+        "phase": 0.9475308641975309,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.566666666666667,
+        "phase": 0.9506172839506173,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.575,
+        "phase": 0.9537037037037037,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.5833333333333335,
+        "phase": 0.9567901234567902,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.591666666666667,
+        "phase": 0.9598765432098766,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6,
+        "phase": 0.9629629629629629,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6083333333333334,
+        "phase": 0.9660493827160493,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6166666666666667,
+        "phase": 0.9691358024691358,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.625,
+        "phase": 0.9722222222222222,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6333333333333333,
+        "phase": 0.9753086419753085,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.641666666666667,
+        "phase": 0.9783950617283952,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6500000000000004,
+        "phase": 0.9814814814814815,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6583333333333337,
+        "phase": 0.9845679012345679,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6666666666666665,
+        "phase": 0.9876543209876542,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6750000000000003,
+        "phase": 0.9907407407407408,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.6833333333333336,
+        "phase": 0.9938271604938271,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.691666666666667,
+        "phase": 0.9969135802469136,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      },
+      {
+        "timeSeconds": 2.7,
+        "phase": 1,
+        "midi": 50,
+        "baseMidi": 50,
+        "kind": "landing",
+        "phraseIndex": 0,
+        "segmentId": "first-arc-phrase:first-arc-return:landing",
+        "anchorId": "first-arc-return"
+      }
+    ]
+  },
+  "points": [
+    {
+      "time": 0,
+      "midi": 50
+    },
+    {
+      "time": 0.005,
+      "midi": 50
+    },
+    {
+      "time": 0.01,
+      "midi": 50
+    },
+    {
+      "time": 0.015,
+      "midi": 50
+    },
+    {
+      "time": 0.02,
+      "midi": 50
+    },
+    {
+      "time": 0.025,
+      "midi": 50
+    },
+    {
+      "time": 0.03,
+      "midi": 50
+    },
+    {
+      "time": 0.035,
+      "midi": 50
+    },
+    {
+      "time": 0.04,
+      "midi": 50
+    },
+    {
+      "time": 0.045,
+      "midi": 50
+    },
+    {
+      "time": 0.05,
+      "midi": 50
+    },
+    {
+      "time": 0.055,
+      "midi": 50
+    },
+    {
+      "time": 0.06,
+      "midi": 50
+    },
+    {
+      "time": 0.065,
+      "midi": 50
+    },
+    {
+      "time": 0.07,
+      "midi": 50
+    },
+    {
+      "time": 0.075,
+      "midi": 50
+    },
+    {
+      "time": 0.08,
+      "midi": 50
+    },
+    {
+      "time": 0.085,
+      "midi": 50
+    },
+    {
+      "time": 0.09,
+      "midi": 50
+    },
+    {
+      "time": 0.095,
+      "midi": 50
+    },
+    {
+      "time": 0.1,
+      "midi": 50
+    },
+    {
+      "time": 0.105,
+      "midi": 50
+    },
+    {
+      "time": 0.11,
+      "midi": 50
+    },
+    {
+      "time": 0.115,
+      "midi": 50
+    },
+    {
+      "time": 0.12,
+      "midi": 50
+    },
+    {
+      "time": 0.125,
+      "midi": 50
+    },
+    {
+      "time": 0.13,
+      "midi": 50
+    },
+    {
+      "time": 0.135,
+      "midi": 50
+    },
+    {
+      "time": 0.14,
+      "midi": 50
+    },
+    {
+      "time": 0.145,
+      "midi": 50
+    },
+    {
+      "time": 0.15,
+      "midi": 50
+    },
+    {
+      "time": 0.155,
+      "midi": 50
+    },
+    {
+      "time": 0.16,
+      "midi": 50
+    },
+    {
+      "time": 0.165,
+      "midi": 50
+    },
+    {
+      "time": 0.17,
+      "midi": 50
+    },
+    {
+      "time": 0.17500000000000002,
+      "midi": 50
+    },
+    {
+      "time": 0.18,
+      "midi": 50
+    },
+    {
+      "time": 0.185,
+      "midi": 50
+    },
+    {
+      "time": 0.19,
+      "midi": 50
+    },
+    {
+      "time": 0.195,
+      "midi": 50
+    },
+    {
+      "time": 0.2,
+      "midi": 50
+    },
+    {
+      "time": 0.20500000000000002,
+      "midi": 50
+    },
+    {
+      "time": 0.21,
+      "midi": 50
+    },
+    {
+      "time": 0.215,
+      "midi": 50
+    },
+    {
+      "time": 0.22,
+      "midi": 50
+    },
+    {
+      "time": 0.225,
+      "midi": 50
+    },
+    {
+      "time": 0.23,
+      "midi": 50
+    },
+    {
+      "time": 0.23500000000000001,
+      "midi": 50
+    },
+    {
+      "time": 0.24,
+      "midi": 50
+    },
+    {
+      "time": 0.245,
+      "midi": 50
+    },
+    {
+      "time": 0.25,
+      "midi": 50
+    },
+    {
+      "time": 0.255,
+      "midi": 50
+    },
+    {
+      "time": 0.26,
+      "midi": 50
+    },
+    {
+      "time": 0.265,
+      "midi": 50
+    },
+    {
+      "time": 0.27,
+      "midi": 50
+    },
+    {
+      "time": 0.275,
+      "midi": 50
+    },
+    {
+      "time": 0.28,
+      "midi": 50
+    },
+    {
+      "time": 0.28500000000000003,
+      "midi": 50
+    },
+    {
+      "time": 0.29,
+      "midi": 50
+    },
+    {
+      "time": 0.295,
+      "midi": 50
+    },
+    {
+      "time": 0.3,
+      "midi": 50
+    },
+    {
+      "time": 0.305,
+      "midi": 50
+    },
+    {
+      "time": 0.31,
+      "midi": 50
+    },
+    {
+      "time": 0.315,
+      "midi": 50
+    },
+    {
+      "time": 0.32,
+      "midi": 50
+    },
+    {
+      "time": 0.325,
+      "midi": 50
+    },
+    {
+      "time": 0.33,
+      "midi": 50
+    },
+    {
+      "time": 0.335,
+      "midi": 50
+    },
+    {
+      "time": 0.34,
+      "midi": 50
+    },
+    {
+      "time": 0.34500000000000003,
+      "midi": 50
+    },
+    {
+      "time": 0.35000000000000003,
+      "midi": 50
+    },
+    {
+      "time": 0.355,
+      "midi": 50
+    },
+    {
+      "time": 0.36,
+      "midi": 50
+    },
+    {
+      "time": 0.365,
+      "midi": 50
+    },
+    {
+      "time": 0.37,
+      "midi": 50
+    },
+    {
+      "time": 0.375,
+      "midi": 50
+    },
+    {
+      "time": 0.38,
+      "midi": 50
+    },
+    {
+      "time": 0.385,
+      "midi": 50
+    },
+    {
+      "time": 0.39,
+      "midi": 50
+    },
+    {
+      "time": 0.395,
+      "midi": 50
+    },
+    {
+      "time": 0.4,
+      "midi": 50
+    },
+    {
+      "time": 0.405,
+      "midi": 50.000353208921254
+    },
+    {
+      "time": 0.41000000000000003,
+      "midi": 50.001405553026856
+    },
+    {
+      "time": 0.41500000000000004,
+      "midi": 50.00314610832954
+    },
+    {
+      "time": 0.42,
+      "midi": 50.00556395084206
+    },
+    {
+      "time": 0.425,
+      "midi": 50.00864815657715
+    },
+    {
+      "time": 0.43,
+      "midi": 50.01238780154757
+    },
+    {
+      "time": 0.435,
+      "midi": 50.01677196176605
+    },
+    {
+      "time": 0.44,
+      "midi": 50.02178971324533
+    },
+    {
+      "time": 0.445,
+      "midi": 50.02743013199818
+    },
+    {
+      "time": 0.45,
+      "midi": 50.03368229403733
+    },
+    {
+      "time": 0.455,
+      "midi": 50.04053527537551
+    },
+    {
+      "time": 0.46,
+      "midi": 50.047978152025486
+    },
+    {
+      "time": 0.465,
+      "midi": 50.056
+    },
+    {
+      "time": 0.47000000000000003,
+      "midi": 50.06458989531179
+    },
+    {
+      "time": 0.47500000000000003,
+      "midi": 50.0737369139736
+    },
+    {
+      "time": 0.48,
+      "midi": 50.08343013199818
+    },
+    {
+      "time": 0.485,
+      "midi": 50.09365862539827
+    },
+    {
+      "time": 0.49,
+      "midi": 50.10441147018662
+    },
+    {
+      "time": 0.495,
+      "midi": 50.115677742375965
+    },
+    {
+      "time": 0.5,
+      "midi": 50.12744651797906
+    },
+    {
+      "time": 0.505,
+      "midi": 50.13970687300865
+    },
+    {
+      "time": 0.51,
+      "midi": 50.15244788347747
+    },
+    {
+      "time": 0.515,
+      "midi": 50.16565862539827
+    },
+    {
+      "time": 0.52,
+      "midi": 50.1793281747838
+    },
+    {
+      "time": 0.525,
+      "midi": 50.193445607646794
+    },
+    {
+      "time": 0.53,
+      "midi": 50.208
+    },
+    {
+      "time": 0.535,
+      "midi": 50.222980427856164
+    },
+    {
+      "time": 0.54,
+      "midi": 50.23837596722804
+    },
+    {
+      "time": 0.545,
+      "midi": 50.25417569412836
+    },
+    {
+      "time": 0.55,
+      "midi": 50.27036868456987
+    },
+    {
+      "time": 0.555,
+      "midi": 50.286944014565314
+    },
+    {
+      "time": 0.56,
+      "midi": 50.303890760127445
+    },
+    {
+      "time": 0.5650000000000001,
+      "midi": 50.321197997269
+    },
+    {
+      "time": 0.5700000000000001,
+      "midi": 50.33885480200273
+    },
+    {
+      "time": 0.5750000000000001,
+      "midi": 50.356850250341374
+    },
+    {
+      "time": 0.58,
+      "midi": 50.37517341829768
+    },
+    {
+      "time": 0.585,
+      "midi": 50.393813381884385
+    },
+    {
+      "time": 0.59,
+      "midi": 50.41275921711425
+    },
+    {
+      "time": 0.595,
+      "midi": 50.432
+    },
+    {
+      "time": 0.6,
+      "midi": 50.45152480655439
+    },
+    {
+      "time": 0.605,
+      "midi": 50.47132271279017
+    },
+    {
+      "time": 0.61,
+      "midi": 50.491382794720074
+    },
+    {
+      "time": 0.615,
+      "midi": 50.51169412835685
+    },
+    {
+      "time": 0.62,
+      "midi": 50.532245789713244
+    },
+    {
+      "time": 0.625,
+      "midi": 50.553026854802006
+    },
+    {
+      "time": 0.63,
+      "midi": 50.57402639963587
+    },
+    {
+      "time": 0.635,
+      "midi": 50.595233500227586
+    },
+    {
+      "time": 0.64,
+      "midi": 50.616637232589895
+    },
+    {
+      "time": 0.645,
+      "midi": 50.63822667273555
+    },
+    {
+      "time": 0.65,
+      "midi": 50.659990896677286
+    },
+    {
+      "time": 0.655,
+      "midi": 50.68191898042786
+    },
+    {
+      "time": 0.66,
+      "midi": 50.704
+    },
+    {
+      "time": 0.665,
+      "midi": 50.72622303140646
+    },
+    {
+      "time": 0.67,
+      "midi": 50.74857715065999
+    },
+    {
+      "time": 0.675,
+      "midi": 50.77105143377333
+    },
+    {
+      "time": 0.68,
+      "midi": 50.79363495675922
+    },
+    {
+      "time": 0.685,
+      "midi": 50.81631679563041
+    },
+    {
+      "time": 0.6900000000000001,
+      "midi": 50.839086026399634
+    },
+    {
+      "time": 0.6950000000000001,
+      "midi": 50.86193172507966
+    },
+    {
+      "time": 0.7000000000000001,
+      "midi": 50.884842967683205
+    },
+    {
+      "time": 0.705,
+      "midi": 50.90780883022303
+    },
+    {
+      "time": 0.71,
+      "midi": 50.93081838871188
+    },
+    {
+      "time": 0.715,
+      "midi": 50.95386071916249
+    },
+    {
+      "time": 0.72,
+      "midi": 50.97692489758762
+    },
+    {
+      "time": 0.725,
+      "midi": 51
+    },
+    {
+      "time": 0.73,
+      "midi": 51.02307510241238
+    },
+    {
+      "time": 0.735,
+      "midi": 51.04613928083751
+    },
+    {
+      "time": 0.74,
+      "midi": 51.06918161128812
+    },
+    {
+      "time": 0.745,
+      "midi": 51.09219116977697
+    },
+    {
+      "time": 0.75,
+      "midi": 51.115157032316795
+    },
+    {
+      "time": 0.755,
+      "midi": 51.13806827492034
+    },
+    {
+      "time": 0.76,
+      "midi": 51.160913973600366
+    },
+    {
+      "time": 0.765,
+      "midi": 51.18368320436959
+    },
+    {
+      "time": 0.77,
+      "midi": 51.20636504324078
+    },
+    {
+      "time": 0.775,
+      "midi": 51.22894856622667
+    },
+    {
+      "time": 0.78,
+      "midi": 51.25142284934001
+    },
+    {
+      "time": 0.785,
+      "midi": 51.27377696859354
+    },
+    {
+      "time": 0.79,
+      "midi": 51.296
+    },
+    {
+      "time": 0.795,
+      "midi": 51.31808101957214
+    },
+    {
+      "time": 0.8,
+      "midi": 51.340009103322714
+    },
+    {
+      "time": 0.805,
+      "midi": 51.36177332726445
+    },
+    {
+      "time": 0.81,
+      "midi": 51.383362767410105
+    },
+    {
+      "time": 0.8150000000000001,
+      "midi": 51.404766499772414
+    },
+    {
+      "time": 0.8200000000000001,
+      "midi": 51.42597360036413
+    },
+    {
+      "time": 0.8250000000000001,
+      "midi": 51.446973145197994
+    },
+    {
+      "time": 0.8300000000000001,
+      "midi": 51.467754210286756
+    },
+    {
+      "time": 0.835,
+      "midi": 51.48830587164315
+    },
+    {
+      "time": 0.84,
+      "midi": 51.508617205279926
+    },
+    {
+      "time": 0.845,
+      "midi": 51.52867728720983
+    },
+    {
+      "time": 0.85,
+      "midi": 51.548475193445604
+    },
+    {
+      "time": 0.855,
+      "midi": 51.568
+    },
+    {
+      "time": 0.86,
+      "midi": 51.58724078288575
+    },
+    {
+      "time": 0.865,
+      "midi": 51.606186618115615
+    },
+    {
+      "time": 0.87,
+      "midi": 51.62482658170232
+    },
+    {
+      "time": 0.875,
+      "midi": 51.643149749658626
+    },
+    {
+      "time": 0.88,
+      "midi": 51.66114519799727
+    },
+    {
+      "time": 0.885,
+      "midi": 51.678802002731
+    },
+    {
+      "time": 0.89,
+      "midi": 51.696109239872555
+    },
+    {
+      "time": 0.895,
+      "midi": 51.713055985434686
+    },
+    {
+      "time": 0.9,
+      "midi": 51.72963131543013
+    },
+    {
+      "time": 0.905,
+      "midi": 51.74582430587164
+    },
+    {
+      "time": 0.91,
+      "midi": 51.76162403277196
+    },
+    {
+      "time": 0.915,
+      "midi": 51.777019572143836
+    },
+    {
+      "time": 0.92,
+      "midi": 51.792
+    },
+    {
+      "time": 0.925,
+      "midi": 51.806554392353206
+    },
+    {
+      "time": 0.93,
+      "midi": 51.8206718252162
+    },
+    {
+      "time": 0.935,
+      "midi": 51.83434137460173
+    },
+    {
+      "time": 0.9400000000000001,
+      "midi": 51.84755211652253
+    },
+    {
+      "time": 0.9450000000000001,
+      "midi": 51.86029312699135
+    },
+    {
+      "time": 0.9500000000000001,
+      "midi": 51.87255348202094
+    },
+    {
+      "time": 0.9550000000000001,
+      "midi": 51.884322257624035
+    },
+    {
+      "time": 0.96,
+      "midi": 51.89558852981338
+    },
+    {
+      "time": 0.965,
+      "midi": 51.90634137460173
+    },
+    {
+      "time": 0.97,
+      "midi": 51.91656986800182
+    },
+    {
+      "time": 0.975,
+      "midi": 51.9262630860264
+    },
+    {
+      "time": 0.98,
+      "midi": 51.93541010468821
+    },
+    {
+      "time": 0.985,
+      "midi": 51.944
+    },
+    {
+      "time": 0.99,
+      "midi": 51.952021847974514
+    },
+    {
+      "time": 0.995,
+      "midi": 51.95946472462449
+    },
+    {
+      "time": 1,
+      "midi": 51.96631770596267
+    },
+    {
+      "time": 1.0050000000000001,
+      "midi": 51.97256986800182
+    },
+    {
+      "time": 1.01,
+      "midi": 51.97821028675467
+    },
+    {
+      "time": 1.0150000000000001,
+      "midi": 51.98322803823395
+    },
+    {
+      "time": 1.02,
+      "midi": 51.98761219845243
+    },
+    {
+      "time": 1.025,
+      "midi": 51.99135184342285
+    },
+    {
+      "time": 1.03,
+      "midi": 51.99443604915794
+    },
+    {
+      "time": 1.035,
+      "midi": 51.99685389167046
+    },
+    {
+      "time": 1.04,
+      "midi": 51.998594446973144
+    },
+    {
+      "time": 1.045,
+      "midi": 51.999646791078746
+    },
+    {
+      "time": 1.05,
+      "midi": 52
+    },
+    {
+      "time": 1.055,
+      "midi": 52
+    },
+    {
+      "time": 1.06,
+      "midi": 52
+    },
+    {
+      "time": 1.065,
+      "midi": 52
+    },
+    {
+      "time": 1.07,
+      "midi": 52
+    },
+    {
+      "time": 1.075,
+      "midi": 52
+    },
+    {
+      "time": 1.08,
+      "midi": 52
+    },
+    {
+      "time": 1.085,
+      "midi": 52
+    },
+    {
+      "time": 1.09,
+      "midi": 52
+    },
+    {
+      "time": 1.095,
+      "midi": 52
+    },
+    {
+      "time": 1.1,
+      "midi": 52
+    },
+    {
+      "time": 1.105,
+      "midi": 52
+    },
+    {
+      "time": 1.11,
+      "midi": 52
+    },
+    {
+      "time": 1.115,
+      "midi": 52
+    },
+    {
+      "time": 1.12,
+      "midi": 52
+    },
+    {
+      "time": 1.125,
+      "midi": 52
+    },
+    {
+      "time": 1.1300000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.135,
+      "midi": 52
+    },
+    {
+      "time": 1.1400000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.145,
+      "midi": 52
+    },
+    {
+      "time": 1.1500000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.155,
+      "midi": 52
+    },
+    {
+      "time": 1.16,
+      "midi": 52
+    },
+    {
+      "time": 1.165,
+      "midi": 52
+    },
+    {
+      "time": 1.17,
+      "midi": 52
+    },
+    {
+      "time": 1.175,
+      "midi": 52
+    },
+    {
+      "time": 1.18,
+      "midi": 52
+    },
+    {
+      "time": 1.185,
+      "midi": 52
+    },
+    {
+      "time": 1.19,
+      "midi": 52
+    },
+    {
+      "time": 1.195,
+      "midi": 52
+    },
+    {
+      "time": 1.2,
+      "midi": 52
+    },
+    {
+      "time": 1.205,
+      "midi": 52
+    },
+    {
+      "time": 1.21,
+      "midi": 52
+    },
+    {
+      "time": 1.215,
+      "midi": 52
+    },
+    {
+      "time": 1.22,
+      "midi": 52
+    },
+    {
+      "time": 1.225,
+      "midi": 52
+    },
+    {
+      "time": 1.23,
+      "midi": 52
+    },
+    {
+      "time": 1.235,
+      "midi": 52
+    },
+    {
+      "time": 1.24,
+      "midi": 52
+    },
+    {
+      "time": 1.245,
+      "midi": 52
+    },
+    {
+      "time": 1.25,
+      "midi": 52
+    },
+    {
+      "time": 1.2550000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.26,
+      "midi": 52
+    },
+    {
+      "time": 1.2650000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.27,
+      "midi": 52
+    },
+    {
+      "time": 1.2750000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.28,
+      "midi": 52
+    },
+    {
+      "time": 1.285,
+      "midi": 52
+    },
+    {
+      "time": 1.29,
+      "midi": 52
+    },
+    {
+      "time": 1.295,
+      "midi": 52
+    },
+    {
+      "time": 1.3,
+      "midi": 52
+    },
+    {
+      "time": 1.305,
+      "midi": 52
+    },
+    {
+      "time": 1.31,
+      "midi": 52
+    },
+    {
+      "time": 1.315,
+      "midi": 52
+    },
+    {
+      "time": 1.32,
+      "midi": 52
+    },
+    {
+      "time": 1.325,
+      "midi": 52
+    },
+    {
+      "time": 1.33,
+      "midi": 52
+    },
+    {
+      "time": 1.335,
+      "midi": 52
+    },
+    {
+      "time": 1.34,
+      "midi": 52
+    },
+    {
+      "time": 1.345,
+      "midi": 52
+    },
+    {
+      "time": 1.35,
+      "midi": 52
+    },
+    {
+      "time": 1.355,
+      "midi": 52
+    },
+    {
+      "time": 1.36,
+      "midi": 52
+    },
+    {
+      "time": 1.365,
+      "midi": 52
+    },
+    {
+      "time": 1.37,
+      "midi": 52
+    },
+    {
+      "time": 1.375,
+      "midi": 52
+    },
+    {
+      "time": 1.3800000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.385,
+      "midi": 52
+    },
+    {
+      "time": 1.3900000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.395,
+      "midi": 52
+    },
+    {
+      "time": 1.4000000000000001,
+      "midi": 52
+    },
+    {
+      "time": 1.405,
+      "midi": 52
+    },
+    {
+      "time": 1.41,
+      "midi": 52
+    },
+    {
+      "time": 1.415,
+      "midi": 52
+    },
+    {
+      "time": 1.42,
+      "midi": 52
+    },
+    {
+      "time": 1.425,
+      "midi": 52
+    },
+    {
+      "time": 1.43,
+      "midi": 52
+    },
+    {
+      "time": 1.435,
+      "midi": 52
+    },
+    {
+      "time": 1.44,
+      "midi": 52
+    },
+    {
+      "time": 1.445,
+      "midi": 52
+    },
+    {
+      "time": 1.45,
+      "midi": 52
+    },
+    {
+      "time": 1.455,
+      "midi": 51.999646791078746
+    },
+    {
+      "time": 1.46,
+      "midi": 51.998594446973144
+    },
+    {
+      "time": 1.465,
+      "midi": 51.99685389167046
+    },
+    {
+      "time": 1.47,
+      "midi": 51.99443604915794
+    },
+    {
+      "time": 1.475,
+      "midi": 51.99135184342285
+    },
+    {
+      "time": 1.48,
+      "midi": 51.98761219845243
+    },
+    {
+      "time": 1.485,
+      "midi": 51.98322803823395
+    },
+    {
+      "time": 1.49,
+      "midi": 51.97821028675467
+    },
+    {
+      "time": 1.495,
+      "midi": 51.97256986800182
+    },
+    {
+      "time": 1.5,
+      "midi": 51.96631770596267
+    },
+    {
+      "time": 1.5050000000000001,
+      "midi": 51.95946472462449
+    },
+    {
+      "time": 1.51,
+      "midi": 51.952021847974514
+    },
+    {
+      "time": 1.5150000000000001,
+      "midi": 51.944
+    },
+    {
+      "time": 1.52,
+      "midi": 51.93541010468821
+    },
+    {
+      "time": 1.5250000000000001,
+      "midi": 51.9262630860264
+    },
+    {
+      "time": 1.53,
+      "midi": 51.91656986800182
+    },
+    {
+      "time": 1.5350000000000001,
+      "midi": 51.90634137460173
+    },
+    {
+      "time": 1.54,
+      "midi": 51.89558852981338
+    },
+    {
+      "time": 1.545,
+      "midi": 51.884322257624035
+    },
+    {
+      "time": 1.55,
+      "midi": 51.87255348202094
+    },
+    {
+      "time": 1.555,
+      "midi": 51.86029312699135
+    },
+    {
+      "time": 1.56,
+      "midi": 51.84755211652253
+    },
+    {
+      "time": 1.565,
+      "midi": 51.83434137460173
+    },
+    {
+      "time": 1.57,
+      "midi": 51.8206718252162
+    },
+    {
+      "time": 1.575,
+      "midi": 51.806554392353206
+    },
+    {
+      "time": 1.58,
+      "midi": 51.792
+    },
+    {
+      "time": 1.585,
+      "midi": 51.777019572143836
+    },
+    {
+      "time": 1.59,
+      "midi": 51.76162403277196
+    },
+    {
+      "time": 1.595,
+      "midi": 51.74582430587164
+    },
+    {
+      "time": 1.6,
+      "midi": 51.72963131543013
+    },
+    {
+      "time": 1.605,
+      "midi": 51.713055985434686
+    },
+    {
+      "time": 1.61,
+      "midi": 51.696109239872555
+    },
+    {
+      "time": 1.615,
+      "midi": 51.678802002731
+    },
+    {
+      "time": 1.62,
+      "midi": 51.66114519799727
+    },
+    {
+      "time": 1.625,
+      "midi": 51.643149749658626
+    },
+    {
+      "time": 1.6300000000000001,
+      "midi": 51.62482658170232
+    },
+    {
+      "time": 1.635,
+      "midi": 51.606186618115615
+    },
+    {
+      "time": 1.6400000000000001,
+      "midi": 51.58724078288575
+    },
+    {
+      "time": 1.645,
+      "midi": 51.568
+    },
+    {
+      "time": 1.6500000000000001,
+      "midi": 51.54847519344561
+    },
+    {
+      "time": 1.655,
+      "midi": 51.52867728720983
+    },
+    {
+      "time": 1.6600000000000001,
+      "midi": 51.508617205279926
+    },
+    {
+      "time": 1.665,
+      "midi": 51.48830587164315
+    },
+    {
+      "time": 1.67,
+      "midi": 51.467754210286756
+    },
+    {
+      "time": 1.675,
+      "midi": 51.446973145198
+    },
+    {
+      "time": 1.68,
+      "midi": 51.42597360036413
+    },
+    {
+      "time": 1.685,
+      "midi": 51.404766499772414
+    },
+    {
+      "time": 1.69,
+      "midi": 51.383362767410105
+    },
+    {
+      "time": 1.695,
+      "midi": 51.36177332726445
+    },
+    {
+      "time": 1.7,
+      "midi": 51.340009103322714
+    },
+    {
+      "time": 1.705,
+      "midi": 51.31808101957215
+    },
+    {
+      "time": 1.71,
+      "midi": 51.296
+    },
+    {
+      "time": 1.715,
+      "midi": 51.27377696859354
+    },
+    {
+      "time": 1.72,
+      "midi": 51.25142284934001
+    },
+    {
+      "time": 1.725,
+      "midi": 51.22894856622667
+    },
+    {
+      "time": 1.73,
+      "midi": 51.20636504324079
+    },
+    {
+      "time": 1.735,
+      "midi": 51.18368320436959
+    },
+    {
+      "time": 1.74,
+      "midi": 51.160913973600366
+    },
+    {
+      "time": 1.745,
+      "midi": 51.13806827492034
+    },
+    {
+      "time": 1.75,
+      "midi": 51.115157032316795
+    },
+    {
+      "time": 1.7550000000000001,
+      "midi": 51.09219116977697
+    },
+    {
+      "time": 1.76,
+      "midi": 51.06918161128812
+    },
+    {
+      "time": 1.7650000000000001,
+      "midi": 51.04613928083751
+    },
+    {
+      "time": 1.77,
+      "midi": 51.02307510241238
+    },
+    {
+      "time": 1.7750000000000001,
+      "midi": 51
+    },
+    {
+      "time": 1.78,
+      "midi": 50.97692489758762
+    },
+    {
+      "time": 1.7850000000000001,
+      "midi": 50.95386071916249
+    },
+    {
+      "time": 1.79,
+      "midi": 50.93081838871188
+    },
+    {
+      "time": 1.795,
+      "midi": 50.90780883022303
+    },
+    {
+      "time": 1.8,
+      "midi": 50.884842967683205
+    },
+    {
+      "time": 1.805,
+      "midi": 50.86193172507966
+    },
+    {
+      "time": 1.81,
+      "midi": 50.839086026399634
+    },
+    {
+      "time": 1.815,
+      "midi": 50.81631679563041
+    },
+    {
+      "time": 1.82,
+      "midi": 50.79363495675922
+    },
+    {
+      "time": 1.825,
+      "midi": 50.77105143377333
+    },
+    {
+      "time": 1.83,
+      "midi": 50.74857715065999
+    },
+    {
+      "time": 1.835,
+      "midi": 50.72622303140646
+    },
+    {
+      "time": 1.84,
+      "midi": 50.704
+    },
+    {
+      "time": 1.845,
+      "midi": 50.68191898042786
+    },
+    {
+      "time": 1.85,
+      "midi": 50.659990896677286
+    },
+    {
+      "time": 1.855,
+      "midi": 50.63822667273555
+    },
+    {
+      "time": 1.86,
+      "midi": 50.616637232589895
+    },
+    {
+      "time": 1.865,
+      "midi": 50.595233500227586
+    },
+    {
+      "time": 1.87,
+      "midi": 50.57402639963587
+    },
+    {
+      "time": 1.875,
+      "midi": 50.553026854802006
+    },
+    {
+      "time": 1.8800000000000001,
+      "midi": 50.532245789713244
+    },
+    {
+      "time": 1.885,
+      "midi": 50.51169412835685
+    },
+    {
+      "time": 1.8900000000000001,
+      "midi": 50.491382794720074
+    },
+    {
+      "time": 1.895,
+      "midi": 50.47132271279017
+    },
+    {
+      "time": 1.9000000000000001,
+      "midi": 50.451524806554396
+    },
+    {
+      "time": 1.905,
+      "midi": 50.432
+    },
+    {
+      "time": 1.9100000000000001,
+      "midi": 50.41275921711425
+    },
+    {
+      "time": 1.915,
+      "midi": 50.393813381884385
+    },
+    {
+      "time": 1.92,
+      "midi": 50.37517341829768
+    },
+    {
+      "time": 1.925,
+      "midi": 50.356850250341374
+    },
+    {
+      "time": 1.93,
+      "midi": 50.33885480200273
+    },
+    {
+      "time": 1.935,
+      "midi": 50.321197997269
+    },
+    {
+      "time": 1.94,
+      "midi": 50.303890760127445
+    },
+    {
+      "time": 1.945,
+      "midi": 50.286944014565314
+    },
+    {
+      "time": 1.95,
+      "midi": 50.27036868456987
+    },
+    {
+      "time": 1.955,
+      "midi": 50.25417569412836
+    },
+    {
+      "time": 1.96,
+      "midi": 50.23837596722804
+    },
+    {
+      "time": 1.965,
+      "midi": 50.222980427856164
+    },
+    {
+      "time": 1.97,
+      "midi": 50.208
+    },
+    {
+      "time": 1.975,
+      "midi": 50.193445607646794
+    },
+    {
+      "time": 1.98,
+      "midi": 50.1793281747838
+    },
+    {
+      "time": 1.985,
+      "midi": 50.16565862539827
+    },
+    {
+      "time": 1.99,
+      "midi": 50.15244788347747
+    },
+    {
+      "time": 1.995,
+      "midi": 50.13970687300865
+    },
+    {
+      "time": 2,
+      "midi": 50.12744651797906
+    },
+    {
+      "time": 2.005,
+      "midi": 50.115677742375965
+    },
+    {
+      "time": 2.0100000000000002,
+      "midi": 50.10441147018662
+    },
+    {
+      "time": 2.015,
+      "midi": 50.09365862539827
+    },
+    {
+      "time": 2.02,
+      "midi": 50.08343013199818
+    },
+    {
+      "time": 2.025,
+      "midi": 50.0737369139736
+    },
+    {
+      "time": 2.0300000000000002,
+      "midi": 50.06458989531179
+    },
+    {
+      "time": 2.035,
+      "midi": 50.056
+    },
+    {
+      "time": 2.04,
+      "midi": 50.047978152025486
+    },
+    {
+      "time": 2.045,
+      "midi": 50.04053527537551
+    },
+    {
+      "time": 2.05,
+      "midi": 50.03368229403733
+    },
+    {
+      "time": 2.055,
+      "midi": 50.02743013199818
+    },
+    {
+      "time": 2.06,
+      "midi": 50.02178971324533
+    },
+    {
+      "time": 2.065,
+      "midi": 50.01677196176605
+    },
+    {
+      "time": 2.07,
+      "midi": 50.01238780154757
+    },
+    {
+      "time": 2.075,
+      "midi": 50.00864815657715
+    },
+    {
+      "time": 2.08,
+      "midi": 50.00556395084206
+    },
+    {
+      "time": 2.085,
+      "midi": 50.00314610832954
+    },
+    {
+      "time": 2.09,
+      "midi": 50.001405553026856
+    },
+    {
+      "time": 2.095,
+      "midi": 50.000353208921254
+    },
+    {
+      "time": 2.1,
+      "midi": 50
+    },
+    {
+      "time": 2.105,
+      "midi": 50
+    },
+    {
+      "time": 2.11,
+      "midi": 50
+    },
+    {
+      "time": 2.115,
+      "midi": 50
+    },
+    {
+      "time": 2.12,
+      "midi": 50
+    },
+    {
+      "time": 2.125,
+      "midi": 50
+    },
+    {
+      "time": 2.13,
+      "midi": 50
+    },
+    {
+      "time": 2.1350000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.14,
+      "midi": 50
+    },
+    {
+      "time": 2.145,
+      "midi": 50
+    },
+    {
+      "time": 2.15,
+      "midi": 50
+    },
+    {
+      "time": 2.1550000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.16,
+      "midi": 50
+    },
+    {
+      "time": 2.165,
+      "midi": 50
+    },
+    {
+      "time": 2.17,
+      "midi": 50
+    },
+    {
+      "time": 2.1750000000000003,
+      "midi": 50
+    },
+    {
+      "time": 2.18,
+      "midi": 50
+    },
+    {
+      "time": 2.185,
+      "midi": 50
+    },
+    {
+      "time": 2.19,
+      "midi": 50
+    },
+    {
+      "time": 2.195,
+      "midi": 50
+    },
+    {
+      "time": 2.2,
+      "midi": 50
+    },
+    {
+      "time": 2.205,
+      "midi": 50
+    },
+    {
+      "time": 2.21,
+      "midi": 50
+    },
+    {
+      "time": 2.215,
+      "midi": 50
+    },
+    {
+      "time": 2.22,
+      "midi": 50
+    },
+    {
+      "time": 2.225,
+      "midi": 50
+    },
+    {
+      "time": 2.23,
+      "midi": 50
+    },
+    {
+      "time": 2.235,
+      "midi": 50
+    },
+    {
+      "time": 2.24,
+      "midi": 50
+    },
+    {
+      "time": 2.245,
+      "midi": 50
+    },
+    {
+      "time": 2.25,
+      "midi": 50
+    },
+    {
+      "time": 2.255,
+      "midi": 50
+    },
+    {
+      "time": 2.2600000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.265,
+      "midi": 50
+    },
+    {
+      "time": 2.27,
+      "midi": 50
+    },
+    {
+      "time": 2.275,
+      "midi": 50
+    },
+    {
+      "time": 2.2800000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.285,
+      "midi": 50
+    },
+    {
+      "time": 2.29,
+      "midi": 50
+    },
+    {
+      "time": 2.295,
+      "midi": 50
+    },
+    {
+      "time": 2.3000000000000003,
+      "midi": 50
+    },
+    {
+      "time": 2.305,
+      "midi": 50
+    },
+    {
+      "time": 2.31,
+      "midi": 50
+    },
+    {
+      "time": 2.315,
+      "midi": 50
+    },
+    {
+      "time": 2.32,
+      "midi": 50
+    },
+    {
+      "time": 2.325,
+      "midi": 50
+    },
+    {
+      "time": 2.33,
+      "midi": 50
+    },
+    {
+      "time": 2.335,
+      "midi": 50
+    },
+    {
+      "time": 2.34,
+      "midi": 50
+    },
+    {
+      "time": 2.345,
+      "midi": 50
+    },
+    {
+      "time": 2.35,
+      "midi": 50
+    },
+    {
+      "time": 2.355,
+      "midi": 50
+    },
+    {
+      "time": 2.36,
+      "midi": 50
+    },
+    {
+      "time": 2.365,
+      "midi": 50
+    },
+    {
+      "time": 2.37,
+      "midi": 50
+    },
+    {
+      "time": 2.375,
+      "midi": 50
+    },
+    {
+      "time": 2.38,
+      "midi": 50
+    },
+    {
+      "time": 2.3850000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.39,
+      "midi": 50
+    },
+    {
+      "time": 2.395,
+      "midi": 50
+    },
+    {
+      "time": 2.4,
+      "midi": 50
+    },
+    {
+      "time": 2.4050000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.41,
+      "midi": 50
+    },
+    {
+      "time": 2.415,
+      "midi": 50
+    },
+    {
+      "time": 2.42,
+      "midi": 50
+    },
+    {
+      "time": 2.4250000000000003,
+      "midi": 50
+    },
+    {
+      "time": 2.43,
+      "midi": 50
+    },
+    {
+      "time": 2.435,
+      "midi": 50
+    },
+    {
+      "time": 2.44,
+      "midi": 50
+    },
+    {
+      "time": 2.445,
+      "midi": 50
+    },
+    {
+      "time": 2.45,
+      "midi": 50
+    },
+    {
+      "time": 2.455,
+      "midi": 50
+    },
+    {
+      "time": 2.46,
+      "midi": 50
+    },
+    {
+      "time": 2.465,
+      "midi": 50
+    },
+    {
+      "time": 2.47,
+      "midi": 50
+    },
+    {
+      "time": 2.475,
+      "midi": 50
+    },
+    {
+      "time": 2.48,
+      "midi": 50
+    },
+    {
+      "time": 2.485,
+      "midi": 50
+    },
+    {
+      "time": 2.49,
+      "midi": 50
+    },
+    {
+      "time": 2.495,
+      "midi": 50
+    },
+    {
+      "time": 2.5,
+      "midi": 50
+    },
+    {
+      "time": 2.505,
+      "midi": 50
+    },
+    {
+      "time": 2.5100000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.515,
+      "midi": 50
+    },
+    {
+      "time": 2.52,
+      "midi": 50
+    },
+    {
+      "time": 2.525,
+      "midi": 50
+    },
+    {
+      "time": 2.5300000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.535,
+      "midi": 50
+    },
+    {
+      "time": 2.54,
+      "midi": 50
+    },
+    {
+      "time": 2.545,
+      "midi": 50
+    },
+    {
+      "time": 2.5500000000000003,
+      "midi": 50
+    },
+    {
+      "time": 2.555,
+      "midi": 50
+    },
+    {
+      "time": 2.56,
+      "midi": 50
+    },
+    {
+      "time": 2.565,
+      "midi": 50
+    },
+    {
+      "time": 2.57,
+      "midi": 50
+    },
+    {
+      "time": 2.575,
+      "midi": 50
+    },
+    {
+      "time": 2.58,
+      "midi": 50
+    },
+    {
+      "time": 2.585,
+      "midi": 50
+    },
+    {
+      "time": 2.59,
+      "midi": 50
+    },
+    {
+      "time": 2.595,
+      "midi": 50
+    },
+    {
+      "time": 2.6,
+      "midi": 50
+    },
+    {
+      "time": 2.605,
+      "midi": 50
+    },
+    {
+      "time": 2.61,
+      "midi": 50
+    },
+    {
+      "time": 2.615,
+      "midi": 50
+    },
+    {
+      "time": 2.62,
+      "midi": 50
+    },
+    {
+      "time": 2.625,
+      "midi": 50
+    },
+    {
+      "time": 2.63,
+      "midi": 50
+    },
+    {
+      "time": 2.6350000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.64,
+      "midi": 50
+    },
+    {
+      "time": 2.645,
+      "midi": 50
+    },
+    {
+      "time": 2.65,
+      "midi": 50
+    },
+    {
+      "time": 2.6550000000000002,
+      "midi": 50
+    },
+    {
+      "time": 2.66,
+      "midi": 50
+    },
+    {
+      "time": 2.665,
+      "midi": 50
+    },
+    {
+      "time": 2.67,
+      "midi": 50
+    },
+    {
+      "time": 2.6750000000000003,
+      "midi": 50
+    },
+    {
+      "time": 2.68,
+      "midi": 50
+    },
+    {
+      "time": 2.685,
+      "midi": 50
+    },
+    {
+      "time": 2.69,
+      "midi": 50
+    },
+    {
+      "time": 2.695,
+      "midi": 50
+    },
+    {
+      "time": 2.6999999900000002,
+      "midi": 50
+    }
+  ]
+}

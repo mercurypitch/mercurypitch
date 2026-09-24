@@ -1,0 +1,28 @@
+{
+  "version": 5,
+  "assetId": "floating-museum-mystery-portrait-v5",
+  "generation": "ChatGPT built-in image generation",
+  "prompt": "sources/mystery-muse-prompt.md",
+  "masterPreserved": true,
+  "runtimeSize": [
+    768,
+    1152
+  ],
+  "derivative": {
+    "tool": "sharp",
+    "quality": 91,
+    "effort": 6
+  },
+  "files": [
+    {
+      "path": "art/glass-adventure/journey-map/v5/sources/mystery-muse.png",
+      "bytes": 3577970,
+      "sha256": "102720d47ec360a304b83ff58f8cb6a3def82dd2a7f54838a66f44f30e57cb6f"
+    },
+    {
+      "path": "apps/beside-cue/public/games/journey-map-v5/mystery-muse.webp",
+      "bytes": 436564,
+      "sha256": "749da7720e19e2f683c31fb0f0376dc5fa2db11d4b090e466756c8a8aeb805e5"
+    }
+  ]
+}

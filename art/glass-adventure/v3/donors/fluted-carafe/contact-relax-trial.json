@@ -1,0 +1,59 @@
+{
+  "method": "local donor-vertex fairing only at diagnosed intersecting face patches",
+  "history": [
+    64,
+    23,
+    21,
+    21,
+    18,
+    18,
+    18,
+    18,
+    19,
+    19,
+    17,
+    13,
+    11,
+    11,
+    11,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+  ],
+  "finalPairs": 8,
+  "maxVertexDisplacementMetres": 0.001500012996245244,
+  "maximumAllowedMetres": 0.0015,
+  "badEdges": 0,
+  "measurement": {
+    "node": "vase_fluted_intact",
+    "role": "intact",
+    "triangles": 50000,
+    "vertices": 24830,
+    "nonManifoldEdges": 0,
+    "signedVolume": 0.0016100277065247944,
+    "materials": [
+      "glass_shell",
+      "glass_cut",
+      "gold_trim"
+    ],
+    "bounds": {
+      "min": [
+        -0.13231737911701202,
+        3.9314709283644333e-05,
+        -0.1353222131729126
+      ],
+      "max": [
+        0.13212579488754272,
+        0.6898784637451172,
+        0.13570855557918549
+      ]
+    }
+  }
+}

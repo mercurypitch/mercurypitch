@@ -17,9 +17,15 @@ importers:
       '@coderline/alphatab':
         specifier: ^1.8.3
         version: 1.8.3
+      '@fontsource-variable/gabarito':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@huggingface/transformers':
         specifier: ^4.2.0
         version: 4.2.0
+      '@irchiinnuss/glass-game':
+        specifier: workspace:*
+        version: link:packages/glass-game
       '@irchiinnuss/pitch-engine':
         specifier: workspace:*
         version: link:packages/pitch-engine
@@ -228,6 +234,9 @@ importers:
       '@irchiinnuss/beside-cue-core':
         specifier: workspace:*
         version: link:../../packages/beside-cue-core
+      '@irchiinnuss/glass-game':
+        specifier: workspace:*
+        version: link:../../packages/glass-game
       '@irchiinnuss/mobile-runtime':
         specifier: workspace:*
         version: link:../../packages/mobile-runtime
@@ -420,6 +429,40 @@ importers:
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.6(@types/node@22.19.19)(@vitest/coverage-v8@4.1.6)(@vitest/ui@4.1.6)(jsdom@25.0.1)(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0))
+
+  packages/glass-game:
+    dependencies:
+      '@irchiinnuss/audio-io':
+        specifier: workspace:*
+        version: link:../audio-io
+      '@irchiinnuss/pitch-engine':
+        specifier: workspace:*
+        version: link:../pitch-engine
+      three:
+        specifier: ^0.185.1
+        version: 0.185.1
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.19
+      '@types/three':
+        specifier: ^0.185.4
+        version: 0.185.4
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
+      solid-js:
+        specifier: ^1.9.12
+        version: 1.9.13
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.2(@types/node@22.19.19)(jiti@2.7.0)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.5
         version: 4.1.6(@types/node@22.19.19)(@vitest/coverage-v8@4.1.6)(@vitest/ui@4.1.6)(jsdom@25.0.1)(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0))
@@ -9254,7 +9297,7 @@ snapshots:
       flatted: 3.4.2
       pathe: 2.0.3
       sirv: 3.0.2
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
       vitest: 4.1.6(@types/node@22.19.19)(@vitest/coverage-v8@4.1.6)(@vitest/ui@4.1.6)(jsdom@25.0.1)(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(less@4.6.4)(lightningcss@1.32.0)(sass@1.99.0)(stylus@0.62.0)(terser@5.49.2)(yaml@2.9.0))
 

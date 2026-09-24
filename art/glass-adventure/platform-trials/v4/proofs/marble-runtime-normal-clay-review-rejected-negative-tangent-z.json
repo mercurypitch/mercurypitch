@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "asset": "cloudway-marble-ultra-v4",
+  "mode": "normal-map",
+  "purpose": "Matched neutral-clay final shading gate. Left is the fitted dense donor, centre is the fitted raw 90k remesh, and right is the exact exported runtime shell with its orientation-filtered dense split normals plus the regenerated selected-to-active 4K tangent-space normal map at strength 1.0.",
+  "order": [
+    "Dense donor",
+    "90K raw",
+    "90K + filtered normals + 4K bake"
+  ],
+  "decision": "pending-visual-review",
+  "sameEnvelope": true,
+  "fit": {
+    "dense": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "sourceLandingBlenderZ": 0.139629545,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.951567748,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        },
+        "positiveHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.878735741,
+        "aboveContact": 0.734636201
+      }
+    },
+    "raw90k": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.999979,
+          -0.538875,
+          0.0
+        ],
+        "max": [
+          0.999508,
+          0.538811,
+          0.721708
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.999487,
+        1.077686,
+        0.721708
+      ],
+      "sourceLandingBlenderZ": 0.511209875,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.901065068,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153204128,
+          "cubic": -0.153204128,
+          "edgeDerivative": 0.901065068
+        },
+        "positiveHalf": {
+          "linear": 1.153204128,
+          "cubic": -0.153204128,
+          "edgeDerivative": 0.901065068
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.832624774,
+        "aboveContact": 0.696086744
+      }
+    }
+  },
+  "candidate": {
+    "file": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-4k-blender.glb",
+    "sha256": "da8419285a7a7d8919109a9a6733f573e5624dce8c01906bd4e0457d7e939456",
+    "normalMapApplied": true,
+    "material": "neutral clay plus selected-to-active dense-donor 4K tangent-space normal",
+    "normalStrength": 1.0,
+    "normalMap": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-4k.png",
+    "normalMapSha256": "11cedafd545817777f60254326a3c070401dd68297f5e90fcbc2257053e7adf4"
+  },
+  "proofs": [
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-runtime-normal-clay-front.png",
+      "bytes": 2330044,
+      "sha256": "e5245d1d260a7b5650219948f924eb542e16735c58ca4f05a2d623cf6a19af97",
+      "dimensions": [
+        2400,
+        900
+      ]
+    },
+    {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-runtime-normal-clay-three-quarter.png",
+      "bytes": 2490236,
+      "sha256": "2163c3e9d3eb37fe89b72017fa3061a26e8b84079a51c00cc09b44df744db7c3",
+      "dimensions": [
+        2400,
+        900
+      ]
+    }
+  ],
+  "render": {
+    "engine": "Blender Eevee",
+    "resolution": [
+      2400,
+      900
+    ],
+    "camera": "orthographic",
+    "lighting": "matched grazing area lights",
+    "blender": "5.2.2 LTS"
+  },
+  "rebuild": "rtk proxy timeout 900 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/render_marble_runtime_normal_review.py --mode normal-map"
+}

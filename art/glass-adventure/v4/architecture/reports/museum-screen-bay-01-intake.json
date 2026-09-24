@@ -1,0 +1,149 @@
+{
+  "version": 4,
+  "assetId": "museum-screen-bay-01",
+  "status": "imported-awaiting-visual-inspection",
+  "sourceGeometry": "Meshy donor; imported unchanged",
+  "source": {
+    "incomingPath": "art/glass-adventure/v2/meshy/museum-screen-bay-01/donor.glb",
+    "rawPath": "raw/museum-screen-bay-01/donor.glb",
+    "bytes": 10945016,
+    "sha256": "9ba95fb57fdc3022b0dae0ccf098a9a83b59c54998fda6582505e840d7c1783c"
+  },
+  "blend": {
+    "path": "sources/museum-screen-bay-01-imported.blend",
+    "bytes": 11155054,
+    "sha256": "c5063983403b1fab59b1b2b0da0787fc65ca6d32e3f3ad2681701dc07d81bd75"
+  },
+  "blenderVersion": "5.2.2 LTS",
+  "coordinateSpace": "Blender imported coordinates, Z up; no normalization applied",
+  "bounds": {
+    "min": [
+      -0.8464140892028809,
+      -0.053973931819200516,
+      -0.951991081237793
+    ],
+    "max": [
+      0.8461800813674927,
+      0.05529206991195679,
+      0.9510970711708069
+    ],
+    "dimensions": [
+      1.6925941705703735,
+      0.1092660017311573,
+      1.9030881524085999
+    ]
+  },
+  "totalTriangles": 19479,
+  "objects": [
+    {
+      "name": "Mesh_0",
+      "vertices": 24383,
+      "polygons": 19479,
+      "triangles": 19479,
+      "uvLayers": [
+        {
+          "name": "UVMap",
+          "corners": 58437
+        }
+      ],
+      "materialSlots": [
+        "Material_0"
+      ],
+      "negativeWorldDeterminant": false,
+      "nonfiniteCoordinates": 0
+    }
+  ],
+  "materials": [
+    {
+      "name": "Material_0",
+      "principled": {
+        "Base Color": {
+          "linked": true,
+          "default": [
+            0.800000011920929,
+            0.800000011920929,
+            0.800000011920929,
+            1.0
+          ]
+        },
+        "Metallic": {
+          "linked": true,
+          "default": 0.0
+        },
+        "Roughness": {
+          "linked": true,
+          "default": 0.5
+        },
+        "IOR": {
+          "linked": false,
+          "default": 1.5
+        },
+        "Alpha": {
+          "linked": false,
+          "default": 1.0
+        },
+        "Transmission Weight": {
+          "linked": false,
+          "default": 0.0
+        }
+      },
+      "imageNodes": [
+        {
+          "name": "Image Texture",
+          "image": "Image_0"
+        },
+        {
+          "name": "Image Texture.001",
+          "image": "Image_1"
+        },
+        {
+          "name": "Image Texture.002",
+          "image": "normal"
+        }
+      ]
+    }
+  ],
+  "images": [
+    {
+      "name": "Image_0",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "sRGB",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    },
+    {
+      "name": "Image_1",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    },
+    {
+      "name": "normal",
+      "source": "FILE",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color",
+      "filepath": "",
+      "packedBeforeSave": true,
+      "missingExternal": false
+    }
+  ],
+  "linkedLibraries": [],
+  "edits": [],
+  "visualInspection": "Raw front and back renders inspected; source form retained",
+  "runtimeExport": null,
+  "pipeline": "V3 donor-preserving helper with V4 path isolation"
+}

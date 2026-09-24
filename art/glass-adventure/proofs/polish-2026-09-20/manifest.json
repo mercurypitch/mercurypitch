@@ -1,0 +1,28 @@
+{
+  "actualRenderPixels": true,
+  "viewport": {
+    "width": 1024,
+    "height": 768
+  },
+  "mirror": {
+    "file": "mirror-adaptive-1024.png",
+    "sourceManifest": "mirror-capture.json",
+    "reflectionTargetPixels": 786432,
+    "reflectionTarget": "1024x768",
+    "reflectionCaptures": 42
+  },
+  "portal": {
+    "readyFile": "twin-exit-front-ready-1024.png",
+    "readySourceManifest": "portal-ready-capture.json",
+    "flourishFile": "twin-exit-flourish-0900ms-1024.png",
+    "flourishSourceManifest": "portal-flourish-capture.json",
+    "flourishSeconds": 0.9,
+    "timing": "completion initialized at dt=0, then 50 mocked state-update frames plus 4 real render frames at 1/60 second"
+  },
+  "observations": [
+    "Adaptive mirror remained on the 1024x768 high target at the supplied pose.",
+    "Mirror reflection is clean with no dark stripe or diagonal artifact.",
+    "At 0.9 seconds, all visible sparkle points remain above the floor and inside/around the lifted portal face; no floor clipping is visible.",
+    "Both capture manifests report zero asset and page errors."
+  ]
+}

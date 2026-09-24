@@ -1,0 +1,98 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "inputVolume": 0.04134598127217455,
+  "inputTriangles": 8728,
+  "meshes": [
+    {
+      "key": "shard_000",
+      "triangles": 2748,
+      "volume": 0.0033996721932325396
+    },
+    {
+      "key": "shard_001",
+      "triangles": 590,
+      "volume": 0.002470286267821046
+    },
+    {
+      "key": "shard_002",
+      "triangles": 442,
+      "volume": 0.0019308741226254794
+    },
+    {
+      "key": "shard_003",
+      "triangles": 476,
+      "volume": 0.002403330873768626
+    },
+    {
+      "key": "shard_004",
+      "triangles": 1356,
+      "volume": 0.0013281562247074983
+    },
+    {
+      "key": "shard_005",
+      "triangles": 472,
+      "volume": 0.0021126061696413725
+    },
+    {
+      "key": "shard_006",
+      "triangles": 426,
+      "volume": 0.0018606697913217827
+    },
+    {
+      "key": "shard_007",
+      "triangles": 650,
+      "volume": 0.0026368864569775744
+    },
+    {
+      "key": "shard_008",
+      "triangles": 842,
+      "volume": 0.0012443271705673653
+    },
+    {
+      "key": "shard_009",
+      "triangles": 694,
+      "volume": 0.00262046204235398
+    },
+    {
+      "key": "shard_010",
+      "triangles": 470,
+      "volume": 0.0021571034672036014
+    },
+    {
+      "key": "shard_011",
+      "triangles": 884,
+      "volume": 0.0011484471479960357
+    },
+    {
+      "key": "shard_012",
+      "triangles": 822,
+      "volume": 0.0022006688746267684
+    },
+    {
+      "key": "shard_013",
+      "triangles": 700,
+      "volume": 0.003736340029282296
+    },
+    {
+      "key": "shard_014",
+      "triangles": 820,
+      "volume": 0.00378479669006495
+    },
+    {
+      "key": "shard_015",
+      "triangles": 760,
+      "volume": 0.0017315736525153648
+    },
+    {
+      "key": "shard_016",
+      "triangles": 1076,
+      "volume": 0.0024002557978801673
+    },
+    {
+      "key": "shard_017",
+      "triangles": 428,
+      "volume": 0.002179524299457127
+    }
+  ],
+  "relativeVolumeError": 3.167866798660313e-12
+}

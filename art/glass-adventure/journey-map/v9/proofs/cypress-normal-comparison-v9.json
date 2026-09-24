@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "asset": "cypress",
+  "purpose": "Same-geometry, same-camera comparison of the provider normal and dense-donor normal bake. Review-only; no automatic normal selection or runtime export.",
+  "candidateManifest": {
+    "file": "exports/floating-museum-cypress-candidate-v9.json",
+    "bytes": 12300,
+    "sha256": "e586ec1bff80c2d2de2f662c7ade350f3a70346eb741cda25aabd9a5dbcbf923"
+  },
+  "order": [
+    "Meshy normal",
+    "dense-donor normal bake"
+  ],
+  "assets": [
+    {
+      "label": "Meshy normal",
+      "file": "exports/floating-museum-cypress-candidate-v9-meshy-normal.glb",
+      "bytes": 19736348,
+      "sha256": "f322d7f5cfb9f099a143dac1b110cc8efbf3762ca46b67d264d73c373f3486e4",
+      "triangles": 20605,
+      "geometrySha256": "36153cf5c0bab7f1d5e6a813945bce8ac32f324d029a05fae699fa340dd99127",
+      "dimensionsMetres": [
+        0.384493,
+        0.458939,
+        1.8
+      ],
+      "groundAnchorMetres": 0.0,
+      "textureImages": 3,
+      "displayX": -0.675
+    },
+    {
+      "label": "dense-donor normal bake",
+      "file": "exports/floating-museum-cypress-candidate-v9-dense-bake-normal.glb",
+      "bytes": 22491296,
+      "sha256": "b0d35e79f0bc36407b3d768602439dbf6d8c29937530977065fbfcc3b6b424de",
+      "triangles": 20605,
+      "geometrySha256": "36153cf5c0bab7f1d5e6a813945bce8ac32f324d029a05fae699fa340dd99127",
+      "dimensionsMetres": [
+        0.384493,
+        0.458939,
+        1.8
+      ],
+      "groundAnchorMetres": 0.0,
+      "textureImages": 3,
+      "displayX": 0.675
+    }
+  ],
+  "identicalGeometry": true,
+  "proofs": [
+    {
+      "file": "proofs/cypress-normal-comparison-front-v9.png",
+      "bytes": 1910605,
+      "sha256": "4d7dfe19cb5f569ca007cbcc3e7b491a107a3b731e8c9b8abb9f2bc8ac55fbbb"
+    },
+    {
+      "file": "proofs/cypress-normal-comparison-angle-v9.png",
+      "bytes": 1942613,
+      "sha256": "b1457ebbd4acf7514c26d649a5a60ba27b6af72f0c71e7c863c9ed85e62cb1a1"
+    }
+  ],
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 24,
+    "seed": 23,
+    "cpuThreads": 8,
+    "resolution": [
+      1800,
+      1000
+    ],
+    "camera": "orthographic",
+    "orthoScale": 4.2,
+    "blender": "5.2.2 LTS"
+  },
+  "requiredReview": "Inspect the tapered crown, branch and foliage clusters, trunk gaps, trailing ivy, planter rim, marble body and base at equal zoom.",
+  "command": "rtk proxy timeout 1800 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/render_museum_finish_comparison.py -- --asset cypress"
+}

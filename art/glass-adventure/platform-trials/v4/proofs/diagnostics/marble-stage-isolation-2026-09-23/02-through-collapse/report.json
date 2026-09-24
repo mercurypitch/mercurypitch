@@ -1,0 +1,778 @@
+{
+  "schema": 1,
+  "purpose": "Matched neutral-clay causal isolation for the rejected direct dense pipeline; no texture normal, provider call, bake, optimization, runtime assembly, or install.",
+  "hypothesis": "Fit and contact flattening preserve the broad slab and arches; if both matched stages remain clean, collapse becomes the next bounded causal boundary.",
+  "status": "diagnostic evidence; independent visual review required",
+  "through": "collapse",
+  "order": [
+    "source",
+    "fit",
+    "flatten",
+    "collapse"
+  ],
+  "inputs": {
+    "denseDonor": {
+      "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+      "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb"
+    },
+    "rejected238kManifest": {
+      "file": "art/glass-adventure/platform-trials/v4/proofs/marble-direct-238k-visual-rejection.json",
+      "sha256": "de7b9c3f4cfa8c8da7775815b268ae01ad235b41f4bebb9accee293b5cf8ccfd"
+    }
+  },
+  "operations": {
+    "fit": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "sourceLandingBlenderZ": 0.139629545,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.951567748,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        },
+        "positiveHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.878735741,
+        "aboveContact": 0.734636201
+      }
+    },
+    "flatten": {
+      "method": "Flatten only vertices on broad upward-facing remesh polygons inside the exact 1.70 x 1.30 metre landing and within 6cm of the sampled datum; preserve UVs, silhouette geometry, ornament and the exposed donor artwork.",
+      "flattenedVertices": 134483,
+      "selectedHeightRangeBeforeMetres": [
+        -0.040258,
+        0.041594
+      ],
+      "targetBlenderZ": 0.0
+    },
+    "collapse": {
+      "method": "Blender collapse decimation with weighted detail protection",
+      "targetTriangles": 238000,
+      "requestedRatio": 0.18940660026294093,
+      "vertexGroupInverted": true,
+      "before": {
+        "vertices": 702537,
+        "triangles": 1256556,
+        "boundaryEdges": 142826,
+        "nonManifoldEdges": 142826,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 3769668,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            3.999999989900971e-06,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.9999960064888,
+            0.999987006187439
+          ]
+        },
+        "tangentCoverage": true,
+        "validTangentCorners": 3769668,
+        "invalidTangentCorners": 0,
+        "minimumTangentLength": 0.9999998286366316,
+        "maximumTangentUnitError": 1.7322598377944587e-07
+      },
+      "after": {
+        "vertices": 152295,
+        "triangles": 238000,
+        "boundaryEdges": 49484,
+        "nonManifoldEdges": 55191,
+        "looseEdges": 5707,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 714000,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            4.400000034365803e-05,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.999987006187439,
+            0.9999610185623169
+          ]
+        },
+        "tangentCoverage": false,
+        "validTangentCorners": 713980,
+        "invalidTangentCorners": 20,
+        "minimumTangentLength": 0.0,
+        "maximumTangentUnitError": 1.0
+      },
+      "protection": {
+        "group": "V4_ProtectedDetail",
+        "method": "Protect high-curvature vertices plus the lower ornament, front/back arches, end architecture and raised rim/foliage; concentrate collapse on broad low-curvature slab surfaces.",
+        "factor": 8.0,
+        "authoredWeightSemantics": "Higher authored weights mark protected detail. The Decimate modifier inverts this group so protected vertices receive low effective collapse weights and broad planar vertices receive high effective collapse weights.",
+        "weightPercentiles": {
+          "p0": 0.0,
+          "p25": 0.9,
+          "p50": 0.92,
+          "p75": 0.94,
+          "p90": 1.0,
+          "p95": 1.0,
+          "p99": 1.0,
+          "p100": 1.0
+        },
+        "effectiveCollapseWeightPercentiles": {
+          "p0": 0.0,
+          "p25": 0.06,
+          "p50": 0.08,
+          "p75": 0.1,
+          "p90": 0.1,
+          "p95": 0.978682,
+          "p99": 0.99952,
+          "p100": 1.0
+        },
+        "reasonVertexCounts": {
+          "highCurvature": 280039,
+          "lowerOrnament": 254363,
+          "frontBackArchitecture": 309278,
+          "endArchitecture": 457656,
+          "raisedRimOrFoliage": 137400
+        }
+      },
+      "providerUv0Retained": true
+    },
+    "postCollapseFlatten": {
+      "method": "Flatten only vertices on broad upward-facing remesh polygons inside the exact 1.70 x 1.30 metre landing and within 6cm of the sampled datum; preserve UVs, silhouette geometry, ornament and the exposed donor artwork.",
+      "flattenedVertices": 44317,
+      "selectedHeightRangeBeforeMetres": [
+        -0.040712,
+        0.043161
+      ],
+      "targetBlenderZ": 0.0
+    }
+  },
+  "stages": {
+    "source": {
+      "topology": {
+        "vertices": 702537,
+        "triangles": 1256556,
+        "boundaryEdges": 142826,
+        "nonManifoldEdges": 142826,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 3769668,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            3.999999989900971e-06,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.9999960064888,
+            0.999987006187439
+          ]
+        },
+        "tangentCoverage": true,
+        "validTangentCorners": 3769668,
+        "invalidTangentCorners": 0,
+        "minimumTangentLength": 0.999999825377002,
+        "maximumTangentUnitError": 1.7462299795045766e-07
+      },
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "dominantLandingBlenderZ": 0.13962954531113303,
+      "regions": {
+        "broadLanding": {
+          "triangles": 72927,
+          "sampleStride": 1,
+          "sampledTriangles": 72927,
+          "areaSquareMetres": {
+            "median": 1.0233785587843158e-06,
+            "p95": 4.1146934381686094e-05,
+            "p99": 0.0001436599416774701,
+            "maximum": 0.008836038410663605
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 2.9499188081823626,
+            "p95": 21.825938429122907,
+            "p99": 41.37388187258803,
+            "maximum": 156.70931901104723
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.7835180014371872,
+            "p01": 0.747035236105171,
+            "p05": 0.8632309660315514,
+            "median": 0.983659798046574,
+            "nonPositive": 14
+          }
+        },
+        "frontSlabAndArches": {
+          "triangles": 271214,
+          "sampleStride": 4,
+          "sampledTriangles": 67804,
+          "areaSquareMetres": {
+            "median": 7.727518038791459e-07,
+            "p95": 7.16725976417364e-06,
+            "p99": 4.710890189016948e-05,
+            "maximum": 0.005785886663943529
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 2.24702940586179,
+            "p95": 7.093513297711213,
+            "p99": 17.109713702304905,
+            "maximum": 95.27357945433913
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.9846731424331665,
+            "p01": 0.6956071666744538,
+            "p05": 0.8775709867473325,
+            "median": 0.9893256220966578,
+            "nonPositive": 130
+          }
+        }
+      }
+    },
+    "fit": {
+      "topology": {
+        "vertices": 702537,
+        "triangles": 1256556,
+        "boundaryEdges": 142826,
+        "nonManifoldEdges": 142826,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 3769668,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            3.999999989900971e-06,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.9999960064888,
+            0.999987006187439
+          ]
+        },
+        "tangentCoverage": true,
+        "validTangentCorners": 3769668,
+        "invalidTangentCorners": 0,
+        "minimumTangentLength": 0.9999998100101767,
+        "maximumTangentUnitError": 1.8998982331819292e-07
+      },
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "dominantLandingBlenderZ": 0.0005021654069423676,
+      "regions": {
+        "broadLanding": {
+          "triangles": 76547,
+          "sampleStride": 1,
+          "sampledTriangles": 76547,
+          "areaSquareMetres": {
+            "median": 1.328522330368287e-06,
+            "p95": 4.850712175539221e-05,
+            "p99": 0.00018162318272515974,
+            "maximum": 0.013190829195082188
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 3.1615083517277123,
+            "p95": 20.414643449368942,
+            "p99": 43.017044663093024,
+            "maximum": 225.44698191001416
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.9265154004096985,
+            "p01": 0.8120793621987105,
+            "p05": 0.9105906194308773,
+            "median": 0.9906167834997177,
+            "nonPositive": 35
+          }
+        },
+        "frontSlabAndArches": {
+          "triangles": 301504,
+          "sampleStride": 4,
+          "sampledTriangles": 75376,
+          "areaSquareMetres": {
+            "median": 7.426120589570928e-07,
+            "p95": 7.455972422576451e-06,
+            "p99": 5.143679936736589e-05,
+            "maximum": 0.011602004989981651
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 2.3245220719339654,
+            "p95": 7.388121449696699,
+            "p99": 17.552659722767327,
+            "maximum": 90.74231689427884
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.9933112524449825,
+            "p01": 0.6829753132443875,
+            "p05": 0.8770466662943364,
+            "median": 0.9896339540428016,
+            "nonPositive": 159
+          }
+        }
+      }
+    },
+    "flatten": {
+      "topology": {
+        "vertices": 702537,
+        "triangles": 1256556,
+        "boundaryEdges": 142826,
+        "nonManifoldEdges": 142826,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 3769668,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            3.999999989900971e-06,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.9999960064888,
+            0.999987006187439
+          ]
+        },
+        "tangentCoverage": true,
+        "validTangentCorners": 3769668,
+        "invalidTangentCorners": 0,
+        "minimumTangentLength": 0.9999998286366316,
+        "maximumTangentUnitError": 1.7322598377944587e-07
+      },
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "dominantLandingBlenderZ": 0.0005021654069423676,
+      "regions": {
+        "broadLanding": {
+          "triangles": 77584,
+          "sampleStride": 1,
+          "sampledTriangles": 77584,
+          "areaSquareMetres": {
+            "median": 1.183313713681855e-06,
+            "p95": 4.423921072884684e-05,
+            "p99": 0.00018016808928223284,
+            "maximum": 0.013190829195082188
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 3.4536123653719586,
+            "p95": 22.383856182062097,
+            "p99": 48.265037117994865,
+            "maximum": 779.3345053708621
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.9978094100952148,
+            "p01": 0.6717435717582703,
+            "p05": 0.927289460413158,
+            "median": 0.9989412426948547,
+            "nonPositive": 153
+          }
+        },
+        "frontSlabAndArches": {
+          "triangles": 301504,
+          "sampleStride": 4,
+          "sampledTriangles": 75376,
+          "areaSquareMetres": {
+            "median": 7.742465299998003e-07,
+            "p95": 9.582762004356482e-06,
+            "p99": 5.3043629122839775e-05,
+            "maximum": 0.011601997539401054
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 2.368610407926475,
+            "p95": 8.956491570464198,
+            "p99": 26.370540946652778,
+            "maximum": 881.6620687342174
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.9997526407241821,
+            "p01": 0.16556291289627553,
+            "p05": 0.7598445880925283,
+            "median": 0.9897308954969049,
+            "nonPositive": 994
+          }
+        }
+      }
+    },
+    "collapse": {
+      "topology": {
+        "vertices": 152295,
+        "triangles": 238000,
+        "boundaryEdges": 49484,
+        "nonManifoldEdges": 55191,
+        "looseEdges": 5707,
+        "zeroAreaFaces": 0,
+        "uv0": "UVMap",
+        "uvCorners": 714000,
+        "uvFinite": true,
+        "uvRange": {
+          "min": [
+            4.400000034365803e-05,
+            1.0013580322265625e-05
+          ],
+          "max": [
+            0.999987006187439,
+            0.9999610185623169
+          ]
+        },
+        "tangentCoverage": false,
+        "validTangentCorners": 713978,
+        "invalidTangentCorners": 22,
+        "minimumTangentLength": 0.0,
+        "maximumTangentUnitError": 1.0
+      },
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700776,
+          -0.427174
+        ],
+        "max": [
+          0.900924,
+          0.69932,
+          0.142995
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.800692,
+        1.400095,
+        0.57017
+      ],
+      "dominantLandingBlenderZ": 0.0004526972770690918,
+      "regions": {
+        "broadLanding": {
+          "triangles": 7108,
+          "sampleStride": 1,
+          "sampledTriangles": 7108,
+          "areaSquareMetres": {
+            "median": 1.9986829329354805e-06,
+            "p95": 0.0005476349964737879,
+            "p99": 0.004186168187297882,
+            "maximum": 0.015799593180418015
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 7.9859062206315,
+            "p95": 80.14069633726159,
+            "p99": 335.55733259033093,
+            "maximum": 5890.677496424137
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.9999709725379944,
+            "p01": -0.021130347140133347,
+            "p05": 0.6288901567459106,
+            "median": 0.9959502220153809,
+            "nonPositive": 222
+          }
+        },
+        "frontSlabAndArches": {
+          "triangles": 54153,
+          "sampleStride": 1,
+          "sampledTriangles": 54153,
+          "areaSquareMetres": {
+            "median": 1.912979769258527e-06,
+            "p95": 0.00011457277432782549,
+            "p99": 0.00042902343440800577,
+            "maximum": 0.013802599161863327
+          },
+          "triangleAspectLongestEdgeOverAltitude": {
+            "median": 4.844920778131892,
+            "p95": 34.70245169307178,
+            "p99": 82.04462096872723,
+            "maximum": 7735.16338072014
+          },
+          "cornerNormalDotFace": {
+            "minimum": -0.9999904632568359,
+            "p01": -0.6555904401093722,
+            "p05": 0.049629132822155954,
+            "median": 0.8472436061128974,
+            "nonPositive": 6826
+          }
+        }
+      }
+    }
+  },
+  "matchedClay": {
+    "material": "identical generated neutral clay; no image texture or normal map",
+    "views": {
+      "front": {
+        "camera": {
+          "type": "orthographic",
+          "location": [
+            0.0,
+            -6.0,
+            0.46
+          ],
+          "target": [
+            0.0,
+            0.0,
+            -0.1
+          ],
+          "scale": 1.5
+        },
+        "proofs": [
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/source-front.png",
+            "bytes": 1045355,
+            "sha256": "36feae32bbd88cb7084b569b09a6d5420c9101b6136b1cac5cde4892ad2391a9",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/fit-front.png",
+            "bytes": 1067417,
+            "sha256": "8922e4dfc60afcd653fc764cd31d98b649c59a2a113d4b062a799aee68074106",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/flatten-front.png",
+            "bytes": 1079269,
+            "sha256": "354d5aed48743980133ab3fbe4bd1aadaed7fd14d41927449cabcc5243318356",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/collapse-front.png",
+            "bytes": 1143194,
+            "sha256": "2ea8017566d7f4e30103752317cca26e3b4889a231c9a04c29af56e12bf0ac6b",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          }
+        ],
+        "contactSheet": {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/matched-front-stages.png",
+          "bytes": 596162,
+          "sha256": "f0a94dda72b2e898e2fda8e0c8412b8da11e8edef9d2fea6108beef109e9639a",
+          "dimensions": [
+            3200,
+            560
+          ]
+        }
+      },
+      "threeQuarter": {
+        "camera": {
+          "type": "orthographic",
+          "location": [
+            4.3,
+            -6.5,
+            2.65
+          ],
+          "target": [
+            0.0,
+            0.0,
+            -0.1
+          ],
+          "scale": 2.2
+        },
+        "proofs": [
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/source-three-quarter.png",
+            "bytes": 1134438,
+            "sha256": "a7e1d437f7199382a401b5a04c639856afd205231c7e59104a2050e2b51640c4",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/fit-three-quarter.png",
+            "bytes": 1162501,
+            "sha256": "702f50b7d0050f17b7361609dc62ebe691dba2c6ae4b75eb11e3bbe4dce96e40",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/flatten-three-quarter.png",
+            "bytes": 1191774,
+            "sha256": "5b0fbb8ce860e2f1875f0ff1a8ff90fedacf71e2fd3809b144702776e85198c7",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          },
+          {
+            "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/collapse-three-quarter.png",
+            "bytes": 1316497,
+            "sha256": "2ba0dbcea88d8200897ce004337886efcdce4202cccf7b419fbff2e08b29c446",
+            "dimensions": [
+              1600,
+              1000
+            ]
+          }
+        ],
+        "contactSheet": {
+          "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/matched-three-quarter-stages.png",
+          "bytes": 708943,
+          "sha256": "dd4690f0d64de232617dc3518eb4b2b829f2920e6545a86217dec4c790b03081",
+          "dimensions": [
+            3200,
+            560
+          ]
+        }
+      }
+    },
+    "sequentialPixelDeltas": {
+      "front": {
+        "sourceToFit": {
+          "interiorOverlapPixels": 366174,
+          "silhouetteIntersectionOverUnion": 0.47582769022637916,
+          "meanAbsoluteLumaDelta": 0.15249794721603394,
+          "p95AbsoluteLumaDelta": 0.39597487449645996,
+          "fractionInteriorPixelsAbove0_08": 0.7073003544762873
+        },
+        "fitToFlatten": {
+          "interiorOverlapPixels": 580044,
+          "silhouetteIntersectionOverUnion": 0.9894871009658757,
+          "meanAbsoluteLumaDelta": 0.006040272302925587,
+          "p95AbsoluteLumaDelta": 0.015969395637512207,
+          "fractionInteriorPixelsAbove0_08": 0.009576859686506541
+        },
+        "flattenToCollapse": {
+          "interiorOverlapPixels": 571681,
+          "silhouetteIntersectionOverUnion": 0.9931614600133992,
+          "meanAbsoluteLumaDelta": 0.03702718764543533,
+          "p95AbsoluteLumaDelta": 0.18195605278015137,
+          "fractionInteriorPixelsAbove0_08": 0.12147333915242942
+        }
+      },
+      "three-quarter": {
+        "sourceToFit": {
+          "interiorOverlapPixels": 442311,
+          "silhouetteIntersectionOverUnion": 0.6377982302052665,
+          "meanAbsoluteLumaDelta": 0.05935367941856384,
+          "p95AbsoluteLumaDelta": 0.1968345046043396,
+          "fractionInteriorPixelsAbove0_08": 0.35696602616710865
+        },
+        "fitToFlatten": {
+          "interiorOverlapPixels": 610424,
+          "silhouetteIntersectionOverUnion": 0.9896586270177147,
+          "meanAbsoluteLumaDelta": 0.008637558668851852,
+          "p95AbsoluteLumaDelta": 0.017657220363616943,
+          "fractionInteriorPixelsAbove0_08": 0.018878681047927344
+        },
+        "flattenToCollapse": {
+          "interiorOverlapPixels": 594655,
+          "silhouetteIntersectionOverUnion": 0.9876065404034892,
+          "meanAbsoluteLumaDelta": 0.028264181688427925,
+          "p95AbsoluteLumaDelta": 0.1591324806213379,
+          "fractionInteriorPixelsAbove0_08": 0.09751872934726859
+        }
+      }
+    },
+    "render": {
+      "engine": "Blender Eevee",
+      "resolution": [
+        1600,
+        1000
+      ],
+      "look": "AgX - Medium High Contrast",
+      "transparentBackground": true,
+      "blender": "5.2.2 LTS"
+    }
+  },
+  "editableSource": {
+    "file": "art/glass-adventure/platform-trials/v4/proofs/diagnostics/marble-stage-isolation-2026-09-23/02-through-collapse/marble-stage-isolation.blend",
+    "bytes": 222701128,
+    "sha256": "64b53250c34ddbd7cbf526c5f4ec1ae63435e95433d6f235993eb8bb4d50c34a",
+    "stages": [
+      "source",
+      "fit",
+      "flatten",
+      "collapse"
+    ]
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/diagnose_marble_stage_boundary.py -- --through collapse"
+}

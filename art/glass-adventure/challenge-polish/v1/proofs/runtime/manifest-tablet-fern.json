@@ -1,0 +1,72 @@
+{
+  "capturedAt": "2026-09-21T17:54:33.252Z",
+  "url": "https://127.0.0.1:5298/glass-game/?campaign=1",
+  "proofs": [
+    {
+      "case": "tablet-fern",
+      "evidence": "Compiled campaign host, real keyboard entry on desktop and real tap on touch contexts. Saved earlier checkpoint only; PCM settles the wave first step but never completes this target. During the approach only, the harness replaced WebGL2 clear, drawArrays, drawArraysInstanced, drawElements and drawElementsInstanced with no-ops, then restored each original property descriptor before the viewport resize, camera assertions and full-raster screenshots. Software rendering, not physical-device performance.",
+      "captureMotion": "reduce (appearance-only compiled proof; normal-motion entry, reframe and return are covered by the separate @smoke camera Playwright E2E)",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "before": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/fern-house/checkpoint/entry",
+        "completed": "1",
+        "playerX": "-3.107658189596743e-16",
+        "playerY": "0",
+        "playerZ": "14.679835314220886",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0,\"position\":{\"x\":1.0662946727895123e-16,\"y\":1.8290969331003597,\"z\":11.271544151991645},\"target\":{\"x\":-3.5182775250079187e-16,\"y\":0.42,\"z\":15.015131446703384},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "singing": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/fern-house/checkpoint/entry",
+        "completed": "1",
+        "playerX": "-3.107658189596743e-16",
+        "playerY": "0",
+        "playerZ": "14.679835314220886",
+        "cameraYaw": "-1.279423232110266",
+        "challengeCameraMode": "holding",
+        "challengeCameraProgress": "1",
+        "challengeCamera": "{\"mode\":\"holding\",\"encounterId\":\"glassworks-resonance-conservatory/resonance-conservatory/fern-house/encounter/fern-wave\",\"progress\":1,\"settled\":true,\"safeBottomFraction\":0.4266153971354167,\"position\":{\"x\":-2.447640423655548,\"y\":0.24076943995490935,\"z\":15.977568751568535},\"target\":{\"x\":0.00008876883719249884,\"y\":0.04916174170646938,\"z\":15.243473301339765},\"mercFrame\":{\"minX\":-0.5343814595509129,\"maxX\":-0.16578699386986903,\"minY\":-0.040676292364438725,\"maxY\":0.47675988972419575},\"targetFrame\":{\"minX\":0.12975749700172523,\"maxX\":0.5263153314503197,\"minY\":0.16758374315425284,\"maxY\":0.8471620888062646},\"combinedFrame\":{\"minX\":-0.5343814595509129,\"maxX\":0.5263153314503197,\"minY\":-0.040676292364438725,\"maxY\":0.8471620888062646},\"safeBottomNdc\":-0.07676920572916662,\"side\":1,\"clearance\":0.8908957723449648,\"occluded\":false}",
+        "challengeCameraEncounter": "glassworks-resonance-conservatory/resonance-conservatory/fern-house/encounter/fern-wave"
+      },
+      "returned": {
+        "testid": "glass-adventure",
+        "ready": "true",
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "loadingPhase": "ready",
+        "checkpoint": "glassworks-resonance-conservatory/resonance-conservatory/fern-house/checkpoint/entry",
+        "completed": "1",
+        "playerX": "-3.107658189596743e-16",
+        "playerY": "0",
+        "playerZ": "14.679835314220886",
+        "cameraYaw": "3.141592653589793",
+        "challengeCameraMode": "exploration",
+        "challengeCameraProgress": "0",
+        "challengeCamera": "{\"mode\":\"exploration\",\"encounterId\":null,\"progress\":0,\"settled\":false,\"safeBottomFraction\":0.4266153971354167,\"position\":{\"x\":9.77520282783797e-17,\"y\":1.8290969331003597,\"z\":11.344033942572505},\"target\":{\"x\":-3.607051915013634e-16,\"y\":0.42,\"z\":15.087621237284244},\"mercFrame\":null,\"targetFrame\":null,\"combinedFrame\":null,\"safeBottomNdc\":null,\"side\":null,\"clearance\":null,\"occluded\":null}"
+      },
+      "panelBounds": {
+        "x": 292,
+        "y": 456.359375,
+        "width": 440,
+        "height": 283.640625
+      },
+      "files": [
+        "tablet-fern-singing.png",
+        "tablet-fern-returned.png"
+      ],
+      "errors": []
+    }
+  ]
+}

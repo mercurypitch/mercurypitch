@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "provider": "Meshy",
+  "taskType": "image-to-3d",
+  "taskId": "01a0c572-e3da-748b-adbe-267d3ea85f59",
+  "finalStatus": {
+    "task_id": "01a0c572-e3da-748b-adbe-267d3ea85f59",
+    "status": "SUCCEEDED",
+    "outcome": "SUCCEEDED",
+    "progress": 100,
+    "consumed_credits": 30
+  },
+  "archivedAtUtc": "2026-09-21T19:38:53.026708+00:00",
+  "artifacts": [
+    {
+      "role": "remeshed_glb",
+      "file": "meshy/glide/donor.glb",
+      "bytes": 38636140,
+      "sha256": "87c555d358064841b09b38e8f671c18c37eb97ae2c2130f4cd0da50894a5acb9"
+    },
+    {
+      "role": "pre_remeshed_glb",
+      "file": "meshy/glide/pre-remeshed.glb",
+      "bytes": 13839688,
+      "sha256": "fd8aac7efec5dfaaaa9f54ac87854e9e6cb1a23a86be8bb4bdcbde138eb1b116"
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/glide/donor_textures/base_color.png",
+      "bytes": 21923531,
+      "sha256": "7196bf705ad9d6c5bc394754e2a4039f706fbd98a6add1b81aa1125305f74dab",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/glide/donor_textures/metallic.png",
+      "bytes": 1077259,
+      "sha256": "7e789b141976ebcc187d3998bf2bb445b07d95640c0d66798c0741b623c06753",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/glide/donor_textures/normal.png",
+      "bytes": 17650446,
+      "sha256": "934961706f85dcdc4a6a32ffcb9327181a6af2285763d4b34024686cbcf174ad",
+      "dimensions": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "role": "pbr_map",
+      "file": "meshy/glide/donor_textures/roughness.png",
+      "bytes": 1494791,
+      "sha256": "6967a81448a5a85738bbdebeefd5b17bbbe9fd8c6955e939990b3a5681a0efa5",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    }
+  ],
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false
+}

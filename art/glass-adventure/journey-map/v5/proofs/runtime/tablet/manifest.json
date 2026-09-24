@@ -1,0 +1,42 @@
+{
+  "createdAt": "2026-09-21T09:12:42.311Z",
+  "url": "https://127.0.0.1:5295/glass-game/?campaign=1",
+  "evidence": "Compiled application under SwiftShader; reduced-motion stills, isolated saved-portrait fixture only for earned view. This is not physical-device FPS or thermal acceptance.",
+  "proofs": [
+    {
+      "name": "tablet",
+      "stageId": "twin-galleries-isle",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "touch": true,
+      "seededPortrait": false,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 196,
+        "triangles": 383855,
+        "geometries": 49,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": []
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "tablet-twin-galleries-isle.png",
+      "bytes": 1018537,
+      "sha256": "f20cbd54257eb4b16f5a01355af5a6533bf460d87fbc2831e2ef67fbb18bd5da"
+    }
+  ]
+}

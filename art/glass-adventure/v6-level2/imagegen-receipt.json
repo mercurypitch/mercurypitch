@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "providerMode": "Codex built-in imagegen",
+  "generatedAtUtc": "2026-09-20",
+  "sourceUrlsPersisted": false,
+  "assets": [
+    {
+      "assetId": "amber-cadence-urn-concept",
+      "file": "concepts/amber-cadence-urn.png",
+      "prompt": "concepts/amber-cadence-urn.prompt.txt",
+      "dimensions": [1254, 1254],
+      "sha256": "720bf5ebc1818bdc6eea182077296d832fb70be87f7f73475d0d978f24c2fefd"
+    },
+    {
+      "assetId": "celadon-lark-decanter-concept",
+      "file": "concepts/celadon-lark-decanter.png",
+      "prompt": "concepts/celadon-lark-decanter.prompt.txt",
+      "dimensions": [1024, 1536],
+      "sha256": "c910a7529bcdf95788c6d2d140aa8120482e414b351c6136cc8a54760bc04050"
+    },
+    {
+      "assetId": "twin-tone-resonance-harp-concept",
+      "file": "concepts/twin-tone-resonance-harp.png",
+      "prompt": "concepts/twin-tone-resonance-harp.prompt.txt",
+      "dimensions": [1254, 1254],
+      "sha256": "6143d7c3b16b21b4add33b4932cd374e0b33762cb704d1baa5245dae629a5e58"
+    },
+    {
+      "assetId": "opaline-echo-amphora-concept",
+      "file": "concepts/opaline-echo-amphora.png",
+      "prompt": "concepts/opaline-echo-amphora.prompt.txt",
+      "dimensions": [1254, 1254],
+      "sha256": "d141e8e2cf198a102b7f5993586579cc281224007c12d5ea5bf9e254b4d39972"
+    },
+    {
+      "assetId": "painting-low-note-keeper",
+      "file": "paintings/low-note-keeper-master.png",
+      "prompt": "paintings/low-note-keeper.prompt.txt",
+      "dimensions": [1024, 1536],
+      "sha256": "9e8b7a7f79a73053ee7d6a5e2cda8c25fe5f5a7cded7d892f952050cf21b5ddc"
+    },
+    {
+      "assetId": "painting-high-note-muse",
+      "file": "paintings/high-note-muse-master.png",
+      "prompt": "paintings/high-note-muse.prompt.txt",
+      "dimensions": [1024, 1536],
+      "sha256": "92621506c8ed2e25b08eb531757d5cc4b21403a0558fe768124929ace8d61469"
+    },
+    {
+      "assetId": "painting-interval-between",
+      "file": "paintings/interval-between-master.png",
+      "prompt": "paintings/interval-between.prompt.txt",
+      "dimensions": [1024, 1536],
+      "sha256": "fac4a003be291df5f1dc01f434db098c73c52c16733586e59c17e6eff5a6f893"
+    }
+  ]
+}

@@ -1,0 +1,566 @@
+{
+  "schema": 1,
+  "assetId": "cloudway-marble-ultra-v4-review",
+  "status": "review candidates; matched neutral-clay and actual-game selection pending",
+  "coordinates": "Blender Z-up authoring; glTF +Y up; metres",
+  "inputs": {
+    "denseSha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+    "remeshSha256": "fcb61f6e902ebea8ab3d10ac128c0ebc4bfa08a1342dced32b5753bb30d82906",
+    "remeshReceipt": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/runtime-remesh-90k-receipt.json",
+    "remeshReview": "art/glass-adventure/platform-trials/v4/proofs/marble-runtime-remesh-review.json",
+    "sourceMaps": {
+      "baseColor": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-base_color.png",
+        "bytes": 24712264,
+        "sha256": "f010c48c9377c99f46ddc89025f7b3e830e53e377b908227575bd79e442e05ba",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      },
+      "normal": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-normal.png",
+        "bytes": 20798487,
+        "sha256": "56bfd319cca2e1f84e3aa750bb7e21ca49a112766b4962549a1a45f2fe85a64a",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      },
+      "metallic": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-metallic.png",
+        "bytes": 781869,
+        "sha256": "1fbcf8ae5a16f5be6f4c34f5a034c8802fb695f9cae720dadbeba8e267f459d1",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "roughness": {
+        "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/textures/set-0-roughness.png",
+        "bytes": 1761714,
+        "sha256": "446bc4c73aa2b9ebee7e00deaba1c79ea1c13be1b5bc70f6f2fb350dcd9d78dd",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    }
+  },
+  "fit": {
+    "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+    "runtimeLow": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.999979,
+          -0.538875,
+          0.0
+        ],
+        "max": [
+          0.999508,
+          0.538811,
+          0.721708
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.999487,
+        1.077686,
+        0.721708
+      ],
+      "sourceLandingBlenderZ": 0.511209875,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.901065068,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153204128,
+          "cubic": -0.153204128,
+          "edgeDerivative": 0.901065068
+        },
+        "positiveHalf": {
+          "linear": 1.153204128,
+          "cubic": -0.153204128,
+          "edgeDerivative": 0.901065068
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.832624774,
+        "aboveContact": 0.696086744
+      }
+    },
+    "denseBakeSource": {
+      "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+      "sourceBoundsBlenderZUpMetres": {
+        "min": [
+          -0.943821,
+          -0.507165,
+          -0.344755
+        ],
+        "max": [
+          0.949547,
+          0.513124,
+          0.339082
+        ]
+      },
+      "sourceDimensionsBlenderZUpMetres": [
+        1.893368,
+        1.020289,
+        0.683837
+      ],
+      "sourceLandingBlenderZ": 0.139629545,
+      "targetBoundsBlenderZUpMetres": {
+        "min": [
+          -0.899768,
+          -0.700478,
+          -0.425646
+        ],
+        "max": [
+          0.9019,
+          0.699575,
+          0.146525
+        ]
+      },
+      "targetDimensionsBlenderZUpMetres": [
+        1.801668,
+        1.400053,
+        0.572171
+      ],
+      "contactPlaneBlenderZ": 0.0,
+      "widthScale": 0.951567748,
+      "depthFit": {
+        "negativeHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        },
+        "positiveHalf": {
+          "linear": 1.153272379,
+          "cubic": -0.153272379,
+          "edgeDerivative": 0.951567748
+        }
+      },
+      "verticalScale": {
+        "belowContact": 0.878735741,
+        "aboveContact": 0.734636201
+      }
+    },
+    "sameTargetEnvelope": true,
+    "originalSourcesPreserved": true
+  },
+  "runtimeGeometry": {
+    "remeshTopologyBeforeFit": {
+      "vertices": 118982,
+      "triangles": 89984,
+      "boundaryEdges": 112678,
+      "nonManifoldEdges": 112678,
+      "looseEdges": 0,
+      "zeroAreaFaces": 0,
+      "uv0": "UVMap",
+      "uvCorners": 269952,
+      "uvFinite": true,
+      "uvRange": {
+        "min": [
+          0.0,
+          2.9802322387695312e-06
+        ],
+        "max": [
+          0.9999989867210388,
+          0.9994919896125793
+        ]
+      },
+      "tangentCoverage": false,
+      "validTangentCorners": 269950,
+      "invalidTangentCorners": 2,
+      "minimumTangentLength": 0.0,
+      "maximumTangentUnitError": 1.0
+    },
+    "triangles": 89984,
+    "boundaryTriangles": 32,
+    "projectedSixInstanceFrontPassTriangles": 539904,
+    "budgetRationale": "Six marble instances project 539,904 shell triangles before the 32-triangle boundary. The 90k shell is retained because matched review shows foliage, arch cuts, medallions and the hanging ornament survive; smooth broad surfaces are restored with dense split normals and a 4K tangent-space bake.",
+    "landingFlatten": {
+      "method": "Flatten only vertices on broad upward-facing remesh polygons inside the exact 1.70 x 1.30 metre landing and within 6cm of the sampled datum; preserve UVs, silhouette geometry, ornament and the exposed donor artwork.",
+      "flattenedVertices": 17713,
+      "selectedHeightRangeBeforeMetres": [
+        -0.038794,
+        0.043742
+      ],
+      "targetBlenderZ": 0.0
+    },
+    "contactMeasurements": {
+      "all": {
+        "sampleCount": 37218,
+        "upwardAreaSquareMetres": 2.317124,
+        "heightRangeMetres": [
+          -0.00883,
+          0.005897
+        ],
+        "maxAbsoluteErrorMetres": 0.00883
+      },
+      "center": {
+        "sampleCount": 6519,
+        "upwardAreaSquareMetres": 0.905156,
+        "heightRangeMetres": [
+          -0.001295,
+          0.001367
+        ],
+        "maxAbsoluteErrorMetres": 0.001367
+      },
+      "edge": {
+        "sampleCount": 28206,
+        "upwardAreaSquareMetres": 0.972254,
+        "heightRangeMetres": [
+          -0.00883,
+          0.005897
+        ],
+        "maxAbsoluteErrorMetres": 0.00883
+      }
+    },
+    "denseSplitNormalTransfer": {
+      "method": "nearest dense-donor polygon interpolation with remesh-hemisphere compatibility; reject donor directions below dot 0.55, blend dot 0.55-0.85, retain strong matches, and use exact +Z only on vertices already flattened to the gameplay datum",
+      "source": "Cloudway_Marble__DenseBakeSource",
+      "target": "Cloudway_Marble_V4_RuntimeLow_Work",
+      "cornerCount": 269952,
+      "exactContactUpCorners": 36098,
+      "upwardRemeshNormalsPreserved": 28705,
+      "orientationRejectedCorners": 16823,
+      "orientationBlendedCorners": 16082,
+      "minimumRawOrientationDot": -0.9999975675950736,
+      "allFinite": true,
+      "positionsIndicesAndUvsChanged": false
+    },
+    "preExportTangentRepair": {
+      "method": "Replace only singular corner normals with the corresponding polygon normal, then regenerate tangent space; positions, indices and UVs remain unchanged.",
+      "repairedCorners": [
+        {
+          "loop": 20709,
+          "polygon": 6903,
+          "normalBefore": [
+            -0.9802466034889221,
+            0.1953088790178299,
+            0.031161606311798096
+          ],
+          "normalAfter": [
+            0.026928292587399483,
+            -0.02135627530515194,
+            0.9994092583656311
+          ]
+        },
+        {
+          "loop": 89123,
+          "polygon": 29707,
+          "normalBefore": [
+            -0.9787388443946838,
+            0.20510946214199066,
+            0.0005751410499215126
+          ],
+          "normalAfter": [
+            0.0,
+            -0.0,
+            1.0
+          ]
+        },
+        {
+          "loop": 237048,
+          "polygon": 79016,
+          "normalBefore": [
+            -0.606090784072876,
+            -0.6071988344192505,
+            -0.5137739181518555
+          ],
+          "normalAfter": [
+            0.7130652666091919,
+            -0.12833163142204285,
+            -0.689252495765686
+          ]
+        }
+      ],
+      "remainingZeroTangents": 0,
+      "maximumTangentUnitError": 1.7136336838419197e-07,
+      "postExportFallbackRequired": false
+    },
+    "uvsPreservedFromArchivedRemesh": true,
+    "opaqueReplacementSlabPresent": false
+  },
+  "selectedToActiveBake": {
+    "engine": "Cycles CPU",
+    "cpuThreads": 8,
+    "cageExtrusionMetres": 0.018,
+    "maximumRayDistanceMetres": 0.075,
+    "sourceNormalMapIncluded": true,
+    "maps": {
+      "baseColor4k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-4k.png",
+        "bytes": 23448669,
+        "sha256": "e8fe02a1989a8255958b7f15117d19592d26a673b25564c8c394e63351be0eb0",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "bakeType": "EMIT",
+        "samples": 16,
+        "marginPixels": 32,
+        "channelRange": [
+          0,
+          254
+        ],
+        "maximumChannelStandardDeviation": 80.2409
+      },
+      "normal4k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-4k.png",
+        "bytes": 24815548,
+        "sha256": "11cedafd545817777f60254326a3c070401dd68297f5e90fcbc2257053e7adf4",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "bakeType": "NORMAL",
+        "samples": 32,
+        "marginPixels": 32,
+        "channelRange": [
+          0,
+          255
+        ],
+        "maximumChannelStandardDeviation": 76.2141
+      },
+      "ambientOcclusion2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-ao-2k.png",
+        "bytes": 4365728,
+        "sha256": "2b7631725ad99cecd3838208991dbc4bc9b22e96207ac2b01016cf079cf41887",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bakeType": "AO",
+        "samples": 32,
+        "marginPixels": 20,
+        "channelRange": [
+          0,
+          255
+        ],
+        "maximumChannelStandardDeviation": 84.1169
+      },
+      "metallic2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-metallic-2k.png",
+        "bytes": 2051483,
+        "sha256": "a4e860e42ca40cff1e4edb15b1ef1cb0f3f10933b46f3d568ea707dfa6a0548b",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bakeType": "EMIT",
+        "samples": 8,
+        "marginPixels": 20,
+        "channelRange": [
+          0,
+          250
+        ],
+        "maximumChannelStandardDeviation": 72.0246
+      },
+      "roughness2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-roughness-2k.png",
+        "bytes": 2942476,
+        "sha256": "9f40e503b8fa738356d7549a26c83310c48fde143b74c6e177cb6517b7d9ce6f",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bakeType": "EMIT",
+        "samples": 8,
+        "marginPixels": 20,
+        "channelRange": [
+          0,
+          191
+        ],
+        "maximumChannelStandardDeviation": 25.7501
+      },
+      "orm2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-orm-2k.png",
+        "bytes": 5651373,
+        "sha256": "7d9c573d2d808f634b4bce575b76be8831de8b3b6ae9f30c7bb11c0a26124e82",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "channels": {
+          "red": "ambient occlusion",
+          "green": "roughness",
+          "blue": "metallic"
+        }
+      },
+      "baseColor2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-base-2k.png",
+        "bytes": 7297844,
+        "sha256": "3e9f90aa9fa3eca7d5a36534755b2b684fc8e9e4103b7327f36994c91bc7cd22",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "normal2k": {
+        "file": "art/glass-adventure/platform-trials/v4/sources/marble-runtime-textures/cloudway-marble-v4-normal-2k.png",
+        "bytes": 7095384,
+        "sha256": "93001824c6f68415c80667e3b817eea48e09073c6be4c2870c45b8282be39707",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Lanczos3 resize followed by per-texel tangent-vector renormalization"
+      }
+    }
+  },
+  "rootContract": {
+    "root": "Cloudway_Marble",
+    "descendantMeshes": [
+      "Cloudway_Marble__DonorShell",
+      "Cloudway_Marble__LandingBoundary"
+    ],
+    "triangles": 90016,
+    "landingBoundsGlTfYUpMetres": {
+      "min": [
+        -0.85,
+        0.0,
+        -0.65
+      ],
+      "max": [
+        0.85,
+        0.0,
+        0.65
+      ]
+    },
+    "collider": {
+      "shape": "box",
+      "width": 1.7,
+      "depth": 1.3,
+      "height": 0.24,
+      "topY": 0.0,
+      "center": [
+        0.0,
+        -0.12,
+        0.0
+      ]
+    },
+    "visualBoundsGlTfYUpMetres": {
+      "min": [
+        -0.899768,
+        -0.425646,
+        -0.699575
+      ],
+      "max": [
+        0.9019,
+        0.146525,
+        0.700478
+      ]
+    },
+    "opaqueReplacementSkinPresent": false
+  },
+  "packedBlend": {
+    "file": "art/glass-adventure/platform-trials/v4/sources/cloudway-platform-kit-v4.blend",
+    "bytes": 249561229,
+    "sha256": "a1b8ff6e2ab588b4b49d84dd5711aa8d7face0454ca88c9d6bb078b7126d20ec",
+    "imagesPacked": true,
+    "denseDonorRetained": true,
+    "v3NonMarbleRootsRetained": [
+      "Cloudway_Crackle_Intact",
+      "Cloudway_Crackle_Release",
+      "Cloudway_Crackle_Warning",
+      "Cloudway_Frost",
+      "Cloudway_Glide"
+    ],
+    "missingExternalImages": []
+  },
+  "variants": {
+    "4k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-4k-blender.glb",
+      "bytes": 60713044,
+      "sha256": "da8419285a7a7d8919109a9a6733f573e5624dce8c01906bd4e0457d7e939456",
+      "tangentAndOcclusionPatch": {
+        "method": "post-export normalize; singular tangent fallback is deterministic and orthogonal to the exported split normal",
+        "zeroTangentsRepaired": 0,
+        "nonUnitTangentsNormalized": 116204,
+        "validatedTangents": 118999,
+        "geometryPositionIndexNormalUvUnchanged": true,
+        "occlusionSharesOrmTexture": true
+      },
+      "decodedTextureMemory": {
+        "assumption": "RGBA8 GPU allocation for base, normal and ORM; complete mip chain adds 1/3",
+        "textureDimensions": {
+          "baseColor": [
+            4096,
+            4096
+          ],
+          "normal": [
+            4096,
+            4096
+          ],
+          "orm": [
+            2048,
+            2048
+          ]
+        },
+        "decodedBaseLevelBytes": 150994944,
+        "decodedBaseLevelMiB": 144.0,
+        "decodedMipChainBytes": 201326592,
+        "decodedMipChainMiB": 192.0
+      }
+    },
+    "2k": {
+      "file": "art/glass-adventure/platform-trials/v4/exports/cloudway-marble-ultra-v4-2k-blender.glb",
+      "bytes": 26842052,
+      "sha256": "6632f9fc7928c557c05b084b421c0d6a39c3a9198232c142461f0e13fb983dfa",
+      "tangentAndOcclusionPatch": {
+        "method": "post-export normalize; singular tangent fallback is deterministic and orthogonal to the exported split normal",
+        "zeroTangentsRepaired": 0,
+        "nonUnitTangentsNormalized": 116204,
+        "validatedTangents": 118999,
+        "geometryPositionIndexNormalUvUnchanged": true,
+        "occlusionSharesOrmTexture": true
+      },
+      "decodedTextureMemory": {
+        "assumption": "RGBA8 GPU allocation for base, normal and ORM; complete mip chain adds 1/3",
+        "textureDimensions": {
+          "baseColor": [
+            2048,
+            2048
+          ],
+          "normal": [
+            2048,
+            2048
+          ],
+          "orm": [
+            2048,
+            2048
+          ]
+        },
+        "decodedBaseLevelBytes": 50331648,
+        "decodedBaseLevelMiB": 48.0,
+        "decodedMipChainBytes": 67108864,
+        "decodedMipChainMiB": 64.0
+      }
+    },
+    "sameGeometry": true,
+    "selection": "pending matched Blender and actual-game review"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v4/production/build_marble_runtime_v4.py",
+    "blender": "5.2.2 LTS"
+  }
+}

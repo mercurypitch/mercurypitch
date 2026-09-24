@@ -1,0 +1,17 @@
+{
+  "ai_model": "meshy-6",
+  "file_path": "art/glass-adventure/v6-level2/concepts/amber-cadence-urn.png",
+  "should_texture": true,
+  "enable_pbr": true,
+  "should_remesh": true,
+  "target_polycount": 9000,
+  "topology": "triangle",
+  "target_formats": ["glb"],
+  "texture_prompt": "Warm honey-amber thick glass body, ivory Carrara marble neck and foot, restrained champagne-gold laurel bands, one dark jade cabochon. Preserve the concept's broad low silhouette and large clean flutes. Neutral clean PBR materials, no ground or scene.",
+  "remove_lighting": true,
+  "save_pre_remeshed_model": true,
+  "image_enhancement": false,
+  "multi_view_thumbnails": true,
+  "origin_at": "bottom",
+  "response_format": "json"
+}

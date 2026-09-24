@@ -1,0 +1,827 @@
+{
+  "revision": "merc-voice-auditions-v2-2026-09-20",
+  "prepared_at": "2026-09-20T11:35:36.961Z",
+  "purpose": "Owner comparison only; no voice is enrolled or active in the game.",
+  "provider": "ElevenLabs",
+  "model": "eleven_ttv_v3",
+  "endpoint": "/v1/text-to-voice/design",
+  "source_format": "pcm_44100",
+  "voice_library_saved": false,
+  "clipping_found": false,
+  "all_selected_transcripts_match": true,
+  "benchmark": {
+    "id": "d",
+    "selected_take": "d2",
+    "favorite_baseline": true,
+    "source_revision": "merc-voice-auditions-v1-2026-09-20"
+  },
+  "generated_id_retention": {
+    "documented_expiry": null,
+    "note": "Official Voice Design and create-voice docs reviewed 2026-09-20 explain how to save a generated_voice_id but state no validity or retention period. Preserve audio and IDs, then save the selected voice promptly."
+  },
+  "lines": [
+    {
+      "id": "ui-tutorial-promise",
+      "status": "current-ui-exact",
+      "source": "packages/glass-game/src/ui/Tutorial.tsx:103",
+      "text": "A little note can break glass."
+    },
+    {
+      "id": "ui-comfortable-note",
+      "status": "current-ui-exact",
+      "source": "packages/glass-game/src/ui/GlassAdventure.tsx:281",
+      "text": "Hum a comfortable note."
+    },
+    {
+      "id": "ui-path-open",
+      "status": "current-ui-exact",
+      "source": "packages/glass-game/src/ui/useAdventure.ts:122",
+      "text": "Beautiful. A new path is open."
+    },
+    {
+      "id": "proposed-shatter-gorgeous",
+      "status": "proposed-merc-line-short-break-quip",
+      "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:A4",
+      "text": "Gorgeous. Absolutely gorgeous."
+    },
+    {
+      "id": "proposed-wall-punchline",
+      "status": "proposed-merc-line-range-sample-not-a-short-trigger",
+      "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:J11",
+      "text": "You broke that with your voice. I need to sit down. I don't have legs."
+    }
+  ],
+  "candidates": [
+    {
+      "id": "d",
+      "label": "Gentle Whimsical",
+      "slug": "gentle-whimsical",
+      "summary": "Gentle, intimate and quietly magical",
+      "audition_note": "A soft, clear guide voice with unhurried rhythm, warmth and a natural sense of wonder.",
+      "selected_take": "d2",
+      "generated_voice_id": "B4fBPRmasEsTgd6YlSok",
+      "voice_description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate register, gentle warmth, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative.",
+      "source": {
+        "file": "../v1/raw/merc-d2.pcm",
+        "bytes": 1735776,
+        "sha256": "18ef65ad51174c15a14b5da154102bc6e54e9c43b033cb995dbd374310c3c3e8",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 19.68
+      },
+      "reel": {
+        "wav": {
+          "file": "../v1/candidates/merc-d-gentle-whimsical.wav",
+          "sha256": "492e283d01245ac0795f8ea1d91f8d2e6e914b5285548049d1a63f7b2cdb2974",
+          "codec": "pcm_s16le",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 705600,
+          "duration_seconds": 19.68,
+          "bytes": 1735820
+        },
+        "mp3": {
+          "file": "../v1/candidates/merc-d-gentle-whimsical.mp3",
+          "sha256": "c9760d7ae1e88c8af8564b2fe6997faa6e3b0fffb3607c0dc4cf9d1c291c7f43",
+          "codec": "mp3",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 160000,
+          "duration_seconds": 19.68,
+          "bytes": 395015
+        }
+      },
+      "qa": {
+        "decoded": true,
+        "pcm": {
+          "samples": 867888,
+          "duration_seconds": 19.68,
+          "peak_sample": 22720,
+          "peak_dbfs": -3.18,
+          "rms_dbfs": -24.76,
+          "clipped_samples": 0
+        },
+        "integrated_lufs": -23.3,
+        "loudness_range_lu": 3.5,
+        "true_peak_dbfs": -3.1,
+        "independent_asr": {
+          "engine": "whisper.cpp",
+          "model": "base.en",
+          "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+          "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "language": "en",
+          "expected_text_supplied": false,
+          "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+          "normalized_exact_match": true,
+          "mean_token_probability": 0.940833
+        }
+      },
+      "lines": [
+        {
+          "id": "ui-tutorial-promise",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/Tutorial.tsx:103",
+          "text": "A little note can break glass.",
+          "clip_start_seconds": 0,
+          "clip_end_seconds": 2.413,
+          "audition": {
+            "file": "../v1/lines/merc-d-gentle-whimsical-01-ui-tutorial-promise.mp3",
+            "sha256": "79d400fd9fd11ce55787dafe7c12739732a5cafa8532c802f48aa8a9c61f872b",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 2.413,
+            "bytes": 39749
+          }
+        },
+        {
+          "id": "ui-comfortable-note",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/GlassAdventure.tsx:281",
+          "text": "Hum a comfortable note.",
+          "clip_start_seconds": 3.344,
+          "clip_end_seconds": 5.005,
+          "audition": {
+            "file": "../v1/lines/merc-d-gentle-whimsical-02-ui-comfortable-note.mp3",
+            "sha256": "1c8195a9a0d025f145037422dd4da8f820af53600c87c94324ba92cfbc1b068d",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 1.661,
+            "bytes": 27628
+          }
+        },
+        {
+          "id": "ui-path-open",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/useAdventure.ts:122",
+          "text": "Beautiful. A new path is open.",
+          "clip_start_seconds": 5.958,
+          "clip_end_seconds": 8.894,
+          "audition": {
+            "file": "../v1/lines/merc-d-gentle-whimsical-03-ui-path-open.mp3",
+            "sha256": "dc651eebf540ba62417b1f012a727c8f6233511f833a58dd2616f41f3883cf28",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 2.936,
+            "bytes": 48108
+          }
+        },
+        {
+          "id": "proposed-shatter-gorgeous",
+          "status": "proposed-merc-line-short-break-quip",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:A4",
+          "text": "Gorgeous. Absolutely gorgeous.",
+          "clip_start_seconds": 9.882,
+          "clip_end_seconds": 13.092,
+          "audition": {
+            "file": "../v1/lines/merc-d-gentle-whimsical-04-proposed-shatter-gorgeous.mp3",
+            "sha256": "8c715c803003c6b08aeb1fda9ee5b8f6cb79cf69572b4a11bfd9054a29a1feec",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 3.21,
+            "bytes": 52287
+          }
+        },
+        {
+          "id": "proposed-wall-punchline",
+          "status": "proposed-merc-line-range-sample-not-a-short-trigger",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:J11",
+          "text": "You broke that with your voice. I need to sit down. I don't have legs.",
+          "clip_start_seconds": 13.644,
+          "clip_end_seconds": 19.68,
+          "audition": {
+            "file": "../v1/lines/merc-d-gentle-whimsical-05-proposed-wall-punchline.mp3",
+            "sha256": "45a358d99fa3a610673a6a8fc116652a71cc520c63db9b50aca62ebea214bca9",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 6.036,
+            "bytes": 97845
+          }
+        }
+      ],
+      "comparison_role": "favorite-baseline",
+      "favorite_baseline": true,
+      "generated_in_revision": false,
+      "source_revision": "merc-voice-auditions-v1-2026-09-20"
+    },
+    {
+      "id": "e",
+      "label": "Warmer Grounded",
+      "slug": "warmer-grounded",
+      "summary": "Warmer, steadier and softly grounded",
+      "audition_note": "A close neighbor to D with a little more low-mid warmth and grounded resonance.",
+      "difference_from_d": "A touch more low-mid warmth and grounded resonance while preserving D's softness, wonder and pace.",
+      "comparison_role": "new-direction",
+      "favorite_baseline": false,
+      "generated_in_revision": true,
+      "selected_take": "e1",
+      "generated_voice_id": "b2SKcEVwu3P6LOYWD7BP",
+      "voice_description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate low-mid register, gentle warmth, a little more grounded resonance, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never heavy, gravelly, wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative.",
+      "source": {
+        "file": "raw/merc-e1.pcm",
+        "bytes": 1799280,
+        "sha256": "4d110b92385f5d852d8b93941870c5c87380f03964b11a9727dc8e82a4831dce",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 20.4
+      },
+      "reel": {
+        "wav": {
+          "file": "candidates/merc-e-warmer-grounded.wav",
+          "sha256": "2ffee3f28eb8d7e9bbcf38cebe9cd177f5e5217ac1cc4499a3ce025a96a1ba97",
+          "codec": "pcm_s16le",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 705600,
+          "duration_seconds": 20.4,
+          "bytes": 1799324
+        },
+        "mp3": {
+          "file": "candidates/merc-e-warmer-grounded.mp3",
+          "sha256": "fd0d90015239c964e6f744251608496fd52d4ffac6a8860e1607bac7ee90695a",
+          "codec": "mp3",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 160000,
+          "duration_seconds": 20.4,
+          "bytes": 409121
+        }
+      },
+      "qa": {
+        "decoded": true,
+        "pcm": {
+          "samples": 899640,
+          "duration_seconds": 20.4,
+          "peak_sample": 16109,
+          "peak_dbfs": -6.17,
+          "rms_dbfs": -26.68,
+          "clipped_samples": 0
+        },
+        "integrated_lufs": -24.92,
+        "loudness_range_lu": 6,
+        "true_peak_dbfs": -6.16,
+        "independent_asr": {
+          "engine": "whisper.cpp",
+          "model": "base.en",
+          "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+          "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "language": "en",
+          "expected_text_supplied": false,
+          "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+          "normalized_exact_match": true,
+          "mean_token_probability": 0.951076,
+          "segments": [
+            {
+              "start_seconds": 0,
+              "end_seconds": 3.24,
+              "text": "A little note can break glass."
+            },
+            {
+              "start_seconds": 3.24,
+              "end_seconds": 5.64,
+              "text": "Hum a comfortable note."
+            },
+            {
+              "start_seconds": 5.64,
+              "end_seconds": 6.96,
+              "text": "Beautiful."
+            },
+            {
+              "start_seconds": 6.96,
+              "end_seconds": 10.28,
+              "text": "A new path is open."
+            },
+            {
+              "start_seconds": 10.28,
+              "end_seconds": 14,
+              "text": "Gorgeous, absolutely gorgeous."
+            },
+            {
+              "start_seconds": 14,
+              "end_seconds": 17.2,
+              "text": "You broke that with your voice."
+            },
+            {
+              "start_seconds": 17.2,
+              "end_seconds": 19.16,
+              "text": "I need to sit down."
+            },
+            {
+              "start_seconds": 19.16,
+              "end_seconds": 20.24,
+              "text": "I don't have legs."
+            }
+          ]
+        }
+      },
+      "lines": [
+        {
+          "id": "ui-tutorial-promise",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/Tutorial.tsx:103",
+          "text": "A little note can break glass.",
+          "clip_start_seconds": 0,
+          "clip_end_seconds": 3.24,
+          "audition": {
+            "file": "lines/merc-e-warmer-grounded-01-ui-tutorial-promise.mp3",
+            "sha256": "c1d63f37d6b77f2a56ad07d770b85ad920a53354d7516ab722bed093aae7b4fb",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 3.24,
+            "bytes": 53123
+          }
+        },
+        {
+          "id": "ui-comfortable-note",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/GlassAdventure.tsx:281",
+          "text": "Hum a comfortable note.",
+          "clip_start_seconds": 3.24,
+          "clip_end_seconds": 5.64,
+          "audition": {
+            "file": "lines/merc-e-warmer-grounded-02-ui-comfortable-note.mp3",
+            "sha256": "6325eb18fcababcf3a84838e7b802851cd81ab169f80856801b3101ada62149a",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 2.4,
+            "bytes": 39331
+          }
+        },
+        {
+          "id": "ui-path-open",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/useAdventure.ts:122",
+          "text": "Beautiful. A new path is open.",
+          "clip_start_seconds": 5.64,
+          "clip_end_seconds": 10.28,
+          "audition": {
+            "file": "lines/merc-e-warmer-grounded-03-ui-path-open.mp3",
+            "sha256": "f6173d28e3a0b2eae66af9b2006aee631fb5cb9707c7473d8a9867277ccd5d1c",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 4.64,
+            "bytes": 75275
+          }
+        },
+        {
+          "id": "proposed-shatter-gorgeous",
+          "status": "proposed-merc-line-short-break-quip",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:A4",
+          "text": "Gorgeous. Absolutely gorgeous.",
+          "clip_start_seconds": 10.28,
+          "clip_end_seconds": 14,
+          "audition": {
+            "file": "lines/merc-e-warmer-grounded-04-proposed-shatter-gorgeous.mp3",
+            "sha256": "76cac76b1593ed8181f1778995117df40e83cb1d7e217e39cc0a3651b375513a",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 3.72,
+            "bytes": 60647
+          }
+        },
+        {
+          "id": "proposed-wall-punchline",
+          "status": "proposed-merc-line-range-sample-not-a-short-trigger",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:J11",
+          "text": "You broke that with your voice. I need to sit down. I don't have legs.",
+          "clip_start_seconds": 14,
+          "clip_end_seconds": 20.4,
+          "audition": {
+            "file": "lines/merc-e-warmer-grounded-05-proposed-wall-punchline.mp3",
+            "sha256": "5ae2b0ed911d8a79e1b42951fd232485c3d6b8131fe44564b428fe1248f400c2",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 6.4,
+            "bytes": 103278
+          }
+        }
+      ]
+    },
+    {
+      "id": "f",
+      "label": "Brighter Clear",
+      "slug": "brighter-clear",
+      "summary": "Slightly brighter with extra clarity",
+      "audition_note": "A close neighbor to D with a lighter presence and especially clear short-line articulation.",
+      "difference_from_d": "A slightly brighter, clearer presence while preserving D's intimacy, gentleness and unhurried rhythm.",
+      "comparison_role": "new-direction",
+      "favorite_baseline": false,
+      "generated_in_revision": true,
+      "selected_take": "f1",
+      "generated_voice_id": "6m5v9TmkzjJiZADUm7nl",
+      "voice_description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate light-mid register, gentle warmth, a slightly brighter presence, quiet wonder and an easy unhurried rhythm. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Extra-clear crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never sharp, breathless, wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative.",
+      "source": {
+        "file": "raw/merc-f1.pcm",
+        "bytes": 1806336,
+        "sha256": "af57f40e7d102c24b7d8334e483ee469a313e7612d5e875bb1df715823fcd7e2",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 20.48
+      },
+      "reel": {
+        "wav": {
+          "file": "candidates/merc-f-brighter-clear.wav",
+          "sha256": "3e373f2dea42338c77209ee102f302ccc94a08e0b64a8338359c25fc9ec3c7fa",
+          "codec": "pcm_s16le",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 705600,
+          "duration_seconds": 20.48,
+          "bytes": 1806380
+        },
+        "mp3": {
+          "file": "candidates/merc-f-brighter-clear.mp3",
+          "sha256": "da5a5cfd54a99ffc83036b4e632b20bebdda9a0b484755bac070295c0d7bc572",
+          "codec": "mp3",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 160000,
+          "duration_seconds": 20.48,
+          "bytes": 410688
+        }
+      },
+      "qa": {
+        "decoded": true,
+        "pcm": {
+          "samples": 903168,
+          "duration_seconds": 20.48,
+          "peak_sample": 14007,
+          "peak_dbfs": -7.38,
+          "rms_dbfs": -25.71,
+          "clipped_samples": 0
+        },
+        "integrated_lufs": -25.02,
+        "loudness_range_lu": 4.7,
+        "true_peak_dbfs": -7.36,
+        "independent_asr": {
+          "engine": "whisper.cpp",
+          "model": "base.en",
+          "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+          "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "language": "en",
+          "expected_text_supplied": false,
+          "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous. Absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+          "normalized_exact_match": true,
+          "mean_token_probability": 0.938562,
+          "segments": [
+            {
+              "start_seconds": 0,
+              "end_seconds": 2.9,
+              "text": "A little note can break glass."
+            },
+            {
+              "start_seconds": 2.9,
+              "end_seconds": 5.9,
+              "text": "Hum a comfortable note."
+            },
+            {
+              "start_seconds": 5.9,
+              "end_seconds": 7.2,
+              "text": "Beautiful."
+            },
+            {
+              "start_seconds": 7.2,
+              "end_seconds": 9.9,
+              "text": "A new path is open."
+            },
+            {
+              "start_seconds": 9.9,
+              "end_seconds": 11.1,
+              "text": "Gorgeous."
+            },
+            {
+              "start_seconds": 11.1,
+              "end_seconds": 13.6,
+              "text": "Absolutely gorgeous."
+            },
+            {
+              "start_seconds": 13.6,
+              "end_seconds": 16.5,
+              "text": "You broke that with your voice."
+            },
+            {
+              "start_seconds": 16.5,
+              "end_seconds": 18.9,
+              "text": "I need to sit down."
+            },
+            {
+              "start_seconds": 18.9,
+              "end_seconds": 20.9,
+              "text": "I don't have legs."
+            }
+          ]
+        }
+      },
+      "lines": [
+        {
+          "id": "ui-tutorial-promise",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/Tutorial.tsx:103",
+          "text": "A little note can break glass.",
+          "clip_start_seconds": 0,
+          "clip_end_seconds": 2.9,
+          "audition": {
+            "file": "lines/merc-f-brighter-clear-01-ui-tutorial-promise.mp3",
+            "sha256": "62b1f9050c86bedde88dfda1bfc0a32e24eaad7a159c9642203d6c1e5a2ca62a",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 2.901,
+            "bytes": 47690
+          }
+        },
+        {
+          "id": "ui-comfortable-note",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/GlassAdventure.tsx:281",
+          "text": "Hum a comfortable note.",
+          "clip_start_seconds": 2.9,
+          "clip_end_seconds": 5.9,
+          "audition": {
+            "file": "lines/merc-f-brighter-clear-02-ui-comfortable-note.mp3",
+            "sha256": "7832e77559125bc402d5b54b4c1d44d46b8eeee7cbbcda7879645649f4073567",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 3,
+            "bytes": 48944
+          }
+        },
+        {
+          "id": "ui-path-open",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/useAdventure.ts:122",
+          "text": "Beautiful. A new path is open.",
+          "clip_start_seconds": 5.9,
+          "clip_end_seconds": 9.9,
+          "audition": {
+            "file": "lines/merc-f-brighter-clear-03-ui-path-open.mp3",
+            "sha256": "cbd5e44894f4cfc6f64a7faa49b18e4d3b9f390747137d5d29d1ae3888b20d26",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 4,
+            "bytes": 65244
+          }
+        },
+        {
+          "id": "proposed-shatter-gorgeous",
+          "status": "proposed-merc-line-short-break-quip",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:A4",
+          "text": "Gorgeous. Absolutely gorgeous.",
+          "clip_start_seconds": 9.9,
+          "clip_end_seconds": 13.6,
+          "audition": {
+            "file": "lines/merc-f-brighter-clear-04-proposed-shatter-gorgeous.mp3",
+            "sha256": "7b0469bd9727abd64b09e51c0957ec44ec4f3ef9e337519a8359bb30f8f43f35",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 3.7,
+            "bytes": 60229
+          }
+        },
+        {
+          "id": "proposed-wall-punchline",
+          "status": "proposed-merc-line-range-sample-not-a-short-trigger",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:J11",
+          "text": "You broke that with your voice. I need to sit down. I don't have legs.",
+          "clip_start_seconds": 13.6,
+          "clip_end_seconds": 20.48,
+          "audition": {
+            "file": "lines/merc-f-brighter-clear-05-proposed-wall-punchline.mp3",
+            "sha256": "d56a03ebfeb6bc34c877f3c2171d7e3529543d6e349d3d3a14b1e2c0b26b5663",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 6.88,
+            "bytes": 111220
+          }
+        }
+      ]
+    },
+    {
+      "id": "g",
+      "label": "Quiet Playful",
+      "slug": "quiet-playful",
+      "summary": "Quiet warmth with playful mischief",
+      "audition_note": "A close neighbor to D with a small mischievous current in the comic beats.",
+      "difference_from_d": "A small current of playful mischief in the comic beats while preserving D's quiet warmth and natural delivery.",
+      "comparison_role": "new-direction",
+      "favorite_baseline": false,
+      "generated_in_revision": true,
+      "selected_take": "g1",
+      "generated_voice_id": "geIXjHNV0PseCcVw7vI1",
+      "voice_description": "An original English-speaking mascot voice for Merc, an ageless liquid-metal adventure sprite who reads as a young adult. Soft and androgynous with a clear intimate register, gentle warmth, quiet wonder, an easy unhurried rhythm and subtle playful mischief tucked into comic beats. Lightly melodic and whimsical while remaining natural, intelligible and emotionally present. Crisp articulation for short game dialogue. Dry, close-mic studio recording with excellent audio quality; no music, background sound or reverb. Moderate-to-soft conversational volume, never shouting. A friendly encouraging coach, never mugging, wispy, sleepy, childish, squeaky, shrill, announcer-like or imitative.",
+      "source": {
+        "file": "raw/merc-g1.pcm",
+        "bytes": 1728720,
+        "sha256": "8d2405d6081dde7270d10760830952185cc39fbed0488482102ab921e5997e6d",
+        "media_type": "audio/pcm",
+        "provider_duration_seconds": 19.6
+      },
+      "reel": {
+        "wav": {
+          "file": "candidates/merc-g-quiet-playful.wav",
+          "sha256": "22ea659bc2fd08769c74f05b4591a2385f710b70128ef5bcb617898192608dfb",
+          "codec": "pcm_s16le",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 705600,
+          "duration_seconds": 19.6,
+          "bytes": 1728764
+        },
+        "mp3": {
+          "file": "candidates/merc-g-quiet-playful.mp3",
+          "sha256": "0a8d0f6f15d5c895f936e8cc2118233b81f055d8f896086a90b1e1ff814b3b21",
+          "codec": "mp3",
+          "sample_rate_hz": 44100,
+          "channels": 1,
+          "bit_rate_bps": 160000,
+          "duration_seconds": 19.6,
+          "bytes": 393448
+        }
+      },
+      "qa": {
+        "decoded": true,
+        "pcm": {
+          "samples": 864360,
+          "duration_seconds": 19.6,
+          "peak_sample": 25234,
+          "peak_dbfs": -2.27,
+          "rms_dbfs": -24.78,
+          "clipped_samples": 0
+        },
+        "integrated_lufs": -23.93,
+        "loudness_range_lu": 4.6,
+        "true_peak_dbfs": -2.24,
+        "independent_asr": {
+          "engine": "whisper.cpp",
+          "model": "base.en",
+          "model_source": "<user-dotfiles>/besidecue/assets/voice-auditions/2026-09-05-casting-review/speech-audit-v1/models/ggml-base.en.bin",
+          "model_sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "language": "en",
+          "expected_text_supplied": false,
+          "transcript": "A little note can break glass. Hum a comfortable note. Beautiful. A new path is open. Gorgeous, absolutely gorgeous. You broke that with your voice. I need to sit down. I don't have legs.",
+          "normalized_exact_match": true,
+          "mean_token_probability": 0.956289,
+          "segments": [
+            {
+              "start_seconds": 0,
+              "end_seconds": 3.16,
+              "text": "A little note can break glass."
+            },
+            {
+              "start_seconds": 3.16,
+              "end_seconds": 5.88,
+              "text": "Hum a comfortable note."
+            },
+            {
+              "start_seconds": 5.88,
+              "end_seconds": 7.2,
+              "text": "Beautiful."
+            },
+            {
+              "start_seconds": 7.2,
+              "end_seconds": 9.92,
+              "text": "A new path is open."
+            },
+            {
+              "start_seconds": 9.92,
+              "end_seconds": 13.56,
+              "text": "Gorgeous, absolutely gorgeous."
+            },
+            {
+              "start_seconds": 13.56,
+              "end_seconds": 16.48,
+              "text": "You broke that with your voice."
+            },
+            {
+              "start_seconds": 16.48,
+              "end_seconds": 18.36,
+              "text": "I need to sit down."
+            },
+            {
+              "start_seconds": 18.36,
+              "end_seconds": 19.64,
+              "text": "I don't have legs."
+            }
+          ]
+        }
+      },
+      "lines": [
+        {
+          "id": "ui-tutorial-promise",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/Tutorial.tsx:103",
+          "text": "A little note can break glass.",
+          "clip_start_seconds": 0,
+          "clip_end_seconds": 3.16,
+          "audition": {
+            "file": "lines/merc-g-quiet-playful-01-ui-tutorial-promise.mp3",
+            "sha256": "d07de568770830983a31449585eff963af9172e1f6be17d22f93aa0c32ba3095",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 3.16,
+            "bytes": 51452
+          }
+        },
+        {
+          "id": "ui-comfortable-note",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/GlassAdventure.tsx:281",
+          "text": "Hum a comfortable note.",
+          "clip_start_seconds": 3.16,
+          "clip_end_seconds": 5.88,
+          "audition": {
+            "file": "lines/merc-g-quiet-playful-02-ui-comfortable-note.mp3",
+            "sha256": "98cba8455f781e5fbd73aebd240076be9d7c5acf261fa564c309b03d351ce6a5",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 2.72,
+            "bytes": 44764
+          }
+        },
+        {
+          "id": "ui-path-open",
+          "status": "current-ui-exact",
+          "source": "packages/glass-game/src/ui/useAdventure.ts:122",
+          "text": "Beautiful. A new path is open.",
+          "clip_start_seconds": 5.88,
+          "clip_end_seconds": 9.92,
+          "audition": {
+            "file": "lines/merc-g-quiet-playful-03-ui-path-open.mp3",
+            "sha256": "653bea391b0ccde09894690524f5f848cdc76d8128550aa360101a09829c2c69",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 4.04,
+            "bytes": 65662
+          }
+        },
+        {
+          "id": "proposed-shatter-gorgeous",
+          "status": "proposed-merc-line-short-break-quip",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:A4",
+          "text": "Gorgeous. Absolutely gorgeous.",
+          "clip_start_seconds": 9.92,
+          "clip_end_seconds": 13.56,
+          "audition": {
+            "file": "lines/merc-g-quiet-playful-04-proposed-shatter-gorgeous.mp3",
+            "sha256": "cc612a3ca0c93e4f29907d78aef83c7b0fb37cbaa23209a2fbc543359e5d3b7f",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 3.64,
+            "bytes": 59393
+          }
+        },
+        {
+          "id": "proposed-wall-punchline",
+          "status": "proposed-merc-line-range-sample-not-a-short-trigger",
+          "source": "<user-dotfiles>/irchiinnuss/native-apps/break-glass/voiceover-plan.md:J11",
+          "text": "You broke that with your voice. I need to sit down. I don't have legs.",
+          "clip_start_seconds": 13.56,
+          "clip_end_seconds": 19.6,
+          "audition": {
+            "file": "lines/merc-g-quiet-playful-05-proposed-wall-punchline.mp3",
+            "sha256": "c3becdf9f5a0c1956e2951d8ed9a30dd2a2226dbe84fb689837970a388e574f7",
+            "codec": "mp3",
+            "sample_rate_hz": 44100,
+            "channels": 1,
+            "bit_rate_bps": 128000,
+            "duration_seconds": 6.04,
+            "bytes": 97845
+          }
+        }
+      ]
+    }
+  ]
+}

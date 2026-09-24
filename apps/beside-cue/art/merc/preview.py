@@ -2,7 +2,8 @@
 
     blender --background merc.blend --python preview.py -- <out_dir>
 
-Renders eight tiles on clay (the body has no material of its own, and
+Renders the existing gameplay poses plus front and three-quarter loader
+motion tiles on clay (the body has no material of its own, and
 grey shows the sculpt; the face keeps its real material) and leaves the
 PNGs in <out_dir>, which defaults to preview/ next to this file. Run
 `magick montage` over them, or just open the folder.
@@ -120,4 +121,12 @@ shot("08-fall-f18-impact.png", "fall", 18, FRONT)
 shot("09-fall-f22-rebound.png", "fall", 22, FRONT)
 shot("10-fall-f42-settled.png", "fall", 42, FRONT)
 shot("11-fall-f42-3q.png", "fall", 42, THREE_Q)
+for number, frame in enumerate((18, 24, 30, 36, 49), start=12):
+    shot(f"{number:02d}-welcome-f{frame:02d}-front.png", "welcome", frame, FRONT)
+for number, frame in enumerate((18, 24, 30, 36, 49), start=17):
+    shot(f"{number:02d}-welcome-f{frame:02d}-3q.png", "welcome", frame, THREE_Q)
+for number, frame in enumerate((6, 11, 16, 22, 37), start=22):
+    shot(f"{number:02d}-laugh-f{frame:02d}-front.png", "laugh", frame, FRONT)
+for number, frame in enumerate((6, 11, 16, 22, 37), start=27):
+    shot(f"{number:02d}-laugh-f{frame:02d}-3q.png", "laugh", frame, THREE_Q)
 print("PREVIEW_DONE", OUT)

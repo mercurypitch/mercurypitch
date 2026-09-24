@@ -1,0 +1,160 @@
+{
+  "assetId": "Marble009",
+  "role": "verde-marble",
+  "maps": [
+    {
+      "channel": "basecolor",
+      "providerFile": "Marble009_1K-PNG_Color.png",
+      "variant": "1K-PNG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_Color.png",
+        "bytes": 1871383,
+        "sha256": "1702b28a34989389f1bfdf55943f323110c844c16bb6f5cd2e1409fb313f87da",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      },
+      "runtime": {
+        "assetId": "verde-marble-basecolor",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-basecolor.png",
+        "bytes": 1871383,
+        "sha256": "1702b28a34989389f1bfdf55943f323110c844c16bb6f5cd2e1409fb313f87da",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Marble009_1K-PNG_NormalGL.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_NormalGL.png",
+        "bytes": 3381773,
+        "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      },
+      "runtime": {
+        "assetId": "verde-marble-normal",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-normal.png",
+        "bytes": 3381773,
+        "sha256": "433aedfd217b5675d073b86ba535cb95f2dad46bd7cfda2dbb923cda833aa62b",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Marble009_1K-PNG_Roughness.png",
+      "variant": "1K-PNG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble009/1K-PNG/Marble009_1K-PNG_Roughness.png",
+        "bytes": 448294,
+        "sha256": "25cfa4d95ee494eb49cd0f72438f57472a81b6c247a17256bedc7f8299a10281",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "L"
+      },
+      "runtime": {
+        "assetId": "verde-marble-roughness",
+        "path": "apps/beside-cue/public/games/adventure-v2/textures/verde-marble-roughness.png",
+        "bytes": 448294,
+        "sha256": "25cfa4d95ee494eb49cd0f72438f57472a81b6c247a17256bedc7f8299a10281",
+        "width": 1024,
+        "height": 1024,
+        "imageMode": "L"
+      }
+    },
+    {
+      "channel": "basecolor",
+      "providerFile": "Marble009_2K-JPG_Color.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "sRGB",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_Color.jpg",
+        "bytes": 5262421,
+        "sha256": "bf14b2a8ebff0221682a0d81ac62b5a5b221f572e928b1c46e0505529ac480b2",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "normal",
+      "providerFile": "Marble009_2K-JPG_NormalGL.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_NormalGL.jpg",
+        "bytes": 1411112,
+        "sha256": "757a906468468b6edf08bdb31b11f21d6d28853fd0765edb12357313a90ec213",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "RGB"
+      }
+    },
+    {
+      "channel": "roughness",
+      "providerFile": "Marble009_2K-JPG_Roughness.jpg",
+      "variant": "2K-JPG",
+      "colorSpace": "none",
+      "source": {
+        "path": "art/glass-adventure/v2/source-pbr/Marble009/2K-JPG/Marble009_2K-JPG_Roughness.jpg",
+        "bytes": 1904788,
+        "sha256": "612a01d5ae74e696aee68c2d0fb9b2a1153eb167cf958211e6e6a2cb836d55f2",
+        "width": 2048,
+        "height": 2048,
+        "imageMode": "L"
+      }
+    }
+  ],
+  "materialSlot": "museum_petrol",
+  "label": "Dark green / teal marble",
+  "matchNote": "Provider dark green marble; project verde Alpi role, not a verified geological Verde Alpi identification. Suitable dark perimeter border and plinth inset.",
+  "tileMeters": 1.2,
+  "scaleProvenance": "Project starting value; provider does not publish a physical size.",
+  "provider": "ambientCG",
+  "providerUrl": "https://ambientcg.com/view?id=Marble009",
+  "license": {
+    "spdx": "CC0-1.0",
+    "legalUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "verifiedUtc": "2026-09-15",
+    "commercialUse": true,
+    "redistribution": true,
+    "attributionRequired": false,
+    "providerLicenseUrl": "https://docs.ambientcg.com/license/"
+  },
+  "creationMethod": "Provider-authored procedural PBR (provider page spells the technique Prodedural); not a photographic scan and not AI-derived maps.",
+  "textureRepeatPerMetre": 0.8333333333333334,
+  "downloads": [
+    {
+      "assetId": "Marble009",
+      "file": "Marble009/Marble009_1K-PNG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble009_ivcTsBhx/Marble009_1K-PNG.zip",
+      "bytesExpected": 12479175,
+      "sha256": "06bfda486311b784e081b324b790d5047f3d14634afe721204e62550066e5cac",
+      "bytes": 12479175
+    },
+    {
+      "assetId": "Marble009",
+      "file": "Marble009/Marble009_2K-JPG.zip",
+      "url": "https://acg-download.struffelproductions.com/file/ambientCG-Web/download/Marble009_ivcTsBhx/Marble009_2K-JPG.zip",
+      "bytesExpected": 14545401,
+      "sha256": "8b63736e59bd3b77cf08a2760942947d9e19c47ad07d0d544edef39fb136d1b2",
+      "bytes": 14545401
+    }
+  ],
+  "preview": {
+    "path": "art/glass-adventure/v2/source-pbr/_previews/Marble009.webp",
+    "url": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/2048-WEBP/Marble009.webp",
+    "purpose": "Provider material preview render only, not a runtime channel.",
+    "bytes": 543660,
+    "sha256": "abdeb48ecc8aac07e4f334485c4d9e19ac33e2cd11fd4b240ce35ecbb90354e9"
+  }
+}

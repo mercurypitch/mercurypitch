@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "asset": "frost",
+  "purpose": "Matched review evidence for source-detail preservation, deliberate landing fit, and physical material response.",
+  "decision": "accepted",
+  "visualReview": "Accepted: the fitted derivative retains the donor snowflake, bubbles, crystalline apron, gold corner cages, and silhouette. The cyan glass extension and gold boundary form a deliberate flush landing frame.",
+  "comparisonOrder": [
+    "V5 accepted dense donor",
+    "V6 fitted derivative"
+  ],
+  "normalization": {
+    "method": "Both displays preserve a uniform 1.80m visual width and align the sampled landing plane to Blender Z=0.",
+    "sameScale": true,
+    "sameCamera": true,
+    "sameLighting": true
+  },
+  "sourceMeasurements": [
+    {
+      "label": "V5 accepted dense donor",
+      "file": "art/glass-adventure/platform-trials/v5/meshy/frost-ultra4k/dense-donor.glb",
+      "uniformWidthMetres": 1.8,
+      "displayCentreXMetres": -1.12,
+      "landingBlenderZMetres": 0.0,
+      "triangles": 632256,
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -2.019999981,
+          -0.485662222,
+          -0.469731718
+        ],
+        "max": [
+          -0.219999999,
+          0.485662222,
+          0.032655146
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.799999952,
+        0.971324444,
+        0.502386868
+      ]
+    },
+    {
+      "label": "V6 fitted derivative",
+      "file": "art/glass-adventure/platform-trials/v6/exports/cloudway-frost-v6-derivative.glb",
+      "uniformWidthMetres": 1.8,
+      "displayCentreXMetres": 1.12,
+      "landingBlenderZMetres": 0.0,
+      "triangles": 634512,
+      "boundsBlenderZUpMetres": {
+        "min": [
+          0.220000029,
+          -0.650000036,
+          -0.469731688
+        ],
+        "max": [
+          2.019999981,
+          0.650000036,
+          0.032655146
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.799999952,
+        1.300000072,
+        0.502386808
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "mode": "clay",
+      "order": [
+        "V5 accepted dense donor",
+        "V6 fitted derivative"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/frost-v5-v6-clay-front.png",
+          "bytes": 1858583,
+          "sha256": "11f6d8bf75b948a5046fcc5c48f18ce6448fe49697537e8b29430dab2dd5b0f5",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/frost-v5-v6-clay-three-quarter.png",
+          "bytes": 1931076,
+          "sha256": "52f282ca5f1d17bf8cdb8ce1d04f69799855a89181371904d81c3e9c2a5da12e",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "pbr",
+      "order": [
+        "V5 accepted dense donor",
+        "V6 fitted derivative"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/frost-v5-v6-pbr-front.png",
+          "bytes": 2201586,
+          "sha256": "d7958a312f4fd0377ad9ca1f3e37d1a28e72d8d72466919af6a369ed51b248db",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/frost-v5-v6-pbr-three-quarter.png",
+          "bytes": 2381245,
+          "sha256": "6f8e34a9e9375a11c5dac765000d0574fc4818a5b9965162adbce35869b14bf1",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    }
+  ],
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 18,
+    "seed": 61,
+    "resolution": [
+      1800,
+      1000
+    ],
+    "camera": "orthographic",
+    "blender": "5.2.2 LTS"
+  },
+  "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/render_fitted_comparison.py -- --asset frost"
+}

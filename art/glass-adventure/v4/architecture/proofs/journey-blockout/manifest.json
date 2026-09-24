@@ -1,0 +1,220 @@
+[
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "arrival",
+      "x": 0,
+      "z": -2.8,
+      "yaw": 3.141592653589793,
+      "distance": 4
+    },
+    "file": "800-arrival.png",
+    "metrics": {
+      "drawCalls": 462,
+      "triangles": 4574013,
+      "textures": 28,
+      "geometries": 131
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "garden",
+      "x": 12.096037511825562,
+      "z": 9.296037511825563,
+      "yaw": 3.141592653589793,
+      "distance": 4,
+      "completed": [
+        "glassworks-journey/journey/vestibule/encounter/vestibule-goblet"
+      ]
+    },
+    "file": "800-garden.png",
+    "metrics": {
+      "drawCalls": 491,
+      "triangles": 4737852,
+      "textures": 28,
+      "geometries": 131
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "portrait",
+      "x": 21.345872707366944,
+      "z": 48.42995924347689,
+      "yaw": 3.141592653589793,
+      "distance": 4,
+      "completed": [
+        "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+        "glassworks-journey/journey/garden/encounter/garden-decanter",
+        "glassworks-journey/journey/archive/encounter/archive-carafe"
+      ]
+    },
+    "file": "800-portrait.png",
+    "metrics": {
+      "drawCalls": 292,
+      "triangles": 2679154,
+      "textures": 28,
+      "geometries": 131
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pose": {
+      "name": "panorama",
+      "x": 21.345872707366944,
+      "z": 65.42599675530244,
+      "yaw": 0,
+      "distance": 4,
+      "completed": [
+        "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+        "glassworks-journey/journey/garden/encounter/garden-decanter",
+        "glassworks-journey/journey/archive/encounter/archive-carafe",
+        "glassworks-journey/journey/portrait/encounter/portrait-finale"
+      ]
+    },
+    "file": "800-panorama.png",
+    "metrics": {
+      "drawCalls": 510,
+      "triangles": 4739731,
+      "textures": 28,
+      "geometries": 131
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 800,
+      "height": 600
+    },
+    "pageErrors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "arrival",
+      "x": 0,
+      "z": -2.8,
+      "yaw": 3.141592653589793,
+      "distance": 4
+    },
+    "file": "390-arrival.png",
+    "metrics": {
+      "drawCalls": 224,
+      "triangles": 2113245,
+      "textures": 27,
+      "geometries": 128
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "garden",
+      "x": 12.096037511825562,
+      "z": 9.296037511825563,
+      "yaw": 3.141592653589793,
+      "distance": 4,
+      "completed": [
+        "glassworks-journey/journey/vestibule/encounter/vestibule-goblet"
+      ]
+    },
+    "file": "390-garden.png",
+    "metrics": {
+      "drawCalls": 426,
+      "triangles": 3721866,
+      "textures": 28,
+      "geometries": 131
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "portrait",
+      "x": 21.345872707366944,
+      "z": 48.42995924347689,
+      "yaw": 3.141592653589793,
+      "distance": 4,
+      "completed": [
+        "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+        "glassworks-journey/journey/garden/encounter/garden-decanter",
+        "glassworks-journey/journey/archive/encounter/archive-carafe"
+      ]
+    },
+    "file": "390-portrait.png",
+    "metrics": {
+      "drawCalls": 288,
+      "triangles": 2590338,
+      "textures": 28,
+      "geometries": 131
+    },
+    "yaw": 3.141592653589793,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pose": {
+      "name": "panorama",
+      "x": 21.345872707366944,
+      "z": 65.42599675530244,
+      "yaw": 0,
+      "distance": 4,
+      "completed": [
+        "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+        "glassworks-journey/journey/garden/encounter/garden-decanter",
+        "glassworks-journey/journey/archive/encounter/archive-carafe",
+        "glassworks-journey/journey/portrait/encounter/portrait-finale"
+      ]
+    },
+    "file": "390-panorama.png",
+    "metrics": {
+      "drawCalls": 484,
+      "triangles": 4397585,
+      "textures": 28,
+      "geometries": 131
+    },
+    "yaw": 0,
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 740
+    },
+    "pageErrors": []
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "revision": "merc-voice-auditions-v1-2026-09-20",
+  "direction": "d",
+  "label": "Gentle Whimsical",
+  "status": "complete",
+  "started_at": "2026-09-20T10:52:31.163Z",
+  "model": "eleven_ttv_v3",
+  "output_format": "pcm_44100",
+  "seed": 31072026,
+  "voice_library_saved": false,
+  "previews": [
+    {
+      "take": "d1",
+      "file": "merc-d1.pcm",
+      "generated_voice_id": "MvTW7MWrxZ15ZfihcmON",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 20.4,
+      "bytes": 1799280,
+      "sha256": "299ff223a3c75fe90c981025454fffdfa8300a328ef7e62d4ab252f36040acae"
+    },
+    {
+      "take": "d2",
+      "file": "merc-d2.pcm",
+      "generated_voice_id": "B4fBPRmasEsTgd6YlSok",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 19.68,
+      "bytes": 1735776,
+      "sha256": "18ef65ad51174c15a14b5da154102bc6e54e9c43b033cb995dbd374310c3c3e8"
+    },
+    {
+      "take": "d3",
+      "file": "merc-d3.pcm",
+      "generated_voice_id": "gHPJzri3j9vecaLGtB3O",
+      "media_type": "audio/pcm",
+      "language": "en",
+      "provider_duration_seconds": 21.28,
+      "bytes": 1876896,
+      "sha256": "ac7fcab2e733ace456a204458e730bf04788f178d4758db293ea8c4ad74bdc4a"
+    }
+  ],
+  "http_status": 200,
+  "provider_request_id": null,
+  "provider_character_cost": null,
+  "returned_text_matches": true,
+  "completed_at": "2026-09-20T10:52:42.450Z"
+}

@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "assetVersion": 3,
+  "sourcePolicy": "Validated Meshy donors finalized in isolated Blender; source masters remain unchanged.",
+  "scope": "Runtime copies only; measured device performance recorded separately.",
+  "totalBytes": 56452940,
+  "assets": [
+    {
+      "id": "glass-fluted-v3",
+      "file": "fluted-carafe-qa-v2.glb",
+      "bytes": 9117212,
+      "sha256": "8e02ae9eb0ce64a7af5f2943ba3f13f1591e16afa2fc40abf58c4c150d6d9b8d",
+      "source": "art/glass-adventure/v3/exports/fluted-carafe.glb",
+      "validation": "art/glass-adventure/v3/donors/fluted-carafe/validation.json",
+      "intactNode": "vase_fluted_intact",
+      "shardPrefix": "vase_fluted_shard_",
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-fluted-carafe.json"
+    },
+    {
+      "id": "glass-amphora-v3",
+      "file": "moon-amphora-qa-v2.glb",
+      "bytes": 11456580,
+      "sha256": "d940811b0981b3b3822e15baaf8c484cfa7ea1748f5b1db5aa6f3744460668fc",
+      "source": "art/glass-adventure/v3/exports/moon-amphora.glb",
+      "validation": "art/glass-adventure/v3/donors/moon-amphora/validation.json",
+      "intactNode": "vase_amphora_intact",
+      "shardPrefix": "vase_amphora_shard_",
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-moon-amphora.json"
+    },
+    {
+      "id": "glass-coupe-v3",
+      "file": "aurora-coupe-qa-v2.glb",
+      "bytes": 7213496,
+      "sha256": "2df31a3d30ccd43d10fbb2e77dd03ef4743f7dc0644397a6a6fdd2317f7b075f",
+      "source": "art/glass-adventure/v3/exports/aurora-coupe.glb",
+      "validation": "art/glass-adventure/v3/donors/aurora-coupe/validation.json",
+      "intactNode": "coupe_aurora_intact",
+      "shardPrefix": "coupe_aurora_shard_",
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-aurora-coupe.json"
+    },
+    {
+      "id": "glass-decanter-v3",
+      "file": "cut-crystal-decanter-qa-v2.glb",
+      "bytes": 8259824,
+      "sha256": "3681f6707c08bec07eb555c6865aac4f15dc6dd30ee3c3adb1aeb3f98e4de07b",
+      "source": "art/glass-adventure/v3/exports/cut-crystal-decanter.glb",
+      "validation": "art/glass-adventure/v3/donors/cut-crystal-decanter/validation.json",
+      "intactNode": "decanter_cut_intact",
+      "shardPrefix": "decanter_cut_shard_",
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-cut-crystal-decanter.json"
+    },
+    {
+      "id": "museum-column-v3",
+      "file": "gilded-column.glb",
+      "bytes": 6031316,
+      "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946",
+      "source": "art/glass-adventure/v3/architecture/exports/gilded-column-01-final-v2.glb",
+      "validation": "art/glass-adventure/v3/architecture/reports/gilded-column-01-final-v2-validation.json",
+      "node": "meshy_gilded_column"
+    },
+    {
+      "id": "museum-arcade-v3",
+      "file": "garden-arcade.glb",
+      "bytes": 6829416,
+      "sha256": "72714424b213c2d4d9c094f9b55f5257f7ee18163f7bcbd096f4066d1c872885",
+      "source": "art/glass-adventure/v3/architecture/exports/garden-arcade-01-final-v1.glb",
+      "validation": "art/glass-adventure/v3/architecture/reports/garden-arcade-01-final-v1-validation.json",
+      "node": "meshy_garden_arcade"
+    },
+    {
+      "id": "museum-canopy-v3",
+      "file": "observatory-canopy.glb",
+      "bytes": 7545096,
+      "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+      "source": "art/glass-adventure/v3/architecture/exports/observatory-canopy-01-final-v1.glb",
+      "validation": "art/glass-adventure/v3/architecture/reports/observatory-canopy-01-final-v1-validation.json",
+      "node": "meshy_observatory_canopy"
+    }
+  ],
+  "runtimeGeometryMeasurement": {
+    "date": "2026-09-24",
+    "method": "Actual GLTFLoader import followed by prepareExhibitAsset. Sum all resulting intact/23-fragment attribute and index arrays; compare the same attribute union expanded to triangle corners.",
+    "verification": "pnpm --filter @irchiinnuss/glass-game exec vitest run src/render/exhibit-asset.test.ts --reporter=verbose --silent=false",
+    "indexedAttributeAndIndexBytes": 26800740,
+    "expandedAttributeBytes": 62287008,
+    "families": [
+      {
+        "recipe": "fluted",
+        "indexedAttributeAndIndexBytes": 6940196,
+        "expandedAttributeBytes": 13888608,
+        "trianglesIncludingFragments": 119708
+      },
+      {
+        "recipe": "amphora",
+        "indexedAttributeAndIndexBytes": 8863608,
+        "expandedAttributeBytes": 23873472,
+        "trianglesIncludingFragments": 223688
+      },
+      {
+        "recipe": "coupe",
+        "indexedAttributeAndIndexBytes": 5277668,
+        "expandedAttributeBytes": 13308480,
+        "trianglesIncludingFragments": 113630
+      },
+      {
+        "recipe": "decanter",
+        "indexedAttributeAndIndexBytes": 5719268,
+        "expandedAttributeBytes": 11216448,
+        "trianglesIncludingFragments": 116838
+      }
+    ],
+    "exclusions": "Does not measure complete GPU/CPU residency, temporary import buffers, crack-line geometry, textures, renderer passes, loading time or device frame time."
+  }
+}

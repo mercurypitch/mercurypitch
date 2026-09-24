@@ -1,0 +1,297 @@
+{
+  "evidence": "Compiled application under SwiftShader; responsive overviews and isolated saved-portrait fixtures. Not physical-device FPS or thermal acceptance.",
+  "proofs": [
+    {
+      "name": "desktop",
+      "stageId": "first-light-isle",
+      "viewport": {
+        "width": 1600,
+        "height": 900
+      },
+      "touch": false,
+      "seededPortrait": false,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 196,
+        "triangles": 383855,
+        "geometries": 49,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": []
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-first-light-isle/desktop-first-light-isle.png",
+      "bytes": 1805446,
+      "sha256": "daba54abfe82f302c825b490f822b9663c8097a10009f412c1715c6a56b584f6",
+      "capturedAt": "2026-09-21T09:11:00.097Z"
+    },
+    {
+      "name": "desktop",
+      "stageId": "glassworks-isle",
+      "viewport": {
+        "width": 1600,
+        "height": 900
+      },
+      "touch": false,
+      "seededPortrait": false,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 196,
+        "triangles": 383855,
+        "geometries": 49,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": []
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-glassworks-isle/desktop-glassworks-isle.png",
+      "bytes": 1791776,
+      "sha256": "db32c097fea80487d95891b8f7cd8076f1444e3b363eac1fdbfeae410d53dc5e",
+      "capturedAt": "2026-09-21T09:11:25.849Z"
+    },
+    {
+      "name": "desktop",
+      "stageId": "resonance-conservatory-isle",
+      "viewport": {
+        "width": 1600,
+        "height": 900
+      },
+      "touch": false,
+      "seededPortrait": false,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 196,
+        "triangles": 383855,
+        "geometries": 49,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": []
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-resonance-conservatory-isle/desktop-resonance-conservatory-isle.png",
+      "bytes": 1808904,
+      "sha256": "ab3d368036bd2edf4281e10f3b74ca81a354e74c3a054e3828de29f5f19bdd7f",
+      "capturedAt": "2026-09-21T09:12:20.188Z"
+    },
+    {
+      "name": "desktop",
+      "stageId": "twin-galleries-isle",
+      "viewport": {
+        "width": 1600,
+        "height": 900
+      },
+      "touch": false,
+      "seededPortrait": false,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 196,
+        "triangles": 383855,
+        "geometries": 49,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": []
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "desktop-twin-galleries-isle/desktop-twin-galleries-isle.png",
+      "bytes": 1803419,
+      "sha256": "ce3922d11e7535aa39edaba20559d2fabd83d201e3b275f9b0b682f7ad08fbc9",
+      "capturedAt": "2026-09-21T09:11:52.864Z"
+    },
+    {
+      "name": "earned",
+      "stageId": "glassworks-isle",
+      "viewport": {
+        "width": 1600,
+        "height": 900
+      },
+      "touch": false,
+      "seededPortrait": true,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 196,
+        "triangles": 383855,
+        "geometries": 49,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": [
+          "glassworks-journey-portrait-monument"
+        ]
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "earned/earned-glassworks-isle.png",
+      "bytes": 1795446,
+      "sha256": "b40e3a48071acc0ac600649016cf9cfc13d3d0ed7c12372b01d38edd44d02e3c",
+      "capturedAt": "2026-09-21T09:13:17.229Z"
+    },
+    {
+      "name": "earned-phone",
+      "stageId": "glassworks-isle",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "touch": true,
+      "seededPortrait": true,
+      "seededStars": 2,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 154,
+        "triangles": 338708,
+        "geometries": 48,
+        "textures": 38,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 2,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": [
+          "glassworks-journey-portrait-monument"
+        ]
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "earned-phone/earned-phone-glassworks-isle.png",
+      "bytes": 261879,
+      "sha256": "2da3945070d888f86203297ae3e7eb5be052e8154b5ed31e688029e6091b4d1d",
+      "capturedAt": "2026-09-21T09:13:28.955Z"
+    },
+    {
+      "name": "phone",
+      "stageId": "first-light-isle",
+      "viewport": {
+        "width": 320,
+        "height": 640
+      },
+      "touch": true,
+      "seededPortrait": false,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 151,
+        "triangles": 338180,
+        "geometries": 47,
+        "textures": 38,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": []
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "phone/phone-first-light-isle.png",
+      "bytes": 280963,
+      "sha256": "039d00cc0c99eb81f8b286c7b1d14a8aed73609aea851ab0ef7f6da9267da7d1",
+      "capturedAt": "2026-09-21T09:12:52.645Z"
+    },
+    {
+      "name": "tablet",
+      "stageId": "twin-galleries-isle",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "touch": true,
+      "seededPortrait": false,
+      "seededStars": 0,
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "metrics": {
+        "drawCalls": 196,
+        "triangles": 383855,
+        "geometries": 49,
+        "textures": 41,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      },
+      "progress": {
+        "stars": {
+          "first-light-isle": 0,
+          "glassworks-isle": 0,
+          "twin-galleries-isle": 0,
+          "resonance-conservatory-isle": 0
+        },
+        "earnedPortraitIds": []
+      },
+      "overflow": false,
+      "errors": [],
+      "screenshot": "tablet/tablet-twin-galleries-isle.png",
+      "bytes": 1018537,
+      "sha256": "f20cbd54257eb4b16f5a01355af5a6533bf460d87fbc2831e2ef67fbb18bd5da",
+      "capturedAt": "2026-09-21T09:12:42.311Z"
+    }
+  ]
+}

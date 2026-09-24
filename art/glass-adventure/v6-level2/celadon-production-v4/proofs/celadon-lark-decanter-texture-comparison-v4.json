@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "purpose": "Compare the packed 2K Blender master against the exported 1K runtime GLB under identical camera, light, floor, and color-management settings.",
+  "packed2K": {
+    "file": "proofs/celadon-lark-decanter-intact-v4.png",
+    "bytes": 848986,
+    "sha256": "1a577be0956b5e9fae74fce7903a40fbdeefc3ec71715bad2434edc0e01a850c",
+    "dimensions": [
+      900,
+      900
+    ]
+  },
+  "runtime1K": {
+    "file": "proofs/celadon-lark-decanter-intact-runtime-1k-v4.png",
+    "bytes": 849232,
+    "sha256": "d5b312bba6025716641ba568dab1306fbea126581267c5b9492391b0d24e6cea",
+    "dimensions": [
+      900,
+      900
+    ]
+  },
+  "sideBySide": {
+    "file": "proofs/celadon-lark-decanter-2k-left-1k-right-v4.png",
+    "bytes": 650945,
+    "sha256": "aa0eb4fac79b28476d401427cf8728f6b9c4be3937aeda00c4c87b86de217950",
+    "dimensions": [
+      1800,
+      900
+    ],
+    "layout": "packed 2K source at left; exported 1K runtime at right"
+  },
+  "pixelDifference": {
+    "fullFrameMeanAbsolute8Bit": 0.02245143987238407,
+    "fullFrameP95Absolute8Bit": 0.0,
+    "fullFramePeakSignalToNoiseDb": 60.986091577411074,
+    "centralVesselCropPixels": [
+      180,
+      50,
+      720,
+      860
+    ],
+    "centralCropMeanAbsolute8Bit": 0.04157674312591553,
+    "centralCropP95Absolute8Bit": 0.0
+  },
+  "decision": "The 1K runtime atlas is retained only if visual review preserves the donor silhouette, celadon/ivory/gold separation, relief, and scalloped mouth at the intended view distance."
+}

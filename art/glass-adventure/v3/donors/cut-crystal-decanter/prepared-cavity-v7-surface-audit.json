@@ -1,0 +1,16 @@
+[
+  {
+    "object": "decanter_cut_body",
+    "nonAdjacentOverlapPairs": 0,
+    "regions": {},
+    "regionBounds": {},
+    "firstPairs": []
+  },
+  {
+    "object": "decanter_cut_stopper",
+    "nonAdjacentOverlapPairs": 0,
+    "regions": {},
+    "regionBounds": {},
+    "firstPairs": []
+  }
+]

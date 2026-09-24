@@ -1,0 +1,106 @@
+{
+  "version": 2,
+  "capturedOn": "2026-09-21",
+  "captureBaseCommit": "25dbb403c9fe3cf52d15075cc381356fc0118278",
+  "subject": "Stage 4 shared web and native delivery",
+  "source": {
+    "kind": "isolated-production-build",
+    "entry": "/glass-game",
+    "assetBase": "/glass-game-assets/",
+    "assetFilesRequired": 67,
+    "assetFilesCopied": 67,
+    "missingAssetFiles": [],
+    "extraAssetFiles": [],
+    "serviceWorkerReferencesMuseumAssets": false
+  },
+  "browserEvidence": {
+    "engine": "Chromium",
+    "deviceEvidence": "Playwright viewport emulation; no physical phone or tablet was used",
+    "command": "pnpm exec playwright test glass-game.spec.ts --config /tmp/glass-stage4.playwright.config.ts --project chromium",
+    "result": "2 passed (18.9s)",
+    "capturedPageErrors": [],
+    "capturedAssetRequestErrors": []
+  },
+  "integrityEvidence": {
+    "verifiedOn": "2026-09-21",
+    "lfsHydration": {
+      "checkoutAllLfs": false,
+      "include": [
+        "apps/beside-cue/public/games/**",
+        "apps/beside-cue/public/models/**",
+        "apps/beside-cue/public/ort/**"
+      ],
+      "excludesArtAndRawSources": true
+    },
+    "nativeProfile": {
+      "schema": 3,
+      "requiredFiles": 71,
+      "checks": [
+        "Every required source is non-empty and is not a Git LFS pointer.",
+        "Every required source and Capacitor-synced file has the same SHA-256 digest.",
+        "The Android asset-merge gate independently rejects missing, pointer, or checksum-mismatched files."
+      ]
+    },
+    "regressions": [
+      "An unhydrated Git LFS pointer fails before web staging or native profile stamping.",
+      "A same-length corrupt GLB byte sequence fails source-to-Capacitor checksum verification."
+    ],
+    "focusedTests": [
+      {
+        "command": "pnpm --dir apps/beside-cue exec vitest run scripts/native-games.test.ts",
+        "result": "10 passed"
+      },
+      {
+        "command": "pnpm exec vitest run tools/glass-game-assets.test.ts",
+        "result": "3 passed"
+      },
+      {
+        "command": "JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew :app:tasks --offline --no-daemon",
+        "result": "Gradle configuration passed"
+      }
+    ]
+  },
+  "limitations": {
+    "nativePackages": "No Android APK or unsigned iOS simulator app has been produced in this local environment yet; the first games-enabled native CI package run remains pending.",
+    "nativeDistribution": "The workflows retain debug test artifacts for seven days and do not release-sign, publish, or upload to an app store.",
+    "physicalDevices": "No physical phone or tablet was used for this delivery proof."
+  },
+  "screenshots": [
+    {
+      "file": "home-phone.png",
+      "viewport": "360x740",
+      "sha256": "c0c97606a0f40cd9206e163f410106e99a7c6a14a2e39ba1826c710f64953609",
+      "proves": "The Play Glassworks destination fits the phone home host."
+    },
+    {
+      "file": "home-tablet.png",
+      "viewport": "768x1024",
+      "sha256": "646392b2739c5d3bce2d69580a7d5bd0e643bd16e16fd5f66dab64dd523f6ea8",
+      "proves": "The Play Glassworks destination fits the tablet home host."
+    },
+    {
+      "file": "home-desktop.png",
+      "viewport": "1280x800",
+      "sha256": "18c48a638a5e9611d68f6429a196391bbe2dfac75d4a643dcf18ba8ead33c92d",
+      "proves": "The Play Glassworks destination fits the desktop home host."
+    },
+    {
+      "file": "campaign-top-tablet.png",
+      "viewport": "1024x768",
+      "sha256": "6097991f20cf8ffe643211fd0552a7340dc4bf7107d5fecd1485b93f38c89010",
+      "proves": "The canonical Glassworks campaign entry presents the first three galleries."
+    },
+    {
+      "file": "campaign-conservatory-tablet.png",
+      "viewport": "1024x768",
+      "sha256": "5cfb44a3a027774220989758f2f35ae2b32b978c1b1042321fe4f7adf3ea1104",
+      "proves": "The fourth Resonance Conservatory chapter is independently selectable."
+    },
+    {
+      "file": "conservatory-first-room-tablet.png",
+      "viewport": "1024x768",
+      "sha256": "708d886a5d1e1c37e782ab20cd44953934dc1763f953c9cdcbe1a54cd0e07e59",
+      "proves": "The real Resonance Conservatory first room loads after tutorial dismissal with no captured GLTF, model, material, page, or asset-request errors."
+    }
+  ]
+}

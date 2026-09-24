@@ -1,0 +1,164 @@
+{
+  "capturedAt": "2026-09-22T13:07:47.629Z",
+  "url": "http://127.0.0.1:5340/glass-game/?layout=cloudway",
+  "rendering": "Real WebGL2 raster through SwiftShader; no draw suppression or canvas resizing.",
+  "proofScope": "Development renderer appearance proof with a seeded saved checkpoint for the finale.",
+  "limitations": "This opens the Cloudway development layout directly. It does not prove campaign unlocking, physical-device performance or traversal to the finale.",
+  "assetBaseline": {
+    "platformKit": {
+      "assetId": "cloudway-platform-kit-v1",
+      "historicalServedFile": "apps/beside-cue/public/games/cloudway-v1/cloudway-platform-kit-v1.glb",
+      "historicalServedManifest": "apps/beside-cue/public/games/cloudway-v1/manifest.json",
+      "historicalServedPathStatus": "Removed after byte-identical archival; paths record what the capture served.",
+      "archiveFile": "art/glass-adventure/platform-trials/v2/exports/cloudway-platform-kit-v1.glb",
+      "archiveManifest": "art/glass-adventure/platform-trials/v2/exports/manifest.json",
+      "manifestVersion": 1,
+      "sha256": "05deefa049031550b3aa7897a6d7a3345718b2e10a7595a272ea513195bb9e3e"
+    },
+    "skyBackdrop": {
+      "assetId": "floating-museum-cloudscape-v3",
+      "file": "apps/beside-cue/public/games/journey-map-v3/cloudscape.webp",
+      "manifestPath": "apps/beside-cue/public/games/journey-map-v3/manifest.json",
+      "manifestVersion": 1,
+      "sha256": "3cab6e70611c1166e536e4c1de78a063abc7bc51030eb1026c2caab82db5b75c"
+    },
+    "portraitSlab": {
+      "assetId": "legend-slab",
+      "file": "apps/beside-cue/public/games/adventure/legend-slab.glb",
+      "manifestPath": "apps/beside-cue/public/games/adventure/manifest.json",
+      "manifestVersion": 1,
+      "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79"
+    },
+    "portraitTexture": {
+      "assetId": "legend-johnny-cash",
+      "file": "apps/beside-cue/public/games/adventure/legend-johnny-cash.webp",
+      "manifestPath": "apps/beside-cue/public/games/adventure/manifest.json",
+      "manifestVersion": 1,
+      "sha256": "9a44d12d318a1fa081a63b5ede408ceec1648f8e7a6c214272752bae8038bff5"
+    }
+  },
+  "proofs": [
+    {
+      "case": "cloudway-arrival-desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "checkpoint": "cloudway-checkpoint-arrival",
+      "file": "cloudway-arrival-desktop.png",
+      "errors": []
+    },
+    {
+      "case": "cloudway-portrait-desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "checkpoint": "cloudway-checkpoint-finale",
+      "camera": {
+        "mode": "holding",
+        "encounterId": "cloudway-finale-portrait",
+        "progress": 1,
+        "settled": true,
+        "safeBottomFraction": 0.3073784722222222,
+        "position": {
+          "x": -1.2186691201589315,
+          "y": 0.7149559863073015,
+          "z": 28.747878735189616
+        },
+        "target": {
+          "x": 1,
+          "y": 0.2508081836715052,
+          "z": 30.434067266510404
+        },
+        "mercFrame": {
+          "minX": -0.5281771295120126,
+          "maxX": -0.19273930222645227,
+          "minY": -0.3052174133770422,
+          "maxY": 0.2371522344256828
+        },
+        "targetFrame": {
+          "minX": 0.07970563742501183,
+          "maxX": 0.4421724561324044,
+          "minY": -0.01448890443785534,
+          "maxY": 0.7169520539199336
+        },
+        "combinedFrame": {
+          "minX": -0.5281771295120126,
+          "maxX": 0.4421724561324044,
+          "minY": -0.3052174133770422,
+          "maxY": 0.7169520539199336
+        },
+        "safeBottomNdc": -0.3152430555555556,
+        "side": -1,
+        "clearance": 1,
+        "occluded": false
+      },
+      "overlapRatio": 0,
+      "panelBounds": {
+        "x": 500,
+        "y": 639.359375,
+        "width": 440,
+        "height": 232.640625
+      },
+      "file": "cloudway-portrait-desktop-singing.png",
+      "errors": []
+    },
+    {
+      "case": "cloudway-portrait-tablet",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "checkpoint": "cloudway-checkpoint-finale",
+      "camera": {
+        "mode": "holding",
+        "encounterId": "cloudway-finale-portrait",
+        "progress": 1,
+        "settled": true,
+        "safeBottomFraction": 0.3602091471354167,
+        "position": {
+          "x": -1.053733847724334,
+          "y": 0.9692779973118258,
+          "z": 28.94466502648397
+        },
+        "target": {
+          "x": 1,
+          "y": 0.19182928563122123,
+          "z": 30.505502750754466
+        },
+        "mercFrame": {
+          "minX": -0.6453387132547457,
+          "maxX": -0.27273400683224935,
+          "minY": -0.2013597264424069,
+          "maxY": 0.536697471287967
+        },
+        "targetFrame": {
+          "minX": 0.07133853311017607,
+          "maxX": 0.5555383149307404,
+          "minY": 0.026309461246479673,
+          "maxY": 0.8276035546782079
+        },
+        "combinedFrame": {
+          "minX": -0.6453387132547457,
+          "maxX": 0.5555383149307404,
+          "minY": -0.2013597264424069,
+          "maxY": 0.8276035546782079
+        },
+        "safeBottomNdc": -0.20958170572916662,
+        "side": -1,
+        "clearance": 1,
+        "occluded": false
+      },
+      "overlapRatio": 0,
+      "panelBounds": {
+        "x": 292,
+        "y": 507.359375,
+        "width": 440,
+        "height": 232.640625
+      },
+      "file": "cloudway-portrait-tablet-singing.png",
+      "errors": []
+    }
+  ]
+}

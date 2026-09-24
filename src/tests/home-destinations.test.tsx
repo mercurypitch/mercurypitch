@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { DestinationGallery, HOME_DESTINATIONS, } from '@/features/home/DestinationGallery'
 import { TAB_ANALYSIS, TAB_EAR_LAB, TAB_EXERCISES, TAB_HOME, TAB_JAM, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { BACKGROUND_CATALOG } from '@/lib/backgrounds/background-catalog'
+import { PAGE_TOURS } from '@/stores/app-store'
 import { activeTab, setActiveTab } from '@/stores/ui-store'
 
 /**
@@ -49,6 +50,7 @@ describe('Home destination gallery', () => {
   it('maps the covers to the canonical app destinations', () => {
     expect(HOME_DESTINATIONS.map((destination) => destination.target)).toEqual([
       { kind: 'tab', tab: TAB_SINGING },
+      { kind: 'page', href: '/glass-game' },
       { kind: 'page', href: '/karaoke' },
       { kind: 'page', href: '/piano-night' },
       { kind: 'page', href: '/guitar-night' },
@@ -59,6 +61,34 @@ describe('Home destination gallery', () => {
       { kind: 'tab', tab: TAB_ANALYSIS },
       { kind: 'tab', tab: TAB_EXERCISES },
     ])
+  })
+
+  it('offers the museum campaign beside the existing practice rooms', () => {
+    const glassworks = HOME_DESTINATIONS.find(
+      (destination) => destination.visual === 'glassworks',
+    )
+
+    expect(glassworks).toMatchObject({
+      target: { kind: 'page', href: '/glass-game' },
+      title: 'Glassworks',
+      action: 'Play Glassworks',
+    })
+  })
+
+  it('resolves the Home tour spotlight to the real Glassworks entrance', () => {
+    const step = PAGE_TOURS[TAB_HOME]?.find(
+      (candidate) => candidate.title === 'A museum that listens',
+    )
+    expect(step?.targetSelector).toBe('[data-tour="home.glassworks"]')
+    if (step?.targetSelector === undefined)
+      throw new Error('Glassworks tour step is missing its target')
+
+    const { container } = render(() => <DestinationGallery />)
+    const entrance = container.querySelector<HTMLAnchorElement>(
+      step.targetSelector,
+    )
+    expect(entrance?.dataset.destination).toBe('glassworks')
+    expect(entrance?.getAttribute('href')).toBe('/glass-game')
   })
 
   it('keeps photographic night-room covers on free catalogue assets', () => {

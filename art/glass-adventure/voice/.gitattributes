@@ -1,0 +1,5 @@
+# Voice source and audition media are binary assets.
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.flac filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.pcm filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,661 @@
+{
+  "schema": 1,
+  "method": "Fresh Blender GLB import; common 1.15m bottom-centre normalization; world-space 0.1 micrometre weld and triangulation; manifold, volume, self-intersection and vertical-ray audit; deterministic bidirectional nearest-surface samples; fixed-grid front, side and top ray-cast silhouettes.",
+  "sources": [
+    {
+      "label": "donor-9k",
+      "file": "meshy/celadon-lark-decanter-donor.glb",
+      "bytes": 12154068,
+      "sha256": "7b1c1a1f712f13b005458ae306fbbd54e7bc808d36fc5ff9614245efd6b31e4b",
+      "normalization": {
+        "scale": 0.6055276647811023,
+        "sourceBounds": {
+          "min": [
+            -0.3149769902229309,
+            -0.3149310052394867,
+            -0.9505530595779419
+          ],
+          "max": [
+            0.3137679994106293,
+            0.31677600741386414,
+            0.9486169815063477
+          ]
+        },
+        "normalizedBoundsMetres": {
+          "min": [
+            -0.19036124646663666,
+            -0.1912580281496048,
+            0.0
+          ],
+          "max": [
+            0.19036123156547546,
+            0.1912580281496048,
+            1.1499998569488525
+          ]
+        },
+        "normalizedDimensionsMetres": [
+          0.3807224631309509,
+          0.3825160562992096,
+          1.1499998569488525
+        ]
+      },
+      "rawObjects": [
+        {
+          "name": "Mesh_0",
+          "vertices": 12402,
+          "edges": 19778,
+          "triangles": 9186,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "materials": [
+            "Material_0"
+          ]
+        }
+      ],
+      "topology": {
+        "weldToleranceMetres": 1e-07,
+        "vertices": 4512,
+        "edges": 13773,
+        "triangles": 9186,
+        "boundaryEdges": 25,
+        "nonManifoldEdges": 53,
+        "nonManifoldVertices": 63,
+        "nonContiguousEdges": 53,
+        "connectedComponents": 1,
+        "signedVolumeCubicMetres": 0.0209445534263792,
+        "selfIntersectionPairs": 2379,
+        "closedOrientedSolidCandidate": false,
+        "verticalRaySamples": [
+          {
+            "xyMetres": [
+              -7.450580596923828e-09,
+              0.0
+            ],
+            "intersectionCount": 2,
+            "zMetres": [
+              0.13890214264392853,
+              0.8549618721008301
+            ]
+          },
+          {
+            "xyMetres": [
+              0.045686688274145126,
+              0.0
+            ],
+            "intersectionCount": 20,
+            "zMetres": [
+              0.06868574023246765,
+              0.0837128534913063,
+              0.1307074874639511,
+              0.134391650557518,
+              0.13501423597335815,
+              0.13674978911876678,
+              0.15109702944755554,
+              0.15987475216388702,
+              0.19026130437850952,
+              0.7129165530204773,
+              0.7611476182937622,
+              0.7647234201431274,
+              0.9740533232688904,
+              0.9891495108604431,
+              0.9921084046363831,
+              1.0100306272506714,
+              1.0472527742385864,
+              1.0493823289871216,
+              1.0776323080062866,
+              1.0813089609146118
+            ]
+          },
+          {
+            "xyMetres": [
+              -0.04568670317530632,
+              0.0
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.0675957053899765,
+              0.08499723672866821,
+              0.13057921826839447,
+              0.13672304153442383,
+              0.15032166242599487,
+              0.15906628966331482,
+              0.18930891156196594,
+              0.7112032175064087,
+              0.7625601291656494,
+              0.7673601508140564,
+              0.9740225076675415,
+              1.010591983795166,
+              1.042869210243225,
+              1.0462775230407715,
+              1.0778580904006958,
+              1.0797735452651978
+            ]
+          },
+          {
+            "xyMetres": [
+              -7.450580596923828e-09,
+              0.04590192809700966
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.06844663619995117,
+              0.08490153402090073,
+              0.13115401566028595,
+              0.1353156566619873,
+              0.1506122201681137,
+              0.15904270112514496,
+              0.1899310201406479,
+              0.7090134024620056,
+              0.7588141560554504,
+              0.7638802528381348,
+              0.975427508354187,
+              1.0106052160263062,
+              1.0453828573226929,
+              1.05140221118927,
+              1.0773261785507202,
+              1.081393837928772
+            ]
+          },
+          {
+            "xyMetres": [
+              -7.450580596923828e-09,
+              -0.04590192809700966
+            ],
+            "intersectionCount": 20,
+            "zMetres": [
+              0.06867237389087677,
+              0.08787078410387039,
+              0.12953954935073853,
+              0.13361556828022003,
+              0.13520365953445435,
+              0.13681499660015106,
+              0.1506909281015396,
+              0.1568991094827652,
+              0.15936104953289032,
+              0.15938712656497955,
+              0.19009175896644592,
+              0.710377037525177,
+              0.7573392987251282,
+              0.7641286253929138,
+              0.9743491411209106,
+              1.0098204612731934,
+              1.0467499494552612,
+              1.0499343872070312,
+              1.0778559446334839,
+              1.0814566612243652
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "source-473k",
+      "file": "meshy/celadon-lark-decanter-pre-remesh.glb",
+      "bytes": 8511692,
+      "sha256": "34e4883dd62c2f1bdd09e7b899e6cd624ba51592e5da0358a1f8c72344f96f24",
+      "normalization": {
+        "scale": 0.605429276875046,
+        "sourceBounds": {
+          "min": [
+            -0.31583479046821594,
+            -0.31502705812454224,
+            -0.9506574869155884
+          ],
+          "max": [
+            0.3138285279273987,
+            0.31707555055618286,
+            0.9488211274147034
+          ]
+        },
+        "normalizedBoundsMetres": {
+          "min": [
+            -0.19060830771923065,
+            -0.19134671986103058,
+            0.0
+          ],
+          "max": [
+            0.19060830771923065,
+            0.19134671986103058,
+            1.149999976158142
+          ]
+        },
+        "normalizedDimensionsMetres": [
+          0.3812166154384613,
+          0.38269343972206116,
+          1.149999976158142
+        ]
+      },
+      "rawObjects": [
+        {
+          "name": "mesh_node",
+          "vertices": 236302,
+          "edges": 709410,
+          "triangles": 472940,
+          "uvLayers": [],
+          "materials": []
+        }
+      ],
+      "topology": {
+        "weldToleranceMetres": 1e-07,
+        "vertices": 236302,
+        "edges": 709410,
+        "triangles": 472940,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "nonManifoldVertices": 0,
+        "nonContiguousEdges": 0,
+        "connectedComponents": 1,
+        "signedVolumeCubicMetres": 0.021170591651935737,
+        "selfIntersectionPairs": 15,
+        "closedOrientedSolidCandidate": true,
+        "verticalRaySamples": [
+          {
+            "xyMetres": [
+              0.0,
+              0.0
+            ],
+            "intersectionCount": 2,
+            "zMetres": [
+              0.1382586508989334,
+              0.8547874689102173
+            ]
+          },
+          {
+            "xyMetres": [
+              0.04574599489569664,
+              0.0
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.06943151354789734,
+              0.08544863760471344,
+              0.1287391185760498,
+              0.13302023708820343,
+              0.15121668577194214,
+              0.15892745554447174,
+              0.18890216946601868,
+              0.7087581157684326,
+              0.7585116028785706,
+              0.7637664079666138,
+              0.9735731482505798,
+              1.011256217956543,
+              1.0470268726348877,
+              1.0509065389633179,
+              1.0791033506393433,
+              1.0813195705413818
+            ]
+          },
+          {
+            "xyMetres": [
+              -0.04574599489569664,
+              0.0
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.06929677724838257,
+              0.08525945246219635,
+              0.12878721952438354,
+              0.13366706669330597,
+              0.15107272565364838,
+              0.15918047726154327,
+              0.18891312181949615,
+              0.7086889743804932,
+              0.7586535811424255,
+              0.7633665800094604,
+              0.9734595417976379,
+              1.0112357139587402,
+              1.046226143836975,
+              1.050361156463623,
+              1.0792957544326782,
+              1.0814205408096313
+            ]
+          },
+          {
+            "xyMetres": [
+              0.0,
+              0.04592321440577507
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.0688265860080719,
+              0.08465662598609924,
+              0.12958621978759766,
+              0.1350601464509964,
+              0.15088872611522675,
+              0.1598491221666336,
+              0.18936537206172943,
+              0.7084689736366272,
+              0.7556840777397156,
+              0.7617172598838806,
+              0.9735103845596313,
+              1.0114095211029053,
+              1.0477547645568848,
+              1.0517680644989014,
+              1.0799386501312256,
+              1.0820318460464478
+            ]
+          },
+          {
+            "xyMetres": [
+              0.0,
+              -0.04592321440577507
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.06898953020572662,
+              0.08523563295602798,
+              0.1289457082748413,
+              0.13410387933254242,
+              0.15088613331317902,
+              0.15980945527553558,
+              0.18896183371543884,
+              0.7085360884666443,
+              0.7559198141098022,
+              0.762416660785675,
+              0.9735583662986755,
+              1.0112392902374268,
+              1.0470857620239258,
+              1.0513485670089722,
+              1.0794577598571777,
+              1.0817254781723022
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "remesh-50k",
+      "file": "meshy/celadon-lark-decanter-remesh-50k.glb",
+      "bytes": 1958064,
+      "sha256": "5b9b101c7660251d64c82dedf8e1c2d361ec1b0980d7f3edcef65026cb6aabaa",
+      "normalization": {
+        "scale": 0.5750655368153089,
+        "sourceBounds": {
+          "min": [
+            -0.3313570022583008,
+            -0.33270102739334106,
+            0.0
+          ],
+          "max": [
+            0.3308830261230469,
+            0.3325020372867584,
+            1.999772071838379
+          ]
+        },
+        "normalizedBoundsMetres": {
+          "min": [
+            -0.19041571021080017,
+            -0.1912676841020584,
+            0.0
+          ],
+          "max": [
+            0.19041571021080017,
+            0.1912676841020584,
+            1.149999976158142
+          ]
+        },
+        "normalizedDimensionsMetres": [
+          0.38083142042160034,
+          0.3825353682041168,
+          1.149999976158142
+        ]
+      },
+      "rawObjects": [
+        {
+          "name": "output_unwrapped",
+          "vertices": 51587,
+          "edges": 97867,
+          "triangles": 51040,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "materials": []
+        }
+      ],
+      "topology": {
+        "weldToleranceMetres": 1e-07,
+        "vertices": 25398,
+        "edges": 76565,
+        "triangles": 51040,
+        "boundaryEdges": 68,
+        "nonManifoldEdges": 116,
+        "nonManifoldVertices": 97,
+        "nonContiguousEdges": 118,
+        "connectedComponents": 1,
+        "signedVolumeCubicMetres": 0.021111676343300842,
+        "selfIntersectionPairs": 62,
+        "closedOrientedSolidCandidate": false,
+        "verticalRaySamples": [
+          {
+            "xyMetres": [
+              0.0,
+              0.0
+            ],
+            "intersectionCount": 2,
+            "zMetres": [
+              0.13844040036201477,
+              0.8549659848213196
+            ]
+          },
+          {
+            "xyMetres": [
+              0.045699771493673325,
+              0.0
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.07053561508655548,
+              0.0852837786078453,
+              0.12853048741817474,
+              0.13289473950862885,
+              0.15099814534187317,
+              0.1588069200515747,
+              0.1885523498058319,
+              0.7095810174942017,
+              0.7593944668769836,
+              0.7648164629936218,
+              0.9736419916152954,
+              1.0112806558609009,
+              1.045691967010498,
+              1.0496827363967896,
+              1.0781625509262085,
+              1.080828070640564
+            ]
+          },
+          {
+            "xyMetres": [
+              -0.045699771493673325,
+              0.0
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.0693778544664383,
+              0.08479383587837219,
+              0.1291891634464264,
+              0.13382568955421448,
+              0.15102717280387878,
+              0.15955616533756256,
+              0.18892793357372284,
+              0.7090203166007996,
+              0.7590636610984802,
+              0.7633416652679443,
+              0.9739689826965332,
+              1.0112059116363525,
+              1.0461760759353638,
+              1.049863576889038,
+              1.0792678594589233,
+              1.0812841653823853
+            ]
+          },
+          {
+            "xyMetres": [
+              0.0,
+              0.0459042452275753
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.06963039934635162,
+              0.08522217720746994,
+              0.12946869432926178,
+              0.13511790335178375,
+              0.1509392410516739,
+              0.159962996840477,
+              0.18892794847488403,
+              0.7087315320968628,
+              0.756901204586029,
+              0.7629333138465881,
+              0.974151074886322,
+              1.0110752582550049,
+              1.0469739437103271,
+              1.0507231950759888,
+              1.0796440839767456,
+              1.0817320346832275
+            ]
+          },
+          {
+            "xyMetres": [
+              0.0,
+              -0.0459042452275753
+            ],
+            "intersectionCount": 16,
+            "zMetres": [
+              0.0686621218919754,
+              0.08497418463230133,
+              0.12937548756599426,
+              0.13422556221485138,
+              0.15079790353775024,
+              0.16001629829406738,
+              0.18909022212028503,
+              0.7085211277008057,
+              0.7563478946685791,
+              0.7623424530029297,
+              0.9737666845321655,
+              1.0111207962036133,
+              1.0471688508987427,
+              1.0511096715927124,
+              1.0792081356048584,
+              1.0812242031097412
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "comparisonsToRecoveredSource": {
+    "donor-9k": {
+      "surfaceDistance": {
+        "candidateToReference": {
+          "samples": 4512,
+          "meanMetres": 0.00014309551252520791,
+          "rmsMetres": 0.00016643060921843686,
+          "p50Metres": 0.0001425356197353841,
+          "p95Metres": 0.00026286269727161305,
+          "p99Metres": 0.00029333496159553965,
+          "maxMetres": 0.0008581033438833305
+        },
+        "referenceToCandidate": {
+          "samples": 23632,
+          "meanMetres": 0.0004034210450423599,
+          "rmsMetres": 0.0005217370148076517,
+          "p50Metres": 0.0003273424699318803,
+          "p95Metres": 0.001039417168054309,
+          "p99Metres": 0.001452620619302229,
+          "maxMetres": 0.003794612471878203
+        }
+      },
+      "silhouette": {
+        "front": {
+          "resolution": 192,
+          "referencePixels": 15350,
+          "candidatePixels": 15342,
+          "intersectionOverUnion": 0.9924694884445598,
+          "referenceMissingFraction": 0.004039087947882736,
+          "candidateExcessFraction": 0.003517915309446254,
+          "candidateToReferenceBoundaryP95Metres": 0.0022849813103675842,
+          "referenceToCandidateBoundaryP95Metres": 0.0022849831730127335,
+          "symmetricBoundaryMaxMetres": 0.0045699626207351685
+        },
+        "side": {
+          "resolution": 192,
+          "referencePixels": 15335,
+          "candidatePixels": 15335,
+          "intersectionOverUnion": 0.9928525016244314,
+          "referenceMissingFraction": 0.0035865666775350504,
+          "candidateExcessFraction": 0.0035865666775350504,
+          "candidateToReferenceBoundaryP95Metres": 0.002292674034833908,
+          "referenceToCandidateBoundaryP95Metres": 0.0022926777601242065,
+          "symmetricBoundaryMaxMetres": 0.006289005279541016
+        },
+        "top": {
+          "resolution": 192,
+          "referencePixels": 20598,
+          "candidatePixels": 20544,
+          "intersectionOverUnion": 0.9960217349117019,
+          "referenceMissingFraction": 0.003301291387513351,
+          "candidateExcessFraction": 0.0006796776386056899,
+          "candidateToReferenceBoundaryP95Metres": 0.0022849813103675842,
+          "referenceToCandidateBoundaryP95Metres": 0.0022849813103675842,
+          "symmetricBoundaryMaxMetres": 0.002292674034833908
+        }
+      }
+    },
+    "remesh-50k": {
+      "surfaceDistance": {
+        "candidateToReference": {
+          "samples": 12700,
+          "meanMetres": 8.938800139473364e-05,
+          "rmsMetres": 0.00010606222334954715,
+          "p50Metres": 8.81649112705802e-05,
+          "p95Metres": 0.00016007262248942064,
+          "p99Metres": 0.0002846726502233422,
+          "maxMetres": 0.0006877172762197117
+        },
+        "referenceToCandidate": {
+          "samples": 23632,
+          "meanMetres": 0.00014571297277754744,
+          "rmsMetres": 0.00019463834626007906,
+          "p50Metres": 0.00011768983429309012,
+          "p95Metres": 0.00036412797516818205,
+          "p99Metres": 0.000546487463414944,
+          "maxMetres": 0.0019904215937021417
+        }
+      },
+      "silhouette": {
+        "front": {
+          "resolution": 192,
+          "referencePixels": 15350,
+          "candidatePixels": 15349,
+          "intersectionOverUnion": 0.9978524014057009,
+          "referenceMissingFraction": 0.0011074918566775244,
+          "candidateExcessFraction": 0.001042345276872964,
+          "candidateToReferenceBoundaryP95Metres": 0.0,
+          "referenceToCandidateBoundaryP95Metres": 0.0,
+          "symmetricBoundaryMaxMetres": 0.004569977521896362
+        },
+        "side": {
+          "resolution": 192,
+          "referencePixels": 15335,
+          "candidatePixels": 15320,
+          "intersectionOverUnion": 0.9981097640464085,
+          "referenceMissingFraction": 0.0014346266710140202,
+          "candidateExcessFraction": 0.0004564721225953701,
+          "candidateToReferenceBoundaryP95Metres": 0.0,
+          "referenceToCandidateBoundaryP95Metres": 0.0,
+          "symmetricBoundaryMaxMetres": 0.0022926926612854004
+        },
+        "top": {
+          "resolution": 192,
+          "referencePixels": 20598,
+          "candidatePixels": 20586,
+          "intersectionOverUnion": 0.9982532751091703,
+          "referenceMissingFraction": 0.0011651616661811825,
+          "candidateExcessFraction": 0.0005825808330905913,
+          "candidateToReferenceBoundaryP95Metres": 0.0022849813103675842,
+          "referenceToCandidateBoundaryP95Metres": 0.0022849738597869873,
+          "symmetricBoundaryMaxMetres": 0.0032369010150432587
+        }
+      }
+    }
+  }
+}

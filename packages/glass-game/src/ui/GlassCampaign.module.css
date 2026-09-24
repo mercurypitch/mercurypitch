@@ -1,0 +1,181 @@
+/* A calm gallery catalogue, shared by the web preview and native game entry. */
+.lobby {
+  min-height: 100dvh;
+  height: 100%;
+  overflow: auto;
+  color: #244943;
+  background:
+    radial-gradient(ellipse at 90% 0, #d6e4d7 0, transparent 45%), #f4efdf;
+  font-family: 'Gabarito Variable', sans-serif;
+}
+.inner {
+  width: min(1120px, 100%);
+  margin: auto;
+  padding: max(28px, env(safe-area-inset-top))
+    max(22px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 0 0;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #62745d;
+}
+.header h1 {
+  margin: 18px 0 14px;
+  font-size: clamp(32px, 5vw, 58px);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+}
+.leave {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #9cae92;
+  border-radius: 50%;
+  background: #fff9e8;
+  color: #244943;
+  cursor: pointer;
+}
+.leave svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.introduction {
+  max-width: 520px;
+  margin: 0 0 30px;
+  line-height: 1.6;
+  color: #52665b;
+}
+.chapters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 22px;
+}
+.chapter {
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  border: 1px solid #b5bb99;
+  border-radius: 120px 120px 18px 18px;
+  background: #fffbef;
+  color: #244943;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 12px 32px #2449430b;
+}
+.art {
+  position: relative;
+  height: 240px;
+  margin: 12px 12px 0;
+  overflow: hidden;
+  border-radius: 110px 110px 4px 4px;
+  background: #254943;
+}
+.art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 38%;
+  display: block;
+  transition: transform 0.3s ease;
+}
+.chapter:hover .art img {
+  transform: scale(1.03);
+}
+.chapterNumber {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 12px;
+  border: 1px solid #d8c48a;
+  border-radius: 30px;
+  background: #203e3bef;
+  color: #fff9e8;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.label {
+  padding: 22px;
+}
+.lesson {
+  color: #91743d;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.label h2 {
+  font-weight: 500;
+  font-size: 25px;
+  line-height: 1.15;
+  margin: 8px 0 12px;
+}
+.label p {
+  min-height: 66px;
+  line-height: 1.5;
+  color: #637065;
+  margin: 0 0 22px;
+  font-size: 15px;
+}
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #d9dcc6;
+  font-size: 12px;
+}
+.status strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.footnote {
+  text-align: center;
+  margin: 28px 0 0;
+  font-size: 13px;
+  color: #6c7967;
+}
+.chapter:focus-visible,
+.leave:focus-visible {
+  outline: 3px solid #b28b43;
+  outline-offset: 4px;
+}
+@media (width < 600px) {
+  .inner {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .header {
+    padding-top: 4px;
+  }
+  .art {
+    height: 190px;
+  }
+  .label p {
+    min-height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .art img {
+    transition: none;
+  }
+}

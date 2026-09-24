@@ -453,7 +453,7 @@ ROLL_AXIS = (0.0, 1.0, 0.0)
 
 
 def build_animations(rig, face, unit):
-    """Five clips, each one NLA track per animated datablock.
+    """Seven clips, each one NLA track per animated datablock.
 
     `unit` is Merc's own height, so every offset below is a fraction of
     him and survives a re-sculpt at a different scale.
@@ -516,6 +516,11 @@ def build_animations(rig, face, unit):
 
     ALL = ("root", "base", "head", "hand_l", "hand_r")
 
+    def listen_pose(frame):
+        """The exact neutral endpoint shared by listen and loader one-shots."""
+        rest(frame, ALL)
+        face_key(frame)
+
     def stash(name):
         """Push every current action into a track called `name`.
 
@@ -541,8 +546,7 @@ def build_animations(rig, face, unit):
 
     # sing: he stretches upward into the note and the hands lift with
     # it. The mouth carries the clip; the body is the follow-through.
-    rest(1, ALL)
-    face_key(1)
+    listen_pose(1)
     bkey("head", 8, up=0.03, stretch=1.06, squash=0.97)
     bkey("head", 15, up=0.06, stretch=1.14, squash=0.93, lean=-0.05)
     bkey("base", 15, squash=1.04, stretch=0.96)
@@ -565,9 +569,72 @@ def build_animations(rig, face, unit):
     bkey("hand_r", 20, side=-0.05, up=0.04)
     blink_at(9)
     blink_at(28)
-    rest(40, ALL)
-    face_key(40)
+    listen_pose(40)
     stash("listen")
+
+    # welcome: one grounded greeting for the loading arch. The right hand
+    # rises clear of the silhouette and crosses two readable wave beats while
+    # the head follows by a few degrees. Root never leaves zero, and the final
+    # key is the exact listen endpoint so the runtime cross-fade cannot pop.
+    listen_pose(1)
+    bkey("base", 5, squash=1.03, stretch=0.97)
+    bkey("head", 5, up=-0.012, squash=1.02, stretch=0.98, lean=-0.025)
+    blink_at(4)
+    bkey("head", 12, up=0.018, lean=0.035, roll=-0.025)
+    bkey("hand_r", 12, side=-0.10, fwd=0.02, up=0.24, roll=-0.24)
+    bkey("hand_l", 12, side=0.025, up=0.018, roll=0.04)
+    face_key(12, wide=0.16)
+
+    # Two complete side-to-side beats. Both extremes stay outside the body;
+    # the rotation does most of the waving so the hand remains recognisably
+    # attached to Merc rather than orbiting him.
+    bkey("hand_r", 18, side=-0.18, fwd=0.025, up=0.32, roll=-0.62)
+    bkey("head", 18, up=0.026, lean=0.045, roll=0.045)
+    face_key(18, wide=0.28)
+    bkey("hand_r", 24, side=-0.035, fwd=0.018, up=0.34, roll=0.52)
+    bkey("head", 24, up=0.03, lean=0.04, roll=-0.04)
+    face_key(24, wide=0.34)
+    bkey("hand_r", 30, side=-0.18, fwd=0.025, up=0.32, roll=-0.58)
+    bkey("head", 30, up=0.026, lean=0.035, roll=0.04)
+    face_key(30, wide=0.28)
+    bkey("hand_r", 36, side=-0.035, fwd=0.015, up=0.31, roll=0.48)
+    bkey("head", 36, up=0.018, lean=0.025, roll=-0.03)
+    face_key(36, wide=0.20)
+    bkey("hand_r", 42, side=-0.08, fwd=0.01, up=0.20, roll=0.08)
+    bkey("head", 42, up=0.008, lean=0.012, roll=0.0)
+    face_key(42, wide=0.08)
+    listen_pose(49)
+    stash("welcome")
+
+    # laugh: two small grounded squash/rebound beats. The hands draw inward,
+    # the head answers the base on alternating sides, and the expression stays
+    # restrained enough to read as a warm laugh rather than a sung note.
+    listen_pose(1)
+    bkey("base", 6, squash=1.07, stretch=0.91)
+    bkey("head", 6, up=-0.018, squash=1.03, stretch=0.95, roll=-0.035)
+    bkey("hand_l", 6, side=-0.055, fwd=0.025, up=0.035, roll=-0.10)
+    bkey("hand_r", 6, side=0.055, fwd=0.025, up=0.035, roll=0.10)
+    face_key(6, wide=0.24, sing=0.12)
+    bkey("base", 11, squash=0.97, stretch=1.05)
+    bkey("head", 11, up=0.016, squash=0.97, stretch=1.06, roll=0.045)
+    bkey("hand_l", 11, side=-0.065, fwd=0.035, up=0.055, roll=-0.16)
+    bkey("hand_r", 11, side=0.065, fwd=0.035, up=0.045, roll=0.16)
+    face_key(11, wide=0.18, sing=0.22)
+    bkey("base", 16, squash=1.08, stretch=0.90)
+    bkey("head", 16, up=-0.022, squash=1.04, stretch=0.93, roll=0.04)
+    bkey("hand_l", 16, side=-0.06, fwd=0.03, up=0.03, roll=-0.14)
+    bkey("hand_r", 16, side=0.06, fwd=0.03, up=0.04, roll=0.14)
+    face_key(16, wide=0.34, sing=0.18)
+    bkey("base", 22, squash=0.98, stretch=1.035)
+    bkey("head", 22, up=0.012, squash=0.98, stretch=1.045, roll=-0.035)
+    bkey("hand_l", 22, side=-0.04, fwd=0.02, up=0.04, roll=-0.08)
+    bkey("hand_r", 22, side=0.04, fwd=0.02, up=0.035, roll=0.08)
+    face_key(22, wide=0.18, sing=0.10)
+    bkey("base", 29, squash=1.01, stretch=0.99)
+    bkey("head", 29, up=-0.004, squash=1.01, stretch=0.99, roll=0.012)
+    face_key(29, wide=0.06)
+    listen_pose(37)
+    stash("laugh")
 
     # celebrate: two hops. The anticipation crouch before each one is
     # what sells the jump -- without it he teleports upward.

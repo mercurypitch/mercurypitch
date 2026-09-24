@@ -1,0 +1,258 @@
+{
+  "schema": 1,
+  "status": "source inspection only; LOD and visual proof pending",
+  "coordinates": "Blender Z-up after glTF import; raw source units",
+  "sources": {
+    "temple": {
+      "file": "meshy/floating-museum-temple-v3.glb",
+      "bytes": 13592912,
+      "sha256": "bfc6be24ea860df8ca04a9d8bc269a2552f932cb5726c817b9071fa2b1d37c8c",
+      "meshObjects": 1,
+      "objectNames": [
+        "Mesh_0"
+      ],
+      "boundsBlenderZUp": {
+        "min": [
+          -0.8550200462341309,
+          -0.9471210837364197,
+          -0.9505670666694641
+        ],
+        "max": [
+          0.8534180521965027,
+          0.9474470019340515,
+          0.9481240510940552
+        ]
+      },
+      "dimensions": [
+        1.7084381580352783,
+        1.8945680856704712,
+        1.898691177368164
+      ],
+      "triangles": 21839,
+      "topology": [
+        {
+          "object": "Mesh_0",
+          "vertices": 36057,
+          "triangles": 21839,
+          "boundaryEdges": 35723,
+          "nonManifoldEdges": 35723,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      ],
+      "negativeScaleObjects": [],
+      "materials": [
+        "Material_0"
+      ],
+      "uvLayers": {
+        "Mesh_0": [
+          "UVMap"
+        ]
+      },
+      "images": [
+        {
+          "name": "Image_0",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "Image_1",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "Image_3",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "normal",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ]
+    },
+    "cliff": {
+      "file": "meshy/floating-museum-cliff-v3.glb",
+      "bytes": 16458528,
+      "sha256": "8792c90d6d45d7ca15a3feeab9fb3c34263023810f5fada41f73c3abbed3cc4c",
+      "meshObjects": 1,
+      "objectNames": [
+        "Mesh_0"
+      ],
+      "boundsBlenderZUp": {
+        "min": [
+          -0.9480180144309998,
+          -0.5177990198135376,
+          -0.42272600531578064
+        ],
+        "max": [
+          0.9457720518112183,
+          0.5191770195960999,
+          0.43065598607063293
+        ]
+      },
+      "dimensions": [
+        1.8937900066375732,
+        1.0369760990142822,
+        0.8533819913864136
+      ],
+      "triangles": 15747,
+      "topology": [
+        {
+          "object": "Mesh_0",
+          "vertices": 29039,
+          "triangles": 15747,
+          "boundaryEdges": 28693,
+          "nonManifoldEdges": 28693,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      ],
+      "negativeScaleObjects": [],
+      "materials": [
+        "Material_0.001"
+      ],
+      "uvLayers": {
+        "Mesh_0": [
+          "UVMap"
+        ]
+      },
+      "images": [
+        {
+          "name": "Image_0.001",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "Image_1.001",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "Image_3.001",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "normal.001",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ]
+    },
+    "cypress": {
+      "file": "meshy/floating-museum-cypress-v3.glb",
+      "bytes": 14166912,
+      "sha256": "2d19cf0cf1c29c69c1143c3a3d6221b4e9a32487c9944a7fa54f540cb60ade65",
+      "meshObjects": 1,
+      "objectNames": [
+        "Mesh_0"
+      ],
+      "boundsBlenderZUp": {
+        "min": [
+          -0.20108598470687866,
+          -0.23956599831581116,
+          -0.9495208859443665
+        ],
+        "max": [
+          0.19957298040390015,
+          0.24136096239089966,
+          0.9474859237670898
+        ]
+      },
+      "dimensions": [
+        0.4006589651107788,
+        0.4809269607067108,
+        1.8970067501068115
+      ],
+      "triangles": 7136,
+      "topology": [
+        {
+          "object": "Mesh_0",
+          "vertices": 12276,
+          "triangles": 7136,
+          "boundaryEdges": 12156,
+          "nonManifoldEdges": 12156,
+          "looseEdges": 0,
+          "zeroAreaFaces": 0,
+          "blenderMeshInvalid": false
+        }
+      ],
+      "negativeScaleObjects": [],
+      "materials": [
+        "Material_0.002"
+      ],
+      "uvLayers": {
+        "Mesh_0": [
+          "UVMap"
+        ]
+      },
+      "images": [
+        {
+          "name": "Image_0.002",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "Image_1.002",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color"
+        },
+        {
+          "name": "Image_3.002",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "sRGB"
+        },
+        {
+          "name": "normal.002",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "colorSpace": "Non-Color"
+        }
+      ]
+    }
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy blender -b --factory-startup --python art/glass-adventure/journey-map/v3/production/audit_meshy_sources.py",
+    "blender": "5.2.2 LTS"
+  }
+}

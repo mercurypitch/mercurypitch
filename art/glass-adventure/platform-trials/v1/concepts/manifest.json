@@ -1,0 +1,35 @@
+{
+  "status": "concept-audition-only",
+  "created": "2026-09-21",
+  "generator": "built-in ChatGPT imagegen",
+  "meshyTasksSubmitted": 0,
+  "items": [
+    {
+      "id": "01-platform-family",
+      "image": "01-platform-family.png",
+      "prompt": "01-platform-family.prompt.md",
+      "originalName": "exec-15f4ccae-d82e-4199-94bc-1d2fcbe8a183.png",
+      "bytes": 2237514,
+      "sha256": "84a236c3cde538f463bceb86518ae94c8e35878bcede6deb271c3509c49932ec",
+      "role": "unapproved design prototype; not runtime asset"
+    },
+    {
+      "id": "02-cloudway-route",
+      "image": "02-cloudway-route.png",
+      "prompt": "02-cloudway-route.prompt.md",
+      "originalName": "exec-81729c9a-b213-4d05-8e7f-1f8284a11ced.png",
+      "bytes": 2495569,
+      "sha256": "32790a9c4bc2336e3ca4a238e35575f6a460a441320bc4ade2b6ada4914ecf94",
+      "role": "unapproved design prototype; not runtime asset"
+    },
+    {
+      "id": "03-crackle-states",
+      "image": "03-crackle-states.png",
+      "prompt": "03-crackle-states.prompt.md",
+      "originalName": "exec-054be8bf-c152-4858-9287-e07d535e5d75.png",
+      "bytes": 1785376,
+      "sha256": "82830d96d7c54004263d7a754c6b3cc198614f36effbe2fb356a3e3d21281240",
+      "role": "unapproved design prototype; not runtime asset"
+    }
+  ]
+}

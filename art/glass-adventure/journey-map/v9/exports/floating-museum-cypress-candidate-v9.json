@@ -1,0 +1,416 @@
+{
+  "schema": 1,
+  "asset": "cypress",
+  "assetId": "floating-museum-cypress-candidate-v9",
+  "status": "review-only; normal-map selection and runtime integration pending",
+  "coordinates": "Blender Z-up authoring; exported glTF +Y up; metres",
+  "source": {
+    "file": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k-retexture-pbr.glb",
+    "bytes": 10374880,
+    "sha256": "c2e6c4403903d9805dca8de75f41a24e67a9ff67489eaaabe3773108961f0cf5",
+    "receipt": "art/glass-adventure/journey-map/v9/meshy/cypress-remesh-20k-retexture-pbr-receipt.json",
+    "receiptContext": {
+      "remeshTaskId": "01a0cebd-1bb5-77ac-a695-9e877f69eb94",
+      "retextureTaskId": "01a0ced2-c48f-71c4-b329-991ce0e016ce",
+      "sourceSha256": "c2e6c4403903d9805dca8de75f41a24e67a9ff67489eaaabe3773108961f0cf5",
+      "denseDonorSha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+      "clayReview": {
+        "file": "art/glass-adventure/journey-map/v9/proofs/cypress-remesh-clay-review-v9.json",
+        "sha256": "863c53c36396319a21228c03eeac481dcf205cd9f8675047b98f91c008d0731a"
+      }
+    },
+    "providerPbr": {
+      "baseColor": {
+        "imageIndex": 0,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 4237046,
+        "sha256": "7de7e549c9ce4127c46524b9ff5b374c79a98b65eee0c996848d6c222a02bd96"
+      },
+      "normal": {
+        "imageIndex": 2,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 2924696,
+        "sha256": "129ccc7dd6c5ccf797196975def55cfff2de1a27e8b01a016624d1fbffd64da7"
+      },
+      "metallicRoughness": {
+        "imageIndex": 1,
+        "name": null,
+        "mimeType": "image/jpeg",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "bytes": 1857293,
+        "sha256": "08cdbd0bb845501059e61e52a304682b01e4e782e18b77b03d4ecfdfd251b7ca"
+      },
+      "providerOcclusionBinding": null
+    },
+    "providerTextureFiles": {
+      "baseColor": {
+        "file": "sources/cypress-bake-v9/provider-base-color.png",
+        "bytes": 7728067,
+        "sha256": "4710864df041932e41deed0bed697d60eef4ad38e8fdac677e6e3ccf2b10cd7b",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "normal": {
+        "file": "sources/cypress-bake-v9/provider-normal.png",
+        "bytes": 5320703,
+        "sha256": "ed8d6d9c763b732a329993bc00913089b39abe902e95dd4172313c92a7b55f82",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      "metallicRoughness": {
+        "file": "sources/cypress-bake-v9/provider-metallic-roughness.png",
+        "bytes": 2744654,
+        "sha256": "4c3e1a8018b7860f43220bcd3235fbb285203962797d885997f5f82b60e3d24a",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    },
+    "topology": {
+      "vertices": 31557,
+      "triangles": 20605,
+      "boundaryEdges": 30503,
+      "nonManifoldEdges": 30503,
+      "looseEdges": 0,
+      "zeroAreaFaces": 0,
+      "blenderMeshInvalid": false
+    }
+  },
+  "denseDonor": {
+    "file": "art/glass-adventure/journey-map/v3/meshy/floating-museum-cypress-v3-pre-remesh.glb",
+    "bytes": 11942508,
+    "sha256": "cb6f436f48909cfa3c449d085dc48ff3ba9dfc71dbc230332878e32c95cbeda1",
+    "topology": {
+      "mesh_node": {
+        "vertices": 331413,
+        "triangles": 663730,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "looseEdges": 0,
+        "zeroAreaFaces": 0,
+        "blenderMeshInvalid": false
+      }
+    }
+  },
+  "boundingBoxNormalization": {
+    "candidate": {
+      "sourceDimensionsGlTfYUp": [
+        0.4228629469871521,
+        1.998291015625,
+        0.506848931312561
+      ],
+      "scaleBlenderXYZ": [
+        0.9092621803283691,
+        0.9054747819900513,
+        0.9007696509361267
+      ],
+      "dimensionsGlTfYUpMetres": [
+        0.38449329137802124,
+        1.7999999523162842,
+        0.45893892645835876
+      ],
+      "anchorErrorMetres": 0.0
+    },
+    "denseDonor": {
+      "sourceDimensionsGlTfYUp": [
+        0.403348445892334,
+        1.8986306190490723,
+        0.4820103049278259
+      ],
+      "scaleBlenderXYZ": [
+        0.953253448009491,
+        0.9521350860595703,
+        0.9480516910552979
+      ],
+      "dimensionsGlTfYUpMetres": [
+        0.38449327647686005,
+        1.7999999523162842,
+        0.45893892645835876
+      ],
+      "anchorErrorMetres": 0.0
+    },
+    "sameTargetBoundsAndGroundAnchor": true,
+    "surfaceRegistration": "unverified; equal bounding boxes do not prove remeshed surface correspondence"
+  },
+  "uvAndTangent": {
+    "activeUv": "UVMap",
+    "tangentRepair": {
+      "method": "none-needed",
+      "repairedCorners": [],
+      "remainingZeroTangents": 0
+    },
+    "positionsIndicesAndUvsChangedByRepair": false
+  },
+  "selectedToActiveBake": {
+    "engine": "Cycles CPU",
+    "resolution": [
+      2048,
+      2048
+    ],
+    "marginPixels": 24,
+    "samples": 64,
+    "cpuThreads": 8,
+    "cageExtrusionMetres": 0.003,
+    "maximumRayDistanceMetres": 0.018,
+    "normal": {
+      "file": "sources/cypress-bake-v9/dense-donor-normal.png",
+      "bytes": 8075643,
+      "sha256": "8e6cfd7f5e821342574efc73bd26552160c73ce507c385a5e2098ad4376dcc0c",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "channelRange": [
+        0,
+        255
+      ],
+      "maximumChannelStandardDeviation": 36.9117
+    },
+    "ambientOcclusion": {
+      "file": "sources/cypress-bake-v9/dense-donor-ao.png",
+      "bytes": 4233345,
+      "sha256": "7b0409b6b24379cba737e0af86395703671b63df3002bdbf47c70508b8131807",
+      "dimensions": [
+        2048,
+        2048
+      ],
+      "channelRange": [
+        0,
+        255
+      ],
+      "maximumChannelStandardDeviation": 88.8734
+    },
+    "runtimeOrm": {
+      "file": "sources/cypress-bake-v9/runtime-orm-with-dense-ao.png",
+      "bytes": 5046572,
+      "sha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    "normalComparison": {
+      "method": "per-texel angular difference after resizing the Meshy normal to the dense-bake resolution",
+      "meanDegrees": 22.5175,
+      "medianDegrees": 17.2755,
+      "p95Degrees": 55.9854,
+      "maximumDegrees": 180.0,
+      "selection": "none; both variants must be reviewed at the same camera"
+    },
+    "normalSelection": "pending same-camera visual review",
+    "surfaceRegistration": "pending donor/low overlap review",
+    "cageAndBakeCoverage": "pending visual review"
+  },
+  "packedBlend": {
+    "file": "sources/floating-museum-cypress-candidate-v9.blend",
+    "bytes": 40644560,
+    "sha256": "4b50b2cf91d387c22b4e0522467cedaf58c33e2f7b405e5aa515459c4225b8a2",
+    "imagesPacked": true,
+    "denseDonorRetained": true,
+    "missingExternalFiles": []
+  },
+  "variants": {
+    "meshy": {
+      "file": "exports/floating-museum-cypress-candidate-v9-meshy-normal.glb",
+      "bytes": 19736348,
+      "sha256": "f322d7f5cfb9f099a143dac1b110cc8efbf3762ca46b67d264d73c373f3486e4",
+      "triangles": 20605,
+      "dimensionsGlTfYUpMetres": [
+        0.38449329137802124,
+        1.7999999523162842,
+        0.45893892645835876
+      ],
+      "anchorErrorMetres": 0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "normalCount": 31563,
+      "minimumNormalLength": 0.9999999111581164,
+      "maximumNormalUnitError": 1.394819799660496e-07,
+      "tangentCount": 31563,
+      "minimumTangentLength": 0.9999191180651448,
+      "maximumTangentUnitError": 8.088193485522588e-05,
+      "materialBindings": {
+        "baseColor": {
+          "index": 1
+        },
+        "normal": {
+          "index": 0
+        },
+        "metallicRoughness": {
+          "index": 2
+        },
+        "occlusion": {
+          "index": 2,
+          "strength": 1
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 7728067,
+          "sha256": "4710864df041932e41deed0bed697d60eef4ad38e8fdac677e6e3ccf2b10cd7b"
+        },
+        "normal": {
+          "imageIndex": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5320703,
+          "sha256": "ed8d6d9c763b732a329993bc00913089b39abe902e95dd4172313c92a7b55f82"
+        },
+        "metallicRoughness": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5046572,
+          "sha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a"
+        },
+        "occlusion": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5046572,
+          "sha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a"
+        }
+      },
+      "normalUvTangentPbrPassed": true
+    },
+    "dense-bake": {
+      "file": "exports/floating-museum-cypress-candidate-v9-dense-bake-normal.glb",
+      "bytes": 22491296,
+      "sha256": "b0d35e79f0bc36407b3d768602439dbf6d8c29937530977065fbfcc3b6b424de",
+      "triangles": 20605,
+      "dimensionsGlTfYUpMetres": [
+        0.38449329137802124,
+        1.7999999523162842,
+        0.45893892645835876
+      ],
+      "anchorErrorMetres": 0,
+      "attributes": [
+        "NORMAL",
+        "POSITION",
+        "TANGENT",
+        "TEXCOORD_0"
+      ],
+      "normalCount": 31563,
+      "minimumNormalLength": 0.9999999111581164,
+      "maximumNormalUnitError": 1.394819799660496e-07,
+      "tangentCount": 31563,
+      "minimumTangentLength": 0.9999191180651448,
+      "maximumTangentUnitError": 8.088193485522588e-05,
+      "materialBindings": {
+        "baseColor": {
+          "index": 1
+        },
+        "normal": {
+          "index": 0
+        },
+        "metallicRoughness": {
+          "index": 2
+        },
+        "occlusion": {
+          "index": 2,
+          "strength": 1
+        }
+      },
+      "images": {
+        "baseColor": {
+          "imageIndex": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 7728067,
+          "sha256": "4710864df041932e41deed0bed697d60eef4ad38e8fdac677e6e3ccf2b10cd7b"
+        },
+        "normal": {
+          "imageIndex": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 8075643,
+          "sha256": "8e6cfd7f5e821342574efc73bd26552160c73ce507c385a5e2098ad4376dcc0c"
+        },
+        "metallicRoughness": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5046572,
+          "sha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a"
+        },
+        "occlusion": {
+          "imageIndex": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "bytes": 5046572,
+          "sha256": "4a8730655f9e9d8aa6115c5f41c356d478787d5d2cc4d5ee6bb53ebf0fbbed3a"
+        }
+      },
+      "normalUvTangentPbrPassed": true
+    }
+  },
+  "runtimeContract": {
+    "requiredNodes": [
+      "map_cypress",
+      "map_cypress_geometry"
+    ],
+    "sharedGeometry": "map_cypress_geometry",
+    "instancingRule": "Every runtime placement reuses this one finished mesh."
+  },
+  "validation": {
+    "archivedProviderReceiptsMatched": true,
+    "preservedDenseDonorMatched": true,
+    "candidateAndDonorBoundingBoxesNormalized": true,
+    "providerNormalRetainedSeparately": true,
+    "denseBakeNormalRetainedSeparately": true,
+    "denseBakeAoChannelPacked": true,
+    "packedEditableSource": true,
+    "dimensionsAndGroundAnchorPassed": true,
+    "uv0NormalAndFullTangentCoveragePassed": true,
+    "pbrBindingsPassed": true,
+    "visualApproval": "pending",
+    "runtimeIntegration": "not performed"
+  },
+  "rebuild": {
+    "workingDirectory": "repository root",
+    "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/journey-map/v9/production/finish_museum_candidate.py -- --asset cypress",
+    "blender": "5.2.2 LTS"
+  },
+  "proofs": []
+}

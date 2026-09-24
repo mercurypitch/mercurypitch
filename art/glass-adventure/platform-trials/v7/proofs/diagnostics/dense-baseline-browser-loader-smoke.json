@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "purpose": "Actual Chromium load smoke using repository Three GLTFLoader without KTX2, Draco, or meshopt decoder configuration.",
+  "status": "passed",
+  "browser": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/148.0.7778.96 Safari/537.36",
+    "webpDecoded": true,
+    "consoleErrors": [],
+    "pageErrors": []
+  },
+  "loader": {
+    "module": "apps/beside-cue/node_modules/three/examples/jsm/loaders/GLTFLoader.js",
+    "threeRevision": "185",
+    "ktx2LoaderConfigured": false,
+    "meshoptDecoderConfigured": false,
+    "dracoLoaderConfigured": false
+  },
+  "artifact": {
+    "file": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb",
+    "bytes": 44277888,
+    "sha256": "6d87455f6ccc901595dc00db0ca400c36ba643bfd1fdb12206a6a43a416bc030"
+  },
+  "asset": {
+    "threeRevision": "185",
+    "parsedMilliseconds": 383.5,
+    "root": "Cloudway_Marble",
+    "meshes": 1,
+    "triangles": 1256556,
+    "geometry": [
+      {
+        "name": "",
+        "triangles": 1256556,
+        "index": {
+          "count": 3769668,
+          "arrayType": "Uint32Array",
+          "bytes": 15078672
+        },
+        "attributes": {
+          "position": {
+            "count": 703128,
+            "itemSize": 3,
+            "normalized": true,
+            "arrayType": "Int16Array",
+            "bytes": 19687584
+          },
+          "normal": {
+            "count": 703128,
+            "itemSize": 3,
+            "normalized": true,
+            "arrayType": "Int16Array",
+            "bytes": 19687584
+          },
+          "uv": {
+            "count": 703128,
+            "itemSize": 2,
+            "normalized": true,
+            "arrayType": "Uint16Array",
+            "bytes": 19687584
+          },
+          "tangent": {
+            "count": 703128,
+            "itemSize": 4,
+            "normalized": true,
+            "arrayType": "Int16Array",
+            "bytes": 19687584
+          }
+        }
+      }
+    ],
+    "materials": [
+      {
+        "name": "Cloudway Marble V7 Delivery 2K",
+        "transparent": false,
+        "metalness": 1,
+        "roughness": 1,
+        "hasBaseColorMap": true,
+        "hasNormalMap": true,
+        "hasMetalnessMap": true,
+        "hasRoughnessMap": true
+      }
+    ],
+    "decodedTextures": [
+      {
+        "name": "cloudway-marble-v7-base-2k",
+        "width": 2048,
+        "height": 2048,
+        "imageType": "ImageBitmap",
+        "colorSpace": "srgb"
+      },
+      {
+        "name": "cloudway-marble-v7-normal-2k",
+        "width": 2048,
+        "height": 2048,
+        "imageType": "ImageBitmap",
+        "colorSpace": ""
+      },
+      {
+        "name": "cloudway-marble-v7-orm-2k",
+        "width": 2048,
+        "height": 2048,
+        "imageType": "ImageBitmap",
+        "colorSpace": ""
+      }
+    ],
+    "boundsThreeYUpMetres": {
+      "min": [
+        -0.8997679948806763,
+        -0.425643401130455,
+        -0.6995800886202344
+      ],
+      "max": [
+        0.9018999338150024,
+        0.1465223896348648,
+        0.7004830989885815
+      ]
+    }
+  },
+  "resources": [
+    {
+      "name": "asset.glb",
+      "encodedBodySize": 44277888,
+      "decodedBodySize": 44277888,
+      "durationMilliseconds": 143.59999999403954
+    }
+  ],
+  "command": "rtk proxy timeout 300 node art/glass-adventure/platform-trials/v7/production/smoke_marble_dense_loader.mjs"
+}

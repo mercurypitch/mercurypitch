@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "kind": "quarantined-existing-invalid-archive",
+  "recordedAtUtc": "2026-09-23T21:09:36.083525+00:00",
+  "taskId": "01a0d009-7173-7142-8f57-0c4c8be24adf",
+  "sourceHost": "assets.meshy.ai",
+  "signedUrlPersisted": false,
+  "originalFile": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+  "quarantinedFile": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/rejected-downloads/dense-donor-existing-4b3d2da84faf.glb",
+  "metadataFile": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/rejected-downloads/dense-donor-existing-4b3d2da84faf.glb.json",
+  "bytesPersisted": true,
+  "reasonCode": "format-validation-failed",
+  "reason": "Archived GLB header or declared length is invalid",
+  "bytes": 1183024,
+  "sha256": "4b3d2da84faf183756023635f39b5a54e66a2db66ce5587fa5dcd4bafabf430c",
+  "glbHeader": {
+    "magicHex": "676c5446",
+    "version": 2,
+    "declaredLength": 30284496
+  }
+}

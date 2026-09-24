@@ -1,0 +1,867 @@
+{
+  "unchangedNonBotanicalNodes": 11,
+  "allProtectedPayloadsAndTransformsIdentical": true,
+  "source": {
+    "map_twin_finish_kit_root": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "map_twin_finish_kit_root/map_cliff": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "map_twin_finish_kit_root/map_cliff/map_cliff_geometry": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "primitives": [
+        {
+          "mode": 4,
+          "extensions": {},
+          "attributes": {
+            "POSITION": {
+              "sha256": "40cb6220d78e6d079f35bec5e98be9d3264472cf7cc69cc9f61de45c45233b49",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 16462,
+              "min": [
+                -2.25,
+                -2.0313870906829834,
+                -1.2320277690887451
+              ],
+              "max": [
+                2.25,
+                0,
+                1.2320277690887451
+              ],
+              "extensions": {}
+            },
+            "NORMAL": {
+              "sha256": "870117abcde2faf4839e1063d7aa49966c9a1ea557852a7345162aed9f23ec9c",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 16462,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TEXCOORD_0": {
+              "sha256": "ebdea161f9252a27cbaeb0aa240eed3b489231d4eccf3302a25062816d7332e3",
+              "type": "VEC2",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 16462,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            }
+          },
+          "indices": {
+            "sha256": "6220d7ddf8c075ba6afdc9eea1ed5d0c00bbb0026a7ce01d5e559fc25059c890",
+            "type": "SCALAR",
+            "componentType": 5123,
+            "normalized": false,
+            "count": 23925,
+            "min": null,
+            "max": null,
+            "extensions": {}
+          },
+          "material": {
+            "doubleSided": true,
+            "emissiveFactor": [
+              1,
+              1,
+              1
+            ],
+            "emissiveTexture": {
+              "index": "da60d3b62f2a4a90849ccd45b3799921ce5dfa31171231db8cba26a7c45ccdff",
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            },
+            "name": "map_cliff_atlas",
+            "normalTexture": {
+              "index": "2ec67084335b282605c0923d6a89005e467e2779e7a2d5c666d2da593aafde19",
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            },
+            "pbrMetallicRoughness": {
+              "baseColorTexture": {
+                "index": "1da749672ba690667f392f3a63b022f886bbe0c445a7567a186aeac7f208230f",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              },
+              "metallicRoughnessTexture": {
+                "index": "a63fee7e46c361edac7148b5a8c1dc3b553d17a4d24066d7d4a298516d6d5afc",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "map_twin_finish_kit_root/map_cypress": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "map_twin_finish_kit_root/map_cypress/map_cypress_geometry": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "primitives": [
+        {
+          "mode": 4,
+          "extensions": {},
+          "attributes": {
+            "POSITION": {
+              "sha256": "5cb8dd10a6415c04b0e38a7f51c2573df52566971e2519ab8b44ce7ae229e7fa",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 31563,
+              "min": [
+                -0.19224664568901062,
+                0,
+                -0.22946946322917938
+              ],
+              "max": [
+                0.19224664568901062,
+                1.7999999523162842,
+                0.22946946322917938
+              ],
+              "extensions": {}
+            },
+            "NORMAL": {
+              "sha256": "3a902ce1bd3b90000fa3c100c6e8754d7e0c2047e6ef3045f70c9e43cc818b02",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 31563,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TEXCOORD_0": {
+              "sha256": "db66321e22a039596f0dede1bbaa062746465c20dd7a02b57fcc393026500a22",
+              "type": "VEC2",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 31563,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TANGENT": {
+              "sha256": "13e08c20b29f3845b0838eccdebaf1f8e9faa8bb63fa23a6c4ede7e7a5243e21",
+              "type": "VEC4",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 31563,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            }
+          },
+          "indices": {
+            "sha256": "fa8923f20c304af5d177c5f1db4b57c596d8fce7a5753adb855ca5fbf9dec1a0",
+            "type": "SCALAR",
+            "componentType": 5123,
+            "normalized": false,
+            "count": 61815,
+            "min": null,
+            "max": null,
+            "extensions": {}
+          },
+          "material": {
+            "doubleSided": true,
+            "extras": {
+              "normalSource": "meshy"
+            },
+            "name": "map_cypress_atlas",
+            "normalTexture": {
+              "index": "100f4e6c18a5cd888be622d85022c1196930cbb6d25f9c7d0aaf67717b751875",
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            },
+            "pbrMetallicRoughness": {
+              "baseColorTexture": {
+                "index": "04781988cbe232e15ebe1a50daa339b3731e7c71dee51b2da944e91691e8b20b",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              },
+              "metallicRoughnessTexture": {
+                "index": "24e5f6984a8a8bb4ea93b90d072d4d99a84a407c670def32eb61c5b8288a8e54",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              }
+            },
+            "occlusionTexture": {
+              "index": "24e5f6984a8a8bb4ea93b90d072d4d99a84a407c670def32eb61c5b8288a8e54",
+              "strength": 1,
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            }
+          }
+        }
+      ]
+    },
+    "map_twin_finish_kit_root/map_temple_amber": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "map_twin_finish_kit_root/map_temple_amber/map_temple_amber_dome": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "primitives": [
+        {
+          "mode": 4,
+          "extensions": {},
+          "attributes": {
+            "POSITION": {
+              "sha256": "5bc6d409d1b44be9846d42ffca091a525d979f5b2c730a036cd39bd4bc50cc25",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": [
+                -1.2000000476837158,
+                0,
+                -1.3312112092971802
+              ],
+              "max": [
+                1.2000001668930054,
+                2.667686939239502,
+                1.3312113285064697
+              ],
+              "extensions": {}
+            },
+            "NORMAL": {
+              "sha256": "03f0952dab92038e6014826ea0ee298befc7e96a707c5100d862aa6e19a2adb9",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TEXCOORD_0": {
+              "sha256": "22ee292f28f8e53c54e023a32595df6c87227d410d46f839ce3de166169025f4",
+              "type": "VEC2",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TANGENT": {
+              "sha256": "3ad5fcd955da3294676659cd7057f0708424a6ecc68857d9f359ab1b509b3f9c",
+              "type": "VEC4",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            }
+          },
+          "indices": {
+            "sha256": "4a2aa24b219919c987168cbbb7857b2ae942e5fbe69a3d150e474a422b694200",
+            "type": "SCALAR",
+            "componentType": 5125,
+            "normalized": false,
+            "count": 74955,
+            "min": null,
+            "max": null,
+            "extensions": {}
+          },
+          "material": {
+            "doubleSided": true,
+            "extras": {
+              "normalSource": "meshy"
+            },
+            "name": "map_temple_dome_amber_atlas",
+            "normalTexture": {
+              "index": "26eb18fb6ae877cb0756f352a22b6b6cd2aa33c3320df4bc38fbecbf7d538c75",
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            },
+            "pbrMetallicRoughness": {
+              "baseColorTexture": {
+                "index": "54808c56775ff53704891d9e5c6b43613230a77d591fc267df2211ecf12b73d7",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              },
+              "metallicRoughnessTexture": {
+                "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              }
+            },
+            "occlusionTexture": {
+              "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+              "strength": 1,
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            }
+          }
+        }
+      ]
+    },
+    "map_twin_finish_kit_root/map_temple_amber/map_temple_amber_structure": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "primitives": [
+        {
+          "mode": 4,
+          "extensions": {},
+          "attributes": {
+            "POSITION": {
+              "sha256": "5bc6d409d1b44be9846d42ffca091a525d979f5b2c730a036cd39bd4bc50cc25",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": [
+                -1.2000000476837158,
+                0,
+                -1.3312112092971802
+              ],
+              "max": [
+                1.2000001668930054,
+                2.667686939239502,
+                1.3312113285064697
+              ],
+              "extensions": {}
+            },
+            "NORMAL": {
+              "sha256": "03f0952dab92038e6014826ea0ee298befc7e96a707c5100d862aa6e19a2adb9",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TEXCOORD_0": {
+              "sha256": "22ee292f28f8e53c54e023a32595df6c87227d410d46f839ce3de166169025f4",
+              "type": "VEC2",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TANGENT": {
+              "sha256": "3ad5fcd955da3294676659cd7057f0708424a6ecc68857d9f359ab1b509b3f9c",
+              "type": "VEC4",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            }
+          },
+          "indices": {
+            "sha256": "15512f8ff95ae518f39d56a0de131042b0db83067e3238c0bbfde21cbaedd6f4",
+            "type": "SCALAR",
+            "componentType": 5125,
+            "normalized": false,
+            "count": 192543,
+            "min": null,
+            "max": null,
+            "extensions": {}
+          },
+          "material": {
+            "doubleSided": true,
+            "extras": {
+              "normalSource": "meshy"
+            },
+            "name": "map_temple_structure_atlas",
+            "normalTexture": {
+              "index": "26eb18fb6ae877cb0756f352a22b6b6cd2aa33c3320df4bc38fbecbf7d538c75",
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            },
+            "pbrMetallicRoughness": {
+              "baseColorTexture": {
+                "index": "31156b013397f0b11a20b27fb0abb780be2519fbea7d2a6f3ce486154cdb6da9",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              },
+              "metallicRoughnessTexture": {
+                "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              }
+            },
+            "occlusionTexture": {
+              "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+              "strength": 1,
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            }
+          }
+        }
+      ]
+    },
+    "map_twin_finish_kit_root/map_temple_teal": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "map_twin_finish_kit_root/map_temple_teal/map_temple_teal_dome": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "primitives": [
+        {
+          "mode": 4,
+          "extensions": {},
+          "attributes": {
+            "POSITION": {
+              "sha256": "5bc6d409d1b44be9846d42ffca091a525d979f5b2c730a036cd39bd4bc50cc25",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": [
+                -1.2000000476837158,
+                0,
+                -1.3312112092971802
+              ],
+              "max": [
+                1.2000001668930054,
+                2.667686939239502,
+                1.3312113285064697
+              ],
+              "extensions": {}
+            },
+            "NORMAL": {
+              "sha256": "03f0952dab92038e6014826ea0ee298befc7e96a707c5100d862aa6e19a2adb9",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TEXCOORD_0": {
+              "sha256": "22ee292f28f8e53c54e023a32595df6c87227d410d46f839ce3de166169025f4",
+              "type": "VEC2",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TANGENT": {
+              "sha256": "3ad5fcd955da3294676659cd7057f0708424a6ecc68857d9f359ab1b509b3f9c",
+              "type": "VEC4",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            }
+          },
+          "indices": {
+            "sha256": "4a2aa24b219919c987168cbbb7857b2ae942e5fbe69a3d150e474a422b694200",
+            "type": "SCALAR",
+            "componentType": 5125,
+            "normalized": false,
+            "count": 74955,
+            "min": null,
+            "max": null,
+            "extensions": {}
+          },
+          "material": {
+            "doubleSided": true,
+            "extras": {
+              "normalSource": "meshy"
+            },
+            "name": "map_temple_dome_teal_atlas",
+            "normalTexture": {
+              "index": "26eb18fb6ae877cb0756f352a22b6b6cd2aa33c3320df4bc38fbecbf7d538c75",
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            },
+            "pbrMetallicRoughness": {
+              "baseColorTexture": {
+                "index": "4f16a5c5d0d94484be8dc87f672ca02bb5addb0d0af280c8dade33557dc07f68",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              },
+              "metallicRoughnessTexture": {
+                "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              }
+            },
+            "occlusionTexture": {
+              "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+              "strength": 1,
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            }
+          }
+        }
+      ]
+    },
+    "map_twin_finish_kit_root/map_temple_teal/map_temple_teal_structure": {
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "primitives": [
+        {
+          "mode": 4,
+          "extensions": {},
+          "attributes": {
+            "POSITION": {
+              "sha256": "5bc6d409d1b44be9846d42ffca091a525d979f5b2c730a036cd39bd4bc50cc25",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": [
+                -1.2000000476837158,
+                0,
+                -1.3312112092971802
+              ],
+              "max": [
+                1.2000001668930054,
+                2.667686939239502,
+                1.3312113285064697
+              ],
+              "extensions": {}
+            },
+            "NORMAL": {
+              "sha256": "03f0952dab92038e6014826ea0ee298befc7e96a707c5100d862aa6e19a2adb9",
+              "type": "VEC3",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TEXCOORD_0": {
+              "sha256": "22ee292f28f8e53c54e023a32595df6c87227d410d46f839ce3de166169025f4",
+              "type": "VEC2",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            },
+            "TANGENT": {
+              "sha256": "3ad5fcd955da3294676659cd7057f0708424a6ecc68857d9f359ab1b509b3f9c",
+              "type": "VEC4",
+              "componentType": 5126,
+              "normalized": false,
+              "count": 117854,
+              "min": null,
+              "max": null,
+              "extensions": {}
+            }
+          },
+          "indices": {
+            "sha256": "15512f8ff95ae518f39d56a0de131042b0db83067e3238c0bbfde21cbaedd6f4",
+            "type": "SCALAR",
+            "componentType": 5125,
+            "normalized": false,
+            "count": 192543,
+            "min": null,
+            "max": null,
+            "extensions": {}
+          },
+          "material": {
+            "doubleSided": true,
+            "extras": {
+              "normalSource": "meshy"
+            },
+            "name": "map_temple_structure_atlas",
+            "normalTexture": {
+              "index": "26eb18fb6ae877cb0756f352a22b6b6cd2aa33c3320df4bc38fbecbf7d538c75",
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            },
+            "pbrMetallicRoughness": {
+              "baseColorTexture": {
+                "index": "31156b013397f0b11a20b27fb0abb780be2519fbea7d2a6f3ce486154cdb6da9",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              },
+              "metallicRoughnessTexture": {
+                "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+                "sampler": {
+                  "wrapS": 10497,
+                  "wrapT": 10497,
+                  "magFilter": 9729,
+                  "minFilter": 9987
+                }
+              }
+            },
+            "occlusionTexture": {
+              "index": "9b4148a43a4a9c22b8bf0a49e562032ae54a07a3c69acba076fbab10235a063f",
+              "strength": 1,
+              "sampler": {
+                "wrapS": 10497,
+                "wrapT": 10497,
+                "magFilter": 9729,
+                "minFilter": 9987
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

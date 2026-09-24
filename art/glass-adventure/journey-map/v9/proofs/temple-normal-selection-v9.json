@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "assetId": "floating-museum-temple-candidate-v9",
+  "decision": "accepted-for-runtime-packing",
+  "reviewedAtUtc": "2026-09-23T15:34:00Z",
+  "selectedVariant": "meshy",
+  "selectedNormalSource": "meshy",
+  "candidateManifest": {
+    "file": "exports/floating-museum-temple-candidate-v9.json",
+    "bytes": 15802,
+    "sha256": "192bbca55271f3bc85df594f547590298bd7f3e219b938f8e70956ba7efcf440"
+  },
+  "selectedCandidate": {
+    "file": "exports/floating-museum-temple-candidate-v9-meshy-normal.glb",
+    "bytes": 21601268,
+    "sha256": "b31cdf876f601b510ee8910a144ec9258b592d355f088b0097e5a04fd5770360",
+    "triangles": 89166,
+    "dimensionsGlTfYUpMetres": [
+      2.400000214576721,
+      2.667686939239502,
+      2.66242253780365
+    ],
+    "groundAnchorErrorMetres": 0
+  },
+  "rejectedCandidate": {
+    "file": "exports/floating-museum-temple-candidate-v9-dense-bake-normal.glb",
+    "bytes": 24113216,
+    "sha256": "d17f0ac9c5c66baafc5904cafd430aadd4f5f3ef25f69294ff111ca3b8533194",
+    "disposition": "retained as audit source; not approved for runtime packing"
+  },
+  "proofs": [
+    {
+      "file": "proofs/temple-normal-comparison-v9.json",
+      "bytes": 4105,
+      "sha256": "635ece6a7ab4339af08a791eb04fd79944e96e4ff96f5dce3234a029a79c7202"
+    },
+    {
+      "file": "proofs/temple-normal-comparison-front-v9.png",
+      "bytes": 2363286,
+      "sha256": "b438d4efb0528392fe30d55e16b765bf64f32a4df01363ba159ac60abb53c792"
+    },
+    {
+      "file": "proofs/temple-normal-comparison-angle-v9.png",
+      "bytes": 2477706,
+      "sha256": "ab15b3ccccee0b289a76aa3a97ec318fcee3968eff714267de368a3f3166ab32"
+    }
+  ],
+  "review": {
+    "finding": "Select the Meshy-normal variant. The dense-donor normal makes the dome ribs slightly more pronounced, but introduces narrow dark streaks and uneven accents at inner arch and column edges, cornices and statue folds. The Meshy normal keeps the accepted architecture cleaner and more coherent at runtime scale.",
+    "knownLimitations": [
+      "The temple is an 89,166-triangle review-budget remesh, not hand-authored retopology.",
+      "The selected candidate retains the shared dense-donor ambient-occlusion transfer in its ORM texture; only the dense-donor normal map is rejected.",
+      "The dense-donor normal variant remains archived for audit evidence.",
+      "The repair is accepted as a substantial fidelity improvement, not as pristine source sculpture."
+    ]
+  },
+  "geometryContinuity": {
+    "positionsByteExactToAcceptedRemesh": true,
+    "indexValuesExactToAcceptedRemesh": true,
+    "indexValueCount": 267498,
+    "topologyUnchangedByPbrRetexture": true
+  },
+  "exportValidation": {
+    "finiteUnitNormals": true,
+    "maximumNormalUnitError": 1.5096508310108447e-07,
+    "finiteUnitTangents": true,
+    "maximumTangentUnitError": 8.062679687648178e-05,
+    "tangentHandednessPlusOrMinusOne": true,
+    "uv0AndPbrBindingsPresent": true
+  },
+  "runtimeIntegration": "authorized by this receipt but not performed by the candidate finisher",
+  "runtimeDomeTintRevision": {
+    "scope": "Runtime dome base-color variants only; selected geometry, UVs, normals, tangents, ORM and candidate GLBs are unchanged.",
+    "reason": "Replace the rejected hard hue thresholds with continuous neutral coverage validated against the accepted dome UV subset; saturated accents remain protected.",
+    "maskContract": {
+      "fullTintThroughChroma": 0.24,
+      "smoothFadeToZeroTintAtChroma": 0.42,
+      "absoluteBrightnessGate": false,
+      "hardHueBoolean": false
+    },
+    "normalComparisonProofImagesUnchanged": true,
+    "runtimeDomeBaseVariants": {
+      "amber": {
+        "file": "sources/temple-bake-v9/temple-dome-amber-base.png",
+        "bytes": 3651003,
+        "sha256": "d12adb6c614ee0fb3821cf7845e24bc2c2383a8fc34a4a2bb1fe0b8d61e7fe03",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      },
+      "teal": {
+        "file": "sources/temple-bake-v9/temple-dome-teal-base.png",
+        "bytes": 4103517,
+        "sha256": "d305559cfbe9be04cabe0799964e724b994d43b47a5334277681cf973afa2168",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "method": "Shade-preserving tint with full neutral coverage through chroma 0.24 and a smooth accent-protection fade to zero tint at chroma 0.42. Apply only to the dome face partition."
+      }
+    }
+  }
+}

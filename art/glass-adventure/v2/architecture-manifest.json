@@ -1,0 +1,1095 @@
+{
+  "version": 2,
+  "units": "metres",
+  "up": "+Y",
+  "front": "+Z",
+  "source": "art/glass-adventure/v2/build_architecture.py",
+  "assets": {
+    "platform_terrace": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_terrace",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 3.3,
+        "depth": 3.3,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_terrace_museum_brass",
+          "role": "decoration",
+          "triangles": 6108,
+          "vertices": 3164,
+          "bounds": {
+            "min": [
+              -1.62,
+              -0.731568,
+              -1.708945
+            ],
+            "max": [
+              1.62,
+              0.009,
+              1.708944
+            ]
+          },
+          "translation": [
+            -1.1,
+            -0.95,
+            1.51
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_terrace_museum_ivory",
+          "role": "decoration",
+          "triangles": 1100,
+          "vertices": 600,
+          "bounds": {
+            "min": [
+              -1.7,
+              -0.95,
+              -1.7
+            ],
+            "max": [
+              1.7,
+              0.0,
+              1.7
+            ]
+          },
+          "translation": [
+            -1.58,
+            -0.9175,
+            1.51
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_terrace_museum_limestone",
+          "role": "decoration",
+          "triangles": 2528,
+          "vertices": 1536,
+          "bounds": {
+            "min": [
+              -1.66,
+              -1.06,
+              -1.66
+            ],
+            "max": [
+              1.66,
+              -0.0825,
+              1.66
+            ]
+          },
+          "translation": [
+            -1.58,
+            -0.84,
+            1.51
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_terrace_museum_petrol",
+          "role": "decoration",
+          "triangles": 184,
+          "vertices": 200,
+          "bounds": {
+            "min": [
+              -1.56,
+              0.002,
+              -1.56
+            ],
+            "max": [
+              1.56,
+              0.002,
+              1.56
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_petrol"
+          ],
+          "nonManifoldEdges": 200,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 9920
+    },
+    "platform_island": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_island",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 1.375,
+        "depth": 1.375,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_island_museum_brass",
+          "role": "decoration",
+          "triangles": 2716,
+          "vertices": 1384,
+          "bounds": {
+            "min": [
+              -0.6575,
+              -0.732046,
+              -0.6575
+            ],
+            "max": [
+              0.6575,
+              0.009,
+              0.6575
+            ]
+          },
+          "translation": [
+            0.0,
+            -0.95,
+            0.5475
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_island_museum_ivory",
+          "role": "decoration",
+          "triangles": 396,
+          "vertices": 216,
+          "bounds": {
+            "min": [
+              -0.7375,
+              -0.95,
+              -0.7375
+            ],
+            "max": [
+              0.7375,
+              0.0,
+              0.7375
+            ]
+          },
+          "translation": [
+            -0.6175,
+            -0.9175,
+            0.5475
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_island_museum_limestone",
+          "role": "decoration",
+          "triangles": 960,
+          "vertices": 576,
+          "bounds": {
+            "min": [
+              -0.6975,
+              -1.06,
+              -0.6975
+            ],
+            "max": [
+              0.6975,
+              -0.0825,
+              0.6975
+            ]
+          },
+          "translation": [
+            -0.6175,
+            -0.84,
+            0.5475
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_island_museum_petrol",
+          "role": "decoration",
+          "triangles": 184,
+          "vertices": 200,
+          "bounds": {
+            "min": [
+              -0.5975,
+              0.002,
+              -0.5975
+            ],
+            "max": [
+              0.5975,
+              0.002,
+              0.5975
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_petrol"
+          ],
+          "nonManifoldEdges": 200,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 4256
+    },
+    "platform_ledge": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_ledge",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 0.77,
+        "depth": 2.2,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_ledge_museum_brass",
+          "role": "decoration",
+          "triangles": 1508,
+          "vertices": 792,
+          "bounds": {
+            "min": [
+              -0.355,
+              -0.731568,
+              -1.07
+            ],
+            "max": [
+              0.355,
+              -0.071,
+              1.07
+            ]
+          },
+          "translation": [
+            0.0,
+            -0.95,
+            0.96
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_ledge_museum_ivory",
+          "role": "decoration",
+          "triangles": 572,
+          "vertices": 312,
+          "bounds": {
+            "min": [
+              -0.435,
+              -0.95,
+              -1.15
+            ],
+            "max": [
+              0.435,
+              0.0,
+              1.15
+            ]
+          },
+          "translation": [
+            -0.315,
+            -0.9175,
+            0.96
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_ledge_museum_limestone",
+          "role": "decoration",
+          "triangles": 1352,
+          "vertices": 816,
+          "bounds": {
+            "min": [
+              -0.395,
+              -1.06,
+              -1.11
+            ],
+            "max": [
+              0.395,
+              -0.0825,
+              1.11
+            ]
+          },
+          "translation": [
+            -0.315,
+            -0.84,
+            0.96
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_ledge_museum_petrol",
+          "role": "decoration",
+          "triangles": 8,
+          "vertices": 8,
+          "bounds": {
+            "min": [
+              -0.295,
+              0.002,
+              -1.01
+            ],
+            "max": [
+              0.295,
+              0.002,
+              1.01
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_petrol"
+          ],
+          "nonManifoldEdges": 8,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 3440
+    },
+    "platform_bridge": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_bridge",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 1.1,
+        "depth": 3.3,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_bridge_museum_brass",
+          "role": "decoration",
+          "triangles": 1996,
+          "vertices": 1048,
+          "bounds": {
+            "min": [
+              -0.52,
+              -0.731568,
+              -1.62
+            ],
+            "max": [
+              0.52,
+              -0.071,
+              1.62
+            ]
+          },
+          "translation": [
+            0.0,
+            -0.95,
+            1.51
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_bridge_museum_ivory",
+          "role": "decoration",
+          "triangles": 748,
+          "vertices": 408,
+          "bounds": {
+            "min": [
+              -0.6,
+              -0.95,
+              -1.7
+            ],
+            "max": [
+              0.6,
+              0.0,
+              1.7
+            ]
+          },
+          "translation": [
+            -0.48,
+            -0.9175,
+            1.51
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_bridge_museum_limestone",
+          "role": "decoration",
+          "triangles": 1744,
+          "vertices": 1056,
+          "bounds": {
+            "min": [
+              -0.56,
+              -1.06,
+              -1.66
+            ],
+            "max": [
+              0.56,
+              -0.0825,
+              1.66
+            ]
+          },
+          "translation": [
+            -0.48,
+            -0.84,
+            1.51
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_bridge_museum_petrol",
+          "role": "decoration",
+          "triangles": 8,
+          "vertices": 8,
+          "bounds": {
+            "min": [
+              -0.46,
+              0.002,
+              -1.56
+            ],
+            "max": [
+              0.46,
+              0.002,
+              1.56
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_petrol"
+          ],
+          "nonManifoldEdges": 8,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 4496
+    },
+    "platform_plinth": {
+      "bundle": "platform-kit.glb",
+      "node": "platform_plinth",
+      "pivot": "surface-center",
+      "collider": {
+        "shape": "box",
+        "width": 1.375,
+        "depth": 1.375,
+        "height": 0.22,
+        "topY": 0
+      },
+      "role": "platform",
+      "meshes": [
+        {
+          "node": "platform_plinth_museum_brass",
+          "role": "decoration",
+          "triangles": 2972,
+          "vertices": 1512,
+          "bounds": {
+            "min": [
+              -0.6575,
+              -1.087,
+              -0.6575
+            ],
+            "max": [
+              0.6575,
+              0.009,
+              0.6575
+            ]
+          },
+          "translation": [
+            0.0,
+            -0.95,
+            0.5475
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_plinth_museum_ivory",
+          "role": "decoration",
+          "triangles": 396,
+          "vertices": 216,
+          "bounds": {
+            "min": [
+              -0.7375,
+              -0.95,
+              -0.7375
+            ],
+            "max": [
+              0.7375,
+              0.0,
+              0.7375
+            ]
+          },
+          "translation": [
+            -0.6175,
+            -0.9175,
+            0.5475
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_plinth_museum_limestone",
+          "role": "decoration",
+          "triangles": 960,
+          "vertices": 576,
+          "bounds": {
+            "min": [
+              -0.6975,
+              -1.06,
+              -0.6975
+            ],
+            "max": [
+              0.6975,
+              -0.0825,
+              0.6975
+            ]
+          },
+          "translation": [
+            -0.6175,
+            -0.84,
+            0.5475
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "platform_plinth_museum_petrol",
+          "role": "decoration",
+          "triangles": 184,
+          "vertices": 200,
+          "bounds": {
+            "min": [
+              -0.5975,
+              0.002,
+              -0.5975
+            ],
+            "max": [
+              0.5975,
+              0.002,
+              0.5975
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_petrol"
+          ],
+          "nonManifoldEdges": 200,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 4512
+    },
+    "museum_column": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_column",
+      "pivot": "foot-center",
+      "role": "non-colliding-ornament",
+      "meshes": [
+        {
+          "node": "museum_column_museum_brass",
+          "role": "decoration",
+          "triangles": 800,
+          "vertices": 400,
+          "bounds": {
+            "min": [
+              -0.185,
+              0.171,
+              -0.185
+            ],
+            "max": [
+              0.185,
+              2.004,
+              0.185
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_column_museum_ivory",
+          "role": "decoration",
+          "triangles": 640,
+          "vertices": 336,
+          "bounds": {
+            "min": [
+              -0.215944,
+              1.87,
+              -0.215944
+            ],
+            "max": [
+              0.215944,
+              2.08,
+              0.215944
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_column_museum_limestone",
+          "role": "decoration",
+          "triangles": 944,
+          "vertices": 482,
+          "bounds": {
+            "min": [
+              -0.23,
+              0.0,
+              -0.23
+            ],
+            "max": [
+              0.23,
+              2.185,
+              0.23
+            ]
+          },
+          "translation": [
+            0.0,
+            2.1625,
+            -0.0
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 2384
+    },
+    "museum_arch": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_arch",
+      "pivot": "foot-center",
+      "role": "non-colliding-ornament",
+      "meshes": [
+        {
+          "node": "museum_arch_museum_brass",
+          "role": "decoration",
+          "triangles": 372,
+          "vertices": 192,
+          "bounds": {
+            "min": [
+              -0.853971,
+              1.279272,
+              -0.17
+            ],
+            "max": [
+              0.853971,
+              2.275,
+              0.17
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_arch_museum_ivory",
+          "role": "decoration",
+          "triangles": 88,
+          "vertices": 48,
+          "bounds": {
+            "min": [
+              -1.015,
+              0.0,
+              -0.2
+            ],
+            "max": [
+              1.015,
+              0.065,
+              0.2
+            ]
+          },
+          "translation": [
+            -0.895,
+            0.0325,
+            -0.0
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_arch_museum_limestone",
+          "role": "decoration",
+          "triangles": 244,
+          "vertices": 152,
+          "bounds": {
+            "min": [
+              -0.975,
+              -0.0125,
+              -0.175
+            ],
+            "max": [
+              0.975,
+              2.213809,
+              0.175
+            ]
+          },
+          "translation": [
+            -0.895,
+            0.64,
+            -0.0
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 704
+    },
+    "museum_arcade_bay": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_arcade_bay",
+      "pivot": "foot-center",
+      "role": "non-colliding-ornament",
+      "meshes": [
+        {
+          "node": "museum_arcade_bay_museum_brass",
+          "role": "decoration",
+          "triangles": 244,
+          "vertices": 128,
+          "bounds": {
+            "min": [
+              -0.438891,
+              0.318602,
+              -0.15
+            ],
+            "max": [
+              0.438891,
+              0.855,
+              0.15
+            ]
+          },
+          "translation": [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_arcade_bay_museum_ivory",
+          "role": "decoration",
+          "triangles": 88,
+          "vertices": 48,
+          "bounds": {
+            "min": [
+              -0.6,
+              0.0,
+              -0.18
+            ],
+            "max": [
+              0.6,
+              0.065,
+              0.18
+            ]
+          },
+          "translation": [
+            -0.48,
+            0.0325,
+            -0.0
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_arcade_bay_museum_limestone",
+          "role": "decoration",
+          "triangles": 196,
+          "vertices": 120,
+          "bounds": {
+            "min": [
+              -0.56,
+              -0.0125,
+              -0.155
+            ],
+            "max": [
+              0.56,
+              0.793199,
+              0.155
+            ]
+          },
+          "translation": [
+            -0.48,
+            0.16,
+            -0.0
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 528
+    },
+    "museum_balustrade": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_balustrade",
+      "pivot": "foot-center",
+      "role": "non-colliding-ornament",
+      "meshes": [
+        {
+          "node": "museum_balustrade_museum_ivory",
+          "role": "decoration",
+          "triangles": 1960,
+          "vertices": 994,
+          "bounds": {
+            "min": [
+              -0.502,
+              0.06,
+              -0.042
+            ],
+            "max": [
+              0.5018,
+              0.39,
+              0.042
+            ]
+          },
+          "translation": [
+            -0.46,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_balustrade_museum_limestone",
+          "role": "decoration",
+          "triangles": 88,
+          "vertices": 48,
+          "bounds": {
+            "min": [
+              -0.55,
+              0.0,
+              -0.095
+            ],
+            "max": [
+              0.55,
+              0.4675,
+              0.095
+            ]
+          },
+          "translation": [
+            0.0,
+            0.43,
+            -0.0
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 2048
+    },
+    "museum_rotunda": {
+      "bundle": "platform-kit.glb",
+      "node": "museum_rotunda",
+      "pivot": "foot-center",
+      "role": "non-colliding-ornament",
+      "meshes": [
+        {
+          "node": "museum_rotunda_museum_brass",
+          "role": "decoration",
+          "triangles": 8752,
+          "vertices": 4400,
+          "bounds": {
+            "min": [
+              -1.356996,
+              0.145115,
+              -1.356995
+            ],
+            "max": [
+              1.356995,
+              2.813994,
+              1.356995
+            ]
+          },
+          "translation": [
+            1.2,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_brass"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_rotunda_museum_ivory",
+          "role": "decoration",
+          "triangles": 5632,
+          "vertices": 2944,
+          "bounds": {
+            "min": [
+              -1.383256,
+              1.586927,
+              -1.383256
+            ],
+            "max": [
+              1.383256,
+              2.12,
+              1.383256
+            ]
+          },
+          "translation": [
+            1.2,
+            0.0,
+            -0.0
+          ],
+          "materials": [
+            "museum_ivory"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        },
+        {
+          "node": "museum_rotunda_museum_limestone",
+          "role": "decoration",
+          "triangles": 7552,
+          "vertices": 3856,
+          "bounds": {
+            "min": [
+              -1.395184,
+              0.0,
+              -1.395184
+            ],
+            "max": [
+              1.395184,
+              1.854243,
+              1.395184
+            ]
+          },
+          "translation": [
+            1.2,
+            1.835149,
+            -0.0
+          ],
+          "materials": [
+            "museum_limestone"
+          ],
+          "nonManifoldEdges": 0,
+          "hasUV": true
+        }
+      ],
+      "trianglesIncludingHiddenShards": 21936
+    }
+  },
+  "bundles": {
+    "platform-kit.glb": {
+      "bytes": 3622720,
+      "sha256": "61fce0a0b314e0e8aff649ea07dcfc070d56e053a9d7096fbc94bca8802ccf28"
+    }
+  },
+  "materials": "scalar named slots; external shared PBR textures bound by runtime",
+  "uvMetresPerRepeat": 1,
+  "status": "geometry-review"
+}
