@@ -5,6 +5,7 @@ import { renderShell } from '../shell/render-for-test'
 import type * as RunShell from '../shell/run-shell-store'
 import type * as ShellNavigation from '../shell/shell-navigation'
 import type * as AlleyAudio from './alley-audio'
+import type * as AlleyGeometry from './alley-geometry'
 
 // The alley's state, its ambient, the welcome flag and the arrival hold all
 // live at module level, so every case imports a fresh copy of each.
@@ -34,6 +35,13 @@ vi.mock('./alley-audio', async (importOriginal) => {
       }
     }),
   }
+})
+
+// The real geometry, with layoutDoors watched: each call is the door layout
+// recomputed after a measured value was written.
+vi.mock('./alley-geometry', async (importOriginal) => {
+  const real = await importOriginal<typeof AlleyGeometry>()
+  return { ...real, layoutDoors: vi.fn(real.layoutDoors) }
 })
 
 class FakeResizeObserver {
@@ -311,6 +319,49 @@ describe('the dock', () => {
     dockTop = 250
     observer.callback([], observer as unknown as ResizeObserver)
     expect(bottom()).toBeLessThanOrEqual(250)
+  })
+})
+
+describe('a measure', () => {
+  it('writes once for a delivery, and not at all for one that moved nothing', async () => {
+    let dockTop = 780
+    const dock = document.createElement('nav')
+    dock.className = 'mp-dock'
+    dock.getBoundingClientRect = () =>
+      ({ top: dockTop, bottom: 852, left: 0, right: 393 }) as DOMRect
+    document.body.appendChild(dock)
+    const { el } = await mountAlley()
+    const geometry = await import('./alley-geometry')
+    const layouts = vi.mocked(geometry.layoutDoors)
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+
+    // A rotation-sized change: the root, the headline block and the dock
+    // all moved in the one delivery.
+    const root = el('rooms-alley')
+    Object.defineProperty(root, 'clientWidth', {
+      value: 412,
+      configurable: true,
+    })
+    Object.defineProperty(root, 'clientHeight', {
+      value: 915,
+      configurable: true,
+    })
+    const block = el('alley-top')
+    Object.defineProperty(block, 'offsetHeight', {
+      value: 240,
+      configurable: true,
+    })
+    dockTop = 840
+    layouts.mockClear()
+    observer.callback([], observer as unknown as ResizeObserver)
+    expect(layouts).toHaveBeenCalledTimes(1)
+
+    // The same values again (a dock a third of a pixel off rounds to them).
+    dockTop = 840.3
+    layouts.mockClear()
+    observer.callback([], observer as unknown as ResizeObserver)
+    expect(layouts).not.toHaveBeenCalled()
   })
 })
 

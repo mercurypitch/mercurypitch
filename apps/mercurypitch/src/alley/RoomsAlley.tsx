@@ -27,7 +27,7 @@
 
 import { hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import './alley.css'
 import { roomName } from '@/features/rooms/room-names'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
@@ -55,6 +55,8 @@ const FADE_OUT_MS = 520
 const CLEAR_MS = 320
 /** The door settling back after a room (keep in step with alley.css). */
 const SETTLE_MS = 360
+/** A measured edge that moved by less than this has not moved. */
+const MEASURE_EPSILON = 0.5
 
 // The alley's state outlives the component: the open unmounts it (the tab
 // changes under the clone), and Back has to find the door it opened.
@@ -441,32 +443,51 @@ export const RoomsAlley: Component = () => {
   )
 
   onMount(() => {
+    // Every read first, then every write in one batch. A write restyles the
+    // alley and a read after it forces a layout, so interleaving them paid up
+    // to four synchronous layouts per rotation. Nothing read here depends on
+    // what is written — the root is fixed to the viewport, the top block's
+    // box is its own CSS, the dock is the shell's — so a delivery settles in
+    // one pass, and a value that moved by less than half a pixel is not news.
     const measure = (): void => {
       if (root === undefined) return
       const w = root.clientWidth
       const h = root.clientHeight
-      const now = untrack(size)
-      if (w > 0 && h > 0 && (w !== now.w || h !== now.h)) setSize({ w, h })
-      if (top !== undefined) {
-        const bottom = Math.ceil(top.offsetTop + top.offsetHeight)
-        if (bottom !== untrack(topBottom)) setTopBottom(bottom)
-        const right = Math.ceil(top.offsetLeft + top.offsetWidth)
-        if (right !== untrack(topRight)) setTopRight(right)
-        const pad = Math.ceil(
-          Number.parseFloat(window.getComputedStyle(top).paddingTop) || 0,
-        )
-        if (pad !== untrack(topPad)) setTopPad(pad)
-      }
+      const block =
+        top === undefined
+          ? null
+          : {
+              bottom: Math.ceil(top.offsetTop + top.offsetHeight),
+              right: Math.ceil(top.offsetLeft + top.offsetWidth),
+              pad: Math.ceil(
+                Number.parseFloat(window.getComputedStyle(top).paddingTop) || 0,
+              ),
+            }
       const dock = document.querySelector('.mp-dock')
       const dockTop =
         dock === null ? h : Math.floor(dock.getBoundingClientRect().top)
-      if (dockTop > 0 && dockTop !== untrack(floor)) setFloor(dockTop)
       const inset = Math.ceil(
         Number.parseFloat(
           window.getComputedStyle(root).getPropertyValue('--safe-right'),
         ) || 0,
       )
-      if (inset !== untrack(safeRight)) setSafeRight(inset)
+      const moved = (value: number, was: number): boolean =>
+        Math.abs(value - was) > MEASURE_EPSILON
+      batch(() => {
+        const now = untrack(size)
+        if (w > 0 && h > 0 && (moved(w, now.w) || moved(h, now.h))) {
+          setSize({ w, h })
+        }
+        if (block !== null) {
+          if (moved(block.bottom, untrack(topBottom))) {
+            setTopBottom(block.bottom)
+          }
+          if (moved(block.right, untrack(topRight))) setTopRight(block.right)
+          if (moved(block.pad, untrack(topPad))) setTopPad(block.pad)
+        }
+        if (dockTop > 0 && moved(dockTop, untrack(floor))) setFloor(dockTop)
+        if (moved(inset, untrack(safeRight))) setSafeRight(inset)
+      })
     }
     measure()
     // iPad and Android rotate; the doors are recomputed, not assumed. The
