@@ -1,0 +1,10 @@
+{
+  "museumAudioRequests": [],
+  "audioEvents": [
+    "one-shot-start",
+    "get-user-media",
+    "mic-stream-overlapped-example",
+    "one-shot-stopped"
+  ],
+  "mode": "reference"
+}

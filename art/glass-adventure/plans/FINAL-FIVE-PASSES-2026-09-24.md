@@ -11,30 +11,30 @@ Commit and push each coherent stage; keep #861 open for owner acceptance.
 ## Execution checklist
 
 - [x] 1. Camera comfort: forward-biased follow during brief diagonal steering,
-  smooth sustained turns, stable zoom/manual orbit and keyboard/touch behavior.
-  Verify real input sequences and side-framed challenge transitions.
+     smooth sustained turns, stable zoom/manual orbit and keyboard/touch behavior.
+     Verify real input sequences and side-framed challenge transitions.
 - [x] 2. Portrait finale: the picture and glass shatter together, while the frame
-  remains and the earned collection portrait stays intact. Preserve protective
-  glazing for archive discoveries. Inspect before/during/after rendered frames.
-- [ ] 3. Merc musical phrases: three attractive short original phrases in the
-  selected Gentle Whimsical D2 voice, configurable 3/5/7-note contours, reference
-  playback matching the same key and pace judged by the microphone exercise.
-  Preserve masters/receipts and a listenable audition; validate decoded references
-  and negative controls through the actual pitch/judge path.
+     remains and the earned collection portrait stays intact. Preserve protective
+     glazing for archive discoveries. Inspect before/during/after rendered frames.
+- [x] 3. Merc musical phrases: three attractive short original phrases in the
+     selected Gentle Whimsical D2 voice, configurable 3/5/7-note contours, reference
+     playback matching the same key and pace judged by the microphone exercise.
+     Preserve masters/receipts and a listenable audition; validate decoded references
+     and negative controls through the actual pitch/judge path.
 - [x] 4. Mobile rendering: measure pass and pixel costs, implement bounded quality
-  policy and avoid redundant work without blindly decimating accepted source art.
-  Compare matched frames and preserve shadows, glass and animation. Desktop
-  counters and screenshots do not establish physical-tablet FPS or heat.
+     policy and avoid redundant work without blindly decimating accepted source art.
+     Compare matched frames and preserve shadows, glass and animation. Desktop
+     counters and screenshots do not establish physical-tablet FPS or heat.
 - [x] 5. Floating Museum: capture each island and both inter-island connections;
-  inspect water source ponds, architectural steps, bridge landings, intersections,
-  resting contact and focal silhouettes. Correct placement and improve stairs
-  with coherent curved treads and natural arrivals. Preserve raw asset lineage.
-- [ ] Review all five changes together; resolve findings and inspect polished
-  phone/tablet/desktop layouts and actual rendered art at matched cameras.
+     inspect water source ponds, architectural steps, bridge landings, intersections,
+     resting contact and focal silhouettes. Correct placement and improve stairs
+     with coherent curved treads and natural arrivals. Preserve raw asset lineage.
+- [x] Review all five changes together; resolve findings and inspect polished
+      phone/tablet/desktop layouts and actual rendered art at matched cameras.
 - [ ] Run focused behavior/regression checks, required proportional pre-push gates,
-  commit/push stages and review exact-head CI. Update the PR description.
+      commit/push stages and review exact-head CI. Update the PR description.
 - [ ] Provide the owner a current preview/build and concise device test route.
-  Device singing, sustained performance and camera feel remain owner acceptance.
+      Device singing, sustained performance and camera feel remain owner acceptance.
 
 ## Ownership and boundaries
 
@@ -95,3 +95,34 @@ images must come from the real runtime, not only offline render scenes.
 - The required combined pre-push preparation/typecheck has not run for this new
   five-pass batch yet. Earlier gate receipts belong to the starting `3eb1ccf5`
   mobile-flow batch and must not be mistaken for final validation of these edits.
+
+- Final musical delivery: 88 references (39 First Arc, 39 Sunlit Steps, 10 Gallery
+  Arch), 3,219,104 bytes, with no detector tone carrier. Public filenames, sizes
+  and SHA-256 hashes match the delivery manifest exactly. All 88 pass the shared
+  YIN/judge at 24/44.1/48 kHz with no retries; wrong key, constant tone, silence,
+  missing middle and missing final anchors remain incomplete at each rate.
+  Natural words retain consonants; Encore alone allows a 400 ms gap and requires
+  120 ms fresh voiced evidence per anchor. Ordinary hold/melody defaults are
+  unchanged. Missing voice variants use the exact instrumental guide.
+- Final independent audio review signed off persistent parent-owned leases for
+  Adventure and Collection, concrete cleanup after the 120 ms fade, stale-request
+  isolation and corrupt-decode cache eviction. Closing/reopening a whole collection
+  cannot allow an old fade to unmute a new microphone session. Final browser
+  regression is now complete; packaging and exact-head CI follow.
+
+- Final phone Encore integration: three browser cases pass. The old per-dialog
+  owner was temporarily restored to prove the close/reopen regression fails
+  (two premature ambient requests); restoring the persistent owner passes. The
+  normal sing handoff stops the example before attaching microphone capture.
+  The artificial sub-120 ms reopen can acquire a stream during the old fade,
+  but remains in reference mode; fresh singing/recording starts after its guide.
+- Required workspace typecheck found one missing `shadowVisibilityChanged`
+  property in a renderer mock. The fixture now matches production. All earlier
+  shared workspace checks passed; targeted glass-game and BesideCue app typecheck
+  completed successfully, and all 19 renderer regression cases passed.
+
+- Combined `pnpm pr:prepare` passed (495 changed files, 71 source files); source
+  index is current. Its import/format changes were inspected, and the formatted
+  public manifest still matches all three decoded-audio verification receipts.
+  Stage commits preserve camera, rendering, portrait, museum and voice work
+  separately. Exact-head cloud CI and the fresh Android artifact are pending.

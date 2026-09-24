@@ -1,7 +1,7 @@
 // Coda Echo — optional portrait melody and explicit local musical memory, after the lesson is complete.
 import { createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
-import { MERC_ENCORE_JUDGE_POLICY, MERC_ENCORE_PHRASES, mercEncoreAvailability, } from '../content/encore-examples'
 import type { MercEncoreAvailability, MercEncoreVariant, } from '../content/encore-examples'
+import { MERC_ENCORE_JUDGE_POLICY, MERC_ENCORE_PHRASES, mercEncoreAvailability, } from '../content/encore-examples'
 import type { GalleryEncore } from '../content/encores'
 import type { GlassMelodyId } from '../content/melodies'
 import { GLASS_MELODIES, glassMelody } from '../content/melodies'

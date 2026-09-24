@@ -78,10 +78,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'merc-encore-light-v5': 'adventure-voice/merc-encore-light-v5.mp3',
   'merc-encore-home-v5': 'adventure-voice/merc-encore-home-v5.mp3',
   ...Object.fromEntries(
-    MERC_ENCORE_VARIANTS.map((variant) => [
-      variant.assetId,
-      variant.assetPath,
-    ]),
+    MERC_ENCORE_VARIANTS.map((variant) => [variant.assetId, variant.assetPath]),
   ),
   ...Object.fromEntries(
     REACTION_CUES.map((cue) => [

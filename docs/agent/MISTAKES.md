@@ -273,6 +273,13 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Rule:** read packaged assets through `fetchAssetBytes` (or `fetchAssetRead`) from `@irchiinnuss/mobile-runtime/asset-fetch`: a 2xx, or status 0 with a non-empty body. Never `if (!response.ok) throw` on a bundled file, and warn on failure: a loader's catch is never empty. The bundle probe answers packaged media with status 0, and the Developer screen's Audio section shows each fetch, decode and failure on a device.
 **See:** `packages/mobile-runtime/src/asset-fetch.ts`, `apps/mercurypitch/scripts/probe-bundle.mjs`, `apps/mercurypitch/src/shell/AudioDiagnosticsPanel.tsx`
 
+### Verify sung references at the live capture sample rates
+
+**Symptom:** a generated reference passed offline melody checks, but those checks did not match the microphone pipeline.
+**Cause:** testing a 24 kHz file with a fixed 2048/1024 YIN window/hop doubles the time window relative to the same live worklet at 48 kHz. Consonant gaps and pitch confidence can differ.
+**Rule:** decode/resample delivery audio to common AudioContext rates (44.1/48 kHz), run the production detector and judge with every unvoiced frame, and test wrong-note controls. Keep source-rate analysis separately labelled; never add hidden tones to force a reference through the judge.
+**See:** `packages/pitch-engine/src/pitch-f0-stream.ts`, `packages/glass-game/src/browser/voice-session.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
