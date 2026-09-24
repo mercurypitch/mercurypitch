@@ -8,6 +8,8 @@ import type { MusicalMemory } from '../core/musical-memory'
 import { memoryFileName } from '../core/musical-memory'
 import type { GlassGameHost } from '../host'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
+import type { EncoreAudioLease } from './encore-audio-lease'
+import { createEncoreAudioLeaseOwner, retireEncoreAudioLease, } from './encore-audio-lease'
 import styles from './EncoreDialog.module.css'
 import type { MelodyPracticeSnapshot } from './melody-practice'
 import { MelodyPractice } from './MelodyPractice'
@@ -56,8 +58,14 @@ export function EncoreDialog(props: {
     onChange: setState,
   })
   const playback = host.createMemoryPlayback?.()
+  const audioLeases = createEncoreAudioLeaseOwner(
+    () => props.beforeCapture(),
+    () => props.onReleaseVoice(),
+  )
   let alive = true
   let playbackGeneration = 0
+  let playbackLease: EncoreAudioLease | undefined
+  let captureLease: EncoreAudioLease | undefined
   let releaseTimer: ReturnType<typeof setTimeout> | undefined
   const downloadUrls = new Set<string>()
   const exampleRequests = new Map<GlassMelodyId, AbortController>()
@@ -88,48 +96,74 @@ export function EncoreDialog(props: {
   }
 
   async function stopPlayback(): Promise<void> {
+    const lease = playbackLease
+    playbackLease = undefined
     playbackGeneration++
     setPlaying(false)
-    await playback?.stop()
+    await retireEncoreAudioLease(
+      lease,
+      () => playback?.stop() ?? Promise.resolve(),
+    )
   }
 
   async function beforeCapture(): Promise<void> {
-    await Promise.all([stopPlayback(), props.beforeCapture()])
+    const lease = audioLeases.acquire()
+    captureLease = lease
+    try {
+      await Promise.all([stopPlayback(), lease.quiet])
+    } catch (cause) {
+      if (captureLease === lease) captureLease = undefined
+      lease.release()
+      throw cause
+    }
+  }
+
+  function releaseCapture(): void {
+    const lease = captureLease
+    captureLease = undefined
+    lease?.release()
   }
 
   async function listenAudio(audio: Blob, example = false): Promise<void> {
     if (!playback || !foreground() || practiceActive()) return
     const token = ++playbackGeneration
+    const lease = audioLeases.acquire()
+    playbackLease = lease
     setStatus('')
-    // The player's factory reaches the shared context synchronously in this tap.
-    const quiet = props.beforeCapture()
-    const releaseVoice = props.onReleaseVoice
     setPlaying(true)
-    const started = await playback.play(
-      audio,
-      () => {
-        if (!alive || token !== playbackGeneration) return
-        setPlaying(false)
-        releaseVoice()
-      },
-      quiet,
-    )
-    if (!alive || token !== playbackGeneration) return
+    let started = false
+    try {
+      started = await playback.play(
+        audio,
+        () => {
+          if (playbackLease === lease) playbackLease = undefined
+          lease.release()
+          if (!alive || token !== playbackGeneration) return
+          setPlaying(false)
+        },
+        lease.quiet,
+      )
+    } catch {
+      started = false
+    }
+    if (!alive || token !== playbackGeneration) {
+      lease.release()
+      return
+    }
     if (!started) {
+      if (playbackLease === lease) playbackLease = undefined
       setPlaying(false)
       setStatus(
         example
           ? 'Merc could not play this time. You can still hear your note guide.'
           : 'This browser could not play the take. You can download it instead.',
       )
-      props.onReleaseVoice()
+      lease.release()
     }
   }
 
   async function stopListening(): Promise<void> {
-    const releaseVoice = props.onReleaseVoice
     await stopPlayback()
-    releaseVoice()
   }
 
   function download(take: MusicalMemory): void {
@@ -176,7 +210,9 @@ export function EncoreDialog(props: {
     memory.dispose()
     exampleRequests.forEach((request) => request.abort())
     playback?.dispose()
-    props.onReleaseVoice()
+    playbackLease = undefined
+    captureLease = undefined
+    audioLeases.releaseAll()
     downloadUrls.forEach((url) => URL.revokeObjectURL(url))
   })
   const recordControls = () => (
@@ -185,6 +221,7 @@ export function EncoreDialog(props: {
         <input
           type="checkbox"
           checked={state().consent}
+          disabled={state().recording}
           onChange={(event) => memory.setConsent(event.currentTarget.checked)}
         />
         Keep a recording of my next melody
@@ -373,7 +410,7 @@ export function EncoreDialog(props: {
                     host.createMelodyReference!(contour)
                   }
                   beforeCapture={beforeCapture}
-                  onReleaseVoice={() => props.onReleaseVoice()}
+                  onReleaseVoice={releaseCapture}
                   canPlay={foreground}
                   onComplete={completed}
                   onChange={(snapshot) =>

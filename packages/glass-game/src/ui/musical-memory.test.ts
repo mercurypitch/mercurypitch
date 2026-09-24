@@ -100,6 +100,25 @@ describe('musical memory consent', () => {
     expect(h.controller.snapshot().saved).toBeNull()
     expect(h.store.remove).toHaveBeenCalledWith('glassworks-journey')
   })
+  it('consumes one opt-in for one sung take and requires an explicit re-arm', async () => {
+    const h = harness()
+    h.controller.setConsent(true)
+    h.controller.recording.start(h.voice)
+    expect(h.controller.snapshot().consent).toBe(false)
+    expect(h.voice.startRecording).toHaveBeenCalledOnce()
+    h.advance()
+    h.controller.recording.stop(h.voice, 'complete')
+    h.resolveTake(new Blob(['voice'], { type: 'audio/webm' }))
+    await h.controller.completed(h.snapshot)
+
+    h.controller.recording.start(h.voice)
+    expect(h.voice.startRecording).toHaveBeenCalledOnce()
+
+    h.controller.setConsent(true)
+    h.controller.recording.start(h.voice)
+    expect(h.voice.startRecording).toHaveBeenCalledTimes(2)
+    h.controller.dispose()
+  })
   it.each(['cancel', 'revoke', 'dispose'] as const)(
     'discards capture on %s without losing the lesson',
     async (action) => {

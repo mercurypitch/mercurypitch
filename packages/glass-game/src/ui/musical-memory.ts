@@ -27,6 +27,7 @@ export function createMusicalMemory(options: {
   let storeGeneration = 0
   let take: GlassVoiceTake | null = null
   let session: GlassVoiceSession | null = null
+  let captureAuthorized = false
   let clock: ReturnType<typeof setInterval> | undefined
   let startedAt = 0
   let finishedAt = 0
@@ -51,6 +52,7 @@ export function createMusicalMemory(options: {
     take?.discard()
     take = null
     session = null
+    captureAuthorized = false
     pending = null
     emit({ recording: false })
   }
@@ -69,6 +71,7 @@ export function createMusicalMemory(options: {
       try {
         take = voice.startRecording()
         session = voice
+        captureAuthorized = true
         startedAt = now()
         clock = setInterval(() => {
           const elapsedSeconds = Math.max(0, (now() - startedAt) / 1000)
@@ -84,6 +87,7 @@ export function createMusicalMemory(options: {
           } else emit({ elapsedSeconds })
         }, 250)
         emit({
+          consent: false,
           recording: true,
           elapsedSeconds: 0,
           message: 'Recording this melody on your device.',
@@ -97,7 +101,7 @@ export function createMusicalMemory(options: {
     },
     stop(voice, outcome) {
       if (voice !== session || take === null) return
-      if (outcome !== 'complete' || !state.consent || !alive) {
+      if (outcome !== 'complete' || !captureAuthorized || !alive) {
         discardActive()
         emit({ message: 'Interrupted take discarded. Nothing was saved.' })
         return
@@ -106,6 +110,7 @@ export function createMusicalMemory(options: {
       const current = take
       take = null
       session = null
+      captureAuthorized = false
       finishedAt = now()
       try {
         pending = current.finish().catch(() => null)
@@ -148,15 +153,9 @@ export function createMusicalMemory(options: {
       pending = null
       const contour = snapshot.contour
       const token = generation
-      if (
-        !prepared ||
-        !contour ||
-        snapshot.judge?.complete !== true ||
-        !state.consent
-      )
-        return
+      if (!prepared || !contour || snapshot.judge?.complete !== true) return
       const audio = await prepared
-      if (!alive || token !== generation || !state.consent) return
+      if (!alive || token !== generation) return
       const durationSeconds = Math.min(
         45,
         Math.max(0, (finishedAt - startedAt) / 1000),
