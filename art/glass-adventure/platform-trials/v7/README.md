@@ -1,8 +1,10 @@
 # Cloudway Marble V7 — source-preserved delivery baseline
 
-V7 is an isolated production lane for one existing Cloudway Marble replacement.
-It does not change the runtime catalog, public assets, the V4 archive, or the
-immutable Meshy source.
+This directory preserves the accepted source-quality baseline for the Cloudway
+Marble replacement. The selected 1K derivative is now integrated with V6
+Frost/Glide and V3 Crackle in the [combined V7 runtime](runtime/README.md). The
+V4 archive and immutable Meshy source are unchanged. `manifest.json` and the
+original checkpoint describe the earlier standalone source-acceptance stage.
 
 ## Accepted production direction
 
@@ -34,8 +36,9 @@ flatten, face replacement, or decoder-bound geometry compression.
 The delivery contains 1,256,556 triangles in one shared prototype mesh. Its
 44,277,888-byte payload requires no Draco, meshopt, or KTX2 decoder. Estimated
 decoded cost is 30.47 MiB of indexed geometry plus 64 MiB for the three mipped
-2K textures. This is a quality baseline for owner review, not an installed or
-declared mobile-default asset.
+2K textures. This standalone 2K baseline remains archived; the
+combined runtime uses the same geometry with reviewed 1K maps. Physical-tablet
+performance remains an owner acceptance check, not a claim from this source audit.
 
 ## Rebuild
 

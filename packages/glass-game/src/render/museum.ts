@@ -553,6 +553,9 @@ export function createMuseum(
           snapshot.nearbyBreakableId === id ? 0.55 : 0.18
       })
     },
+    cullCloudwayPlatforms(viewpoint: Vec3) {
+      cloudwayPlatforms.cullForView(viewpoint)
+    },
     roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
     setDecorationTexture(assetId: string, texture: Texture) {
       decorations.installTexture(assetId, texture)
@@ -603,6 +606,7 @@ export function createMuseum(
     },
     setVisibleRooms,
     dispose() {
+      cloudwayPlatforms.dispose()
       decorations.dispose()
     },
   }

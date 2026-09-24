@@ -1,6 +1,6 @@
 // Island trials — optional routes kept outside the museum's main chapter order.
 import type { GalleryChapter } from './campaign'
-import { CLOUDWAY_GLASS_RIBBON } from './cloudway-trial'
+import { CLOUDWAY_CURRENT_TRIAL } from './cloudway-layouts'
 import type { MuseumJourneyDefinition } from './museum-journey'
 
 export interface IslandTrial {
@@ -22,7 +22,7 @@ export const MUSEUM_TRIALS: readonly IslandTrial[] = [
       description:
         'Skim the frost, ride an opaline raft and cross the crackling ribbon. Rest and sing on the marble landings.',
       imageAsset: 'cloudway-ribbon-preview',
-      level: CLOUDWAY_GLASS_RIBBON,
+      level: CLOUDWAY_CURRENT_TRIAL,
     },
   },
 ]

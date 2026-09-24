@@ -1,6 +1,12 @@
 # V7 production checkpoint
 
-## 2026-09-24 — exact dense quality baseline passed
+## Current integration
+
+The 1K combined V7 kit is installed and verified. See [runtime/README.md](runtime/README.md)
+and the [integration record](../../plans/CLOUDWAY-V7-RUNTIME-INTEGRATION-2026-09-24.md).
+The following source-gate entry is historical and does not describe current install status.
+
+## 2026-09-24 — earlier exact dense quality baseline gate
 
 - Immutable donor SHA-256 verified:
   `fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb`.

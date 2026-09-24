@@ -456,6 +456,7 @@ function createGlassRendererInstance(
       }
       if (challengeId === null) boundsEncounterId = null
       camera.update(snapshot, cameraDt, presentationPaused)
+      museum.cullCloudwayPlatforms(camera.camera.position)
       const visibleRooms = museum.updateRoomVisibility(
         snapshot.player.position,
         camera.camera,

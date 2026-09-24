@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { MUSEUM_CAMPAIGN } from '../content/campaign'
 import { islandChapterIds, MUSEUM_TRIALS } from '../content/campaign-trials'
+import { CLOUDWAY_CURRENT_TRIAL } from '../content/cloudway-layouts'
+import { CLOUDWAY_GLASS_RIBBON } from '../content/cloudway-trial'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import type { LevelDefinition, SavedProgress } from '../contracts'
 import { readProgress } from './progress'
@@ -42,6 +44,38 @@ function completed(
 }
 
 describe('Cloudway island unlock', () => {
+  it('selects the crescent without reusing legacy trial progress or changing its historical unlock key', () => {
+    const trial = MUSEUM_TRIALS[0]!
+    expect(trial).toMatchObject({
+      id: 'first-island-cloudway',
+      islandId: 'first-light-landmass',
+      chapter: {
+        id: 'cloudway-glass-ribbon',
+        imageAsset: 'cloudway-ribbon-preview',
+        level: CLOUDWAY_CURRENT_TRIAL,
+      },
+    })
+
+    const legacySave: SavedProgress = {
+      ...readProgress(CLOUDWAY_GLASS_RIBBON, null),
+      completedBreakableIds: CLOUDWAY_GLASS_RIBBON.breakables.map(
+        (item) => item.id,
+      ),
+      finished: true,
+    }
+    expect(readProgress(CLOUDWAY_CURRENT_TRIAL, legacySave)).toEqual(
+      readProgress(CLOUDWAY_CURRENT_TRIAL, null),
+    )
+
+    const currentSave: SavedProgress = {
+      ...readProgress(CLOUDWAY_CURRENT_TRIAL, null),
+      checkpointId: 'cloudway-checkpoint-frost-catch',
+    }
+    expect(readProgress(CLOUDWAY_GLASS_RIBBON, currentSave)).toEqual(
+      readProgress(CLOUDWAY_GLASS_RIBBON, null),
+    )
+  })
+
   it('derives the first-island gate from both mapped galleries without adding the trial to the campaign', () => {
     expect(
       islandChapterIds(FLOATING_MUSEUM_JOURNEY, MUSEUM_TRIALS[0]!.islandId),

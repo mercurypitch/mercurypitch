@@ -23,7 +23,11 @@ async function selectedDevelopmentLevel() {
     layout !== 'journey' &&
     layout !== 'twin-galleries' &&
     layout !== 'conservatory' &&
-    layout !== 'cloudway'
+    layout !== 'cloudway' &&
+    layout !== 'cloudway-current' &&
+    layout !== 'cloudway-crescent' &&
+    layout !== 'cloudway-ribbon' &&
+    layout !== 'cloudway-terrace'
   )
     return undefined
   const {
@@ -32,6 +36,10 @@ async function selectedDevelopmentLevel() {
     TWIN_GALLERIES,
     RESONANCE_CONSERVATORY,
     CLOUDWAY_GLASS_RIBBON,
+    CLOUDWAY_CURRENT_TRIAL,
+    CLOUDWAY_CRESCENT_AUDITION,
+    CLOUDWAY_RIBBON_AUDITION,
+    CLOUDWAY_TERRACE_AUDITION,
     GLASS_FOUNDATION_QUARTER_TURN,
     GLASS_FOUNDATION_STRAIGHT,
   } = await import('@irchiinnuss/glass-game/development-levels')
@@ -41,6 +49,10 @@ async function selectedDevelopmentLevel() {
   if (layout === 'twin-galleries') return TWIN_GALLERIES
   if (layout === 'conservatory') return RESONANCE_CONSERVATORY
   if (layout === 'cloudway') return CLOUDWAY_GLASS_RIBBON
+  if (layout === 'cloudway-current') return CLOUDWAY_CURRENT_TRIAL
+  if (layout === 'cloudway-crescent') return CLOUDWAY_CRESCENT_AUDITION
+  if (layout === 'cloudway-ribbon') return CLOUDWAY_RIBBON_AUDITION
+  if (layout === 'cloudway-terrace') return CLOUDWAY_TERRACE_AUDITION
   return layout === 'straight'
     ? GLASS_FOUNDATION_STRAIGHT
     : GLASS_FOUNDATION_QUARTER_TURN

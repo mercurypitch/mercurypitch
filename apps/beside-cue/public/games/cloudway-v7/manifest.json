@@ -1,0 +1,66 @@
+{
+  "version": 7,
+  "assetId": "cloudway-platform-kit-v1",
+  "status": "integrated runtime delivery",
+  "description": "Accepted source-preserved V7 Marble with 1K maps, accepted V6 Frost and Glide, and unchanged Crackle states.",
+  "coordinates": "glTF +Y up; metres; root origins at landing plane y=0",
+  "collider": {
+    "shape": "box",
+    "width": 1.7,
+    "depth": 1.3,
+    "height": 0.24,
+    "topY": 0,
+    "center": [0, -0.12, 0]
+  },
+  "bundle": {
+    "id": "cloudway-platform-kit-v1",
+    "file": "cloudway-platform-kit-v7.glb",
+    "bytes": 77414948,
+    "sha256": "0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9"
+  },
+  "roots": [
+    "Cloudway_Crackle_Intact",
+    "Cloudway_Crackle_Release",
+    "Cloudway_Crackle_Warning",
+    "Cloudway_Frost",
+    "Cloudway_Glide",
+    "Cloudway_Marble"
+  ],
+  "preservedV6Roots": [
+    "Cloudway_Crackle_Intact",
+    "Cloudway_Crackle_Release",
+    "Cloudway_Crackle_Warning",
+    "Cloudway_Frost",
+    "Cloudway_Glide"
+  ],
+  "replacedV7Roots": ["Cloudway_Marble"],
+  "sources": [
+    {
+      "path": "art/glass-adventure/platform-trials/v6/runtime/archive/cloudway-platform-kit-v6.glb",
+      "bytes": 44046324,
+      "sha256": "1c18c7a5e818346551fdadef6a091b848f19d0242092a14bf366d85a90b7930c"
+    },
+    {
+      "path": "art/glass-adventure/platform-trials/v7/exports/cloudway-marble-v7-dense-baseline-2k.glb",
+      "bytes": 63686476,
+      "sha256": "2d6efa7f2a6561546041eb56ba7f13eec2daaad74caff6757a1a655dd6255a6b"
+    },
+    {
+      "path": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb",
+      "bytes": 44277888,
+      "sha256": "6d87455f6ccc901595dc00db0ca400c36ba643bfd1fdb12206a6a43a416bc030"
+    }
+  ],
+  "marbleDelivery": {
+    "triangles": 1256556,
+    "textureMaximumDimension": 1024,
+    "geometryReduction": false,
+    "quantizedAccessorRecordSha256": "62e1c2222eca4afc3047e994e3423ffc19cc2cee7c3db12995451d1cf7e0da65"
+  },
+  "runtimeContract": {
+    "loader": "plain Three.js GLTFLoader",
+    "requiredExtensions": ["EXT_texture_webp", "KHR_mesh_quantization"],
+    "decoderRequired": false,
+    "topologyReduction": false
+  }
+}

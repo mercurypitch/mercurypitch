@@ -50,9 +50,19 @@ describe('Glassworks asset contract', () => {
     expect(required.has('journey-map-v10/manifest.json')).toBe(true)
     expect(required.has('journey-map-v4/manifest.json')).toBe(false)
     expect(required.has('journey-map-v7/manifest.json')).toBe(false)
-    expect(required.has('cloudway-v3/cloudway-platform-kit-v3.glb')).toBe(true)
+    expect(required.has('cloudway-v7/cloudway-platform-kit-v7.glb')).toBe(true)
+    expect(required.has('cloudway-v7/manifest.json')).toBe(true)
+    expect(required.has('cloudway-v6/cloudway-platform-kit-v6.glb')).toBe(false)
+    expect(required.has('cloudway-v6/manifest.json')).toBe(false)
+    expect(required.has('cloudway-v3/cloudway-platform-kit-v3.glb')).toBe(false)
     expect(required.has('cloudway-v3/cloudway-ribbon-preview.webp')).toBe(true)
     expect(required.has('cloudway-v3/manifest.json')).toBe(true)
     expect(required.has('adventure-voice-v2/manifest.json')).toBe(true)
+    expect(glassGameAssetPath('merc-encore-light-v5')).toBe(
+      'adventure-voice/merc-encore-light-v5.mp3',
+    )
+    expect(glassGameAssetPath('merc-encore-home-v5')).toBe(
+      'adventure-voice/merc-encore-home-v5.mp3',
+    )
   })
 })

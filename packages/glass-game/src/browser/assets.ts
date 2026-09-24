@@ -68,7 +68,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'journey-map-v8/floating-museum-architecture-kit-v8.glb',
   'floating-museum-map-kit-v1': 'journey-map-v1/floating-museum-map-kit-v1.glb',
   // Authored IDs stay stable while runtime paths invalidate older cached art.
-  'cloudway-platform-kit-v1': 'cloudway-v3/cloudway-platform-kit-v3.glb',
+  'cloudway-platform-kit-v1': 'cloudway-v7/cloudway-platform-kit-v7.glb',
   'cloudway-ribbon-preview': 'cloudway-v3/cloudway-ribbon-preview.webp',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
@@ -107,6 +107,7 @@ const MANIFEST_FILES = [
   'journey-map-v3/manifest.json',
   'journey-map-v10/manifest.json',
   'journey-map-v8/manifest.json',
+  'cloudway-v7/manifest.json',
   'cloudway-v3/manifest.json',
   'adventure-voice-v1/manifest.json',
   'adventure-voice-v2/manifest.json',

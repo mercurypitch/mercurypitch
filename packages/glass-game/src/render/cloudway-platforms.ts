@@ -1,10 +1,11 @@
 // Cloudway platform presentation — instanced donor art follows authoritative simulation transforms and phases.
 
 import type { Mesh, Object3D } from 'three'
-import { Color, DynamicDrawUsage, Euler, Group, InstancedMesh, MathUtils, Matrix4, Quaternion, Vector3, } from 'three'
-import type { GameSnapshot, LevelDefinition, PlatformDefinition, PlatformRuntimeSnapshot, } from '../contracts'
+import { Box3, Color, DynamicDrawUsage, Euler, Group, InstancedMesh, MathUtils, Matrix4, Quaternion, Vector3, } from 'three'
+import type { GameSnapshot, LevelDefinition, PlatformDefinition, PlatformRuntimeSnapshot, Vec3, } from '../contracts'
 import type { CloudwayPlatformRenderId } from './cloudway-catalog'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, isCloudwayPlatformRenderId, } from './cloudway-catalog'
+import { CLOUDWAY_FOG_FAR } from './cloudway-scene'
 import { disposeObject } from './dispose'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
@@ -22,6 +23,8 @@ interface InstancedPart {
   index: number
   mesh: InstancedMesh
   localMatrix: Matrix4
+  localBounds: Box3
+  worldMatrix: Matrix4
 }
 
 interface InstalledDonor {
@@ -68,6 +71,9 @@ const DONORS: readonly DonorSpec[] = [
 const WARNING_TURNS = 2
 const WARNING_YAW_RADIANS = 0.012
 const RELEASE_HIDE_PROGRESS = 0.96
+export const CLOUDWAY_PLATFORM_FOG_CULL_MARGIN = 2
+const CLOUDWAY_PLATFORM_CULL_DISTANCE =
+  CLOUDWAY_FOG_FAR + CLOUDWAY_PLATFORM_FOG_CULL_MARGIN
 
 function visualState(
   platform: PlatformDefinition,
@@ -94,6 +100,10 @@ function createInstancedDonor(
   template.traverse((object) => {
     const mesh = object as Mesh
     if (!mesh.isMesh) return
+    mesh.geometry.computeBoundingBox()
+    const localBounds = mesh.geometry.boundingBox?.clone()
+    if (localBounds === undefined)
+      throw new Error(`Cloudway donor "${spec.node}" has invalid bounds.`)
     const instance = new InstancedMesh(
       mesh.geometry,
       mesh.material,
@@ -109,6 +119,8 @@ function createInstancedDonor(
       index: parts.length,
       mesh: instance,
       localMatrix: mesh.matrixWorld.clone(),
+      localBounds,
+      worldMatrix: new Matrix4(),
     })
   })
   if (parts.length === 0)
@@ -120,6 +132,11 @@ function createInstancedDonor(
     state: spec.state,
     parts,
   }
+}
+
+function disposeDonors(donors: readonly InstalledDonor[]): void {
+  for (const donor of donors)
+    for (const part of donor.parts) part.mesh.dispose()
 }
 
 function releaseProgress(runtime: PlatformRuntimeSnapshot | undefined): number {
@@ -170,17 +187,20 @@ export function createCloudwayPlatformRenderer(
   const platformIds = new Set(platforms.map((platform) => platform.id))
   const runtimeById = new Map<string, PlatformRuntimeSnapshot>()
   const rootMatrix = new Matrix4()
-  const instanceMatrix = new Matrix4()
   const motionMatrix = new Matrix4()
+  const partBounds = new Box3()
+  const platformBounds = new Box3()
   const scale = new Vector3()
   const position = new Vector3()
   const motionOffset = new Vector3()
   const motionRotation = new Euler()
   const motionQuaternion = new Quaternion()
   const motionScale = new Vector3()
+  const viewPosition = new Vector3()
   const warningColor = new Color()
   let installedRoot: Group | undefined
   let installedDonors: readonly InstalledDonor[] = []
+  let latestSnapshot: GameSnapshot | undefined
 
   function install(sourceScene: Object3D, bundle: string): ReadonlySet<string> {
     if (bundle !== CLOUDWAY_PLATFORM_BUNDLE_ID || platforms.length === 0)
@@ -218,6 +238,7 @@ export function createCloudwayPlatformRenderer(
         donor.parts.forEach(({ mesh }) => stagedRoot.add(mesh))
       }
     } catch (error) {
+      disposeDonors(stagedDonors)
       disposeObject(stagedRoot, materialLibrary.materials)
       throw error
     }
@@ -231,8 +252,10 @@ export function createCloudwayPlatformRenderer(
     return platformIds
   }
 
-  function update(snapshot: GameSnapshot): void {
+  function writeInstances(snapshot: GameSnapshot, viewpoint?: Vec3): void {
     if (installedRoot === undefined) return
+    if (viewpoint !== undefined)
+      viewPosition.set(viewpoint.x, viewpoint.y, viewpoint.z)
     runtimeById.clear()
     for (const state of snapshot.platformStates ?? [])
       runtimeById.set(state.id, state)
@@ -267,6 +290,7 @@ export function createCloudwayPlatformRenderer(
         )
         rootMatrix.scale(scale)
         rootMatrix.setPosition(position)
+        platformBounds.makeEmpty()
         for (const part of donor.parts) {
           if (released) {
             fragmentMotion(
@@ -278,21 +302,31 @@ export function createCloudwayPlatformRenderer(
               motionQuaternion,
               motionScale,
             )
-            instanceMatrix.multiplyMatrices(rootMatrix, motionMatrix)
-            instanceMatrix.multiply(part.localMatrix)
+            part.worldMatrix.multiplyMatrices(rootMatrix, motionMatrix)
+            part.worldMatrix.multiply(part.localMatrix)
           } else {
-            instanceMatrix.multiplyMatrices(rootMatrix, part.localMatrix)
+            part.worldMatrix.multiplyMatrices(rootMatrix, part.localMatrix)
           }
-          part.mesh.setMatrixAt(instanceIndex, instanceMatrix)
-          if (donor.state === 'warning') {
-            const pulse = 0.5 + 0.5 * Math.sin(warning * Math.PI * 4)
-            warningColor.setRGB(
-              1.06 + pulse * 0.12,
-              0.9 + pulse * 0.08,
-              0.72 + pulse * 0.14,
-            )
-            part.mesh.setColorAt(instanceIndex, warningColor)
-          }
+          partBounds.copy(part.localBounds).applyMatrix4(part.worldMatrix)
+          platformBounds.union(partBounds)
+        }
+        if (
+          viewpoint !== undefined &&
+          platformBounds.distanceToPoint(viewPosition) >
+            CLOUDWAY_PLATFORM_CULL_DISTANCE
+        )
+          continue
+
+        for (const part of donor.parts) {
+          part.mesh.setMatrixAt(instanceIndex, part.worldMatrix)
+          if (donor.state !== 'warning') continue
+          const pulse = 0.5 + 0.5 * Math.sin(warning * Math.PI * 4)
+          warningColor.setRGB(
+            1.06 + pulse * 0.12,
+            0.9 + pulse * 0.08,
+            0.72 + pulse * 0.14,
+          )
+          part.mesh.setColorAt(instanceIndex, warningColor)
         }
         instanceIndex++
       }
@@ -313,6 +347,25 @@ export function createCloudwayPlatformRenderer(
       return platformIds.has(platformId)
     },
     install,
-    update,
+    update(snapshot: GameSnapshot): void {
+      latestSnapshot = snapshot
+      // Camera occlusion needs every current transform before its raycasts.
+      // The final presentation pass compacts fully fogged instances afterward.
+      writeInstances(snapshot)
+    },
+    cullForView(viewpoint: Vec3): void {
+      if (latestSnapshot !== undefined)
+        writeInstances(latestSnapshot, viewpoint)
+    },
+    dispose(): void {
+      disposeDonors(installedDonors)
+      if (installedRoot !== undefined) {
+        disposeObject(installedRoot, materialLibrary.materials)
+        installedRoot.removeFromParent()
+      }
+      installedRoot = undefined
+      installedDonors = []
+      latestSnapshot = undefined
+    },
   }
 }

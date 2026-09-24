@@ -4,8 +4,8 @@ import type { BufferGeometry, Material } from 'three'
 import { ConeGeometry, CylinderGeometry, Group, IcosahedronGeometry, InstancedMesh, Matrix4, Quaternion, SphereGeometry, Vector3, } from 'three'
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
-import { AUTHORED_CYPRESS_BASE_RADIUS, addInstancedDonor, clearsJourneyLandmarks, clearsVegetationFootprints, createAuthoredFlowerPlacement, rimPoint, sourceFloraPoint, } from './vegetation-placement'
 import type { VegetationFootprint } from './vegetation-placement'
+import { addInstancedDonor, AUTHORED_CYPRESS_BASE_RADIUS, clearsJourneyLandmarks, clearsVegetationFootprints, createAuthoredFlowerPlacement, rimPoint, sourceFloraPoint, } from './vegetation-placement'
 
 export { journeyBridgeDistanceXZ } from './vegetation-placement'
 

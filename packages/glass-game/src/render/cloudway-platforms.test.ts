@@ -1,10 +1,10 @@
 // Cloudway platform rendering tests — authoritative snapshots select one batched visual state per platform.
 
 import type { Group as GroupType, InstancedMesh as InstancedMeshType, } from 'three'
-import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
-import { describe, expect, it } from 'vitest'
+import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Raycaster, Vector3, } from 'three'
+import { describe, expect, it, vi } from 'vitest'
 import { CLOUDWAY_GLASS_RIBBON } from '../content/cloudway-trial'
-import type { GameSnapshot, PlatformRuntimeSnapshot } from '../contracts'
+import type { GameSnapshot, LevelDefinition, PlatformRuntimeSnapshot, } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, } from './cloudway-catalog'
 import { createCloudwayPlatformRenderer } from './cloudway-platforms'
@@ -94,9 +94,11 @@ function snapshot(
   }
 }
 
-function floors(): Map<string, Group> {
+function floors(
+  level: LevelDefinition = CLOUDWAY_GLASS_RIBBON,
+): Map<string, Group> {
   return new Map(
-    CLOUDWAY_GLASS_RIBBON.platforms.map((platform) => {
+    level.platforms.map((platform) => {
       const floor = new Group()
       floor.name = `floor-${platform.id}`
       floor.add(
@@ -165,6 +167,129 @@ describe('Cloudway platform renderer', () => {
     fallbackFloors.forEach((floor) => expect(floor.children).toHaveLength(0))
 
     disposeObject(sceneRoot, library.materials)
+    disposeObject(source)
+    library.dispose()
+    disposeMaterials(Object.values(palette))
+  })
+
+  it('culls only fully fogged bounds and restores every blocker for the next camera prepass', () => {
+    const palette = materials()
+    const library = createMaterialLibrary()
+    const sceneRoot = new Group()
+    const renderer = createCloudwayPlatformRenderer(
+      CLOUDWAY_GLASS_RIBBON,
+      sceneRoot,
+      floors(),
+      palette,
+      library,
+    )
+    const source = donorScene()
+    renderer.install(source, CLOUDWAY_PLATFORM_BUNDLE_ID)
+    const current = snapshot(platformStates())
+    renderer.update(current)
+
+    const marble = instance(sceneRoot, 'cloudway-stable-Cloudway_Marble__Top')
+    expect(marble.count).toBe(6)
+    renderer.cullForView({ x: 0, y: 0, z: 0 })
+    expect(marble.count).toBe(3)
+
+    const finale = CLOUDWAY_GLASS_RIBBON.platforms.find(
+      (platform) => platform.id === 'cloudway-finale',
+    )!
+    const raycaster = new Raycaster(
+      new Vector3(
+        (finale.minX + finale.maxX) / 2,
+        4,
+        (finale.minZ + finale.maxZ) / 2,
+      ),
+      new Vector3(0, -1, 0),
+    )
+    sceneRoot.updateMatrixWorld(true)
+    expect(raycaster.intersectObject(marble).length).toBe(0)
+
+    // The following frame restores all transforms before camera collision.
+    renderer.update(current)
+    sceneRoot.updateMatrixWorld(true)
+    expect(marble.count).toBe(6)
+    expect(raycaster.intersectObject(marble).length).toBeGreaterThan(0)
+
+    disposeObject(sceneRoot, library.materials)
+    disposeObject(source)
+    library.dispose()
+    disposeMaterials(Object.values(palette))
+  })
+
+  it('uses complete ornament bounds and the live moving offset at the fog edge', () => {
+    const palette = materials()
+    const library = createMaterialLibrary()
+    const source = donorScene()
+    const marbleSource = source.getObjectByName(CLOUDWAY_PLATFORM_NODES.marble)!
+    const ornament = new Mesh(
+      new BoxGeometry(0.2, 2, 0.2),
+      new MeshStandardMaterial(),
+    )
+    ornament.name = 'Cloudway_Marble__UndersideOrnament'
+    ornament.position.set(0, -1, -1.9)
+    marbleSource.add(ornament)
+
+    const finale = CLOUDWAY_GLASS_RIBBON.platforms.find(
+      (platform) => platform.id === 'cloudway-finale',
+    )!
+    const marbleLevel: LevelDefinition = {
+      ...CLOUDWAY_GLASS_RIBBON,
+      platforms: [finale],
+    }
+    const marbleRoot = new Group()
+    const marbleRenderer = createCloudwayPlatformRenderer(
+      marbleLevel,
+      marbleRoot,
+      floors(marbleLevel),
+      palette,
+      library,
+    )
+    marbleRenderer.install(source, CLOUDWAY_PLATFORM_BUNDLE_ID)
+    marbleRenderer.update(snapshot(platformStates()))
+    const ornamentInstances = instance(
+      marbleRoot,
+      'cloudway-stable-Cloudway_Marble__UndersideOrnament',
+    )
+    marbleRenderer.cullForView({ x: 1, y: 0, z: 9 })
+    expect(ornamentInstances.count).toBe(1)
+    marbleRenderer.cullForView({ x: 1, y: 0, z: 6 })
+    expect(ornamentInstances.count).toBe(0)
+
+    const glide = CLOUDWAY_GLASS_RIBBON.platforms.find(
+      (platform) => platform.id === 'cloudway-glide-raft',
+    )!
+    const glideLevel: LevelDefinition = {
+      ...CLOUDWAY_GLASS_RIBBON,
+      platforms: [glide],
+    }
+    const glideRoot = new Group()
+    const glideRenderer = createCloudwayPlatformRenderer(
+      glideLevel,
+      glideRoot,
+      floors(glideLevel),
+      palette,
+      library,
+    )
+    glideRenderer.install(source, CLOUDWAY_PLATFORM_BUNDLE_ID)
+    glideRenderer.update(
+      snapshot(
+        platformStates({
+          'cloudway-glide-raft': { offset: { x: 0, y: 0, z: 1.25 } },
+        }),
+      ),
+    )
+    const glideInstances = instance(
+      glideRoot,
+      'cloudway-stable-Cloudway_Glide__Top',
+    )
+    glideRenderer.cullForView({ x: 0.7, y: 0, z: 31.5 })
+    expect(glideInstances.count).toBe(1)
+
+    disposeObject(marbleRoot, library.materials)
+    disposeObject(glideRoot, library.materials)
     disposeObject(source)
     library.dispose()
     disposeMaterials(Object.values(palette))
@@ -342,14 +467,52 @@ describe('Cloudway platform renderer', () => {
       library,
     )
     const source = donorScene(CLOUDWAY_PLATFORM_NODES.crackleWarning)
+    const disposeInstances = vi.spyOn(InstancedMesh.prototype, 'dispose')
 
     expect(() => renderer.install(source, CLOUDWAY_PLATFORM_BUNDLE_ID)).toThrow(
       'Cloudway_Crackle_Warning',
     )
+    expect(disposeInstances).toHaveBeenCalled()
+    disposeInstances.mockRestore()
     expect(sceneRoot.getObjectByName('cloudway-platform-art')).toBeUndefined()
     fallbackFloors.forEach((floor) => expect(floor.children).toHaveLength(1))
 
     fallbackFloors.forEach((floor) => disposeObject(floor))
+    disposeObject(source)
+    library.dispose()
+    disposeMaterials(Object.values(palette))
+  })
+
+  it('disposes every instanced batch buffer and removes the installed root', () => {
+    const palette = materials()
+    const library = createMaterialLibrary()
+    const sceneRoot = new Group()
+    const renderer = createCloudwayPlatformRenderer(
+      CLOUDWAY_GLASS_RIBBON,
+      sceneRoot,
+      floors(),
+      palette,
+      library,
+    )
+    const source = donorScene()
+    renderer.install(source, CLOUDWAY_PLATFORM_BUNDLE_ID)
+    const batches: InstancedMeshType[] = []
+    sceneRoot.traverse((object) => {
+      if (object instanceof InstancedMesh) batches.push(object)
+    })
+    let disposed = 0
+    batches.forEach((batch) =>
+      batch.addEventListener('dispose', () => {
+        disposed++
+      }),
+    )
+
+    renderer.dispose()
+
+    expect(disposed).toBe(batches.length)
+    expect(batches.length).toBeGreaterThan(0)
+    expect(sceneRoot.getObjectByName('cloudway-platform-art')).toBeUndefined()
+
     disposeObject(source)
     library.dispose()
     disposeMaterials(Object.values(palette))

@@ -115,14 +115,15 @@ console or page errors.
 
 ## Integrated runtime kit
 
-The public runtime is
-[`cloudway-platform-kit-v6.glb`](../../../../apps/beside-cue/public/games/cloudway-v6/cloudway-platform-kit-v6.glb):
+The superseded combined runtime is preserved exactly at
+[`cloudway-platform-kit-v6.glb`](runtime/archive/cloudway-platform-kit-v6.glb):
 44,046,324 bytes, 36,090,287 bytes at gzip level 9, SHA-256
 `1c18c7a5e818346551fdadef6a091b848f19d0242092a14bf366d85a90b7930c`.
 The authored logical ID remains `cloudway-platform-kit-v1`, so levels and
 renderer contracts do not change. Its
-[`manifest.json`](../../../../apps/beside-cue/public/games/cloudway-v6/manifest.json)
-records the exact source hashes and the six direct roots.
+[`manifest.json`](runtime/archive/manifest.json)
+records the exact source hashes and the six direct roots. V7 now supplies the
+public runtime; V6 remains a pinned production input under this archive.
 
 [`build_runtime_kit.mjs`](production/build_runtime_kit.mjs) removes only the V3
 Frost and Glide roots and their now-unused resources, imports the accepted V6
@@ -132,7 +133,7 @@ not weld, simplify, decimate, or introduce a decoder-bound extension. Every
 root keeps the exact 1.70 x 1.30 m, 0.24 m-deep collider contract with top Y=0.
 
 [`cloudway-platform-kit-v6-audit.json`](proofs/runtime/cloudway-platform-kit-v6-audit.json)
-fresh-imports all three inputs and the public output. It verifies the manifest
+fresh-imports all three inputs and the archived combined output. It verifies the manifest
 hash, six roots, all geometry/material/texture records, 634,512 Frost triangles,
 147,250 Glide triangles, the full base/normal/metallic-roughness/transmission
 maps, and removal of the old Frost/Glide atlases. The 15 runtime textures are an
