@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { LevelDefinition, Vec3 } from '../contracts'
-import { crossesExitPortal, deriveExitPortalGeometry, EXIT_PORTAL_HEIGHT, } from './exit-portal'
+import { blockExitPortalCrossing, crossesExitPortal, deriveExitPortalGeometry, EXIT_PORTAL_HEIGHT, } from './exit-portal'
 
 type ExitDefinition = LevelDefinition['exit']
 
@@ -99,5 +99,58 @@ describe('exit portal geometry', () => {
     expect(
       crosses(eastExit, { x: 4.8, y: 0, z: 0.2 }, { x: 5.2, y: 0, z: 0.2 }),
     ).toBe(true)
+  })
+
+  it('returns a crossing body to its approach side without changing its arc', () => {
+    const geometry = deriveExitPortalGeometry(northExit)
+    const body = { height: 0.5, radius: 0.16 }
+
+    const northApproach = blockExitPortalCrossing(
+      { x: 0.1, y: 0.45, z: 2.7 },
+      { x: 0.12, y: 0.52, z: 2.3 },
+      geometry,
+      body,
+    )
+    expect(northApproach).toMatchObject({ x: 0.12, y: 0.52 })
+    expect(northApproach?.z).toBeCloseTo(geometry.center.z + body.radius)
+
+    const southApproach = blockExitPortalCrossing(
+      { x: -0.1, y: 0.3, z: 2.3 },
+      { x: -0.12, y: 0.4, z: 2.7 },
+      geometry,
+      body,
+    )
+    expect(southApproach).toMatchObject({ x: -0.12, y: 0.4 })
+    expect(southApproach?.z).toBeCloseTo(geometry.center.z - body.radius)
+  })
+
+  it('blocks a glancing overlap but not movement wholly outside the seal', () => {
+    const geometry = deriveExitPortalGeometry(northExit)
+    const body = { height: 0.5, radius: 0.16 }
+
+    expect(
+      blockExitPortalCrossing(
+        { x: 0, y: 0.2, z: 2.9 },
+        { x: 0, y: 0.2, z: 2.7 },
+        geometry,
+        body,
+      ),
+    ).toBeNull()
+    expect(
+      blockExitPortalCrossing(
+        { x: 0.6, y: 0.2, z: 2.7 },
+        { x: 0.6, y: 0.2, z: 2.3 },
+        geometry,
+        body,
+      ),
+    ).not.toBeNull()
+    expect(
+      blockExitPortalCrossing(
+        { x: 0.82, y: 0.2, z: 2.7 },
+        { x: 0.82, y: 0.2, z: 2.3 },
+        geometry,
+        body,
+      ),
+    ).toBeNull()
   })
 })

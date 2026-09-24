@@ -1,7 +1,7 @@
 // Cloudway platform rendering tests — authoritative snapshots select one batched visual state per platform.
 
 import type { Group as GroupType, InstancedMesh as InstancedMeshType, } from 'three'
-import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Raycaster, Vector3, } from 'three'
+import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, PerspectiveCamera, Raycaster, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { CLOUDWAY_GLASS_RIBBON } from '../content/cloudway-trial'
 import type { GameSnapshot, LevelDefinition, PlatformRuntimeSnapshot, } from '../contracts'
@@ -115,6 +115,17 @@ function instance(root: GroupType, name: string): InstancedMeshType {
   return mesh as InstancedMeshType
 }
 
+function cameraLookingAt(
+  position: { readonly x: number; readonly y: number; readonly z: number },
+  target: { readonly x: number; readonly y: number; readonly z: number },
+): PerspectiveCamera {
+  const camera = new PerspectiveCamera(48, 4 / 3, 0.05, 180)
+  camera.position.set(position.x, position.y, position.z)
+  camera.lookAt(target.x, target.y, target.z)
+  camera.updateMatrixWorld(true)
+  return camera
+}
+
 describe('Cloudway platform renderer', () => {
   it('declares one required logical bundle for the entire reusable family', () => {
     const plan = createMuseumAssetLoadPlan(CLOUDWAY_GLASS_RIBBON)
@@ -190,7 +201,9 @@ describe('Cloudway platform renderer', () => {
 
     const marble = instance(sceneRoot, 'cloudway-stable-Cloudway_Marble__Top')
     expect(marble.count).toBe(6)
-    renderer.cullForView({ x: 0, y: 0, z: 0 })
+    renderer.cullForView(
+      cameraLookingAt({ x: 0, y: 2, z: -4 }, { x: 0, y: 0, z: 8 }),
+    )
     expect(marble.count).toBe(3)
 
     const finale = CLOUDWAY_GLASS_RIBBON.platforms.find(
@@ -207,7 +220,11 @@ describe('Cloudway platform renderer', () => {
     sceneRoot.updateMatrixWorld(true)
     expect(raycaster.intersectObject(marble).length).toBe(0)
 
-    // The following frame restores all transforms before camera collision.
+    // A missing camera keeps the full cached set rather than guessing.
+    renderer.cullForView(undefined)
+    expect(marble.count).toBe(6)
+
+    // The following frame also restores all transforms before camera collision.
     renderer.update(current)
     sceneRoot.updateMatrixWorld(true)
     expect(marble.count).toBe(6)
@@ -253,9 +270,13 @@ describe('Cloudway platform renderer', () => {
       marbleRoot,
       'cloudway-stable-Cloudway_Marble__UndersideOrnament',
     )
-    marbleRenderer.cullForView({ x: 1, y: 0, z: 9 })
+    marbleRenderer.cullForView(
+      cameraLookingAt({ x: 1, y: 2, z: 9 }, { x: 1, y: 0, z: 29.5 }),
+    )
     expect(ornamentInstances.count).toBe(1)
-    marbleRenderer.cullForView({ x: 1, y: 0, z: 6 })
+    marbleRenderer.cullForView(
+      cameraLookingAt({ x: 1, y: 2, z: 6 }, { x: 1, y: 0, z: 0 }),
+    )
     expect(ornamentInstances.count).toBe(0)
 
     const glide = CLOUDWAY_GLASS_RIBBON.platforms.find(
@@ -285,8 +306,15 @@ describe('Cloudway platform renderer', () => {
       glideRoot,
       'cloudway-stable-Cloudway_Glide__Top',
     )
-    glideRenderer.cullForView({ x: 0.7, y: 0, z: 31.5 })
+    const matrix = new Matrix4()
+    const position = new Vector3()
+    glideRenderer.cullForView(
+      cameraLookingAt({ x: 0.7, y: 2, z: 31.5 }, { x: 0.7, y: 0, z: 15.65 }),
+    )
     expect(glideInstances.count).toBe(1)
+    glideInstances.getMatrixAt(0, matrix)
+    position.setFromMatrixPosition(matrix)
+    expect(position.z).toBeCloseTo(15.65)
 
     disposeObject(marbleRoot, library.materials)
     disposeObject(glideRoot, library.materials)
@@ -390,6 +418,14 @@ describe('Cloudway platform renderer', () => {
     released.getMatrixAt(0, matrix)
     position.setFromMatrixPosition(matrix)
     expect(position.y).toBeLessThan(-0.4)
+    const releasedY = position.y
+    renderer.cullForView(
+      cameraLookingAt({ x: 1, y: 2, z: 19 }, { x: 1, y: 0, z: 27.15 }),
+    )
+    expect(released.count).toBe(1)
+    released.getMatrixAt(0, matrix)
+    position.setFromMatrixPosition(matrix)
+    expect(position.y).toBeCloseTo(releasedY)
 
     renderer.update(
       snapshot(

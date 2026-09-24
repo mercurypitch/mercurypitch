@@ -443,6 +443,12 @@ export interface GameSnapshot {
   paused: boolean
   checkpointId: string
   nearbyBreakableId: string | null
+  /** Current required encounter whose own prerequisites are complete. */
+  nextRequiredBreakableId?: string | null
+  /** Nearby encounter that cannot start until its prerequisites are complete. */
+  nearbyLockedBreakableId?: string | null
+  /** The player is approaching an exit whose required encounters remain. */
+  nearLockedExit?: boolean
   elapsedSeconds: number
   complete: boolean
   rewardSummary?: LevelRewardSummary

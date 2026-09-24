@@ -173,11 +173,10 @@ function visit(audition: CloudwayLayoutAudition, dt: number): Driver {
   for (const waypoint of audition.route.waypoints.slice(7))
     run.moveTo(waypoint, waypoint.platformId)
   run.sing(CLOUDWAY_ENCOUNTER_IDS.finale)
-  const exit = audition.level.exit
-  run.moveTo({
-    x: (exit.minX + exit.maxX) / 2,
-    z: exit.maxZ + 0.2,
-  })
+  // The visible portrait plinth remains physical after the glazing opens.
+  // One ordinary forward jump clears it on the way through the exit.
+  for (let frame = 0; frame < 240 && !run.game.snapshot().complete; frame++)
+    run.step(0, 1, frame === 0)
   return run
 }
 
@@ -272,6 +271,36 @@ describe('Cloudway route-shape auditions', () => {
         expect(safe.has(support!.id), encounter.id).toBe(true)
         expect(support!.behavior, encounter.id).toBeUndefined()
       }
+    }
+  })
+
+  it('keeps exhibit collision aligned when a layout shifts its rest islands', () => {
+    for (const audition of Object.values(CLOUDWAY_LAYOUT_AUDITIONS)) {
+      for (const encounter of audition.level.breakables) {
+        const plinth = audition.level.solids?.find(
+          (solid) => solid.id === `plinth:${encounter.id}`,
+        )
+        expect(plinth, `${audition.id}:${encounter.id}`).toMatchObject({
+          kind: 'prop',
+          shape: 'cylinder',
+          x: encounter.position.x,
+          z: encounter.position.z,
+        })
+      }
+      const portrait = audition.level.breakables.find(
+        (item) => item.id === CLOUDWAY_ENCOUNTER_IDS.finale,
+      )!
+      const portraitSolid = audition.level.solids?.find(
+        (solid) => solid.id === `intact:${portrait.id}`,
+      )
+      expect(portraitSolid, audition.id).toMatchObject({
+        kind: 'prop',
+        shape: 'box',
+        minX: portrait.position.x - 0.2912,
+        maxX: portrait.position.x + 0.2912,
+        minZ: portrait.position.z - 0.0504,
+        maxZ: portrait.position.z + 0.0504,
+      })
     }
   })
 

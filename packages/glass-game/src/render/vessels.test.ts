@@ -1,6 +1,6 @@
 // Adventure vessel regressions — persistent artwork survives its breakable glazing.
 
-import type { Group, Mesh } from 'three'
+import type { Group, Mesh, MeshPhysicalMaterial } from 'three'
 import { Texture } from 'three'
 import { describe, expect, it } from 'vitest'
 import { GLASSWORKS_JOURNEY } from '../content/glassworks-journey'
@@ -9,6 +9,42 @@ import { getBreakableRenderRecipe } from './catalog'
 import { createVessel } from './vessels'
 
 describe('persistent glazed artwork', () => {
+  it('uses plane texture orientation only for the separate artwork plane', () => {
+    const target = GLASSWORKS_JOURNEY.breakables.find((item) =>
+      item.id.endsWith('/archive/encounter/archive-glazing'),
+    )!
+    const planeTexture = new Texture()
+    planeTexture.flipY = false
+    const planeVersion = planeTexture.version
+    const glazedVessel = createVessel(target, false)
+
+    glazedVessel.setPortrait(planeTexture)
+
+    const art = glazedVessel.root.getObjectByName(
+      `persistent-portrait-${target.id}`,
+    ) as Mesh
+    expect((art.material as MeshPhysicalMaterial).map).toBe(planeTexture)
+    expect(planeTexture.flipY).toBe(true)
+    expect(planeTexture.version).toBe(planeVersion + 1)
+    glazedVessel.dispose()
+
+    const shardTexture = new Texture()
+    shardTexture.flipY = false
+    const shardVersion = shardTexture.version
+    const shardTarget = {
+      ...target,
+      id: `${target.id}-portrait-shards`,
+      variant: 'portrait',
+    }
+    const shardVessel = createVessel(shardTarget, false)
+
+    shardVessel.setPortrait(shardTexture)
+
+    expect(shardTexture.flipY).toBe(false)
+    expect(shardTexture.version).toBe(shardVersion)
+    shardVessel.dispose()
+  })
+
   it('fractures the glazing while preserving the authored image plane and frame contract', () => {
     const target = GLASSWORKS_JOURNEY.breakables.find((item) =>
       item.id.endsWith('/archive/encounter/archive-glazing'),

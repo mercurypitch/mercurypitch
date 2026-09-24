@@ -4,6 +4,7 @@
 
 import type { BufferGeometry, Material, Texture } from 'three'
 import { BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, Vector2, Vector3, } from 'three'
+import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, PORTRAIT_EXHIBIT_ENVELOPE, } from '../content/solid-props'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
 import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
@@ -29,8 +30,15 @@ export function createVesselGeometry(variant: string): BufferGeometry {
   const recipe = getBreakableRenderRecipe(variant)
   const shape = recipe.fallbackShape
   if (shape === 'slab') {
-    const geometry = new BoxGeometry(0.52, 0.75, 0.09, 6, 8, 1)
-    geometry.translate(0, 0.375, 0)
+    const geometry = new BoxGeometry(
+      PORTRAIT_EXHIBIT_ENVELOPE.width,
+      PORTRAIT_EXHIBIT_ENVELOPE.height,
+      PORTRAIT_EXHIBIT_ENVELOPE.depth,
+      6,
+      8,
+      1,
+    )
+    geometry.translate(0, PORTRAIT_EXHIBIT_ENVELOPE.height / 2, 0)
     return fitDisplayHeight(geometry, recipe.displayHeight)
   }
   const profile =
@@ -113,7 +121,7 @@ export function createVessel(
   const materialLibrary = createMaterialLibrary()
   root.name = `vessel-${target.id}`
   root.position.copy(target.position)
-  root.position.y += target.mount?.height ?? 0.255
+  root.position.y += target.mount?.height ?? DEFAULT_EXHIBIT_MOUNT_HEIGHT
   if (target.mount !== undefined) root.rotation.y = target.mount.facingYaw
   if (recipe.faceAnchor === true)
     root.rotation.y = Math.atan2(
@@ -290,6 +298,12 @@ export function createVessel(
       install(geometry, authoredPieces)
     },
     setPortrait(texture: Texture) {
+      // Loaded portraits use the glTF texture convention. The separate artwork
+      // is a native PlaneGeometry, whose UVs need the regular vertical upload.
+      if (persistentPortrait !== undefined && !texture.flipY) {
+        texture.flipY = true
+        texture.needsUpdate = true
+      }
       portrait.map = texture
       portrait.needsUpdate = true
       if (persistentPortrait !== undefined) persistentPortrait.visible = true

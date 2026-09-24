@@ -1,6 +1,6 @@
 // Resonance portal — a bounds-fitted brass and iridescent veil with a bounded finish flourish.
 
-import { AdditiveBlending, CircleGeometry, DoubleSide, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, TorusGeometry, Vector3, } from 'three'
+import { AdditiveBlending, CircleGeometry, Color, DoubleSide, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, TorusGeometry, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { deriveExitPortalGeometry } from '../core/exit-portal'
 import type { MuseumMaterials } from './materials'
@@ -8,6 +8,7 @@ import type { MuseumMaterials } from './materials'
 const SPARKLE_COUNT = 20
 const RIM_FLOOR_CLEARANCE = 0.08
 const OUTER_RIM_RADIUS = 0.526
+const SEAL_OPEN_SECONDS = 0.6
 export const EXIT_CELEBRATION_SECONDS = 1.2
 export const EXIT_REDUCED_CELEBRATION_SECONDS = 0.24
 
@@ -72,7 +73,7 @@ export function createResonancePortal(
     emissive: 0x1d7b78,
     emissiveIntensity: 0.12,
     metalness: 0,
-    roughness: 0.08,
+    roughness: 0.7,
     ior: 1.28,
     iridescence: 1,
     iridescenceIOR: 1.45,
@@ -80,7 +81,7 @@ export function createResonancePortal(
     clearcoat: 1,
     envMapIntensity: 1.4,
     transparent: true,
-    opacity: 0.06,
+    opacity: 0.68,
     depthWrite: false,
     side: DoubleSide,
   })
@@ -89,6 +90,43 @@ export function createResonancePortal(
   veil.name = 'resonance-veil-surface'
   veil.scale.set(geometry.width, geometry.height, 1)
   face.add(veil)
+
+  // A frosted face closes the aperture; each gold seal belongs to a required
+  // exhibit. These share one small geometry/material, with no transmission pass.
+  const sealMaterial = new MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 1,
+    depthWrite: false,
+    side: DoubleSide,
+  })
+  sealMaterial.forceSinglePass = true
+  const seals = new InstancedMesh(
+    new CircleGeometry(0.048, 4),
+    sealMaterial,
+    exit.requiresCompleted.length,
+  )
+  seals.name = 'resonance-veil-seals'
+  const sealedColor = new Color(0x916f35)
+  const completedColor = new Color(0xffedb9)
+  const frostedColor = new Color(0x9bbdb8)
+  const openColor = veilMaterial.color.clone()
+  const sealStates: boolean[] = []
+  const sealMatrix = new Matrix4()
+  const sealSpacing = Math.min(
+    0.18,
+    (geometry.width * 0.65) / Math.max(1, seals.count),
+  )
+  for (let index = 0; index < seals.count; index++) {
+    sealMatrix.makeTranslation(
+      (index - (seals.count - 1) / 2) * sealSpacing,
+      geometry.height * 0.24,
+      0.012,
+    )
+    seals.setMatrixAt(index, sealMatrix)
+    seals.setColorAt(index, sealedColor)
+  }
+  face.add(seals)
 
   const sparkleMaterial = new MeshBasicMaterial({
     color: 0xffefbd,
@@ -126,6 +164,8 @@ export function createResonancePortal(
   root.add(sparkles)
 
   let previousComplete: boolean | undefined
+  let previousReady: boolean | undefined
+  let sealOpening = 0
   let celebrationSeconds = Number.POSITIVE_INFINITY
   let completionDelivered = false
 
@@ -135,6 +175,29 @@ export function createResonancePortal(
       const ready = exit.requiresCompleted.every((id) =>
         snapshot.completedBreakableIds.includes(id),
       )
+      sealOpening = !ready
+        ? 0
+        : previousReady === undefined || reducedMotion
+          ? 1
+          : Math.min(1, sealOpening + Math.max(0, delta) / SEAL_OPEN_SECONDS)
+      previousReady = ready
+      const openAmount = smoothstep(sealOpening)
+      seals.visible = seals.count > 0 && openAmount < 1
+      sealMaterial.opacity = 1 - openAmount
+      if (seals.visible) {
+        for (let index = 0; index < seals.count; index++) {
+          const complete = snapshot.completedBreakableIds.includes(
+            exit.requiresCompleted[index]!,
+          )
+          if (sealStates[index] === complete) continue
+          sealStates[index] = complete
+          seals.setColorAt(index, complete ? completedColor : sealedColor)
+          if (seals.instanceColor !== null)
+            seals.instanceColor.needsUpdate = true
+        }
+      }
+      veilMaterial.color.copy(frostedColor).lerp(openColor, openAmount)
+      veilMaterial.roughness = 0.7 + (0.08 - 0.7) * openAmount
       if (previousComplete === undefined && snapshot.complete)
         completionDelivered = true
       else if (previousComplete === false && snapshot.complete) {
@@ -154,7 +217,7 @@ export function createResonancePortal(
         )
       const progress = celebrating ? celebrationSeconds / duration : 1
 
-      const baseOpacity = ready ? 0.34 : 0.06
+      const baseOpacity = 0.68 + (0.34 - 0.68) * openAmount
       const pulse =
         ready && !reducedMotion && !snapshot.complete
           ? 1 + Math.sin(snapshot.elapsedSeconds * 2.4) * 0.014

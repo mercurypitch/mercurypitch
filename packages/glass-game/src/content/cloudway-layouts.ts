@@ -1,7 +1,7 @@
 // Cloudway layout auditions — isolated crescent, ribbon and terrace routes built from one proven trial envelope.
 
 import type { CheckpointDefinition, IntentionalGapDefinition, LevelDefinition, PlatformDefinition, RoomDecorationInstanceDefinition, SolidPropDefinition, } from '../contracts'
-import { CLOUDWAY_ENCOUNTER_IDS, CLOUDWAY_GLASS_RIBBON, CLOUDWAY_PLATFORM_IDS, } from './cloudway-trial'
+import { CLOUDWAY_ENCOUNTER_IDS, CLOUDWAY_GLASS_RIBBON, CLOUDWAY_PLATFORM_IDS,cloudwayExhibitSolids,  } from './cloudway-trial'
 
 export type CloudwayLayoutId = 'crescent' | 'ribbon' | 'terrace'
 
@@ -428,6 +428,25 @@ function buildCloudwayLayout(
   )
   const spawnDx = spec.centers.arrival
   const finaleDx = spec.centers.finale - 1
+  const breakables = CLOUDWAY_GLASS_RIBBON.breakables.map((breakable) => {
+    const key = ENCOUNTER_PLATFORM[breakable.id]
+    if (key === undefined)
+      throw new Error(`Unknown Cloudway encounter "${breakable.id}".`)
+    const base = CLOUDWAY_GLASS_RIBBON.platforms.find(
+      (platform) => platform.id === CLOUDWAY_PLATFORM_IDS[key],
+    )!
+    const dx = spec.centers[key] - (base.minX + base.maxX) / 2
+    return {
+      ...breakable,
+      position: { ...breakable.position, x: breakable.position.x + dx },
+      anchor: { ...breakable.anchor, x: breakable.anchor.x + dx },
+    }
+  })
+  const baseExhibitSolidIds = new Set(
+    cloudwayExhibitSolids(CLOUDWAY_GLASS_RIBBON.breakables).map(
+      (solid) => solid.id,
+    ),
+  )
 
   return {
     ...CLOUDWAY_GLASS_RIBBON,
@@ -452,7 +471,10 @@ function buildCloudwayLayout(
     },
     platforms,
     solids: [
-      ...(CLOUDWAY_GLASS_RIBBON.solids ?? []),
+      ...(CLOUDWAY_GLASS_RIBBON.solids ?? []).filter(
+        (solid) => !baseExhibitSolidIds.has(solid.id),
+      ),
+      ...cloudwayExhibitSolids(breakables),
       landmark,
       ...planters.map((item) => item.solid),
     ],
@@ -460,20 +482,7 @@ function buildCloudwayLayout(
       shiftedGap(gap, platformByKey),
     ),
     checkpoints,
-    breakables: CLOUDWAY_GLASS_RIBBON.breakables.map((breakable) => {
-      const key = ENCOUNTER_PLATFORM[breakable.id]
-      if (key === undefined)
-        throw new Error(`Unknown Cloudway encounter "${breakable.id}".`)
-      const base = CLOUDWAY_GLASS_RIBBON.platforms.find(
-        (platform) => platform.id === CLOUDWAY_PLATFORM_IDS[key],
-      )!
-      const dx = spec.centers[key] - (base.minX + base.maxX) / 2
-      return {
-        ...breakable,
-        position: { ...breakable.position, x: breakable.position.x + dx },
-        anchor: { ...breakable.anchor, x: breakable.anchor.x + dx },
-      }
-    }),
+    breakables,
     exit: {
       ...CLOUDWAY_GLASS_RIBBON.exit,
       minX: CLOUDWAY_GLASS_RIBBON.exit.minX + finaleDx,
