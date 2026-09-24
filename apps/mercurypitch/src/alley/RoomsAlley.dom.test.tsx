@@ -18,10 +18,13 @@ vi.mock('../shell/shell-navigation', async (importOriginal) => ({
 
 class FakeResizeObserver {
   static last: FakeResizeObserver | null = null
+  readonly observed: Element[] = []
   constructor(readonly callback: ResizeObserverCallback) {
     FakeResizeObserver.last = this
   }
-  observe(): void {}
+  observe(target: Element): void {
+    this.observed.push(target)
+  }
   disconnect(): void {}
 }
 
@@ -190,6 +193,36 @@ describe('a resize', () => {
     expect(el('alley-clip')).toBe(clip)
     expect(clip.isConnected).toBe(true)
     expect(el('rooms-alley').dataset.phase).toBe('alive')
+  })
+})
+
+describe('the dock', () => {
+  it('is watched, and its top is the floor of the band on a screen on its side', async () => {
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    let dockTop = 321
+    const dock = document.createElement('nav')
+    dock.className = 'mp-dock'
+    dock.getBoundingClientRect = () =>
+      ({ top: dockTop, bottom: 393, left: 0, right: 852 }) as DOMRect
+    document.body.appendChild(dock)
+
+    const { el } = await mountAlley()
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+    expect(observer.observed).toContain(dock)
+    const bottom = (): number => {
+      const key = el('alley-door-guitar')
+      return (
+        Number.parseFloat(key.style.top) + Number.parseFloat(key.style.height)
+      )
+    }
+    expect(bottom()).toBeLessThanOrEqual(321)
+
+    // The accessory slot grows: the dock's top rises, and the doors with it.
+    dockTop = 250
+    observer.callback([], observer as unknown as ResizeObserver)
+    expect(bottom()).toBeLessThanOrEqual(250)
   })
 })
 

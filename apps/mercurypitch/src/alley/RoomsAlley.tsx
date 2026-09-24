@@ -366,6 +366,10 @@ export const RoomsAlley: Component = () => {
     if (root !== undefined) observer.observe(root)
     // Border box: the safe area is padding, and the content box ignores it.
     if (top !== undefined) observer.observe(top, { box: 'border-box' })
+    // And the dock, whose top is the landscape band's floor: its safe-bottom
+    // padding and its accessory slot move that top without resizing us.
+    const dock = document.querySelector('.mp-dock')
+    if (dock !== null) observer.observe(dock, { box: 'border-box' })
     onCleanup(() => observer.disconnect())
 
     // Back from a room: the door it opened settles into place.
