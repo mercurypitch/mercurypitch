@@ -20,12 +20,22 @@ const MANIFEST = JSON.parse(
     'utf8',
   ),
 ) as {
-  bundle: { bytes: number; sha256: string }
+  bundle: {
+    bytes: number
+    sha256: string
+    dependencies: readonly {
+      file: string
+      bytes: number
+      sha256: string
+    }[]
+  }
 }
-const KIT_URL = '/games/cloudway-v7/cloudway-platform-kit-v7.glb'
+const KIT_URL = '/games/cloudway-v7/cloudway-platform-kit-v7.gltf'
 const CRESCENT = CLOUDWAY_LAYOUT_AUDITIONS.crescent
 const COMPARISON_KIT = process.env.CLOUDWAY_V7_COMPARISON_KIT
 const RENDER_PROOF = process.env.CLOUDWAY_V7_RENDER_PROOF === '1'
+const RENDER_CLOCK_START = Date.UTC(2026, 8, 24, 12)
+const RENDER_CLOCK_CAPTURE = RENDER_CLOCK_START + 3_600_000
 
 test('the real renderer submits only near V7/V6 platforms and crosses the first recovery @smoke', async ({
   page,
@@ -45,6 +55,18 @@ test('the real renderer submits only near V7/V6 platforms and crosses the first 
   expect(createHash('sha256').update(publicBytes).digest('hex')).toBe(
     MANIFEST.bundle.sha256,
   )
+  for (const dependency of MANIFEST.bundle.dependencies) {
+    const publicDependency = await request.get(
+      `/games/cloudway-v7/${dependency.file}`,
+    )
+    expect(publicDependency.status()).toBe(200)
+    const dependencyBytes = await publicDependency.body()
+    expect(dependencyBytes.byteLength).toBe(dependency.bytes)
+    expect(dependencyBytes.byteLength).toBeLessThanOrEqual(25 * 1024 * 1024)
+    expect(createHash('sha256').update(dependencyBytes).digest('hex')).toBe(
+      dependency.sha256,
+    )
+  }
   const kitResponse = page.waitForResponse((response) =>
     response.url().endsWith(KIT_URL),
   )
@@ -210,7 +232,7 @@ test('renders the 1K Marble at the overview and closest supported zoom', async (
     if (message.type() === 'error') errors.push(message.text())
   })
   await installVisit(page, { realRendering: RENDER_PROOF })
-  await page.clock.install()
+  await page.clock.install({ time: RENDER_CLOCK_START })
   const response = await page.goto('/glass-game/?layout=cloudway-current', {
     waitUntil: 'domcontentloaded',
   })
@@ -225,7 +247,7 @@ test('renders the 1K Marble at the overview and closest supported zoom', async (
   )
   const skipTutorial = page.getByRole('button', { name: 'Skip tutorial' })
   if (await skipTutorial.isVisible()) await skipTutorial.click()
-  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
+  await page.clock.pauseAt(RENDER_CLOCK_CAPTURE)
   await captureInstancedFrame(page)
   await page.screenshot({
     path: testInfo.outputPath('cloudway-v7-route-overview.png'),
@@ -249,14 +271,15 @@ test('renders the 1K Marble at the overview and closest supported zoom', async (
   expect(errors).toEqual([])
 })
 
-test('captures the source-equivalent 2K Marble at the same gameplay cameras', async ({
+test('captures a comparison kit at the same gameplay cameras', async ({
   page,
 }, testInfo) => {
   test.skip(
     COMPARISON_KIT === undefined,
-    'Set CLOUDWAY_V7_COMPARISON_KIT for the one-off 1K/2K visual proof.',
+    'Set CLOUDWAY_V7_COMPARISON_KIT to an accepted GLB for the one-off equal-camera proof.',
   )
   if (COMPARISON_KIT === undefined) return
+  expect(COMPARISON_KIT).toMatch(/\.glb(?:$|\?)/u)
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => {
@@ -264,7 +287,10 @@ test('captures the source-equivalent 2K Marble at the same gameplay cameras', as
   })
   await installVisit(page)
   await page.route(`**${KIT_URL}`, (route) => {
-    if (COMPARISON_KIT.startsWith('/'))
+    if (
+      COMPARISON_KIT.startsWith('/games/') ||
+      /^https?:\/\//u.test(COMPARISON_KIT)
+    )
       return route.continue({
         url: new URL(COMPARISON_KIT, route.request().url()).href,
       })
@@ -273,7 +299,7 @@ test('captures the source-equivalent 2K Marble at the same gameplay cameras', as
       contentType: 'model/gltf-binary',
     })
   })
-  await page.clock.install()
+  await page.clock.install({ time: RENDER_CLOCK_START })
   const response = await page.goto('/glass-game/?layout=cloudway-crescent', {
     waitUntil: 'domcontentloaded',
   })
@@ -285,10 +311,10 @@ test('captures the source-equivalent 2K Marble at the same gameplay cameras', as
   )
   const skipTutorial = page.getByRole('button', { name: 'Skip tutorial' })
   if (await skipTutorial.isVisible()) await skipTutorial.click()
-  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 3_600_000)
+  await page.clock.pauseAt(RENDER_CLOCK_CAPTURE)
   await captureInstancedFrame(page)
   await page.screenshot({
-    path: testInfo.outputPath('cloudway-v7-2k-route-overview.png'),
+    path: testInfo.outputPath('cloudway-v7-comparison-route-overview.png'),
   })
   const viewport = page.getByLabel('Glass museum; drag to look around')
   const bounds = await viewport.boundingBox()
@@ -303,7 +329,7 @@ test('captures the source-equivalent 2K Marble at the same gameplay cameras', as
   await restoreRasterOutput(page)
   await captureInstancedFrame(page)
   await page.screenshot({
-    path: testInfo.outputPath('cloudway-v7-2k-arrival-zoomed-in.png'),
+    path: testInfo.outputPath('cloudway-v7-comparison-arrival-zoomed-in.png'),
   })
   expect(errors).toEqual([])
 })

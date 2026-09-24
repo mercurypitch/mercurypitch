@@ -153,10 +153,12 @@ decoded indexed geometry plus 64 MiB for three mipped 2K textures. Its 94.47 MiB
 decoded estimate is useful for source-quality review, but it is not the current
 combined runtime file.
 
-The accepted runtime file is
-`apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.glb`, SHA-256
+The accepted self-contained runtime master is archived at
+`art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb`, SHA-256
 `0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9`.
-It is a 77,414,948-byte (73.83 MiB) combined kit. Marble retains the accepted
+It is a 77,414,948-byte (73.83 MiB) combined kit. Web and native delivery now use
+a standard `.gltf` document plus four external buffers below 24 MiB per file,
+preserving all accepted buffer-view bytes; see the V7 runtime delivery receipt. Marble retains the accepted
 1,256,556-triangle geometry and geometry hash while its base, normal, and ORM
 maps are 1K. Across every family, the kit contains 2,041,018 unique triangles,
 49.24 MiB of decoded indexed geometry, and 218,103,788 bytes (208.00 MiB) of

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { fileFingerprint, stageCandidateForAtomicPromotion, verifyAcceptedFile, } from './runtime_build_guards.mjs'
+import { fileFingerprint, stageCandidateForAtomicPromotion, verifyAcceptedFile, verifyAcceptedFileIfPresent, } from './runtime_build_guards.mjs'
 
 test('input drift is rejected by its immutable receipt', async (context) => {
   const directory = await mkdtemp(join(tmpdir(), 'cloudway-v7-input-drift-'))
@@ -80,4 +80,30 @@ test('an already accepted target is not rewritten', async (context) => {
   assert.equal(staged, null)
   assert.equal(after.ino, before.ino)
   assert.equal(after.mtimeMs, before.mtimeMs)
+})
+
+test('an obsolete public artifact must match its receipt before removal', async (context) => {
+  const directory = await mkdtemp(join(tmpdir(), 'cloudway-v7-obsolete-'))
+  context.after(async () => {
+    const { rm } = await import('node:fs/promises')
+    await rm(directory, { recursive: true, force: true })
+  })
+  const obsolete = join(directory, 'cloudway-platform-kit-v7.glb')
+  await writeFile(obsolete, 'accepted runtime')
+  const accepted = await fileFingerprint(obsolete)
+  await writeFile(obsolete, 'unreviewed replacement')
+
+  await assert.rejects(
+    verifyAcceptedFileIfPresent(obsolete, accepted, 'obsolete public V7 GLB'),
+    /Accepted obsolete public V7 GLB changed/,
+  )
+  assert.equal(await readFile(obsolete, 'utf8'), 'unreviewed replacement')
+  assert.equal(
+    await verifyAcceptedFileIfPresent(
+      join(directory, 'missing.glb'),
+      accepted,
+      'missing obsolete public V7 GLB',
+    ),
+    false,
+  )
 })

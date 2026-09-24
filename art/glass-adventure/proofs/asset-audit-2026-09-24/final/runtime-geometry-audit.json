@@ -3,6 +3,9 @@
   "assets": [
     {
       "file": "apps/beside-cue/public/games/adventure-v2/garden-kit.glb",
+      "bytes": 813920,
+      "sha256": "64e7e44d4d6fe7ffa743f5fdc5eda4dcb5be7fa6b65945a3c0a1af3c95366685",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -82,6 +85,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v2/platform-kit.glb",
+      "bytes": 3622720,
+      "sha256": "61fce0a0b314e0e8aff649ea07dcfc070d56e053a9d7096fbc94bca8802ccf28",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -497,6 +503,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v2/vessels-qa-v2.glb",
+      "bytes": 3378428,
+      "sha256": "6b04ecf14ef27b8610d3ee7e37980bb6cda0d0427ce89fc7d691a9827c936393",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -2532,6 +2541,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v3/aurora-coupe-qa-v2.glb",
+      "bytes": 7213496,
+      "sha256": "2df31a3d30ccd43d10fbb2e77dd03ef4743f7dc0644397a6a6fdd2317f7b075f",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -3331,6 +3343,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v3/cut-crystal-decanter-qa-v2.glb",
+      "bytes": 8259824,
+      "sha256": "3681f6707c08bec07eb555c6865aac4f15dc6dd30ee3c3adb1aeb3f98e4de07b",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -4022,6 +4037,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v3/fluted-carafe-qa-v2.glb",
+      "bytes": 9117212,
+      "sha256": "8e02ae9eb0ce64a7af5f2943ba3f13f1591e16afa2fc40abf58c4c150d6d9b8d",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -4725,6 +4743,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v3/garden-arcade.glb",
+      "bytes": 6829416,
+      "sha256": "72714424b213c2d4d9c094f9b55f5257f7ee18163f7bcbd096f4066d1c872885",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -4744,6 +4765,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v3/gilded-column.glb",
+      "bytes": 6031316,
+      "sha256": "74bb7303370adfe98f44471dbf0741005c5f9dbc863c9e959c69c80f78a1c946",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -4763,6 +4787,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v3/moon-amphora-qa-v2.glb",
+      "bytes": 11456580,
+      "sha256": "d940811b0981b3b3822e15baaf8c484cfa7ea1748f5b1db5aa6f3744460668fc",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -5538,6 +5565,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v3/observatory-canopy.glb",
+      "bytes": 7545096,
+      "sha256": "472d85c84d8444cd2a2eb6c9bc16e62d5a4df03b84dd4a230243cc14b60ad92b",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -5557,6 +5587,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v4/museum-screen-bay.glb",
+      "bytes": 4686268,
+      "sha256": "486c5debde3f9d8d36ca97b6e6a82fd72836cfe28d72e04d291d263cf33d122f",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -5576,6 +5609,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v4/museum-window-bay.glb",
+      "bytes": 5047156,
+      "sha256": "cb3da19d36c5869fb22341b465eb26e2c1b5119ede7e9348c55aa41a126bdd69",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -5595,6 +5631,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v5/museum-decor.glb",
+      "bytes": 9240644,
+      "sha256": "998d3026a7393cab3bae36c7e1d8ef9b13ea586230713e0089ba81f29068540a",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -5638,6 +5677,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v6/amber-cadence-urn-qa-v2.glb",
+      "bytes": 3741768,
+      "sha256": "fc416cb997b38a3fe66b8c975effad535628ad0614609321ff9348073a486209",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -6221,6 +6263,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v6/celadon-lark-decanter-fracture-v4.glb",
+      "bytes": 5820204,
+      "sha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -6888,6 +6933,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v6/opaline-echo-amphora-qa-v2.glb",
+      "bytes": 3814404,
+      "sha256": "b8a06ba8111db685e5e68a71ce75d2e903257e68c5fbb5672e917266298d7766",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -7543,6 +7591,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure-v6/twin-tone-resonance-harp.glb",
+      "bytes": 2810588,
+      "sha256": "43805c83bd0f54937cb2b709b66d3c03fbf245fbcdb377e92c29a035df96d438",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -7562,6 +7613,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure/legend-slab.glb",
+      "bytes": 709632,
+      "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -8037,6 +8091,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure/platform-kit-qa-v2.glb",
+      "bytes": 944596,
+      "sha256": "66f8f57a2d1f13b5f83af186745f3972950ca6c42302cc6274d0d21a1ffbe149",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -8440,6 +8497,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/adventure/vessels.glb",
+      "bytes": 442928,
+      "sha256": "ab521342177578aeb8aa13932ded620790203946f1c32d6f267bb094a4077f71",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -9094,7 +9154,39 @@
       "flags": []
     },
     {
-      "file": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.glb",
+      "file": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf",
+      "bytes": 60583,
+      "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1",
+      "dependencies": [
+        {
+          "buffer": 0,
+          "uri": "cloudway-platform-kit-v7-part-01.bin",
+          "file": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-01.bin",
+          "bytes": 24483552,
+          "sha256": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9"
+        },
+        {
+          "buffer": 1,
+          "uri": "cloudway-platform-kit-v7-part-02.bin",
+          "file": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-02.bin",
+          "bytes": 11976384,
+          "sha256": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96"
+        },
+        {
+          "buffer": 2,
+          "uri": "cloudway-platform-kit-v7-part-03.bin",
+          "file": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-03.bin",
+          "bytes": 23520812,
+          "sha256": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe"
+        },
+        {
+          "buffer": 3,
+          "uri": "cloudway-platform-kit-v7-part-04.bin",
+          "file": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-04.bin",
+          "bytes": 17393098,
+          "sha256": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065"
+        }
+      ],
       "primitives": [
         {
           "mesh": 0,
@@ -9510,6 +9602,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+      "bytes": 431512,
+      "sha256": "33a307d6b701f81b0c0cbcebdc808e1f245de9ef920e0e3b0a4a7616f1c13e16",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -9565,6 +9660,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+      "bytes": 6831200,
+      "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -9764,6 +9862,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/journey-map-v10/floating-museum-botanical-kit-v10.glb",
+      "bytes": 25596100,
+      "sha256": "bac1a83183a86397d1c46e1cc1cda1802d664739edfdfbe326eddbcfbd75498f",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,
@@ -9856,6 +9957,9 @@
     },
     {
       "file": "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+      "bytes": 25448308,
+      "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615",
+      "dependencies": [],
       "primitives": [
         {
           "mesh": 0,

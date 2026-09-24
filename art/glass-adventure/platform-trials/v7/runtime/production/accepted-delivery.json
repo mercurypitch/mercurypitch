@@ -1,0 +1,432 @@
+{
+  "schema": 1,
+  "decision": "Accepted byte-preserving external-buffer delivery. Production packaging verifies this receipt and never updates it.",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb",
+    "bytes": 77414948,
+    "sha256": "0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9"
+  },
+  "limitBytes": 25165824,
+  "bufferViewCount": 49,
+  "bufferViewBytes": 77373828,
+  "bufferViews": [
+    {
+      "index": 15,
+      "sourceOffset": 0,
+      "part": 0,
+      "partOffset": 0,
+      "bytes": 24429768,
+      "sha256": "c1cf177f8716231a59b0dc700869fb8f9ead33ec11aa4ed957bfd0fcb05d872e"
+    },
+    {
+      "index": 16,
+      "sourceOffset": 24429768,
+      "part": 0,
+      "partOffset": 24429768,
+      "bytes": 10368,
+      "sha256": "f9f7583ab8f9246bef8e55a2938da3a05623a04363ca205d5d7ace3f804da704"
+    },
+    {
+      "index": 17,
+      "sourceOffset": 24440136,
+      "part": 0,
+      "partOffset": 24440136,
+      "bytes": 36432,
+      "sha256": "0090be8ca9ee967597e756efa7e888c3f0f78aa8acf9b373cf1b44e6fb262c74"
+    },
+    {
+      "index": 18,
+      "sourceOffset": 24476568,
+      "part": 0,
+      "partOffset": 24476568,
+      "bytes": 720,
+      "sha256": "b190ea50222c1eec3c5f6549ba9d5d64dd127ccb1eb39818ea6a1393221a8182"
+    },
+    {
+      "index": 19,
+      "sourceOffset": 24477288,
+      "part": 0,
+      "partOffset": 24477288,
+      "bytes": 720,
+      "sha256": "a9c5c443c08b75e569b50f30d5a8a3ed61d9ebae28c886f9fb04adf03cdf7d39"
+    },
+    {
+      "index": 20,
+      "sourceOffset": 24478008,
+      "part": 0,
+      "partOffset": 24478008,
+      "bytes": 720,
+      "sha256": "c8f0defe4cf83943ae94cb2647fafabf05f28ca3ae54eee80ffd994999555511"
+    },
+    {
+      "index": 21,
+      "sourceOffset": 24478728,
+      "part": 0,
+      "partOffset": 24478728,
+      "bytes": 720,
+      "sha256": "d90246648df6a6cf3b36caa3dc347894ba0165d235a41aaf71ae22ad5ce72bf9"
+    },
+    {
+      "index": 22,
+      "sourceOffset": 24479448,
+      "part": 0,
+      "partOffset": 24479448,
+      "bytes": 720,
+      "sha256": "b30ec3d287fb89dd877597965075ae7e1c6f285c06eb92518d16cf91269aebfe"
+    },
+    {
+      "index": 23,
+      "sourceOffset": 24480168,
+      "part": 0,
+      "partOffset": 24480168,
+      "bytes": 720,
+      "sha256": "8e010294c9e2a58d9b9dffc20d80bab320decd57dd6a71c75dfcb964ba4ef5ab"
+    },
+    {
+      "index": 24,
+      "sourceOffset": 24480888,
+      "part": 0,
+      "partOffset": 24480888,
+      "bytes": 2664,
+      "sha256": "5eb1b29a55b0ef3ef0b4b036aa0ef266c28ddb0bac1e795425094934924fbef0"
+    },
+    {
+      "index": 25,
+      "sourceOffset": 24483552,
+      "part": 1,
+      "partOffset": 0,
+      "bytes": 9525824,
+      "sha256": "50ab5ef0be8c32faa7422f7e6b063036f85ba6149751154691cc3a5b263cc425"
+    },
+    {
+      "index": 26,
+      "sourceOffset": 34009376,
+      "part": 1,
+      "partOffset": 9525824,
+      "bytes": 10752,
+      "sha256": "9a06f0738f3b27dc76b0da98fc025d306bc84d7158e07c9f0feba7c1b88b41d4"
+    },
+    {
+      "index": 27,
+      "sourceOffset": 34020128,
+      "part": 1,
+      "partOffset": 9536576,
+      "bytes": 10752,
+      "sha256": "262c384e79a7b99ea2a6c2ea5ac56bd10ede461362ef71ee876efacada9f3d3a"
+    },
+    {
+      "index": 28,
+      "sourceOffset": 34030880,
+      "part": 1,
+      "partOffset": 9547328,
+      "bytes": 3072,
+      "sha256": "dab3c8c73f1b3b4c88454eba20fd68f0d43be51d3019c3918c9794b452b2ff85"
+    },
+    {
+      "index": 29,
+      "sourceOffset": 34033952,
+      "part": 1,
+      "partOffset": 9550400,
+      "bytes": 3072,
+      "sha256": "3bebe99b10bfc0ae7204cabd69d194a2361456c747c7c771337772d0d15a8352"
+    },
+    {
+      "index": 30,
+      "sourceOffset": 34037024,
+      "part": 1,
+      "partOffset": 9553472,
+      "bytes": 10752,
+      "sha256": "b77d17d1ff097771c7022bd9c18fa94d763cb95efe57e791927a69f6c6f61e6e"
+    },
+    {
+      "index": 31,
+      "sourceOffset": 34047776,
+      "part": 1,
+      "partOffset": 9564224,
+      "bytes": 10752,
+      "sha256": "8989ae9db54b79b2a96161a8f6b14aef67336ab4bd9f98eb4e73345d6f77b053"
+    },
+    {
+      "index": 32,
+      "sourceOffset": 34058528,
+      "part": 1,
+      "partOffset": 9574976,
+      "bytes": 3072,
+      "sha256": "2d343e266fc68f0c31975297fa48ee02366b16898709a6853c285e0f11f26469"
+    },
+    {
+      "index": 33,
+      "sourceOffset": 34061600,
+      "part": 1,
+      "partOffset": 9578048,
+      "bytes": 4608,
+      "sha256": "2c4f70df1debb7d7f47ca0f46313ddddee21accb83814401050412ddd051ef29"
+    },
+    {
+      "index": 34,
+      "sourceOffset": 34066208,
+      "part": 1,
+      "partOffset": 9582656,
+      "bytes": 10752,
+      "sha256": "0be5f4e209e42a812a62043cd2e2debc54107250d8609010b83d313aac8eded9"
+    },
+    {
+      "index": 35,
+      "sourceOffset": 34076960,
+      "part": 1,
+      "partOffset": 9593408,
+      "bytes": 10752,
+      "sha256": "9daf541ec055a634261304b56a398e1e75a306374e9e6914bd348d8d646596c0"
+    },
+    {
+      "index": 36,
+      "sourceOffset": 34087712,
+      "part": 1,
+      "partOffset": 9604160,
+      "bytes": 3072,
+      "sha256": "4f59f7896fa2a177e624123f464e5126991694237b45a70877a2204be374d3a8"
+    },
+    {
+      "index": 37,
+      "sourceOffset": 34090784,
+      "part": 1,
+      "partOffset": 9607232,
+      "bytes": 2300032,
+      "sha256": "4255eecc8728b0d618ceaa001f58a2a7c2ee5775ef9ac0e8e645cfb2fae58668"
+    },
+    {
+      "index": 38,
+      "sourceOffset": 36390816,
+      "part": 1,
+      "partOffset": 11907264,
+      "bytes": 10752,
+      "sha256": "f5282ee75d2bacad344a8e9b8d126a672d6b46d1cb84fbed6caebd086757a01e"
+    },
+    {
+      "index": 39,
+      "sourceOffset": 36401568,
+      "part": 1,
+      "partOffset": 11918016,
+      "bytes": 3072,
+      "sha256": "1f8b8a0dbaa23f9d99fed4ad4f377b3168e3b8e18f3a37d837bcd19ac5795fc4"
+    },
+    {
+      "index": 40,
+      "sourceOffset": 36404640,
+      "part": 1,
+      "partOffset": 11921088,
+      "bytes": 10752,
+      "sha256": "ebea14dfd7b721f844a9c764074c45cb720673a54bdb529c5132d2a1224b0f77"
+    },
+    {
+      "index": 41,
+      "sourceOffset": 36415392,
+      "part": 1,
+      "partOffset": 11931840,
+      "bytes": 10752,
+      "sha256": "f488243a7a5a77c12066ccb0592d2137268e82059fc5fe603f719adfbee0af3d"
+    },
+    {
+      "index": 42,
+      "sourceOffset": 36426144,
+      "part": 1,
+      "partOffset": 11942592,
+      "bytes": 3072,
+      "sha256": "0ba782371d6e37a234d7c1fca15276d0dc666ab5f94cdf94e553e97f136be8f6"
+    },
+    {
+      "index": 43,
+      "sourceOffset": 36429216,
+      "part": 1,
+      "partOffset": 11945664,
+      "bytes": 3072,
+      "sha256": "75c228a459410b91afbb543164371be94d777de503c5b6d534c50090be4e7a71"
+    },
+    {
+      "index": 44,
+      "sourceOffset": 36432288,
+      "part": 1,
+      "partOffset": 11948736,
+      "bytes": 10752,
+      "sha256": "0be5f4e209e42a812a62043cd2e2debc54107250d8609010b83d313aac8eded9"
+    },
+    {
+      "index": 45,
+      "sourceOffset": 36443040,
+      "part": 1,
+      "partOffset": 11959488,
+      "bytes": 10752,
+      "sha256": "2feec1fd083ddc350a414d4c108d48a31b9215248e9c9cb3fbf80ede6be86e95"
+    },
+    {
+      "index": 46,
+      "sourceOffset": 36453792,
+      "part": 1,
+      "partOffset": 11970240,
+      "bytes": 3072,
+      "sha256": "860df37063ebf1306a5045c71fab22a8a1bd5058c3897ea2905eb50a20f094db"
+    },
+    {
+      "index": 47,
+      "sourceOffset": 36456864,
+      "part": 1,
+      "partOffset": 11973312,
+      "bytes": 3072,
+      "sha256": "5472c071fe7382d38bed123287b63dee962c87a6f965fc5ec936517d3b1e75b9"
+    },
+    {
+      "index": 48,
+      "sourceOffset": 36459936,
+      "part": 2,
+      "partOffset": 0,
+      "bytes": 19687584,
+      "sha256": "f2493dc59e8f6bebecbb1176970b7c3e85793199c42df2086ea29a4086068f13"
+    },
+    {
+      "index": 0,
+      "sourceOffset": 56147520,
+      "part": 2,
+      "partOffset": 19687584,
+      "bytes": 135702,
+      "sha256": "c073e5ef9a48f93ed4b83dcb33c5fbfc1387a1b525f7cab25d3688d7f0706804"
+    },
+    {
+      "index": 1,
+      "sourceOffset": 56283224,
+      "part": 2,
+      "partOffset": 19823288,
+      "bytes": 3697524,
+      "sha256": "8c26ae1c91996871a354dfc47b7618c859a4854f7535323b7c18a4f940c3a3f2"
+    },
+    {
+      "index": 2,
+      "sourceOffset": 59980752,
+      "part": 3,
+      "partOffset": 0,
+      "bytes": 4481282,
+      "sha256": "dde1f3b15290676c5182412e5b98c26ebb3a0848ef62295c05511f2363ac6d8a"
+    },
+    {
+      "index": 3,
+      "sourceOffset": 64462040,
+      "part": 3,
+      "partOffset": 4481284,
+      "bytes": 1140162,
+      "sha256": "5460f08685869235a5068067dd1833008587e89136b15ee66d2ed514a19a2fea"
+    },
+    {
+      "index": 4,
+      "sourceOffset": 65602208,
+      "part": 3,
+      "partOffset": 5621448,
+      "bytes": 132230,
+      "sha256": "13fc85c2e772e15fa052780709e021b1006e65492a2be922ee35b25c20faf53e"
+    },
+    {
+      "index": 5,
+      "sourceOffset": 65734440,
+      "part": 3,
+      "partOffset": 5753680,
+      "bytes": 31234,
+      "sha256": "b096bb46abb5d37759ae3274f60907082dc1bcb7ba48b8d09d08ade3887d5b71"
+    },
+    {
+      "index": 6,
+      "sourceOffset": 65765680,
+      "part": 3,
+      "partOffset": 5784916,
+      "bytes": 188104,
+      "sha256": "7b8a5253ade50a3b749c866b57d0b4ac432938a9be921941fe994bb0495b7d92"
+    },
+    {
+      "index": 7,
+      "sourceOffset": 65953784,
+      "part": 3,
+      "partOffset": 5973020,
+      "bytes": 3270906,
+      "sha256": "5825e564334e45bebf4dd28ddc9f4ba34a83ba019df88722d7993aa7be82c01b"
+    },
+    {
+      "index": 8,
+      "sourceOffset": 69224696,
+      "part": 3,
+      "partOffset": 9243928,
+      "bytes": 4119166,
+      "sha256": "5c5db1016d08bd89ba88d9dfed35e46c455876bf74f12ab314d976c747d61e3f"
+    },
+    {
+      "index": 9,
+      "sourceOffset": 73343864,
+      "part": 3,
+      "partOffset": 13363096,
+      "bytes": 1009368,
+      "sha256": "73b07bace8d94bddfd8678859b57b0d8315e9d722cd1d9d49cbe707872d0ecdf"
+    },
+    {
+      "index": 10,
+      "sourceOffset": 74353232,
+      "part": 3,
+      "partOffset": 14372464,
+      "bytes": 134974,
+      "sha256": "50914610226e844e1d307a814b04e48e5a6fb09bf9751bae7dc9285dc858c074"
+    },
+    {
+      "index": 11,
+      "sourceOffset": 74488208,
+      "part": 3,
+      "partOffset": 14507440,
+      "bytes": 39352,
+      "sha256": "2e90f0803e85e6d14e3b639d145600d974093183232eee1393cebb146071ddb1"
+    },
+    {
+      "index": 12,
+      "sourceOffset": 74527560,
+      "part": 3,
+      "partOffset": 14546792,
+      "bytes": 819500,
+      "sha256": "e6fea6e80150370f5b7da09e611362d8c223cdb2a5dab99df590d2f866c05d85"
+    },
+    {
+      "index": 13,
+      "sourceOffset": 75347064,
+      "part": 3,
+      "partOffset": 15366292,
+      "bytes": 1350790,
+      "sha256": "65260099e309245732b32be0e68f62352bae41f024956b1ef08a9c5d536fb408"
+    },
+    {
+      "index": 14,
+      "sourceOffset": 76697856,
+      "part": 3,
+      "partOffset": 16717084,
+      "bytes": 676014,
+      "sha256": "2dc06b8c0ac1754baf66eabf149740fef22fdeaa0e2273f5c85eb69081f6b59d"
+    }
+  ],
+  "files": {
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf": {
+      "bytes": 60583,
+      "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1"
+    },
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-01.bin": {
+      "bytes": 24483552,
+      "sha256": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9"
+    },
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-02.bin": {
+      "bytes": 11976384,
+      "sha256": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96"
+    },
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-03.bin": {
+      "bytes": 23520812,
+      "sha256": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe"
+    },
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-04.bin": {
+      "bytes": 17393098,
+      "sha256": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065"
+    },
+    "apps/beside-cue/public/games/cloudway-v7/manifest.json": {
+      "bytes": 3369,
+      "sha256": "2fae1755c163db2ac75995c5a0d1bdbe2acba5cdbbe9ad92a5b7a762bb1df097"
+    }
+  }
+}

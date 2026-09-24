@@ -1,11 +1,49 @@
 {
   "status": "passed",
-  "purpose": "Fresh-import audit of the public V7 kit, accepted source lineage and current crescent submission cost.",
+  "purpose": "Fresh-import audit of the public external-buffer V7 kit, accepted source lineage and current crescent submission cost.",
   "runtimeFile": {
-    "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.glb",
+    "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf",
+    "bytes": 60583,
+    "gzipBytes": 6135,
+    "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1"
+  },
+  "runtimeDependencies": [
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-01.bin",
+      "bytes": 24483552,
+      "gzipBytes": 11032663,
+      "sha256": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9"
+    },
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-02.bin",
+      "bytes": 11976384,
+      "gzipBytes": 10083790,
+      "sha256": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96"
+    },
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-03.bin",
+      "bytes": 23520812,
+      "gzipBytes": 20618098,
+      "sha256": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe"
+    },
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-04.bin",
+      "bytes": 17393098,
+      "gzipBytes": 17372881,
+      "sha256": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065"
+    }
+  ],
+  "acceptedMaster": {
+    "path": "art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb",
     "bytes": 77414948,
     "gzipBytes": 59115775,
     "sha256": "0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9"
+  },
+  "externalDelivery": {
+    "byteIdenticalBufferViews": true,
+    "bufferViewCount": 49,
+    "bufferViewBytes": 77373828,
+    "limitBytes": 25165824
   },
   "manifestHashVerified": true,
   "logicalAssetId": "cloudway-platform-kit-v1",

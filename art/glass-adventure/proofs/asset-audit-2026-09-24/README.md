@@ -1,9 +1,12 @@
 # Current game asset audit
 
-This audit covers the **25 GLBs selected by the shared runtime asset contract**,
+This audit covers the **25 glTF models selected by the shared runtime asset contract**,
 not every historical source in the art archive. Final hashes, structural results,
 mesh/image inventories and geometry screens are in [`final/`](final/).
 The reports outside that folder preserve the initial findings before repairs.
+Cloudway is a standard external-buffer glTF; the other 24 models are GLBs. Its
+original self-contained master remains archived. The final receipt includes
+all external buffer hashes, and delivery preserves every accepted buffer view.
 
 ## Result and repairs
 
@@ -84,6 +87,24 @@ SwiftShader screenshots prove appearance and rendering behavior, not physical
 tablet frame rate, memory headroom or thermal stability. The owner device pass
 is the agreed stop boundary before adding campaign content.
 
+## Web and native delivery
+
+The V7 self-contained master exceeded the static host’s 25 MiB per-file limit.
+The accepted delivery preserves every geometry/texture buffer-view byte in a
+standard glTF document and four local binary parts below 24 MiB each. Its guarded
+production recipe lives with the [V7 runtime evidence](../../platform-trials/v7/runtime/).
+
+`delivery-host.json` records staging all 87 declared files with matching source
+hashes, then actual HTTP responses for the glTF, four buffers and two sung Merc
+examples. The largest staged file is V10 at 25,596,100 bytes, below 25 MiB. Native
+verification includes each glTF dependency and both explicit-listen recordings;
+delivery inventory does not trigger world preloading. The staging boundary test
+rejects an oversized file before upload. Reproduce the host check with Node 22:
+
+```sh
+rtk proxy timeout 60 node --experimental-strip-types art/glass-adventure/production/check_delivery_host.mjs
+```
+
 ## Reproduce and reuse
 
 From the repository root, with the installed glTF Transform CLI and Python
@@ -93,7 +114,7 @@ Pillow/NumPy dependencies:
 rtk proxy timeout 240 python3 art/glass-adventure/production/audit_runtime_assets.py --output art/glass-adventure/proofs/asset-audit-2026-09-24/final
 ```
 
-The command reads the logical-ID asset allowlist, inventories only loaded GLBs,
+The command reads the logical-ID asset allowlist, inventories only loaded models,
 runs the geometry screen and validates each export. It writes reports and never
 changes the assets. Files are identified by SHA-256 and validator version.
 

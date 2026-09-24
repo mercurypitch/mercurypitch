@@ -48,7 +48,7 @@ assert(
 )
 const OUTPUT_DIR = process.env.CLOUDWAY_V7_OUTPUT_DIR
   ? resolve(process.env.CLOUDWAY_V7_OUTPUT_DIR)
-  : join(REPO, 'apps/beside-cue/public/games/cloudway-v7')
+  : join(REPO, 'art/glass-adventure/platform-trials/v7/runtime/master')
 const OUTPUT_KIT = join(OUTPUT_DIR, 'cloudway-platform-kit-v7.glb')
 const OUTPUT_MANIFEST = join(OUTPUT_DIR, 'manifest.json')
 const ACCEPTED_INPUTS_PATH = join(
@@ -422,7 +422,7 @@ async function main() {
     const manifest = {
       version: 7,
       assetId: LOGICAL_ASSET_ID,
-      status: 'integrated runtime delivery',
+      status: 'accepted runtime master',
       description: `Accepted source-preserved V7 Marble with ${MARBLE_TEXTURE_MAX / 1024}K maps, accepted V6 Frost and Glide, and unchanged Crackle states.`,
       coordinates: 'glTF +Y up; metres; root origins at landing plane y=0',
       collider: COLLIDER,

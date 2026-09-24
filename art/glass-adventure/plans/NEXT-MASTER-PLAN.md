@@ -40,16 +40,16 @@ sound yield to assessed microphone capture. Glass-break reactions are varied.
 
 ## Approved batch 1–8
 
-| Item                       | Implemented result                                                                                                                                                           | Owner acceptance focus                                                     |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 1. Platform quality        | Accepted Meshy 7.1 marble, fitted Frost/Glide, existing Crackle; source-preserved geometry and measured texture choices; fog-hidden instance culling                         | Close-up fidelity, loading, sustained tablet frame rate and heat           |
-| 2. Camera comfort          | Smooth bounded character/follow response; independent development sensitivity and comfort presets; saved preference                                                          | Diagonal turns, different zooms, manual orbit recovery and touch feel      |
-| 3. Current trial route     | Selected crescent with safe rests, planted landmark and edge planters; ribbon/terrace auditions retained; versioned current-trial save                                       | Jump readability, scenery, zero-break checkpoint reload and camera comfort |
-| 4. Museum/asset quality    | Camellia dense-to-remesh bake and six instances; hollow Celadon with 18 closed shards; current-world placement audit; 25-GLB validation; guarded rebuilds and reusable skill | Museum detail, source/contact transitions and device cost                  |
-| 5. Configurable melody     | Shared contour compiler, live pitch judge, anchors/glides/breath breaks, transposition and pace; optional Coda Echo in existing galleries                                    | Actual singing fairness, musical phrasing and comfortable tuning           |
-| 6. Replay stars            | Easy first clear, authored harder tiers, complete-attempt evidence and save migration; old accuracy results kept separate                                                    | Goals are clear and harder stars cannot come from partial/easy runs        |
-| 7. Discoveries/collection  | Optional window/glazing/vase discoveries, finite tokens and distinct earned portraits for existing full galleries                                                            | No duplicate farming; ownership and best results survive replays           |
-| 8. Musical memories/finale | Original sung Merc examples, optional Encore seal, explicit opt-in local recording, playback/delete and deliberate download/export                                           | Voice character, recording lifecycle, real microphone and backgrounding    |
+| Item                       | Implemented result                                                                                                                                                             | Owner acceptance focus                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| 1. Platform quality        | Accepted Meshy 7.1 marble, fitted Frost/Glide, existing Crackle; source-preserved geometry and measured texture choices; fog-hidden instance culling                           | Close-up fidelity, loading, sustained tablet frame rate and heat           |
+| 2. Camera comfort          | Smooth bounded character/follow response; independent development sensitivity and comfort presets; saved preference                                                            | Diagonal turns, different zooms, manual orbit recovery and touch feel      |
+| 3. Current trial route     | Selected crescent with safe rests, planted landmark and edge planters; ribbon/terrace auditions retained; versioned current-trial save                                         | Jump readability, scenery, zero-break checkpoint reload and camera comfort |
+| 4. Museum/asset quality    | Camellia dense-to-remesh bake and six instances; hollow Celadon with 18 closed shards; current-world placement audit; 25-model validation; guarded rebuilds and reusable skill | Museum detail, source/contact transitions and device cost                  |
+| 5. Configurable melody     | Shared contour compiler, live pitch judge, anchors/glides/breath breaks, transposition and pace; optional Coda Echo in existing galleries                                      | Actual singing fairness, musical phrasing and comfortable tuning           |
+| 6. Replay stars            | Easy first clear, authored harder tiers, complete-attempt evidence and save migration; old accuracy results kept separate                                                      | Goals are clear and harder stars cannot come from partial/easy runs        |
+| 7. Discoveries/collection  | Optional window/glazing/vase discoveries, finite tokens and distinct earned portraits for existing full galleries                                                              | No duplicate farming; ownership and best results survive replays           |
+| 8. Musical memories/finale | Original sung Merc examples, optional Encore seal, explicit opt-in local recording, playback/delete and deliberate download/export                                             | Voice character, recording lifecycle, real microphone and backgrounding    |
 
 Implementation and test details are in the approved execution record. The owner
 route is [OWNER-ACCEPTANCE-ITEMS-1-8-2026-09-24.md](./OWNER-ACCEPTANCE-ITEMS-1-8-2026-09-24.md).
@@ -65,7 +65,11 @@ selected V7 marble retains 1,256,556 source triangles; 1K/2K texture comparisons
 select the runtime maps without changing the relief. Fitted Frost/Glide retain
 their source topology and use separate collision proxies. The combined trial
 kit is about 2.04M unique triangles and 208 MiB estimated decoded texture mip
-storage, so physical-device testing is a real acceptance boundary.
+storage, so physical-device testing is a real acceptance boundary. Standard glTF delivery
+uses four external buffers, each below 24 MiB, to meet the web host's 25 MiB
+per-file ceiling without changing the accepted geometry or texture bytes. The
+original self-contained GLB remains archived, and web/native manifests include
+every dependency.
 
 The accepted museum V8 architecture remains. V10 replaces the former V9 flower
 prototype with the camellia bake and preserves eleven unrelated nodes' geometry

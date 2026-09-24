@@ -21,13 +21,14 @@ describe('Glassworks asset contract', () => {
     )
   })
 
-  it('includes every cold campaign byte once in the offline allowlist', () => {
+  it('delivers every named asset and dependency once, including on-demand examples', () => {
     const required = new Set(GLASS_GAME_REQUIRED_FILES)
-    const onDemand = new Set<string>(GLASS_GAME_ON_DEMAND_ASSET_IDS)
 
     expect(required.size).toBe(GLASS_GAME_REQUIRED_FILES.length)
-    for (const [id, path] of Object.entries(GLASS_GAME_ASSET_FILES))
-      expect(required.has(path), path).toBe(!onDemand.has(id))
+    for (const path of Object.values(GLASS_GAME_ASSET_FILES))
+      expect(required.has(path), path).toBe(true)
+    for (const id of GLASS_GAME_ON_DEMAND_ASSET_IDS)
+      expect(required.has(glassGameAssetPath(id)), id).toBe(true)
     expect(required.has('adventure-v6/manifest.json')).toBe(true)
     expect(required.has('adventure-v6/amber-cadence-urn-qa-v2.glb')).toBe(true)
     expect(
@@ -50,7 +51,12 @@ describe('Glassworks asset contract', () => {
     expect(required.has('journey-map-v10/manifest.json')).toBe(true)
     expect(required.has('journey-map-v4/manifest.json')).toBe(false)
     expect(required.has('journey-map-v7/manifest.json')).toBe(false)
-    expect(required.has('cloudway-v7/cloudway-platform-kit-v7.glb')).toBe(true)
+    expect(required.has('cloudway-v7/cloudway-platform-kit-v7.gltf')).toBe(true)
+    expect(required.has('cloudway-v7/cloudway-platform-kit-v7.glb')).toBe(false)
+    for (const part of ['01', '02', '03', '04'])
+      expect(
+        required.has(`cloudway-v7/cloudway-platform-kit-v7-part-${part}.bin`),
+      ).toBe(true)
     expect(required.has('cloudway-v7/manifest.json')).toBe(true)
     expect(required.has('cloudway-v6/cloudway-platform-kit-v6.glb')).toBe(false)
     expect(required.has('cloudway-v6/manifest.json')).toBe(false)

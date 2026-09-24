@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "purpose": "Equal-camera real-game comparison of the public external-buffer delivery and its accepted single-file master.",
+  "route": "/glass-game/?layout=cloudway-current",
+  "renderer": "Three.js WebGL through the Beside Cue Playwright host",
+  "viewport": {
+    "width": 1024,
+    "height": 768
+  },
+  "clock": {
+    "startUnixMilliseconds": 1790251200000,
+    "captureUnixMilliseconds": 1790254800000
+  },
+  "publicDelivery": {
+    "file": "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf",
+    "sha256": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1"
+  },
+  "acceptedMaster": {
+    "file": "art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb",
+    "sha256": "0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9"
+  },
+  "captures": {
+    "routeOverview": {
+      "normalizedRmse": 0.0012250619443382874,
+      "changedPixels": 4326,
+      "changedPixelFraction": 0.00550079345703125,
+      "differenceBounds": [336, 227, 621, 471],
+      "external": {
+        "file": "cloudway-v7-external-route-overview.png",
+        "bytes": 983347,
+        "sha256": "bf641f79d960cb74cac47296df19d002cd785a570843ac4b58a383e748f72c72"
+      },
+      "master": {
+        "file": "cloudway-v7-master-route-overview.png",
+        "bytes": 983283,
+        "sha256": "3dccbd714bf578ff44c9a5a86f0fe2e4d079e0bacc21432b4a583b8aa3534d76"
+      }
+    },
+    "arrivalZoomedIn": {
+      "normalizedRmse": 0.002196281407103531,
+      "changedPixels": 17712,
+      "changedPixelFraction": 0.02252197265625,
+      "differenceBounds": [117, 109, 651, 572],
+      "external": {
+        "file": "cloudway-v7-external-arrival-zoomed-in.png",
+        "bytes": 946031,
+        "sha256": "85311853fb992e8af60cc16b32726f3ab8b9ab88cd1c3f719656859321366a90"
+      },
+      "master": {
+        "file": "cloudway-v7-master-arrival-zoomed-in.png",
+        "bytes": 946148,
+        "sha256": "4048d21c505e2f32b23f2d00923e57190faf95d00029209807ecc6a12da38504"
+      }
+    }
+  },
+  "finding": "Both Playwright captures passed and show the same accepted platform materials, silhouette, fit and scene placement. Independent live game visits are not asserted pixel-identical because animated scene state advances while each asset path loads. Exact equivalence is established separately by all 49 buffer-view payloads matching the accepted master byte for byte."
+}

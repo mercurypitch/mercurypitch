@@ -8,6 +8,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
+import { verifyExternalDelivery } from './external_gltf_delivery.mjs'
+
 const REPO = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '../../../../../..',
@@ -20,9 +22,13 @@ const MARBLE_DELIVERY_2K = join(
   REPO,
   'art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb',
 )
+const MASTER_KIT = join(
+  REPO,
+  'art/glass-adventure/platform-trials/v7/runtime/master/cloudway-platform-kit-v7.glb',
+)
 const RUNTIME_KIT = join(
   REPO,
-  'apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.glb',
+  'apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf',
 )
 const RUNTIME_MANIFEST = join(
   REPO,
@@ -326,15 +332,38 @@ function marbleMaterialContract(root) {
 async function main() {
   const { ALL_EXTENSIONS, NodeIO, getBounds } = await gltfTransform()
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
+  const manifest = JSON.parse(await readFile(RUNTIME_MANIFEST, 'utf8'))
+  assert.equal(manifest.bundle.file, 'cloudway-platform-kit-v7.gltf')
+  const dependencyPaths = manifest.bundle.dependencies.map((dependency) =>
+    join(dirname(RUNTIME_KIT), dependency.file),
+  )
+  const [masterBytes, runtimeDocument, ...dependencyBytes] = await Promise.all([
+    readFile(MASTER_KIT),
+    readFile(RUNTIME_KIT, 'utf8'),
+    ...dependencyPaths.map((path) => readFile(path)),
+  ])
+  const externalDelivery = verifyExternalDelivery(
+    masterBytes,
+    JSON.parse(runtimeDocument),
+    dependencyBytes,
+  )
   const [v6, acceptedMarble, runtime] = await Promise.all([
     io.read(V6_KIT),
     io.read(MARBLE_DELIVERY_2K),
     io.read(RUNTIME_KIT),
   ])
-  const manifest = JSON.parse(await readFile(RUNTIME_MANIFEST, 'utf8'))
   const runtimeFile = await fileRecord(RUNTIME_KIT)
   assert.equal(runtimeFile.sha256, manifest.bundle.sha256)
   assert.equal(runtimeFile.bytes, manifest.bundle.bytes)
+  const runtimeDependencies = await Promise.all(dependencyPaths.map(fileRecord))
+  assert.deepEqual(
+    runtimeDependencies.map(({ path, bytes, sha256 }) => ({
+      file: path.slice(path.lastIndexOf('/') + 1),
+      bytes,
+      sha256,
+    })),
+    manifest.bundle.dependencies,
+  )
 
   const runtimeScene = runtime.getRoot().listScenes()[0]
   assert(runtimeScene, 'Runtime kit must contain a scene.')
@@ -406,8 +435,19 @@ async function main() {
   const report = {
     status: 'passed',
     purpose:
-      'Fresh-import audit of the public V7 kit, accepted source lineage and current crescent submission cost.',
+      'Fresh-import audit of the public external-buffer V7 kit, accepted source lineage and current crescent submission cost.',
     runtimeFile,
+    runtimeDependencies,
+    acceptedMaster: await fileRecord(MASTER_KIT),
+    externalDelivery: {
+      byteIdenticalBufferViews: true,
+      bufferViewCount: externalDelivery.bufferViews.length,
+      bufferViewBytes: externalDelivery.bufferViews.reduce(
+        (total, view) => total + view.bytes,
+        0,
+      ),
+      limitBytes: externalDelivery.limitBytes,
+    },
     manifestHashVerified: true,
     logicalAssetId: manifest.assetId,
     roots: ROOT_NAMES,

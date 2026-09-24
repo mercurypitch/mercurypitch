@@ -154,9 +154,10 @@ master/test route into dotfiles when recording delivery.
 
 - Stage 1: accepted V6 Frost/Glide and source-preserved V7 Marble are installed
   in the combined versioned runtime. Source archives are in `fddabf39`; runtime,
-  culling and current route are in `5157b7c7`. Exact public hash is
+  culling and current route are in `5157b7c7`. The archived accepted master hash is
   `0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9`.
-  Runtime 1K/2K comparisons preserve detail; the selected 1K marble maps save
+  Standard glTF delivery splits its unchanged buffer-view bytes into four local
+  buffers below 24 MiB each for the hosting limit. Runtime 1K/2K comparisons preserve detail; the selected 1K marble maps save
   48 MiB. The 2.04M-triangle kit costs an estimated 257.24 MiB geometry/maps
   before driver overhead. Fully fogged instances stop submitting triangles;
   current camera raycasts still see all live transforms before culling.
@@ -179,7 +180,7 @@ master/test route into dotfiles when recording delivery.
   mouth corrects it without an added draw or triangle; all three actual-renderer
   panels and the authored-mouth regression verify the correction.
 - Seven old vessels and an older ramp have attribute-only repairs in `060cee9f`.
-  All 25 current mapped GLBs pass Khronos validation with zero errors and no
+  All 25 current mapped glTF models pass Khronos validation with zero errors and no
   non-finite positions/normals. One inherited cliff normal-screen flag affects
   0.33% of surface area; actual views show no whole-shell inversion, so no blanket
   normal reset was applied. `bb4caa3c` adds conservative extension-aware tangent
@@ -205,7 +206,13 @@ master/test route into dotfiles when recording delivery.
   to avoid pitch-sampling stalls. Owner listening/singing remains the next gate.
 - The previous remote `f017afac` CI passed browser, unit, typecheck and native
   jobs; only one proof-README formatting check failed, corrected in `bb4caa3c`.
-  Inspect the final new PR head after push; older green jobs cannot certify it.
+  `ae3c1ff0` then exposed the web host's 25 MiB limit and a stale renderer-test
+  fixture. The delivery follow-up replaces the oversized public container with
+  standard glTF plus four same-byte buffers, checks the hosting limit before
+  staging, and verifies native/offline dependency completeness. Both explicit-listen Merc
+  examples are now included in web/native delivery without eager playback or
+  world preloading. Inspect its final
+  PR head after push; older green jobs cannot certify it.
 
 All bounded agent implementation and review handoffs are complete. No additional
 levels, enemies or release work is authorized. Root handles the final PR gate

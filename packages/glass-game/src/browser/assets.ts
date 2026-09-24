@@ -68,7 +68,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'journey-map-v8/floating-museum-architecture-kit-v8.glb',
   'floating-museum-map-kit-v1': 'journey-map-v1/floating-museum-map-kit-v1.glb',
   // Authored IDs stay stable while runtime paths invalidate older cached art.
-  'cloudway-platform-kit-v1': 'cloudway-v7/cloudway-platform-kit-v7.glb',
+  'cloudway-platform-kit-v1': 'cloudway-v7/cloudway-platform-kit-v7.gltf',
   'cloudway-ribbon-preview': 'cloudway-v3/cloudway-ribbon-preview.webp',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
@@ -113,21 +113,28 @@ const MANIFEST_FILES = [
   'adventure-voice-v2/manifest.json',
 ] as const
 
-/** Explicit-listen examples stay out of the cold world-loading bundle. */
+// Standard glTF external buffers preserve the accepted source bytes while
+// keeping every delivered file below the web host's per-file size limit.
+const DEPENDENCY_FILES = [
+  'cloudway-v7/cloudway-platform-kit-v7-part-01.bin',
+  'cloudway-v7/cloudway-platform-kit-v7-part-02.bin',
+  'cloudway-v7/cloudway-platform-kit-v7-part-03.bin',
+  'cloudway-v7/cloudway-platform-kit-v7-part-04.bin',
+] as const
+
+/** Explicit-listen examples are loaded on demand by the practice UI. */
 export const GLASS_GAME_ON_DEMAND_ASSET_IDS = [
   'merc-encore-light-v5',
   'merc-encore-home-v5',
 ] as const
 
-const ON_DEMAND_ASSET_IDS = new Set<string>(GLASS_GAME_ON_DEMAND_ASSET_IDS)
-
-/** Every source byte needed for a cold offline campaign, relative to games/. */
+/** Delivery inventory for web and native, including on-demand audio. This is
+ * a packaging list, not a runtime preload list; world load plans stay separate. */
 export const GLASS_GAME_REQUIRED_FILES: readonly string[] = Object.freeze([
   ...new Set([
-    ...Object.entries(GLASS_GAME_ASSET_FILES)
-      .filter(([id]) => !ON_DEMAND_ASSET_IDS.has(id))
-      .map(([, path]) => path),
+    ...Object.values(GLASS_GAME_ASSET_FILES),
     ...MANIFEST_FILES,
+    ...DEPENDENCY_FILES,
   ]),
 ])
 

@@ -22,6 +22,16 @@ export async function verifyAcceptedFile(path, expected, label) {
   return actual
 }
 
+export async function verifyAcceptedFileIfPresent(path, expected, label) {
+  try {
+    await verifyAcceptedFile(path, expected, label)
+    return true
+  } catch (error) {
+    if (error?.code === 'ENOENT') return false
+    throw error
+  }
+}
+
 async function targetAlreadyAccepted(path, expected) {
   if (!expected) return false
   try {

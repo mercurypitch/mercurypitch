@@ -41,6 +41,12 @@ the corresponding runtime decoder and supported device path; attribute quantizin
 does not remove triangles. Retain a working fallback only when it is an intentional
 product behavior, not a way to call a rejected candidate complete.
 
+Check the hosting per-file limit as well as total download size. A detailed model
+can pass desktop tests yet exceed a static host upload limit. Standard glTF with
+local external buffers can preserve all buffer-view bytes while keeping each
+file under the limit; include every dependency in web/native/offline manifests
+and verify hashes after packaging. Archive the original self-contained master.
+
 **Evidence:** identify assets by hash, not only friendly filename. Record source
 and delivery triangles, exported vertices (UV seams/hard edges split vertices),
 map dimensions, bytes, draw/pass costs, visual acceptance and device limitations.
@@ -55,3 +61,6 @@ Reviewed 24 September 2026; confirm version-sensitive settings when producing.
 - [Meshy remesh](https://docs.meshy.ai/en/api/remesh): triangle decimation versus quad-dominant topology; requested and actual counts differ.
 - [Three.js InstancedMesh](https://threejs.org/docs/pages/InstancedMesh.html): compatible shared geometry/material, instance matrices and bounds.
 - [Khronos glTF validator](https://github.com/KhronosGroup/glTF-Validator): structural validation complements visual and behavioral testing.
+
+- [Khronos buffers and buffer views](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#buffers-and-buffer-views): standard external-buffer delivery and alignment.
+- [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/): verify the current static-asset size ceiling before preparing delivery.

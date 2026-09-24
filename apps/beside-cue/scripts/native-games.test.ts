@@ -5,7 +5,7 @@
 import { glassGameAssetPath } from '@irchiinnuss/glass-game/assets'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, resolve } from 'node:path'
+import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { gamesInfoPlist, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
@@ -32,6 +32,33 @@ afterEach(() => {
 })
 
 describe('explicit native games profile', () => {
+  it('includes each referenced glTF buffer and image in the shared offline package', () => {
+    const declared = new Set<string>(requiredGameAssets)
+    const models = requiredGameAssets.filter((asset) => asset.endsWith('.gltf'))
+    expect(models.length).toBeGreaterThan(0)
+    for (const model of models) {
+      const document = JSON.parse(
+        readFileSync(resolve(publicDirectory, model), 'utf8'),
+      ) as {
+        buffers?: { uri?: string }[]
+        images?: { uri?: string }[]
+      }
+      for (const resource of [
+        ...(document.buffers ?? []),
+        ...(document.images ?? []),
+      ]) {
+        if (resource.uri === undefined) continue
+        expect(resource.uri).not.toMatch(/[:\\\\]|^\//u)
+        const dependency = posix.join(posix.dirname(model), resource.uri)
+        expect(dependency.startsWith('games/')).toBe(true)
+        expect(
+          declared.has(dependency),
+          `${model} needs ${dependency} offline`,
+        ).toBe(true)
+      }
+    }
+  })
+
   it('keeps every declared static source asset materialized in public', () => {
     expect(requiredGameAssets.length).toBeGreaterThan(0)
     for (const asset of requiredGameAssets.filter(

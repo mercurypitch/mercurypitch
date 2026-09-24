@@ -22,6 +22,7 @@ const state = vi.hoisted(() => {
     canvasRemove: vi.fn(),
     mercDispose: vi.fn(),
     runtimeRoomId: undefined as string | undefined,
+    cullCloudwayPlatforms: vi.fn(),
     visibleRoomIds,
     updateRoomVisibility: vi.fn(() => ({
       visibleRoomIds,
@@ -92,6 +93,7 @@ vi.mock('./museum', () => ({
       root: new Group(),
       update: vi.fn(),
       cameraOccluders: () => [],
+      cullCloudwayPlatforms: state.cullCloudwayPlatforms,
       roomIdForRuntimeId: () => state.runtimeRoomId,
       updateRoomVisibility: state.updateRoomVisibility,
       updatePlanarReflection: state.updatePlanarReflection,
@@ -143,6 +145,7 @@ afterEach(() => {
   state.mercDispose.mockClear()
   state.updateRoomVisibility.mockClear()
   state.updatePlanarReflection.mockClear()
+  state.cullCloudwayPlatforms.mockClear()
   state.runtimeRoomId = undefined
   state.visibleRoomIds.clear()
 })
@@ -162,6 +165,9 @@ it.each([false, true])(
     renderer.render(createGlassGame(GLASSWORKS).snapshot(), 0.016)
     expect(onContextLost).toHaveBeenCalledTimes(contextLoss ? 1 : 0)
     expect(state.render).toHaveBeenCalledTimes(contextLoss ? 0 : 1)
+    expect(state.cullCloudwayPlatforms).toHaveBeenCalledTimes(
+      contextLoss ? 0 : 1,
+    )
     expect(state.updateRoomVisibility).toHaveBeenCalledTimes(
       contextLoss ? 0 : 1,
     )
