@@ -141,10 +141,17 @@ export const RoomsAlley: Component = () => {
   // The dock's top. With the headline's bottom it is the room a landscape
   // screen gives the doors (`alleyFit`).
   const [floor, setFloor] = createSignal(window.innerHeight)
+  // The right safe-area inset (--safe-right): an Android cutout on its side.
+  const [safeRight, setSafeRight] = createSignal(0)
   const landscape = (): boolean => size().w > size().h
   const frame = (): AlleyFrame =>
     landscape()
-      ? { top: topPad(), bottom: floor(), left: topRight() }
+      ? {
+          top: topPad(),
+          bottom: floor(),
+          left: topRight(),
+          right: size().w - safeRight(),
+        }
       : { top: topBottom(), bottom: floor() }
   const fit = createMemo(() =>
     alleyFit(ALLEY_PLATE, DOORS, size().w, size().h, frame()),
@@ -161,7 +168,13 @@ export const RoomsAlley: Component = () => {
   })
   const band = createMemo(() =>
     // Beside the block on its side, the band needs no clamp from above.
-    tapBand(doors(), size().w, size().h, landscape() ? 0 : topBottom()),
+    tapBand(
+      doors(),
+      size().w,
+      size().h,
+      landscape() ? 0 : topBottom(),
+      size().w - safeRight(),
+    ),
   )
   const layoutOf = (key: DoorKey): DoorLayout =>
     doors().find((door) => door.key === key) ?? doors()[0]
@@ -448,6 +461,12 @@ export const RoomsAlley: Component = () => {
       const dockTop =
         dock === null ? h : Math.floor(dock.getBoundingClientRect().top)
       if (dockTop > 0 && dockTop !== untrack(floor)) setFloor(dockTop)
+      const inset = Math.ceil(
+        Number.parseFloat(
+          window.getComputedStyle(root).getPropertyValue('--safe-right'),
+        ) || 0,
+      )
+      if (inset !== untrack(safeRight)) setSafeRight(inset)
     }
     measure()
     // iPad and Android rotate; the doors are recomputed, not assumed. The

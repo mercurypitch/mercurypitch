@@ -421,6 +421,22 @@ describe('the alley on its side', () => {
     },
   )
 
+  it('keeps the doors and the tap band clear of a right safe-area inset', () => {
+    // An Android phone on its side with its camera cutout on the right: 48 px
+    // of inset, as the dock and the room header already honour.
+    const frame = { top: 8, bottom: 321, left: 300, right: 852 - 48 }
+    const doors = layoutDoors(ALLEY_PLATE, DOORS, 852, 393, frame)
+    const x0 = Math.min(...doors.map((d) => d.x0))
+    const x1 = Math.max(...doors.map((d) => d.x1))
+    expect(x1).toBeLessThanOrEqual(804)
+    expect(Math.abs((x0 + x1) / 2 - (300 + 804) / 2)).toBeLessThan(1)
+    const band = tapBand(doors, 852, 393, 0, 804)
+    expect(band.x + band.w).toBeLessThanOrEqual(804)
+    // The band itself is clamped too, where the doors run to the edge.
+    const upright = tapBand(at393, 393, 852, 0, 360)
+    expect(upright.x + upright.w).toBeLessThanOrEqual(360)
+  })
+
   it('is still cover-fit in portrait, whatever the frame says', () => {
     expect(
       layoutDoors(ALLEY_PLATE, DOORS, 393, 852, { top: 300, bottom: 700 }),

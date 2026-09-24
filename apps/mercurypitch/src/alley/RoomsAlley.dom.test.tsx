@@ -314,6 +314,28 @@ describe('the dock', () => {
   })
 })
 
+describe('the right safe-area inset', () => {
+  it('keeps the doors and the tap band clear of it on a screen on its side', async () => {
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    const { el } = await mountAlley()
+    const root = el('rooms-alley')
+    // What mobile-kit.css resolves env(safe-area-inset-right) to. Wide, so
+    // the doors' own fit would cross it without the bound.
+    root.style.setProperty('--safe-right', '400px')
+    const observer = FakeResizeObserver.last
+    if (observer === null) throw new Error('no ResizeObserver')
+    observer.callback([], observer as unknown as ResizeObserver)
+
+    const right = (key: HTMLElement): number =>
+      Number.parseFloat(key.style.left) + Number.parseFloat(key.style.width)
+    const keys = [...root.querySelectorAll<HTMLElement>('.mp-alley__key')]
+    expect(Math.max(...keys.map(right))).toBeLessThanOrEqual(852 - 400)
+    const band = el('alley-hit')
+    expect(right(band)).toBeLessThanOrEqual(852 - 400)
+  })
+})
+
 describe('the Sing door clip', () => {
   it('has a source only while Sing is picked', async () => {
     // A src'd <video>, even paused, is a media pipeline and a metadata read

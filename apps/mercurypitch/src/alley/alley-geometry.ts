@@ -89,6 +89,12 @@ export interface AlleyFrame {
   readonly top: number
   readonly bottom: number
   readonly left?: number
+  /**
+   * The right bound: the width less the right safe-area inset. On its side an
+   * Android phone can put its camera cutout there, and the doors, like the
+   * dock and the room header, stay clear of it. The screen's width if absent.
+   */
+  readonly right?: number
 }
 
 /** The doors' extent in plate pixels. */
@@ -124,8 +130,8 @@ const BAND_SLACK = 6
  * LANDSCAPE sizes the plate by the door band instead: the band fits between
  * `frame.top` (the safe top) and `frame.bottom` (the dock), and between
  * `frame.left` (the headline block's right edge: on its side the block stands
- * beside the doors, so the band keeps the full height) and the right edge,
- * centred in that box. What the plate does not cover is the alley's own
+ * beside the doors, so the band keeps the full height) and `frame.right` (the
+ * right safe-area inset), centred in that box. What the plate does not cover is the alley's own
  * ground colour. Cover-fit there would put the doors a screen and a half tall
  * behind a 393 px window.
  */
@@ -140,13 +146,14 @@ export function alleyFit(
   if (w > h) {
     const cover = Math.max(w / plate.width, h / plate.height)
     const left = frame.left ?? 0
+    const right = frame.right ?? w
     const room = Math.max(1, frame.bottom - frame.top - BAND_SLACK * 2)
     const scale = Math.min(
       cover,
       room / (extent.y1 - extent.y0),
-      Math.max(1, w - left - BAND_SLACK * 2) / (extent.x1 - extent.x0),
+      Math.max(1, right - left - BAND_SLACK * 2) / (extent.x1 - extent.x0),
     )
-    const ox = ((extent.x0 + extent.x1) / 2) * scale - (left + w) / 2
+    const ox = ((extent.x0 + extent.x1) / 2) * scale - (left + right) / 2
     const oy =
       ((extent.y0 + extent.y1) / 2) * scale - (frame.top + frame.bottom) / 2
     return fitOf(plate, scale, ox, oy)
@@ -434,19 +441,21 @@ export interface Band {
  * and the surface must not — and to `minTop`, the measured bottom of the
  * headline block. Under a tall safe area the headline reaches down over the
  * door tops, and a tap on the words must not open a door behind them.
+ * `maxRight` is the right bound inside the safe area (`AlleyFrame.right`).
  */
 export function tapBand(
   doors: readonly DoorLayout[],
   w: number,
   h: number,
   minTop = 0,
+  maxRight = w,
 ): Band {
   const x = r1(Math.max(0, Math.min(...doors.map((d) => d.x0)) - 6))
   const y1 = r1(Math.min(h, Math.max(...doors.map((d) => d.y1)) + 6))
   const y = r1(
     Math.min(y1, Math.max(0, minTop, Math.min(...doors.map((d) => d.y0)) - 6)),
   )
-  const x1 = r1(Math.min(w, Math.max(...doors.map((d) => d.x1)) + 6))
+  const x1 = r1(Math.min(w, maxRight, Math.max(...doors.map((d) => d.x1)) + 6))
   return { x, y, w: r1(x1 - x), h: r1(y1 - y) }
 }
 
