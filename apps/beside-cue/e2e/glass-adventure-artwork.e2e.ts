@@ -77,14 +77,17 @@ test('artwork offer shares the top header row above guidance and leaves controls
   await page.setViewportSize({ width: 320, height: 640 })
   await openGarden(page)
   const offer = page.getByRole('button', { name: 'View nearby artwork' })
-  const guidance = page.getByRole('status').filter({
-    hasText: 'Follow the gold inlay to the laurel goblet.',
-  })
+  const guidance = page.getByTestId('glass-progress-guidance')
   const help = page.getByRole('button', { name: 'How to play' })
   const title = page.getByRole('heading', {
     level: 1,
     name: 'Glassworks Journey',
   })
+  await expect(guidance).toHaveRole('status')
+  await expect(guidance).toHaveAttribute('data-guidance-kind', 'next')
+  await expect(guidance).toContainText(
+    'Next: Garden decanter. Follow its glowing circle, then tap Sing.',
+  )
 
   for (const viewport of [
     { width: 320, height: 640, touch: true },
