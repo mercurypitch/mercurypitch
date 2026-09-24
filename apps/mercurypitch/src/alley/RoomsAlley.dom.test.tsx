@@ -473,9 +473,42 @@ describe('the keyboard', () => {
     expect(escape.defaultPrevented).toBe(true)
     expect(el('rooms-alley').dataset.phase).toBe('rest')
     expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    // Enter went with the card at the start of the open: focus goes back to
+    // the door that was opening, not left on <body>.
+    await vi.advanceTimersByTimeAsync(0)
+    expect(document.activeElement).toBe(el('alley-door-sing'))
     expect(store.roomArrivalHeld()).toBe(false)
     await vi.advanceTimersByTimeAsync(2000)
     expect(nav.goToTab).not.toHaveBeenCalled()
+  })
+
+  it('Back mid-open gives focus back to the door, as Escape does', async () => {
+    const { el, nav } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+    expect(document.activeElement).toBe(document.body)
+
+    const back = { canGoBack: true, back: vi.fn(), minimize: vi.fn() }
+    expect(nav.performBack(back)).toBe('door-open')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(document.activeElement).toBe(el('alley-door-sing'))
+  })
+
+  it('a rail tab calling the open off keeps its own focus', async () => {
+    const { el, nav } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+    const tab = document.createElement('button')
+    document.body.appendChild(tab)
+    tab.focus()
+
+    // What goToTab does: call the open off, then move the hash.
+    nav.cancelDoorOpen()
+    window.location.hash = '#/progress'
+    await vi.advanceTimersByTimeAsync(0)
+    expect(document.activeElement).toBe(tab)
   })
 
   it('Escape at rest is left to whoever else wants it', async () => {

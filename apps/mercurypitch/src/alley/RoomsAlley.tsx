@@ -297,6 +297,36 @@ export const RoomsAlley: Component = () => {
     ),
   )
 
+  /** Focus on the door's key: where a keyboard reader goes back to. */
+  const focusKey = (door: DoorKey | null): void => {
+    if (door === null) return
+    root
+      ?.querySelector<HTMLButtonElement>(`.mp-alley__key[data-door="${door}"]`)
+      ?.focus({ preventScroll: true })
+  }
+
+  /**
+   * Call the open off from here — Escape, or Back through the shell — and
+   * give focus back to the door that was opening. Enter was unmounted with
+   * the card when the open began, so focus was on <body>. Only when it still
+   * is and the alley is still where it was: a rail tab calls the open off on
+   * its way out, and its own button keeps the focus it has.
+   */
+  const cancelHere = (): boolean => {
+    const door = untrack(alley).door
+    const hash = window.location.hash
+    const cancelled = cancelOpen()
+    if (cancelled) {
+      queueMicrotask(() => {
+        const active = document.activeElement
+        const lost = active === null || active === document.body
+        if (lost && root?.isConnected === true && window.location.hash === hash)
+          focusKey(door)
+      })
+    }
+    return cancelled
+  }
+
   /** Enter, or the selected door tapped again. Inside the tap. */
   const open = (): void => {
     let state = alley()
@@ -357,7 +387,7 @@ export const RoomsAlley: Component = () => {
       console.error('The door did not open:', error)
       return
     }
-    const unregister = registerDoorOpen(cancelOpen)
+    const unregister = registerDoorOpen(cancelHere)
     document.addEventListener('pointerdown', onPressOutside, true)
     inFlight = {
       cancel: handle.cancel,
@@ -460,11 +490,7 @@ export const RoomsAlley: Component = () => {
       clear()
       // The card that had focus is gone: focus goes back to the door it was
       // for, not to <body>, so the next Tab starts where the reader was.
-      root
-        ?.querySelector<HTMLButtonElement>(
-          `.mp-alley__key[data-door="${state.door}"]`,
-        )
-        ?.focus({ preventScroll: true })
+      focusKey(state.door)
       return true
     }
     onCleanup(registerDoorClear(putBack))
@@ -472,7 +498,7 @@ export const RoomsAlley: Component = () => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       // Mid-grow it is Back: the open is called off and the alley stays.
       if (alley().phase === 'opening') {
-        if (cancelOpen()) event.preventDefault()
+        if (cancelHere()) event.preventDefault()
         return
       }
       if (putBack()) event.preventDefault()
