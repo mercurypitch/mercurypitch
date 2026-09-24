@@ -38,6 +38,7 @@ import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-na
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
 import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
+import type { DoorOpen } from './alley-entry'
 import { OPEN_MS, openDoor, REDUCED_MS } from './alley-entry'
 import type { AlleyFrame, DoorLayout } from './alley-geometry'
 import { alleyFit, dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rectToQuad, tapBand, } from './alley-geometry'
@@ -316,35 +317,46 @@ export const RoomsAlley: Component = () => {
     // hash as it mounts, so "elsewhere" is a different hash AND a different
     // tab, or a sheet or screen the shell put over the room.
     let arrivedHash: string | null = null
-    const handle = openDoor({
-      door: layoutOf(key),
-      width: size().w,
-      height: size().h,
-      reduced: reduced(),
-      video: clip,
-      plateSrc: plate(),
-      plateBox: {
-        x: -fit().ox,
-        y: -fit().oy,
-        w: fit().width,
-        h: fit().height,
-      },
-      roomBackground: ROOM_BACKGROUND[key] ?? '[data-room-background]',
-      ambientSilent,
-      onCovered: () => {
-        finishOpen()
-        dispatch({ type: 'covered' })
-        // The welcome is over when a room is reached, not when Enter is
-        // pressed: an open called off leaves it to be seen again.
-        markWelcomeSeen()
-        goToTab(tab)
-        arrivedHash = window.location.hash
-      },
-      away: () =>
-        untrack(shellCovered) ||
-        (untrack(currentTab) !== tab && window.location.hash !== arrivedHash),
-      holdArrival: holdRoomArrival,
-    })
+    let handle: DoorOpen
+    try {
+      handle = openDoor({
+        door: layoutOf(key),
+        width: size().w,
+        height: size().h,
+        reduced: reduced(),
+        video: clip,
+        plateSrc: plate(),
+        plateBox: {
+          x: -fit().ox,
+          y: -fit().oy,
+          w: fit().width,
+          h: fit().height,
+        },
+        roomBackground: ROOM_BACKGROUND[key] ?? '[data-room-background]',
+        ambientSilent,
+        onCovered: () => {
+          finishOpen()
+          dispatch({ type: 'covered' })
+          // The welcome is over when a room is reached, not when Enter is
+          // pressed: an open called off leaves it to be seen again.
+          markWelcomeSeen()
+          goToTab(tab)
+          arrivedHash = window.location.hash
+        },
+        away: () =>
+          untrack(shellCovered) ||
+          (untrack(currentTab) !== tab && window.location.hash !== arrivedHash),
+        holdArrival: holdRoomArrival,
+      })
+    } catch (error) {
+      // Nothing is growing and nothing can call it off: left in 'opening',
+      // the alley dropped every tap, Escape and Back until a tab change.
+      // openDoor has let the hold go and put the clip back; the door goes
+      // back into the plate and the alley takes taps again.
+      dispatch({ type: 'cancel' })
+      console.error('The door did not open:', error)
+      return
+    }
     const unregister = registerDoorOpen(cancelOpen)
     document.addEventListener('pointerdown', onPressOutside, true)
     inFlight = {

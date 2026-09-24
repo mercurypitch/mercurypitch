@@ -60,10 +60,47 @@ describe('the hold on the room', () => {
         remove: () => undefined,
       },
     })
+    vi.spyOn(video, 'pause').mockImplementation(() => undefined)
+    vi.spyOn(video, 'load').mockImplementation(() => undefined)
 
     expect(() => openDoor(plan({ video }))).toThrow('the clip would not move')
     expect(roomArrivalHeld()).toBe(false)
     expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+  })
+
+  it('leaves the clip unmarked when the clone throws half-built', () => {
+    const door = document.createElement('div')
+    const video = document.createElement('video')
+    door.appendChild(video)
+    document.body.appendChild(door)
+    vi.spyOn(video, 'pause').mockImplementation(() => undefined)
+    // Marked for the clone, then the next step throws.
+    Object.defineProperty(video, 'muted', {
+      set: () => {
+        throw new Error('the clip would not mute')
+      },
+    })
+
+    expect(() => openDoor(plan({ video }))).toThrow('the clip would not mute')
+    expect(roomArrivalHeld()).toBe(false)
+    expect(video.parentElement).toBe(door)
+    expect(video.classList.contains('mp-alley-morph__clip')).toBe(false)
+  })
+
+  it('is let go, and the clip goes home, when a throw comes after the clip moved', () => {
+    const door = document.createElement('div')
+    const video = document.createElement('video')
+    door.appendChild(video)
+    document.body.appendChild(door)
+    vi.spyOn(video, 'pause').mockImplementation(() => undefined)
+    vi.spyOn(document.body, 'appendChild').mockImplementationOnce(() => {
+      throw new Error('the clone would not go up')
+    })
+
+    expect(() => openDoor(plan({ video }))).toThrow('the clone would not go up')
+    expect(roomArrivalHeld()).toBe(false)
+    expect(video.parentElement).toBe(door)
+    expect(video.classList.contains('mp-alley-morph__clip')).toBe(false)
   })
 
   it('stays on until the clone is gone AND the ambient is silent', async () => {

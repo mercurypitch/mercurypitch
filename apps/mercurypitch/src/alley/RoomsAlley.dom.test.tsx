@@ -152,6 +152,32 @@ describe('entering a room from the alley', () => {
   })
 })
 
+describe('an open that throws', () => {
+  it('goes back to rest, lets the hold go and takes taps again', async () => {
+    // Left in 'opening' with no clone and nothing registered, the alley
+    // dropped every tap, Escape and Back until a tab change remounted it.
+    const { el, store } = await mountAlley()
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    el('alley-door-sing').click()
+    const clip = el<HTMLVideoElement>('alley-clip')
+    Object.defineProperty(clip, 'paused', { value: false })
+    vi.spyOn(clip.classList, 'add').mockImplementation(() => {
+      throw new Error('the clip would not move')
+    })
+
+    el('alley-enter').click()
+
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(store.roomArrivalHeld()).toBe(false)
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(clip.closest('.mp-alley__art')).not.toBeNull()
+    expect(error).toHaveBeenCalled()
+
+    el('alley-door-sing').click()
+    expect(el('rooms-alley').dataset.phase).toBe('alive')
+  })
+})
+
 describe('somewhere else, after the clone has covered', () => {
   // The open cannot be called off once covered, and the clone waited up to
   // 1.7 s on a room the user had already left: a rail tab, More, the pill

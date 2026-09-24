@@ -234,7 +234,31 @@ function startOpen(
   // Where the clip lived, so a cancelled open can put it back.
   const home = plan.video?.parentNode ?? null
   const homeNext = plan.video?.nextSibling ?? null
-  const clone = buildClone(plan)
+  /** The clip back in its door, paused; unloaded if the door has gone. */
+  const putClipBack = (): void => {
+    const video = plan.video
+    if (video === null) return
+    video.pause()
+    video.classList.remove('mp-alley-morph__clip')
+    if (home !== null && home.isConnected) {
+      if (video.parentNode === home) return
+      home.insertBefore(
+        video,
+        homeNext !== null && homeNext.parentNode === home ? homeNext : null,
+      )
+    } else {
+      video.removeAttribute('src')
+      video.load()
+    }
+  }
+  let clone: HTMLDivElement
+  try {
+    clone = buildClone(plan)
+  } catch (error) {
+    // The clip may already have moved: it goes home before the throw does.
+    putClipBack()
+    throw error
+  }
   // The screen the clone grows to. A rotation mid-open retargets it, so the
   // grow ends covering the new screen rather than the old one on its side.
   let vw = plan.width
@@ -264,8 +288,17 @@ function startOpen(
     clone.dataset.motion = 'grow'
     clone.style.transform = at(0)
   }
-  document.body.appendChild(clone)
-  if (plan.video !== null) void plan.video.play().catch(() => undefined)
+  try {
+    document.body.appendChild(clone)
+    if (plan.video !== null) void plan.video.play().catch(() => undefined)
+  } catch (error) {
+    // No half-built open left behind: the clone goes, the clip goes home,
+    // and `openDoor` lets the hold go.
+    window.removeEventListener('resize', retarget)
+    clone.remove()
+    putClipBack()
+    throw error
+  }
 
   let covered = false
   let cancelled = false
@@ -308,21 +341,8 @@ function startOpen(
     cancelled = true
     for (const timer of timers) window.clearTimeout(timer)
     cancelAnimationFrame(frame)
-    const video = plan.video
-    if (video !== null) {
-      video.pause()
-      video.classList.remove('mp-alley-morph__clip')
-      if (home !== null && home.isConnected) {
-        // The door is still on screen: its clip goes back where it was.
-        home.insertBefore(
-          video,
-          homeNext !== null && homeNext.parentNode === home ? homeNext : null,
-        )
-      } else {
-        video.removeAttribute('src')
-        video.load()
-      }
-    }
+    // The door is still on screen: its clip goes back where it was.
+    putClipBack()
     clone.remove()
     window.removeEventListener('resize', retarget)
     window.clearTimeout(failsafe)
