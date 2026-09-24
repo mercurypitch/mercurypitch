@@ -31,6 +31,7 @@ const state = vi.hoisted(() => {
     updateRoomVisibility: vi.fn(() => ({
       visibleRoomIds,
       fallbackAllVisible: false,
+      shadowVisibilityChanged: false,
     })),
     updatePlanarReflection: vi.fn(() => false),
   }

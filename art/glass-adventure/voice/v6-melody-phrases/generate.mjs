@@ -62,7 +62,9 @@ for (const line of batch.lines) {
       previous.text !== line.text ||
       previous.voice_id !== batch.voice_id
     )
-      throw new Error(`Inspect prior attempt for ${line.id}; no automatic retry.`)
+      throw new Error(
+        `Inspect prior attempt for ${line.id}; no automatic retry.`,
+      )
     const bytes = await readFile(audioPath)
     if (digest(bytes) !== previous.sha256)
       throw new Error(`Stored audio mismatch for ${line.id}.`)

@@ -1,0 +1,20 @@
+{
+  "requests": [
+    "/games/adventure-voice-v6/first-arc/r60-p100.mp3",
+    "/games/adventure-voice-v6/first-arc/r60-p080.mp3",
+    "/games/adventure-voice-v6/first-arc/r59-p080.mp3",
+    "/games/adventure-voice-v6/sunlit-steps/r60-p100.mp3"
+  ],
+  "failedRequests": [
+    "/games/adventure-voice-v6/first-arc/r60-p100.mp3",
+    "/games/adventure-voice-v6/first-arc/r60-p080.mp3",
+    "/games/adventure-voice-v6/first-arc/r59-p080.mp3"
+  ],
+  "heldRequestRetired": false,
+  "audioEvents": [
+    "one-shot-start",
+    "get-user-media",
+    "one-shot-stopped",
+    "mic-stream-after-example"
+  ]
+}

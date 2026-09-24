@@ -266,6 +266,13 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Rule:** tolerate that suspended event only while the new unlock is pending and no sources have started. Native suspension preparation and genuine interruption must still cancel. Reproduce the ordering with an actual AudioContext, not only synchronous mocks.
 **See:** `packages/glass-game/src/browser/museum-output.ts`, `art/glass-adventure/audio/v1/verify_runtime.mjs`
 
+### Verify sung references at the live capture sample rates
+
+**Symptom:** a generated reference passed offline melody checks, but those checks did not match the microphone pipeline.
+**Cause:** testing a 24 kHz file with a fixed 2048/1024 YIN window/hop doubles the time window relative to the same live worklet at 48 kHz. Consonant gaps and pitch confidence can differ.
+**Rule:** decode/resample delivery audio to common AudioContext rates (44.1/48 kHz), run the production detector and judge with every unvoiced frame, and test wrong-note controls. Keep source-rate analysis separately labelled; never add hidden tones to force a reference through the judge.
+**See:** `packages/pitch-engine/src/pitch-f0-stream.ts`, `packages/glass-game/src/browser/voice-session.ts`.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
