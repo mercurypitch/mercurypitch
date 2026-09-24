@@ -16,7 +16,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TAB_EAR_LAB, TAB_HOME, TAB_PROGRESS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { NativeRunControls } from '@/stores/native-shell-store'
-import { consumeRunParked, registerRunControls, } from '@/stores/native-shell-store'
+import { consumeRunParked, holdRoomArrival, registerRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { chipVisible, closeColumn, closeMore, COLUMN_IDLE_MS, columnOpen, countInBeat, countingIn, elapsedMs, finishRun, formatElapsed, keepAlertOpen, locked, moreOpen, openColumn, openMore, parked, parkRun, popScreen, pushed, pushScreen, railVisible, requestEnd, resetRunShell, roomHeaderVisible, runLabel, runOwner, runState, toggleLock, touchColumn, transportVisible, } from './run-shell-store'
@@ -90,6 +90,7 @@ beforeEach(() => {
   setActiveTab(TAB_SINGING)
   setPlaybackState('stopped')
   resetRunShell()
+  resetRoomArrivalHolds()
   consumeRunParked(TAB_SINGING)
 })
 
@@ -510,6 +511,21 @@ describe('the room header, while a screen is pushed', () => {
     expect(roomHeaderVisible()).toBe(true)
     closeMore()
 
+    expect(roomHeaderVisible()).toBe(true)
+  })
+
+  it('waits for a door to finish opening onto the room', () => {
+    // The alley holds the arrival while its clone covers the screen. A header
+    // up at once was drawn over the clone: a Back and a gear on the plate
+    // before the room behind them existed. The rail is not the room's and
+    // stays.
+    mount()
+
+    const release = holdRoomArrival()
+    expect(roomHeaderVisible()).toBe(false)
+    expect(railVisible()).toBe(true)
+
+    release()
     expect(roomHeaderVisible()).toBe(true)
   })
 

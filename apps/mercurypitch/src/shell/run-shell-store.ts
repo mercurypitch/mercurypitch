@@ -34,7 +34,7 @@
 
 import { createEffect, createMemo, createRoot, createSignal, on, untrack, } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { markRunParked, nativeRunControls } from '@/stores/native-shell-store'
+import { markRunParked, nativeRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { playbackState } from '@/stores/playback-state-store'
 import { activeTab } from '@/stores/ui-store'
 
@@ -213,11 +213,19 @@ export const chipVisible = createMemo<boolean>(
  * `--z-rail - 1`), so it took the tap meant for the screen's own Back and
  * floated its chip and gear over a page they have nothing to do with.
  *
+ * Nor while a door is still opening onto the room. The alley's clone covers
+ * the screen and holds the room's arrival until it has faded; a header that
+ * came up at once was drawn over the clone, a Back and a gear floating on the
+ * plate before the room behind them existed. The rail stays: it is the
+ * shell's, and the door opened from it.
+ *
  * Not "is there a header" — that is the shell's question, and it answers it
  * by whether a room registered controls at all. This is only "should the one
  * we have be showing".
  */
-export const roomHeaderVisible = createMemo<boolean>(() => pushed() === null)
+export const roomHeaderVisible = createMemo<boolean>(
+  () => pushed() === null && !roomArrivalHeld(),
+)
 
 export function elapsedMs(): number {
   tick()
