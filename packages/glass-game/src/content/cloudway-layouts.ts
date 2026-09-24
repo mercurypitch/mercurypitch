@@ -1,7 +1,7 @@
 // Cloudway layout auditions — isolated crescent, ribbon and terrace routes built from one proven trial envelope.
 
 import type { CheckpointDefinition, IntentionalGapDefinition, LevelDefinition, PlatformDefinition, RoomDecorationInstanceDefinition, SolidPropDefinition, } from '../contracts'
-import { CLOUDWAY_ENCOUNTER_IDS, CLOUDWAY_GLASS_RIBBON, CLOUDWAY_PLATFORM_IDS,cloudwayExhibitSolids,  } from './cloudway-trial'
+import { CLOUDWAY_ENCOUNTER_IDS, CLOUDWAY_GLASS_RIBBON, CLOUDWAY_PLATFORM_IDS, cloudwayExhibitSolids, } from './cloudway-trial'
 
 export type CloudwayLayoutId = 'crescent' | 'ribbon' | 'terrace'
 
