@@ -1,6 +1,6 @@
 # Glass adventure — current master plan
 
-Updated 24 September 2026. This is the current status and next-stage plan, not a
+Updated 25 September 2026. This is the current status and next-stage plan, not a
 chronological chat log. It supersedes the older “pending” labels in dated research
 and production notes for the items explicitly implemented below. Original sources,
 rejected experiments, detailed research and decision history remain preserved.
@@ -24,8 +24,14 @@ mirrored under `<user-dotfiles>/personal/besidecue/glass-adventure/`.
 The owner approved camera comfort, picture-bearing portrait shatter, matched
 Merc musical phrases, bounded mobile rendering quality, and the final museum
 art/pond/stair pass. Follow [FINAL-FIVE-PASSES-2026-09-24.md](./FINAL-FIVE-PASSES-2026-09-24.md).
-Complete the batch, review and polish, then hand back for physical-device tests.
-PR #861 stays open; no new levels or public release in this batch.
+Implementation is complete: brief diagonal steering preserves camera yaw;
+portrait artwork rides the shards; Merc's 3/5/7-note phrases match the selected
+key and pace; stable mobile quality reduces measured render work; and per-island
+inspection corrected pond/plinth contact and curved bridge landings. Independent
+source review has cleared all five areas, including audio retry and close/reopen
+ownership. Final browser proof, combined gates and exact-head CI are recorded in
+the execution checklist. PR #861 stays open for physical-device acceptance; no
+new levels or public release in this batch.
 
 ## Current priority after mobile playtest
 
@@ -262,6 +268,16 @@ record and this current master plan state what has now been implemented.
 
 The first musical phrase audition proposal is saved in
 [MERC-MUSICAL-PHRASES-2026-09-24.md](./MERC-MUSICAL-PHRASES-2026-09-24.md).
-Camera and portrait findings, including the corrected orientation and pending
-fracture choice, are recorded in
+Camera and portrait findings were recorded in
 [the Android audit](../proofs/mobile-playability-2026-09-24/camera-portrait-audit.md).
+
+The approved final passes supersede the pending choices in that earlier Android
+audit: picture-bearing shards are implemented, the earned picture remains intact,
+and brief diagonal steering no longer earns an immediate camera swing. The final
+voice delivery contains 88 lazy-loaded variants (39 three-note, 39 five-note and
+10 seven-note), 3.22 MB total. Missing seven-note key/pace combinations use the
+exact instrumental guide. Every delivered reference completes the shared detector
+and judge at 24, 44.1 and 48 kHz; wrong key, constant tone, silence and missed
+anchors do not. Encore alone permits a 400 ms consonant gap, without unvoiced
+progress, and requires 120 ms fresh voiced evidence per anchor. Real singing and
+whether Merc's phrasing feels delightful remain owner listening decisions.

@@ -8,6 +8,34 @@ Use the HTTPS LAN host for tablet microphone testing. The standalone path skips
 app onboarding. The playtest server disables hot reload; a manual page reload
 is enough to restart a play session, but edited source needs a server restart.
 
+## Focused route for the final five-pass build
+
+Use the new PR #861 build identified in the handoff, rather than an earlier APK
+or TestFlight build. The execution/CI status is recorded in
+[FINAL-FIVE-PASSES-2026-09-24.md](./FINAL-FIVE-PASSES-2026-09-24.md).
+
+1. Walk forward while briefly tapping left/right, then hold a longer turn. Try
+   near/far zoom and touch movement. Brief steering should keep a steady view;
+   sustained turns should follow smoothly without a second swing on release.
+2. Break a gallery's final portrait. Its picture should travel with the shards,
+   the frame should remain, and the earned picture should return upright. The
+   archive's optional protective glass intentionally keeps its painting intact.
+3. Open an optional encore. Compare Merc's words and the instrumental guide in
+   the same selected key and pace, then repeat the phrase yourself. Check that
+   ordinary consonants do not erase progress, and missed notes still matter.
+   Try changing the pace during playback and closing/reopening the encore.
+4. Play the current Cloudway route for several minutes. Compare High and
+   Balanced in the development Tune panel when available; report smoothness,
+   heat, shadow artifacts and any visible detail loss. Auto keeps one stable
+   profile for the session. Desktop submission counts are not device FPS.
+5. Inspect every museum island, including both ends of each connecting bridge.
+   Ponds should sit beside the architecture with clear waterfall lips; stairs
+   should rest on their base and the curved bridge treads should meet cleanly.
+
+Please keep any build identifier with device feedback, particularly for camera,
+singing and sustained-performance comparisons. New campaign levels wait for this
+acceptance pass.
+
 ## Short pre-merge recovery check
 
 1. Cold-open the current Cloudway link in Chrome. If startup graphics fail, use
