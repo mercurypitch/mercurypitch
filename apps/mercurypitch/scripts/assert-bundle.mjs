@@ -60,9 +60,10 @@
 // tree that is stale rather than absent -- which the PRESENT checks alone
 // cannot tell apart from a good one.
 //
-// Dependency-free on purpose: it runs on a bare runner before any workspace
-// install has necessarily happened, and inside the reusable Capacitor
-// workflow, which knows nothing about this app.
+// It needs only Node and `vite` (through ../api-base.mjs, which reads the env
+// files with Vite's own loader): every job that runs it -- the PR gate and
+// the reusable Capacitor workflow, which knows nothing about this app -- has
+// installed the workspace first.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'

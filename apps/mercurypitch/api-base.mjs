@@ -27,11 +27,14 @@
 //
 // Shared by `vite.config.ts`, which compiles the answer in and prints it, and
 // by `scripts/assert-bundle.mjs`, which reads the built JS and fails when the
-// answer is not what is there. Dependency-free for the second one's sake: it
-// runs on a bare runner.
+// answer is not what is there. Both read the env files through Vite's own
+// `loadEnv`, so an inline comment, an `export ` prefix, quotes or a `${VAR}`
+// mean here exactly what they mean to the build. A hand-rolled reader once
+// took `URL # the dev worker` for the URL, and `export VITE_API_BASE_URL=`
+// for no base at all. Every job that runs assert-bundle has installed the
+// workspace first, so `vite` is there.
 
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { loadEnv } from 'vite'
 
 /** The two workers a native build may name, and nothing else is special. */
 export const API_BASES = Object.freeze({
@@ -43,42 +46,16 @@ export const API_BASES = Object.freeze({
 export const API_TARGET_ENV = 'MERCURYPITCH_API_TARGET'
 
 /**
- * The env files Vite would read for `mode`, in its own order, lowest first.
- * Only simple `NAME=value` lines — which is all this app's files hold.
+ * The `VITE_` variables Vite loads for `mode` from `dir`: its own `loadEnv`,
+ * so its file order, its parser and its `${VAR}` expansion. As for the build,
+ * a `VITE_` variable already in the process environment wins over the files.
  *
  * @param {string} dir
  * @param {string} mode
  * @returns {Record<string, string>}
  */
 export function readEnvFiles(dir, mode) {
-  /** @type {Record<string, string>} */
-  const out = {}
-  for (const name of [
-    '.env',
-    '.env.local',
-    `.env.${mode}`,
-    `.env.${mode}.local`,
-  ]) {
-    const path = join(dir, name)
-    if (!existsSync(path)) continue
-    for (const raw of readFileSync(path, 'utf8').split(/\r?\n/u)) {
-      const line = raw.trim()
-      if (line === '' || line.startsWith('#')) continue
-      const eq = line.indexOf('=')
-      if (eq <= 0) continue
-      const key = line.slice(0, eq).trim()
-      let value = line.slice(eq + 1).trim()
-      if (
-        value.length >= 2 &&
-        (value[0] === '"' || value[0] === "'") &&
-        value.at(-1) === value[0]
-      ) {
-        value = value.slice(1, -1)
-      }
-      out[key] = value
-    }
-  }
-  return out
+  return loadEnv(mode, dir, 'VITE_')
 }
 
 /**
@@ -112,7 +89,11 @@ export function resolveApiBase(files, processEnv) {
   }
 
   const fromProcess = processEnv.VITE_API_BASE_URL
-  const base = (fromProcess ?? files.VITE_API_BASE_URL ?? '').trim()
+  // No trailing slash: `${base}/api/...` is how every caller joins it, and a
+  // dev worker written with one is still the dev worker.
+  const base = (fromProcess ?? files.VITE_API_BASE_URL ?? '')
+    .trim()
+    .replace(/\/+$/u, '')
   const source =
     fromProcess !== undefined
       ? 'VITE_API_BASE_URL from the process environment'
@@ -120,7 +101,7 @@ export function resolveApiBase(files, processEnv) {
         ? 'VITE_API_BASE_URL from apps/mercurypitch/.env*'
         : 'nothing: no VITE_API_BASE_URL anywhere'
 
-  if (base.replace(/\/+$/u, '') === API_BASES.production) {
+  if (base === API_BASES.production) {
     throw new Error(
       `VITE_API_BASE_URL names the production worker (${base}) without ${API_TARGET_ENV}=production. The production worker is compiled in only through that switch — see apps/mercurypitch/.env.example.`,
     )

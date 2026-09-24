@@ -48,7 +48,11 @@ export default defineConfig({
     // The shell is developed against a TEST build, which is the one with the
     // developer screen in it. Without this the suites would run as a store
     // build and every case that pushes that screen would assert a no-op.
-    env: { VITE_PORTABLE_CONSOLE: 'true' },
+    //
+    // No API base, as in the root config: the committed .env names the live
+    // dev worker, Vitest serves import.meta.env from Vite's env, and a test
+    // that reached getDb() would otherwise talk to it instead of Dexie.
+    env: { VITE_PORTABLE_CONSOLE: 'true', VITE_API_BASE_URL: '' },
     projects: [
       {
         extends: true,
