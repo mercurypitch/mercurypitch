@@ -374,4 +374,60 @@ describe('explicit native games profile', () => {
       )
     }
   })
+
+  it('wires the complete games profile into non-tag distribution builds', () => {
+    const repository = fileURLToPath(new URL('../../../', import.meta.url))
+    const caller = readFileSync(
+      resolve(repository, '.github/workflows/beside-cue-mobile.yml'),
+      'utf8',
+    )
+    const reusable = readFileSync(
+      resolve(repository, '.github/workflows/capacitor-app.yml'),
+      'utf8',
+    )
+
+    expect(caller).toContain("tags: ['bc-v*']")
+    expect(caller).toContain('packages/glass-game/**')
+    expect(caller).toContain('native-test-profile-script: native:games')
+    expect(caller).toContain(
+      'native-test-android-gradle-property: besideCueGames=1',
+    )
+    expect(caller).toContain(
+      'native-test-ios-build-setting: BESIDE_CUE_INFO_PLIST_PATH=build/games/Info.plist',
+    )
+    expect(caller).toContain('size-fail-mb: 150')
+    expect(caller).toContain('native-test-size-warn-mb: 300')
+    expect(caller).toContain('native-test-size-fail-mb: 340')
+    for (const path of [
+      'apps/beside-cue/public/games/**',
+      'apps/beside-cue/public/models/**',
+      'apps/beside-cue/public/ort/**',
+    ])
+      expect(caller).toContain(path)
+
+    expect(reusable.match(/USE_NATIVE_TEST_PROFILE:/gu)).toHaveLength(3)
+    expect(reusable).toContain(
+      "!startsWith(github.ref, format('refs/tags/{0}', inputs.tag-prefix)) && inputs.native-test-profile-script != ''",
+    )
+    expect(
+      reusable.match(
+        /"\$NATIVE_TEST_PROFILE_SCRIPT" -- --platform (?:android|ios) --build/gu,
+      ),
+    ).toHaveLength(4)
+    expect(
+      reusable.match(
+        /profile_args\+=\("-P\$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"\)/gu,
+      ),
+    ).toHaveLength(2)
+    expect(
+      reusable.match(/profile_args\+=\("\$NATIVE_TEST_IOS_BUILD_SETTING"\)/gu),
+    ).toHaveLength(2)
+    expect(reusable).toContain('Upload signed native testing artifacts')
+    expect(reusable).toContain(
+      "if: env.USE_NATIVE_TEST_PROFILE == 'true' && env.HAS_UPLOAD_KEY == 'true'",
+    )
+    expect(reusable).toContain(
+      "UPLOAD: ${{ github.event_name != 'pull_request' && (inputs.testflight-upload-from == 'main-and-tags' || github.ref_type == 'tag') }}",
+    )
+  })
 })

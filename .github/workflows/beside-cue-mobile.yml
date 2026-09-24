@@ -11,6 +11,9 @@ name: Beside Cue Mobile
 #
 # Beside Cue versions independently of MercuryPitch, so this deliberately
 # does not use the `v*` tags that ship the web app to production.
+# Non-tag builds are owner testing builds and include the optional games. A
+# `bc-v*` tag remains the future public-release boundary and uses the canonical
+# games-off manifests and web bundle.
 
 on:
   pull_request:
@@ -19,10 +22,13 @@ on:
       - 'apps/beside-cue/**'
       - 'packages/audio-io/**'
       - 'packages/beside-cue-core/**'
+      - 'packages/glass-game/**'
       - 'packages/mobile-runtime/**'
       - 'packages/pitch-engine/**'
       - 'packages/ios-audio-session/**'
+      - 'packages/purchase-kit/**'
       - 'gradle/signing.gradle'
+      - '.gitattributes'
       - 'package.json'
       - 'pnpm-lock.yaml'
       # The size gate's measurement lives in a script, not inline in the
@@ -67,7 +73,7 @@ jobs:
       signing-env-prefix: BESIDE_CUE
       profile-build-setting: BESIDE_CUE_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
-      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|mobile-runtime|pitch-engine|ios-audio-session)/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
+      changed-paths-regex: '^(apps/beside-cue/|packages/(audio-io|beside-cue-core|glass-game|mobile-runtime|pitch-engine|ios-audio-session|purchase-kit)/|gradle/signing\.gradle$|\.gitattributes$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(beside-cue-mobile|capacitor-app)\.yml$)'
       # The hash of the store reviewer's unlock code. Not a secret (it is a
       # digest), so it lives in a repository variable; the code itself is in
       # the vault and is only ever typed into App Store Connect and Play.
@@ -77,10 +83,22 @@ jobs:
       testflight-purchase-mode: ${{ vars.BESIDE_CUE_TESTFLIGHT_PURCHASES || 'mock' }}
       testflight-upload-from: main-and-tags
       ios-export-method: ${{ vars.BESIDE_CUE_IOS_EXPORT_METHOD || 'release-testing' }}
+      # The native games command owns the build, provenance stamp, Capacitor
+      # sync and byte-for-byte verification. The paired platform arguments
+      # select the microphone manifests; a Vite flag alone is insufficient.
+      native-test-profile-script: native:games
+      native-test-profile-lfs-include: 'apps/beside-cue/public/games/**,apps/beside-cue/public/models/**,apps/beside-cue/public/ort/**'
+      native-test-android-gradle-property: besideCueGames=1
+      native-test-ios-build-setting: BESIDE_CUE_INFO_PLIST_PATH=build/games/Info.plist
       # Beside Cue ships video and audio packs and sits at ~82 MB today; the
       # owner accepts that, the gate should not warn on every run.
       size-warn-mb: 90
       size-fail-mb: 150
+      # The 2026-09-24 games-enabled web tree is 378.07 MiB unpacked and
+      # 288.72 MiB under ordinary ZIP compression. These preview-only limits
+      # leave packaging headroom without weakening the future release gate.
+      native-test-size-warn-mb: 300
+      native-test-size-fail-mb: 340
       # The onboarding media is generated, not checked in, and a build that
       # silently drops it ships an app whose first screen is blank.
       verify-assets: |

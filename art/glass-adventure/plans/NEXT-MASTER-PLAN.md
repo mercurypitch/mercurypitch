@@ -5,21 +5,58 @@ chronological chat log. It supersedes the older “pending” labels in dated re
 and production notes for the items explicitly implemented below. Original sources,
 rejected experiments, detailed research and decision history remain preserved.
 
-Work is on `feat/glass-museum-level-one`, draft PR #807. The owner authorized
-roadmap **1–8**, including easily configurable melody, and asked us to **stop
-before 9** for testing. Items 10–11 remain later. No merge or release is authorized.
+The Glassworks foundation was squash-merged through PR #807 into `main` at
+`3076872d5dca644682985f2bda70a84e18c2ff95` on 24 September 2026, after the
+required PR Gate passed again. The owner authorized roadmap **1–8**, including
+configurable melody, and asked us to **stop before 9** for testing. Items 10–11
+remain later. Current work is `feat/glass-native-preview-builds`: the owner
+explicitly approved games-enabled Android and TestFlight testing builds.
+Public release remains a separate decision.
 The durable execution record is
 [APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md](./APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md);
 its final integration/CI checkpoint is authoritative for this batch. Plans are
 mirrored under `<user-dotfiles>/personal/besidecue/glass-adventure/`.
 
-## Active pre-merge review
+## Current priority after mobile playtest
 
-The owner requested a graphics/microphone recovery and independent review pass
-before closing PR807. Follow [PR807-PREMERGE-REVIEW-2026-09-24.md](./PR807-PREMERGE-REVIEW-2026-09-24.md)
-for this pass; the previous batch's green CI does not certify these new changes.
-The next PR should include another Floating Museum art pass for visible
-triangulation and architectural detail. Roadmap 9 still waits for acceptance.
+The owner reported poor real-mobile performance, unclear challenge activation and
+Cloudway portrait pass-through/locked-exit confusion. Follow
+[MOBILE-PERFORMANCE-AND-GUIDANCE-FOLLOWUP-2026-09-24.md](./MOBILE-PERFORMANCE-AND-GUIDANCE-FOLLOWUP-2026-09-24.md).
+It contains evidence-ranked rendering findings, the exact current Sing gesture,
+required encounter/exit rules, collision and guidance changes, device acceptance,
+and the later breakable-ice-wall concept. This work precedes new islands/levels.
+Games-enabled Android and TestFlight testing builds are now authorized so the
+shared runtime can be assessed on actual hardware; this does not claim mobile
+performance is accepted or authorize public release. Keep full source art while
+measuring culling, render passes, mobile quality and reviewed LODs.
+
+## Completed foundation review
+
+The graphics/microphone recovery and independent review pass is complete;
+[PR807-PREMERGE-REVIEW-2026-09-24.md](./PR807-PREMERGE-REVIEW-2026-09-24.md)
+records the findings and limits. Exact head `7a9666eb` passed all 44 applicable
+checks, then the ready-for-review PR Gate rerun also passed before merge.
+Mobile testing exposed the performance and Cloudway guidance/collision work
+above; it belongs in a focused follow-up. Another Floating Museum art pass
+for visible triangulation remains planned after the mobile budget is measured.
+Roadmap 9 still waits for acceptance.
+
+### Native testing build enablement
+
+The new workflow profile includes games in non-tag BesideCue PR/main/manual
+Android and TestFlight testing builds. It hydrates runtime LFS assets, builds
+and verifies native game provenance, and pairs the Android microphone manifest
+and iOS microphone plist with the packaged web assets. PR jobs do not upload
+TestFlight; main and manual runs keep the existing TestFlight upload behavior.
+Android debug APKs are retained, with signed testing AAB/APK artifacts when the
+upload key is configured; Google Play internal upload remains manual.
+
+`bc-v*` public-release tags retain canonical games-off manifests/bundles and the
+existing 90/150 MiB warning/failure limits. The test profile has a separate
+300/340 MiB budget based on a real 378.07 MiB unpacked game-enabled web build
+and its 288.72 MiB ZIP estimate. Actual native package sizes still require CI.
+This testing configuration supports physical-device measurement; it is not
+acceptance of current mobile frame rate or authorization for public release.
 
 ## What is playable
 

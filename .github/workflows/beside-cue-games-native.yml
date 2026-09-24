@@ -1,7 +1,8 @@
 name: Beside Cue Games Native
 
-# Test-only native profiles for the optional Glassworks campaign. Store builds
-# stay on the games-off workflow; this never release-signs or publishes packages.
+# Fast unsigned native-profile smoke tests for the optional Glassworks campaign.
+# The distribution workflow uses the same profile for non-tag owner builds;
+# this workflow never release-signs or publishes packages.
 on:
   pull_request:
     branches: [main]
