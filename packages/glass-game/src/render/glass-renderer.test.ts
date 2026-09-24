@@ -11,6 +11,8 @@ const state = vi.hoisted(() => {
   return {
     render: vi.fn(),
     setSize: vi.fn(),
+    setPixelRatio: vi.fn(),
+    shadowNeedsUpdateAtRender: [] as boolean[],
     getError: vi.fn((): number => 0),
     listeners: new Map<string, EventListener>(),
     loseContext: false,
@@ -44,16 +46,24 @@ vi.mock('three', async (original) => ({
         state.listeners.set(name, listener),
       removeEventListener: (name: string) => state.listeners.delete(name),
     }
-    shadowMap = {}
+    shadowMap = {
+      autoUpdate: true,
+      enabled: false,
+      needsUpdate: false,
+      type: 0,
+    }
     info = { render: {}, memory: {} }
     setSize = state.setSize
-    setPixelRatio = vi.fn()
+    setPixelRatio = state.setPixelRatio
     getContext = () => ({
       drawingBufferWidth: 800,
       drawingBufferHeight: 600,
       getError: state.getError,
     })
-    render = state.render
+    render = (...args: unknown[]) => {
+      state.shadowNeedsUpdateAtRender.push(this.shadowMap.needsUpdate)
+      return state.render(...args)
+    }
     dispose = state.rendererDispose
     forceContextLoss = state.forceContextLoss
   },
@@ -147,14 +157,22 @@ afterEach(() => {
   state.environmentLoadFailure = null
   state.render.mockClear()
   state.setSize.mockClear()
+  state.setPixelRatio.mockClear()
+  state.shadowNeedsUpdateAtRender.length = 0
   state.getError.mockReset().mockReturnValue(0)
   state.rendererDispose.mockClear()
   state.forceContextLoss.mockClear()
   state.canvasRemove.mockClear()
   state.mercDispose.mockClear()
   state.updateRoomVisibility.mockClear()
+  state.updateRoomVisibility.mockReturnValue({
+    visibleRoomIds: state.visibleRoomIds,
+    fallbackAllVisible: false,
+    shadowVisibilityChanged: false,
+  })
   state.updatePlanarReflection.mockClear()
   state.cullCloudwayPlatforms.mockClear()
+  state.cullCloudwayPlatforms.mockReturnValue(false)
   state.runtimeRoomId = undefined
   state.visibleRoomIds.clear()
 })
@@ -208,6 +226,128 @@ it('checks the first frame without polling the GPU on every game frame', async (
   renderer.render(snapshot, 0.016)
   renderer.render(snapshot, 0.016)
   expect(state.getError).toHaveBeenCalledOnce()
+  renderer.dispose()
+})
+
+it('applies balanced pixels and reuses at most one shadow frame', async () => {
+  const container = browserFixture()
+  vi.stubGlobal('window', {
+    devicePixelRatio: 3,
+    innerWidth: 390,
+    innerHeight: 844,
+    matchMedia: () => ({ matches: true }),
+  })
+  const renderer = createGlassRenderer(container, GLASSWORKS, (id) => id, {
+    renderQuality: 'balanced',
+  })
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  expect(renderer.getRenderQuality()).toEqual({
+    preference: 'balanced',
+    profile: 'balanced',
+    pixelRatio: 1.25,
+    shadowFrameInterval: 2,
+  })
+  expect(state.setPixelRatio).toHaveBeenLastCalledWith(1.25)
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, false, true])
+  expect(renderer.getMetrics()).toMatchObject({
+    shadowUpdates: 2,
+    shadowReuses: 1,
+  })
+
+  renderer.dispose()
+})
+
+it('invalidates a balanced shadow immediately when rendered visibility changes', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'balanced' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  state.cullCloudwayPlatforms.mockReturnValueOnce(true)
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, false, true])
+
+  state.updateRoomVisibility.mockReturnValueOnce({
+    visibleRoomIds: state.visibleRoomIds,
+    fallbackAllVisible: false,
+    shadowVisibilityChanged: true,
+  })
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender.at(-1)).toBe(true)
+  renderer.dispose()
+})
+
+it('invalidates a balanced shadow when Merc starts moving or glass starts shattering', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'balanced' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  const movingSnapshot = {
+    ...snapshot,
+    player: {
+      ...snapshot.player,
+      velocity: { ...snapshot.player.velocity, x: 1 },
+    },
+  }
+  renderer.render(movingSnapshot, 0.016)
+  renderer.render(movingSnapshot, 0.016)
+  const shatteringSnapshot = {
+    ...movingSnapshot,
+    breakables: movingSnapshot.breakables.map((breakable, index) =>
+      index === 0 ? { ...breakable, phase: 'shattering' as const } : breakable,
+    ),
+  }
+  renderer.render(shatteringSnapshot, 0.016)
+
+  expect(state.shadowNeedsUpdateAtRender).toEqual([
+    true,
+    false,
+    true,
+    false,
+    true,
+  ])
+  renderer.dispose()
+})
+
+it('switches an explicit quality choice without changing the accepted high profile', async () => {
+  const container = browserFixture()
+  vi.stubGlobal('window', { devicePixelRatio: 3 })
+  const renderer = createGlassRenderer(container, GLASSWORKS, (id) => id, {
+    renderQuality: 'balanced',
+  })
+  await renderer.ready
+
+  renderer.setRenderQuality('high')
+  expect(renderer.getRenderQuality()).toEqual({
+    preference: 'high',
+    profile: 'high',
+    pixelRatio: 1.5,
+    shadowFrameInterval: 1,
+  })
+  expect(state.setPixelRatio).toHaveBeenLastCalledWith(1.5)
+
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, true])
   renderer.dispose()
 })
 

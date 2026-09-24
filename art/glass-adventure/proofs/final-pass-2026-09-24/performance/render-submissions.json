@@ -1,0 +1,200 @@
+{
+  "environment": {
+    "renderer": "Chromium SwiftShader",
+    "viewportCssPixels": [
+      390,
+      844
+    ],
+    "deviceScaleFactor": 3,
+    "note": "Submission and pixel-budget evidence only; software render wall time is not phone FPS."
+  },
+  "high": {
+    "canvas": {
+      "cssHeight": 844,
+      "cssWidth": 390,
+      "devicePixelRatio": 3,
+      "height": 1266,
+      "pixelRatio": 1.5,
+      "width": 585
+    },
+    "drawCalls": 116,
+    "passes": {
+      "shadow": {
+        "drawCalls": 33,
+        "targetPixels": 1048576,
+        "targets": 1,
+        "triangles": 5125770,
+        "viewport": [
+          1024,
+          1024
+        ]
+      },
+      "transmission": {
+        "drawCalls": 35,
+        "targetPixels": 184836,
+        "targets": 1,
+        "triangles": 3863532,
+        "viewport": [
+          292,
+          633
+        ]
+      },
+      "screen": {
+        "drawCalls": 48,
+        "targetPixels": 740610,
+        "targets": 1,
+        "triangles": 5130634,
+        "viewport": [
+          585,
+          1266
+        ]
+      }
+    },
+    "preference": "high",
+    "profile": "high",
+    "targetPixels": 1974022,
+    "triangles": 14119936
+  },
+  "balancedUpdate": {
+    "canvas": {
+      "cssHeight": 844,
+      "cssWidth": 390,
+      "devicePixelRatio": 3,
+      "height": 1055,
+      "pixelRatio": 1.2487179487179487,
+      "width": 487
+    },
+    "drawCalls": 116,
+    "passes": {
+      "shadow": {
+        "drawCalls": 33,
+        "targetPixels": 1048576,
+        "targets": 1,
+        "triangles": 5125770,
+        "viewport": [
+          1024,
+          1024
+        ]
+      },
+      "transmission": {
+        "drawCalls": 35,
+        "targetPixels": 128061,
+        "targets": 1,
+        "triangles": 3863532,
+        "viewport": [
+          243,
+          527
+        ]
+      },
+      "screen": {
+        "drawCalls": 48,
+        "targetPixels": 513785,
+        "targets": 1,
+        "triangles": 5130634,
+        "viewport": [
+          487,
+          1055
+        ]
+      }
+    },
+    "preference": "balanced",
+    "profile": "balanced",
+    "targetPixels": 1690422,
+    "triangles": 14119936
+  },
+  "balancedReuse": {
+    "canvas": {
+      "cssHeight": 844,
+      "cssWidth": 390,
+      "devicePixelRatio": 3,
+      "height": 1055,
+      "pixelRatio": 1.2487179487179487,
+      "width": 487
+    },
+    "drawCalls": 83,
+    "passes": {
+      "transmission": {
+        "drawCalls": 35,
+        "targetPixels": 128061,
+        "targets": 1,
+        "triangles": 3863532,
+        "viewport": [
+          243,
+          527
+        ]
+      },
+      "screen": {
+        "drawCalls": 48,
+        "targetPixels": 513785,
+        "targets": 1,
+        "triangles": 5130634,
+        "viewport": [
+          487,
+          1055
+        ]
+      }
+    },
+    "preference": "balanced",
+    "profile": "balanced",
+    "targetPixels": 641846,
+    "triangles": 8994166
+  },
+  "balancedMovementStart": {
+    "canvas": {
+      "cssHeight": 844,
+      "cssWidth": 390,
+      "devicePixelRatio": 3,
+      "height": 1055,
+      "pixelRatio": 1.2487179487179487,
+      "width": 487
+    },
+    "drawCalls": 116,
+    "passes": {
+      "shadow": {
+        "drawCalls": 33,
+        "targetPixels": 1048576,
+        "targets": 1,
+        "triangles": 5125770,
+        "viewport": [
+          1024,
+          1024
+        ]
+      },
+      "transmission": {
+        "drawCalls": 35,
+        "targetPixels": 128061,
+        "targets": 1,
+        "triangles": 3863532,
+        "viewport": [
+          243,
+          527
+        ]
+      },
+      "screen": {
+        "drawCalls": 48,
+        "targetPixels": 513785,
+        "targets": 1,
+        "triangles": 5130634,
+        "viewport": [
+          487,
+          1055
+        ]
+      }
+    },
+    "preference": "balanced",
+    "profile": "balanced",
+    "targetPixels": 1690422,
+    "triangles": 14119936
+  },
+  "balancedAverage": {
+    "drawCalls": 99.5,
+    "targetPixels": 1166134,
+    "triangles": 11557051
+  },
+  "reductions": {
+    "recurringColorTargetPixels": 0.3064468375248258,
+    "averageDrawCalls": 0.14224137931034486,
+    "averageSubmittedTriangles": 0.18150825896094713,
+    "averageTargetPixels": 0.40925987653633045
+  }
+}

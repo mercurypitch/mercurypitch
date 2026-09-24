@@ -2,13 +2,17 @@
 
 import { createSignal, For, onCleanup, Show } from 'solid-js'
 import { CAMERA_FOLLOW_SMOOTHNESS } from '../render/camera'
+import type { GlassRenderQualityPreference, GlassRenderQualityProfile, } from '../render/render-quality'
 import type { CameraComfortSettings } from './camera-comfort'
-import { CAMERA_COMFORT_PRESETS, cameraComfortPresetText, DEFAULT_CAMERA_COMFORT, LOOK_SENSITIVITY, normalizeCameraComfort, } from './camera-comfort'
+import { CAMERA_COMFORT_PRESETS, DEFAULT_CAMERA_COMFORT, LOOK_SENSITIVITY, normalizeCameraComfort, } from './camera-comfort'
 import styles from './CameraTuningPanel.module.css'
 
 interface CameraTuningPanelProps {
   settings: CameraComfortSettings
   onChange(settings: CameraComfortSettings): void
+  renderQualityPreference: GlassRenderQualityPreference
+  renderQualityProfile: GlassRenderQualityProfile
+  onRenderQualityChange(preference: GlassRenderQualityPreference): void
 }
 
 type CopyState = 'idle' | 'copied' | 'failed'
@@ -46,7 +50,14 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
       props.settings.followSmoothnessSeconds - settings.followSmoothnessSeconds,
     ) < 1e-6
   const copy = (): void => {
-    const text = cameraComfortPresetText(props.settings)
+    const text = JSON.stringify(
+      {
+        cameraComfort: normalizeCameraComfort(props.settings),
+        renderQuality: props.renderQualityPreference,
+      },
+      null,
+      2,
+    )
     void (async () => {
       let copied = false
       try {
@@ -118,6 +129,41 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
               )}
             </For>
           </div>
+          <fieldset class={styles.quality}>
+            <legend>Graphics</legend>
+            <div class={styles.qualityStatus}>
+              Current output: {props.renderQualityProfile}
+            </div>
+            <div
+              class={styles.presets}
+              role="group"
+              aria-label="Graphics quality"
+            >
+              <For
+                each={
+                  [
+                    { id: 'auto', label: 'Auto' },
+                    { id: 'high', label: 'High' },
+                    { id: 'balanced', label: 'Balanced' },
+                  ] as const
+                }
+              >
+                {(quality) => (
+                  <button
+                    type="button"
+                    aria-pressed={props.renderQualityPreference === quality.id}
+                    onClick={() => props.onRenderQualityChange(quality.id)}
+                  >
+                    {quality.label}
+                  </button>
+                )}
+              </For>
+            </div>
+            <small>
+              Balanced helps smooth play. High keeps the sharpest detail. Auto
+              chooses for your screen.
+            </small>
+          </fieldset>
           <label class={styles.row} for="glass-look-sensitivity">
             <span>
               Look sensitivity
@@ -168,7 +214,10 @@ export function CameraTuningPanel(props: CameraTuningPanelProps) {
           <footer class={styles.actions}>
             <button
               type="button"
-              onClick={() => props.onChange({ ...DEFAULT_CAMERA_COMFORT })}
+              onClick={() => {
+                props.onChange({ ...DEFAULT_CAMERA_COMFORT })
+                props.onRenderQualityChange('auto')
+              }}
             >
               Reset defaults
             </button>

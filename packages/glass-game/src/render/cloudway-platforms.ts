@@ -44,6 +44,7 @@ interface PreparedPlatform {
   color: Color
   partBounds: readonly Box3[]
   partMatrices: readonly Matrix4[]
+  selectedForView: boolean
 }
 
 const DONORS: readonly DonorSpec[] = [
@@ -142,6 +143,7 @@ function createInstancedDonor(
       color: new Color(),
       partBounds: parts.map(() => new Box3()),
       partMatrices: parts.map(() => new Matrix4()),
+      selectedForView: false,
     })),
     receivesShadow: parts.some((part) => part.mesh.receiveShadow),
     renderId: spec.renderId,
@@ -402,17 +404,26 @@ export function createCloudwayPlatformRenderer(
       // The final presentation pass compacts these cached transforms afterward.
       prepareInstances(snapshot)
     },
-    cullForView(camera: PerspectiveCamera | undefined): void {
+    cullForView(camera: PerspectiveCamera | undefined): boolean {
       shadowReceiverBounds.length = 0
       for (const bounds of staticReceiverBounds)
         shadowReceiverBounds.push(bounds)
       for (const bounds of platformReceiverBounds)
         shadowReceiverBounds.push(bounds)
       viewSelector.update(camera, shadowReceiverBounds)
-      for (const donor of installedDonors)
-        writePreparedInstances(donor, (prepared) =>
-          viewSelector.includes(prepared.bounds),
-        )
+      let selectionChanged = false
+      for (const donor of installedDonors) {
+        for (const prepared of donor.prepared) {
+          const selectedForView =
+            prepared.active && viewSelector.includes(prepared.bounds)
+          if (selectedForView !== prepared.selectedForView) {
+            prepared.selectedForView = selectedForView
+            selectionChanged = true
+          }
+        }
+        writePreparedInstances(donor, (prepared) => prepared.selectedForView)
+      }
+      return selectionChanged
     },
     dispose(): void {
       disposeDonors(installedDonors)
