@@ -1,0 +1,141 @@
+{
+  "schema": 1,
+  "asset": "glide",
+  "purpose": "Matched review evidence for source-detail preservation, deliberate landing fit, and physical material response.",
+  "decision": "accepted",
+  "visualReview": "Accepted: the fitted derivative retains the donor lunar inlay, water veining, crystalline underside, gold hardware, and silhouette. The emerald glass extension and gold boundary form a deliberate flush landing frame.",
+  "comparisonOrder": [
+    "V5 accepted dense donor",
+    "V6 fitted derivative"
+  ],
+  "normalization": {
+    "method": "Both displays preserve a uniform 1.80m visual width and align the sampled landing plane to Blender Z=0.",
+    "sameScale": true,
+    "sameCamera": true,
+    "sameLighting": true
+  },
+  "sourceMeasurements": [
+    {
+      "label": "V5 accepted dense donor",
+      "file": "art/glass-adventure/platform-trials/v5/meshy/glide-ultra4k/dense-donor.glb",
+      "uniformWidthMetres": 1.8,
+      "displayCentreXMetres": -1.12,
+      "landingBlenderZMetres": 0.0,
+      "triangles": 145370,
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -2.019999981,
+          -0.418782741,
+          -0.303937286
+        ],
+        "max": [
+          -0.219999999,
+          0.418782741,
+          0.019400267
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.799999952,
+        0.837565482,
+        0.323337555
+      ]
+    },
+    {
+      "label": "V6 fitted derivative",
+      "file": "art/glass-adventure/platform-trials/v6/exports/cloudway-glide-v6-derivative.glb",
+      "uniformWidthMetres": 1.8,
+      "displayCentreXMetres": 1.12,
+      "landingBlenderZMetres": 0.0,
+      "triangles": 147250,
+      "boundsBlenderZUpMetres": {
+        "min": [
+          0.220000029,
+          -0.649999976,
+          -0.303937286
+        ],
+        "max": [
+          2.019999981,
+          0.649999976,
+          0.019400267
+        ]
+      },
+      "dimensionsBlenderZUpMetres": [
+        1.799999952,
+        1.299999952,
+        0.323337555
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "mode": "clay",
+      "order": [
+        "V5 accepted dense donor",
+        "V6 fitted derivative"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/glide-v5-v6-clay-front.png",
+          "bytes": 1751365,
+          "sha256": "1c2d48013211b0b52656d7089e01b3151043303777555bfb62e51009ff1177ef",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/glide-v5-v6-clay-three-quarter.png",
+          "bytes": 1795212,
+          "sha256": "e184ccdbd4d6a6a47e0cd4ec1cf9ad085e8c94ca97ace69fce99656e4c2998e4",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "pbr",
+      "order": [
+        "V5 accepted dense donor",
+        "V6 fitted derivative"
+      ],
+      "sameScale": true,
+      "sameCameraAndLighting": true,
+      "proofs": [
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/glide-v5-v6-pbr-front.png",
+          "bytes": 2150703,
+          "sha256": "16a213b96e71646eccb4872e7f9b865c3c043679a23666cc6d8dcaefdaeda324",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        },
+        {
+          "file": "art/glass-adventure/platform-trials/v6/proofs/comparisons/glide-v5-v6-pbr-three-quarter.png",
+          "bytes": 2353344,
+          "sha256": "080700fb9947f5fed014a7aa2a1927ee0e73d57cf2aa67d328e1fbef8a5cf3ba",
+          "dimensions": [
+            1800,
+            1000
+          ]
+        }
+      ]
+    }
+  ],
+  "render": {
+    "engine": "Cycles CPU",
+    "samples": 18,
+    "seed": 61,
+    "resolution": [
+      1800,
+      1000
+    ],
+    "camera": "orthographic",
+    "blender": "5.2.2 LTS"
+  },
+  "command": "rtk proxy timeout 3600 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v6/production/render_fitted_comparison.py -- --asset glide"
+}

@@ -1,0 +1,163 @@
+{
+  "schema": 1,
+  "purpose": "Actual Chromium load smoke using the repository Three 0.185.1 GLTFLoader without KTX2, Draco, or meshopt decoder configuration.",
+  "status": "passed",
+  "browser": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/148.0.7778.96 Safari/537.36",
+    "webpDecoded": true,
+    "consoleErrors": [],
+    "pageErrors": []
+  },
+  "loader": {
+    "module": "apps/beside-cue/node_modules/three/examples/jsm/loaders/GLTFLoader.js",
+    "threeRevision": "185",
+    "ktx2LoaderConfigured": false,
+    "meshoptDecoderConfigured": false,
+    "dracoLoaderConfigured": false
+  },
+  "artifacts": [
+    {
+      "asset": "frost",
+      "file": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-frost-v6-delivery-2k.glb",
+      "bytes": 26829112,
+      "sha256": "6a63fb71fc80319e13a8d783c0bb7788216615aefbb6690f28c3df7f6c72e0a0"
+    },
+    {
+      "asset": "glide",
+      "file": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-glide-v6-delivery-2k.glb",
+      "bytes": 12889480,
+      "sha256": "68eefd6f006a0d2b0d6c8fdad658974432a8fb2bf936b9830904be8d50e50a23"
+    }
+  ],
+  "assets": [
+    {
+      "asset": "frost",
+      "root": "Cloudway_Frost",
+      "meshes": 13,
+      "triangles": 634512,
+      "transmissiveMaterials": 5,
+      "metallicMaterials": 9,
+      "decodedTextures": [
+        {
+          "name": "set-0-base_color",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "set-0-normal",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "frost-metallic-2k-frost-roughness-2k",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "frost-transmission-2k",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "frost-frame-base-1k",
+          "width": 1024,
+          "height": 1024,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "frost-frame-normal-1k",
+          "width": 1024,
+          "height": 1024,
+          "imageType": "ImageBitmap"
+        }
+      ],
+      "boundsThreeYUpMetres": {
+        "min": [
+          -0.8999999761581421,
+          -0.4697208568513704,
+          -0.6500065525967045
+        ],
+        "max": [
+          0.8999999761581421,
+          0.03264431432488685,
+          0.6500065525967045
+        ]
+      }
+    },
+    {
+      "asset": "glide",
+      "root": "Cloudway_Glide",
+      "meshes": 11,
+      "triangles": 147250,
+      "transmissiveMaterials": 5,
+      "metallicMaterials": 7,
+      "decodedTextures": [
+        {
+          "name": "set-0-base_color",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "set-0-normal",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "glide-metallic-2k-glide-roughness-2k",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "glide-transmission-2k",
+          "width": 2048,
+          "height": 2048,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "glide-frame-base-1k",
+          "width": 1024,
+          "height": 1024,
+          "imageType": "ImageBitmap"
+        },
+        {
+          "name": "glide-frame-normal-1k",
+          "width": 1024,
+          "height": 1024,
+          "imageType": "ImageBitmap"
+        }
+      ],
+      "boundsThreeYUpMetres": {
+        "min": [
+          -0.8999999761581421,
+          -0.303937257419425,
+          -0.6499988696931479
+        ],
+        "max": [
+          0.8999999761581421,
+          0.019400238211351367,
+          0.6499988696931479
+        ]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "name": "frost.glb",
+      "encodedBodySize": 26829112,
+      "decodedBodySize": 26829112
+    },
+    {
+      "name": "glide.glb",
+      "encodedBodySize": 12889480,
+      "decodedBodySize": 12889480
+    }
+  ],
+  "command": "rtk proxy timeout 300 node art/glass-adventure/platform-trials/v6/production/smoke_delivery_loader.mjs"
+}

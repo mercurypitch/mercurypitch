@@ -1,0 +1,321 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "purpose": "Measure the source-preserved 2K quantized marble baseline before any semantic simplification.",
+  "artifacts": {
+    "raw": {
+      "file": "art/glass-adventure/platform-trials/v7/exports/cloudway-marble-v7-dense-baseline-2k.glb",
+      "bytes": 63686476,
+      "gzipBytes": 48477309,
+      "sha256": "2d6efa7f2a6561546041eb56ba7f13eec2daaad74caff6757a1a655dd6255a6b"
+    },
+    "delivery": {
+      "file": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb",
+      "bytes": 44277888,
+      "gzipBytes": 33337276,
+      "sha256": "6d87455f6ccc901595dc00db0ca400c36ba643bfd1fdb12206a6a43a416bc030"
+    },
+    "validator": {
+      "file": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k-validator.txt",
+      "bytes": 668,
+      "gzipBytes": 104,
+      "sha256": "34590999cc01b410711bfd41faf3be7c6eee95c0a06ca397e69e6605e28fff70"
+    }
+  },
+  "topology": {
+    "expectedTriangles": 1256556,
+    "rawFreshImport": {
+      "vertices": 703128,
+      "triangles": 1256556,
+      "triangleIndicesInt32Sha256": "55ba228aecc7a94b8f128a6bb72d0124eb1cd9f5a14a8f9df42010a0c7074043",
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.8997679948806763,
+          -0.7004780173301697,
+          -0.42564600706100464
+        ],
+        "max": [
+          0.9018999338150024,
+          0.6995750069618225,
+          0.14652499556541443
+        ]
+      },
+      "rootExtras": {
+        "assetId": "cloudway-marble-v7-dense-baseline",
+        "status": "review-only delivery candidate",
+        "coordinates": "Blender Z-up; glTF +Y up; metres",
+        "landingWidthMetres": 1.7,
+        "landingDepthMetres": 1.3,
+        "landingTopGlTfYMetres": 0.0,
+        "colliderSizeMetres": [
+          1.7,
+          0.24,
+          1.3
+        ],
+        "sourceTopologyMutation": false,
+        "fitMethod": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum"
+      },
+      "materials": [
+        "Cloudway Marble V7 Delivery 2K"
+      ],
+      "images": [
+        {
+          "name": "cloudway-marble-v7-base-2k",
+          "width": 2048,
+          "height": 2048,
+          "fileFormat": "PNG"
+        },
+        {
+          "name": "cloudway-marble-v7-normal-2k",
+          "width": 2048,
+          "height": 2048,
+          "fileFormat": "PNG"
+        },
+        {
+          "name": "cloudway-marble-v7-orm-2k",
+          "width": 2048,
+          "height": 2048,
+          "fileFormat": "PNG"
+        }
+      ]
+    },
+    "deliveryFreshImport": {
+      "vertices": 703128,
+      "triangles": 1256556,
+      "triangleIndicesInt32Sha256": "55ba228aecc7a94b8f128a6bb72d0124eb1cd9f5a14a8f9df42010a0c7074043",
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.8997679948806763,
+          -0.7004830837249756,
+          -0.4256433844566345
+        ],
+        "max": [
+          0.9018999338150024,
+          0.6995800733566284,
+          0.1465223878622055
+        ]
+      },
+      "rootExtras": {
+        "assetId": "cloudway-marble-v7-dense-baseline",
+        "status": "review-only delivery candidate",
+        "coordinates": "Blender Z-up; glTF +Y up; metres",
+        "landingWidthMetres": 1.7,
+        "landingDepthMetres": 1.3,
+        "landingTopGlTfYMetres": 0,
+        "colliderSizeMetres": [
+          1.7,
+          0.24,
+          1.3
+        ],
+        "sourceTopologyMutation": false,
+        "fitMethod": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum"
+      },
+      "materials": [
+        "Cloudway Marble V7 Delivery 2K"
+      ],
+      "images": [
+        {
+          "name": "cloudway-marble-v7-base-2k",
+          "width": 2048,
+          "height": 2048,
+          "fileFormat": "WEBP"
+        },
+        {
+          "name": "cloudway-marble-v7-normal-2k",
+          "width": 2048,
+          "height": 2048,
+          "fileFormat": "WEBP"
+        },
+        {
+          "name": "cloudway-marble-v7-orm-2k",
+          "width": 2048,
+          "height": 2048,
+          "fileFormat": "WEBP"
+        }
+      ]
+    },
+    "triangleIndexOrderingPreserved": true
+  },
+  "quantization": {
+    "method": "KHR_mesh_quantization; 16-bit position, normal, tangent, and UV attributes; per-mesh volume",
+    "maximumWorldVertexErrorMetres": 2.3745064651912727e-05,
+    "p95WorldVertexErrorMetres": 1.8980447989790746e-05,
+    "maximumBoundsErrorMetres": 5.066394805908203e-06
+  },
+  "runtimeCost": {
+    "directSceneRoots": [
+      "Cloudway_Marble"
+    ],
+    "meshes": 1,
+    "primitives": 1,
+    "triangles": 1256556,
+    "renderVerticesPerPass": 3769668,
+    "uploadedVertices": 703128,
+    "geometryPayloadBytes": 31953744,
+    "geometryPayloadMiB": 30.473464965820312,
+    "accessors": [
+      {
+        "semantic": "INDICES",
+        "count": 3769668,
+        "type": "SCALAR",
+        "componentType": 5125,
+        "normalized": false,
+        "payloadBytes": 15078672
+      },
+      {
+        "semantic": "POSITION",
+        "count": 703128,
+        "type": "VEC3",
+        "componentType": 5122,
+        "normalized": true,
+        "payloadBytes": 4218768
+      },
+      {
+        "semantic": "NORMAL",
+        "count": 703128,
+        "type": "VEC3",
+        "componentType": 5122,
+        "normalized": true,
+        "payloadBytes": 4218768
+      },
+      {
+        "semantic": "TEXCOORD_0",
+        "count": 703128,
+        "type": "VEC2",
+        "componentType": 5123,
+        "normalized": true,
+        "payloadBytes": 2812512
+      },
+      {
+        "semantic": "TANGENT",
+        "count": 703128,
+        "type": "VEC4",
+        "componentType": 5122,
+        "normalized": true,
+        "payloadBytes": 5625024
+      }
+    ],
+    "images": [
+      {
+        "name": "cloudway-marble-v7-normal-2k",
+        "mimeType": "image/webp",
+        "encodedBytes": 3134028
+      },
+      {
+        "name": "cloudway-marble-v7-base-2k",
+        "mimeType": "image/webp",
+        "encodedBytes": 4605310
+      },
+      {
+        "name": "cloudway-marble-v7-orm-2k",
+        "mimeType": "image/webp",
+        "encodedBytes": 1769026
+      }
+    ],
+    "decodedTextureBaseBytes": 50331648,
+    "decodedTextureBaseMiB": 48.0,
+    "decodedTextureWithMipmapsBytes": 67108864,
+    "decodedTextureWithMipmapsMiB": 64.0,
+    "estimatedGeometryPlusMippedTexturesMiB": 94.47346496582031,
+    "extensionsUsed": [
+      "EXT_texture_webp",
+      "KHR_materials_clearcoat",
+      "KHR_mesh_quantization"
+    ],
+    "extensionsRequired": [
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ]
+  },
+  "runtimeContract": {
+    "plainThreeGltfLoader": true,
+    "decoderRequired": false,
+    "requiredExtensions": [
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "oneMeshPrototype": true,
+    "topologyReduction": false
+  },
+  "rawGlbCost": {
+    "directSceneRoots": [
+      "Cloudway_Marble"
+    ],
+    "meshes": 1,
+    "primitives": 1,
+    "triangles": 1256556,
+    "renderVerticesPerPass": 3769668,
+    "uploadedVertices": 703128,
+    "geometryPayloadBytes": 48828816,
+    "geometryPayloadMiB": 46.56678771972656,
+    "accessors": [
+      {
+        "semantic": "POSITION",
+        "count": 703128,
+        "type": "VEC3",
+        "componentType": 5126,
+        "normalized": false,
+        "payloadBytes": 8437536
+      },
+      {
+        "semantic": "NORMAL",
+        "count": 703128,
+        "type": "VEC3",
+        "componentType": 5126,
+        "normalized": false,
+        "payloadBytes": 8437536
+      },
+      {
+        "semantic": "TEXCOORD_0",
+        "count": 703128,
+        "type": "VEC2",
+        "componentType": 5126,
+        "normalized": false,
+        "payloadBytes": 5625024
+      },
+      {
+        "semantic": "TANGENT",
+        "count": 703128,
+        "type": "VEC4",
+        "componentType": 5126,
+        "normalized": false,
+        "payloadBytes": 11250048
+      },
+      {
+        "semantic": "INDICES",
+        "count": 3769668,
+        "type": "SCALAR",
+        "componentType": 5125,
+        "normalized": false,
+        "payloadBytes": 15078672
+      }
+    ],
+    "images": [
+      {
+        "name": "cloudway-marble-v7-normal-2k",
+        "mimeType": "image/png",
+        "encodedBytes": 5009005
+      },
+      {
+        "name": "cloudway-marble-v7-base-2k",
+        "mimeType": "image/png",
+        "encodedBytes": 7322602
+      },
+      {
+        "name": "cloudway-marble-v7-orm-2k",
+        "mimeType": "image/png",
+        "encodedBytes": 2523050
+      }
+    ],
+    "decodedTextureBaseBytes": 50331648,
+    "decodedTextureBaseMiB": 48.0,
+    "decodedTextureWithMipmapsBytes": 67108864,
+    "decodedTextureWithMipmapsMiB": 64.0,
+    "estimatedGeometryPlusMippedTexturesMiB": 110.56678771972656,
+    "extensionsUsed": [
+      "KHR_materials_clearcoat"
+    ],
+    "extensionsRequired": []
+  },
+  "command": "rtk proxy timeout 900 env ALSOFT_DRIVERS=null blender -b --factory-startup --python-exit-code 1 --python art/glass-adventure/platform-trials/v7/production/audit_marble_dense_delivery.py"
+}

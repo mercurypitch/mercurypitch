@@ -1,0 +1,239 @@
+{
+  "schema": 1,
+  "asset": "Cloudway_Marble",
+  "status": "review-ready exact-source quality baseline; runtime integration pending",
+  "decision": "Preserve the fitted dense donor because the reviewed semantic shell displaced arches, cut corner connections, and left fascia remnants.",
+  "source": {
+    "file": "art/glass-adventure/platform-trials/v4/meshy/marble-ultra4k/dense-donor.glb",
+    "bytes": 65096584,
+    "sha256": "fa4d01900561e257be18c7190ef893aa789f178d1d4ccd13c2da22427d1033bb",
+    "authoringVertices": 702537,
+    "triangles": 1256556,
+    "triangleIndicesInt32Sha256": "23039e153bc1bf97eaf0bb605bf6ca80ae729a1a4f15c0cdf8d7557c65f90d96"
+  },
+  "fit": {
+    "method": "linear width fit; edge-protected cubic depth fit with front/back local scale equal to the width scale; piecewise vertical fit around the sampled landing datum",
+    "sourceBoundsBlenderZUpMetres": {
+      "min": [
+        -0.943821,
+        -0.507165,
+        -0.344755
+      ],
+      "max": [
+        0.949547,
+        0.513124,
+        0.339082
+      ]
+    },
+    "sourceDimensionsBlenderZUpMetres": [
+      1.893368,
+      1.020289,
+      0.683837
+    ],
+    "sourceLandingBlenderZ": 0.139629545,
+    "targetBoundsBlenderZUpMetres": {
+      "min": [
+        -0.899768,
+        -0.700478,
+        -0.425646
+      ],
+      "max": [
+        0.9019,
+        0.699575,
+        0.146525
+      ]
+    },
+    "targetDimensionsBlenderZUpMetres": [
+      1.801668,
+      1.400053,
+      0.572171
+    ],
+    "contactPlaneBlenderZ": 0.0,
+    "widthScale": 0.951567748,
+    "depthFit": {
+      "negativeHalf": {
+        "linear": 1.153272379,
+        "cubic": -0.153272379,
+        "edgeDerivative": 0.951567748
+      },
+      "positiveHalf": {
+        "linear": 1.153272379,
+        "cubic": -0.153272379,
+        "edgeDerivative": 0.951567748
+      }
+    },
+    "verticalScale": {
+      "belowContact": 0.878735741,
+      "aboveContact": 0.734636201
+    }
+  },
+  "delivery": {
+    "file": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k.glb",
+    "bytes": 44277888,
+    "sha256": "6d87455f6ccc901595dc00db0ca400c36ba643bfd1fdb12206a6a43a416bc030",
+    "root": "Cloudway_Marble",
+    "meshes": 1,
+    "primitives": 1,
+    "triangles": 1256556,
+    "uploadedVertices": 703128,
+    "requiredExtensions": [
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "decoderRequired": false,
+    "topologyReduction": false
+  },
+  "packedSource": {
+    "file": "art/glass-adventure/platform-trials/v7/sources/cloudway-marble-dense-baseline-v7.blend",
+    "bytes": 151673792,
+    "sha256": "dfeb0b8747fe4545a1510a3dcf25a813c119933ded71b0b8fe342059f3dc59c9"
+  },
+  "raw2kMaster": {
+    "file": "art/glass-adventure/platform-trials/v7/exports/cloudway-marble-v7-dense-baseline-2k.glb",
+    "bytes": 63686476,
+    "sha256": "2d6efa7f2a6561546041eb56ba7f13eec2daaad74caff6757a1a655dd6255a6b"
+  },
+  "textures": {
+    "method": "Lanczos3 base resize; Lanczos3 normal resize with per-texel vector renormalization; provider 2K roughness and metallic packed into ORM",
+    "base": {
+      "file": "art/glass-adventure/platform-trials/v7/textures/dense-baseline/cloudway-marble-v7-base-2k.png",
+      "bytes": 7322602,
+      "sha256": "c5cd7902866c339320ad71ef51979939356c3cccf617d516058e1d0a54c0f4ff",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    "normal": {
+      "file": "art/glass-adventure/platform-trials/v7/textures/dense-baseline/cloudway-marble-v7-normal-2k.png",
+      "bytes": 5009005,
+      "sha256": "1cd0c38bed3e37b836011149b1ddcaf0d2123f9c2661b689c5355e0acaf7a074",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    },
+    "orm": {
+      "file": "art/glass-adventure/platform-trials/v7/textures/dense-baseline/cloudway-marble-v7-orm-2k.png",
+      "bytes": 2523050,
+      "sha256": "cb03a51adca90a202e9100c475156e6063e4bbe6284f20f20ed9aaac1fe0c6ea",
+      "dimensions": [
+        2048,
+        2048
+      ]
+    }
+  },
+  "runtimeCost": {
+    "geometryPayloadBytes": 31953744,
+    "geometryPayloadMiB": 30.473464965820312,
+    "decodedTextureWithMipmapsBytes": 67108864,
+    "decodedTextureWithMipmapsMiB": 64.0,
+    "estimatedGeometryPlusMippedTexturesMiB": 94.47346496582031,
+    "browserParseMilliseconds": 383.5,
+    "browserTimingIsHostSpecific": true
+  },
+  "quantization": {
+    "method": "KHR_mesh_quantization; 16-bit position, normal, tangent, and UV attributes; per-mesh volume",
+    "maximumWorldVertexErrorMetres": 2.3745064651912727e-05,
+    "p95WorldVertexErrorMetres": 1.8980447989790746e-05,
+    "maximumBoundsErrorMetres": 5.066394805908203e-06
+  },
+  "proofs": {
+    "clay": {
+      "front": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-front.png",
+        "bytes": 186770,
+        "sha256": "2a7bab6c1d0ac4cd67b880ec9365085a0be6ac1afebd2f4a3f349760e7724ab1"
+      },
+      "three-quarter": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-three-quarter.png",
+        "bytes": 249017,
+        "sha256": "f7f265e16d586122e3106bdbb30c13c5c335a05fd59fa036a05b8c124e9e6583"
+      },
+      "gameplay": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-gameplay.png",
+        "bytes": 240229,
+        "sha256": "1fa8a48a0d5ab436172549cf93c3f5ee92bdb10d04c04ea8cc3041c6b2663b58"
+      },
+      "top": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-top.png",
+        "bytes": 292970,
+        "sha256": "5c15e0199bd1b1e4d22a6c92e02731800dd067e4a0406b151ace2ed60fd02ab4"
+      },
+      "side": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-clay-side.png",
+        "bytes": 312649,
+        "sha256": "fce946d39c21ee120b514a162bac43197b87ca9eda44b0ec29489e877e9149ca"
+      }
+    },
+    "pbr": {
+      "front": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-front.png",
+        "bytes": 473093,
+        "sha256": "e118588fc1661c8b86edd004f6dde475edc8784daab5dd7f1e0928efc1d21627"
+      },
+      "three-quarter": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-three-quarter.png",
+        "bytes": 781782,
+        "sha256": "035df0720223de74b8382c772e038c67223f00226399e94f1d3a2f4862f55a9a"
+      },
+      "gameplay": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-gameplay.png",
+        "bytes": 787561,
+        "sha256": "457d13be440a222aaf7ffdd109093da169b86a486226eb657be24cb95a948507"
+      },
+      "top": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-top.png",
+        "bytes": 1219249,
+        "sha256": "88d28904e62f3f29227ed415d73b6571cd945ffec7e92d66b7188f521a34081a"
+      },
+      "side": {
+        "file": "art/glass-adventure/platform-trials/v7/proofs/dense-baseline/matched-pbr-side.png",
+        "bytes": 634683,
+        "sha256": "49d0533dd264856aefb826ef522752b26be1ce04940f373250d61d7adc8dcf88"
+      }
+    }
+  },
+  "verification": {
+    "buildReport": {
+      "file": "art/glass-adventure/platform-trials/v7/production/dense-baseline-build-report.json",
+      "bytes": 16380,
+      "sha256": "0f4b0260de5f04f12346b674678837cee1dd892cbd19ffd45b1235b3d5e12a0f"
+    },
+    "deliveryAudit": {
+      "file": "art/glass-adventure/platform-trials/v7/proofs/diagnostics/dense-baseline-delivery-audit.json",
+      "bytes": 9255,
+      "sha256": "a426e938a179a139be9cd1d6d94441119e38b101592aa6c60c046ab1d4b77d61"
+    },
+    "browserLoaderSmoke": {
+      "file": "art/glass-adventure/platform-trials/v7/proofs/diagnostics/dense-baseline-browser-loader-smoke.json",
+      "bytes": 3456,
+      "sha256": "8588630e170053197cbd78f23b851c65fe76fa2cae960745cab8205299b1b1bd"
+    },
+    "khronosValidator": {
+      "file": "art/glass-adventure/platform-trials/v7/exports/delivery/cloudway-marble-v7-dense-baseline-delivery-2k-validator.txt",
+      "bytes": 668,
+      "sha256": "34590999cc01b410711bfd41faf3be7c6eee95c0a06ca397e69e6605e28fff70"
+    },
+    "claySilhouetteIntersectionOverUnion": {
+      "front": 1.0,
+      "three-quarter": 1.0,
+      "gameplay": 1.0,
+      "top": 1.0,
+      "side": 1.0
+    }
+  },
+  "reviewBoundary": {
+    "installed": false,
+    "mobileDefaultDeclaredReady": false,
+    "reason": "The exact source is the visual quality baseline; its measured 44.28 MB transfer and 94.47 MiB decoded geometry-plus-texture estimate require owner cost review."
+  },
+  "excluded": [
+    "authored reconstruction rejected at clay review",
+    "whole-shell collapse, decimation, or remesh",
+    "visible-surface flatten",
+    "provider call or credit use",
+    "runtime/public installation",
+    "commit or push"
+  ]
+}

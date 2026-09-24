@@ -1,0 +1,450 @@
+{
+  "status": "passed",
+  "purpose": "Fresh-import audit of the public combined Cloudway runtime kit.",
+  "runtimeFile": {
+    "path": "art/glass-adventure/platform-trials/v6/runtime/archive/cloudway-platform-kit-v6.glb",
+    "bytes": 44046324,
+    "gzipBytes": 36090287,
+    "sha256": "1c18c7a5e818346551fdadef6a091b848f19d0242092a14bf366d85a90b7930c"
+  },
+  "manifestHashVerified": true,
+  "logicalAssetId": "cloudway-platform-kit-v1",
+  "roots": [
+    "Cloudway_Crackle_Intact",
+    "Cloudway_Crackle_Release",
+    "Cloudway_Crackle_Warning",
+    "Cloudway_Frost",
+    "Cloudway_Glide",
+    "Cloudway_Marble"
+  ],
+  "extensionsUsed": [
+    {
+      "name": "EXT_texture_webp",
+      "required": true
+    },
+    {
+      "name": "KHR_materials_clearcoat",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_emissive_strength",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_ior",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_transmission",
+      "required": false
+    },
+    {
+      "name": "KHR_materials_volume",
+      "required": false
+    },
+    {
+      "name": "KHR_mesh_quantization",
+      "required": true
+    }
+  ],
+  "preservedV3": {
+    "Cloudway_Crackle_Intact": {
+      "triangles": 2472,
+      "geometryAndMaterialsSha256": "d7635a313e77274ea318896624d66c27178bc78bc0ca9525c2209bb7a934aa1e"
+    },
+    "Cloudway_Crackle_Release": {
+      "triangles": 308,
+      "geometryAndMaterialsSha256": "594a099c6765fbb8bbf57c4c0bf6f6624db875c91eca416bfa7597c4619c99b8"
+    },
+    "Cloudway_Crackle_Warning": {
+      "triangles": 2616,
+      "geometryAndMaterialsSha256": "23a0fcdb478e1ddf727d83977bdf4ae4430e767a763514af56a6be1d45c1b896"
+    },
+    "Cloudway_Marble": {
+      "triangles": 40032,
+      "geometryAndMaterialsSha256": "689187b6579e05de7bb7801c06062a8cb348d376b62aaaa5c4980c4cbe06d527"
+    }
+  },
+  "upgradedV6": {
+    "Cloudway_Frost": {
+      "source": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-frost-v6-delivery-2k.glb",
+      "triangles": 634512,
+      "geometryAndMaterialsSha256": "40e2f0049599eaf96d174af9cb6d67bfc6bc1dc1b4b3eafc275dafadce11f4d8",
+      "bounds": {
+        "min": [
+          -0.8999999761581421,
+          -0.4697208568513704,
+          -0.6500065525967045
+        ],
+        "max": [
+          0.8999999761581421,
+          0.03264431432488685,
+          0.6500065525967045
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0,
+        "center": [
+          0,
+          -0.12,
+          0
+        ]
+      },
+      "materials": [
+        {
+          "name": "frost_glass_ice_gold",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": true,
+          "transmissionMap": true
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "frost_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        }
+      ]
+    },
+    "Cloudway_Glide": {
+      "source": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-glide-v6-delivery-2k.glb",
+      "triangles": 147250,
+      "geometryAndMaterialsSha256": "f1f0d340aa28d394d1a2b2a68c279424dc875bce470f7b08a542b4fdf88b75a5",
+      "bounds": {
+        "min": [
+          -0.8999999761581421,
+          -0.303937257419425,
+          -0.6499988696931479
+        ],
+        "max": [
+          0.8999999761581421,
+          0.019400238211351367,
+          0.6499988696931479
+        ]
+      },
+      "collider": {
+        "shape": "box",
+        "width": 1.7,
+        "depth": 1.3,
+        "height": 0.24,
+        "topY": 0,
+        "center": [
+          0,
+          -0.12,
+          0
+        ]
+      },
+      "materials": [
+        {
+          "name": "glide_glass_ice_gold",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": true,
+          "transmissionMap": true
+        },
+        {
+          "name": "glide_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_landing_glass",
+          "baseColorMap": true,
+          "normalMap": true,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        },
+        {
+          "name": "glide_opaque_gold_boundary",
+          "baseColorMap": false,
+          "normalMap": false,
+          "metallicRoughnessMap": false,
+          "transmissionMap": false
+        }
+      ]
+    }
+  },
+  "prunedLegacyFrostGlideMaterials": true,
+  "prunedLegacyFrostGlideTextures": true,
+  "materialCount": 12,
+  "textureCount": 15,
+  "estimatedDecodedTextureMemory": {
+    "method": "RGBA8 bytes for every complete mip level; excludes driver overhead",
+    "bytes": 234881004,
+    "textures": [
+      {
+        "name": "cloudway_marble-atlas-03-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "decodedRgbaMipBytes": 5592404
+      },
+      {
+        "name": "cloudway_marble-atlas-01-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "cloudway_marble-atlas-02-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "decodedRgbaMipBytes": 5592404
+      },
+      {
+        "name": "frost-transmission-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "set-0-normal",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "set-0-base_color",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "frost-metallic-2k-frost-roughness-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "frost-frame-normal-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "decodedRgbaMipBytes": 5592404
+      },
+      {
+        "name": "frost-frame-base-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "decodedRgbaMipBytes": 5592404
+      },
+      {
+        "name": "glide-transmission-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "set-0-normal",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "set-0-base_color",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "glide-metallic-2k-glide-roughness-2k",
+        "dimensions": [
+          2048,
+          2048
+        ],
+        "decodedRgbaMipBytes": 22369620
+      },
+      {
+        "name": "glide-frame-normal-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "decodedRgbaMipBytes": 5592404
+      },
+      {
+        "name": "glide-frame-base-1k",
+        "dimensions": [
+          1024,
+          1024
+        ],
+        "decodedRgbaMipBytes": 5592404
+      }
+    ]
+  },
+  "sourceFiles": [
+    {
+      "path": "apps/beside-cue/public/games/cloudway-v3/cloudway-platform-kit-v3.glb",
+      "bytes": 10338088,
+      "gzipBytes": 9038775,
+      "sha256": "e96bb26369cb037dffcfab3d0c71911dc7e872c2b8f766db8cb73599a6d51c62"
+    },
+    {
+      "path": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-frost-v6-delivery-2k.glb",
+      "bytes": 26829112,
+      "gzipBytes": 21010713,
+      "sha256": "6a63fb71fc80319e13a8d783c0bb7788216615aefbb6690f28c3df7f6c72e0a0"
+    },
+    {
+      "path": "art/glass-adventure/platform-trials/v6/exports/delivery/cloudway-glide-v6-delivery-2k.glb",
+      "bytes": 12889480,
+      "gzipBytes": 11413787,
+      "sha256": "68eefd6f006a0d2b0d6c8fdad658974432a8fb2bf936b9830904be8d50e50a23"
+    }
+  ]
+}
