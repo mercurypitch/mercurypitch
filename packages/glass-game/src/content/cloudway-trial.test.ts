@@ -1,6 +1,7 @@
 // Cloudway Glass Ribbon contract tests — preserve one readable route with safe voice perches and explicit gaps.
 
 import { describe, expect, it } from 'vitest'
+import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { CLOUDWAY_ENCOUNTER_IDS, CLOUDWAY_GLASS_RIBBON, CLOUDWAY_GLASS_RIBBON_ROUTE, CLOUDWAY_PLATFORM_IDS, } from './cloudway-trial'
 
@@ -107,5 +108,58 @@ describe('The Glass Ribbon', () => {
         (target) => target.challenge.kind === 'hold',
       ),
     ).toBe(true)
+  })
+
+  it('discovers the first Sing action from the authored spawn and keeps the route explicit', () => {
+    const game = createGlassGame(CLOUDWAY_GLASS_RIBBON)
+    expect(game.snapshot()).toMatchObject({
+      nearbyBreakableId: CLOUDWAY_ENCOUNTER_IDS.arrival,
+      nextRequiredBreakableId: CLOUDWAY_ENCOUNTER_IDS.arrival,
+      nearbyLockedBreakableId: null,
+    })
+    expect(
+      CLOUDWAY_GLASS_RIBBON.guidance?.tutorial?.pages.some((page) =>
+        /glowing circle.*tap Sing/i.test(`${page.body} ${page.aside ?? ''}`),
+      ),
+    ).toBe(true)
+  })
+
+  it('matches every visible plinth and the intact finale portrait with collision', () => {
+    const solids = CLOUDWAY_GLASS_RIBBON.solids ?? []
+    for (const target of CLOUDWAY_GLASS_RIBBON.breakables) {
+      const plinth = solids.find((solid) => solid.id === `plinth:${target.id}`)
+      expect(plinth, target.id).toMatchObject({
+        kind: 'prop',
+        shape: 'cylinder',
+        x: target.position.x,
+        z: target.position.z,
+        top: 0.24,
+        thickness: 0.24,
+        radiusTop: 0.25,
+        radiusBottom: 0.29,
+      })
+    }
+
+    const portrait = solids.find(
+      (solid) => solid.id === `intact:${CLOUDWAY_ENCOUNTER_IDS.finale}`,
+    )
+    expect(portrait).toMatchObject({
+      kind: 'prop',
+      shape: 'box',
+      activation: { noneCompleted: [CLOUDWAY_ENCOUNTER_IDS.finale] },
+    })
+    const restored = createGlassGame(CLOUDWAY_GLASS_RIBBON, {
+      version: 2,
+      levelId: CLOUDWAY_GLASS_RIBBON.id,
+      checkpointId: 'cloudway-checkpoint-finale',
+      completedBreakableIds: [
+        CLOUDWAY_ENCOUNTER_IDS.arrival,
+        CLOUDWAY_ENCOUNTER_IDS.crossing,
+        CLOUDWAY_ENCOUNTER_IDS.finale,
+      ],
+    })
+    expect(restored.snapshot().activeSolidIds).not.toContain(
+      `intact:${CLOUDWAY_ENCOUNTER_IDS.finale}`,
+    )
   })
 })

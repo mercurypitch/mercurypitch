@@ -73,7 +73,7 @@ describe('resonance portal', () => {
     expect((veil.material as MeshPhysicalMaterial).forceSinglePass).toBe(true)
   })
 
-  it('brightens only when requirements are ready and delivers one finish', () => {
+  it('opens its opaque seal only after every required exhibit and delivers one finish', () => {
     const portal = createResonancePortal(GLASSWORKS.exit, materials(), false)
     const veil = portal.root.getObjectByName('resonance-veil-surface') as Mesh
     const material = veil.material as MeshPhysicalMaterial
@@ -83,9 +83,16 @@ describe('resonance portal', () => {
     const completed = GLASSWORKS.exit.requiresCompleted
 
     expect(portal.update(snapshot([]), 0)).toBe(false)
-    expect(material.opacity).toBe(0.06)
+    expect(material.opacity).toBeGreaterThan(0.6)
     expect(sparkles.visible).toBe(false)
+    portal.update(snapshot(completed.slice(0, -1)), 1)
+    expect(material.opacity).toBeGreaterThan(0.6)
     expect(portal.update(snapshot(completed), 0)).toBe(false)
+    expect(material.opacity).toBeGreaterThan(0.6)
+    portal.update(snapshot(completed), 0.25)
+    expect(material.opacity).toBeGreaterThan(0.34)
+    expect(material.opacity).toBeLessThan(0.7)
+    portal.update(snapshot(completed), 0.5)
     expect(material.opacity).toBe(0.34)
     expect(portal.update(snapshot(completed, true), 0)).toBe(false)
     expect(sparkles.visible).toBe(true)
@@ -94,6 +101,28 @@ describe('resonance portal', () => {
     expect(portal.update(snapshot(completed, true), 0.6)).toBe(true)
     expect(portal.update(snapshot(completed, true), 1)).toBe(false)
     expect(sparkles.visible).toBe(false)
+  })
+
+  it('shows one seal marker per requirement and removes them after unlocking', () => {
+    const portal = createResonancePortal(GLASSWORKS.exit, materials(), false)
+    const seals = portal.root.getObjectByName(
+      'resonance-veil-seals',
+    ) as InstancedMesh
+    expect(seals.count).toBe(GLASSWORKS.exit.requiresCompleted.length)
+    portal.update(snapshot([]), 0)
+    expect(seals.visible).toBe(true)
+    portal.update(snapshot(GLASSWORKS.exit.requiresCompleted), 1)
+    expect(seals.visible).toBe(false)
+  })
+
+  it('restores an already unlocked exit without replaying the seal opening', () => {
+    const portal = createResonancePortal(GLASSWORKS.exit, materials(), false)
+    const veil = portal.root.getObjectByName('resonance-veil-surface') as Mesh
+    portal.update(snapshot(GLASSWORKS.exit.requiresCompleted), 0)
+    expect((veil.material as MeshPhysicalMaterial).opacity).toBe(0.34)
+    expect(portal.root.getObjectByName('resonance-veil-seals')?.visible).toBe(
+      false,
+    )
   })
 
   it('keeps reduced-motion framing fixed during the brief finish cue', () => {

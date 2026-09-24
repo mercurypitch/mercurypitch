@@ -1,6 +1,7 @@
 // Cloudway Glass Ribbon — one optional, forgiving route through frost, glide and crackle platforms.
 
-import type { BreakableDefinition, ChallengeDefinition, CheckpointDefinition, HoldDefinition, LevelDefinition, PlatformDefinition, } from '../contracts'
+import type { BreakableDefinition, ChallengeDefinition, CheckpointDefinition, HoldDefinition, LevelDefinition, PlatformDefinition, SolidPropDefinition, } from '../contracts'
+import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, EXHIBIT_PLINTH, PORTRAIT_EXHIBIT_ENVELOPE, } from './solid-props'
 
 const PLATFORM_TOP = 0
 const PLATFORM_THICKNESS = 0.28
@@ -90,6 +91,43 @@ function exhibit(
   }
 }
 
+/** Collision mirrors the legacy plinth and intact portrait renderer envelopes. */
+export function cloudwayExhibitSolids(
+  breakables: readonly BreakableDefinition[],
+): SolidPropDefinition[] {
+  const solids: SolidPropDefinition[] = breakables.map((target) => ({
+    id: `plinth:${target.id}`,
+    kind: 'prop',
+    shape: 'cylinder',
+    x: target.position.x,
+    z: target.position.z,
+    top: target.position.y + EXHIBIT_PLINTH.height,
+    thickness: EXHIBIT_PLINTH.height,
+    radiusTop: EXHIBIT_PLINTH.radiusTop,
+    radiusBottom: EXHIBIT_PLINTH.radiusBottom,
+  }))
+  const portrait = breakables.find(
+    (target) => target.id === CLOUDWAY_ENCOUNTER_IDS.finale,
+  )
+  if (portrait !== undefined)
+    solids.push({
+      id: `intact:${portrait.id}`,
+      kind: 'prop',
+      shape: 'box',
+      minX: portrait.position.x - PORTRAIT_EXHIBIT_ENVELOPE.width / 2,
+      maxX: portrait.position.x + PORTRAIT_EXHIBIT_ENVELOPE.width / 2,
+      minZ: portrait.position.z - PORTRAIT_EXHIBIT_ENVELOPE.depth / 2,
+      maxZ: portrait.position.z + PORTRAIT_EXHIBIT_ENVELOPE.depth / 2,
+      top:
+        portrait.position.y +
+        DEFAULT_EXHIBIT_MOUNT_HEIGHT +
+        PORTRAIT_EXHIBIT_ENVELOPE.height,
+      thickness: PORTRAIT_EXHIBIT_ENVELOPE.height,
+      activation: { noneCompleted: [portrait.id] },
+    })
+  return solids
+}
+
 /**
  * Stable route hints for deterministic simulation and browser traversals.
  * The recommended direction is north along +Z; each jump begins from a wide,
@@ -112,6 +150,32 @@ export const CLOUDWAY_GLASS_RIBBON_ROUTE = {
   ],
 } as const
 
+const CLOUDWAY_BREAKABLES = [
+  exhibit(
+    CLOUDWAY_ENCOUNTER_IDS.arrival,
+    'The ribbon goblet',
+    'goblet',
+    { x: 1.05, z: 1.75 },
+    { x: 0.3, z: 1.75 },
+  ),
+  exhibit(
+    CLOUDWAY_ENCOUNTER_IDS.crossing,
+    'The opaline crossing vase',
+    'vase',
+    { x: 1.45, z: 18.55 },
+    { x: 0.7, z: 18.55 },
+    [CLOUDWAY_ENCOUNTER_IDS.arrival],
+  ),
+  exhibit(
+    CLOUDWAY_ENCOUNTER_IDS.finale,
+    'The cloudway portrait',
+    'portrait',
+    { x: 1, z: 31.15 },
+    { x: 1, z: 30.4 },
+    [CLOUDWAY_ENCOUNTER_IDS.crossing],
+  ),
+] as const satisfies readonly BreakableDefinition[]
+
 export const CLOUDWAY_GLASS_RIBBON: LevelDefinition = {
   id: 'cloudway-glass-ribbon',
   title: 'The Glass Ribbon',
@@ -130,7 +194,7 @@ export const CLOUDWAY_GLASS_RIBBON: LevelDefinition = {
     subtitle: 'A gentle road across pearl clouds',
     tutorial: {
       id: 'cloudway-first-crossing',
-      version: 1,
+      version: 2,
       pages: [
         {
           title: 'Follow the gold ribbon.',
@@ -139,10 +203,10 @@ export const CLOUDWAY_GLASS_RIBBON: LevelDefinition = {
             'There are no lives to lose. A missed jump returns Merc to the last safe landing.',
         },
         {
-          title: 'Watch before you cross.',
-          body: 'The opaline raft pauses at each dock. A crackle tile glows before it releases, and each one has solid marble immediately beyond it.',
+          title: 'Rest, then sing.',
+          body: 'On each safe landing, walk onto the glowing circle and tap Sing. Hold your comfortable note gently; the next exhibit lights after the glass opens.',
           aside:
-            'Singing happens only on still marble. Listen, rest and use your comfortable note whenever you are ready.',
+            'The opaline raft pauses at each dock. A crackle tile glows before it releases, with solid marble immediately beyond it.',
         },
       ],
     },
@@ -349,31 +413,8 @@ export const CLOUDWAY_GLASS_RIBBON: LevelDefinition = {
     checkpoint('cloudway-checkpoint-crackle-recovery', 0.8, 24.3),
     checkpoint('cloudway-checkpoint-finale', 1, 29.5),
   ],
-  breakables: [
-    exhibit(
-      CLOUDWAY_ENCOUNTER_IDS.arrival,
-      'The ribbon goblet',
-      'goblet',
-      { x: 1.05, z: 1.75 },
-      { x: 0.3, z: 1.75 },
-    ),
-    exhibit(
-      CLOUDWAY_ENCOUNTER_IDS.crossing,
-      'The opaline crossing vase',
-      'vase',
-      { x: 1.45, z: 18.55 },
-      { x: 0.7, z: 18.55 },
-      [CLOUDWAY_ENCOUNTER_IDS.arrival],
-    ),
-    exhibit(
-      CLOUDWAY_ENCOUNTER_IDS.finale,
-      'The cloudway portrait',
-      'portrait',
-      { x: 1, z: 31.15 },
-      { x: 1, z: 30.4 },
-      [CLOUDWAY_ENCOUNTER_IDS.crossing],
-    ),
-  ],
+  breakables: CLOUDWAY_BREAKABLES,
+  solids: cloudwayExhibitSolids(CLOUDWAY_BREAKABLES),
   exit: {
     minX: 0.4,
     maxX: 1.6,

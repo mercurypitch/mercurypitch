@@ -3,12 +3,13 @@
 // ============================================================
 
 import type { Material, Object3D, PerspectiveCamera, Scene, Texture, WebGLRenderer, } from 'three'
-import { Box3, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, Vector3, } from 'three'
+import { Box3, BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, SphereGeometry, TorusGeometry, Vector3, } from 'three'
 import { EXHIBIT_PLINTH } from '../content/solid-props'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, Vec3, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
 import { getPlatformRenderRecipe } from './catalog'
 import { createCloudwayPlatformRenderer } from './cloudway-platforms'
+import { createExhibitApproachPads } from './exhibit-approach-pads'
 import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import { createMaterialLibrary } from './material-library'
@@ -287,7 +288,7 @@ export function createMuseum(
     materials,
     materialLibrary,
   )
-  const pads = new Map<string, Mesh>()
+  const pads = createExhibitApproachPads(level, renderParent, materials.gold)
   for (const target of level.breakables) {
     const parent = renderParent(target.id)
     if (target.mount === undefined) {
@@ -315,29 +316,6 @@ export function createMuseum(
         target.position.z,
       )
     }
-    const pad = new Mesh(
-      new CircleGeometry(0.23, 48),
-      new MeshBasicMaterial({
-        color: 0x68d9d3,
-        transparent: true,
-        opacity: 0.2,
-        depthWrite: false,
-      }),
-    )
-    pad.rotation.x = -Math.PI / 2
-    pad.position.copy(target.anchor)
-    pad.position.y += 0.02
-    parent.add(pad)
-    pads.set(target.id, pad)
-    ring(
-      parent,
-      materials.gold,
-      0.24,
-      0.012,
-      target.anchor.x,
-      target.anchor.y + 0.018,
-      target.anchor.z,
-    )
   }
   // Tall dressing is beyond the playable rectangles, leaving orbit and jumps open.
   for (const platform of level.platforms.filter((item) =>
@@ -520,6 +498,7 @@ export function createMuseum(
           if (proxy !== undefined) proxy.mesh.visible = false
         }
       }
+      cloudwayPlatforms.refreshShadowReceivers()
       roomRenderBoundsDirty = true
     },
     update(snapshot: GameSnapshot) {
@@ -547,14 +526,10 @@ export function createMuseum(
         floor.visible = active.has(id)
       })
       cloudwayPlatforms.update(snapshot)
-      pads.forEach((pad, id) => {
-        pad.visible = !snapshot.completedBreakableIds.includes(id)
-        ;(pad.material as MeshBasicMaterial).opacity =
-          snapshot.nearbyBreakableId === id ? 0.55 : 0.18
-      })
+      pads.update(snapshot)
     },
-    cullCloudwayPlatforms(viewpoint: Vec3) {
-      cloudwayPlatforms.cullForView(viewpoint)
+    cullCloudwayPlatforms(camera: PerspectiveCamera | undefined) {
+      cloudwayPlatforms.cullForView(camera)
     },
     roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
     setDecorationTexture(assetId: string, texture: Texture) {

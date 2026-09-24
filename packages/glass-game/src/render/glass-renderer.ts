@@ -5,6 +5,7 @@
 import type { Material, Texture } from 'three'
 import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition, Vec3 } from '../contracts'
+import { getRequiredRouteBreakableIds } from '../core/progress'
 import type { LoadingProgress } from '../loading-progress'
 import { createLoadingProgressLedger } from '../loading-progress'
 import { loadMuseumAssets } from './asset-kit'
@@ -230,7 +231,7 @@ function createGlassRendererInstance(
   })
   scene.add(museum.root)
   const portal = createResonancePortal(
-    level.exit,
+    { ...level.exit, requiresCompleted: getRequiredRouteBreakableIds(level) },
     materials,
     options.reducedMotion ?? false,
   )
@@ -463,7 +464,7 @@ function createGlassRendererInstance(
       }
       if (challengeId === null) boundsEncounterId = null
       camera.update(snapshot, cameraDt, presentationPaused)
-      museum.cullCloudwayPlatforms(camera.camera.position)
+      museum.cullCloudwayPlatforms(camera.camera)
       const visibleRooms = museum.updateRoomVisibility(
         snapshot.player.position,
         camera.camera,

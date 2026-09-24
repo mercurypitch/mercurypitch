@@ -1,13 +1,43 @@
 # Glassworks: mobile performance and clear challenge progression
 
 24 September 2026. Owner feedback after the PR807 recovery pass. This is the
-next focused work item, before new levels or islands. It records unresolved
-work, not a claim that mobile performance or these interactions are fixed.
+focused work item, before new levels or islands. The implementation checkpoint
+below distinguishes completed software work from outstanding physical-device
+acceptance; earlier audit observations describe the baseline.
 The owner permits merging PR807 and handling this pass separately. The owner subsequently authorized games in Android and TestFlight testing
 builds. Public release remains a separate decision. Native testing builds are
 allowed before this performance pass so they can be measured on real hardware.
 
-## Report and current evidence
+## Implementation checkpoint
+
+PR860 was merged at `ff7eae76`; this work is on `feat/glass-mobile-playability`.
+
+- [x] Expanded-frustum platform selection and cached donor transforms, retaining
+      offscreen casters whose shadows can reach visible receiving artwork. No mesh,
+      texture, DPR or material-quality reduction. Matched WebGL submission receipts
+      live in `../proofs/mobile-rendering-2026-09-24/`. These are not phone FPS.
+- [x] Singing area widened to 1.1m with whole-body static-deck support retained.
+      Gold approach rings and persistent prerequisite-aware hints identify the next
+      required exhibit. Locked targets name an actionable earlier challenge.
+- [x] Cloudway plinths and intact portraits now have matching collision, including
+      shifted route variants. The exit physically blocks crossing until the required
+      dependency chain is complete, then its frosted seal opens.
+- [x] Optional discoveries remain optional; old zero-break checkpoints remain valid.
+      Resumed visits suppress stale opening instructions and the narrow header counter
+      stays on one line.
+- [x] Corrected native-plane texture orientation for persistent portrait art;
+      source images and imported glTF texture conventions remain unchanged.
+- [ ] Physical Android sustained frame rate, heat and real microphone playthrough.
+      Further quality tiers/LODs require this measurement; they are not silently
+      replaced by the first culling improvement.
+- [ ] Diagonal camera behavior and portrait fracture design: see the Android audit
+      in `../proofs/mobile-playability-2026-09-24/camera-portrait-audit.md`.
+
+No new inter-station barriers were added. Cloudway still permits exploring and
+reaching recovery checkpoints before singing; the required exit seal and explicit
+next-object guidance provide the bounded fix without invalidating those saves.
+
+## Original report and baseline evidence
 
 - Mobile browser play is very slow. The exact device/browser and affected scenes
   have been requested; no physical-device profile has been captured here.
@@ -39,7 +69,7 @@ allowed before this performance pass so they can be measured on real hardware.
 - [ ] Capture frame-time distribution and long frames on the map, a gallery and
       Cloudway: idle, walking/turning, entering a challenge, live singing, shattering
       and exiting. Separate initial load/compile stalls from sustained slow frames.
-- [ ] Count draw calls and triangles across every render pass, not just the last
+- [x] Count draw calls and triangles across every render pass, not just the last
       renderer.info reset; include transmission, shadow and mirror passes. Record
       render target dimensions and texture/geometry estimates separately.
 - [ ] Compare looking toward/away from the detailed kit and through room walls;
@@ -51,7 +81,7 @@ allowed before this performance pass so they can be measured on real hardware.
 
 ## 2. Optimize rendering while retaining the accepted appearance
 
-- [ ] Check actual camera-frustum culling and spatial bounds. Offscreen culling
+- [x] Check actual camera-frustum culling and spatial bounds. Offscreen culling
       does not imply wall occlusion, skipped shadow work or skipped CPU updates.
       Repeated meshes must be grouped into useful spatial/room chunks.
 - [ ] Add measured automatic/mobile quality settings for render resolution,
@@ -69,35 +99,35 @@ allowed before this performance pass so they can be measured on real hardware.
 
 ## 3. Make starting to sing obvious on touch
 
-- [ ] Keep a clear, reachable Sing action while approaching an available exhibit;
+- [x] Keep a clear, reachable Sing action while approaching an available exhibit;
       use a visible ground marker and target highlight, with a forgiving safe approach
       area. Do not require users to guess an invisible precise anchor.
-- [ ] Explain the locked state of a later exhibit: name the next required object
+- [x] Explain the locked state of a later exhibit: name the next required object
       and provide a short directional cue rather than hiding the action entirely.
-- [ ] For touch, show a microphone icon and concise action without keyboard-only
+- [x] For touch, show a microphone icon and concise action without keyboard-only
       instructions. Retain F for keyboard. Ensure 44 px target size and no overlap
       with movement, Jump, Help, Tune, captions or browser safe areas.
-- [ ] Keep explicit user intent for microphone acquisition; do not start capture
+- [x] Keep explicit user intent for microphone acquisition; do not start capture
       just by walking past an object. Preserve the recovery/takeover flow.
 - [ ] Verify the first encounter from a fresh save and from a zero-break resumed
       checkpoint, permission-denied recovery and each replay difficulty.
 
 ## 4. Make challenge gates and the finale physically coherent
 
-- [ ] Add deliberate collision proxies for intact required portraits/frames and
+- [x] Add deliberate collision proxies for intact required portraits/frames and
       vulnerable exhibit volumes; remove only the broken parts after shattering.
       Avoid blocking the singing anchor, camera escape or safe return path.
-- [ ] Present a clearly sealed exit until every required encounter is complete,
+- [x] Present a clearly sealed exit until every required encounter is complete,
       with a concise remaining-object cue. Open the seal visibly after the portrait
       shatters. Optional discoveries and optional Encore must never block completion.
 - [ ] Decide where required challenge completion should open the next route
       segment. Recommended: a visible resonance seal at each teaching station with
       a safe resting/singing platform, rather than allowing an unexplained run to
       the inert finale. Use existing reusable geometry before commissioning ice art.
-- [ ] Keep checkpoints useful before the first break. If new physical gates make
+- [x] Keep checkpoints useful before the first break. If new physical gates make
       old saved positions invalid, restore the player to a safe reachable unlocked
       checkpoint without losing broken exhibits, earned rewards or recordings.
-- [ ] Test touching/crossing/jumping through a locked exit, final-shatter unlock,
+- [x] Test touching/crossing/jumping through a locked exit, final-shatter unlock,
       entry from either direction, lingering in the trigger and jump/grounded exit.
       Completion and rewards occur exactly once; zero/partial breaks cannot finish.
 - [ ] Test all prerequisites on fresh/resumed/easy/harder attempts, with galleries
@@ -121,15 +151,15 @@ allowed before this performance pass so they can be measured on real hardware.
 - [ ] Portrait collision, shatter and finale agree visually and physically.
 - [ ] Before/after measurements show sustained improvement on the reported real
       device; desktop/tablet screenshots or software WebGL do not certify phone speed.
-- [ ] Responsive checks cover narrow portrait and landscape layouts, real touch
+- [x] Responsive checks cover narrow portrait and landscape layouts, real touch
       input and safe areas. Microphone evidence remains independent of frame rate.
-- [ ] Retain current accepted fog, art sources, camera settings, saves and finite
+- [x] Retain current accepted fog, art sources, camera settings, saves and finite
       rewards. No additional islands, new levels, enemies or release scope yet.
 
 Related plans: NEXT-MASTER-PLAN.md, OWNER-ACCEPTANCE-ITEMS-1-8-2026-09-24.md,
 PR807-PREMERGE-REVIEW-2026-09-24.md and the game-asset production checklist.
 
-## Bounded audit findings (24 September)
+## Original bounded audit findings (24 September)
 
 The camera/interaction and rendering audits were read-only. No fresh physical
 phone measurements or new browser runs were claimed for this report.

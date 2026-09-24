@@ -10,6 +10,54 @@ export function requirementsMet(
   return required === undefined || required.every((id) => completed.has(id))
 }
 
+/** Optional encounters remain rewards even if an exit lists one by mistake. */
+export function getRequiredExitBreakableIds(
+  level: LevelDefinition,
+): readonly string[] {
+  const optional = new Set(
+    level.breakables
+      .filter((target) => target.optional)
+      .map((target) => target.id),
+  )
+  return level.exit.requiresCompleted.filter((id) => !optional.has(id))
+}
+
+/** Dependency-first route rooted at the exit, excluding optional side work. */
+export function getRequiredRouteBreakableIds(
+  level: LevelDefinition,
+): readonly string[] {
+  const targets = new Map(level.breakables.map((target) => [target.id, target]))
+  const optional = new Set(
+    level.breakables
+      .filter((target) => target.optional)
+      .map((target) => target.id),
+  )
+  const visiting = new Set<string>()
+  const visited = new Set<string>()
+  const ordered: string[] = []
+  const visit = (id: string): void => {
+    if (visited.has(id) || optional.has(id)) return
+    // Authored content rejects cycles. Keep direct LevelDefinition fixtures
+    // finite while still retaining every member as a blocking requirement.
+    if (visiting.has(id)) return
+    visiting.add(id)
+    for (const dependency of targets.get(id)?.requiresCompleted ?? [])
+      visit(dependency)
+    visiting.delete(id)
+    visited.add(id)
+    ordered.push(id)
+  }
+  for (const id of getRequiredExitBreakableIds(level)) visit(id)
+  return ordered
+}
+
+export function exitRequirementsMet(
+  level: LevelDefinition,
+  completed: ReadonlySet<string>,
+): boolean {
+  return requirementsMet(getRequiredRouteBreakableIds(level), completed)
+}
+
 export function readProgress(
   level: LevelDefinition,
   raw: unknown,
@@ -56,9 +104,7 @@ export function readProgress(
     levelId: level.id,
     checkpointId: checkpoint?.id ?? fallback.checkpointId,
     completedBreakableIds: [...completed],
-    finished:
-      data.finished === true &&
-      requirementsMet(level.exit.requiresCompleted, completed),
+    finished: data.finished === true && exitRequirementsMet(level, completed),
     rewards: readRewardProgress(
       level,
       data.rewards,

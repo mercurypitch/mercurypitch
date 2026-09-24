@@ -7,6 +7,16 @@ export const EXHIBIT_PLINTH = {
   height: 0.24,
 } as const
 
+/** Default renderer lift used by legacy exhibits without an authored mount. */
+export const DEFAULT_EXHIBIT_MOUNT_HEIGHT = 0.255
+
+/** Final world-space envelope shared by portrait art and collision proxies. */
+export const PORTRAIT_EXHIBIT_ENVELOPE = {
+  width: 0.5824,
+  height: 0.84,
+  depth: 0.1008,
+} as const
+
 /** Decoration above the trough rims and the open arch passage stay nonblocking. */
 export function glassworksSolidProps(
   level: LevelDefinition,

@@ -90,6 +90,14 @@ test('the real renderer submits only near V7/V6 platforms and crosses the first 
   ).length
   expect(marbleInstances).toBe(6)
   const submissionProof: Record<string, unknown> = {}
+  const submissionPath = testInfo.outputPath(
+    'cloudway-v7-platform-submissions.json',
+  )
+  const persistSubmissionProof = () =>
+    writeFileSync(
+      submissionPath,
+      `${JSON.stringify(submissionProof, null, 2)}\n`,
+    )
   const arrivalDefault = await captureInstancedFrame(page)
   submissionProof.arrivalDefault = submissionReceipt(arrivalDefault)
   submissionProof.arrivalNoRasterFrameTime =
@@ -154,14 +162,7 @@ test('the real renderer submits only near V7/V6 platforms and crosses the first 
     .getByRole('button', { name: 'Cancel', exact: true })
     .click()
   await advanceToCameraMode(page, 'exploration')
-  const submissionPath = testInfo.outputPath(
-    'cloudway-v7-platform-submissions.json',
-  )
-  writeFileSync(submissionPath, `${JSON.stringify(submissionProof, null, 2)}\n`)
-  await testInfo.attach('cloudway-v7-platform-submissions', {
-    path: submissionPath,
-    contentType: 'application/json',
-  })
+  persistSubmissionProof()
 
   const arrivalWaypoint = CRESCENT.route.waypoints[0]!
   const arrivalPlatform = CRESCENT.level.platforms.find(
@@ -216,6 +217,19 @@ test('the real renderer submits only near V7/V6 platforms and crosses the first 
     ),
   )
   await page.clock.runFor(64)
+  const firstRecoveryForward = await captureInstancedFrame(page)
+  submissionProof.firstRecoveryForward = submissionReceipt(firstRecoveryForward)
+  const firstRecoveryScreenMarble = firstRecoveryForward.draws.filter(
+    (draw) =>
+      draw.target === 'screen' && draw.elements === MARBLE_ELEMENT_COUNT,
+  )
+  expect(firstRecoveryScreenMarble).toHaveLength(1)
+  expect(firstRecoveryScreenMarble[0]!.instances).toBeLessThan(4)
+  persistSubmissionProof()
+  await testInfo.attach('cloudway-v7-platform-submissions', {
+    path: submissionPath,
+    contentType: 'application/json',
+  })
   expect(errors).toEqual([])
 })
 
