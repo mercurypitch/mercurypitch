@@ -387,6 +387,11 @@ export const RoomsAlley: Component = () => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       const phase = alley().phase
+      // Mid-grow it is Back: the open is called off and the alley stays.
+      if (phase === 'opening') {
+        if (cancelOpen()) event.preventDefault()
+        return
+      }
       if (phase !== 'selected' && phase !== 'alive') return
       event.preventDefault()
       clear()

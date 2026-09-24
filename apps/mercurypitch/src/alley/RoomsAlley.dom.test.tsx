@@ -258,6 +258,26 @@ describe('the keyboard', () => {
     expect(escape.defaultPrevented).toBe(true)
   })
 
+  it('Escape mid-open calls the open off, as Back does', async () => {
+    const { el, store, nav } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+
+    const escape = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true,
+    })
+    window.dispatchEvent(escape)
+
+    expect(escape.defaultPrevented).toBe(true)
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(store.roomArrivalHeld()).toBe(false)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(nav.goToTab).not.toHaveBeenCalled()
+  })
+
   it('Escape at rest is left to whoever else wants it', async () => {
     const { el } = await mountAlley()
     const escape = new KeyboardEvent('keydown', {
