@@ -6,6 +6,7 @@ import type { Object3D } from 'three'
 import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { shortestAngleDelta, stepAngularResponse, stopAngularResponse, } from './angular-response'
+import { createCameraHeadingIntent } from './camera-heading-intent'
 import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
 import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
@@ -119,6 +120,7 @@ export function createAdventureCamera(
   let occluders: Object3D[] = []
   let yaw = level.spawn.facingYaw
   const followResponse = { angle: yaw, velocity: 0 }
+  const headingIntent = createCameraHeadingIntent()
   let followSmoothnessSeconds = validFollowSmoothness(
     options.followSmoothnessSeconds,
   )
@@ -509,11 +511,13 @@ export function createAdventureCamera(
     rebaseMovement() {
       movementReferenceYaw = yaw
       committedHeading = null
+      headingIntent.rebase()
     },
     cancelHeadingFollow() {
       committedHeading = null
       movementActive = false
       movementReferenceYaw = yaw
+      headingIntent.reset()
       stopAngularResponse(followResponse, yaw)
     },
     setFollowSmoothness(seconds: number) {
@@ -648,8 +652,16 @@ export function createAdventureCamera(
       if (!followsHeading) {
         committedHeading = null
         stopAngularResponse(followResponse, yaw)
-      } else if (movementActive && moving && !orbitActive)
-        committedHeading = facing
+      } else if (!orbitActive) {
+        const requestedHeading = headingIntent.target({
+          elapsedSeconds: safeDt,
+          facingYaw: facing,
+          movementActive,
+          movementReferenceYaw,
+          moving,
+        })
+        if (requestedHeading !== null) committedHeading = requestedHeading
+      }
       // Input intent, rather than velocity, defines one movement contact. A
       // collision can stop Merc without releasing the held key/stick; keeping
       // the basis there avoids turning a wall contact into camera feedback.
