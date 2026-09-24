@@ -394,6 +394,100 @@ describe("the Ear Lab's drift", () => {
   })
 })
 
+describe('each door is its own box', () => {
+  it.each([
+    [393, 852],
+    [852, 393],
+  ])(
+    'draws every door, rim and spill where the screen quad is, at %i x %i',
+    async (w, h) => {
+      vi.stubGlobal('innerWidth', w)
+      vi.stubGlobal('innerHeight', h)
+      const { el } = await mountAlley()
+      const alley = el('rooms-alley')
+      const plate = el('alley-plate')
+      const num = (v: string): number => Number.parseFloat(v)
+      const doors = alley.querySelectorAll<HTMLElement>('.mp-alley__door')
+      expect(doors).toHaveLength(6)
+      for (const door of doors) {
+        const key = door.dataset.door ?? ''
+        const bx = num(door.style.left)
+        const by = num(door.style.top)
+        const bw = num(door.style.width)
+        const bh = num(door.style.height)
+        // The quad's screen bounds, from the door's key button.
+        const hit = el(`alley-door-${key}`)
+        const x0 = num(hit.style.left)
+        const y0 = num(hit.style.top)
+        const x1 = x0 + num(hit.style.width)
+        const y1 = y0 + num(hit.style.height)
+        // A door, not the screen: a lifted door is composited at this size,
+        // so the box is the quad, its rim and its spill, and no more.
+        const sw0 = num(door.style.getPropertyValue('--sw'))
+        expect(bw, key).toBeLessThanOrEqual(Math.max(x1 - x0, sw0) + 10)
+        expect(bh, key).toBeLessThanOrEqual(y1 - y0 + 72 + 10)
+        expect(bw * bh, key).toBeLessThan((w * h) / 2)
+        // The rim, in the box's own coordinates, is back on the quad.
+        const rim = door.querySelector('.mp-alley__rim')
+        expect(rim?.getAttribute('viewBox'), key).toBe(`0 0 ${bw} ${bh}`)
+        const points = (
+          rim?.querySelector('.mp-alley__rim-line')?.getAttribute('points') ??
+          ''
+        )
+          .split(' ')
+          .map((pair) => pair.split(',').map(Number))
+        expect(points, key).toHaveLength(4)
+        const xs = points.map((p) => p[0] + bx)
+        const ys = points.map((p) => p[1] + by)
+        expect(Math.min(...xs), key).toBeCloseTo(x0, 0)
+        expect(Math.max(...xs), key).toBeCloseTo(x1, 0)
+        expect(Math.min(...ys), key).toBeCloseTo(y0, 0)
+        expect(Math.max(...ys), key).toBeCloseTo(y1, 0)
+        // The rim's halo fits inside the box.
+        expect(Math.min(...points.map((p) => p[0])), key).toBeGreaterThan(2)
+        expect(Math.min(...points.map((p) => p[1])), key).toBeGreaterThan(2)
+        expect(Math.max(...points.map((p) => p[0])), key).toBeLessThan(bw - 2)
+        expect(Math.max(...points.map((p) => p[1])), key).toBeLessThan(bh - 2)
+        // The paint's clip is the same local quad.
+        expect(
+          door.querySelector<HTMLElement>('.mp-alley__paint')?.style.clipPath,
+          key,
+        ).toBe(
+          `polygon(${points.map((p) => `${p[0]}px ${p[1]}px`).join(', ')})`,
+        )
+        // The paint's plate copy lands on the plate.
+        const img = door.querySelector<HTMLImageElement>('.mp-alley__paint img')
+        expect(num(img?.style.left ?? '') + bx, key).toBeCloseTo(
+          num(plate.style.left),
+          1,
+        )
+        expect(num(img?.style.top ?? '') + by, key).toBeCloseTo(
+          num(plate.style.top),
+          1,
+        )
+        // The spill sits on the quad's bottom edge and inside the box.
+        const sx = num(door.style.getPropertyValue('--sx'))
+        const sy = num(door.style.getPropertyValue('--sy'))
+        const sw = num(door.style.getPropertyValue('--sw'))
+        expect(sx + bx, key).toBeGreaterThanOrEqual(x0 - 1)
+        expect(sx + bx, key).toBeLessThanOrEqual(x1 + 1)
+        expect(sy + by, key).toBeGreaterThan((y0 + y1) / 2)
+        expect(sy + by, key).toBeLessThanOrEqual(y1 + 1)
+        expect(sx - sw / 2, key).toBeGreaterThanOrEqual(0)
+        expect(sx + sw / 2, key).toBeLessThanOrEqual(bw)
+        expect(sy + 72 * 0.74, key).toBeLessThanOrEqual(bh)
+        // The lift turns about the door's centre on screen.
+        const cx = num(door.style.getPropertyValue('--cx')) + bx
+        const cy = num(door.style.getPropertyValue('--cy')) + by
+        expect(cx, key).toBeGreaterThan(x0)
+        expect(cx, key).toBeLessThan(x1)
+        expect(cy, key).toBeGreaterThan(y0)
+        expect(cy, key).toBeLessThan(y1)
+      }
+    },
+  )
+})
+
 describe('the plate file', () => {
   it('is the 1x on a DPR 3 screen on its side, where the band draws it small', async () => {
     vi.stubGlobal('innerWidth', 852)

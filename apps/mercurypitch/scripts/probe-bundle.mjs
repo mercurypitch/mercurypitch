@@ -3505,6 +3505,27 @@ async function walkAlley(browser, args, frame) {
       }
     })
     await shoot(page, ctx, 'alley-clip-before-enter')
+    // Item 14: a lifted door is its own box, not the screen's, so it is
+    // composited door-sized (CDP layer tree: 393x852 before, 130x362 after).
+    const lifted = await page.evaluate(() => {
+      const door = document.querySelector('.mp-alley__door.is-selected')
+      const key = document.querySelector('[data-testid="alley-door-sing"]')
+      const a = door.getBoundingClientRect()
+      const k = key.getBoundingClientRect()
+      return {
+        w: door.offsetWidth,
+        h: door.offsetHeight,
+        screen: window.innerWidth * window.innerHeight,
+        holdsKey:
+          a.left <= k.left + 1 &&
+          a.top <= k.top + 1 &&
+          a.right >= k.right - 1 &&
+          a.bottom >= k.bottom - 1,
+      }
+    })
+    if (lifted.w * lifted.h * 2 > lifted.screen || !lifted.holdsKey) {
+      throw new Error(`lifted door box: ${JSON.stringify(lifted)}`)
+    }
     await page.evaluate(() => {
       window.__mpRaf = window.requestAnimationFrame
       window.requestAnimationFrame = () => 0
@@ -3566,7 +3587,7 @@ async function walkAlley(browser, args, frame) {
     await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
     const r = (v) => Math.round(v * 10) / 10
     steps.push(
-      `alley clip first frame: the door showed source ${r(doorCrop.x)},${r(doorCrop.y)} ${r(doorCrop.w)}x${r(doorCrop.h)}, the clone's first frame ${r(cloneCrop.x)},${r(cloneCrop.y)} ${r(cloneCrop.w)}x${r(cloneCrop.h)} (${r(off)} source px apart); shots alley-clip-before-enter, alley-clip-first-frame`,
+      `alley clip first frame: the door showed source ${r(doorCrop.x)},${r(doorCrop.y)} ${r(doorCrop.w)}x${r(doorCrop.h)}, the clone's first frame ${r(cloneCrop.x)},${r(cloneCrop.y)} ${r(cloneCrop.w)}x${r(cloneCrop.h)} (${r(off)} source px apart); shots alley-clip-before-enter, alley-clip-first-frame; the lifted door's own box ${lifted.w}x${lifted.h}`,
     )
 
     // ── Developer: Replay the welcome ─────────────────────────

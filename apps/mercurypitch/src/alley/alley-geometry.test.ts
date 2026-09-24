@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DoorLayout } from './alley-geometry'
-import { alleyFit, coverFit, easeOut, fullQuad, invert, layoutDoors, lerpQuad, matrix3d, parsePosition, pickDoor, placePanel, project, rectToQuad, tapBand, } from './alley-geometry'
+import { alleyFit, coverFit, doorBox, easeOut, fullQuad, invert, layoutDoors, lerpQuad, matrix3d, parsePosition, pickDoor, placePanel, project, quadIn, rectToQuad, SPILL_H, spillAt, tapBand, } from './alley-geometry'
 import type { Point, Quad } from './alley-plate'
 import { ALLEY_PLATE, DOORS } from './alley-plate'
 
@@ -441,5 +441,55 @@ describe('the alley on its side', () => {
     expect(
       layoutDoors(ALLEY_PLATE, DOORS, 393, 852, { top: 300, bottom: 700 }),
     ).toEqual(at393)
+  })
+})
+
+describe('doorBox', () => {
+  it.each([
+    [393, 852],
+    [852, 393],
+    [375, 667],
+  ])(
+    'holds each door, its rim halo and its spill in whole pixels at %i x %i',
+    (w, h) => {
+      for (const door of layoutDoors(ALLEY_PLATE, DOORS, w, h)) {
+        const box = doorBox(door)
+        for (const v of [box.x, box.y, box.w, box.h]) {
+          expect(Number.isInteger(v), door.key).toBe(true)
+        }
+        // The halo is a 6 px stroke: 3 px each side of the quad.
+        expect(box.x, door.key).toBeLessThanOrEqual(door.x0 - 3)
+        expect(box.y, door.key).toBeLessThanOrEqual(door.y0 - 3)
+        expect(box.x + box.w, door.key).toBeGreaterThanOrEqual(door.x1 + 3)
+        expect(box.y + box.h, door.key).toBeGreaterThanOrEqual(door.y1 + 3)
+        const spill = spillAt(door)
+        expect(box.x, door.key).toBeLessThanOrEqual(spill.x - spill.w / 2)
+        expect(box.x + box.w, door.key).toBeGreaterThanOrEqual(
+          spill.x + spill.w / 2,
+        )
+        expect(box.y + box.h, door.key).toBeGreaterThanOrEqual(
+          spill.y + SPILL_H * 0.74,
+        )
+        // And no more than that, bar a pixel of rounding.
+        expect(box.w, door.key).toBeLessThanOrEqual(
+          Math.max(door.x1 - door.x0 + 8, spill.w) + 2,
+        )
+      }
+    },
+  )
+
+  it('moves a quad into the box, point for point', () => {
+    const q: Quad = [
+      [10, 20],
+      [30, 22],
+      [31, 60],
+      [9, 58],
+    ]
+    expect(quadIn(q, 9, 20)).toEqual([
+      [1, 0],
+      [21, 2],
+      [22, 40],
+      [0, 38],
+    ])
   })
 })

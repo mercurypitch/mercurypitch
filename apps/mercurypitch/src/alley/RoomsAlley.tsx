@@ -41,9 +41,10 @@ import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
 import type { DoorOpen } from './alley-entry'
 import { OPEN_MS, openDoor, REDUCED_MS } from './alley-entry'
 import type { AlleyFrame, DoorLayout } from './alley-geometry'
-import { alleyFit, artBox, dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rectToQuad, tapBand, } from './alley-geometry'
+import { alleyFit, artBox, dimPath, doorBox, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, quadIn, rectToQuad, spillAt, tapBand, } from './alley-geometry'
 import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
+import type { Quad } from './alley-plate'
 import type { DoorKey } from './alley-plate'
 import { ALLEY_PLATE, DOORS, doorSpec, isEnterable, plateSourceFor, } from './alley-plate'
 import { markWelcomeSeen, welcomeSeen } from './alley-welcome'
@@ -598,8 +599,8 @@ export const RoomsAlley: Component = () => {
     releaseClip()
   })
 
-  const quadCss = (door: DoorLayout): string =>
-    `polygon(${door.quad.map((p) => `${p[0]}px ${p[1]}px`).join(', ')})`
+  const quadCss = (quad: Quad): string =>
+    `polygon(${quad.map((p) => `${p[0]}px ${p[1]}px`).join(', ')})`
 
   return (
     <div
@@ -665,6 +666,16 @@ export const RoomsAlley: Component = () => {
             const door = (): DoorLayout => layoutOf(spec.key)
             const artW = (): number => artBox(door()).w
             const artH = (): number => artBox(door()).h
+            // The door is its own box, not the screen: what it draws is
+            // placed in that box's coordinates (doorBox says why).
+            const box = createMemo(() => doorBox(door()))
+            const quad = (): Quad => quadIn(door().quad, box().x, box().y)
+            const spill = (): { x: number; y: number; w: number } =>
+              spillAt(door())
+            const points = (): string =>
+              quad()
+                .map((p) => `${p[0]},${p[1]}`)
+                .join(' ')
             return (
               <div
                 class="mp-alley__door"
@@ -679,23 +690,35 @@ export const RoomsAlley: Component = () => {
                   'is-drifting': spec.drift,
                 }}
                 style={{
-                  '--cx': `${door().cx}px`,
-                  '--cy': `${door().cy}px`,
+                  left: `${box().x}px`,
+                  top: `${box().y}px`,
+                  width: `${box().w}px`,
+                  height: `${box().h}px`,
+                  '--cx': `${door().cx - box().x}px`,
+                  '--cy': `${door().cy - box().y}px`,
                   // The same centre in the paint <img>'s own box, which starts
-                  // at (-ox, -oy): where the Ear Lab's drift pivots.
+                  // at (-ox, -oy) on screen: where the Ear Lab's drift pivots.
                   '--px': `${door().cx + fit().ox}px`,
                   '--py': `${door().cy + fit().oy}px`,
-                  '--sx': `${Math.round((door().quad[2][0] + door().quad[3][0]) / 2)}px`,
-                  '--sy': `${Math.round((door().quad[2][1] + door().quad[3][1]) / 2)}px`,
-                  '--sw': `${Math.round((door().x1 - door().x0) * 2.4)}px`,
+                  '--sx': `${spill().x - box().x}px`,
+                  '--sy': `${spill().y - box().y}px`,
+                  '--sw': `${spill().w}px`,
                   '--spill': spec.spill,
                 }}
               >
                 <div
                   class="mp-alley__paint"
-                  style={{ 'clip-path': quadCss(door()) }}
+                  style={{ 'clip-path': quadCss(quad()) }}
                 >
-                  <img src={plate()} alt="" style={plateStyle()} />
+                  <img
+                    src={plate()}
+                    alt=""
+                    style={{
+                      ...plateStyle(),
+                      left: `${-fit().ox - box().x}px`,
+                      top: `${-fit().oy - box().y}px`,
+                    }}
+                  />
                 </div>
                 <Show when={spec.clip !== null}>
                   <div
@@ -703,9 +726,7 @@ export const RoomsAlley: Component = () => {
                     style={{
                       width: `${artW()}px`,
                       height: `${artH()}px`,
-                      transform: matrix3d(
-                        rectToQuad(artW(), artH(), door().quad),
-                      ),
+                      transform: matrix3d(rectToQuad(artW(), artH(), quad())),
                     }}
                   >
                     <video
@@ -727,10 +748,10 @@ export const RoomsAlley: Component = () => {
                 </Show>
                 <svg
                   class="mp-alley__rim"
-                  viewBox={`0 0 ${size().w} ${size().h}`}
+                  viewBox={`0 0 ${box().w} ${box().h}`}
                 >
-                  <polygon class="mp-alley__rim-halo" points={door().points} />
-                  <polygon class="mp-alley__rim-line" points={door().points} />
+                  <polygon class="mp-alley__rim-halo" points={points()} />
+                  <polygon class="mp-alley__rim-line" points={points()} />
                 </svg>
                 <div class="mp-alley__spill" />
               </div>

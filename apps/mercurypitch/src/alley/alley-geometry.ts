@@ -436,6 +436,53 @@ export function artBox(door: DoorLayout): { w: number; h: number } {
   }
 }
 
+/** The coloured pool a lifted door throws on the floor: its centre on the
+ * quad's bottom edge and its width, CSS px (the height is SPILL_H). */
+export function spillAt(door: DoorLayout): { x: number; y: number; w: number } {
+  const [, , c, d] = door.quad
+  return {
+    x: Math.round((c[0] + d[0]) / 2),
+    y: Math.round((c[1] + d[1]) / 2),
+    w: Math.round((door.x1 - door.x0) * 2.4),
+  }
+}
+
+/** alley.css `.mp-alley__spill`: its height, and the share of it drawn
+ * above its anchor (`translate(-50%, -26%)`). */
+export const SPILL_H = 72
+const SPILL_ABOVE = 0.26
+/** Half the rim halo's 6 px stroke, and a pixel over. */
+const RIM_SLACK = 4
+
+/**
+ * A door's own box, whole CSS px on screen: the quad, its rim's halo and the
+ * spill under it. The door element is this box, not the screen, so a lifted
+ * door is composited as a door-sized layer (measured at 393x852 each before,
+ * on a 393x852 screen, CDP layer tree). Everything drawn inside the door is
+ * placed in this box's coordinates.
+ */
+export function doorBox(door: DoorLayout): {
+  x: number
+  y: number
+  w: number
+  h: number
+} {
+  const spill = spillAt(door)
+  const x = Math.floor(Math.min(door.x0 - RIM_SLACK, spill.x - spill.w / 2))
+  const y = Math.floor(door.y0 - RIM_SLACK)
+  const right = Math.ceil(Math.max(door.x1 + RIM_SLACK, spill.x + spill.w / 2))
+  const bottom = Math.ceil(
+    Math.max(door.y1 + RIM_SLACK, spill.y + SPILL_H * (1 - SPILL_ABOVE)),
+  )
+  return { x, y, w: right - x, h: bottom - y }
+}
+
+/** A quad moved into a box that starts at (x, y). */
+export function quadIn(q: Quad, x: number, y: number): Quad {
+  const [a, b, c, d] = q.map((p): Point => [p[0] - x, p[1] - y])
+  return [a, b, c, d]
+}
+
 /** A rectangle of a video's own pixels. */
 export interface SourceRect {
   readonly x: number
