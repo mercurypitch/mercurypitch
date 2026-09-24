@@ -9,6 +9,17 @@ const W = 393
 const H = 852
 const sing = layoutDoors(ALLEY_PLATE, DOORS, W, H).find((d) => d.key === 'sing')
 
+// The hold is a module-level count. Every hold a case takes is let go after
+// it, so a case that leaks one (a regression in the release) fails alone
+// instead of failing every case after it too.
+const releases: Array<() => void> = []
+
+function held(): () => void {
+  const release = holdRoomArrival()
+  releases.push(release)
+  return release
+}
+
 function plan(over: Partial<DoorOpenPlan> = {}): DoorOpenPlan {
   if (sing === undefined) throw new Error('no Sing door')
   return {
@@ -22,7 +33,7 @@ function plan(over: Partial<DoorOpenPlan> = {}): DoorOpenPlan {
     roomBackground: '[data-testid="sing-cover"]',
     ambientSilent: Promise.resolve(),
     onCovered: () => undefined,
-    holdArrival: holdRoomArrival,
+    holdArrival: held,
     ...over,
   }
 }
@@ -32,6 +43,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  for (const release of releases.splice(0)) release()
   vi.useRealTimers()
   document.body.innerHTML = ''
 })
