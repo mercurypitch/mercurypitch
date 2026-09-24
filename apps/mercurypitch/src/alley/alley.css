@@ -451,6 +451,9 @@
   padding: 14px 16px;
   border-radius: 12px;
   border: 1px solid rgba(230, 237, 243, 0.1);
+  /* The same fill for iOS 16.0 and 16.1, which drop color-mix() at parse
+     time and would leave the card with no fill behind its text. */
+  background: rgba(22, 27, 34, 0.72);
   background: color-mix(in srgb, #161b22 72%, transparent);
   -webkit-backdrop-filter: blur(18px) saturate(1.35);
   backdrop-filter: blur(18px) saturate(1.35);
