@@ -1,0 +1,157 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "status": "final-natural-bank-selection-owner-listening-pending",
+  "method": "selected raw-ASR-exact Gentle takes by carrier-free root-50 pilot, then accepted only delivered variants with exact hash-bound lyric recognition and production judge completion at 24, 44.1 and 48 kHz",
+  "phrases": [
+    {
+      "id": "let-it-shine",
+      "melody_id": "first-arc",
+      "words": "Let it shine",
+      "selected_source": "shine-gentle",
+      "candidates": [
+        {
+          "id": "shine-gentle",
+          "transcript": "Let it shine.",
+          "lexical_token_mean_probability": 0.9999873333333333,
+          "lexical_token_minimum_probability": 0.999962,
+          "phrase_id": "let-it-shine",
+          "duration_seconds": 1.76,
+          "pcm_bytes": 84480,
+          "pcm_sha256": "a90d5a5eddaff1023845e9d77783186ccd924facc2c6655b0e010c4f3456c7c3",
+          "peak_dbfs": -6.065779504126692,
+          "rms_dbfs": -18.699294259055247,
+          "clipped_samples": 0,
+          "exact_transcript": true
+        },
+        {
+          "id": "shine-playful",
+          "transcript": "Let it shine.",
+          "lexical_token_mean_probability": 0.8730596666666667,
+          "lexical_token_minimum_probability": 0.816922,
+          "phrase_id": "let-it-shine",
+          "duration_seconds": 2.08,
+          "pcm_bytes": 99840,
+          "pcm_sha256": "41117114074f506cbfb6e3f5d6f0c2f9586b74db6946f994371bb31a179033a8",
+          "peak_dbfs": -1.326221631320801,
+          "rms_dbfs": -16.168803907885362,
+          "clipped_samples": 0,
+          "exact_transcript": true
+        }
+      ]
+    },
+    {
+      "id": "tiny-sparks-can-glow",
+      "melody_id": "sunlit-steps",
+      "words": "Tiny sparks can glow",
+      "selected_source": "sparks-gentle",
+      "candidates": [
+        {
+          "id": "sparks-gentle",
+          "transcript": "Tiny sparks can glow.",
+          "lexical_token_mean_probability": 0.96123525,
+          "lexical_token_minimum_probability": 0.920463,
+          "phrase_id": "tiny-sparks-can-glow",
+          "duration_seconds": 2.48,
+          "pcm_bytes": 119040,
+          "pcm_sha256": "bc1d9975765daa075f1efac0c02e073774d8c96936c12c0b11cbe622e1044601",
+          "peak_dbfs": -1.4936498751042424,
+          "rms_dbfs": -16.97891878421556,
+          "clipped_samples": 0,
+          "exact_transcript": true
+        },
+        {
+          "id": "sparks-playful",
+          "transcript": "Tiny sparks can glow.",
+          "lexical_token_mean_probability": 0.96433025,
+          "lexical_token_minimum_probability": 0.930158,
+          "phrase_id": "tiny-sparks-can-glow",
+          "duration_seconds": 2,
+          "pcm_bytes": 96000,
+          "pcm_sha256": "9f4070d0d120a149e99fe8a0ca1757640e9eeaa2d4da1d5f02f82f3dd9f43aa2",
+          "peak_dbfs": -1.091943540308452,
+          "rms_dbfs": -15.942400135890475,
+          "clipped_samples": 0,
+          "exact_transcript": true
+        }
+      ]
+    },
+    {
+      "id": "another-beautiful-mess",
+      "melody_id": "gallery-arch",
+      "words": "Another beautiful mess",
+      "selected_source": "mess-gentle",
+      "candidates": [
+        {
+          "id": "mess-gentle",
+          "transcript": "Another beautiful mess.",
+          "lexical_token_mean_probability": 0.8634266666666667,
+          "lexical_token_minimum_probability": 0.690331,
+          "phrase_id": "another-beautiful-mess",
+          "duration_seconds": 2.24,
+          "pcm_bytes": 107520,
+          "pcm_sha256": "f750c3c0374079ebfed65bf449ed28c23c03e32faa98bfba884cfde2bd4acaba",
+          "peak_dbfs": -0.9571325342887215,
+          "rms_dbfs": -15.8625533695831,
+          "clipped_samples": 0,
+          "exact_transcript": true
+        },
+        {
+          "id": "mess-playful",
+          "transcript": "Another beautiful mess!",
+          "lexical_token_mean_probability": 0.7881003333333333,
+          "lexical_token_minimum_probability": 0.676414,
+          "phrase_id": "another-beautiful-mess",
+          "duration_seconds": 2.4,
+          "pcm_bytes": 115200,
+          "pcm_sha256": "e31157c1e0671a0b53025788ac75d53aa4643071e54b0799dd1742c960c445a1",
+          "peak_dbfs": -1.3438410152649858,
+          "rms_dbfs": -14.528883558751705,
+          "clipped_samples": 0,
+          "exact_transcript": true
+        }
+      ]
+    }
+  ],
+  "rejected_carrier_experiment": {
+    "roots": [
+      48,
+      50,
+      64
+    ],
+    "paces": [
+      0.8,
+      1,
+      1.25
+    ],
+    "exact_asr_counts": {
+      "shine-gentle": 9,
+      "sparks-gentle": 4,
+      "sparks-playful": 5,
+      "mess-gentle": 3,
+      "mess-playful": 9
+    },
+    "decision": "root 64 excluded from the supported vocal bank; missing exact variants use the calibrated instrumental guide",
+    "status": "rejected experiment",
+    "reason": "This early bank used a low detector carrier. It is retained only as experiment history and none of its processed audio or counts describe shipped assets."
+  },
+  "final_natural_bank": {
+    "carrier": "none",
+    "candidate_variant_count": 117,
+    "approved_variant_count": 88,
+    "rejected_variant_count": 29,
+    "approved_by_phrase": {
+      "let-it-shine": 39,
+      "tiny-sparks-can-glow": 39,
+      "another-beautiful-mess": 10
+    },
+    "total_public_bytes": 3219104,
+    "automated_receipts": [
+      "bank-approved.json",
+      "bank-intelligibility.json",
+      "runtime-verification-full-sr24000.json",
+      "runtime-verification-full-sr44100.json",
+      "runtime-verification-full-sr48000.json"
+    ],
+    "owner_listening": "pending"
+  }
+}

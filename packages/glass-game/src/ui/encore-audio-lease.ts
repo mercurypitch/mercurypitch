@@ -5,6 +5,59 @@ export interface EncoreAudioLease {
   release(): void
 }
 
+export interface EncoreAudioLeaseOwner {
+  acquire(): EncoreAudioLease
+}
+
+export interface EncorePlaybackClaim {
+  readonly assetId: string | null
+  readonly lease: EncoreAudioLease
+  readonly generation: number
+}
+
+export interface EncorePlaybackRelease {
+  readonly latest: boolean
+  readonly owned: boolean
+}
+
+export function createEncorePlaybackClaims() {
+  let current: EncorePlaybackClaim | undefined
+  let generation = 0
+
+  return {
+    claim(
+      lease: EncoreAudioLease,
+      assetId: string | null,
+    ): EncorePlaybackClaim {
+      const claim = { assetId, lease, generation: ++generation }
+      current = claim
+      return claim
+    },
+    currentAssetId(): string | null {
+      return current?.assetId ?? null
+    },
+    isLatest(claim: EncorePlaybackClaim): boolean {
+      return claim.generation === generation
+    },
+    takeCurrentLease(): EncoreAudioLease | undefined {
+      const lease = current?.lease
+      current = undefined
+      generation++
+      return lease
+    },
+    release(claim: EncorePlaybackClaim): EncorePlaybackRelease {
+      const owned = current === claim
+      if (owned) current = undefined
+      claim.lease.release()
+      return { latest: claim.generation === generation, owned }
+    },
+    clear(): void {
+      current = undefined
+      generation++
+    },
+  }
+}
+
 export async function retireEncoreAudioLease(
   lease: EncoreAudioLease | undefined,
   retire: () => Promise<void>,
@@ -21,7 +74,7 @@ export async function retireEncoreAudioLease(
 export function createEncoreAudioLeaseOwner(
   silence: () => Promise<void>,
   restore: () => void,
-) {
+): EncoreAudioLeaseOwner {
   let generation = 0
   let held = false
 
@@ -47,12 +100,6 @@ export function createEncoreAudioLeaseOwner(
           restore()
         },
       }
-    },
-    releaseAll(): void {
-      generation++
-      if (!held) return
-      held = false
-      restore()
     },
   }
 }

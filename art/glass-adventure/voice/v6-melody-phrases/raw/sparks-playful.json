@@ -1,0 +1,31 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "id": "sparks-playful",
+  "phrase_id": "tiny-sparks-can-glow",
+  "text": "[sings playfully, with five clear notes] Tiny sparks can glow.",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "request": {
+    "text": "[sings playfully, with five clear notes] Tiny sparks can glow.",
+    "model_id": "eleven_v3",
+    "language_code": "en",
+    "voice_settings": {
+      "stability": 0.5,
+      "similarity_boost": 0.75,
+      "style": 0,
+      "use_speaker_boost": false,
+      "speed": 1
+    },
+    "seed": 2092464
+  },
+  "output_format": "pcm_24000",
+  "started_at": "2026-09-24T19:57:54.622Z",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": "j2nVBhSY3OVjO0OJ4Fpk",
+  "character_cost": "34",
+  "bytes": 96000,
+  "sha256": "9f4070d0d120a149e99fe8a0ca1757640e9eeaa2d4da1d5f02f82f3dd9f43aa2",
+  "sample_rate_hz": 24000,
+  "duration_seconds": 2,
+  "completed_at": "2026-09-24T19:58:00.482Z"
+}

@@ -1,0 +1,355 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "status": "pilot",
+  "codec": "mono 24 kHz MP3 64k",
+  "synthesis": {
+    "pitchSource": "authored contour on naturally voiced WORLD frames",
+    "detectorCarrier": "none",
+    "defaultMaximumMappedConsonantEdgeSeconds": 0.11,
+    "preservedConsonantSyllables": [
+      {
+        "phraseId": "tiny-sparks-can-glow",
+        "syllable": "sparks",
+        "sourceDurationScale": 1
+      }
+    ],
+    "defaultNucleusSelection": "full aligned vowel",
+    "specialNucleusWindows": [
+      {
+        "phraseId": "another-beautiful-mess",
+        "syllable": "ti",
+        "seconds": 0.04,
+        "selection": "fully voiced WORLD window, then periodicity and energy"
+      }
+    ]
+  },
+  "variantFilter": "r50-p100",
+  "roots": [
+    50
+  ],
+  "paces": [
+    1
+  ],
+  "variantCount": 3,
+  "totalBytes": 124164,
+  "maximumBytes": 58220,
+  "pyinMedianAbsoluteCentsMaximum": 1.23658738011585,
+  "pyinP95AbsoluteCentsMaximum": 7.540945619428763,
+  "maximumSampleDelta": 0.256805419921875,
+  "variants": [
+    {
+      "id": "first-arc-r50-p100",
+      "phraseId": "let-it-shine",
+      "melodyId": "first-arc",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "shine-gentle",
+      "asset": "adventure-voice-v6/first-arc/r50-p100.mp3",
+      "bytes": 24620,
+      "sha256": "1ef4912d033eb2399e7977841b0534b9704206c12fc4cc22453ddc63c705b77a",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.34,
+          0.52,
+          0.72,
+          0.76,
+          0.84,
+          0.98,
+          1.22,
+          1.36,
+          1.76
+        ],
+        "targetSeconds": [
+          0,
+          0.11,
+          0.9400000000000001,
+          1.05,
+          1.09,
+          1.99,
+          2.1,
+          2.208,
+          2.592,
+          2.7
+        ],
+        "nucleusSelections": [
+          {
+            "syllable": "Let",
+            "start": 0.34,
+            "end": 0.52,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.11,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "it",
+            "start": 0.76,
+            "end": 0.84,
+            "mappedAttackSeconds": 0.040000000000000036,
+            "mappedReleaseSeconds": 0.11,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "shine",
+            "start": 1.22,
+            "end": 1.36,
+            "mappedAttackSeconds": 0.10800000000000001,
+            "mappedReleaseSeconds": 0.10800000000000001,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 2.985,
+      "peakDb": -8.393759509644351,
+      "maximumSampleDelta": 0.1986083984375,
+      "pyinVoicedFrames": 471,
+      "pyinMedianAbsoluteCents": 0.6370585006308715,
+      "pyinP95AbsoluteCents": 5.309413961818166,
+      "pyinMaximumAbsoluteCents": 9.36294149936927
+    },
+    {
+      "id": "sunlit-steps-r50-p100",
+      "phraseId": "tiny-sparks-can-glow",
+      "melodyId": "sunlit-steps",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "sparks-gentle",
+      "asset": "adventure-voice-v6/sunlit-steps/r50-p100.mp3",
+      "bytes": 41324,
+      "sha256": "841fca67027178d99059a0918241498a81992716b04609d965d4f6b50fb2a159",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.3,
+          0.355,
+          0.36,
+          0.54,
+          0.64,
+          0.7,
+          1.04,
+          1.1,
+          1.52,
+          1.6,
+          1.66,
+          1.8,
+          2.02,
+          2.1,
+          2.48
+        ],
+        "targetSeconds": [
+          0,
+          0.11,
+          1.045,
+          1.05,
+          1.1600000000000001,
+          2.04,
+          2.1,
+          2.4400000000000004,
+          2.73,
+          3.15,
+          3.23,
+          4.09,
+          4.2,
+          4.308,
+          4.692,
+          4.8
+        ],
+        "nucleusSelections": [
+          {
+            "syllable": "Ti",
+            "start": 0.3,
+            "end": 0.355,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.0050000000000000044,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "ny",
+            "start": 0.54,
+            "end": 0.64,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.05999999999999994,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "sparks",
+            "start": 1.04,
+            "end": 1.1,
+            "mappedAttackSeconds": 0.3400000000000001,
+            "mappedReleaseSeconds": 0.41999999999999993,
+            "consonantPolicy": "retain near-natural source duration around mapped vowel",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "can",
+            "start": 1.6,
+            "end": 1.66,
+            "mappedAttackSeconds": 0.08000000000000007,
+            "mappedReleaseSeconds": 0.11,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "glow",
+            "start": 2.02,
+            "end": 2.1,
+            "mappedAttackSeconds": 0.10799999999999993,
+            "mappedReleaseSeconds": 0.10799999999999993,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 5.085,
+      "peakDb": -6.128354762463662,
+      "maximumSampleDelta": 0.256805419921875,
+      "pyinVoicedFrames": 739,
+      "pyinMedianAbsoluteCents": 1.0261345133756095,
+      "pyinP95AbsoluteCents": 6.620075548153039,
+      "pyinMaximumAbsoluteCents": 30.637058500630587
+    },
+    {
+      "id": "gallery-arch-r50-p100",
+      "phraseId": "another-beautiful-mess",
+      "melodyId": "gallery-arch",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "mess-gentle",
+      "asset": "adventure-voice-v6/gallery-arch/r50-p100.mp3",
+      "bytes": 58220,
+      "sha256": "bafef1ed23157b25986d3fbaacfe604f2580a33cb48424cf5040482cfff14d19",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.16,
+          0.22,
+          0.29,
+          0.46,
+          0.515,
+          0.52,
+          0.62,
+          0.74,
+          0.88,
+          1.08,
+          1.2550000000000001,
+          1.26,
+          1.32,
+          1.36,
+          1.44,
+          1.46,
+          1.56,
+          1.69,
+          1.82,
+          1.96,
+          2.24
+        ],
+        "targetSeconds": [
+          0,
+          0.11,
+          0.9800000000000001,
+          1.05,
+          1.1600000000000001,
+          2.095,
+          2.1,
+          2.2,
+          3.04,
+          3.15,
+          3.26,
+          4.195,
+          4.2,
+          4.26,
+          5.170000000000001,
+          5.250000000000001,
+          5.270000000000001,
+          6.190000000000001,
+          6.300000000000002,
+          6.408000000000001,
+          6.792000000000002,
+          6.900000000000001
+        ],
+        "nucleusSelections": [
+          {
+            "syllable": "A",
+            "start": 0.16,
+            "end": 0.22,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.06999999999999998,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "no",
+            "start": 0.46,
+            "end": 0.515,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.0050000000000000044,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "ther",
+            "start": 0.62,
+            "end": 0.74,
+            "mappedAttackSeconds": 0.09999999999999998,
+            "mappedReleaseSeconds": 0.11,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "beau",
+            "start": 1.08,
+            "end": 1.2550000000000001,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.004999999999999893,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "ti",
+            "start": 1.32,
+            "end": 1.36,
+            "mappedAttackSeconds": 0.06000000000000005,
+            "mappedReleaseSeconds": 0.07999999999999985,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "fully voiced WORLD window, then periodicity and energy",
+            "voicedFraction": 1.0,
+            "meanPeriodicity": 0.45346135326924975
+          },
+          {
+            "syllable": "ful",
+            "start": 1.46,
+            "end": 1.56,
+            "mappedAttackSeconds": 0.020000000000000018,
+            "mappedReleaseSeconds": 0.11,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "mess",
+            "start": 1.82,
+            "end": 1.96,
+            "mappedAttackSeconds": 0.10799999999999993,
+            "mappedReleaseSeconds": 0.10799999999999993,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 7.185,
+      "peakDb": -6.248885204624694,
+      "maximumSampleDelta": 0.21746826171875,
+      "pyinVoicedFrames": 1163,
+      "pyinMedianAbsoluteCents": 1.23658738011585,
+      "pyinP95AbsoluteCents": 7.540945619428763,
+      "pyinMaximumAbsoluteCents": 56.847147234463336
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { collectionBadges } from '../core/collection'
 import type { GlassGameHost } from '../host'
 import { ArtworkInspection } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
+import type { EncoreAudioLeaseOwner } from './encore-audio-lease'
 import styles from './MuseumCollection.module.css'
 
 const EncoreDialog = lazy(async () => ({
@@ -24,8 +25,7 @@ export function MuseumCollection(props: {
   onClose(): void
   onVisit(levelId: string): void
   host?: GlassGameHost
-  beforeCapture?(): Promise<void>
-  onReleaseVoice?(): void
+  audioLeases?: EncoreAudioLeaseOwner
 }) {
   const [inspecting, setInspecting] = createSignal<CollectionViewEntry>()
   const [encoreEntry, setEncoreEntry] = createSignal<CollectionViewEntry>()
@@ -241,8 +241,7 @@ export function MuseumCollection(props: {
             host={props.host!}
             levelId={entry.levelId}
             encore={entry.encore!}
-            beforeCapture={() => props.beforeCapture?.() ?? Promise.resolve()}
-            onReleaseVoice={() => props.onReleaseVoice?.()}
+            audioLeases={props.audioLeases!}
             onClose={closeEncore}
             returnLabel="Back to collection"
           />

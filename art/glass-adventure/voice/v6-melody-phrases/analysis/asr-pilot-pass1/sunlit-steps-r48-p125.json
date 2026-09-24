@@ -1,0 +1,157 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:06,000"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 6000
+			},
+			"text": " Chinese Barks in Glow.",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": " Chinese",
+					"timestamps": {
+						"from": "00:00:00,740",
+						"to": "00:00:01,990"
+					},
+					"offsets": {
+						"from": 740,
+						"to": 1990
+					},
+					"id": 3999,
+					"p": 0.998643,
+					"t_dtw": -1
+				},
+				{
+					"text": " Bar",
+					"timestamps": {
+						"from": "00:00:01,990",
+						"to": "00:00:02,800"
+					},
+					"offsets": {
+						"from": 1990,
+						"to": 2800
+					},
+					"id": 2409,
+					"p": 0.31397,
+					"t_dtw": -1
+				},
+				{
+					"text": "ks",
+					"timestamps": {
+						"from": "00:00:03,030",
+						"to": "00:00:03,410"
+					},
+					"offsets": {
+						"from": 3030,
+						"to": 3410
+					},
+					"id": 591,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": " in",
+					"timestamps": {
+						"from": "00:00:03,410",
+						"to": "00:00:03,980"
+					},
+					"offsets": {
+						"from": 3410,
+						"to": 3980
+					},
+					"id": 287,
+					"p": 0.999992,
+					"t_dtw": -1
+				},
+				{
+					"text": " Glow",
+					"timestamps": {
+						"from": "00:00:03,980",
+						"to": "00:00:05,120"
+					},
+					"offsets": {
+						"from": 3980,
+						"to": 5120
+					},
+					"id": 45929,
+					"p": 0.999992,
+					"t_dtw": -1
+				},
+				{
+					"text": ".",
+					"timestamps": {
+						"from": "00:00:05,120",
+						"to": "00:00:05,850"
+					},
+					"offsets": {
+						"from": 5120,
+						"to": 5850
+					},
+					"id": 13,
+					"p": 0.999985,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_300]",
+					"timestamps": {
+						"from": "00:00:06,000",
+						"to": "00:00:06,000"
+					},
+					"offsets": {
+						"from": 6000,
+						"to": 6000
+					},
+					"id": 50663,
+					"p": 0.72426,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

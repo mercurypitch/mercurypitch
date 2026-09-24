@@ -1,0 +1,185 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:08,800"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 8800
+			},
+			"text": " ♪ Ah-nother beautiful mat ♪",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:00,190",
+						"to": "00:00:00,970"
+					},
+					"offsets": {
+						"from": 190,
+						"to": 970
+					},
+					"id": 20724,
+					"p": 0.88561,
+					"t_dtw": -1
+				},
+				{
+					"text": " Ah",
+					"timestamps": {
+						"from": "00:00:00,970",
+						"to": "00:00:01,620"
+					},
+					"offsets": {
+						"from": 970,
+						"to": 1620
+					},
+					"id": 7900,
+					"p": 0.309732,
+					"t_dtw": -1
+				},
+				{
+					"text": "-",
+					"timestamps": {
+						"from": "00:00:01,620",
+						"to": "00:00:01,940"
+					},
+					"offsets": {
+						"from": 1620,
+						"to": 1940
+					},
+					"id": 12,
+					"p": 0.982085,
+					"t_dtw": -1
+				},
+				{
+					"text": "n",
+					"timestamps": {
+						"from": "00:00:01,940",
+						"to": "00:00:02,260"
+					},
+					"offsets": {
+						"from": 1940,
+						"to": 2260
+					},
+					"id": 77,
+					"p": 0.985964,
+					"t_dtw": -1
+				},
+				{
+					"text": "other",
+					"timestamps": {
+						"from": "00:00:02,260",
+						"to": "00:00:03,880"
+					},
+					"offsets": {
+						"from": 2260,
+						"to": 3880
+					},
+					"id": 847,
+					"p": 0.997725,
+					"t_dtw": -1
+				},
+				{
+					"text": " beautiful",
+					"timestamps": {
+						"from": "00:00:03,880",
+						"to": "00:00:06,610"
+					},
+					"offsets": {
+						"from": 3880,
+						"to": 6610
+					},
+					"id": 4950,
+					"p": 0.974643,
+					"t_dtw": -1
+				},
+				{
+					"text": " mat",
+					"timestamps": {
+						"from": "00:00:06,950",
+						"to": "00:00:07,780"
+					},
+					"offsets": {
+						"from": 6950,
+						"to": 7780
+					},
+					"id": 2603,
+					"p": 0.942655,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:07,780",
+						"to": "00:00:08,770"
+					},
+					"offsets": {
+						"from": 7780,
+						"to": 8770
+					},
+					"id": 20724,
+					"p": 0.999916,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_440]",
+					"timestamps": {
+						"from": "00:00:08,800",
+						"to": "00:00:08,800"
+					},
+					"offsets": {
+						"from": 8800,
+						"to": 8800
+					},
+					"id": 50803,
+					"p": 0.217756,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

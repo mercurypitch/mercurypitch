@@ -1,0 +1,161 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "id": "sparks-gentle",
+  "text": "Tiny sparks can glow.",
+  "sha256": "2b19b1ff6afeb11832392e102a426b8c9d991254d3e50d96bddc7228970a6226",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": null,
+  "words": [
+    {
+      "text": "Tiny",
+      "start": 0.14,
+      "end": 0.64,
+      "loss": 1.2099332809448242
+    },
+    {
+      "text": " ",
+      "start": 0.64,
+      "end": 0.76,
+      "loss": 1.2096595764160156
+    },
+    {
+      "text": "sparks",
+      "start": 0.76,
+      "end": 1.46,
+      "loss": 0.9761171340942383
+    },
+    {
+      "text": " ",
+      "start": 1.46,
+      "end": 1.58,
+      "loss": 0.7056827545166016
+    },
+    {
+      "text": "can",
+      "start": 1.58,
+      "end": 1.74,
+      "loss": 0.7665386199951172
+    },
+    {
+      "text": " ",
+      "start": 1.74,
+      "end": 1.86,
+      "loss": 1.0716781616210938
+    },
+    {
+      "text": "glow.",
+      "start": 1.86,
+      "end": 2.3,
+      "loss": 0.8282314300537109
+    }
+  ],
+  "characters": [
+    {
+      "text": "T",
+      "start": 0.14,
+      "end": 0.3
+    },
+    {
+      "text": "i",
+      "start": 0.3,
+      "end": 0.36
+    },
+    {
+      "text": "n",
+      "start": 0.36,
+      "end": 0.52
+    },
+    {
+      "text": "y",
+      "start": 0.54,
+      "end": 0.64
+    },
+    {
+      "text": " ",
+      "start": 0.64,
+      "end": 0.76
+    },
+    {
+      "text": "s",
+      "start": 0.76,
+      "end": 0.94
+    },
+    {
+      "text": "p",
+      "start": 0.94,
+      "end": 0.98
+    },
+    {
+      "text": "a",
+      "start": 1.04,
+      "end": 1.1
+    },
+    {
+      "text": "r",
+      "start": 1.1,
+      "end": 1.22
+    },
+    {
+      "text": "k",
+      "start": 1.22,
+      "end": 1.36
+    },
+    {
+      "text": "s",
+      "start": 1.36,
+      "end": 1.46
+    },
+    {
+      "text": " ",
+      "start": 1.46,
+      "end": 1.58
+    },
+    {
+      "text": "c",
+      "start": 1.58,
+      "end": 1.6
+    },
+    {
+      "text": "a",
+      "start": 1.6,
+      "end": 1.66
+    },
+    {
+      "text": "n",
+      "start": 1.66,
+      "end": 1.74
+    },
+    {
+      "text": " ",
+      "start": 1.74,
+      "end": 1.86
+    },
+    {
+      "text": "g",
+      "start": 1.86,
+      "end": 1.94
+    },
+    {
+      "text": "l",
+      "start": 1.94,
+      "end": 2.02
+    },
+    {
+      "text": "o",
+      "start": 2.02,
+      "end": 2.1
+    },
+    {
+      "text": "w",
+      "start": 2.1,
+      "end": 2.3
+    },
+    {
+      "text": ".",
+      "start": 2.3,
+      "end": 2.3
+    }
+  ],
+  "loss": 0.958296639578683
+}

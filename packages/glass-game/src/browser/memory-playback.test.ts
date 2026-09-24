@@ -139,6 +139,77 @@ describe('local memory playback', () => {
     expect(sharedAudioContextOwners()).toHaveLength(0)
   })
 
+  it('reserves gesture-time audio while a lazy take loads, then cancels it safely', async () => {
+    let resolveAudio!: (audio: Blob) => void
+    const lazyAudio = new Promise<Blob>((resolve) => {
+      resolveAudio = resolve
+    })
+    const player = createBrowserMemoryPlayback()
+
+    const played = player.play(lazyAudio)
+    expect(context.gains).toHaveLength(1)
+    expect(sharedAudioContextOwners()).toHaveLength(1)
+
+    await player.stop()
+    resolveAudio(new Blob(['late take'], { type: 'audio/webm' }))
+    expect(await played).toBe(false)
+    expect(context.decodeAudioData).not.toHaveBeenCalled()
+    expect(context.sources).toHaveLength(0)
+    expect(sharedAudioContextOwners()).toHaveLength(0)
+  })
+
+  it('consumes a failed fetch while gesture-time unlock is still pending', async () => {
+    context.state = 'suspended'
+    let unlock!: () => void
+    context.resume.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          unlock = () => {
+            context.state = 'running'
+            resolve()
+          }
+        }),
+    )
+    const player = createBrowserMemoryPlayback()
+
+    const played = player.play(Promise.reject(new Error('fetch failed')))
+    await flush()
+    expect(context.resume).toHaveBeenCalledOnce()
+    expect(sharedAudioContextOwners()).toHaveLength(1)
+
+    unlock()
+    expect(await played).toBe(false)
+    expect(context.decodeAudioData).not.toHaveBeenCalled()
+    expect(sharedAudioContextOwners()).toHaveLength(0)
+
+    player.dispose()
+    await expect(
+      player.play(Promise.reject(new Error('disposed fetch'))),
+    ).resolves.toBe(false)
+    await flush()
+  })
+
+  it('consumes a failed quiet lease while a lazy take is still loading', async () => {
+    let resolveAudio!: (audio: Blob) => void
+    const lazyAudio = new Promise<Blob>((resolve) => {
+      resolveAudio = resolve
+    })
+    const player = createBrowserMemoryPlayback()
+
+    const played = player.play(
+      lazyAudio,
+      undefined,
+      Promise.reject(new Error('museum quiet failed')),
+    )
+    await flush()
+    expect(sharedAudioContextOwners()).toHaveLength(1)
+
+    resolveAudio(new Blob(['late take'], { type: 'audio/webm' }))
+    expect(await played).toBe(false)
+    expect(context.sources).toHaveLength(0)
+    expect(sharedAudioContextOwners()).toHaveLength(0)
+  })
+
   it('releases failed codecs and interrupted audio without touching saved bytes', async () => {
     const player = createBrowserMemoryPlayback()
     context.decodeAudioData.mockRejectedValueOnce(
