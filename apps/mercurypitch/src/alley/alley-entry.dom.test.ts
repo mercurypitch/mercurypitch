@@ -215,6 +215,55 @@ describe('somewhere else, once the clone has covered', () => {
   })
 })
 
+describe('reduced motion', () => {
+  // A crossfade, and it has to run. As a CSS transition it never did: set in
+  // the frame the clone was appended it had nothing to start from, and
+  // app.css's reduced-motion rule cuts every transition to 0.001 ms anyway.
+  // A Web Animation is touched by neither.
+  afterEach(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).animate
+  })
+
+  it('fades the clone in over 120 ms as a Web Animation, from the append', () => {
+    const animate = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'animate', {
+      value: animate,
+      configurable: true,
+    })
+
+    const open = openDoor(plan({ reduced: true }))
+
+    expect(animate).toHaveBeenCalledTimes(1)
+    expect(animate.mock.contexts[0]).toBe(open.clone)
+    expect(animate.mock.calls[0]).toEqual([
+      [{ opacity: 0 }, { opacity: 1 }],
+      { duration: 120, easing: 'linear' },
+    ])
+    expect(open.clone.style.transition).toBe('')
+    expect(open.clone.style.transform).toBe('')
+  })
+
+  it('fades the clone out the same way', async () => {
+    const animate = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'animate', {
+      value: animate,
+      configurable: true,
+    })
+    let elsewhere = false
+    const open = openDoor(plan({ reduced: true, away: () => elsewhere }))
+    await vi.advanceTimersByTimeAsync(400)
+    expect(open.clone.dataset.phase).toBe('covered')
+
+    elsewhere = true
+    await vi.advanceTimersByTimeAsync(40)
+    expect(animate).toHaveBeenLastCalledWith([{ opacity: 1 }, { opacity: 0 }], {
+      duration: 80,
+      easing: 'linear',
+    })
+    expect(open.clone.style.transition).toBe('')
+  })
+})
+
 describe('a rotation mid-open', () => {
   it('retargets the clone to the new screen', async () => {
     const open = openDoor(plan())

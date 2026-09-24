@@ -3413,6 +3413,58 @@ async function walkAlley(browser, args, frame) {
       throw new Error('reduced: Back did not return to the alley')
     }
     await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+
+    // ── Reduced motion: the crossfade runs (PR 859 review, item 31) ─
+    // Sampled every frame from the frame after the clone is appended, and
+    // never read before then: a style read in that window is what made a
+    // transition start and hid the hard cut. Under the OS setting app.css
+    // cuts every CSS transition to 0.001 ms, so only an animation that is
+    // not a transition shows a value between 0 and 1 here.
+    await waitPhase(page, 'rest', null, 'reduced fade: back at rest')
+    await page.evaluate(() => {
+      window.__mpFade = []
+      const seen = new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (!(node instanceof HTMLElement)) continue
+            if (node.dataset.testid !== 'alley-morph') continue
+            seen.disconnect()
+            let frames = 0
+            const sample = () => {
+              window.__mpFade.push(Number(getComputedStyle(node).opacity))
+              frames += 1
+              if (frames < 16 && node.isConnected) requestAnimationFrame(sample)
+            }
+            requestAnimationFrame(sample)
+          }
+        }
+      })
+      seen.observe(document.body, { childList: true })
+    })
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'reduced fade: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(500)
+    const fades = await page.evaluate(() => window.__mpFade)
+    const between = fades.filter((o) => o > 0 && o < 1)
+    if (between.length === 0) {
+      throw new Error(
+        `reduced fade: no frame between 0 and 1 (${fades.map((o) => o.toFixed(2)).join(' ')})`,
+      )
+    }
+    await page
+      .locator('[data-testid="sing-room"]')
+      .waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS })
+    steps.push(
+      `alley reduced motion crossfade: ${between.length} frames mid-fade (${fades
+        .slice(0, 8)
+        .map((o) => o.toFixed(2))
+        .join(' ')})`,
+    )
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('reduced fade: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
     await page.emulateMedia({ reducedMotion: 'no-preference' })
 
     // ── Developer: Replay the welcome ─────────────────────────

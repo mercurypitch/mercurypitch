@@ -148,6 +148,28 @@ async function backgroundDecoded(
   await Promise.race([decoded, wait(Math.max(0, deadline - performance.now()))])
 }
 
+/**
+ * Fade an element's opacity with a Web Animation, and leave the end value
+ * inline. Not a CSS transition, for two reasons that each cut the reduced-
+ * motion crossfade to a hard cut: app.css's reduced-motion rule sets every
+ * `transition-duration` to 0.001ms !important, and a transition set in the
+ * frame the clone was appended has no before-change style to start from. An
+ * engine without `animate` (jsdom) cuts to the end value.
+ */
+function fadeOpacity(
+  element: HTMLElement,
+  from: number,
+  to: number,
+  ms: number,
+): void {
+  element.style.opacity = String(to)
+  if (!('animate' in element)) return
+  element.animate([{ opacity: from }, { opacity: to }], {
+    duration: ms,
+    easing: 'linear',
+  })
+}
+
 function buildClone(plan: DoorOpenPlan): HTMLDivElement {
   const clone = document.createElement('div')
   clone.className = 'mp-alley-morph'
@@ -283,7 +305,6 @@ function startOpen(
     // No transform on the clone at all: it sits over the screen and fades in.
     clone.dataset.motion = 'crossfade'
     clone.style.opacity = '0'
-    clone.style.transition = `opacity ${REDUCED_MS}ms linear`
   } else {
     clone.dataset.motion = 'grow'
     clone.style.transform = at(0)
@@ -291,6 +312,7 @@ function startOpen(
   try {
     document.body.appendChild(clone)
     if (plan.video !== null) void plan.video.play().catch(() => undefined)
+    if (plan.reduced) fadeOpacity(clone, 0, 1, REDUCED_MS)
   } catch (error) {
     // No half-built open left behind: the clone goes, the clip goes home,
     // and `openDoor` lets the hold go.
@@ -321,8 +343,7 @@ function startOpen(
     // Gone elsewhere: out of the way at once, over whatever is there now.
     const fade = !drawn ? LEAVE_MS : plan.reduced ? REDUCED_MS : REVEAL_MS
     clone.dataset.phase = 'revealing'
-    clone.style.transition = `opacity ${fade}ms linear`
-    clone.style.opacity = '0'
+    fadeOpacity(clone, 1, 0, fade)
     await wait(fade + 20)
     if (plan.video !== null) {
       plan.video.pause()
@@ -355,11 +376,8 @@ function startOpen(
   // the timer is what guarantees the room is reached.
   timers.push(window.setTimeout(cover, duration + 200))
   if (plan.reduced) {
-    frame = requestAnimationFrame(() => {
-      if (cancelled) return
-      clone.style.opacity = '1'
-      timers.push(window.setTimeout(cover, REDUCED_MS))
-    })
+    // Covered when the crossfade has run.
+    timers.push(window.setTimeout(cover, REDUCED_MS))
   } else {
     const t0 = performance.now()
     const tick = (now: number): void => {
