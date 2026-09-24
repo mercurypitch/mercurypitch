@@ -126,6 +126,52 @@ describe('entering a room from the alley', () => {
   })
 })
 
+describe('an open called off without Back or a rail tab', () => {
+  it('stops for a press anywhere outside the alley', async () => {
+    const { el, store, nav } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+    expect(document.querySelector('[data-testid="alley-morph"]')).not.toBeNull()
+
+    // More, or the corner chip: not a rail tab, so goToTab never sees it.
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(store.roomArrivalHeld()).toBe(false)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(nav.goToTab).not.toHaveBeenCalled()
+  })
+
+  it('ignores a press inside the alley while it grows', async () => {
+    const { el } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+    el('alley-plate').dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(el('rooms-alley').dataset.phase).toBe('opening')
+  })
+
+  it('stops when the alley is unmounted under it', async () => {
+    const { el, store, nav } = await mountAlley()
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+
+    // A hash change, a deep link: the tab went away without the shell's help.
+    view?.unmount()
+    view = null
+
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(store.roomArrivalHeld()).toBe(false)
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(nav.goToTab).not.toHaveBeenCalled()
+  })
+})
+
 describe('a resize', () => {
   it('moves the doors and keeps the same <video>', async () => {
     const { el } = await mountAlley()

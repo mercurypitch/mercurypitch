@@ -3203,6 +3203,45 @@ async function walkAlley(browser, args, frame) {
       'alley no scroll: a scrollIntoView on Enter leaves the alley at 0,0',
     )
 
+    // ── An open called off: More at +150 ms ───────────────────
+    // More is not a tab, so goToTab never sees it: the capture-phase press
+    // outside the alley is what calls the open off. The sheet opens over the
+    // alley at rest, not over a room the grow went on to open.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'More mid-open: select Sing')
+    const homeHash = await page.evaluate(() => window.location.hash)
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(150)
+    await page.locator('[data-rail-item="more"]').click()
+    await page.waitForTimeout(1200)
+    const moreMid = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+      sheet: document.querySelector('[data-more-item="developer"]') !== null,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    if (
+      moreMid.hash !== homeHash ||
+      !moreMid.sheet ||
+      moreMid.clone ||
+      moreMid.alley?.phase !== 'rest' ||
+      moreMid.alley?.held !== false
+    ) {
+      throw new Error(
+        `More mid-open: ${JSON.stringify({ homeHash, ...moreMid })}`,
+      )
+    }
+    note = await goneKept(page, 'More mid-open', {
+      gone: ['[data-testid="alley-morph"]', '[data-testid="sing-room"]'],
+      kept: ['[data-testid="rooms-alley"]', '[data-more-item="developer"]'],
+    })
+    const closed = await pressBack(page)
+    if (closed !== 'sheet')
+      throw new Error(`More mid-open: Back answered '${closed}'`)
+    steps.push(
+      `alley Enter then More at +150 ms: stays on ${moreMid.hash} with the sheet open, the alley at rest, hold ${moreMid.alley.held}; ${note}`,
+    )
+
     // ── Reduced motion ────────────────────────────────────────
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page
