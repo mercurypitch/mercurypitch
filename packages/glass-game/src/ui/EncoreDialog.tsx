@@ -1,5 +1,6 @@
 // Coda Echo — optional portrait melody and explicit local musical memory, after the lesson is complete.
 import { createSignal, For, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { MERC_ENCORE_EXAMPLES } from '../content/encore-examples'
 import type { GalleryEncore } from '../content/encores'
 import type { GlassMelodyId } from '../content/melodies'
 import { GLASS_MELODIES, glassMelody } from '../content/melodies'
@@ -36,6 +37,9 @@ export function EncoreDialog(props: {
   const [playing, setPlaying] = createSignal(false)
   const [practiceActive, setPracticeActive] = createSignal(false)
   const [status, setStatus] = createSignal('')
+  const [examples, setExamples] = createSignal<
+    Partial<Record<GlassMelodyId, { audio?: Blob; failed?: boolean }>>
+  >({})
   const [state, setState] = createSignal<MusicalMemoryState>({
     consent: false,
     recording: false,
@@ -56,6 +60,32 @@ export function EncoreDialog(props: {
   let playbackGeneration = 0
   let releaseTimer: ReturnType<typeof setTimeout> | undefined
   const downloadUrls = new Set<string>()
+  const exampleRequests = new Map<GlassMelodyId, AbortController>()
+
+  async function loadExample(id: GlassMelodyId): Promise<void> {
+    const example = MERC_ENCORE_EXAMPLES[id]
+    if (!example || exampleRequests.has(id)) return
+    const request = new AbortController()
+    exampleRequests.set(id, request)
+    setExamples((current) => ({ ...current, [id]: {} }))
+    const deadline = setTimeout(() => request.abort(), 10_000)
+    try {
+      const response = await fetch(host.assetUrl(example.assetId), {
+        signal: request.signal,
+      })
+      if (!response.ok) throw new Error('Voice example unavailable')
+      const audio = await response.blob()
+      if (!audio.size || audio.size > 1_000_000)
+        throw new Error('Invalid voice example')
+      if (alive) setExamples((current) => ({ ...current, [id]: { audio } }))
+    } catch {
+      if (alive)
+        setExamples((current) => ({ ...current, [id]: { failed: true } }))
+    } finally {
+      clearTimeout(deadline)
+      exampleRequests.delete(id)
+    }
+  }
 
   async function stopPlayback(): Promise<void> {
     playbackGeneration++
@@ -67,7 +97,7 @@ export function EncoreDialog(props: {
     await Promise.all([stopPlayback(), props.beforeCapture()])
   }
 
-  async function listen(take: MusicalMemory): Promise<void> {
+  async function listenAudio(audio: Blob, example = false): Promise<void> {
     if (!playback || !foreground() || practiceActive()) return
     const token = ++playbackGeneration
     setStatus('')
@@ -76,7 +106,7 @@ export function EncoreDialog(props: {
     const releaseVoice = props.onReleaseVoice
     setPlaying(true)
     const started = await playback.play(
-      take.audio,
+      audio,
       () => {
         if (!alive || token !== playbackGeneration) return
         setPlaying(false)
@@ -88,7 +118,9 @@ export function EncoreDialog(props: {
     if (!started) {
       setPlaying(false)
       setStatus(
-        'This browser could not play the take. You can download it instead.',
+        example
+          ? 'Merc could not play this time. You can still hear your note guide.'
+          : 'This browser could not play the take. You can download it instead.',
       )
       props.onReleaseVoice()
     }
@@ -129,6 +161,8 @@ export function EncoreDialog(props: {
   }
   onMount(() => {
     void memory.load()
+    for (const id of Object.keys(MERC_ENCORE_EXAMPLES) as GlassMelodyId[])
+      void loadExample(id)
     const unsubscribe = host.subscribeForeground((value) => {
       setForeground(value)
       if (!value) void stopPlayback()
@@ -140,6 +174,7 @@ export function EncoreDialog(props: {
     playbackGeneration++
     clearTimeout(releaseTimer)
     memory.dispose()
+    exampleRequests.forEach((request) => request.abort())
     playback?.dispose()
     props.onReleaseVoice()
     downloadUrls.forEach((url) => URL.revokeObjectURL(url))
@@ -183,7 +218,7 @@ export function EncoreDialog(props: {
           <button
             type="button"
             disabled={practiceActive()}
-            onClick={() => void listen(take)}
+            onClick={() => void listenAudio(take.audio)}
           >
             Listen
           </button>
@@ -208,7 +243,7 @@ export function EncoreDialog(props: {
           type="button"
           disabled={state().saving}
           onClick={() => {
-            void stopPlayback()
+            void stopListening()
             if (candidate) memory.discardCandidate()
             else void memory.deleteSaved()
           }}
@@ -263,8 +298,8 @@ export function EncoreDialog(props: {
               </For>
             </div>
             <p>
-              {selected() === encore.melodyId
-                ? `“${encore.words}”`
+              {MERC_ENCORE_EXAMPLES[selected()]?.words !== undefined
+                ? `“${MERC_ENCORE_EXAMPLES[selected()]?.words}”`
                 : 'Hum the shape, or give it your own words.'}
             </p>
             <Show when={sealed()}>
@@ -276,6 +311,32 @@ export function EncoreDialog(props: {
               </div>
             </Show>
             <small>Your lesson, stars and portrait are already yours.</small>
+            <Show when={playback && MERC_ENCORE_EXAMPLES[selected()]}>
+              <div class={styles.mercExample}>
+                <button
+                  type="button"
+                  disabled={
+                    practiceActive() ||
+                    (!examples()[selected()]?.audio &&
+                      examples()[selected()]?.failed !== true)
+                  }
+                  onClick={() => {
+                    const example = examples()[selected()]
+                    if (example?.audio) void listenAudio(example.audio, true)
+                    else void loadExample(selected())
+                  }}
+                >
+                  {examples()[selected()]?.failed === true
+                    ? 'Retry Merc’s example'
+                    : examples()[selected()]?.audio
+                      ? 'Hear Merc'
+                      : 'Preparing Merc’s example…'}
+                </button>
+                <small>
+                  Merc sings in his own range. Your note guide fits yours.
+                </small>
+              </div>
+            </Show>
           </aside>
           <div class={styles.practiceColumn}>
             <label class={styles.shape}>
@@ -284,7 +345,7 @@ export function EncoreDialog(props: {
                 value={selected()}
                 disabled={practiceActive()}
                 onChange={(event) => {
-                  void stopPlayback()
+                  void stopListening()
                   memory.setConsent(false)
                   setSelected(event.currentTarget.value as GlassMelodyId)
                 }}

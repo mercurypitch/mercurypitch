@@ -47,6 +47,7 @@
 }
 .header button,
 .take button,
+.mercExample button,
 .stop,
 .recordingActive button {
   min-height: 44px;
@@ -88,6 +89,16 @@
   max-width: 24ch;
   color: #6d786a;
   line-height: 1.5;
+}
+.mercExample {
+  margin-top: 16px;
+}
+.mercExample button {
+  background: #e3eddb;
+  border-color: #859b7d;
+}
+.mercExample small {
+  font-size: 12px;
 }
 .seal {
   display: inline-flex;
@@ -277,6 +288,17 @@
   .portrait small {
     margin: 0;
     max-width: none;
+  }
+  .mercExample {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 2px;
+  }
+  .mercExample button {
+    flex-shrink: 0;
+    max-width: 55%;
   }
   .seal {
     justify-self: start;

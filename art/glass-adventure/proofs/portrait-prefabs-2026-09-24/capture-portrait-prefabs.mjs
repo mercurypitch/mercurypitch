@@ -53,8 +53,7 @@ const cases = [
     id: 'wave-keeper',
     layout: 'conservatory',
     title: 'Resonance Conservatory',
-    levelId:
-      'glassworks-resonance-conservatory/resonance-conservatory',
+    levelId: 'glassworks-resonance-conservatory/resonance-conservatory',
     checkpointId:
       'glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry',
     completedBreakableIds: [
@@ -150,10 +149,7 @@ try {
       },
       { prefix, proofCase },
     )
-    const caseUrl = new URL(
-      `/glass-game/?layout=${proofCase.layout}`,
-      appUrl,
-    )
+    const caseUrl = new URL(`/glass-game/?layout=${proofCase.layout}`, appUrl)
     await page.goto(caseUrl.href, { waitUntil: 'domcontentloaded' })
     const adventure = page.getByTestId('glass-adventure')
     await expect(adventure).toHaveAttribute('data-ready', 'true', {
@@ -175,7 +171,10 @@ try {
     await page.waitForTimeout(500)
     const bounds = await viewport.boundingBox()
     if (!bounds) throw new Error(`No museum viewport for ${proofCase.id}.`)
-    await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+    await page.mouse.move(
+      bounds.x + bounds.width / 2,
+      bounds.y + bounds.height / 2,
+    )
     for (let step = 0; step < 3; step++) await page.mouse.wheel(0, -520)
     await page.waitForTimeout(1200)
 
@@ -234,7 +233,9 @@ try {
     if (!assets.some((asset) => asset.path.endsWith('/legend-slab.glb')))
       errors.push('Legend slab geometry was not observed.')
     if (assets.some((asset) => asset.matchesLocal === false))
-      errors.push('A served portrait asset differed from its local source file.')
+      errors.push(
+        'A served portrait asset differed from its local source file.',
+      )
     proofs.push({
       id: proofCase.id,
       title: proofCase.title,
@@ -270,14 +271,16 @@ await writeFile(
 )
 console.log(
   JSON.stringify(
-    proofs.map(({ id, screenshot, checkpointId, renderer, assets, errors }) => ({
-      id,
-      screenshot,
-      checkpointId,
-      renderer: renderer.renderer,
-      assets: assets.length,
-      errors,
-    })),
+    proofs.map(
+      ({ id, screenshot, checkpointId, renderer, assets, errors }) => ({
+        id,
+        screenshot,
+        checkpointId,
+        renderer: renderer.renderer,
+        assets: assets.length,
+        errors,
+      }),
+    ),
     null,
     2,
   ),

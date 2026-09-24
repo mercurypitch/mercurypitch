@@ -71,6 +71,8 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
+  'merc-encore-light-v5': 'adventure-voice/merc-encore-light-v5.mp3',
+  'merc-encore-home-v5': 'adventure-voice/merc-encore-home-v5.mp3',
   ...Object.fromEntries(
     REACTION_CUES.map((cue) => [
       `merc-voice-${cue}`,
@@ -108,9 +110,22 @@ const MANIFEST_FILES = [
   'adventure-voice-v2/manifest.json',
 ] as const
 
+/** Explicit-listen examples stay out of the cold world-loading bundle. */
+export const GLASS_GAME_ON_DEMAND_ASSET_IDS = [
+  'merc-encore-light-v5',
+  'merc-encore-home-v5',
+] as const
+
+const ON_DEMAND_ASSET_IDS = new Set<string>(GLASS_GAME_ON_DEMAND_ASSET_IDS)
+
 /** Every source byte needed for a cold offline campaign, relative to games/. */
 export const GLASS_GAME_REQUIRED_FILES: readonly string[] = Object.freeze([
-  ...new Set([...Object.values(GLASS_GAME_ASSET_FILES), ...MANIFEST_FILES]),
+  ...new Set([
+    ...Object.entries(GLASS_GAME_ASSET_FILES)
+      .filter(([id]) => !ON_DEMAND_ASSET_IDS.has(id))
+      .map(([, path]) => path),
+    ...MANIFEST_FILES,
+  ]),
 ])
 
 /** Preserve the legacy authored fallback while centralising every known ID. */

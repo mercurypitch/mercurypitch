@@ -1,0 +1,36 @@
+{
+  "revision": "merc-coda-singing-v5-2026-09-24",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "voice_name": "Merc V1 Gentle Whimsical D2",
+  "model_id": "eleven_v3",
+  "output_format": "pcm_24000",
+  "voice_settings": {
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0,
+    "use_speaker_boost": false,
+    "speed": 1
+  },
+  "lines": [
+    {
+      "id": "light-a",
+      "text": "[sings gently] Let light sing.",
+      "seed": 2092401
+    },
+    {
+      "id": "light-b",
+      "text": "[sings playfully] Let light sing.",
+      "seed": 2092402
+    },
+    {
+      "id": "home-a",
+      "text": "[sings gently] Two small lights come home.",
+      "seed": 2092403
+    },
+    {
+      "id": "home-b",
+      "text": "[sings warmly] Two small lights come home.",
+      "seed": 2092404
+    }
+  ]
+}

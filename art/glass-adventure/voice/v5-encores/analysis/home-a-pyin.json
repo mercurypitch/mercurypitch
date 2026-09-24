@@ -1,0 +1,6 @@
+{
+  "independentAnalysis": "librosa pYIN confidence > 0.5, decoded MP3, no supplied target-pitch prior",
+  "validFrames": 744,
+  "medianAbsoluteCents": 2.592059366017452,
+  "p95AbsoluteCents": 7.40794063398198
+}

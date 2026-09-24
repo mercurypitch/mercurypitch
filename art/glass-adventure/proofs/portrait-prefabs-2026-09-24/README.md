@@ -8,11 +8,11 @@ calls or substitute a test scene.
 
 ## Result
 
-| Portrait | Gallery checkpoint | Visual inspection |
-| --- | --- | --- |
-| [Awakened Muse](captures/awakened-muse.png) | Glassworks Journey portrait entry | Warm pink and gold portrait is upright, fully inside the brass frame, and has intact glass and texture mapping. |
-| [Interval](captures/interval.png) | Twin Galleries portrait entry | Gold and celadon two-light portrait is upright, fully framed, and has intact glass and texture mapping. |
-| [Wave Keeper](captures/wave-keeper.png) | Resonance Conservatory wave-salon portrait entry | Green floral portrait is upright, fully framed, and has intact glass and texture mapping. |
+| Portrait                                    | Gallery checkpoint                               | Visual inspection                                                                                               |
+| ------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| [Awakened Muse](captures/awakened-muse.png) | Glassworks Journey portrait entry                | Warm pink and gold portrait is upright, fully inside the brass frame, and has intact glass and texture mapping. |
+| [Interval](captures/interval.png)           | Twin Galleries portrait entry                    | Gold and celadon two-light portrait is upright, fully framed, and has intact glass and texture mapping.         |
+| [Wave Keeper](captures/wave-keeper.png)     | Resonance Conservatory wave-salon portrait entry | Green floral portrait is upright, fully framed, and has intact glass and texture mapping.                       |
 
 All three captures reached the expected checkpoint with three main exhibits
 complete. Each run observed HTTP 200 responses for the prefab geometry and its

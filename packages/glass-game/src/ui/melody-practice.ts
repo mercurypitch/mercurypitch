@@ -7,6 +7,7 @@ import type { MelodyJudge, MelodyJudgePolicy, MelodyJudgeSnapshot, } from '../co
 import { createMelodyJudge } from '../core/melody-judge'
 import type { MelodyReferencePlayer } from '../core/melody-reference'
 import type { GlassGameHost, GlassVoiceSession } from '../host'
+import { feedbackCopy, idleCopy } from './melody-practice-copy'
 import { microphoneError } from './mic-error'
 
 export type MelodyPracticeMode =
@@ -111,60 +112,6 @@ function copySnapshot(
             coveredAnchorIds: [...snapshot.judge.coveredAnchorIds],
             completedPhraseIds: [...snapshot.judge.completedPhraseIds],
           },
-  }
-}
-
-function idleCopy(
-  melody: MelodyDefinition,
-): Pick<MelodyPracticeSnapshot, 'message' | 'hint'> {
-  return {
-    message: melody.title,
-    hint: `${melody.description} Listen first, or sing when you are ready.`,
-  }
-}
-
-function feedbackCopy(snapshot: MelodyJudgeSnapshot): {
-  message: string
-  hint: string
-} {
-  if (snapshot.complete)
-    return {
-      message: 'The whole ribbon is glowing.',
-      hint: 'You carried the melody all the way through.',
-    }
-  if (snapshot.phase === 'breath')
-    return {
-      message: 'Next phrase when you are ready.',
-      hint: 'Breathe if you want to, then begin on the glowing note.',
-    }
-  if (snapshot.feedback === 'retry')
-    return {
-      message: 'Try this phrase again.',
-      hint: 'Return to its first note and let the shape unfold gently.',
-    }
-  if (snapshot.feedback === 'high')
-    return {
-      message: 'A little lower.',
-      hint: 'Follow the ribbon; there is no need to sing loudly.',
-    }
-  if (snapshot.feedback === 'low')
-    return {
-      message: 'A little higher.',
-      hint: 'Follow the ribbon; there is no need to sing loudly.',
-    }
-  if (snapshot.feedback === 'dropout' || snapshot.feedback === 'stale')
-    return {
-      message: 'Let the note come through clearly.',
-      hint: 'A gentle hum is enough. Begin this phrase again if you need to.',
-    }
-  if (snapshot.feedback === 'find-start')
-    return {
-      message: 'Find the glowing note.',
-      hint: 'Settle there briefly, then follow the ribbon forward.',
-    }
-  return {
-    message: 'Follow the ribbon.',
-    hint: 'Keep moving gently through the shape. Breathe between phrases if you want to.',
   }
 }
 

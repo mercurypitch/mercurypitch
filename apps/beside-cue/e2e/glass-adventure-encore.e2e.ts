@@ -136,6 +136,22 @@ test('optional encore records only with consent, preserves completion and fits m
   })
   await expect(consent).not.toBeChecked()
   const practice = dialog.locator('section[data-mode]')
+  // Merc's authored example is real decoded delivery audio and does not open
+  // capture, move the pitch judge or opt the player into a recording.
+  await expect(
+    dialog.getByRole('button', { name: 'Hear Merc', exact: true }),
+  ).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Hear Merc', exact: true }).click()
+  await expect(
+    dialog.getByRole('button', { name: 'Stop listening' }),
+  ).toBeVisible()
+  expect(await page.evaluate(() => window.encoreFixture.streams.length)).toBe(0)
+  expect(await page.evaluate(() => window.encoreFixture.recordings)).toBe(0)
+  await expect(practice).toHaveAttribute('data-mode', 'idle')
+  await dialog.getByRole('button', { name: 'Stop listening' }).click()
+  await dialog.evaluate((element) => {
+    element.scrollTop = 0
+  })
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 })
     await page.screenshot({ path: testInfo.outputPath(`encore-${width}.png`) })

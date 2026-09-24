@@ -3,7 +3,13 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { GLASS_GAME_ASSET_FILES, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, glassGameAssetUrl, } from './assets'
+import {
+  GLASS_GAME_ASSET_FILES,
+  GLASS_GAME_ON_DEMAND_ASSET_IDS,
+  GLASS_GAME_REQUIRED_FILES,
+  glassGameAssetPath,
+  glassGameAssetUrl,
+} from './assets'
 
 describe('Glassworks asset contract', () => {
   it('resolves the same authored ID beneath any host-owned base', () => {
@@ -21,12 +27,13 @@ describe('Glassworks asset contract', () => {
     )
   })
 
-  it('includes every mapped campaign byte once in the offline allowlist', () => {
+  it('includes every cold campaign byte once in the offline allowlist', () => {
     const required = new Set(GLASS_GAME_REQUIRED_FILES)
+    const onDemand = new Set<string>(GLASS_GAME_ON_DEMAND_ASSET_IDS)
 
     expect(required.size).toBe(GLASS_GAME_REQUIRED_FILES.length)
-    for (const path of Object.values(GLASS_GAME_ASSET_FILES))
-      expect(required.has(path), path).toBe(true)
+    for (const [id, path] of Object.entries(GLASS_GAME_ASSET_FILES))
+      expect(required.has(path), path).toBe(!onDemand.has(id))
     expect(required.has('adventure-v6/manifest.json')).toBe(true)
     expect(required.has('adventure-v6/amber-cadence-urn.glb')).toBe(true)
     expect(required.has('adventure-v7/manifest.json')).toBe(true)
