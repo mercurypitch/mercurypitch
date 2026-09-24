@@ -4,12 +4,19 @@ Small sung mini-games inside Beside Cue. Free, unscored, and never part of
 the plan-and-cue contract: they are an optional B-side move someone can pick
 as their tiny replacement action.
 
-## Not in v1
+## Public release boundary
 
 Beside Cue v1 goes to the stores without the games (maff, 2026-09-14): they
 cannot be polished enough for a first review. They come back in a later
 release, which is reviewed with them. Never as a remote switch on a shipped
 build: App Review guideline 2.3.1 forbids hidden features turned on later.
+
+Owner testing builds now include the games while that public release remains
+distant. The distinction is the ref, not a runtime switch: pull requests,
+pushes to `main`, and non-tag manual workflow runs use the explicit native
+games profile; a `bc-v*` release tag still builds the canonical games-off
+profile. Both sides are guarded against carrying the other profile's assets or
+permissions.
 
 - The build decides. `VITE_BESIDE_CUE_GAMES=1` builds the games in; unset,
   `vite.config.ts` resolves `@/games/entry` (`src/games/entry.ts`, the one
@@ -72,8 +79,37 @@ allowlist into a provenance marker, run Capacitor sync, and verify every
 declared byte in the copied native tree. Android debug builds additionally use
 `-PbesideCueGames=1`; iOS simulator builds point
 `BESIDE_CUE_INFO_PLIST_PATH` at the generated games plist. The dedicated
-`beside-cue-games-native.yml` workflow compiles both profiles without signing,
-uploading, or changing the games-off store workflow.
+`beside-cue-games-native.yml` workflow remains the short unsigned smoke test
+for both platforms. The distribution workflow also uses this profile on every
+non-tag owner testing build:
+
+- Android keeps the games-enabled debug APK as a GitHub Actions artifact. When
+  the upload-signing secret is present, it also keeps the signed release AAB
+  and APK for a manual Google Play internal-track upload. There is no Google
+  Play publisher or service-account credential in the workflow, so nothing is
+  uploaded to Play automatically. A sideloaded APK uses the RevenueCat Test
+  Store; Play Billing requires the Play-installed AAB.
+- A pull request builds and signs the games-enabled iOS archive but does not
+  upload it. A push to `main` uploads the games-enabled archive to TestFlight
+  automatically. A manual workflow run on a non-tag ref also uploads under the
+  current `main-and-tags` policy. App Store Connect signing secrets must be
+  present for either archive or upload.
+- A `bc-v*` tag ignores the testing-profile inputs and uses the canonical
+  games-off Android manifest, iOS plist, and web output. Its original 90 MiB
+  warning and 150 MiB failure budgets remain unchanged.
+
+CI hydrates only the native runtime paths before a games build:
+
+```text
+apps/beside-cue/public/games/**
+apps/beside-cue/public/models/**
+apps/beside-cue/public/ort/**
+```
+
+The games-enabled web tree measured 378.07 MiB unpacked and 288.72 MiB with
+ordinary ZIP compression on 2026-09-24, so preview Android packages use a
+separate 300 MiB warning and 340 MiB failure ceiling. This is a testing budget,
+not a public-store size claim; release tags retain the smaller budget above.
 
 The iOS target validates that pairing on every build. `App/App/public` is an
 ignored Capacitor output, so a games playtest can leave its web bundle there

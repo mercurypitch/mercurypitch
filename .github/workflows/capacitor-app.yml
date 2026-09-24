@@ -153,6 +153,35 @@ on:
         required: false
         type: string
         default: ''
+      native-test-profile-script:
+        description: >-
+          Optional package script that builds, stamps, syncs and verifies an
+          alternate native testing profile. It runs only on non-release refs;
+          release tags keep the canonical store profile.
+        required: false
+        type: string
+        default: ''
+      native-test-profile-lfs-include:
+        description: >-
+          Optional comma-separated Git LFS include list hydrated before the
+          native testing profile runs. Empty profiles do not invoke Git LFS.
+        required: false
+        type: string
+        default: ''
+      native-test-android-gradle-property:
+        description: >-
+          Gradle property, without the -P prefix, that pairs Android packages
+          with the native testing profile. Ignored on release tags.
+        required: false
+        type: string
+        default: ''
+      native-test-ios-build-setting:
+        description: >-
+          Complete Xcode build-setting argument that pairs iOS packages with
+          the native testing profile. Ignored on release tags.
+        required: false
+        type: string
+        default: ''
       size-warn-mb:
         description: >-
           Warn when a download artifact is bigger than this. The gate measures
@@ -171,6 +200,20 @@ on:
         required: false
         type: number
         default: 100
+      native-test-size-warn-mb:
+        description: >-
+          Optional warning budget for the alternate native testing profile.
+          Zero reuses size-warn-mb; release tags always use size-warn-mb.
+        required: false
+        type: number
+        default: 0
+      native-test-size-fail-mb:
+        description: >-
+          Optional failure ceiling for the alternate native testing profile.
+          Zero reuses size-fail-mb; release tags always use size-fail-mb.
+        required: false
+        type: number
+        default: 0
       run-android:
         required: false
         type: boolean
@@ -256,6 +299,38 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate native testing profile inputs
+        shell: bash
+        env:
+          PROFILE_SCRIPT: ${{ inputs.native-test-profile-script }}
+          LFS_INCLUDE: ${{ inputs.native-test-profile-lfs-include }}
+          ANDROID_PROPERTY: ${{ inputs.native-test-android-gradle-property }}
+          IOS_BUILD_SETTING: ${{ inputs.native-test-ios-build-setting }}
+          RUN_ANDROID: ${{ inputs.run-android }}
+          RUN_IOS_TESTFLIGHT: ${{ inputs.run-ios-testflight }}
+          RUN_IOS_ADHOC: ${{ inputs.run-ios-adhoc }}
+          TEST_SIZE_WARN_MB: ${{ inputs.native-test-size-warn-mb }}
+          TEST_SIZE_FAIL_MB: ${{ inputs.native-test-size-fail-mb }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$PROFILE_SCRIPT" ]]; then
+            if [[ -n "$LFS_INCLUDE$ANDROID_PROPERTY$IOS_BUILD_SETTING" ||
+                  "$TEST_SIZE_WARN_MB" != "0" || "$TEST_SIZE_FAIL_MB" != "0" ]]; then
+              echo 'Native testing profile inputs require native-test-profile-script.' >&2
+              exit 1
+            fi
+            exit 0
+          fi
+          if [[ "$RUN_ANDROID" == "true" && -z "$ANDROID_PROPERTY" ]]; then
+            echo 'The Android native testing profile needs its Gradle property.' >&2
+            exit 1
+          fi
+          if [[ ("$RUN_IOS_TESTFLIGHT" == "true" || "$RUN_IOS_ADHOC" == "true") &&
+                -z "$IOS_BUILD_SETTING" ]]; then
+            echo 'The iOS native testing profile needs its Xcode build setting.' >&2
+            exit 1
+          fi
+
       - name: Decide whether the app changed
         id: filter
         shell: bash
@@ -302,6 +377,7 @@ jobs:
       HAS_UPLOAD_KEY: ${{ secrets.keystore-base64 != '' }}
       HAS_DEBUG_KEY: ${{ secrets.debug-keystore-base64 != '' }}
       IS_RELEASE: ${{ startsWith(github.ref, format('refs/tags/{0}', inputs.tag-prefix)) }}
+      USE_NATIVE_TEST_PROFILE: ${{ !startsWith(github.ref, format('refs/tags/{0}', inputs.tag-prefix)) && inputs.native-test-profile-script != '' }}
       APP_DIR: ${{ inputs.app-dir }}
       PKG: ${{ inputs.package-name }}
       PREFIX: ${{ inputs.signing-env-prefix }}
@@ -309,10 +385,18 @@ jobs:
       PLATFORM_ENV: ${{ inputs.platform-env-name }}
       REVIEW_UNLOCK_SHA256: ${{ inputs.review-unlock-sha256 }}
       VERIFY_ASSETS: ${{ inputs.verify-assets }}
+      NATIVE_TEST_PROFILE_SCRIPT: ${{ inputs.native-test-profile-script }}
+      NATIVE_TEST_ANDROID_GRADLE_PROPERTY: ${{ inputs.native-test-android-gradle-property }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Hydrate native testing profile assets
+        if: env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-profile-lfs-include != ''
+        env:
+          LFS_INCLUDE: ${{ inputs.native-test-profile-lfs-include }}
+        run: git lfs pull --include="$LFS_INCLUDE" --exclude=""
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -389,7 +473,11 @@ jobs:
           export VITE_REVIEW_UNLOCK_SHA256="$REVIEW_UNLOCK_SHA256"
           export VITE_REVENUECAT_ALLOW_TEST_STORE="$ALLOW_TEST_STORE"
           export VITE_REVENUECAT_ANDROID_KEY="$RC_ANDROID_KEY"
-          pnpm --filter "$PKG" exec vite build
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            pnpm --filter "$PKG" "$NATIVE_TEST_PROFILE_SCRIPT" -- --platform android --build
+          else
+            pnpm --filter "$PKG" exec vite build
+          fi
 
       - name: Verify the debug bundle
         if: inputs.verify-assets != ''
@@ -403,6 +491,7 @@ jobs:
           bash -euo pipefail -c "$VERIFY_ASSETS"
 
       - name: Synchronize Android project
+        if: env.USE_NATIVE_TEST_PROFILE != 'true'
         run: pnpm --filter "$PKG" exec cap sync android
 
       - name: Decode upload keystore
@@ -435,7 +524,14 @@ jobs:
           set -euo pipefail
           export "${PREFIX}_DEBUG_KEYSTORE_FILE=$DEBUG_KEYSTORE_FILE"
           cd "$APP_DIR/android"
-          ./gradlew test lint assembleDebug :app:assembleDebugAndroidTest --no-daemon
+          profile_argument=''
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            test -n "$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
+            profile_argument="-P$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
+          fi
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" ./gradlew test lint assembleDebug \
+            :app:assembleDebugAndroidTest --no-daemon
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -471,8 +567,12 @@ jobs:
           export VITE_REVIEW_UNLOCK_SHA256="$REVIEW_UNLOCK_SHA256"
           export VITE_REVENUECAT_ALLOW_TEST_STORE=0
           export VITE_REVENUECAT_ANDROID_KEY="$RC_ANDROID_KEY"
-          pnpm --filter "$PKG" exec vite build
-          pnpm --filter "$PKG" exec cap sync android
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            pnpm --filter "$PKG" "$NATIVE_TEST_PROFILE_SCRIPT" -- --platform android --build
+          else
+            pnpm --filter "$PKG" exec vite build
+            pnpm --filter "$PKG" exec cap sync android
+          fi
 
       - name: Verify the release bundle
         if: inputs.verify-assets != ''
@@ -508,7 +608,13 @@ jobs:
           export "${PREFIX}_KEY_ALIAS=$KEY_ALIAS"
           export "${PREFIX}_KEY_PASSWORD=$KEY_PASSWORD"
           cd "$APP_DIR/android"
-          ./gradlew bundleRelease assembleRelease --no-daemon
+          profile_argument=''
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            test -n "$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
+            profile_argument="-P$NATIVE_TEST_ANDROID_GRADLE_PROPERTY"
+          fi
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" ./gradlew bundleRelease assembleRelease --no-daemon
 
       # Every run, not only a release: the release bundle is built on pull
       # requests too, so this is where a size regression is cheapest to see.
@@ -518,8 +624,8 @@ jobs:
         shell: bash
         env:
           APP_NAME: ${{ inputs.app-name }}
-          WARN_MB: ${{ inputs.size-warn-mb }}
-          FAIL_MB: ${{ inputs.size-fail-mb }}
+          WARN_MB: ${{ env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-size-warn-mb || inputs.size-warn-mb }}
+          FAIL_MB: ${{ env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-size-fail-mb || inputs.size-fail-mb }}
           OUTPUTS: ${{ inputs.app-dir }}/android/app/build/outputs
         run: |
           set -euo pipefail
@@ -538,6 +644,20 @@ jobs:
             ${{ inputs.app-dir }}/android/app/build/outputs/apk/release/app-release*.apk
           if-no-files-found: error
           retention-days: 90
+
+      # No Play publisher or service-account credential exists here. Keeping
+      # the signed non-tag AAB lets the owner upload this exact package to an
+      # internal track by hand; the debug APK above remains the sideload path.
+      - name: Upload signed native testing artifacts
+        if: env.USE_NATIVE_TEST_PROFILE == 'true' && env.HAS_UPLOAD_KEY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app-slug }}-android-native-testing
+          path: |
+            ${{ inputs.app-dir }}/android/app/build/outputs/bundle/release/app-release*.aab
+            ${{ inputs.app-dir }}/android/app/build/outputs/apk/release/app-release*.apk
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Report signing state
         if: always()
@@ -566,6 +686,8 @@ jobs:
     timeout-minutes: 60
     env:
       HAS_ASC: ${{ secrets.apple-asc-key-id != '' && secrets.apple-asc-issuer-id != '' && secrets.apple-asc-key-p8 != '' && secrets.apple-team-id != '' && secrets.appstore-profile-base64 != '' }}
+      IS_RELEASE: ${{ startsWith(github.ref, format('refs/tags/{0}', inputs.tag-prefix)) }}
+      USE_NATIVE_TEST_PROFILE: ${{ !startsWith(github.ref, format('refs/tags/{0}', inputs.tag-prefix)) && inputs.native-test-profile-script != '' }}
       # Every run archives. Which ones also upload is the caller's call —
       # see the testflight-upload-from input. A pull request never uploads.
       UPLOAD: ${{ github.event_name != 'pull_request' && (inputs.testflight-upload-from == 'main-and-tags' || github.ref_type == 'tag') }}
@@ -576,11 +698,19 @@ jobs:
       DIST_ENV: ${{ inputs.distribution-env-name }}
       PLATFORM_ENV: ${{ inputs.platform-env-name }}
       APP_SLUG: ${{ inputs.app-slug }}
+      NATIVE_TEST_PROFILE_SCRIPT: ${{ inputs.native-test-profile-script }}
+      NATIVE_TEST_IOS_BUILD_SETTING: ${{ inputs.native-test-ios-build-setting }}
 
     steps:
       - name: Checkout
         if: env.HAS_ASC == 'true'
         uses: actions/checkout@v7
+
+      - name: Hydrate native testing profile assets
+        if: env.HAS_ASC == 'true' && env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-profile-lfs-include != ''
+        env:
+          LFS_INCLUDE: ${{ inputs.native-test-profile-lfs-include }}
+        run: git lfs pull --include="$LFS_INCLUDE" --exclude=""
 
       - name: Set up pnpm
         if: env.HAS_ASC == 'true'
@@ -619,8 +749,12 @@ jobs:
           export "$PLATFORM_ENV=ios"
           export VITE_REVENUECAT_ALLOW_TEST_STORE=0
           export VITE_REVENUECAT_IOS_KEY="$RC_IOS_KEY"
-          pnpm --filter "$PKG" exec vite build
-          pnpm --filter "$PKG" exec cap sync ios
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            pnpm --filter "$PKG" "$NATIVE_TEST_PROFILE_SCRIPT" -- --platform ios --build
+          else
+            pnpm --filter "$PKG" exec vite build
+            pnpm --filter "$PKG" exec cap sync ios
+          fi
 
       - name: Import signing certificate
         if: env.HAS_ASC == 'true'
@@ -685,6 +819,12 @@ jobs:
           set -euo pipefail
           cd "$APP_DIR/ios/App"
 
+          profile_argument=''
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            test -n "$NATIVE_TEST_IOS_BUILD_SETTING"
+            profile_argument="$NATIVE_TEST_IOS_BUILD_SETTING"
+          fi
+
           # A tag names the version it is releasing; everything else carries
           # the app's own. The run number tells two uploads of the same
           # version apart, and rises across all of them.
@@ -738,7 +878,8 @@ jobs:
           # So the App target names its own certificate and asks for its
           # profile through the build setting named by
           # `profile-build-setting` -- which no other target reads.
-          xcodebuild \
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" xcodebuild \
             -project App.xcodeproj \
             -scheme App \
             -configuration Release \
@@ -820,15 +961,24 @@ jobs:
     env:
       HAS_SIGNING: ${{ secrets.apple-certificate-p12-base64 != '' && secrets.adhoc-profile-base64 != '' }}
       IS_RELEASE: ${{ startsWith(github.ref, format('refs/tags/{0}', inputs.tag-prefix)) }}
+      USE_NATIVE_TEST_PROFILE: ${{ !startsWith(github.ref, format('refs/tags/{0}', inputs.tag-prefix)) && inputs.native-test-profile-script != '' }}
       APP_DIR: ${{ inputs.app-dir }}
       PKG: ${{ inputs.package-name }}
       DIST_ENV: ${{ inputs.distribution-env-name }}
       PLATFORM_ENV: ${{ inputs.platform-env-name }}
       APP_SLUG: ${{ inputs.app-slug }}
+      NATIVE_TEST_PROFILE_SCRIPT: ${{ inputs.native-test-profile-script }}
+      NATIVE_TEST_IOS_BUILD_SETTING: ${{ inputs.native-test-ios-build-setting }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Hydrate native testing profile assets
+        if: env.USE_NATIVE_TEST_PROFILE == 'true' && inputs.native-test-profile-lfs-include != ''
+        env:
+          LFS_INCLUDE: ${{ inputs.native-test-profile-lfs-include }}
+        run: git lfs pull --include="$LFS_INCLUDE" --exclude=""
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -859,9 +1009,14 @@ jobs:
           export VITE_MOCK_PURCHASES=0
           export VITE_REVENUECAT_ALLOW_TEST_STORE="$ALLOW_TEST_STORE"
           export VITE_REVENUECAT_IOS_KEY="$RC_IOS_KEY"
-          pnpm --filter "$PKG" exec vite build
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            pnpm --filter "$PKG" "$NATIVE_TEST_PROFILE_SCRIPT" -- --platform ios --build
+          else
+            pnpm --filter "$PKG" exec vite build
+          fi
 
       - name: Synchronize iOS project
+        if: env.USE_NATIVE_TEST_PROFILE != 'true'
         run: pnpm --filter "$PKG" exec cap sync ios
 
       # Always runs, with or without signing. This is the check that the app and
@@ -872,7 +1027,13 @@ jobs:
         run: |
           set -euo pipefail
           cd "$APP_DIR/ios/App"
-          xcodebuild \
+          profile_argument=''
+          if [[ "$USE_NATIVE_TEST_PROFILE" == "true" ]]; then
+            test -n "$NATIVE_TEST_IOS_BUILD_SETTING"
+            profile_argument="$NATIVE_TEST_IOS_BUILD_SETTING"
+          fi
+          bash "$GITHUB_WORKSPACE/.github/scripts/run-with-optional-profile-argument.sh" \
+            "$profile_argument" xcodebuild \
             -project App.xcodeproj \
             -scheme App \
             -configuration Debug \
