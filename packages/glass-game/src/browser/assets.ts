@@ -6,7 +6,8 @@
 // currently live under Beside Cue's public/games directory; web hosts may stage
 // only this allowlist elsewhere without changing the IDs authored in levels.
 
-import { MERC_ENCORE_VARIANTS } from '../content/encore-examples'
+// The export resolves to an explicit .ts path for Node's native-build scripts.
+import { MERC_ENCORE_VARIANTS } from '@irchiinnuss/glass-game/encore-examples'
 
 const MATERIALS = [
   'warm-carrara',

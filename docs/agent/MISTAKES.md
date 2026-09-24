@@ -273,6 +273,16 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Rule:** decode/resample delivery audio to common AudioContext rates (44.1/48 kHz), run the production detector and judge with every unvoiced frame, and test wrong-note controls. Keep source-rate analysis separately labelled; never add hidden tones to force a reference through the judge.
 **See:** `packages/pitch-engine/src/pitch-f0-stream.ts`, `packages/glass-game/src/browser/voice-session.ts`.
 
+### Keep the game asset inventory loadable by plain Node
+
+**Symptom:** Browser play works, but native packaging and root Vite startup fail
+with `ERR_MODULE_NOT_FOUND` after the inventory imports another TypeScript file.
+**Cause:** Those scripts load the package export using Node type stripping,
+which does not resolve extensionless relative imports like Vite does.
+**Do instead:** Use an explicit, script-safe package export for shared catalogue
+data and keep its runtime dependencies Node-loadable. The asset contract test
+must import the inventory in a child Node process as well as through Vitest.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

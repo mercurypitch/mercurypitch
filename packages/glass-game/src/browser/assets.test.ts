@@ -2,10 +2,32 @@
 // Glassworks asset contract tests — keep hosts and offline packages on one map
 // ============================================================
 
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { GLASS_GAME_ASSET_FILES, GLASS_GAME_ON_DEMAND_ASSET_IDS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, glassGameAssetUrl, } from './assets'
 
 describe('Glassworks asset contract', () => {
+  it('loads the same inventory directly in Node for native and web packaging', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--experimental-strip-types',
+        '--input-type=module',
+        '--eval',
+        `import { GLASS_GAME_REQUIRED_FILES } from '@irchiinnuss/glass-game/assets';
+         process.stdout.write(JSON.stringify(GLASS_GAME_REQUIRED_FILES));`,
+      ],
+      {
+        cwd: fileURLToPath(new URL('../../', import.meta.url)),
+        encoding: 'utf8',
+        timeout: 10_000,
+      },
+    )
+    expect(result.status, result.stderr).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual(GLASS_GAME_REQUIRED_FILES)
+  })
+
   it('resolves the same authored ID beneath any host-owned base', () => {
     expect(glassGameAssetUrl('museum-window-v4', '/glass-game-assets')).toBe(
       '/glass-game-assets/adventure-v4/museum-window-bay.glb',
