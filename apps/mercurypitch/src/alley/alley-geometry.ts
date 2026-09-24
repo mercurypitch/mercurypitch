@@ -80,10 +80,15 @@ function fitOf(
   }
 }
 
-/** Where the landscape door band may go: under the headline, over the dock. */
+/**
+ * Where the landscape door band may go: from the safe top to the dock, right
+ * of the headline block, which stands beside the doors on a screen on its
+ * side (`left`, its right edge; 0 when it is above them).
+ */
 export interface AlleyFrame {
   readonly top: number
   readonly bottom: number
+  readonly left?: number
 }
 
 /** The doors' extent in plate pixels. */
@@ -117,10 +122,12 @@ const BAND_SLACK = 6
  * plate allows.
  *
  * LANDSCAPE sizes the plate by the door band instead: the band fits between
- * `frame.top` (the headline block's bottom) and `frame.bottom` (the dock),
- * centred in both directions. What the plate does not cover is the alley's
- * own ground colour. Cover-fit there would put the doors a screen and a half
- * tall behind a 393 px window.
+ * `frame.top` (the safe top) and `frame.bottom` (the dock), and between
+ * `frame.left` (the headline block's right edge: on its side the block stands
+ * beside the doors, so the band keeps the full height) and the right edge,
+ * centred in that box. What the plate does not cover is the alley's own
+ * ground colour. Cover-fit there would put the doors a screen and a half tall
+ * behind a 393 px window.
  */
 export function alleyFit(
   plate: PlateBox,
@@ -132,13 +139,14 @@ export function alleyFit(
   const extent = doorExtent(doors)
   if (w > h) {
     const cover = Math.max(w / plate.width, h / plate.height)
+    const left = frame.left ?? 0
     const room = Math.max(1, frame.bottom - frame.top - BAND_SLACK * 2)
     const scale = Math.min(
       cover,
       room / (extent.y1 - extent.y0),
-      Math.max(1, w - BAND_SLACK * 2) / (extent.x1 - extent.x0),
+      Math.max(1, w - left - BAND_SLACK * 2) / (extent.x1 - extent.x0),
     )
-    const ox = ((extent.x0 + extent.x1) / 2) * scale - w / 2
+    const ox = ((extent.x0 + extent.x1) / 2) * scale - (left + w) / 2
     const oy =
       ((extent.y0 + extent.y1) / 2) * scale - (frame.top + frame.bottom) / 2
     return fitOf(plate, scale, ox, oy)

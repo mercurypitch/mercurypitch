@@ -38,7 +38,7 @@ import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
 import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
 import { OPEN_MS, openDoor, REDUCED_MS } from './alley-entry'
-import type { DoorLayout } from './alley-geometry'
+import type { AlleyFrame, DoorLayout } from './alley-geometry'
 import { alleyFit, dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rectToQuad, tapBand, } from './alley-geometry'
 import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
@@ -137,20 +137,23 @@ export const RoomsAlley: Component = () => {
   // the safe area and the headline's line count make of it. A tap on the
   // words falls through to the plate and clears a selection.
   const [topBottom, setTopBottom] = createSignal(0)
+  // On its side the block stands left of the doors instead (alley.css): its
+  // right edge and its top padding (the safe top) bound the band there.
+  const [topRight, setTopRight] = createSignal(0)
+  const [topPad, setTopPad] = createSignal(0)
   // The dock's top. With the headline's bottom it is the room a landscape
   // screen gives the doors (`alleyFit`).
   const [floor, setFloor] = createSignal(window.innerHeight)
+  const landscape = (): boolean => size().w > size().h
+  const frame = (): AlleyFrame =>
+    landscape()
+      ? { top: topPad(), bottom: floor(), left: topRight() }
+      : { top: topBottom(), bottom: floor() }
   const fit = createMemo(() =>
-    alleyFit(ALLEY_PLATE, DOORS, size().w, size().h, {
-      top: topBottom(),
-      bottom: floor(),
-    }),
+    alleyFit(ALLEY_PLATE, DOORS, size().w, size().h, frame()),
   )
   const doors = createMemo(() =>
-    layoutDoors(ALLEY_PLATE, DOORS, size().w, size().h, {
-      top: topBottom(),
-      bottom: floor(),
-    }),
+    layoutDoors(ALLEY_PLATE, DOORS, size().w, size().h, frame()),
   )
   /** The plate as `alleyFit` placed it, for every copy of it drawn. */
   const plateStyle = (): Record<string, string> => ({
@@ -160,7 +163,8 @@ export const RoomsAlley: Component = () => {
     height: `${fit().height}px`,
   })
   const band = createMemo(() =>
-    tapBand(doors(), size().w, size().h, topBottom()),
+    // Beside the block on its side, the band needs no clamp from above.
+    tapBand(doors(), size().w, size().h, landscape() ? 0 : topBottom()),
   )
   const layoutOf = (key: DoorKey): DoorLayout =>
     doors().find((door) => door.key === key) ?? doors()[0]
@@ -343,6 +347,12 @@ export const RoomsAlley: Component = () => {
       if (top !== undefined) {
         const bottom = Math.ceil(top.offsetTop + top.offsetHeight)
         if (bottom !== untrack(topBottom)) setTopBottom(bottom)
+        const right = Math.ceil(top.offsetLeft + top.offsetWidth)
+        if (right !== untrack(topRight)) setTopRight(right)
+        const pad = Math.ceil(
+          Number.parseFloat(window.getComputedStyle(top).paddingTop) || 0,
+        )
+        if (pad !== untrack(topPad)) setTopPad(pad)
       }
       const dock = document.querySelector('.mp-dock')
       const dockTop =

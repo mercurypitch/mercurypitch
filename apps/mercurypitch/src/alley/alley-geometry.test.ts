@@ -392,6 +392,35 @@ describe('the alley on its side', () => {
     },
   )
 
+  it.each([
+    [852, 393, 8, 321, 300],
+    [932, 430, 8, 360, 300],
+    [844, 390, 55, 330, 180],
+  ])(
+    'at %i x %i, beside a headline block, takes the full height right of it',
+    (w, h, top, bottom, left) => {
+      const frame = { top, bottom, left }
+      const doors = layoutDoors(ALLEY_PLATE, DOORS, w, h, frame)
+      const x0 = Math.min(...doors.map((d) => d.x0))
+      const x1 = Math.max(...doors.map((d) => d.x1))
+      const y0 = Math.min(...doors.map((d) => d.y0))
+      const y1 = Math.max(...doors.map((d) => d.y1))
+      // Right of the block, whole, and between the safe top and the dock.
+      expect(x0).toBeGreaterThanOrEqual(left + 5.9)
+      expect(x1).toBeLessThanOrEqual(w)
+      expect(y0).toBeGreaterThanOrEqual(top + 5.9)
+      expect(y1).toBeLessThanOrEqual(bottom - 5.9)
+      expect(Math.abs((x0 + x1) / 2 - (left + w) / 2)).toBeLessThan(1)
+      // Bigger than the same screen with the block above the doors.
+      const above = layoutDoors(ALLEY_PLATE, DOORS, w, h, {
+        top: top + 176,
+        bottom,
+      })
+      const width = (d: DoorLayout[]) => door(d, 'ear').x1 - door(d, 'ear').x0
+      expect(width(doors)).toBeGreaterThan(width(above) * 2)
+    },
+  )
+
   it('is still cover-fit in portrait, whatever the frame says', () => {
     expect(
       layoutDoors(ALLEY_PLATE, DOORS, 393, 852, { top: 300, bottom: 700 }),

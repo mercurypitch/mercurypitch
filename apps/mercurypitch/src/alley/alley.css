@@ -138,6 +138,20 @@
   gap: 8px;
 }
 
+/* On its side the block stands beside the doors, left of them, and the door
+   band keeps the full height from the safe top to the dock (alleyFit reads
+   the block's right edge). The compact title shrinks to its own width. */
+@media (orientation: landscape) {
+  .mp-alley__top {
+    right: auto;
+    width: min(36vw, 300px);
+  }
+
+  .mp-alley[data-first='off'] .mp-alley__top {
+    width: auto;
+  }
+}
+
 .mp-alley__intro {
   max-width: 300px;
 }

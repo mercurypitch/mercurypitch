@@ -3505,33 +3505,43 @@ async function walkAlleyLandscape(browser, args, frame) {
           b: b.bottom,
         }
       })
+      const block = rect(document.querySelector('[data-testid="alley-top"]'))
+      const band = rect(document.querySelector('[data-testid="alley-hit"]'))
       return {
         keys,
-        top: rect(document.querySelector('[data-testid="alley-top"]')).bottom,
-        subline: rect(document.querySelector('[data-testid="alley-subline"]'))
-          .bottom,
-        band: rect(document.querySelector('[data-testid="alley-hit"]')).top,
+        blockRight: block.right,
+        blockBottom: block.bottom,
+        bandLeft: band.left,
+        bandTop: band.top,
+        bandHeight: band.height,
         dock: document.querySelector('.mp-dock')
           ? rect(document.querySelector('.mp-dock')).top
           : window.innerHeight,
         width: window.innerWidth,
       }
     })
+    // The block stands beside the doors (S4 round 2, V3 option b): every
+    // door right of it, whole, between the top and the dock, and the band
+    // taller than the 116 px it had with the block above it.
     const doorTop = Math.min(...m.keys.map((k) => k.t))
     const doorBottom = Math.max(...m.keys.map((k) => k.b))
+    const doorLeft = Math.min(...m.keys.map((k) => k.l))
+    const widths = m.keys.map((k) => k.r - k.l)
     const cut = m.keys.filter((k) => k.l < -0.5 || k.r > m.width + 0.5)
     if (
       m.keys.length !== 6 ||
       cut.length > 0 ||
-      doorTop < m.top - 0.5 ||
-      m.band < m.top - 0.5 ||
-      doorBottom > m.dock + 0.5
+      doorLeft < m.blockRight - 0.5 ||
+      m.bandLeft < m.blockRight - 0.5 ||
+      doorTop < 0 ||
+      doorBottom > m.dock + 0.5 ||
+      m.bandHeight < 232
     ) {
       throw new Error(`landscape layout: ${JSON.stringify(m)}`)
     }
     await shoot(page, ctx, 'alley-landscape')
     steps.push(
-      `alley landscape: headline block ends ${Math.round(m.top)}, doors ${Math.round(doorTop)} to ${Math.round(doorBottom)}, dock ${Math.round(m.dock)}, all six whole`,
+      `alley landscape: headline block beside the doors (right edge ${Math.round(m.blockRight)}), doors ${Math.round(doorLeft)}..${Math.round(Math.max(...m.keys.map((k) => k.r)))} x ${Math.round(doorTop)}..${Math.round(doorBottom)}, band ${Math.round(m.bandHeight)} px tall, dock ${Math.round(m.dock)}, door widths ${Math.min(...widths).toFixed(1)}-${Math.max(...widths).toFixed(1)} px, all six whole`,
     )
 
     // Select Sing on its side, open it, and turn the phone upright mid-grow.
