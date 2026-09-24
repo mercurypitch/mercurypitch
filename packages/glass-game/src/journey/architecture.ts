@@ -1,9 +1,12 @@
 // Journey architecture — compose authored kit pieces into palatial halls, medallions and arched paths.
 
 import type { BufferGeometry, Material, Object3D } from 'three'
-import { BoxGeometry, CatmullRomCurve3, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, OctahedronGeometry, QuadraticBezierCurve3, Quaternion, RingGeometry, Shape, ShapeGeometry, SphereGeometry, TorusGeometry, TubeGeometry, Vector3, } from 'three'
-import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyPortraitMonument, MuseumJourneyStage, } from '../content/museum-journey'
+import { BoxGeometry, CylinderGeometry, Group, InstancedMesh, Matrix4, Mesh, OctahedronGeometry, Quaternion, RingGeometry, Shape, ShapeGeometry, SphereGeometry, TorusGeometry, Vector3, } from 'three'
+import type { MuseumJourneyDefinition, MuseumJourneyPortraitMonument, MuseumJourneyStage, } from '../content/museum-journey'
+import { createJourneyBridge } from './bridges'
 import { JOURNEY_MEDALLION_FACE_Y, JOURNEY_MEDALLION_SURFACE_Y, } from './landmarks'
+import type { JourneyStairway } from './terrace-layout'
+import { JOURNEY_STAIR_COUNT, JOURNEY_STAIR_DEPTH, JOURNEY_STAIR_RUN, JOURNEY_STAIRWAYS, } from './terrace-layout'
 
 export interface JourneyArchitectureMaterials {
   gold: Material
@@ -219,10 +222,9 @@ function addStairway(
   root: Group,
   geometry: ArchitectureGeometry,
   material: Material,
-  width: number,
-  frontZ: number,
+  { width, frontZ }: JourneyStairway,
 ): void {
-  const count = 6
+  const count = JOURNEY_STAIR_COUNT
   const stairs = new InstancedMesh(geometry.step, material, count)
   stairs.name = 'ivory-processional-stairway'
   stairs.castShadow = true
@@ -231,9 +233,17 @@ function addStairway(
   for (let index = 0; index < count; index++) {
     const progress = index / Math.max(1, count - 1)
     matrix.compose(
-      new Vector3(0, 0.035 + index * 0.045, frontZ - index * 0.16),
+      new Vector3(
+        0,
+        (0.07 + index * 0.045) / 2,
+        frontZ - index * JOURNEY_STAIR_RUN,
+      ),
       new Quaternion(),
-      new Vector3(width - progress * 0.2, 0.07, 0.25),
+      new Vector3(
+        width - progress * 0.2,
+        0.07 + index * 0.045,
+        JOURNEY_STAIR_DEPTH,
+      ),
     )
     stairs.setMatrixAt(index, matrix)
   }
@@ -305,7 +315,7 @@ function addPavilion(
     ],
     0.48,
   )
-  addStairway(root, geometry, materials.ivory, 1.55, 1.32)
+  addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.pavilion)
   addCrystalCluster(root, geometry, materials.crystal, 1.05, 0.78)
 }
 
@@ -343,7 +353,7 @@ function addEntryGarden(
     root.add(planter)
   }
   addCrystalCluster(root, geometry, materials.crystal, 0, 0.18)
-  addStairway(root, geometry, materials.ivory, 1.15, 0.92)
+  addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.garden)
 }
 
 function addRotunda(
@@ -370,7 +380,7 @@ function addRotunda(
     ],
     0.53,
   )
-  addStairway(root, geometry, materials.ivory, 1.78, 1.5)
+  addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.rotunda)
 }
 
 function addTwinGalleries(
@@ -427,7 +437,7 @@ function addTwinGalleries(
     connector.scale.setScalar(0.78)
     root.add(connector)
   }
-  addStairway(root, geometry, materials.ivory, 2.25, 1.45)
+  addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.twins)
   if (connector === undefined)
     addCrystalCluster(root, geometry, materials.crystal, 0, 0.9)
 }
@@ -443,7 +453,7 @@ function addConservatory(
   if (conservatory !== undefined) {
     conservatory.position.y = 0.02
     root.add(conservatory)
-    addStairway(root, geometry, materials.ivory, 2.05, 1.68)
+    addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.conservatory)
     addCrystalCluster(root, geometry, materials.crystal, -1.24, 0.88)
     return
   }
@@ -466,7 +476,7 @@ function addConservatory(
     ],
     0.58,
   )
-  addStairway(root, geometry, materials.ivory, 2.05, 1.72)
+  addStairway(root, geometry, materials.ivory, JOURNEY_STAIRWAYS.conservatory)
   addCrystalCluster(root, geometry, materials.crystal, -1.24, 0.88)
 }
 
@@ -619,126 +629,6 @@ function addPortraitMonument(
   stageRoot.add(monument)
 }
 
-function createBridge(
-  bridge: MuseumJourneyBridge,
-  geometry: ArchitectureGeometry,
-  materials: JourneyArchitectureMaterials,
-  owned: Set<BufferGeometry>,
-): Group {
-  const root = new Group()
-  root.name = bridge.id
-  const from = new Vector3().fromArray(bridge.from)
-  const to = new Vector3().fromArray(bridge.to)
-  const delta = to.clone().sub(from)
-  const length = delta.length()
-  const lateral = new Vector3(-delta.z, 0, delta.x).normalize()
-  const midpoint = from.clone().lerp(to, 0.5)
-  midpoint.addScaledVector(lateral, bridge.curve)
-  midpoint.y += bridge.kind === 'skybridge' ? 0.2 : 0.035
-  const curve = new QuadraticBezierCurve3(from, midpoint, to)
-  const segmentCount = Math.max(6, Math.ceil(length / 0.32))
-  const deckGeometry = own(new BoxGeometry(1, 1, 1), owned)
-  const deck = new InstancedMesh(deckGeometry, materials.ivory, segmentCount)
-  deck.name = `${bridge.id}-curved-promenade`
-  deck.castShadow = true
-  deck.receiveShadow = true
-  const edgeGeometry = own(new BoxGeometry(1, 1, 1), owned)
-  const edges = new InstancedMesh(
-    edgeGeometry,
-    materials.gold,
-    segmentCount * 2,
-  )
-  edges.name = `${bridge.id}-gold-edges`
-  const matrix = new Matrix4()
-  const quaternion = new Quaternion()
-  const zAxis = new Vector3(0, 0, 1)
-  for (let index = 0; index < segmentCount; index++) {
-    const t = (index + 0.5) / segmentCount
-    const point = curve.getPoint(t)
-    const tangent = curve.getTangent(t).normalize()
-    quaternion.setFromUnitVectors(zAxis, tangent)
-    matrix.compose(
-      point,
-      quaternion,
-      new Vector3(bridge.width, 0.12, (length / segmentCount) * 1.18),
-    )
-    deck.setMatrixAt(index, matrix)
-    const side = new Vector3(-tangent.z, 0, tangent.x).normalize()
-    for (const sideIndex of [-1, 1] as const) {
-      matrix.compose(
-        point.clone().addScaledVector(side, sideIndex * bridge.width * 0.46),
-        quaternion,
-        new Vector3(0.055, 0.055, (length / segmentCount) * 1.2),
-      )
-      edges.setMatrixAt(index * 2 + (sideIndex === -1 ? 0 : 1), matrix)
-    }
-  }
-  deck.instanceMatrix.needsUpdate = true
-  edges.instanceMatrix.needsUpdate = true
-  root.add(deck, edges)
-
-  const ornamentCount = Math.ceil(segmentCount / 2) * 2
-  const ornaments = new InstancedMesh(
-    geometry.crystal,
-    materials.gold,
-    ornamentCount,
-  )
-  ornaments.name = `${bridge.id}-gilded-rail-finials`
-  ornaments.castShadow = true
-  let ornamentIndex = 0
-  for (let index = 0; index < segmentCount; index += 2) {
-    const t = (index + 0.5) / segmentCount
-    const point = curve.getPoint(t)
-    const tangent = curve.getTangent(t).normalize()
-    const side = new Vector3(-tangent.z, 0, tangent.x).normalize()
-    for (const sideIndex of [-1, 1] as const) {
-      matrix.compose(
-        point
-          .clone()
-          .addScaledVector(side, sideIndex * bridge.width * 0.48)
-          .add(new Vector3(0, 0.17, 0)),
-        new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), index * 0.37),
-        new Vector3(0.15, 0.26, 0.15),
-      )
-      ornaments.setMatrixAt(ornamentIndex++, matrix)
-    }
-  }
-  ornaments.count = ornamentIndex
-  ornaments.instanceMatrix.needsUpdate = true
-  root.add(ornaments)
-
-  if (bridge.kind === 'skybridge') {
-    for (const sideSign of [-1, 1] as const) {
-      const side = lateral
-        .clone()
-        .multiplyScalar(sideSign * bridge.width * 0.42)
-      const archCurve = new CatmullRomCurve3([
-        from
-          .clone()
-          .add(side)
-          .add(new Vector3(0, -0.72, 0)),
-        midpoint
-          .clone()
-          .add(side)
-          .add(new Vector3(0, -0.12, 0)),
-        to
-          .clone()
-          .add(side)
-          .add(new Vector3(0, -0.72, 0)),
-      ])
-      const archGeometry = own(
-        new TubeGeometry(archCurve, 20, 0.045, 6, false),
-        owned,
-      )
-      const arch = new Mesh(archGeometry, materials.gold)
-      arch.name = `${bridge.id}-supporting-arch`
-      arch.castShadow = true
-      root.add(arch)
-    }
-  }
-  return root
-}
-
 export function createJourneyArchitecture(
   definition: MuseumJourneyDefinition,
   authoredUnit: JourneyAuthoredUnit,
@@ -804,7 +694,7 @@ export function createJourneyArchitecture(
   }
 
   for (const bridge of definition.bridges)
-    root.add(createBridge(bridge, geometry, materials, ownedGeometries))
+    root.add(createJourneyBridge(bridge, materials, ownedGeometries))
 
   return {
     root,

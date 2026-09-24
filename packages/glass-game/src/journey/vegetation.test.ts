@@ -61,8 +61,8 @@ function expectClearOfArchitecture(point: Vector3, radius: number): void {
     const dz = point.z - stage.architecturePosition[2]
     const sine = Math.sin(stage.yaw)
     const cosine = Math.cos(stage.yaw)
-    const localX = cosine * dx + sine * dz
-    const localZ = -sine * dx + cosine * dz
+    const localX = cosine * dx - sine * dz
+    const localZ = sine * dx + cosine * dz
     const clearanceX = halfWidth * stage.scale + radius
     const clearanceZ = halfDepth * stage.scale + radius
     expect(
@@ -78,10 +78,10 @@ function expectSupportedByTerrace(point: Vector3, radius: number): void {
     const dz = point.z - island.position[2]
     const sine = Math.sin(island.yaw)
     const cosine = Math.cos(island.yaw)
-    const localX = cosine * dx + sine * dz
-    const localZ = -sine * dx + cosine * dz
+    const localX = cosine * dx - sine * dz
+    const localZ = sine * dx + cosine * dz
     const radiusX = island.terraceScale[0] * 1.644 - radius
-    const radiusZ = island.terraceScale[2] * 1.233 - radius
+    const radiusZ = island.terraceScale[2] * 1.5 - radius
     return (
       (localX * localX) / (radiusX * radiusX) +
         (localZ * localZ) / (radiusZ * radiusZ) <=

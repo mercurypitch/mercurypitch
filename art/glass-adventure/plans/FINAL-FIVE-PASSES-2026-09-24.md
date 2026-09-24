@@ -25,7 +25,7 @@ Commit and push each coherent stage; keep #861 open for owner acceptance.
   policy and avoid redundant work without blindly decimating accepted source art.
   Compare matched frames and preserve shadows, glass and animation. Desktop
   counters and screenshots do not establish physical-tablet FPS or heat.
-- [ ] 5. Floating Museum: capture each island and both inter-island connections;
+- [x] 5. Floating Museum: capture each island and both inter-island connections;
   inspect water source ponds, architectural steps, bridge landings, intersections,
   resting contact and focal silhouettes. Correct placement and improve stairs
   with coherent curved treads and natural arrivals. Preserve raw asset lineage.
