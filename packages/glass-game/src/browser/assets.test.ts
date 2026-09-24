@@ -3,13 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import {
-  GLASS_GAME_ASSET_FILES,
-  GLASS_GAME_ON_DEMAND_ASSET_IDS,
-  GLASS_GAME_REQUIRED_FILES,
-  glassGameAssetPath,
-  glassGameAssetUrl,
-} from './assets'
+import { GLASS_GAME_ASSET_FILES, GLASS_GAME_ON_DEMAND_ASSET_IDS, GLASS_GAME_REQUIRED_FILES, glassGameAssetPath, glassGameAssetUrl, } from './assets'
 
 describe('Glassworks asset contract', () => {
   it('resolves the same authored ID beneath any host-owned base', () => {

@@ -90,42 +90,42 @@ unfinished code paths or rejected visual assets presented as completed work.
 
 ## 5. Configurable melody ribbon
 
-- [ ] M2: authored contour compiler and pitch judge with confidence/freshness,
+- [x] M2: authored contour compiler and pitch judge with confidence/freshness,
       tolerances, pace, anchors, glides, breath breaks and configurable phrases.
-- [ ] M3: actual microphone audition with shared calibration, reference audio,
+- [x] M3: actual microphone audition with shared calibration, reference audio,
       forward trace fill, replay/reset and reliable lifecycle cancellation.
-- [ ] Integrate an optional configurable portrait/vase encounter into an existing
+- [x] Integrate an optional configurable portrait/vase encounter into an existing
       gallery without introducing a new campaign level. Preserve easy defaults.
-- [ ] Verify capture-time correctness and browser flows. Owner melody/feel tuning
+- [x] Verify capture-time correctness and browser flows. Owner melody/feel tuning
       follows the full batch; do not mistake reference animation for live capture.
 
 ## 6. Replay difficulty and stars
 
-- [ ] Typed authored profiles and validation for current hold/pair/wave lessons.
-- [ ] Versioned isolated attempts, durable collections, legacy migration and
+- [x] Typed authored profiles and validation for current hold/pair/wave lessons.
+- [x] Versioned isolated attempts, durable collections, legacy migration and
       idempotent completion evidence. Easy progress cannot certify hard.
-- [ ] Clear replay selector, in-run goal and end-card level-star presentation.
-- [ ] Current-gallery tier profiles and optional Legend/custom practice treatment
+- [x] Clear replay selector, in-run goal and end-card level-star presentation.
+- [x] Current-gallery tier profiles and optional Legend/custom practice treatment
       consistent with existing trials; preserve old accuracy records and unlocks.
-- [ ] Test restart, resume, profile switching, duplicate exits and old saves.
+- [x] Test restart, resume, profile switching, duplicate exits and old saves.
 
 ## 7. Discoveries and portrait collection
 
-- [ ] Add authored optional windows/glazing/vase discoveries to existing routes.
-- [ ] One completion portrait per full existing learning level, finite tokens,
+- [x] Add authored optional windows/glazing/vase discoveries to existing routes.
+- [x] One completion portrait per full existing learning level, finite tokens,
       personal bests and meaningful earned badges with no fabricated awards.
-- [ ] Accessible collection/portrait inspection and separated end-card rewards.
-- [ ] Verify no duplicate farming, lost ownership or cross-level save leakage.
+- [x] Accessible collection/portrait inspection and separated end-card rewards.
+- [x] Verify no duplicate farming, lost ownership or cross-level save leakage.
 
 ## 8. Musical memories and finale
 
-- [ ] Original short configurable finale phrases/reference production with
+- [x] Original short configurable finale phrases/reference production with
       musically accurate pitch; preserve the chosen Merc character voice.
-- [ ] Opt-in local take capture, preview/replay/delete and user-initiated export
+- [x] Opt-in local take capture, preview/replay/delete and user-initiated export
       or sharing with robust permissions, cancellation and audio lifecycle.
-- [ ] Optional familiar Coda Echo with a themed light/Encore celebration and
+- [x] Optional familiar Coda Echo with a themed light/Encore celebration and
       earned seal; existing exit remains usable without the encore.
-- [ ] Verify recording never occurs without consent and failed/cancelled capture
+- [x] Verify recording never occurs without consent and failed/cancelled capture
       never loses completion or leaks a microphone/audio session.
 
 ## Stop boundary and final acceptance
@@ -140,15 +140,65 @@ unfinished code paths or rejected visual assets presented as completed work.
 
 ## Current checkpoint
 
-24 September update: stage 2 implementation and focused verification complete.
-52 unit tests, two real-input browser cases and Beside Cue typecheck passed;
-owner hardware comfort acceptance remains at the final testing boundary. See
-`CAMERA-COMFORT-IMPLEMENTATION-2026-09-23.md` and its preserved rendered proofs.
-Replay isolation and collection foundations pass focused tests; selector and
-album work is still being integrated with completion presentation. Platform
-4K masters are preserved; runtime delivery compression is being compared.
-Melody judge is implemented; actual microphone practice is in progress.
-Current-trial route auditions are the next camera-agent slice.
+24 September checkpoint (committed and pushed through `333cf58f` to PR #807):
+
+- Stage 2 complete in `5050a9a5`; focused tests and real-input browser proofs
+  preserved. Hardware comfort acceptance remains with the owner.
+- Replay profiles, durable collection and three distinct reward portraits shipped
+  in `af3d9065`. Storage-disabled stale-visit protection and CI import sorting
+  fixed in `6d5ff512`. Independent review found no additional replay findings.
+  Real Three.js **intact** portrait proofs for all three galleries are preserved
+  in `proofs/portrait-prefabs-2026-09-24/`; short fracture proofs remain final QA.
+- Stage 5 and local stage-8 encore/recording implementation are in `115d7d18`.
+  64 focused tests passed, both package and BesideCue typechecks passed, and the
+  actual-PCM browser flow passed through consent, capture, save, reload, collection
+  playback/delete and restored focus. 320/768/1440 screenshots and failed/passing
+  traces are preserved. Hidden world rendering caused sampling stalls; pausing
+  covered rendering fixed it without changing singing tolerances. See
+  `ENCORE-IMPLEMENTATION-2026-09-24.md`. Original sung Merc examples now ship in
+  `333cf58f`: “Let light sing” and “Two small lights come home,” preserving the
+  selected D2 voice. Authored contour resynthesis, independent pitch analysis,
+  unprompted transcription, raw takes and lossless masters are preserved in
+  `voice/v5-encores/`. The real-PCM browser flow passed again including explicit
+  Merc playback without opening the microphone or recording. Owner listening
+  remains part of the final handoff; the separate note guide adapts to the learner.
+- CI at `6d5ff512` found a stale exact-text locator in the wave-instructions test.
+  The actual disclosure contained the new correct cycle-specific copy. Updated
+  the locator in `115d7d18`; its targeted Conservatory test passed (20.5 seconds).
+  CI at `115d7d18` found two formatting files and an oversized practice controller;
+  `333cf58f` fixes those through formatting and a meaningful coaching-copy module,
+  with the unchanged metrics baseline passing locally. The new gate then found
+  the asset test import must use the repository's one-line import formatter;
+  that narrow formatting correction accompanies this checkpoint.
+- Frost/Glide V6 masters, fitted landing bounds, 2K WebP/quantized delivery and
+  matched gameplay comparisons are accepted. All source triangles are retained;
+  combined delivery saves about 69% versus the 4K masters. V6 bundle integration
+  and runtime-loaded-hash/collision proofs are in progress with the camera agent.
+- Crescent/ribbon/terrace route auditions and input/checkpoint proofs are complete.
+  Root selected the crescent. It has a fresh explicitly versioned save identity;
+  historical trial progress/unlock evidence remains readable. Campaign integration
+  is being finished with V6 before the route stage is committed.
+- The semantic marble reconstruction was rejected on actual matched clay views:
+  its arches, corner joins and fascia were worse than the donor. V7 now preserves
+  the complete dense source geometry, with texture/encoding optimization only;
+  do not install rejected reconstructions. Final delivery review is pending.
+- Valid hollow Celadon is visually accepted, with 18 closed matching shards and
+  a packed source. Existing Twin Galleries placement and intact/fracture browser
+  proofs are finishing in `v6-level2/celadon-production-v4/`.
+- V10 Meshy 7.1 camellia planter source and lower-cost topology are preserved with
+  paid receipts (40 credits total). Source-to-remesh rebaking fixes visible leaf
+  texture transfer artifacts; final game packaging/instancing is in progress.
+- The reusable production skill and first static inventory are written. Actual
+  Khronos validation found seven old vessels with unused invalid tangents and one
+  older platform kit with invalid/missing UV references. Narrow attribute-only
+  repairs and fresh validation are in progress. Museum dressing and final audit
+  remain within the authorized batch. Do not mark complete or begin item 9.
+
+Active ownership: root owns sung references, museum dressing/quality workflow and
+final review; camera agent owns V6/current-crescent runtime integration; platform
+agent owns semantic marble V7; melody agent owns Celadon production after its
+portrait/CI review handoff. Separate output directories and browser ports remain
+required. Owner preview has not been restarted for these checks.
 
 Original baseline follows:
 
