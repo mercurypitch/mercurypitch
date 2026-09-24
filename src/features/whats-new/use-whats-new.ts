@@ -47,7 +47,21 @@ function writeSeen(): void {
   }
 }
 
-export function createWhatsNewController(): WhatsNewController {
+export interface WhatsNewOptions {
+  /**
+   * The native build (IS_NATIVE_BUILD). It has no What's New surface and no
+   * way to open one, and the notes describe the web: the announcement neither
+   * shows nor marks a release line seen there. Marking it would also be
+   * wrong on its own — a native install is never a "returning" visitor (its
+   * welcome is the alley's, on another key), so every launch recorded the
+   * line as seen without ever showing it.
+   */
+  readonly native?: boolean
+}
+
+export function createWhatsNewController(
+  options: WhatsNewOptions = {},
+): WhatsNewController {
   const [open, setOpen] = createSignal(
     parseHash(window.location.hash).type === 'whats-new',
   )
@@ -67,6 +81,7 @@ export function createWhatsNewController(): WhatsNewController {
   }
 
   const announceIfNew = (returning: boolean) => {
+    if (options.native === true) return
     // Automated runs get no ambient surfaces. Every spec seeds
     // `pitchperfect_welcome_version` to skip onboarding, which makes every
     // spec a returning visitor — so without this the release page opens over

@@ -818,8 +818,9 @@ const AppShell: Component<AppProps> = (props) => {
   // What's New: the release page. Announced once per release line to a
   // visitor who was already here for the last one, and reachable from the
   // sidebar afterwards. `welcomeSeen` is the returning-visitor test — a
-  // first-ever arrival is mid-onboarding and has no "new" to be shown.
-  const whatsNew = createWhatsNewController()
+  // first-ever arrival is mid-onboarding and has no "new" to be shown. Not
+  // under the native build, which has no What's New (use-whats-new.ts).
+  const whatsNew = createWhatsNewController({ native: IS_NATIVE_BUILD })
   onMount(() => whatsNew.announceIfNew(welcomeSeen() !== ''))
 
   const closeVoiceConstellation = () => {
