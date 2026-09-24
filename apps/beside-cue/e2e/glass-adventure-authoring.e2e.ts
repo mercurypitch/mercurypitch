@@ -403,20 +403,30 @@ async function visitOptionalThenBlockedExit(
   page: Page,
   route: ProofRoute,
 ): Promise<void> {
+  // Return from the optional detour through the centre of the authored exit;
+  // an off-axis route would not exercise the sealed aperture.
   if (route.layout === 'straight') {
     await moveTo(page, 'z', 6.25, MOVEMENT_KEYS.north)
     await moveTo(page, 'x', -1.25, MOVEMENT_KEYS.west)
     await expect(page.getByText('Just for the joy of it')).toBeVisible()
     await moveTo(page, 'x', 0, MOVEMENT_KEYS.east)
-    await moveTo(page, 'z', 8.3, MOVEMENT_KEYS.north)
+    await driveIntoClosedGate(page, MOVEMENT_KEYS.north)
+    expect(Math.abs(await coordinate(page, 'x'))).toBeLessThan(0.12)
+    expect(await coordinate(page, 'z')).toBeGreaterThan(8.19)
+    expect(await coordinate(page, 'z')).toBeLessThan(8.23)
   } else {
     await moveTo(page, 'x', 6.25, MOVEMENT_KEYS.east)
     await moveTo(page, 'z', -1.25, MOVEMENT_KEYS.south)
     await expect(page.getByText('Just for the joy of it')).toBeVisible()
     await moveTo(page, 'z', -2, MOVEMENT_KEYS.south)
-    await moveTo(page, 'x', 8.3, MOVEMENT_KEYS.east)
+    await moveTo(page, 'x', 8, MOVEMENT_KEYS.east)
     await moveTo(page, 'z', 0, MOVEMENT_KEYS.north)
+    await driveIntoClosedGate(page, MOVEMENT_KEYS.east)
+    expect(Math.abs(await coordinate(page, 'z'))).toBeLessThan(0.12)
+    expect(await coordinate(page, 'x')).toBeGreaterThan(8.19)
+    expect(await coordinate(page, 'x')).toBeLessThan(8.23)
   }
+  await expect(page.getByText('Exit sealed.', { exact: true })).toBeVisible()
   await expect(
     page.getByRole('dialog', { name: 'You made the museum sing.' }),
   ).toHaveCount(0)
