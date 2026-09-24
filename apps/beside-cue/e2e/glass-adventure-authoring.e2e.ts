@@ -52,7 +52,7 @@ test('the main app CSP permits embedded GLTF texture blobs @smoke', async ({
       }
     }
     const asset = await new GLTFLoader().loadAsync(
-      '/games/adventure/platform-kit.glb',
+      '/games/adventure/platform-kit-qa-v2.glb',
     )
     let pixels = 0
     asset.scene.traverse((node) => {

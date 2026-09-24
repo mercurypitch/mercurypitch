@@ -3,7 +3,7 @@
   "assetVersion": 2,
   "sourcePolicy": "Blender-authored V2 GLBs validated against preserved receipts; external CC0 texture and environment runtime files match their preserved source hashes.",
   "scope": "All binary assets currently shipped from public/games/adventure-v2; provenance JSON and this manifest are excluded from totalBytes.",
-  "totalBytes": 29215969,
+  "totalBytes": 29202477,
   "provenance": {
     "file": "textures/CC0-SOURCES.json",
     "bytes": 6456,
@@ -36,15 +36,16 @@
     },
     {
       "id": "vessels-v2",
-      "file": "vessels.glb",
-      "bytes": 3391920,
-      "sha256": "40c58723fea8c6d60b7b00393a3d9264a741e96b546deb7e5e43cb9f4544432b",
+      "file": "vessels-qa-v2.glb",
+      "bytes": 3378428,
+      "sha256": "6b04ecf14ef27b8610d3ee7e37980bb6cda0d0427ce89fc7d691a9827c936393",
       "source": "art/glass-adventure/v2/models/vessels.blend",
       "sourceBytes": 1628442,
       "sourceSha256": "d10322b36a64e1f4f8d61dd11e068567364be52a303c723c9784ddb947e8fcf8",
       "validation": "art/glass-adventure/v2/validation.json",
       "triangles": 62552,
-      "embeddedImages": 0
+      "embeddedImages": 0,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v2-vessels.json"
     },
     {
       "id": "museum-environment-v2",

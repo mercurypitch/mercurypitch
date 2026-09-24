@@ -47,7 +47,7 @@
     },
     {
       "id": "opaline-v6",
-      "file": "opaline-echo-amphora.glb",
+      "file": "opaline-echo-amphora-qa-v2.glb",
       "node": "breakable_l2_opaline_echo_amphora",
       "intactNode": "breakable_l2_opaline_echo_amphora_intact",
       "shardPrefix": "breakable_l2_opaline_echo_amphora_shard_",
@@ -55,7 +55,7 @@
       "source": "art/glass-adventure/v6-level2/sources/opaline-echo-amphora-fracture-v2.blend",
       "sourceSha256": "169aa9e27e5dab371fec360a4124255f35bdaa480fb97b939452b65f789238c6",
       "runtimeSource": "art/glass-adventure/v6-level2/exports/opaline-echo-amphora-fracture-v2.glb",
-      "sha256": "676b769793eb0ec39f78557dfbb98a45261ede0384ccd15cdc7be6c013247ee4",
+      "sha256": "b8a06ba8111db685e5e68a71ce75d2e903257e68c5fbb5672e917266298d7766",
       "dimensions": [
         0.6186075806617737, 0.5681103467941284, 0.9200000166893005
       ],
@@ -63,11 +63,13 @@
       "triangles": 23382,
       "textureCount": 5,
       "maximumTextureDimensions": [1024, 1024],
-      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only the declared intact and shard nodes."
+      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only the declared intact and shard nodes.",
+      "bytes": 3814404,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v6-opaline-echo-amphora.json"
     },
     {
       "id": "amber-v6",
-      "file": "amber-cadence-urn.glb",
+      "file": "amber-cadence-urn-qa-v2.glb",
       "node": "breakable_l2_low_amber_urn",
       "intactNode": "breakable_l2_low_amber_urn_intact",
       "shardPrefix": "breakable_l2_low_amber_urn_shard_",
@@ -75,7 +77,7 @@
       "source": "art/glass-adventure/v6-level2/sources/amber-cadence-urn-fracture-v2.blend",
       "sourceSha256": "461ac348fc0197cf3bb4ef105505d2752382e08152aa2b93072048bd60810ab7",
       "runtimeSource": "art/glass-adventure/v6-level2/exports/amber-cadence-urn-fracture-v2.glb",
-      "sha256": "5823e2f6538928f426f45081f196e2f582b2feca645588f649324810ea02c353",
+      "sha256": "fc416cb997b38a3fe66b8c975effad535628ad0614609321ff9348073a486209",
       "dimensions": [
         0.9315478801727295, 0.9315483570098877, 0.7200000286102295
       ],
@@ -83,7 +85,9 @@
       "triangles": 26488,
       "textureCount": 4,
       "maximumTextureDimensions": [1024, 1024],
-      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only declared intact and shard nodes."
+      "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only declared intact and shard nodes.",
+      "bytes": 3741768,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v6-amber-cadence-urn.json"
     }
   ]
 }

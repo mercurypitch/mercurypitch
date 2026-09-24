@@ -7,7 +7,7 @@
   "blenderVersion": "5.2.1 LTS",
   "assets": {
     "platform_terrace": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "platform_terrace",
       "pivot": "surface-center",
       "collider": {
@@ -93,7 +93,7 @@
       "trianglesIncludingHiddenShards": 1934
     },
     "platform_island": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "platform_island",
       "pivot": "surface-center",
       "collider": {
@@ -179,7 +179,7 @@
       "trianglesIncludingHiddenShards": 1934
     },
     "platform_ledge": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "platform_ledge",
       "pivot": "surface-center",
       "collider": {
@@ -265,7 +265,7 @@
       "trianglesIncludingHiddenShards": 1934
     },
     "platform_bridge": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "platform_bridge",
       "pivot": "surface-center",
       "collider": {
@@ -351,7 +351,7 @@
       "trianglesIncludingHiddenShards": 2526
     },
     "platform_plinth": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "platform_plinth",
       "pivot": "surface-center",
       "collider": {
@@ -437,7 +437,7 @@
       "trianglesIncludingHiddenShards": 2510
     },
     "platform_ramp": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "platform_ramp",
       "pivot": "surface-center",
       "collider": {
@@ -475,13 +475,13 @@
           "translation": [0.0, 0.0, -0.0],
           "materials": ["museum_ivory"],
           "nonManifoldEdges": 0,
-          "hasUV": false
+          "hasUV": true
         }
       ],
       "trianglesIncludingHiddenShards": 148
     },
     "museum_column": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "museum_column",
       "pivot": "foot-center",
       "role": "non-colliding-ornament",
@@ -518,7 +518,7 @@
       "trianglesIncludingHiddenShards": 3768
     },
     "museum_arch": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "museum_arch",
       "pivot": "foot-center",
       "role": "non-colliding-ornament",
@@ -569,7 +569,7 @@
       "trianglesIncludingHiddenShards": 2168
     },
     "museum_astrolabe": {
-      "bundle": "platform-kit.glb",
+      "bundle": "platform-kit-qa-v2.glb",
       "node": "museum_astrolabe",
       "pivot": "foot-center",
       "role": "non-colliding-panorama",
@@ -1815,7 +1815,7 @@
     }
   },
   "assetUrls": {
-    "museum-kit": "platform-kit.glb",
+    "museum-kit": "platform-kit-qa-v2.glb",
     "vessel-vase": "vessels.glb",
     "vessel-fluted": "vessels.glb",
     "legend-slab": "legend-slab.glb",
@@ -1868,9 +1868,9 @@
     }
   ],
   "bundles": {
-    "platform-kit.glb": {
-      "bytes": 944260,
-      "sha256": "dd64110ede5f283b0eadf28ed02c5a8ff7ee957d844928ff10907f1b8c9ef83b"
+    "platform-kit-qa-v2.glb": {
+      "bytes": 944596,
+      "sha256": "66f8f57a2d1f13b5f83af186745f3972950ca6c42302cc6274d0d21a1ffbe149"
     },
     "vessels.glb": {
       "bytes": 442928,

@@ -194,7 +194,16 @@ def ramp():
     # Blender -Y becomes glTF +Z; the high edge is +Z, the low entrance -Z.
     verts = [(-w/2, -d/2, rise), (w/2, -d/2, rise), (w/2, d/2, 0), (-w/2, d/2, 0),
              (-w/2, -d/2, rise-0.20), (w/2, -d/2, rise-0.20), (w/2, d/2, -0.20), (-w/2, d/2, -0.20)]
-    mesh(name + "_stone", verts, [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)], root, MATS["museum_ivory"])
+    stone = mesh(name + "_stone", verts, [(0, 1, 2, 3), (7, 6, 5, 4), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)], root, MATS["museum_ivory"])
+    # Textured procedural meshes need explicit UVs; otherwise glTF can export
+    # texCoord=-1 and the shared marble material becomes invalid for the kit.
+    uv = stone.data.uv_layers.new(name="UVMap")
+    for face in stone.data.polygons:
+        axis = max(range(3), key=lambda i: abs(face.normal[i]))
+        axes = ((1, 2), (0, 2), (0, 1))[axis]
+        for loop_index in face.loop_indices:
+            point = stone.data.vertices[stone.data.loops[loop_index].vertex_index].co
+            uv.data[loop_index].uv = (point[axes[0]], point[axes[1]])
     for side in (-1, 1):
         tube(name + "_gold_rail_" + str(side), [(side*(w/2-0.04), -d/2, rise+0.005), (side*(w/2-0.04), d/2, 0.005)], 0.018, root, MATS["museum_brass"])
     for i in range(1, 9):

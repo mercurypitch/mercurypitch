@@ -29,7 +29,7 @@ describe('Glassworks asset contract', () => {
     for (const [id, path] of Object.entries(GLASS_GAME_ASSET_FILES))
       expect(required.has(path), path).toBe(!onDemand.has(id))
     expect(required.has('adventure-v6/manifest.json')).toBe(true)
-    expect(required.has('adventure-v6/amber-cadence-urn.glb')).toBe(true)
+    expect(required.has('adventure-v6/amber-cadence-urn-qa-v2.glb')).toBe(true)
     expect(required.has('adventure-v7/manifest.json')).toBe(true)
     expect(required.has('adventure-v7/listening-garden.webp')).toBe(true)
     expect(required.has('adventure-v7/wave-keeper.webp')).toBe(true)

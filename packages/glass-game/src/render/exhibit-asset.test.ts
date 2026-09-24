@@ -61,7 +61,7 @@ describe('complete indexed exhibit assets', () => {
   ])(
     'preserves real %s geometry, physical materials and all 23 fragments',
     async (id, file) => {
-      const scene = await load(`adventure-v3/${file}.glb`)
+      const scene = await load(`adventure-v3/${file}-qa-v2.glb`)
       const recipe = getBreakableRenderRecipe(id)
       const source = scene.getObjectByName(recipe.intactNode!)!
       if (id === 'decanter') expect(source.children).toHaveLength(2)
@@ -80,8 +80,11 @@ describe('complete indexed exhibit assets', () => {
       ]) {
         expect(geometry.index).not.toBeNull()
         const count = geometry.getAttribute('position').count
-        for (const name of ['normal', 'uv', 'tangent'])
+        for (const name of ['normal', 'uv'])
           expect(geometry.getAttribute(name).count).toBe(count)
+        // These physical glass/gold materials have no normal maps. Their old
+        // unused tangent streams contained invalid zero vectors on cut faces.
+        expect(geometry.hasAttribute('tangent')).toBe(false)
         expect(
           geometry.groups.reduce((sum, group) => sum + group.count, 0),
         ).toBe(geometry.index!.count)
@@ -105,6 +108,9 @@ describe('complete indexed exhibit assets', () => {
         new Set(['glass_shell', 'glass_cut', 'gold_trim']),
       )
       const physical = asset.materials as MeshPhysicalMaterial[]
+      expect(physical.every((material) => material.normalMap === null)).toBe(
+        true,
+      )
       expect(
         physical.find((material) => material.name === 'glass_shell')!
           .transmission,
@@ -146,7 +152,7 @@ describe('complete indexed exhibit assets', () => {
   )
 
   it('rejects missing, duplicated or unexpected fragment roots before cloning materials', async () => {
-    const scene = await load('adventure-v3/fluted-carafe.glb')
+    const scene = await load('adventure-v3/fluted-carafe-qa-v2.glb')
     const recipe = getBreakableRenderRecipe('fluted'),
       library = createMaterialLibrary()
     const shard = scene.getObjectByName('vase_fluted_shard_022')!,

@@ -3,51 +3,55 @@
   "assetVersion": 3,
   "sourcePolicy": "Validated Meshy donors finalized in isolated Blender; source masters remain unchanged.",
   "scope": "Runtime copies only; measured device performance recorded separately.",
-  "totalBytes": 56472600,
+  "totalBytes": 56452940,
   "assets": [
     {
       "id": "glass-fluted-v3",
-      "file": "fluted-carafe.glb",
-      "bytes": 9121856,
-      "sha256": "a23ffab3b2e37ef38a5c9cc5648241b47fcca55775c46863ed1726940f4862fa",
+      "file": "fluted-carafe-qa-v2.glb",
+      "bytes": 9117212,
+      "sha256": "8e02ae9eb0ce64a7af5f2943ba3f13f1591e16afa2fc40abf58c4c150d6d9b8d",
       "source": "art/glass-adventure/v3/exports/fluted-carafe.glb",
       "validation": "art/glass-adventure/v3/donors/fluted-carafe/validation.json",
       "intactNode": "vase_fluted_intact",
       "shardPrefix": "vase_fluted_shard_",
-      "shardCount": 23
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-fluted-carafe.json"
     },
     {
       "id": "glass-amphora-v3",
-      "file": "moon-amphora.glb",
-      "bytes": 11461724,
-      "sha256": "b84f64b2036e8a4cf663a09525544926e24f807e1c7a8a2c68c0c162b9473251",
+      "file": "moon-amphora-qa-v2.glb",
+      "bytes": 11456580,
+      "sha256": "d940811b0981b3b3822e15baaf8c484cfa7ea1748f5b1db5aa6f3744460668fc",
       "source": "art/glass-adventure/v3/exports/moon-amphora.glb",
       "validation": "art/glass-adventure/v3/donors/moon-amphora/validation.json",
       "intactNode": "vase_amphora_intact",
       "shardPrefix": "vase_amphora_shard_",
-      "shardCount": 23
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-moon-amphora.json"
     },
     {
       "id": "glass-coupe-v3",
-      "file": "aurora-coupe.glb",
-      "bytes": 7218784,
-      "sha256": "61e0c2d373204eb6929df3e4834ccca1ae1d2f9d27d9ee55d398e2cb6d70e024",
+      "file": "aurora-coupe-qa-v2.glb",
+      "bytes": 7213496,
+      "sha256": "2df31a3d30ccd43d10fbb2e77dd03ef4743f7dc0644397a6a6fdd2317f7b075f",
       "source": "art/glass-adventure/v3/exports/aurora-coupe.glb",
       "validation": "art/glass-adventure/v3/donors/aurora-coupe/validation.json",
       "intactNode": "coupe_aurora_intact",
       "shardPrefix": "coupe_aurora_shard_",
-      "shardCount": 23
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-aurora-coupe.json"
     },
     {
       "id": "glass-decanter-v3",
-      "file": "cut-crystal-decanter.glb",
-      "bytes": 8264408,
-      "sha256": "2fb379b4effb24169d0181764735481313a1e53c71e23d85e575d77d54244533",
+      "file": "cut-crystal-decanter-qa-v2.glb",
+      "bytes": 8259824,
+      "sha256": "3681f6707c08bec07eb555c6865aac4f15dc6dd30ee3c3adb1aeb3f98e4de07b",
       "source": "art/glass-adventure/v3/exports/cut-crystal-decanter.glb",
       "validation": "art/glass-adventure/v3/donors/cut-crystal-decanter/validation.json",
       "intactNode": "decanter_cut_intact",
       "shardPrefix": "decanter_cut_shard_",
-      "shardCount": 23
+      "shardCount": 23,
+      "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v3-cut-crystal-decanter.json"
     },
     {
       "id": "museum-column-v3",
@@ -78,34 +82,34 @@
     }
   ],
   "runtimeGeometryMeasurement": {
-    "date": "2026-09-15",
+    "date": "2026-09-24",
     "method": "Actual GLTFLoader import followed by prepareExhibitAsset. Sum all resulting intact/23-fragment attribute and index arrays; compare the same attribute union expanded to triangle corners.",
     "verification": "pnpm --filter @irchiinnuss/glass-game exec vitest run src/render/exhibit-asset.test.ts --reporter=verbose --silent=false",
-    "indexedAttributeAndIndexBytes": 36739700,
-    "expandedAttributeBytes": 89832480,
+    "indexedAttributeAndIndexBytes": 26800740,
+    "expandedAttributeBytes": 62287008,
     "families": [
       {
         "recipe": "fluted",
-        "indexedAttributeAndIndexBytes": 9362260,
-        "expandedAttributeBytes": 19634592,
+        "indexedAttributeAndIndexBytes": 6940196,
+        "expandedAttributeBytes": 13888608,
         "trianglesIncludingFragments": 119708
       },
       {
         "recipe": "amphora",
-        "indexedAttributeAndIndexBytes": 11996952,
-        "expandedAttributeBytes": 34610496,
+        "indexedAttributeAndIndexBytes": 8863608,
+        "expandedAttributeBytes": 23873472,
         "trianglesIncludingFragments": 223688
       },
       {
         "recipe": "coupe",
-        "indexedAttributeAndIndexBytes": 7152100,
-        "expandedAttributeBytes": 18762720,
+        "indexedAttributeAndIndexBytes": 5277668,
+        "expandedAttributeBytes": 13308480,
         "trianglesIncludingFragments": 113630
       },
       {
         "recipe": "decanter",
-        "indexedAttributeAndIndexBytes": 8228388,
-        "expandedAttributeBytes": 16824672,
+        "indexedAttributeAndIndexBytes": 5719268,
+        "expandedAttributeBytes": 11216448,
         "trianglesIncludingFragments": 116838
       }
     ],

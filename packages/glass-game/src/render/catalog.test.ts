@@ -51,7 +51,7 @@ describe('data-driven exhibit recipes', () => {
     const receipts = [...v3Manifest.assets, ...v6Manifest.models]
     const files: Record<string, string> = {
       vessels: 'adventure/vessels.glb',
-      'vessels-v2': 'adventure-v2/vessels.glb',
+      'vessels-v2': 'adventure-v2/vessels-qa-v2.glb',
       'legend-slab': 'adventure/legend-slab.glb',
       ...Object.fromEntries(
         v3Manifest.assets.map((asset) => [

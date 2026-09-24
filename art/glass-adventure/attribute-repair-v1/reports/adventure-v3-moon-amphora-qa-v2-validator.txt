@@ -1,0 +1,283 @@
+ERROR
+ ────────────────────────────────────────────
+info: No errors found.
+
+
+
+ WARNING
+ ────────────────────────────────────────────
+info: No warnings found.
+
+
+
+ INFO
+ ────────────────────────────────────────────
+┌───────────────┬────────────────────────────┬──────────┬───────────────────────────────────────────────┐
+│ code          │ message                    │ severity │ pointer                                       │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/0/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/0/primitives/0/attributes/TEXCOORD_1  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/0/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/0/primitives/1/attributes/TEXCOORD_1  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/1/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/1/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/1/primitives/2/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/2/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/2/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/2/primitives/2/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/3/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/3/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/4/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/4/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/5/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/5/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/6/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/6/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/6/primitives/2/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/7/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/7/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/7/primitives/2/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/8/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/8/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/9/primitives/0/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/9/primitives/1/attributes/TEXCOORD_0  │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/10/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/10/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/10/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/11/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/11/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/11/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/12/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/12/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/12/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/13/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/13/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/13/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/14/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/14/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/14/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/15/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/15/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/15/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/16/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/16/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/16/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/17/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/17/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/18/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/18/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/18/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/19/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/19/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/20/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/20/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/20/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/21/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/21/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/21/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/22/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/22/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/22/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/23/primitives/0/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/23/primitives/1/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /meshes/23/primitives/2/attributes/TEXCOORD_0 │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/4                                │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/10                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/15                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/20                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/25                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/30                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/35                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/40                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/45                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/50                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/55                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/60                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/65                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/70                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/75                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/80                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/85                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/90                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/95                               │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/100                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/105                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/110                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/115                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/120                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/125                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/130                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/135                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/140                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/145                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/150                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/155                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/160                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/165                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/170                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/175                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/180                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/185                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/190                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/195                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/200                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/205                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/210                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/215                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/220                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/225                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/230                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/235                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/240                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/245                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/250                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/255                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/260                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/265                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/270                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/275                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/280                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/285                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/290                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/295                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/300                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/305                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/310                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/315                              │
+├───────────────┼────────────────────────────┼──────────┼───────────────────────────────────────────────┤
+│ UNUSED_OBJECT │ This object may be unused. │ 2        │ /bufferViews/320                              │
+└───────────────┴────────────────────────────┴──────────┴───────────────────────────────────────────────┘
+
+
+
+ HINT
+ ────────────────────────────────────────────
+info: No hints found.
