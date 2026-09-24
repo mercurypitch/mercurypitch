@@ -727,7 +727,9 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         [SING_GLASS_VAR]: String(glass()),
       }}
     >
-      <div class={styles.cover} data-testid="sing-cover" />
+      {/* data-room-background: the picture a door's clone waits on before it
+          fades (apps/mercurypitch alley-entry.ts). */}
+      <div class={styles.cover} data-testid="sing-cover" data-room-background />
       {/* The veil the room sheet's slider moves (R5). Named for the walk: its
           computed opacity IS the setting, and nothing else on screen says
           what the slider just did. */}

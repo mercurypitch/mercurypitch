@@ -183,6 +183,9 @@ export function EarRoomShell(props: EarRoomShellProps): JSX.Element {
           style={background.resolvedStyle()}
           aria-hidden="true"
           data-testid="ear-room-art"
+          // The picture a door's clone waits on before it fades (the native
+          // alley's alley-entry.ts).
+          data-room-background
         />
         <div class={styles.roomShade} aria-hidden="true" />
         <div class={styles.roomVignette} aria-hidden="true" />

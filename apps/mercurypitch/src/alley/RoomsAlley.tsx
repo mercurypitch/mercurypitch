@@ -56,11 +56,6 @@ const CLEAR_MS = 320
 /** The door settling back after a room (keep in step with alley.css). */
 const SETTLE_MS = 360
 
-const ROOM_BACKGROUND: Partial<Record<DoorKey, string>> = {
-  sing: '[data-testid="sing-cover"]',
-  ear: '[data-testid="ear-room-art"]',
-}
-
 // The alley's state outlives the component: the open unmounts it (the tab
 // changes under the clone), and Back has to find the door it opened.
 const [alley, setAlley] = createSignal<AlleyState>(ALLEY_REST)
@@ -362,7 +357,6 @@ export const RoomsAlley: Component = () => {
           w: fit().width,
           h: fit().height,
         },
-        roomBackground: ROOM_BACKGROUND[key] ?? '[data-room-background]',
         ambientSilent,
         onCovered: () => {
           finishOpen()

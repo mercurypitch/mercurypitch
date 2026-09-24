@@ -30,7 +30,6 @@ function plan(over: Partial<DoorOpenPlan> = {}): DoorOpenPlan {
     video: null,
     plateSrc: '/rooms/alley/night-rooms-hero.webp',
     plateBox: { x: -126, y: 0, w: 568, h: 852 },
-    roomBackground: '[data-testid="sing-cover"]',
     ambientSilent: Promise.resolve(),
     onCovered: () => undefined,
     away: () => false,
@@ -109,7 +108,7 @@ describe('the hold on the room', () => {
       silence = resolve
     })
     const room = document.createElement('div')
-    room.dataset.testid = 'sing-cover'
+    room.dataset.roomBackground = ''
     room.style.backgroundImage = 'url(/sing/room.webp)'
     document.body.appendChild(room)
     const onCovered = vi.fn()
@@ -138,6 +137,53 @@ describe('the hold on the room', () => {
     expect(roomArrivalHeld()).toBe(true)
     await vi.advanceTimersByTimeAsync(200)
     expect(roomArrivalHeld()).toBe(false)
+  })
+})
+
+describe("the wait on the room's background", () => {
+  // The contract is `data-room-background`, on the element the room draws its
+  // picture on: nothing else is read.
+  afterEach(() => {
+    delete (HTMLImageElement.prototype as Partial<HTMLImageElement>).decode
+  })
+
+  it('reveals as soon as the marked picture decodes', async () => {
+    let decoded: () => void = () => undefined
+    Object.defineProperty(HTMLImageElement.prototype, 'decode', {
+      value: () =>
+        new Promise<void>((resolve) => {
+          decoded = resolve
+        }),
+      configurable: true,
+    })
+    const room = document.createElement('div')
+    room.dataset.roomBackground = ''
+    room.style.backgroundImage = 'url(/sing/room.webp)'
+    document.body.appendChild(room)
+    const open = openDoor(plan())
+    await vi.advanceTimersByTimeAsync(700)
+    expect(open.clone.dataset.phase).toBe('covered')
+
+    decoded()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(open.clone.isConnected).toBe(false)
+  })
+
+  it('waits the whole deadline for a room that marks nothing', async () => {
+    // A room with its own test id and no attribute is not waited on as drawn.
+    const room = document.createElement('div')
+    room.dataset.testid = 'sing-cover'
+    room.style.backgroundImage = 'url(/sing/room.webp)'
+    document.body.appendChild(room)
+    const open = openDoor(plan())
+    await vi.advanceTimersByTimeAsync(700)
+
+    // Covered at about 420 ms; ROOM_WAIT_MS runs out 1500 ms after that.
+    await vi.advanceTimersByTimeAsync(1100)
+    expect(open.clone.dataset.phase).toBe('covered')
+    // Past ROOM_WAIT_MS from the cover, plus the fade.
+    await vi.advanceTimersByTimeAsync(600)
+    expect(open.clone.isConnected).toBe(false)
   })
 })
 
@@ -196,7 +242,7 @@ describe('somewhere else, once the clone has covered', () => {
   it('the clone is gone within 120 ms of the room unmounting', async () => {
     // A room that mounted but has not drawn its background yet.
     const room = document.createElement('div')
-    room.dataset.testid = 'sing-cover'
+    room.dataset.roomBackground = ''
     document.body.appendChild(room)
     const open = openDoor(plan())
     await vi.advanceTimersByTimeAsync(700)

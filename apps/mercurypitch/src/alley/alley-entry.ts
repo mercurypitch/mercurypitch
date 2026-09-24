@@ -41,6 +41,12 @@ export const ARRIVAL_FAILSAFE_MS = 4000
 export const LEAVE_MS = 80
 /** How often a covered clone asks whether the user is still going its way. */
 const AWAY_POLL_MS = 20
+/**
+ * The room's background, as every enterable room marks it. The contract is
+ * the attribute, not a per-room test id: a room renamed or added without it
+ * would otherwise wait out the whole ROOM_WAIT_MS on every entry, silently.
+ */
+export const ROOM_BACKGROUND = '[data-room-background]'
 
 export interface DoorOpenPlan {
   readonly door: DoorLayout
@@ -57,8 +63,6 @@ export interface DoorOpenPlan {
     readonly w: number
     readonly h: number
   }
-  /** Where the room draws its background, to be waited on. */
-  readonly roomBackground: string
   /** Resolves once the door's ambient has faded out and stopped. */
   readonly ambientSilent: Promise<void>
   /** The clone covers the screen: mount the room under it. */
@@ -91,10 +95,7 @@ const wait = (ms: number): Promise<void> =>
  * user went elsewhere or the room's element is unmounted: nothing is coming
  * to be revealed. True otherwise.
  */
-async function roomDrawn(
-  selector: string,
-  away: () => boolean,
-): Promise<boolean> {
+async function roomDrawn(away: () => boolean): Promise<boolean> {
   const deadline = performance.now() + ROOM_WAIT_MS
   let element: Element | null = null
   let over = false
@@ -112,7 +113,7 @@ async function roomDrawn(
   })
   const drawing = (async (): Promise<void> => {
     while (element === null && !left && performance.now() < deadline) {
-      element = document.querySelector(selector)
+      element = document.querySelector(ROOM_BACKGROUND)
       if (element === null) await wait(40)
     }
     if (element === null || left) return
@@ -339,7 +340,7 @@ function startOpen(
   }
 
   const reveal = async (): Promise<void> => {
-    const drawn = await roomDrawn(plan.roomBackground, plan.away)
+    const drawn = await roomDrawn(plan.away)
     // Gone elsewhere: out of the way at once, over whatever is there now.
     const fade = !drawn ? LEAVE_MS : plan.reduced ? REDUCED_MS : REVEAL_MS
     clone.dataset.phase = 'revealing'

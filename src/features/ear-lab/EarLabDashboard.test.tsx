@@ -75,6 +75,15 @@ describe('EarLabDashboard', () => {
     engine.init.mockClear()
   })
 
+  it('marks the picture an alley door waits on before it fades', () => {
+    // The native alley's clone waits on `[data-room-background]` and nothing
+    // else; a room without it is waited on for the whole deadline.
+    const { container } = render(() => <Bench />)
+    const marked = container.querySelectorAll('[data-room-background]')
+    expect(marked).toHaveLength(1)
+    expect((marked[0] as HTMLElement).dataset.testid).toBe('ear-room-art')
+  })
+
   it('keeps the panel id and every tour hook on a fresh store', () => {
     const { container } = render(() => <Bench />)
     expect(container.querySelector('#ear-lab-panel')).not.toBeNull()

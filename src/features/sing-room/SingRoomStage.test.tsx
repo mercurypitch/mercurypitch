@@ -363,6 +363,15 @@ describe('"Remove" on the song sheet', () => {
 describe('arriving through an alley door', () => {
   // `active` is what the arrival sets, and what every automatic start —
   // the remembered grant reaching for the microphone — is gated on.
+  it('marks the picture a door waits on before it fades', () => {
+    // The native alley's clone waits on `[data-room-background]` and nothing
+    // else; a room without it is waited on for the whole deadline.
+    mountRoom()
+    const marked = document.querySelectorAll('[data-room-background]')
+    expect(marked).toHaveLength(1)
+    expect((marked[0] as HTMLElement).dataset.testid).toBe('sing-cover')
+  })
+
   it('waits for the shell to release the arrival', async () => {
     const release = holdRoomArrival()
     mountRoom()
