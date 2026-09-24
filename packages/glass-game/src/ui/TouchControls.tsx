@@ -61,6 +61,7 @@ export function TouchControls(props: TouchControlsProps) {
       class={styles.touchControls}
       aria-label="Movement controls"
       style={{ visibility: props.disabled ? 'hidden' : undefined }}
+      onContextMenu={(event) => event.preventDefault()}
     >
       <div
         ref={stickElement}

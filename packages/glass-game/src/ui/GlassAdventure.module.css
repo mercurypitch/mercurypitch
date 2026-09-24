@@ -23,6 +23,9 @@
   cursor: pointer;
   color: inherit;
   touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 .adventure button:focus-visible {
   outline: 3px solid #64d7d0;
@@ -115,8 +118,9 @@
   right: max(22px, env(safe-area-inset-right));
   display: grid;
   gap: 10px;
+  justify-items: center;
 }
-.utility button {
+.utility > button {
   width: 38px;
   height: 38px;
   border: 1px solid #fff6;
@@ -126,7 +130,7 @@
   place-items: center;
   font-size: 22px;
 }
-.utility svg {
+.utility > button svg {
   width: 20px;
   height: 20px;
 }
@@ -366,6 +370,9 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 .stick {
   width: 118px;

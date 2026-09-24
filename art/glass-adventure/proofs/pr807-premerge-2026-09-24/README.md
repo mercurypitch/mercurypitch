@@ -16,3 +16,15 @@ of force-unlocking another application. No user microphone audio was recorded.
 
 The graphics reproduction, limits and full review receipt are in
 `../../plans/PR807-PREMERGE-REVIEW-2026-09-24.md`.
+
+## Narrow phone controls
+
+`phone-controls.png` and `phone-tuning-panel.png` capture the actual rendered
+scene and development tuning panel at 320 x 740 in Chromium touch emulation.
+The regression first reproduced a 12px overlap between Tune and Help; the fixed
+shared rail keeps at least 8px clear at widths 320, 390, 768 and 1180. Real taps
+open both Help and Tune, a mouse drag selects no control text, the movement
+context menu is prevented, and native CDP touch still jumps. The existing
+three-finger movement/orbit/jump/cancellation case also passes. Safari-prefixed
+selection and callout rules are included; physical iPhone acceptance remains
+with the owner.

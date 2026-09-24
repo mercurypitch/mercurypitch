@@ -388,13 +388,13 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           >
             ?
           </button>
+          <Show when={import.meta.env.DEV}>
+            <CameraTuningPanel
+              settings={adventure.cameraComfort()}
+              onChange={adventure.changeCameraComfort}
+            />
+          </Show>
         </div>
-        <Show when={import.meta.env.DEV}>
-          <CameraTuningPanel
-            settings={adventure.cameraComfort()}
-            onChange={adventure.changeCameraComfort}
-          />
-        </Show>
         <Show
           when={
             adventure.notice() &&

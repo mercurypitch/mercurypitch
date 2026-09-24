@@ -23,6 +23,10 @@ is enough to restart a play session, but edited source needs a server restart.
    **Sing again**. The second attempt must not record unless you opt in again.
    Check playback/Stop and switching away/returning once.
 
+4. On a narrow phone, verify **Tune** sits below **?** without covering it, and
+   holding/dragging the movement and Jump controls does not select their labels
+   or open a browser callout.
+
 ## Suggested order
 
 1. **Museum map:** `/glass-game/?campaign=1`. Orbit and zoom around Twin Galleries

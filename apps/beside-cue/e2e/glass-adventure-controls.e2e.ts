@@ -33,7 +33,7 @@ async function omitRasterOutput(page: Page): Promise<void> {
   }, RASTER_METHODS)
 }
 
-async function openMuseum(page: Page): Promise<void> {
+async function openMuseum(page: Page, renderPixels = false): Promise<void> {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => {
@@ -42,7 +42,7 @@ async function openMuseum(page: Page): Promise<void> {
   page.on('requestfailed', (request) =>
     errors.push(`${request.url()} ${request.failure()?.errorText}`),
   )
-  await omitRasterOutput(page)
+  if (!renderPixels) await omitRasterOutput(page)
   await page.addInitScript(() =>
     localStorage.setItem('beside-cue:glass-adventure:tutorial', 'seen'),
   )
@@ -262,6 +262,101 @@ test.describe('phone', () => {
     viewport: { width: 390, height: 844 },
     hasTouch: true,
     isMobile: true,
+  })
+  test('Tune clears Help and movement labels cannot be selected @smoke', async ({
+    page,
+    context,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 740 })
+    await openMuseum(page, true)
+    const help = page.getByRole('button', { name: 'How to play' })
+    const tune = page.getByRole('button', {
+      name: 'Camera tuning',
+      exact: true,
+    })
+    for (const width of [320, 390, 768, 1180]) {
+      await page.setViewportSize({ width, height: 740 })
+      const helpBox = await help.boundingBox()
+      const tuneBox = await tune.boundingBox()
+      expect(helpBox).not.toBeNull()
+      expect(tuneBox).not.toBeNull()
+      expect(
+        tuneBox!.y - (helpBox!.y + helpBox!.height),
+      ).toBeGreaterThanOrEqual(8)
+      expect(tuneBox!.x + tuneBox!.width).toBeLessThanOrEqual(width)
+    }
+    await page.setViewportSize({ width: 320, height: 740 })
+    await page.clock.runFor(32)
+    await page.screenshot({ path: testInfo.outputPath('phone-controls.png') })
+    await help.tap()
+    await expect(
+      page.getByRole('dialog', { name: 'A little room to wander.' }),
+    ).toBeVisible()
+    await page.keyboard.press('Escape')
+    await tune.tap()
+    await expect(
+      page.getByRole('dialog', { name: 'Camera comfort tuning' }),
+    ).toBeVisible()
+    await page.screenshot({
+      path: testInfo.outputPath('phone-tuning-panel.png'),
+    })
+    await page.getByRole('button', { name: 'Close camera tuning' }).tap()
+    // Resume a released-input frame after the tutorial before pressing Jump.
+    await page.clock.runFor(32)
+
+    const jump = page.getByRole('button', { name: 'Jump', exact: true })
+    await expect(jump.locator('span')).toHaveCSS('user-select', 'none')
+    await expect(
+      page
+        .getByRole('group', { name: 'Move Merc' })
+        .getByText('Move', { exact: true }),
+    ).toHaveCSS('user-select', 'none')
+    const label = await jump.locator('span').boundingBox()
+    expect(label).not.toBeNull()
+    await page.mouse.move(label!.x, label!.y + label!.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(
+      label!.x + label!.width,
+      label!.y + label!.height / 2,
+      { steps: 5 },
+    )
+    await page.mouse.up()
+    expect(await page.evaluate(() => window.getSelection()?.toString())).toBe(
+      '',
+    )
+    await page.evaluate(() => {
+      document.addEventListener(
+        'contextmenu',
+        (event) => {
+          document.body.dataset.movementContextMenu = String(
+            event.defaultPrevented,
+          )
+        },
+        { once: true },
+      )
+    })
+    await jump.click({ button: 'right' })
+    await expect(page.locator('body')).toHaveAttribute(
+      'data-movement-context-menu',
+      'true',
+    )
+    const cdp = await context.newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        {
+          id: 1,
+          x: label!.x + label!.width / 2,
+          y: label!.y + label!.height / 2,
+        },
+      ],
+    })
+    await page.clock.runFor(100)
+    expect(await value(page, 'player-y')).toBeGreaterThan(0.1)
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: [],
+    })
   })
   test('three fingers move, orbit and jump independently; cancellation releases the controls @smoke', async ({
     page,

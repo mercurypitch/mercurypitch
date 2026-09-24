@@ -18,6 +18,8 @@ No merge or release has been requested yet; normal store builds keep games off.
 - [x] iOS archive guard rejects stale games-enabled assets under the store plist; 22 native tests pass. Actual Xcode execution remains CI-owned.
 - [x] Bounded progression/persistence/integration review complete; no additional concrete blocker found in those paths.
 - [x] Scoped code fixes committed: `1c82975d` (iOS pairing), `746393ec` (graphics/mic recovery), `0b38de25` (Encore consent/audio).
+- [x] Narrow-phone Tune/Help overlap fixed with one shared control rail; movement controls suppress selection/callouts. Real-rendered phone screenshots and pointer/touch checks pass.
+- [x] Melody microphone lifecycle extracted after CI caught file-size growth; metric baseline unchanged and the ratchet passes locally.
 - [ ] Merge gate: final pushed revision must pass CI and the owner's recovery playtest. Final CI evidence is saved with the dotfiles task checkpoint; never substitute baseline CI.
 - [ ] Owner: retry real singing, cold Chrome opening, and tablet play before merge decision.
 
