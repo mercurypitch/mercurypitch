@@ -1,6 +1,6 @@
 // Room decoration renderer tests — required art installs into stable roots with clean ownership.
 
-import { BoxGeometry, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Texture, } from 'three'
+import { BoxGeometry, Group, InstancedMesh, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Texture, } from 'three'
 import { expect, it, vi } from 'vitest'
 import type { LevelDefinition } from '../contracts'
 import { disposeMaterials, disposeObject } from './dispose'
@@ -268,4 +268,67 @@ it('rejects a frame whose authored inset material is absent', () => {
   manager.dispose()
   library.dispose()
   disposeMaterials(Object.values(palette))
+})
+
+it('batches repeated opaque planters per room and preserves each covered-solid activation', () => {
+  const original = level()
+  const planter = original.presentation!.decorations![0]!
+  const configured: LevelDefinition = {
+    ...original,
+    presentation: {
+      ...original.presentation!,
+      decorations: [
+        planter,
+        {
+          ...planter,
+          id: 'second-planter',
+          position: { x: -1, y: 0, z: 2 },
+          coveredSolidIds: [],
+        },
+        {
+          ...planter,
+          id: 'other-room-planter',
+          roomId: 'other-room',
+          coveredSolidIds: [],
+        },
+      ],
+    },
+  }
+  const palette = materials()
+  const library = createMaterialLibrary()
+  const manager = createRoomDecorations(configured, palette, library)
+  const roots = new Group()
+  roots.add(...manager.instances.map((instance) => instance.root))
+  const source = bundle()
+  expect(manager.installBundle(source, 'museum-decor-v5')).toEqual([
+    'planter-bowl',
+  ])
+  const batches: InstancedMesh[] = []
+  roots.traverse((object) => {
+    if (object instanceof InstancedMesh) batches.push(object)
+  })
+  expect(batches).toHaveLength(1)
+  expect(batches[0]!.count).toBe(2)
+  expect(
+    manager.instances.find(({ root }) => root === batches[0]!.parent)?.roomId,
+  ).toBe(planter.roomId)
+  const other = manager.instances.find(({ roomId }) => roomId === 'other-room')!
+  expect(other.root.children).toHaveLength(1)
+  manager.update(new Set())
+  expect(batches[0]!.count).toBe(1)
+  expect(other.root.visible).toBe(true)
+  manager.update(new Set(['planter-bowl']))
+  expect(batches[0]!.count).toBe(2)
+  expect(manager.installBundle(source, 'museum-decor-v5')).toEqual([])
+  const disposed = vi.fn()
+  batches[0]!.addEventListener('dispose', disposed)
+  manager.dispose()
+  expect(disposed).toHaveBeenCalledTimes(1)
+  disposeObject(
+    roots,
+    new Set([...library.materials, ...Object.values(palette)]),
+  )
+  library.dispose()
+  disposeMaterials(Object.values(palette))
+  disposeObject(source)
 })

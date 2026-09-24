@@ -1,0 +1,14 @@
+{
+  "result": {
+    "placements": 6,
+    "beforeCalls": 6,
+    "afterCalls": 1,
+    "beforeTriangles": 55416,
+    "afterTriangles": 55416,
+    "changedChannelFraction": 0.00013966666666666666,
+    "meanAbsoluteChannelError": 0.000812,
+    "largestError": 46
+  },
+  "errors": [],
+  "scope": "Actual GLB and runtime room decoration manager; deterministic arranged prop comparison, not a full-level or physical-device performance claim."
+}

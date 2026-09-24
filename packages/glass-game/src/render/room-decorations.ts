@@ -5,13 +5,14 @@ import { Group } from 'three'
 import type { LevelDefinition, RoomDecorationInstanceDefinition, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
 import { disposeMaterials, disposeObject } from './dispose'
-import { createKitInstance } from './kit-instance'
+import { createKitInstance, removeKitGeometry } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
 import type { PlanarMirrorSurface } from './planar-reflections'
 import { createPlanarMirrorSurface } from './planar-reflections'
 import type { RoomDecorationSurfaceRecipe } from './room-decoration-catalog'
 import { getRoomDecorationRecipe } from './room-decoration-catalog'
+import { createStaticDecorationBatch } from './static-decoration-batch'
 
 export interface RoomDecorationRenderInstance {
   roomId: string
@@ -151,15 +152,42 @@ export function createRoomDecorations(
       coveredSolidIds.some((id) => initialActiveSolidIds.has(id))
     return { definition, root, installed: false }
   })
+  // Keep every room as an independent visibility owner. Unique paintings and
+  // live reflection surfaces retain their own material/picking lifecycle.
+  const repeated = new Map<string, DecorationRecord[]>()
+  for (const record of records) {
+    if (getRoomDecorationRecipe(record.definition.recipeId).surface) continue
+    const key = `${record.definition.roomId}:${record.definition.recipeId}`
+    const members = repeated.get(key) ?? []
+    members.push(record)
+    repeated.set(key, members)
+  }
+  const batches = [...repeated.values()]
+    .filter((members) => members.length > 1)
+    .map((members) => {
+      const root = new Group()
+      root.name = `decoration-batch-${members[0]!.definition.id}`
+      return {
+        members,
+        root,
+        renderer: undefined as ReturnType<typeof createStaticDecorationBatch>,
+      }
+    })
 
   return {
     planarMirrors,
-    instances: records.map(
-      ({ definition, root }): RoomDecorationRenderInstance => ({
-        roomId: definition.roomId,
+    instances: [
+      ...records.map(
+        ({ definition, root }): RoomDecorationRenderInstance => ({
+          roomId: definition.roomId,
+          root,
+        }),
+      ),
+      ...batches.map(({ members, root }) => ({
+        roomId: members[0]!.definition.roomId,
         root,
-      }),
-    ),
+      })),
+    ],
     installTexture(assetId: string, texture: Texture): void {
       if (textures.has(assetId))
         throw new Error(
@@ -169,6 +197,32 @@ export function createRoomDecorations(
     },
     installBundle(scene: Object3D, bundle: string): readonly string[] {
       const coveredSolidIds: string[] = []
+      for (const batch of batches) {
+        const first = batch.members[0]!
+        const recipe = getRoomDecorationRecipe(first.definition.recipeId)
+        if (first.installed || recipe.bundle !== bundle) continue
+        const source = scene.getObjectByName(recipe.node)
+        if (source === undefined) continue // The individual path reports the missing node.
+        const template = createKitInstance(
+          source,
+          materials,
+          {},
+          materialLibrary,
+        )
+        batch.renderer = createStaticDecorationBatch(
+          template,
+          batch.members.map((member) => member.root),
+          batch.root,
+        )
+        if (batch.renderer === undefined) {
+          removeKitGeometry(template)
+          continue
+        }
+        for (const member of batch.members) {
+          member.installed = true
+          coveredSolidIds.push(...(member.definition.coveredSolidIds ?? []))
+        }
+      }
       for (const record of records) {
         const recipe = getRoomDecorationRecipe(record.definition.recipeId)
         if (record.installed || recipe.bundle !== bundle) continue
@@ -207,8 +261,10 @@ export function createRoomDecorations(
           coveredSolidIds.length === 0 ||
           coveredSolidIds.some((id) => activeSolidIds.has(id))
       }
+      batches.forEach((batch) => batch.renderer?.update())
     },
     dispose(): void {
+      batches.forEach((batch) => batch.renderer?.dispose())
       planarMirrors.forEach((mirror) => mirror.disposeTarget())
       planarMirrors.length = 0
       textures.forEach((texture) => texture.dispose())
