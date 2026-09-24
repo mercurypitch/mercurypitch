@@ -32,6 +32,13 @@
   inset: 0;
   z-index: var(--z-stage, 450);
   overflow: hidden;
+  /* Clip, not merely hide. The Guitar spill makes the alley wider than the
+     screen, and under overflow: hidden it is still a scroll container: a
+     scrollIntoView (Playwright's actionability retry calls one on Enter)
+     slid it up to 99 px while door taps are mapped against the unscrolled
+     box, so the next tap picked the door to the left. A clipped box has no
+     scroll position at all. Hidden stays as the fallback before iOS 16. */
+  overflow: clip;
   background: #0b0d12;
   color: var(--alley-ink);
   touch-action: manipulation;

@@ -2706,6 +2706,10 @@ async function tapReport(page) {
       scroll: [window.scrollX, window.scrollY],
       visual: vv ? [vv.offsetLeft, vv.offsetTop, vv.scale] : null,
       alleys: document.querySelectorAll('[data-testid="rooms-alley"]').length,
+      alleyScroll: (() => {
+        const root = document.querySelector('[data-testid="rooms-alley"]')
+        return root === null ? null : [root.scrollLeft, root.scrollTop]
+      })(),
     }
   })
 }
@@ -3171,6 +3175,32 @@ async function walkAlley(browser, args, frame) {
     })
     steps.push(
       `alley Enter then Back at +150 ms: '${midBack}', the alley at rest, nothing playing, hold ${backMid.alley.held}; ${note}`,
+    )
+
+    // ── The alley does not scroll ─────────────────────────────
+    // The Guitar spill makes .mp-alley wider than the screen. Under overflow:
+    // hidden it is still a scroll container, and a scrollIntoView (Playwright's
+    // own actionability retry calls one) moves every door while the plate tap
+    // is mapped against the unscrolled box: the next tap picks the door to the
+    // left.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'no scroll: select Sing')
+    const shifted = await page.evaluate(() => {
+      document
+        .querySelector('[data-testid="alley-enter"]')
+        ?.scrollIntoView({ block: 'start', inline: 'start' })
+      const root = document.querySelector('[data-testid="rooms-alley"]')
+      return root === null ? null : [root.scrollLeft, root.scrollTop]
+    })
+    if (shifted === null || shifted[0] !== 0 || shifted[1] !== 0) {
+      throw new Error(
+        `no scroll: a scrollIntoView on Enter moved the alley to ${JSON.stringify(shifted)}`,
+      )
+    }
+    await page.keyboard.press('Escape')
+    await waitPhase(page, 'rest', null, 'no scroll: Escape')
+    steps.push(
+      'alley no scroll: a scrollIntoView on Enter leaves the alley at 0,0',
     )
 
     // ── Reduced motion ────────────────────────────────────────
