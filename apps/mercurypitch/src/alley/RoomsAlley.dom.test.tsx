@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TAB_SINGING } from '@/features/tabs/constants'
 import type { RenderedShell } from '../shell/render-for-test'
 import { renderShell } from '../shell/render-for-test'
+import type * as RunShell from '../shell/run-shell-store'
 import type * as ShellNavigation from '../shell/shell-navigation'
+import type * as AlleyAudio from './alley-audio'
 
 // The alley's state, its ambient, the welcome flag and the arrival hold all
 // live at module level, so every case imports a fresh copy of each.
@@ -15,6 +17,19 @@ vi.mock('../shell/shell-navigation', async (importOriginal) => ({
   ...(await importOriginal<typeof ShellNavigation>()),
   goToTab: vi.fn(),
 }))
+
+// The real ambient, with its stop() watched: jsdom has no AudioContext, so
+// whether the door's sound was told to fade is the thing a case can see.
+vi.mock('./alley-audio', async (importOriginal) => {
+  const real = await importOriginal<typeof AlleyAudio>()
+  return {
+    ...real,
+    createAlleyAmbient: vi.fn((deps: AlleyAudio.AmbientDeps) => {
+      const ambient = real.createAlleyAmbient(deps)
+      return { ...ambient, stop: vi.fn(ambient.stop) }
+    }),
+  }
+})
 
 class FakeResizeObserver {
   static last: FakeResizeObserver | null = null
@@ -50,6 +65,8 @@ async function mountAlley() {
   const welcome = await import('./alley-welcome')
   const store = await import('@/stores/native-shell-store')
   const nav = await import('../shell/shell-navigation')
+  const shell = await import('../shell/run-shell-store')
+  const audio = await import('./alley-audio')
   const Alley = alley.RoomsAlley
   view = renderShell(() => <Alley />)
   const el = <T extends Element = HTMLElement>(testid: string): T => {
@@ -57,7 +74,13 @@ async function mountAlley() {
     if (found === null || found === undefined) throw new Error(`${testid}?`)
     return found
   }
-  return { el, welcome, store, nav }
+  /** The ambient's stop(), once a door tap has created it. */
+  const ambientStop = () => {
+    const made = vi.mocked(audio.createAlleyAmbient).mock.results.at(-1)
+    if (made === undefined) throw new Error('no ambient yet')
+    return vi.mocked((made.value as AlleyAudio.AlleyAmbient).stop)
+  }
+  return { el, welcome, store, nav, shell, ambientStop }
 }
 
 beforeEach(() => {
@@ -227,15 +250,39 @@ describe('the dock', () => {
 })
 
 describe('the Sing door clip', () => {
-  it('loads only its metadata until Sing is picked', async () => {
+  it('has a source only while Sing is picked', async () => {
+    // A src'd <video>, even paused, is a media pipeline and a metadata read
+    // on every visit to the tab. The loop is loaded in the tap that wants it.
     const { el } = await mountAlley()
     const clip = el<HTMLVideoElement>('alley-clip')
-    expect(clip.getAttribute('preload')).toBe('metadata')
+    const load = vi.mocked(HTMLMediaElement.prototype.load)
+    expect(clip.getAttribute('src')).toBeNull()
 
     el('alley-door-sing').click()
-    expect(clip.getAttribute('preload')).toBe('auto')
+    expect(clip.getAttribute('src')).toMatch(/\.mp4$/u)
+    load.mockClear()
     el('alley-door-karaoke').click()
-    expect(clip.getAttribute('preload')).toBe('metadata')
+    expect(clip.getAttribute('src')).toBeNull()
+    expect(load.mock.contexts).toContain(clip)
+
+    el('alley-door-sing').click()
+    expect(clip.getAttribute('src')).not.toBeNull()
+    el('alley-plate').click()
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(clip.getAttribute('src')).toBeNull()
+  })
+
+  it('lets go of its source when an open is called off', async () => {
+    const { el, nav } = await mountAlley()
+    el('alley-door-sing').click()
+    const clip = el<HTMLVideoElement>('alley-clip')
+    Object.defineProperty(clip, 'paused', { value: false })
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(150)
+
+    expect(nav.cancelDoorOpen()).toBe(true)
+    expect(clip.closest('[data-testid="alley-morph"]')).toBeNull()
+    expect(clip.getAttribute('src')).toBeNull()
   })
 
   it('lets go of its source when the alley unmounts', async () => {
@@ -272,6 +319,51 @@ describe('the Sing door clip', () => {
     view = null
 
     expect(clip.getAttribute('src')).not.toBeNull()
+  })
+})
+
+describe('a door picked, then covered by the shell', () => {
+  // The alley stays mounted under the More sheet and a pushed screen: only a
+  // tab change unmounts it. The door's ambient and clip played on under
+  // Settings for as long as it was up.
+  const covers = [
+    ['the More sheet', (shell: typeof RunShell) => shell.openMore()],
+    [
+      'a pushed screen',
+      (shell: typeof RunShell) => shell.pushScreen('settings'),
+    ],
+  ] as const
+
+  for (const [name, cover] of covers) {
+    it(`goes back to rest, silent, under ${name}`, async () => {
+      const { el, shell, ambientStop } = await mountAlley()
+      el('alley-door-sing').click()
+      expect(el('rooms-alley').dataset.phase).toBe('alive')
+      const clip = el<HTMLVideoElement>('alley-clip')
+      const pause = vi.mocked(HTMLMediaElement.prototype.pause)
+      pause.mockClear()
+      ambientStop().mockClear()
+
+      cover(shell)
+
+      expect(el('rooms-alley').dataset.phase).toBe('rest')
+      expect(ambientStop()).toHaveBeenCalledTimes(1)
+      expect(pause.mock.contexts).toContain(clip)
+      expect(clip.getAttribute('src')).toBeNull()
+      expect(el('alley-panel').classList.contains('is-shown')).toBe(false)
+    })
+  }
+
+  it('reads every overlay the shell draws over a tab as covered', async () => {
+    const { shell } = await mountAlley()
+    expect(shell.shellCovered()).toBe(false)
+    shell.openMore()
+    expect(shell.shellCovered()).toBe(true)
+    shell.closeMore()
+    shell.pushScreen('settings')
+    expect(shell.shellCovered()).toBe(true)
+    shell.popScreen()
+    expect(shell.shellCovered()).toBe(false)
   })
 })
 

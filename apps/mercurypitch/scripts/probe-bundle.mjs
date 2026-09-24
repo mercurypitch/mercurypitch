@@ -3257,6 +3257,59 @@ async function walkAlley(browser, args, frame) {
       `alley Enter then More at +150 ms: stays on ${moreMid.hash} with the sheet open, the alley at rest, hold ${moreMid.alley.held}; ${note}`,
     )
 
+    // ── A door picked, then More (PR 859 review, items 5 and 38) ─
+    // The alley stays mounted under the sheet: only a tab change unmounts it.
+    // A picked door's ambient and clip once played on under More and under
+    // Settings. Covered, the door goes back into the plate and falls silent,
+    // and the clip lets go of its source.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'More over a door: select Sing')
+    await page
+      .waitForFunction(() => window.mpAlley().level > 0.1, null, {
+        timeout: STEP_TIMEOUT_MS,
+      })
+      .catch(async () => {
+        throw new Error(
+          `More over a door: the ambient never rose (${JSON.stringify(await alleyNow(page))})`,
+        )
+      })
+    await page.locator('[data-rail-item="more"]').click()
+    await page.waitForTimeout(700)
+    const under = await page.evaluate(() => {
+      const clip = document.querySelector('[data-testid="alley-clip"]')
+      return {
+        alley: window.mpAlley(),
+        sheet: document.querySelector('[data-more-item="developer"]') !== null,
+        clipPaused: clip?.paused ?? null,
+        clipSrc: clip?.getAttribute('src') ?? null,
+      }
+    })
+    const playingUnder = await mediaPlaying(page)
+    if (
+      !under.sheet ||
+      under.alley.phase !== 'rest' ||
+      under.alley.level !== 0 ||
+      under.alley.sounding !== null ||
+      under.clipPaused !== true ||
+      under.clipSrc !== null ||
+      playingUnder !== 0
+    ) {
+      throw new Error(
+        `More over a door: ${JSON.stringify({ ...under, playingUnder })}`,
+      )
+    }
+    const shut = await pressBack(page)
+    if (shut !== 'sheet')
+      throw new Error(`More over a door: Back answered '${shut}'`)
+    await page.waitForTimeout(300)
+    const back = await alleyNow(page)
+    if (back.phase !== 'rest' || back.level !== 0) {
+      throw new Error(`More over a door, closed: ${JSON.stringify(back)}`)
+    }
+    steps.push(
+      `alley Sing picked then More: ambient ${under.alley.level}, clip paused with no source, alley ${under.alley.phase}; More closed, alley ${back.phase} at ${back.level}`,
+    )
+
     // ── Reduced motion ────────────────────────────────────────
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page

@@ -33,6 +33,7 @@ import { roomName } from '@/features/rooms/room-names'
 import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { exposeForE2E } from '@/lib/test-utils'
 import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
+import { shellCovered } from '../shell/run-shell-store'
 import { goToTab, registerDoorOpen } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
@@ -204,8 +205,24 @@ export const RoomsAlley: Component = () => {
     if (!welcomeSeen()) setFirst(true)
   })
 
+  /**
+   * The Sing door's clip lets go of its source and its decoder. It has one
+   * only while Sing is out: a <video> with a src, even paused, holds a media
+   * pipeline (and on Chrome a decoded first frame) for as long as it exists.
+   * Not while it is in the clone: that one is the open's, and the open
+   * unloads it once the room has drawn.
+   */
+  const releaseClip = (): void => {
+    const clip = singVideo
+    if (clip === undefined || clip.closest('.mp-alley-morph') !== null) return
+    clip.pause()
+    if (clip.getAttribute('src') === null) return
+    clip.removeAttribute('src')
+    clip.load()
+  }
+
   const quiet = (fadeMs: number): Promise<void> => {
-    singVideo?.pause()
+    releaseClip()
     return ambient().stop(fadeMs)
   }
 
@@ -227,11 +244,16 @@ export const RoomsAlley: Component = () => {
     if (before.door !== null && before.door !== key) {
       // Another door was out: its clip stops, its ambient hands over below
       // (or fades out, for a locked door that has none).
-      singVideo?.pause()
+      releaseClip()
       if (spec.ambient === null) void ambient().stop(CLEAR_MS)
     }
     if (spec.tab !== null) {
       if (spec.clip !== null && singVideo !== undefined) {
+        // The source is set here, in the tap, and not at mount: a visit that
+        // never picks Sing never loads the loop.
+        if (singVideo.getAttribute('src') !== spec.clip) {
+          singVideo.src = spec.clip
+        }
         singVideo.muted = true
         void singVideo.play().catch(() => undefined)
       }
@@ -249,6 +271,30 @@ export const RoomsAlley: Component = () => {
     dispatch({ type: 'tap-plate' })
     void quiet(reduced() ? REDUCED_MS : CLEAR_MS)
   }
+
+  // Covered without being left: More, a pushed screen, the chip's column or
+  // the Keep alert. The alley stays mounted under all of them, so nothing
+  // else would stop a picked door's ambient and clip — they played on under
+  // Settings for as long as it was up. The door goes back into the plate.
+  createEffect(
+    on(shellCovered, (covered) => {
+      if (!covered) return
+      const phase = untrack(alley).phase
+      if (phase !== 'selected' && phase !== 'alive') return
+      dispatch({ type: 'leave' })
+      void quiet(reduced() ? REDUCED_MS : CLEAR_MS)
+    }),
+  )
+  // Whatever brought the alley back to rest — a clear, a leave, an open
+  // called off with the clip put back in its door — the clip lets go.
+  createEffect(
+    on(
+      () => alley().phase,
+      (phase) => {
+        if (phase === 'rest') releaseClip()
+      },
+    ),
+  )
 
   /** Enter, or the selected door tapped again. Inside the tap. */
   const open = (): void => {
@@ -449,7 +495,7 @@ export const RoomsAlley: Component = () => {
     // change nothing here saw coming): the open is called off, not left to
     // navigate on top of wherever the app went.
     if (untrack(alley).phase === 'opening') cancelOpen()
-    // Leaving mid-selection (the rail, More): no sound left behind. An open
+    // Leaving mid-selection (a rail tab): no sound left behind. An open
     // that has covered owns its own fade, and the clip has moved into the clone.
     const phase = untrack(alley).phase
     if (phase === 'selected' || phase === 'alive' || phase === 'settling') {
@@ -458,14 +504,7 @@ export const RoomsAlley: Component = () => {
     }
     // The Sing door's clip lets go of its decoder: an unmounted <video> with
     // a src keeps its buffer and its hardware decoder until it is collected.
-    // Not while it is in the clone: that one is the open's, and the open
-    // unloads it once the room has drawn.
-    const clip = singVideo
-    if (clip !== undefined && clip.closest('.mp-alley-morph') === null) {
-      clip.pause()
-      clip.removeAttribute('src')
-      clip.load()
-    }
+    releaseClip()
   })
 
   const quadCss = (door: DoorLayout): string =>
@@ -565,36 +604,33 @@ export const RoomsAlley: Component = () => {
                 >
                   <img src={plate()} alt="" style={plateStyle()} />
                 </div>
-                <Show when={spec.clip}>
-                  {(clip) => (
-                    <div
-                      class="mp-alley__art"
-                      style={{
-                        width: `${artW()}px`,
-                        height: `${artH()}px`,
-                        transform: matrix3d(
-                          rectToQuad(artW(), artH(), door().quad),
-                        ),
+                <Show when={spec.clip !== null}>
+                  <div
+                    class="mp-alley__art"
+                    style={{
+                      width: `${artW()}px`,
+                      height: `${artH()}px`,
+                      transform: matrix3d(
+                        rectToQuad(artW(), artH(), door().quad),
+                      ),
+                    }}
+                  >
+                    <video
+                      ref={(element) => {
+                        singVideo = element
+                        element.muted = true
+                        element.defaultMuted = true
                       }}
-                    >
-                      <video
-                        ref={(element) => {
-                          singVideo = element
-                          element.muted = true
-                          element.defaultMuted = true
-                        }}
-                        class="mp-alley__clip"
-                        src={clip()}
-                        muted
-                        loop
-                        playsinline
-                        preload={selected() === 'sing' ? 'auto' : 'metadata'}
-                        disablepictureinpicture
-                        tabIndex={-1}
-                        data-testid="alley-clip"
-                      />
-                    </div>
-                  )}
+                      class="mp-alley__clip"
+                      muted
+                      loop
+                      playsinline
+                      preload="auto"
+                      disablepictureinpicture
+                      tabIndex={-1}
+                      data-testid="alley-clip"
+                    />
+                  </div>
                 </Show>
                 <svg
                   class="mp-alley__rim"

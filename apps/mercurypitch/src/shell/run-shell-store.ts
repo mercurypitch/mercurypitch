@@ -227,6 +227,16 @@ export const roomHeaderVisible = createMemo<boolean>(
   () => pushed() === null && !roomArrivalHeld(),
 )
 
+/**
+ * Whether the shell has drawn something over the tab: the More sheet, a
+ * pushed screen, the chip's column or the Keep alert. The tab stays mounted
+ * under every one of them, so a tab that makes sound of its own (the alley's
+ * door ambient) reads this to fall silent — only a tab change unmounts it.
+ */
+export const shellCovered = createMemo<boolean>(
+  () => moreOpen() || pushed() !== null || columnOpen() || keepAlertOpen(),
+)
+
 export function elapsedMs(): number {
   tick()
   const running = startedAt === null ? 0 : Date.now() - startedAt
