@@ -201,10 +201,10 @@ describe('Cloudway platform renderer', () => {
 
     const marble = instance(sceneRoot, 'cloudway-stable-Cloudway_Marble__Top')
     expect(marble.count).toBe(6)
-    renderer.cullForView(
-      cameraLookingAt({ x: 0, y: 2, z: -4 }, { x: 0, y: 0, z: 8 }),
-    )
+    const view = cameraLookingAt({ x: 0, y: 2, z: -4 }, { x: 0, y: 0, z: 8 })
+    expect(renderer.cullForView(view)).toBe(true)
     expect(marble.count).toBe(3)
+    expect(renderer.cullForView(view)).toBe(false)
 
     const finale = CLOUDWAY_GLASS_RIBBON.platforms.find(
       (platform) => platform.id === 'cloudway-finale',
@@ -221,8 +221,9 @@ describe('Cloudway platform renderer', () => {
     expect(raycaster.intersectObject(marble).length).toBe(0)
 
     // A missing camera keeps the full cached set rather than guessing.
-    renderer.cullForView(undefined)
+    expect(renderer.cullForView(undefined)).toBe(true)
     expect(marble.count).toBe(6)
+    expect(renderer.cullForView(undefined)).toBe(false)
 
     // The following frame also restores all transforms before camera collision.
     renderer.update(current)

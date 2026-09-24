@@ -236,6 +236,8 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       data-travel-yaw={adventure.desiredTravelYaw() ?? undefined}
       data-look-sensitivity={adventure.cameraComfort().lookSensitivity}
       data-follow-smoothness={adventure.cameraComfort().followSmoothnessSeconds}
+      data-render-quality-preference={adventure.renderQualityPreference()}
+      data-render-quality-profile={adventure.renderQualityProfile()}
       data-challenge-camera-mode={
         adventure.challengeCamera()?.mode ?? 'exploration'
       }
@@ -393,6 +395,9 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             <CameraTuningPanel
               settings={adventure.cameraComfort()}
               onChange={adventure.changeCameraComfort}
+              renderQualityPreference={adventure.renderQualityPreference()}
+              renderQualityProfile={adventure.renderQualityProfile()}
+              onRenderQualityChange={adventure.changeRenderQuality}
             />
           </Show>
         </div>

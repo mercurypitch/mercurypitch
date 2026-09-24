@@ -343,9 +343,13 @@ export function createMuseum(
     parent.add(arch)
   }
   const setVisibleRooms = (visibleRoomIds: ReadonlySet<string>) => {
+    let changed = false
     roomGroups.forEach((group, id) => {
-      group.visible = visibleRoomIds.has(id)
+      const visible = visibleRoomIds.has(id)
+      if (group.visible !== visible) changed = true
+      group.visible = visible
     })
+    return changed
   }
   return {
     root,
@@ -518,7 +522,8 @@ export function createMuseum(
           coveredSolidIds.length === 0 ||
           coveredSolidIds.some((id) => active.has(id))
       const enabled = activeSolidIds.join('|')
-      if (enabled !== lastActive) {
+      const shadowVisibilityChanged = enabled !== lastActive
+      if (shadowVisibilityChanged) {
         cameraMeshCache = undefined
         lastActive = enabled
       }
@@ -527,9 +532,10 @@ export function createMuseum(
       })
       cloudwayPlatforms.update(snapshot)
       pads.update(snapshot)
+      return shadowVisibilityChanged
     },
     cullCloudwayPlatforms(camera: PerspectiveCamera | undefined) {
-      cloudwayPlatforms.cullForView(camera)
+      return cloudwayPlatforms.cullForView(camera)
     },
     roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
     setDecorationTexture(assetId: string, texture: Texture) {
@@ -544,8 +550,10 @@ export function createMuseum(
         roomRenderBoundsDirty = false
       }
       const selection = roomVisibility.select(player, camera)
-      setVisibleRooms(selection.visibleRoomIds)
-      return selection
+      return {
+        ...selection,
+        shadowVisibilityChanged: setVisibleRooms(selection.visibleRoomIds),
+      }
     },
     planarReflectionMetrics: planarReflections.metrics,
     updatePlanarReflection(

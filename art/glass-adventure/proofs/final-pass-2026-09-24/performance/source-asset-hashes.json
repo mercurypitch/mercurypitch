@@ -1,0 +1,14 @@
+{
+  "scope": "Current Cloudway source kit consumed by the matched proof",
+  "head": "122e57855fce8058a1039e6c079165226bd80cfb",
+  "trackedAssetDiffFromHead": [],
+  "sha256": {
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-01.bin": "fe5bd4f0133834960c7185f7e864cfc7fbba0ad1142583f5e53148d6e33585a9",
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-02.bin": "f360bf1525c8a5f95f0bce849320ae0bf5ad145ece2b9f39f2e11034a3affb96",
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-03.bin": "b6655790c58fd7b56c60fa39e5992f469ff184f972241e3d3d05a523840fd4fe",
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7-part-04.bin": "d01d8ef9e49488946d7d08face07a323d029ec3ff52bdf682f30fe61655cd065",
+    "apps/beside-cue/public/games/cloudway-v7/cloudway-platform-kit-v7.gltf": "5383673777e743da7922f5d5c406bece3da51445b3a7b31e3a6b77fecd1434d1",
+    "apps/beside-cue/public/games/cloudway-v7/manifest.json": "2fae1755c163db2ac75995c5a0d1bdbe2acba5cdbbe9ad92a5b7a762bb1df097"
+  },
+  "interpretation": "The performance pass changed renderer/runtime code and proof artifacts; it did not edit the tracked Cloudway mesh, buffers, or textures."
+}
