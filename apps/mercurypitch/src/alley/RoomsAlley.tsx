@@ -41,7 +41,7 @@ import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
 import type { DoorOpen } from './alley-entry'
 import { OPEN_MS, openDoor, REDUCED_MS } from './alley-entry'
 import type { AlleyFrame, DoorLayout } from './alley-geometry'
-import { alleyFit, dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rectToQuad, tapBand, } from './alley-geometry'
+import { alleyFit, artBox, dimPath, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, rectToQuad, tapBand, } from './alley-geometry'
 import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
 import type { DoorKey } from './alley-plate'
@@ -663,10 +663,8 @@ export const RoomsAlley: Component = () => {
         <For each={DOORS}>
           {(spec) => {
             const door = (): DoorLayout => layoutOf(spec.key)
-            const artW = (): number =>
-              Math.max(1, Math.round(door().x1 - door().x0))
-            const artH = (): number =>
-              Math.max(1, Math.round(door().y1 - door().y0))
+            const artW = (): number => artBox(door()).w
+            const artH = (): number => artBox(door()).h
             return (
               <div
                 class="mp-alley__door"

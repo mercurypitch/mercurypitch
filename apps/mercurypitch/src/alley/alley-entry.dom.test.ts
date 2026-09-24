@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { holdRoomArrival, roomArrivalHeld } from '@/stores/native-shell-store'
 import type { DoorOpenPlan } from './alley-entry'
 import { openDoor } from './alley-entry'
-import { layoutDoors } from './alley-geometry'
+import { artBox, coverCrop, layoutDoors } from './alley-geometry'
 import { ALLEY_PLATE, DOORS } from './alley-plate'
 
 const W = 393
@@ -307,6 +307,59 @@ describe('reduced motion', () => {
       easing: 'linear',
     })
     expect(open.clone.style.transition).toBe('')
+  })
+})
+
+describe("the Sing clip's crop", () => {
+  // In its door the loop is cover-fit to the art box; the clone's box is
+  // cover-fit to the screen. Both are warped onto the same quad at t = 0, so
+  // unless the clone starts on the door's crop the first frame shows 2.7
+  // times as much of the loop, squeezed.
+  const clipIn = (): HTMLVideoElement => {
+    const door = document.createElement('div')
+    const video = document.createElement('video')
+    Object.defineProperty(video, 'videoWidth', { value: 1080 })
+    Object.defineProperty(video, 'videoHeight', { value: 1920 })
+    vi.spyOn(video, 'play').mockResolvedValue(undefined)
+    vi.spyOn(video, 'pause').mockImplementation(() => undefined)
+    door.appendChild(video)
+    document.body.appendChild(door)
+    return video
+  }
+  /** The source rect the clip's transform lays over the W x H clone. */
+  const shown = (video: HTMLVideoElement) => {
+    const [kx, , , ky, tx, ty] = video.style.transform
+      .replace(/^matrix\(|\)$/gu, '')
+      .split(',')
+      .map(Number)
+    return { x: -tx / kx, y: -ty / ky, w: W / kx, h: H / ky }
+  }
+
+  it("starts on the door's own crop and ends on the screen's", async () => {
+    if (sing === undefined) throw new Error('no Sing door')
+    const video = clipIn()
+    openDoor(plan({ video }))
+
+    const art = artBox(sing)
+    const door = coverCrop(1080, 1920, art.w, art.h)
+    const first = shown(video)
+    expect(first.x).toBeCloseTo(door.x, 0)
+    expect(first.w).toBeCloseTo(door.w, 0)
+    expect(first.h).toBeCloseTo(door.h, 0)
+
+    await vi.advanceTimersByTimeAsync(700)
+    const last = shown(video)
+    const screen = coverCrop(1080, 1920, W, H)
+    expect(last.x).toBeCloseTo(screen.x, 0)
+    expect(last.w).toBeCloseTo(screen.w, 0)
+  })
+
+  it('goes back into its door with none of it', async () => {
+    const video = clipIn()
+    const open = openDoor(plan({ video }))
+    await vi.advanceTimersByTimeAsync(150)
+    open.cancel()
+    expect(video.getAttribute('style') ?? '').toBe('')
   })
 })
 

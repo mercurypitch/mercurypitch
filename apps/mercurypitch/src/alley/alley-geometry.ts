@@ -428,6 +428,54 @@ export function pickDoor(p: Point, doors: readonly DoorLayout[]): DoorLayout {
   return best
 }
 
+/** The box a door's clip is laid out in before its homography: the quad's bounds. */
+export function artBox(door: DoorLayout): { w: number; h: number } {
+  return {
+    w: Math.max(1, Math.round(door.x1 - door.x0)),
+    h: Math.max(1, Math.round(door.y1 - door.y0)),
+  }
+}
+
+/** A rectangle of a video's own pixels. */
+export interface SourceRect {
+  readonly x: number
+  readonly y: number
+  readonly w: number
+  readonly h: number
+}
+
+/** What `object-fit: cover` shows of a vw x vh video in a w x h box. */
+export function coverCrop(
+  vw: number,
+  vh: number,
+  w: number,
+  h: number,
+): SourceRect {
+  const scale = Math.max(w / vw, h / vh)
+  const cw = w / scale
+  const ch = h / scale
+  return { x: (vw - cw) / 2, y: (vh - ch) / 2, w: cw, h: ch }
+}
+
+export function lerpRect(a: SourceRect, b: SourceRect, t: number): SourceRect {
+  return {
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+    w: a.w + (b.w - a.w) * t,
+    h: a.h + (b.h - a.h) * t,
+  }
+}
+
+/**
+ * The CSS transform, origin 0 0, that lays source rect `r` of a video drawn
+ * at its own pixel size (`object-fit: fill`) exactly over a w x h box.
+ */
+export function cropTransform(r: SourceRect, w: number, h: number): string {
+  const kx = w / r.w
+  const ky = h / r.h
+  return `matrix(${kx}, 0, 0, ${ky}, ${-r.x * kx}, ${-r.y * ky})`
+}
+
 export interface Band {
   readonly x: number
   readonly y: number

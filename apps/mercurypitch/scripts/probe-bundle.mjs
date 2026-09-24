@@ -3456,6 +3456,106 @@ async function walkAlley(browser, args, frame) {
     await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
     await page.emulateMedia({ reducedMotion: 'no-preference' })
 
+    // ── The clip's first frame (PR 859 review, item 12) ────────
+    // In its door the loop is cover-fit to the art box; the clone's box is
+    // cover-fit to the screen, and both are warped onto the same quad at the
+    // start of the grow. The clone has to start on the door's crop, or the
+    // first frame after Enter shows 2.7 times as much of the loop, squeezed.
+    // The grow is held at that frame (no animation frame runs) for the shot.
+    await waitPhase(page, 'rest', null, 'clip crop: back at rest')
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'clip crop: select Sing')
+    await page
+      .waitForFunction(
+        () => {
+          const v = document.querySelector('[data-testid="alley-clip"]')
+          return v !== null && !v.paused && v.videoWidth > 0
+        },
+        null,
+        { timeout: STEP_TIMEOUT_MS },
+      )
+      .catch(() => {
+        throw new Error('clip crop: the Sing clip never played')
+      })
+    await page.waitForTimeout(400)
+    const doorCrop = await page.evaluate(() => {
+      const v = document.querySelector('[data-testid="alley-clip"]')
+      const art = v.parentElement
+      const w = Number.parseFloat(art.style.width)
+      const h = Number.parseFloat(art.style.height)
+      const k = Math.max(w / v.videoWidth, h / v.videoHeight)
+      return {
+        x: (v.videoWidth - w / k) / 2,
+        y: (v.videoHeight - h / k) / 2,
+        w: w / k,
+        h: h / k,
+      }
+    })
+    await shoot(page, ctx, 'alley-clip-before-enter')
+    await page.evaluate(() => {
+      window.__mpRaf = window.requestAnimationFrame
+      window.requestAnimationFrame = () => 0
+      window.__mpClipFirst = null
+      const seen = new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (!(node instanceof HTMLElement)) continue
+            if (node.dataset.testid !== 'alley-morph') continue
+            seen.disconnect()
+            window.__mpClipFirst = {
+              transform: node.querySelector('video')?.style.transform ?? '',
+              w: node.style.width,
+              h: node.style.height,
+            }
+          }
+        }
+      })
+      seen.observe(document.body, { childList: true })
+    })
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await shoot(page, ctx, 'alley-clip-first-frame')
+    const clipFirst = await page.evaluate(() => {
+      window.requestAnimationFrame = window.__mpRaf
+      return window.__mpClipFirst
+    })
+    const [kx, , , ky, tx, ty] = (clipFirst?.transform ?? '')
+      .replace(/^matrix\(|\)$/gu, '')
+      .split(',')
+      .map(Number)
+    const cloneCrop = {
+      x: -tx / kx,
+      y: -ty / ky,
+      w: Number.parseFloat(clipFirst?.w) / kx,
+      h: Number.parseFloat(clipFirst?.h) / ky,
+    }
+    const off = Math.max(
+      ...['x', 'y', 'w', 'h'].map((k) => Math.abs(cloneCrop[k] - doorCrop[k])),
+    )
+    if (!(off <= 1)) {
+      throw new Error(
+        `clip crop: door ${JSON.stringify(doorCrop)}, clone's first frame ${JSON.stringify({ ...cloneCrop, clipFirst })}`,
+      )
+    }
+    await page
+      .waitForFunction(
+        () =>
+          document.querySelector('[data-testid="alley-morph"]') === null &&
+          document.querySelector('[data-testid="sing-room"]') !== null,
+        null,
+        { timeout: 8000 },
+      )
+      .catch(() => {
+        throw new Error('clip crop: the room never replaced the clone')
+      })
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('clip crop: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    const r = (v) => Math.round(v * 10) / 10
+    steps.push(
+      `alley clip first frame: the door showed source ${r(doorCrop.x)},${r(doorCrop.y)} ${r(doorCrop.w)}x${r(doorCrop.h)}, the clone's first frame ${r(cloneCrop.x)},${r(cloneCrop.y)} ${r(cloneCrop.w)}x${r(cloneCrop.h)} (${r(off)} source px apart); shots alley-clip-before-enter, alley-clip-first-frame`,
+    )
+
     // ── Developer: Replay the welcome ─────────────────────────
     await page.locator('[data-rail-item="more"]').click()
     const developerTile = page.locator('[data-more-item="developer"]')

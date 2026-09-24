@@ -22,7 +22,8 @@
 // is being built cannot leave a room waiting forever.
 
 import type { DoorLayout } from './alley-geometry'
-import { easeOut, fullQuad, invert, lerpQuad, matrix3d, rectToQuad, } from './alley-geometry'
+import type { SourceRect } from './alley-geometry'
+import { artBox, coverCrop, cropTransform, easeOut, fullQuad, invert, lerpQuad, lerpRect, matrix3d, rectToQuad, } from './alley-geometry'
 
 /** The grow. The brief's "about 420 ms"; the lab ran 520. */
 export const OPEN_MS = 420
@@ -263,6 +264,15 @@ function startOpen(
     if (video === null) return
     video.pause()
     video.classList.remove('mp-alley-morph__clip')
+    for (const name of [
+      'width',
+      'height',
+      'object-fit',
+      'transform',
+      'transform-origin',
+    ]) {
+      video.style.removeProperty(name)
+    }
     if (home !== null && home.isConnected) {
       if (video.parentNode === home) return
       home.insertBefore(
@@ -289,6 +299,33 @@ function startOpen(
   let full = fullQuad(vw, vh)
   const at = (t: number): string =>
     matrix3d(rectToQuad(vw, vh, lerpQuad(plan.door.quad, full, t)))
+  // The clip's crop, over the grow. In its door the loop was cover-fit to the
+  // art box and warped onto the quad; the clone's box is warped onto the same
+  // quad at t = 0, so drawing the art box's crop stretched over the clone is
+  // the doorway exactly as it was, and the crop eases out to the screen's own
+  // cover crop by t = 1 (the paint variant's invert(), for a video). Without
+  // this the first frame showed 2.7 times as much of the loop, squeezed.
+  const clip = plan.video
+  const source =
+    clip !== null && clip.videoWidth > 0 && clip.videoHeight > 0
+      ? { w: clip.videoWidth, h: clip.videoHeight }
+      : null
+  const art = artBox(plan.door)
+  const doorCrop: SourceRect | null =
+    source === null ? null : coverCrop(source.w, source.h, art.w, art.h)
+  const cropAt = (t: number): void => {
+    if (clip === null || source === null || doorCrop === null) return
+    const screen = coverCrop(source.w, source.h, vw, vh)
+    clip.style.transform = cropTransform(lerpRect(doorCrop, screen, t), vw, vh)
+  }
+  if (clip !== null && source !== null && !plan.reduced) {
+    // Drawn at its own pixel size and placed by the transform alone.
+    clip.style.width = `${source.w}px`
+    clip.style.height = `${source.h}px`
+    clip.style.objectFit = 'fill'
+    clip.style.transformOrigin = '0 0'
+    cropAt(0)
+  }
   const retarget = (): void => {
     const w = window.innerWidth
     const h = window.innerHeight
@@ -298,7 +335,10 @@ function startOpen(
     full = fullQuad(vw, vh)
     clone.style.width = `${vw}px`
     clone.style.height = `${vh}px`
-    if (covered && !plan.reduced) clone.style.transform = at(1)
+    if (covered && !plan.reduced) {
+      clone.style.transform = at(1)
+      cropAt(1)
+    }
   }
   window.addEventListener('resize', retarget)
 
@@ -333,6 +373,7 @@ function startOpen(
     for (const timer of timers) window.clearTimeout(timer)
     cancelAnimationFrame(frame)
     clone.style.transform = plan.reduced ? '' : at(1)
+    if (!plan.reduced) cropAt(1)
     clone.style.opacity = '1'
     clone.dataset.phase = 'covered'
     plan.onCovered()
@@ -385,6 +426,7 @@ function startOpen(
       if (covered || cancelled) return
       const t = Math.min(1, (now - t0) / duration)
       clone.style.transform = at(easeOut(t))
+      cropAt(easeOut(t))
       if (t < 1) frame = requestAnimationFrame(tick)
       else cover()
     }
