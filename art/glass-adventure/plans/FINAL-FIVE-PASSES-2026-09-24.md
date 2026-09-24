@@ -13,7 +13,7 @@ Commit and push each coherent stage; keep #861 open for owner acceptance.
 - [x] 1. Camera comfort: forward-biased follow during brief diagonal steering,
   smooth sustained turns, stable zoom/manual orbit and keyboard/touch behavior.
   Verify real input sequences and side-framed challenge transitions.
-- [ ] 2. Portrait finale: the picture and glass shatter together, while the frame
+- [x] 2. Portrait finale: the picture and glass shatter together, while the frame
   remains and the earned collection portrait stays intact. Preserve protective
   glazing for archive discoveries. Inspect before/during/after rendered frames.
 - [ ] 3. Merc musical phrases: three attractive short original phrases in the
@@ -77,8 +77,21 @@ images must come from the real runtime, not only offline render scenes.
   production app build passed. Measured Balanced two-frame work fell 18.15% in
   submitted triangles and 40.93% in target pixels; this is not device FPS.
   UI copy was polished and the selector screenshot refreshed after review.
-- Museum implementation and matched per-island captures are complete, with 37
-  focused tests and scoped lint passing. Independent review remains pending.
+- Portrait stage: twenty focused unit cases and the final actual-runtime browser
+  proof passed. All six desktop/tablet captures are populated and upright;
+  picture-bearing shards remain visible without the panorama banner, mirrors
+  reflect the room, and the earned image/save return intact. Independent review
+  found no remaining source or proof issue.
+- Museum implementation and matched per-island captures are complete; independent
+  review caught and resolved the imported Conservatory plinth overlap. All 38
+  focused tests and scoped lint pass, with refreshed screenshots and signoff.
+- Combined review: portrait raster proof now rejects blank captures and includes
+  a populated mirror; the banner/shard overlap is fixed. Sung
+  references exposed consonant-dropout resets. Experimental tone carriers are
+  excluded from delivery; the lyrical Encore will require real voiced evidence
+  at every anchor while permitting a bounded consonant gap. First-gesture audio
+  unlock, delayed-fetch cancellation and stale replay ownership are also under
+  regression review. The provisional voice-bank count is not a delivery receipt.
 - The required combined pre-push preparation/typecheck has not run for this new
   five-pass batch yet. Earlier gate receipts belong to the starting `3eb1ccf5`
   mobile-flow batch and must not be mistaken for final validation of these edits.

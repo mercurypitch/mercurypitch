@@ -406,7 +406,8 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             adventure.notice() &&
             !active() &&
             !adventure.tutorial() &&
-            !adventure.paused()
+            !adventure.paused() &&
+            adventure.snapshot().phase !== 'shattering'
           }
         >
           <p class={styles.notice} role="status" data-testid="glass-notice">

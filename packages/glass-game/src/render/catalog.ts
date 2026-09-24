@@ -21,7 +21,9 @@ export interface BreakableRenderRecipe {
   thickness: number
   portraitTexture?: string
   portraitMaterial?: string
-  /** Separate art plane that remains after only the protective glazing breaks. */
+  /** Whether the image remains protected or travels on the authored shards. */
+  portraitFracture?: 'protective-glazing' | 'picture-bearing'
+  /** Separate art plane used before fracture and for the collected reward. */
   persistentPortrait?: {
     width: number
     height: number
@@ -53,6 +55,7 @@ function collectedPortrait(portraitTexture: string): BreakableRenderRecipe {
     fallbackShape: 'slab',
     portraitTexture,
     portraitMaterial: 'legend_portrait',
+    portraitFracture: 'picture-bearing',
     persistentPortrait: { width: 0.58, height: 0.78, centerY: 0.42, z: 0.032 },
     faceAnchor: true,
     fragmentBudget: 18,
@@ -176,6 +179,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     fallbackShape: 'slab',
     portraitTexture: 'painting-archive-v5',
     portraitMaterial: 'legend_portrait',
+    portraitFracture: 'protective-glazing',
     persistentPortrait: {
       width: 0.58,
       height: 0.78,
