@@ -1,0 +1,47 @@
+{
+  "variant": "rebaked",
+  "source": "baked/camellia-crescent-rebaked.glb",
+  "widthMetres": 1,
+  "originalBounds": [
+    [
+      -0.4999721646308899,
+      -0.25021031498908997,
+      -0.0003748387098312378
+    ],
+    [
+      0.49980443716049194,
+      0.25054678320884705,
+      0.3952164053916931
+    ]
+  ],
+  "meshes": 1,
+  "triangles": 117800,
+  "vertices": 107913,
+  "textureImages": [
+    {
+      "name": "camellia-base-2k",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "sRGB"
+    },
+    {
+      "name": "camellia-normal-2k",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color"
+    },
+    {
+      "name": "camellia-orm-2k",
+      "size": [
+        2048,
+        2048
+      ],
+      "colorSpace": "Non-Color"
+    }
+  ],
+  "blender": "5.2.2 LTS"
+}

@@ -1,0 +1,47 @@
+{
+  "variant": "quad60k",
+  "source": "sources/camellia-crescent-quad60k.glb",
+  "widthMetres": 1,
+  "originalBounds": [
+    [
+      -0.9516560435295105,
+      -0.48317310214042664,
+      -0.3771209716796875
+    ],
+    [
+      0.950001060962677,
+      0.4693080484867096,
+      0.375326007604599
+    ]
+  ],
+  "meshes": 1,
+  "triangles": 117800,
+  "vertices": 105455,
+  "textureImages": [
+    {
+      "name": "normal",
+      "size": [
+        4096,
+        4096
+      ],
+      "colorSpace": "Non-Color"
+    },
+    {
+      "name": "texture_0",
+      "size": [
+        4096,
+        4096
+      ],
+      "colorSpace": "sRGB"
+    },
+    {
+      "name": "texture_0_metallic_roughness",
+      "size": [
+        4096,
+        4096
+      ],
+      "colorSpace": "Non-Color"
+    }
+  ],
+  "blender": "5.2.2 LTS"
+}

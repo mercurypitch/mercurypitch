@@ -1,9 +1,13 @@
 // Journey vegetation — bounded instanced cypresses, flowers and hanging cliff ivy.
 
-import type { BufferGeometry, Material, Mesh } from 'three'
+import type { BufferGeometry, Material } from 'three'
 import { ConeGeometry, CylinderGeometry, Group, IcosahedronGeometry, InstancedMesh, Matrix4, Quaternion, SphereGeometry, Vector3, } from 'three'
-import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyLandmass, MuseumJourneySpillway, } from '../content/museum-journey'
+import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
+import { AUTHORED_CYPRESS_BASE_RADIUS, addInstancedDonor, clearsJourneyLandmarks, clearsVegetationFootprints, createAuthoredFlowerPlacement, rimPoint, sourceFloraPoint, } from './vegetation-placement'
+import type { VegetationFootprint } from './vegetation-placement'
+
+export { journeyBridgeDistanceXZ } from './vegetation-placement'
 
 export interface JourneyVegetationMaterials {
   foliage: Material
@@ -18,144 +22,6 @@ function own<T extends BufferGeometry>(
 ): T {
   owned.add(geometry)
   return geometry
-}
-
-function rimPoint(
-  island: MuseumJourneyLandmass,
-  angle: number,
-  inset = 1,
-): Vector3 {
-  const radiusX = island.terraceScale[0] * 1.38 * inset
-  const radiusZ = island.terraceScale[2] * 1.38 * inset
-  return new Vector3(
-    island.position[0] + Math.cos(angle + island.yaw) * radiusX,
-    island.position[1] + 0.05,
-    island.position[2] + Math.sin(angle + island.yaw) * radiusZ,
-  )
-}
-
-function distanceToSegment(
-  px: number,
-  pz: number,
-  ax: number,
-  az: number,
-  bx: number,
-  bz: number,
-): number {
-  const dx = bx - ax
-  const dz = bz - az
-  const lengthSquared = dx * dx + dz * dz
-  const t =
-    lengthSquared <= Number.EPSILON
-      ? 0
-      : Math.max(
-          0,
-          Math.min(1, ((px - ax) * dx + (pz - az) * dz) / lengthSquared),
-        )
-  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t))
-}
-
-/** Horizontal clearance from a point to the same bowed path used by the deck. */
-export function journeyBridgeDistanceXZ(
-  bridge: MuseumJourneyBridge,
-  point: Pick<Vector3, 'x' | 'z'>,
-): number {
-  const dx = bridge.to[0] - bridge.from[0]
-  const dz = bridge.to[2] - bridge.from[2]
-  const length = Math.max(0.001, Math.hypot(dx, dz))
-  const midpointX =
-    (bridge.from[0] + bridge.to[0]) / 2 + (-dz / length) * bridge.curve
-  const midpointZ =
-    (bridge.from[2] + bridge.to[2]) / 2 + (dx / length) * bridge.curve
-  let previousX = bridge.from[0]
-  let previousZ = bridge.from[2]
-  let distance = Number.POSITIVE_INFINITY
-  for (let step = 1; step <= 32; step++) {
-    const t = step / 32
-    const inverse = 1 - t
-    const x =
-      inverse * inverse * bridge.from[0] +
-      2 * inverse * t * midpointX +
-      t * t * bridge.to[0]
-    const z =
-      inverse * inverse * bridge.from[2] +
-      2 * inverse * t * midpointZ +
-      t * t * bridge.to[2]
-    distance = Math.min(
-      distance,
-      distanceToSegment(point.x, point.z, previousX, previousZ, x, z),
-    )
-    previousX = x
-    previousZ = z
-  }
-  return distance
-}
-
-function clearsJourneyLandmarks(
-  definition: MuseumJourneyDefinition,
-  point: Vector3,
-  footprintRadius = 0,
-): boolean {
-  for (const stage of definition.stages) {
-    if (
-      Math.hypot(point.x - stage.position[0], point.z - stage.position[2]) <
-      0.8 + footprintRadius
-    )
-      return false
-    if (
-      stage.portrait !== undefined &&
-      Math.hypot(
-        point.x - stage.portrait.position[0],
-        point.z - stage.portrait.position[2],
-      ) <
-        0.65 + footprintRadius
-    )
-      return false
-  }
-  for (const spillway of definition.spillways) {
-    const source = spillway.source
-    if (source === undefined) continue
-    const dx = point.x - source.position[0]
-    const dz = point.z - source.position[2]
-    const sine = Math.sin(spillway.yaw)
-    const cosine = Math.cos(spillway.yaw)
-    const localX = cosine * dx - sine * dz
-    const localZ = sine * dx + cosine * dz
-    const clearanceX = source.width * 0.5 + 0.055 + footprintRadius
-    const clearanceZ = source.length * 0.5 + 0.055 + footprintRadius
-    if (
-      (localX * localX) / (clearanceX * clearanceX) +
-        (localZ * localZ) / (clearanceZ * clearanceZ) <
-      1
-    )
-      return false
-  }
-  for (const bridge of definition.bridges)
-    if (
-      journeyBridgeDistanceXZ(bridge, point) <
-      bridge.width * 0.5 + 0.08 + footprintRadius
-    )
-      return false
-  return true
-}
-
-function sourceFloraPoint(
-  spillway: MuseumJourneySpillway,
-  across: number,
-  downstream: number,
-): Vector3 {
-  const source = spillway.source
-  if (source === undefined)
-    throw new Error(`Journey spillway ${spillway.id} has no source pond.`)
-  const localX = across * (source.width * 0.5 + 0.09)
-  const localZ = downstream * (source.length * 0.5 + 0.08)
-  const sine = Math.sin(spillway.yaw)
-  const cosine = Math.cos(spillway.yaw)
-  return new Vector3(
-    source.position[0] + cosine * localX + sine * localZ,
-    source.position[1] + 0.035,
-    source.position[2] - sine * localX + cosine * localZ,
-  )
 }
 
 export function createJourneyVegetation(
@@ -223,8 +89,11 @@ export function createJourneyVegetation(
   let ivyIndex = 0
   let darkIvyIndex = 0
   const cypressTransforms: Matrix4[] = []
+  const cypressFootprints: VegetationFootprint[] = []
   const authoredSourceFlowerTransforms: Matrix4[] = []
   const authoredRimFlowerTransforms: Matrix4[] = []
+  const authoredFlowerFootprints: VegetationFootprint[] = []
+  const planterTransforms: Matrix4[] = []
 
   for (
     let islandIndex = 0;
@@ -244,6 +113,10 @@ export function createJourneyVegetation(
           new Vector3(height * 0.82, height * 0.82, height * 0.82),
         ),
       )
+      cypressFootprints.push({
+        position: point.clone(),
+        radius: AUTHORED_CYPRESS_BASE_RADIUS * height * 0.82,
+      })
       matrix.compose(
         point.clone().add(new Vector3(0, height * 0.5, 0)),
         rotation,
@@ -315,56 +188,11 @@ export function createJourneyVegetation(
       pocket++
     }
 
-    const islandStageIds = new Set(
-      definition.stages
-        .filter((stage) => stage.islandId === island.id)
-        .map((stage) => stage.id),
-    )
-    const islandSources = definition.spillways.filter(
-      (spillway) =>
-        spillway.source !== undefined && islandStageIds.has(spillway.stageId),
-    )
-    let authoredFlowerCount = 0
-    for (const spillway of islandSources) {
-      if (authoredFlowerCount === 2) break
-      for (const [across, downstream] of [
-        [-1.55, -0.75],
-        [1.55, -0.75],
-        [0, -2],
-      ] as const) {
-        const point = sourceFloraPoint(spillway, across, downstream)
-        if (!clearsJourneyLandmarks(definition, point, 0.4)) continue
-        authoredSourceFlowerTransforms.push(
-          new Matrix4().compose(
-            point,
-            new Quaternion().setFromAxisAngle(
-              new Vector3(0, 1, 0),
-              spillway.yaw + across * 0.22,
-            ),
-            new Vector3(0.82, 0.82, 0.82),
-          ),
-        )
-        authoredFlowerCount++
-        break
-      }
-    }
-    for (let candidate = 0; candidate < 10; candidate++) {
-      if (authoredFlowerCount === 2) break
-      const angle = ((candidate + 0.55) / 10) * Math.PI * 2 + islandIndex * 0.53
-      const point = rimPoint(island, angle, candidate % 2 === 0 ? 0.7 : 0.76)
-      if (!clearsJourneyLandmarks(definition, point, 0.46)) continue
-      authoredRimFlowerTransforms.push(
-        new Matrix4().compose(
-          point,
-          new Quaternion().setFromAxisAngle(
-            new Vector3(0, 1, 0),
-            -angle + Math.PI / 2,
-          ),
-          new Vector3(0.95, 0.95, 0.95),
-        ),
-      )
-      authoredFlowerCount++
-    }
+    const authoredPlacement = createAuthoredFlowerPlacement(definition, island)
+    authoredSourceFlowerTransforms.push(...authoredPlacement.sourceTransforms)
+    authoredRimFlowerTransforms.push(...authoredPlacement.rimTransforms)
+    authoredFlowerFootprints.push(...authoredPlacement.footprints)
+    const islandSources = authoredPlacement.sources
 
     for (const spillway of islandSources) {
       for (const [pointIndex, [across, downstream]] of [
@@ -433,11 +261,16 @@ export function createJourneyVegetation(
       const angle = Math.PI * (0.16 + index * 0.34) + island.yaw
       const point = rimPoint(island, angle, 0.72)
       if (!clearsJourneyLandmarks(definition, point, 0.2)) continue
-      const planter = authoredUnit('map_planter')
-      planter.position.copy(point)
-      planter.rotation.y = -angle + Math.PI / 2
-      planter.scale.setScalar(0.42 + (index % 2) * 0.05)
-      root.add(planter)
+      planterTransforms.push(
+        new Matrix4().compose(
+          point,
+          new Quaternion().setFromAxisAngle(
+            new Vector3(0, 1, 0),
+            -angle + Math.PI / 2,
+          ),
+          new Vector3(1, 1, 1).multiplyScalar(0.42 + (index % 2) * 0.05),
+        ),
+      )
     }
   }
 
@@ -455,28 +288,26 @@ export function createJourneyVegetation(
   darkIvy.count = darkIvyIndex
   if (sculpturalUnit === undefined) root.add(trunks, crowns)
   else {
+    const clearedCypressTransforms = cypressTransforms.filter(
+      (_transform, index) => {
+        const footprint = cypressFootprints[index]
+        return (
+          footprint !== undefined &&
+          clearsVegetationFootprints(
+            footprint.position,
+            footprint.radius,
+            authoredFlowerFootprints,
+          )
+        )
+      },
+    )
     const cypress = sculpturalUnit('map_cypress')
-    cypress.updateMatrixWorld(true)
-    let meshIndex = 0
-    cypress.traverse((object) => {
-      const mesh = object as Mesh
-      if (!mesh.isMesh) return
-      const instances = new InstancedMesh(
-        mesh.geometry,
-        mesh.material,
-        cypressTransforms.length,
-      )
-      instances.name = `instanced-authored-cypresses-${meshIndex++}`
-      instances.castShadow = true
-      instances.receiveShadow = true
-      const instanceMatrix = new Matrix4()
-      cypressTransforms.forEach((transform, index) => {
-        instanceMatrix.multiplyMatrices(transform, mesh.matrixWorld)
-        instances.setMatrixAt(index, instanceMatrix)
-      })
-      instances.instanceMatrix.needsUpdate = true
-      root.add(instances)
-    })
+    addInstancedDonor(
+      root,
+      cypress,
+      clearedCypressTransforms,
+      'instanced-authored-cypresses',
+    )
   }
 
   const authoredFlowerTransforms = [
@@ -485,30 +316,22 @@ export function createJourneyVegetation(
   ]
   const flowerCluster = sculpturalUnit?.('map_flower_cluster')
   if (flowerCluster !== undefined && authoredFlowerTransforms.length > 0) {
-    flowerCluster.updateMatrixWorld(true)
-    let meshIndex = 0
-    flowerCluster.traverse((object) => {
-      const mesh = object as Mesh
-      if (!mesh.isMesh) return
-      const instances = new InstancedMesh(
-        mesh.geometry,
-        mesh.material,
-        authoredFlowerTransforms.length,
-      )
-      instances.name = `instanced-authored-flower-clusters-${meshIndex++}`
-      instances.userData.sourceFlowerCount =
-        authoredSourceFlowerTransforms.length
-      instances.castShadow = true
-      instances.receiveShadow = true
-      const instanceMatrix = new Matrix4()
-      authoredFlowerTransforms.forEach((transform, index) => {
-        instanceMatrix.multiplyMatrices(transform, mesh.matrixWorld)
-        instances.setMatrixAt(index, instanceMatrix)
-      })
-      instances.instanceMatrix.needsUpdate = true
-      root.add(instances)
-    })
+    addInstancedDonor(
+      root,
+      flowerCluster,
+      authoredFlowerTransforms,
+      'instanced-authored-flower-clusters',
+      { sourceFlowerCount: authoredSourceFlowerTransforms.length },
+    )
   }
-  root.add(flowers, bedLeaves, ivy, darkIvy)
+  if (planterTransforms.length > 0)
+    addInstancedDonor(
+      root,
+      authoredUnit('map_planter'),
+      planterTransforms,
+      'instanced-authored-planters',
+    )
+  if (sculpturalUnit === undefined) root.add(flowers, bedLeaves)
+  root.add(ivy, darkIvy)
   return root
 }

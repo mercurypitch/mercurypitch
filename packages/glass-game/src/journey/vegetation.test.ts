@@ -47,14 +47,61 @@ function expectClearOfPaths(point: Vector3, radius = 0): void {
     )
 }
 
+function expectClearOfArchitecture(point: Vector3, radius: number): void {
+  for (const stage of FLOATING_MUSEUM_JOURNEY.stages) {
+    const [halfWidth, halfDepth] =
+      stage.kind === 'twins'
+        ? [1.62, 1.08]
+        : stage.kind === 'conservatory'
+          ? [1.2, 1.55]
+          : stage.kind === 'pavilion'
+            ? [1.15, 1.1]
+            : [1.05, 1.05]
+    const dx = point.x - stage.architecturePosition[0]
+    const dz = point.z - stage.architecturePosition[2]
+    const sine = Math.sin(stage.yaw)
+    const cosine = Math.cos(stage.yaw)
+    const localX = cosine * dx + sine * dz
+    const localZ = -sine * dx + cosine * dz
+    const clearanceX = halfWidth * stage.scale + radius
+    const clearanceZ = halfDepth * stage.scale + radius
+    expect(
+      (localX * localX) / (clearanceX * clearanceX) +
+        (localZ * localZ) / (clearanceZ * clearanceZ),
+    ).toBeGreaterThanOrEqual(1)
+  }
+}
+
+function expectSupportedByTerrace(point: Vector3, radius: number): void {
+  const supported = FLOATING_MUSEUM_JOURNEY.landmasses.some((island) => {
+    const dx = point.x - island.position[0]
+    const dz = point.z - island.position[2]
+    const sine = Math.sin(island.yaw)
+    const cosine = Math.cos(island.yaw)
+    const localX = cosine * dx + sine * dz
+    const localZ = -sine * dx + cosine * dz
+    const radiusX = island.terraceScale[0] * 1.644 - radius
+    const radiusZ = island.terraceScale[2] * 1.233 - radius
+    return (
+      (localX * localX) / (radiusX * radiusX) +
+        (localZ * localZ) / (radiusZ * radiusZ) <=
+      1
+    )
+  })
+  expect(supported).toBe(true)
+}
+
 describe('journey vegetation', () => {
-  it('bounds shared flower donors and clears every marker and portrait', () => {
+  it('instances authored gardens, bounds six flower donors and clears trees and landmarks', () => {
     const material = new MeshBasicMaterial()
-    const donorGeometry = new BoxGeometry(1, 1, 1)
+    const cypressGeometry = new BoxGeometry(0.48, 1, 0.48)
+    const flowerGeometry = new BoxGeometry(0.96, 1, 0.96)
+    const planterGeometry = new BoxGeometry(1, 1, 1)
     const ownedGeometries = new Set<BufferGeometry>()
     const authoredUnit = (name: string): Object3D => {
       const unit = new Group()
       unit.name = name
+      if (name === 'map_planter') unit.add(new Mesh(planterGeometry, material))
       return unit
     }
     const sculpturalUnit = (name: string): Object3D => {
@@ -62,7 +109,12 @@ describe('journey vegetation', () => {
         throw new Error(`Missing ${name}`)
       const unit = new Group()
       unit.name = name
-      unit.add(new Mesh(donorGeometry, material))
+      unit.add(
+        new Mesh(
+          name === 'map_cypress' ? cypressGeometry : flowerGeometry,
+          material,
+        ),
+      )
       return unit
     }
     const root = createJourneyVegetation(
@@ -81,42 +133,56 @@ describe('journey vegetation', () => {
     try {
       const matrix = new Matrix4()
       const point = new Vector3()
+      const cypressFootprints: Array<{ point: Vector3; radius: number }> = []
+      const flowerFootprints: Array<{ point: Vector3; radius: number }> = []
       root.traverse((object) => {
         if (!(object instanceof InstancedMesh)) return
         for (let index = 0; index < object.count; index++) {
           object.getMatrixAt(index, matrix)
           point.setFromMatrixPosition(matrix)
+          const scale = new Vector3().setFromMatrixScale(matrix)
           const footprint = object.name.startsWith(
             'instanced-authored-cypresses-',
           )
-            ? 0.2
+            ? Math.max(scale.x, scale.z) * 0.24
             : object.name.startsWith('instanced-authored-flower-clusters-')
-              ? Math.max(
-                  ...new Vector3().setFromMatrixScale(matrix).toArray(),
-                ) * 0.48
-              : 0
+              ? Math.max(scale.x, scale.z) * 0.48
+              : object.name.startsWith('instanced-authored-planters-')
+                ? Math.max(scale.x, scale.z) * 0.5
+                : 0
           expectClearOfLandmarks(point, footprint)
           expectClearOfSourcePonds(point, footprint)
           expectClearOfPaths(point, footprint)
+          if (object.name.startsWith('instanced-authored-flower-clusters-'))
+            expectClearOfArchitecture(point, footprint)
+          if (object.name.startsWith('instanced-authored-flower-clusters-'))
+            expectSupportedByTerrace(point, footprint)
+          if (object.name.startsWith('instanced-authored-cypresses-'))
+            cypressFootprints.push({ point: point.clone(), radius: footprint })
+          if (object.name.startsWith('instanced-authored-flower-clusters-'))
+            flowerFootprints.push({ point: point.clone(), radius: footprint })
         }
       })
-      for (const planter of root.children.filter(
-        (child) => child.name === 'map_planter',
-      )) {
-        expectClearOfLandmarks(planter.position, 0.2)
-        expectClearOfSourcePonds(planter.position, 0.2)
-        expectClearOfPaths(planter.position, 0.2)
-      }
+      for (const flower of flowerFootprints)
+        for (const cypress of cypressFootprints)
+          expect(
+            Math.hypot(
+              flower.point.x - cypress.point.x,
+              flower.point.z - cypress.point.z,
+            ),
+          ).toBeGreaterThanOrEqual(flower.radius + cypress.radius + 0.08)
 
       const flowerDonor = root.getObjectByName(
         'instanced-authored-flower-clusters-0',
       ) as InstancedMesh
-      expect(flowerDonor.count).toBeGreaterThan(0)
-      expect(flowerDonor.count).toBeLessThanOrEqual(
+      expect(flowerDonor.count).toBe(
         FLOATING_MUSEUM_JOURNEY.landmasses.length * 2,
       )
       const sourceFlowerCount = Number(flowerDonor.userData.sourceFlowerCount)
-      expect(sourceFlowerCount).toBe(FLOATING_MUSEUM_JOURNEY.spillways.length)
+      expect(sourceFlowerCount).toBeGreaterThan(0)
+      expect(sourceFlowerCount).toBeLessThanOrEqual(
+        FLOATING_MUSEUM_JOURNEY.spillways.length,
+      )
       const sourceCenters = FLOATING_MUSEUM_JOURNEY.spillways.flatMap(
         (spillway) =>
           spillway.source === undefined
@@ -139,9 +205,68 @@ describe('journey vegetation', () => {
           ),
         ).toBeLessThan(1.5)
       }
+      const planterDonor = root.getObjectByName(
+        'instanced-authored-planters-0',
+      ) as InstancedMesh
+      expect(planterDonor.count).toBeGreaterThan(0)
+      expect(root.getObjectByName('map_planter')).toBeUndefined()
+      expect(
+        root.getObjectByName('instanced-museum-rim-blossoms'),
+      ).toBeUndefined()
+      expect(
+        root.getObjectByName('instanced-museum-flower-bed-leaves'),
+      ).toBeUndefined()
     } finally {
       for (const geometry of ownedGeometries) geometry.dispose()
-      donorGeometry.dispose()
+      cypressGeometry.dispose()
+      flowerGeometry.dispose()
+      planterGeometry.dispose()
+      material.dispose()
+    }
+  })
+
+  it('retains procedural trees and flower beds when authored botanicals are unavailable', () => {
+    const material = new MeshBasicMaterial()
+    const planterGeometry = new BoxGeometry(1, 1, 1)
+    const ownedGeometries = new Set<BufferGeometry>()
+    const authoredUnit = (name: string): Object3D => {
+      const unit = new Group()
+      unit.name = name
+      if (name === 'map_planter') unit.add(new Mesh(planterGeometry, material))
+      return unit
+    }
+    const root = createJourneyVegetation(
+      FLOATING_MUSEUM_JOURNEY,
+      authoredUnit,
+      undefined,
+      {
+        foliage: material,
+        darkFoliage: material,
+        trunk: material,
+        blossom: material,
+      },
+      ownedGeometries,
+    )
+
+    try {
+      expect(
+        root.getObjectByName('instanced-museum-cypress-trunks'),
+      ).toBeDefined()
+      expect(
+        root.getObjectByName('instanced-museum-cypress-crowns'),
+      ).toBeDefined()
+      expect(
+        root.getObjectByName('instanced-museum-rim-blossoms'),
+      ).toBeDefined()
+      expect(
+        root.getObjectByName('instanced-museum-flower-bed-leaves'),
+      ).toBeDefined()
+      expect(
+        root.getObjectByName('instanced-authored-flower-clusters-0'),
+      ).toBeUndefined()
+    } finally {
+      for (const geometry of ownedGeometries) geometry.dispose()
+      planterGeometry.dispose()
       material.dispose()
     }
   })

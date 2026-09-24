@@ -1,0 +1,234 @@
+{
+  "url": "http://127.0.0.1:5908/glass-game/?campaign=1",
+  "viewport": {
+    "width": 1600,
+    "height": 1000
+  },
+  "deviceScope": "Desktop browser on local hardware",
+  "renderer": "ANGLE (AMD, Vulkan 1.4.359 (AMD Radeon RX 9070 XT (RADV GFX1201) (0x00007550)), radv)",
+  "rasterization": "actual WebGL drawing; no suppressed calls",
+  "purpose": "Side views supplement the matched desktop and tablet proofs; clearance assertions remain in vegetation.test.ts.",
+  "screenshots": [
+    {
+      "file": "glassworks-isle-left.png",
+      "stage": "glassworks-isle",
+      "side": "left",
+      "camera": {
+        "yaw": "1.140",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "9bc763e2025cef715308f964dd6cd9fb71f3cac4e89ed95cc901bc8f191b01c5",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "glassworks-isle-right.png",
+      "stage": "glassworks-isle",
+      "side": "right",
+      "camera": {
+        "yaw": "-1.420",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "f9836df4f3541db907d31b27d4374622a4b42062b46dda52d3ce2c1fb7204ca7",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "glassworks-isle-top.png",
+      "stage": "glassworks-isle",
+      "side": "top",
+      "camera": {
+        "yaw": "-0.140",
+        "pitch": "0.900",
+        "zoom": "1.000"
+      },
+      "sha256": "634bd353b799700af886545fc37c1f6fb638d9ef153dac0d0d255d5b1a6cfa20",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "twin-galleries-isle-left.png",
+      "stage": "twin-galleries-isle",
+      "side": "left",
+      "camera": {
+        "yaw": "1.140",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "7e96cf56f53f4e1cddc5ce9afe3fc59a7df9c936548321546ef9cd57e2878d71",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "twin-galleries-isle-right.png",
+      "stage": "twin-galleries-isle",
+      "side": "right",
+      "camera": {
+        "yaw": "-1.420",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "19003b858898a80ca5ec0235395a4651c4b946b6e78da4edd59849a12032ea67",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "twin-galleries-isle-top.png",
+      "stage": "twin-galleries-isle",
+      "side": "top",
+      "camera": {
+        "yaw": "-0.140",
+        "pitch": "0.900",
+        "zoom": "1.000"
+      },
+      "sha256": "163ad8c1beae9582511295eecc59ff53eebe229de70135b689ed9df5fcc4a736",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "twin-galleries-isle-top-left.png",
+      "stage": "twin-galleries-isle",
+      "side": "top-left",
+      "camera": {
+        "yaw": "0.900",
+        "pitch": "0.900",
+        "zoom": "1.000"
+      },
+      "sha256": "b34c08a35db10e1dc212aee2fae3709feaac510559876f4be72dbe7ced411738",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "twin-galleries-isle-top-right.png",
+      "stage": "twin-galleries-isle",
+      "side": "top-right",
+      "camera": {
+        "yaw": "-1.180",
+        "pitch": "0.900",
+        "zoom": "1.000"
+      },
+      "sha256": "7d66204b6151719fd46510d727309a3ec7070fb0a3a7efb34529fa7565d8e77d",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "resonance-conservatory-isle-left.png",
+      "stage": "resonance-conservatory-isle",
+      "side": "left",
+      "camera": {
+        "yaw": "1.140",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "a2848b440b3a541bd143c1e814eded1dc1687a425762079165739c5b5f73cf5a",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "resonance-conservatory-isle-right.png",
+      "stage": "resonance-conservatory-isle",
+      "side": "right",
+      "camera": {
+        "yaw": "-1.420",
+        "pitch": "0.450",
+        "zoom": "1.000"
+      },
+      "sha256": "b5447c644606807be393f907c5270dadb6c09cecd49338e95fc499faee5e2a73",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    },
+    {
+      "file": "resonance-conservatory-isle-top.png",
+      "stage": "resonance-conservatory-isle",
+      "side": "top",
+      "camera": {
+        "yaw": "-0.140",
+        "pitch": "0.900",
+        "zoom": "1.000"
+      },
+      "sha256": "edebb26ad6cf8009394e6fa93caf70f56eb07e1dca2f4531e88a8d6ebca9a063",
+      "rendererMetrics": {
+        "drawCalls": 255,
+        "triangles": 4417240,
+        "geometries": 48,
+        "textures": 46,
+        "waterTriangles": 2136,
+        "waterDrawCalls": 5,
+        "secondaryRenderPasses": 1
+      }
+    }
+  ],
+  "errors": []
+}

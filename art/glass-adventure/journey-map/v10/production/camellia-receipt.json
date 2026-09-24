@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "provider": "Meshy image-to-3d",
+  "status": "downloaded",
+  "source": {
+    "file": "guides/camellia-crescent-planter.png",
+    "bytes": 1634847,
+    "sha256": "fa4bbfca9ca689aa4bdd6db93a5771b75fa7d3719b11aeb54352bf8f32e2d95b"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "4k",
+    "enable_pbr": true,
+    "image_enhancement": true,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true,
+    "texture_prompt": "Ivory camellia flowers with distinct rounded layered petals and warm pale gold centers, clean deep jade broad leaves, small soft celadon leaves, low crescent shaped polished ivory marble planter with a restrained aged gold rim. Botanical sculptural museum ornament. Preserve the isolated complete solid planter, distinct petals and leaves, without scene, ground, shadows baked into color, writing or extra structures."
+  },
+  "authorization": "Owner authorized prepared guide uploads and Meshy production for current museum polish.",
+  "beforeBalance": {
+    "balance": 3725
+  },
+  "submittedAt": 1790207401.2560306,
+  "taskId": "01a0d0ad-1f73-77fe-bef9-539183653513",
+  "providerStatus": {
+    "id": "01a0d0ad-1f73-77fe-bef9-539183653513",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790207405152,
+    "finished_at": 1790207693212,
+    "consumed_credits": 35
+  },
+  "donor": {
+    "file": "sources/camellia-crescent-dense.glb",
+    "bytes": 83321304,
+    "sha256": "6487c4bd8876175f02a9b13aece51023de59f3b049e23f1868078529e4e10d8f"
+  },
+  "afterBalance": {
+    "balance": 3690
+  }
+}

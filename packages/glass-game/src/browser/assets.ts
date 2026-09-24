@@ -63,7 +63,7 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'floating-museum-mystery-portrait-v5': 'journey-map-v5/mystery-muse.webp',
   'floating-museum-cloudscape-v3': 'journey-map-v3/cloudscape.webp',
   'floating-museum-twin-finish-kit-v4':
-    'journey-map-v9/floating-museum-twin-finish-kit-v9.glb',
+    'journey-map-v10/floating-museum-botanical-kit-v10.glb',
   'floating-museum-architecture-kit-v6':
     'journey-map-v8/floating-museum-architecture-kit-v8.glb',
   'floating-museum-map-kit-v1': 'journey-map-v1/floating-museum-map-kit-v1.glb',
@@ -105,7 +105,7 @@ const MANIFEST_FILES = [
   'adventure-v7/manifest.json',
   'journey-map-v1/manifest.json',
   'journey-map-v3/manifest.json',
-  'journey-map-v9/manifest.json',
+  'journey-map-v10/manifest.json',
   'journey-map-v8/manifest.json',
   'cloudway-v3/manifest.json',
   'adventure-voice-v1/manifest.json',

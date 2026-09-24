@@ -58,7 +58,7 @@ test('phone, tablet and desktop map load only lobby models before gallery entry 
     [
       '/games/glass3d/merc.glb',
       '/games/journey-map-v1/floating-museum-map-kit-v1.glb',
-      '/games/journey-map-v9/floating-museum-twin-finish-kit-v9.glb',
+      '/games/journey-map-v10/floating-museum-botanical-kit-v10.glb',
       '/games/journey-map-v8/floating-museum-architecture-kit-v8.glb',
     ].sort(),
   )
