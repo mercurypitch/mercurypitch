@@ -704,6 +704,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   }
 
   const onCapsule = (): void => {
+    // Not until the room has arrived. Under an alley door the room is
+    // mounted beneath the growing clone, and a tap in that window started a
+    // take whose microphone only opened when the arrival was released.
+    if (!ctx().active) return
     haptics.tapLight()
     // Still inside the tap: iOS un-suspends a context, and promotes the page
     // to the audible session, only from a gesture. Before any await.
@@ -743,6 +747,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             setOptionsOpen(true)
           }}
           onToggleMic={() => {
+            // The chip is the capsule while resting: same rule, same reason.
+            if (!ctx().active) return
             dismissCoachMark()
             // Resting: the chip IS the capsule, gesture and all.
             if (micChipAction(ctx()) === 'start') {
@@ -817,6 +823,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
               type="button"
               class={styles.capsule}
               onClick={onCapsule}
+              aria-disabled={ctx().active ? undefined : 'true'}
               data-testid="sing-capsule"
             >
               {ctx().melodyLoaded ? 'Continue' : 'Sing a note'}

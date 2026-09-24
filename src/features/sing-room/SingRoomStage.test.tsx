@@ -20,6 +20,7 @@ import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
 import { holdRoomArrival, nativeRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import type { MelodyItem, NoteName } from '@/types'
+import { setSingCoachMarkSeen, singCoachMarkSeen } from './sing-room-settings'
 import { dispatchSingRoom, singRoomContext } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
 import { SingRoomStage } from './SingRoomStage'
@@ -371,6 +372,27 @@ describe('arriving through an alley door', () => {
     release()
     await Promise.resolve()
     expect(singRoomContext().active).toBe(true)
+  })
+
+  it('takes no tap that would start a take until it has arrived', async () => {
+    const release = holdRoomArrival()
+    mountRoom()
+    await Promise.resolve()
+    const capsule = screen.getByTestId('sing-capsule')
+    expect(capsule.getAttribute('aria-disabled')).toBe('true')
+
+    fireEvent.click(capsule)
+    setSingCoachMarkSeen(false)
+    fireEvent.click(screen.getByTestId('sing-state-chip'))
+    expect(singRoomContext().state).toBe('resting')
+    // The chip did nothing at all: not even the coach mark counts it as use.
+    expect(singCoachMarkSeen()).toBe(false)
+
+    release()
+    await Promise.resolve()
+    expect(capsule.getAttribute('aria-disabled')).toBeNull()
+    fireEvent.click(capsule)
+    expect(singRoomContext().state).not.toBe('resting')
   })
 
   it('arrives at once when nothing holds it', async () => {
