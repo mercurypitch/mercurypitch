@@ -41,9 +41,16 @@ The same encore is reachable later from its earned portrait in the collection.
   there as the diagnosis, not as an accepted result. This suite suppresses WebGL
   draw calls to isolate audio/UI; portrait world proofs are a separate real-Three run.
 
-## Remaining within stage 8
+## Accepted Merc examples
 
-Original sung Merc D2 examples are being produced and pitch-audited separately
-under `voice/v5-encores/`. The current teaching reference is a calibrated tone
-contour. Do not describe the unreviewed raw singing takes as accepted instruction.
-Human feel tuning and physical-device testing follow the complete 1–8 batch.
+Original sung Merc D2 examples now ship under `voice/v5-encores/`: “Let light
+sing” and “Two small lights come home.” The preserved selected character voice
+is aligned to the authored three/five-note contours with a reproducible WORLD
+resynthesis recipe. Independent pitch analysis and unprompted transcription
+verify the resulting phrases; the lossless masters and original takes remain
+archived. “Hear Merc” is explicit playback and never opens the microphone or
+starts recording. The separate note guide adapts to the learner's range.
+
+The actual-PCM browser flow passed again after integration, including Merc
+playback without capture. Human feel tuning and physical-device testing follow
+the complete 1–8 batch.

@@ -49,19 +49,20 @@ unfinished code paths or rejected visual assets presented as completed work.
 - Collection covers existing galleries; no empty ten-level album or fabricated
   future achievements. New worlds and map expansion wait at item 9.
 - Player recording is explicit opt-in, local by default, replayable and deletable.
-  Sharing is user-initiated from a preview; no automatic uploads.
+  A take can be downloaded from its preview for deliberate sharing; no automatic uploads.
 - The ending encore is optional and cosmetic. It never blocks a learned lesson,
   takes away a portrait or penalizes choosing to continue.
 
 ## 1. Current platform art
 
-- [ ] Finish V5 Frost/Glide fitting, glass/ice/gold materials and faithful runtime
+- [x] Finish V5 Frost/Glide fitting, glass/ice/gold materials and faithful runtime
       geometry; preserve packed projects and matched clay/PBR review.
-- [ ] Prove the marble arch/fascia repair, then extend the accepted method to the
-      platform without destructive contact flattening or whole-shell collapse.
-- [ ] Integrate accepted derivatives, compare 2K/4K at gameplay distance and
-      record delivered bytes, scene costs and exact loaded hashes.
-- [ ] Verify platform surfaces, movement, fractures and checkpoint parity.
+- [x] Review marble arch/fascia alternatives. Reject the distorted reconstruction;
+      preserve every dense source triangle with encoding/texture optimization.
+      Keep collision contact separate from the decorative relief.
+- [x] Integrate accepted derivatives, compare 1K/2K runtime views against the
+      preserved 4K-source review and record bytes, scene costs and loaded hashes.
+- [x] Verify platform surfaces, movement, fractures and checkpoint parity.
 
 ## 2. Camera and turn comfort
 
@@ -72,21 +73,21 @@ unfinished code paths or rejected visual assets presented as completed work.
 
 ## 3. Current trial route and scenery
 
-- [ ] Audition crescent, ribbon and staggered alternatives as current-trial
+- [x] Audition crescent, ribbon and staggered alternatives as current-trial
       layouts with explicit save isolation; select a polished default.
-- [ ] Dress start/rest/end islands with clean planting, landmarks and sightlines.
-- [ ] Keep accepted fog, safe voice stations and reachable landings; verify
+- [x] Dress start/rest/end islands with clean planting, landmarks and sightlines.
+- [x] Keep accepted fog, safe voice stations and reachable landings; verify
       input-driven traversal and checkpoint reload without any prior break.
 
 ## 4. Museum art and repeatable asset quality
 
-- [ ] Finish visible foliage, flower beds, bridge/cliff variation and landmark
+- [x] Finish visible foliage, flower beds, bridge/cliff variation and landmark
       dressing within current destinations; inspect waterfall origins/endings.
-- [ ] Deliver a valid hollow Celadon replacement and useful vessel/decor variants
+- [x] Deliver a valid hollow Celadon replacement and useful vessel/decor variants
       for existing rooms, with intact/fracture proofs and correct surface contact.
-- [ ] Inventory shipped asset families and audit hidden bevels, intersections,
+- [x] Inventory shipped asset families and audit hidden bevels, intersections,
       normals/tangents/UVs, instancing, collisions, fracture and measured cost.
-- [ ] Publish researched production checklist, lessons and reusable asset skill.
+- [x] Publish researched production checklist, lessons and reusable asset skill.
 
 ## 5. Configurable melody ribbon
 
@@ -122,7 +123,7 @@ unfinished code paths or rejected visual assets presented as completed work.
 - [x] Original short configurable finale phrases/reference production with
       musically accurate pitch; preserve the chosen Merc character voice.
 - [x] Opt-in local take capture, preview/replay/delete and user-initiated export
-      or sharing with robust permissions, cancellation and audio lifecycle.
+      for deliberate sharing with robust permissions, cancellation and audio lifecycle.
 - [x] Optional familiar Coda Echo with a themed light/Encore celebration and
       earned seal; existing exit remains usable without the encore.
 - [x] Verify recording never occurs without consent and failed/cancelled capture
@@ -130,75 +131,85 @@ unfinished code paths or rejected visual assets presented as completed work.
 
 ## Stop boundary and final acceptance
 
-- [ ] Independently review all integrated stages and fix findings.
-- [ ] Complete applicable targeted/browser checks and current-head PR CI.
-- [ ] Commit/push every accepted stage, update source manifests and mirror plans.
-- [ ] Provide a concise testing route, exact implemented scope and verified
-      preview restart command if a server was started.
-- [ ] Stop for owner testing BEFORE roadmap 9. Do not add future islands/levels,
-      enemies, broad mechanics or publication work to fill spare time.
+- [x] Independently review integrated stages and fix the findings.
+- [x] Complete the applicable focused tests, typechecks, browser and rendered checks.
+- [x] Preserve source manifests, production guards, asset audit and owner test route.
+- [x] Stop before roadmap 9; no future islands, levels, enemies or publication.
+
+Delivery uses draft [PR #807](https://github.com/mercurypitch/mercurypitch/pull/807).
+Its current-head checks are the authoritative final gate; prior green runs do not
+certify later commits. The exact delivered revision, final CI result, preview
+lifetime and restart command are recorded in the latest private `TASKS.md`
+checkpoint after push. The owner acceptance route is
+[OWNER-ACCEPTANCE-ITEMS-1-8-2026-09-24.md](OWNER-ACCEPTANCE-ITEMS-1-8-2026-09-24.md).
+Physical-device and human-singing acceptance remains the agreed stop boundary.
 
 ## Current checkpoint
 
-24 September checkpoint (committed and pushed through `333cf58f` to PR #807):
+24 September: roadmap 1–8 implementation and independent reviews are complete.
+Staged delivery commits through `5157b7c7` retain the art, runtime and acceptance
+proofs; the final audit/documentation commit includes the three waterfall source
+mouth corrections and refreshed actual-renderer panels. Mirror this file and the
+master/test route into dotfiles when recording delivery.
 
-- Stage 2 complete in `5050a9a5`; focused tests and real-input browser proofs
-  preserved. Hardware comfort acceptance remains with the owner.
-- Replay profiles, durable collection and three distinct reward portraits shipped
-  in `af3d9065`. Storage-disabled stale-visit protection and CI import sorting
-  fixed in `6d5ff512`. Independent review found no additional replay findings.
-  Real Three.js **intact** portrait proofs for all three galleries are preserved
-  in `proofs/portrait-prefabs-2026-09-24/`; short fracture proofs remain final QA.
-- Stage 5 and local stage-8 encore/recording implementation are in `115d7d18`.
-  64 focused tests passed, both package and BesideCue typechecks passed, and the
-  actual-PCM browser flow passed through consent, capture, save, reload, collection
-  playback/delete and restored focus. 320/768/1440 screenshots and failed/passing
-  traces are preserved. Hidden world rendering caused sampling stalls; pausing
-  covered rendering fixed it without changing singing tolerances. See
-  `ENCORE-IMPLEMENTATION-2026-09-24.md`. Original sung Merc examples now ship in
-  `333cf58f`: “Let light sing” and “Two small lights come home,” preserving the
-  selected D2 voice. Authored contour resynthesis, independent pitch analysis,
-  unprompted transcription, raw takes and lossless masters are preserved in
-  `voice/v5-encores/`. The real-PCM browser flow passed again including explicit
-  Merc playback without opening the microphone or recording. Owner listening
-  remains part of the final handoff; the separate note guide adapts to the learner.
-- CI at `6d5ff512` found a stale exact-text locator in the wave-instructions test.
-  The actual disclosure contained the new correct cycle-specific copy. Updated
-  the locator in `115d7d18`; its targeted Conservatory test passed (20.5 seconds).
-  CI at `115d7d18` found two formatting files and an oversized practice controller;
-  `333cf58f` fixes those through formatting and a meaningful coaching-copy module,
-  with the unchanged metrics baseline passing locally. The new gate then found
-  the asset test import must use the repository's one-line import formatter;
-  that narrow formatting correction accompanies this checkpoint.
-- Frost/Glide V6 masters, fitted landing bounds, 2K WebP/quantized delivery and
-  matched gameplay comparisons are accepted. All source triangles are retained;
-  combined delivery saves about 69% versus the 4K masters. V6 bundle integration
-  and runtime-loaded-hash/collision proofs are in progress with the camera agent.
-- Crescent/ribbon/terrace route auditions and input/checkpoint proofs are complete.
-  Root selected the crescent. It has a fresh explicitly versioned save identity;
-  historical trial progress/unlock evidence remains readable. Campaign integration
-  is being finished with V6 before the route stage is committed.
-- The semantic marble reconstruction was rejected on actual matched clay views:
-  its arches, corner joins and fascia were worse than the donor. V7 now preserves
-  the complete dense source geometry, with texture/encoding optimization only;
-  do not install rejected reconstructions. Final delivery review is pending.
-- Valid hollow Celadon is visually accepted, with 18 closed matching shards and
-  a packed source. Existing Twin Galleries placement and intact/fracture browser
-  proofs are finishing in `v6-level2/celadon-production-v4/`.
-- V10 Meshy 7.1 camellia planter source and lower-cost topology are preserved with
-  paid receipts (40 credits total). Source-to-remesh rebaking fixes visible leaf
-  texture transfer artifacts; final game packaging/instancing is in progress.
-- The reusable production skill and first static inventory are written. Actual
-  Khronos validation found seven old vessels with unused invalid tangents and one
-  older platform kit with invalid/missing UV references. Narrow attribute-only
-  repairs and fresh validation are in progress. Museum dressing and final audit
-  remain within the authorized batch. Do not mark complete or begin item 9.
+- Stage 1: accepted V6 Frost/Glide and source-preserved V7 Marble are installed
+  in the combined versioned runtime. Source archives are in `fddabf39`; runtime,
+  culling and current route are in `5157b7c7`. Exact public hash is
+  `0f7a2129e7cd23b4148605a46d12fe28361d9ba632bea5d81d92142922fffee9`.
+  Runtime 1K/2K comparisons preserve detail; the selected 1K marble maps save
+  48 MiB. The 2.04M-triangle kit costs an estimated 257.24 MiB geometry/maps
+  before driver overhead. Fully fogged instances stop submitting triangles;
+  current camera raycasts still see all live transforms before culling.
+  Thirty focused tests, typechecking, three routine V7 browser tests and three
+  campaign-entry/save-isolation tests pass. Actual raster proofs and submission
+  costs are in the V7 integration record; tablet performance needs owner testing.
+- Stage 2 complete in `5050a9a5`: smooth bounded camera/facing, persistent comfort
+  presets and sensitivity, with real input and responsive proofs.
+- Stage 3: crescent selected for the current campaign trial with a new versioned
+  save identity. Ribbon/terrace auditions and old straight-route saves remain
+  separate. Planted rests/landmark, fixed-timestep whole-route traversal, keyboard
+  checkpoints before any break and touch opening traversal are verified. The
+  standalone `?layout=cloudway-current` shortcut selects the same current save.
+- Stage 4: hollow Celadon and portrait proofs are in `f017afac`; actual Twin
+  intact/fracture views accept 18 closed shards and base contact. V10 camellias
+  and six supported, clearance-checked instances are in `7790a9c0`; eleven
+  unrelated V9 nodes retain exact geometry/image payloads. Actual map/orbit
+  images and source receipts are preserved. The final side-view audit caught
+  a visible pond-to-lip gap despite geometric overlap. A shared tapered source
+  mouth corrects it without an added draw or triangle; all three actual-renderer
+  panels and the authored-mouth regression verify the correction.
+- Seven old vessels and an older ramp have attribute-only repairs in `060cee9f`.
+  All 25 current mapped GLBs pass Khronos validation with zero errors and no
+  non-finite positions/normals. One inherited cliff normal-screen flag affects
+  0.33% of surface area; actual views show no whole-shell inversion, so no blanket
+  normal reset was applied. `bb4caa3c` adds conservative extension-aware tangent
+  handling, hash-guarded repairs and the reusable game-asset skill. Independent
+  V10/V7 build review fixes input pinning and verifies candidates before atomic
+  promotion. Already accepted GLBs remain byte-identical after rebuild.
+- Compatible repeated room planters batch per room in `c6a39a67`; actual matched
+  output changes six draws to one at the same 55,416 triangles. Transparent,
+  reflection and animated ownership boundaries remain explicit. Independent
+  review found no further batching findings.
+- Stages 6–7 are in `af3d9065`, with storage-disabled stale-visit protection in
+  `6d5ff512`: authored easy/two/three-star profiles, versioned attempts, finite
+  discoveries, collection and three distinct reward portraits. Old accuracy
+  records never become invented harder-tier clears. Replay review passed.
+- Stages 5 and 8 are in `115d7d18`; original sung Merc references are in
+  `333cf58f`. The selected D2 voice sings “Let light sing” and “Two small lights
+  come home.” Authored contours and all raw/lossless references are preserved.
+  Configurable live judging, optional Coda Echo/seal, explicit local recording,
+  save/reload/playback/delete and deliberate download/export are implemented.
+  Sixty-four focused tests, typechecks and actual PCM browser flows passed;
+  phone/tablet/desktop layout evidence is saved. “Hear Merc” never opens a mic.
+  Covered-world rendering is suspended while the opaque practice UI is active
+  to avoid pitch-sampling stalls. Owner listening/singing remains the next gate.
+- The previous remote `f017afac` CI passed browser, unit, typecheck and native
+  jobs; only one proof-README formatting check failed, corrected in `bb4caa3c`.
+  Inspect the final new PR head after push; older green jobs cannot certify it.
 
-Active ownership: root owns sung references, museum dressing/quality workflow and
-final review; camera agent owns V6/current-crescent runtime integration; platform
-agent owns semantic marble V7; melody agent owns Celadon production after its
-portrait/CI review handoff. Separate output directories and browser ports remain
-required. Owner preview has not been restarted for these checks.
+All bounded agent implementation and review handoffs are complete. No additional
+levels, enemies or release work is authorized. Root handles the final PR gate
+and owner handoff; a failed gate is fixed before declaring delivery complete.
 
 Original baseline follows:
 

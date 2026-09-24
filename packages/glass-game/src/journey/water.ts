@@ -54,6 +54,7 @@ const WIDTH_SEGMENTS = 14
 const FALL_SEGMENTS = 24
 const BASIN_SEGMENTS = 48
 const SOURCE_POOL_SEGMENTS = 40
+const SOURCE_POOL_MOUTH_EXTENSION = 0.9
 const MIST_PARTICLES_PER_SPILLWAY = 22
 const BUBBLE_PARTICLES_PER_SPILLWAY = 10
 const TERMINATION_PARTICLES_PER_SPILLWAY =
@@ -519,6 +520,25 @@ function createSheetGeometry(spillway: JourneyWaterSpillway): BufferGeometry {
   return geometry
 }
 
+function createSourcePoolGeometry(): BufferGeometry {
+  const geometry = new CircleGeometry(1, SOURCE_POOL_SEGMENTS)
+  geometry.name = 'journey-water-source-pool-shared'
+  const positions = geometry.getAttribute('position') as BufferAttribute
+  for (let index = 0; index < positions.count; index++) {
+    const x = positions.getX(index)
+    const y = positions.getY(index)
+    if (y >= 0) continue
+    const downstream = clamp(-y, 0, 1)
+    const centerWeight = Math.pow(clamp(1 - Math.abs(x), 0, 1), 3)
+    const mouthWeight = centerWeight * downstream * downstream
+    positions.setY(index, y - SOURCE_POOL_MOUTH_EXTENSION * mouthWeight)
+  }
+  positions.needsUpdate = true
+  geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
 function createWaterMaterial(uniforms: OwnedUniforms): ShaderMaterial {
   const material = new ShaderMaterial({
     name: 'journey-water-sheet-material',
@@ -752,8 +772,7 @@ export function createJourneyWater(
   )
   let sourcePools: InstancedMesh | undefined
   if (sourceSpillways.length > 0) {
-    const sourceGeometry = new CircleGeometry(1, SOURCE_POOL_SEGMENTS)
-    sourceGeometry.name = 'journey-water-source-pool-shared'
+    const sourceGeometry = createSourcePoolGeometry()
     ownedGeometries.add(sourceGeometry)
     const sourceMaterial = createSourceMaterial(uniforms)
     ownedMaterials.add(sourceMaterial)

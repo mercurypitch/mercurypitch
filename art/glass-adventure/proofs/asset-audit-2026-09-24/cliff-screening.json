@@ -1,0 +1,97 @@
+{
+  "scope": "Face/normal alignment in local exported coordinates. Does not certify outward orientation, manifold topology, animated contact or appearance. Curved smooth surfaces and intentional leaf sheets need visual review.",
+  "assets": [
+    {
+      "file": "apps/beside-cue/public/games/journey-map-v10/floating-museum-botanical-kit-v10.glb",
+      "primitives": [
+        {
+          "mesh": 0,
+          "name": "map_cliff_geometry_mesh_v4",
+          "primitive": 0,
+          "triangles": 7975,
+          "degenerateTriangles": 0,
+          "opposedFaceNormalTriangles": 134,
+          "opposedFraction": 0.016803,
+          "opposedAreaFraction": 0.00330078,
+          "nonFiniteVertexValues": 0,
+          "nonFiniteNormalValues": 0
+        },
+        {
+          "mesh": 1,
+          "name": "map_cypress_geometry_mesh_v9",
+          "primitive": 0,
+          "triangles": 20605,
+          "degenerateTriangles": 0,
+          "opposedFaceNormalTriangles": 17,
+          "opposedFraction": 0.000825,
+          "opposedAreaFraction": 0.00042113,
+          "nonFiniteVertexValues": 0,
+          "nonFiniteNormalValues": 0
+        },
+        {
+          "mesh": 2,
+          "name": "map_temple_dome_amber_mesh",
+          "primitive": 0,
+          "triangles": 24985,
+          "degenerateTriangles": 0,
+          "opposedFaceNormalTriangles": 8,
+          "opposedFraction": 0.00032,
+          "opposedAreaFraction": 0.00010686,
+          "nonFiniteVertexValues": 0,
+          "nonFiniteNormalValues": 0
+        },
+        {
+          "mesh": 3,
+          "name": "map_temple_structure_mesh",
+          "primitive": 0,
+          "triangles": 64181,
+          "degenerateTriangles": 0,
+          "opposedFaceNormalTriangles": 26,
+          "opposedFraction": 0.000405,
+          "opposedAreaFraction": 0.00016689,
+          "nonFiniteVertexValues": 0,
+          "nonFiniteNormalValues": 0
+        },
+        {
+          "mesh": 4,
+          "name": "map_temple_dome_teal_mesh",
+          "primitive": 0,
+          "triangles": 24985,
+          "degenerateTriangles": 0,
+          "opposedFaceNormalTriangles": 8,
+          "opposedFraction": 0.00032,
+          "opposedAreaFraction": 0.00010686,
+          "nonFiniteVertexValues": 0,
+          "nonFiniteNormalValues": 0
+        },
+        {
+          "mesh": 5,
+          "name": "output",
+          "primitive": 0,
+          "triangles": 117800,
+          "degenerateTriangles": 33,
+          "opposedFaceNormalTriangles": 82,
+          "opposedFraction": 0.000696,
+          "opposedAreaFraction": 4.247e-05,
+          "nonFiniteVertexValues": 0,
+          "nonFiniteNormalValues": 0
+        }
+      ],
+      "mirroredTransforms": [],
+      "flags": [
+        {
+          "mesh": 0,
+          "name": "map_cliff_geometry_mesh_v4",
+          "primitive": 0,
+          "triangles": 7975,
+          "degenerateTriangles": 0,
+          "opposedFaceNormalTriangles": 134,
+          "opposedFraction": 0.016803,
+          "opposedAreaFraction": 0.00330078,
+          "nonFiniteVertexValues": 0,
+          "nonFiniteNormalValues": 0
+        }
+      ]
+    }
+  ]
+}

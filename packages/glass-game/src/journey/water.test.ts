@@ -70,6 +70,50 @@ describe('journey water', () => {
     }
   })
 
+  it('carries every authored non-faded source mouth past its lip', () => {
+    const sourceSpillways = FLOATING_MUSEUM_JOURNEY.spillways.filter(
+      (spillway) => spillway.source !== undefined,
+    )
+    const water = createJourneyWater(FLOATING_MUSEUM_JOURNEY.spillways, {
+      mist: false,
+    })
+    const sources = water.root.getObjectByName(
+      'journey-water-source-pools',
+    ) as InstancedMesh
+    const sourcePositions = sources.geometry.getAttribute(
+      'position',
+    ) as BufferAttribute
+    let mouthIndex = 0
+    for (let index = 1; index < sourcePositions.count; index++) {
+      if (sourcePositions.getY(index) < sourcePositions.getY(mouthIndex))
+        mouthIndex = index
+    }
+
+    for (const [index, spillway] of sourceSpillways.entries()) {
+      const source = spillway.source
+      if (source === undefined) continue
+      const sourceMatrix = new Matrix4()
+      sources.getMatrixAt(index, sourceMatrix)
+      const sourcePosition = new Vector3(...source.position)
+      const mouth = new Vector3()
+        .fromBufferAttribute(sourcePositions, mouthIndex)
+        .applyMatrix4(sourceMatrix)
+      const nonFadedMouth = sourcePosition.clone().lerp(mouth, 0.94)
+      const downstream = new Vector3(
+        Math.sin(spillway.yaw),
+        0,
+        Math.cos(spillway.yaw),
+      )
+      const visibleReach = nonFadedMouth.sub(sourcePosition).dot(downstream)
+      const lipReach = new Vector3(...spillway.position)
+        .sub(sourcePosition)
+        .dot(downstream)
+      expect(visibleReach).toBeGreaterThan(lipReach + 0.2)
+    }
+
+    water.dispose()
+  })
+
   it('places a pinned top edge at the authored origin and curves toward yaw', () => {
     const water = createJourneyWater(SPILLWAYS, { mist: false })
     const north = water.root.getObjectByName(
