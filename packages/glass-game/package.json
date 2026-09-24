@@ -11,7 +11,8 @@
     "./solid": "./src/ui/GlassAdventure.tsx",
     "./campaign": "./src/ui/GlassCampaign.tsx",
     "./browser": "./src/browser/browser-host.ts",
-    "./assets": "./src/browser/assets.ts"
+    "./assets": "./src/browser/assets.ts",
+    "./encore-examples": "./src/content/encore-examples.ts"
   },
   "scripts": {
     "check": "tsc --noEmit",
