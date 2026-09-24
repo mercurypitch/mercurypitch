@@ -31,6 +31,7 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+import { parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
 /** Every frame the walk is repeated at. The lab's, and the owner's phone. */
@@ -43,31 +44,19 @@ const BOOT_TIMEOUT_MS = 15_000
 /**
  * The names the app gives its rooms, read from the module that owns them
  * (`src/features/rooms/room-names.ts`) rather than copied here, so the walk
- * measures the strings that ship. A leaf module of string literals, parsed
- * rather than imported because this script runs under bare node.
+ * measures the strings that ship. Parsed rather than imported because this
+ * script runs under bare node, and every key must be read or it throws
+ * (room-names-source.mjs).
  */
-const ROOM_NAMES = (() => {
-  const source = readFileSync(
+const ROOM_NAMES = parseRoomNames(
+  readFileSync(
     resolve(
       dirname(fileURLToPath(import.meta.url)),
       '../../../src/features/rooms/room-names.ts',
     ),
     'utf8',
-  )
-  const block = source.match(/ROOM_NAMES[^=]*=\s*\{([^}]*)\}/u)
-  if (block === null)
-    throw new Error('probe-bundle: no ROOM_NAMES in room-names.ts')
-  const names = {}
-  for (const [, id, name] of block[1].matchAll(
-    /^\s*'?([\w-]+)'?:\s*'([^']+)',?\s*$/gmu,
-  )) {
-    names[id] = name
-  }
-  if (names.sing === undefined || Object.keys(names).length < 6) {
-    throw new Error('probe-bundle: could not read the room names')
-  }
-  return names
-})()
+  ),
+)
 const STEP_TIMEOUT_MS = 10_000
 
 /** Console noise a browser cannot avoid, and that says nothing about the shell. */
