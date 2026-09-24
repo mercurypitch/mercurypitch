@@ -1,9 +1,15 @@
 // Cloudway traversal proof — complete the authored route with movement and measured pitch input.
 import { describe, expect, it } from 'vitest'
-import { CLOUDWAY_ENCOUNTER_IDS as ENCOUNTER, CLOUDWAY_GLASS_RIBBON as LEVEL, CLOUDWAY_PLATFORM_IDS as PLATFORM, } from '../content/cloudway-trial'
+import { CLOUDWAY_ENCOUNTER_IDS as ENCOUNTER, CLOUDWAY_GLASS_RIBBON as LEVEL, CLOUDWAY_GLASS_RIBBON_ROUTE as ROUTE, CLOUDWAY_PLATFORM_IDS as PLATFORM, } from '../content/cloudway-trial'
 import { createGlassGame } from './game'
 
 const REST = { moveX: 0, moveZ: 0, jumpDown: false }
+
+function encounterAnchor(id: string) {
+  const encounter = LEVEL.breakables.find((item) => item.id === id)
+  if (encounter === undefined) throw new Error(`Unknown encounter ${id}`)
+  return encounter.anchor
+}
 
 function visit(frameSeconds: number) {
   const game = createGlassGame(LEVEL)
@@ -113,15 +119,25 @@ function visit(frameSeconds: number) {
       `Could not cross to z=${z}; mode=${raftMode}; ${JSON.stringify(game.snapshot().player)}; respawns=${respawns}`,
     )
   }
-  reach(0.7, 1.75)
+  const arrivalAnchor = encounterAnchor(ENCOUNTER.arrival)
+  reach(arrivalAnchor.x, arrivalAnchor.z)
   sing(ENCOUNTER.arrival)
   forwardTo(9.5)
   forwardTo(18.3, true)
-  reach(0.7, 18.55)
+  const crossingAnchor = encounterAnchor(ENCOUNTER.crossing)
+  reach(crossingAnchor.x, crossingAnchor.z)
   sing(ENCOUNTER.crossing)
   forwardTo(29.5)
-  reach(1, 30.4)
+  const finaleAnchor = encounterAnchor(ENCOUNTER.finale)
+  reach(finaleAnchor.x, finaleAnchor.z)
   sing(ENCOUNTER.finale)
+  const exit = LEVEL.exit
+  if (exit === undefined) throw new Error('Cloudway route is missing its exit')
+  // The portrait shatters, but its plinth remains solid. Skirt the west edge,
+  // then line up inside the open portal before crossing its plane.
+  reach(exit.minX - 0.1, finaleAnchor.z)
+  reach(exit.minX - 0.1, exit.minZ - 0.2)
+  reach(exit.minX + 0.3, exit.minZ - 0.2)
   forwardTo(32.1)
   return { game, seconds, respawns, visited }
 }
@@ -287,8 +303,16 @@ describe('Cloudway first-island journey', () => {
       step()
     }
     southTo(12.8)
-    southTo(1.75)
-    reach(0.3, 1.75)
+    const arrivalWaypoint = ROUTE.waypoints.find(
+      (waypoint) => waypoint.platformId === PLATFORM.arrival,
+    )
+    if (arrivalWaypoint === undefined)
+      throw new Error('Cloudway route is missing its arrival waypoint')
+    // Clear the arrival plinth before turning toward the interaction anchor.
+    southTo(arrivalWaypoint.z)
+    reach(arrivalWaypoint.x, arrivalWaypoint.z)
+    const arrivalAnchor = encounterAnchor(ENCOUNTER.arrival)
+    reach(arrivalAnchor.x, arrivalAnchor.z)
 
     expect(respawns).toBe(0)
     expect(game.snapshot().nearbyBreakableId).toBe(ENCOUNTER.arrival)

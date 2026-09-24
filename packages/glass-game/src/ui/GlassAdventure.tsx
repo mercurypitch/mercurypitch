@@ -3,8 +3,8 @@ import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show,
 import { GALLERY_ENCORES } from '../content/encores'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
-import { getRequiredRouteBreakableIds } from '../core/progress'
 import type { GlassGameHost } from '../host'
+import { AdventureGuidance } from './AdventureGuidance'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createFreshVisitHost } from './fresh-visit-host'
@@ -101,16 +101,6 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       (item) => item.id === adventure.snapshot().nearbyBreakableId,
     ),
   )
-  const nearbyLocked = createMemo(() =>
-    level.breakables.find(
-      (item) => item.id === adventure.snapshot().nearbyLockedBreakableId,
-    ),
-  )
-  const nextRequired = createMemo(() =>
-    level.breakables.find(
-      (item) => item.id === adventure.snapshot().nextRequiredBreakableId,
-    ),
-  )
   const active = createMemo(() =>
     level.breakables.find(
       (item) =>
@@ -165,50 +155,6 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           adventure.snapshot().completedBreakableIds.includes(item.id),
       ).length,
   )
-  const requiredRouteIds = getRequiredRouteBreakableIds(level)
-  const remainingRequired = createMemo(() =>
-    requiredRouteIds.filter(
-      (id) => !adventure.snapshot().completedBreakableIds.includes(id),
-    ),
-  )
-  const progressGuidance = createMemo(() => {
-    const next = nextRequired()
-    const locked = nearbyLocked()
-    if (locked !== undefined) {
-      const directDependency = locked.requiresCompleted
-        ?.filter(
-          (id) => !adventure.snapshot().completedBreakableIds.includes(id),
-        )
-        .map((id) => level.breakables.find((item) => item.id === id))
-        .find((item) => item !== undefined)
-      const dependency = next ?? directDependency
-      return {
-        kind: 'locked' as const,
-        heading: `${locked.label} is still sealed.`,
-        detail:
-          dependency === undefined
-            ? 'Open the earlier required exhibit first.'
-            : `Sing to ${dependency.label.replace(/^The /, 'the ')} first.`,
-      }
-    }
-    if (adventure.snapshot().nearLockedExit === true) {
-      const remaining = remainingRequired().length
-      return {
-        kind: 'exit' as const,
-        heading: 'Exit sealed.',
-        detail:
-          next === undefined
-            ? `${remaining} required ${remaining === 1 ? 'exhibit remains' : 'exhibits remain'}.`
-            : `${remaining} ${remaining === 1 ? 'exhibit remains' : 'exhibits remain'}. Next: ${next.label}.`,
-      }
-    }
-    if (next === undefined || nearby() !== undefined) return undefined
-    return {
-      kind: 'next' as const,
-      heading: `Next: ${next.label}.`,
-      detail: 'Follow its glowing circle, then tap Sing.',
-    }
-  })
   let pointer: number | null = null
   let previous = { x: 0, y: 0 }
   let pointerStart = { x: 0, y: 0 }
@@ -515,26 +461,14 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               adventure.snapshot().phase === 'shattering'
             }
           />
-          <Show
-            when={
+          <AdventureGuidance
+            level={level}
+            snapshot={adventure.snapshot()}
+            visible={
               adventure.voiceMode() === 'off' &&
-              adventure.snapshot().phase !== 'shattering' &&
-              progressGuidance()
+              adventure.snapshot().phase !== 'shattering'
             }
-          >
-            {(guidance) => (
-              <p
-                class={styles.progressGuidance}
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
-                data-testid="glass-progress-guidance"
-                data-guidance-kind={guidance().kind}
-              >
-                <strong>{guidance().heading}</strong> {guidance().detail}
-              </p>
-            )}
-          </Show>
+          />
           <Show
             when={
               adventure.voiceMode() === 'off' &&
