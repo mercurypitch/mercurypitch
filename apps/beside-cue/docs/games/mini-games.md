@@ -75,6 +75,36 @@ declared byte in the copied native tree. Android debug builds additionally use
 `beside-cue-games-native.yml` workflow compiles both profiles without signing,
 uploading, or changing the games-off store workflow.
 
+The iOS target validates that pairing on every build. `App/App/public` is an
+ignored Capacitor output, so a games playtest can leave its web bundle there
+after the test ends. Before a normal store archive, replace that output with a
+games-off build:
+
+```bash
+VITE_BESIDE_CUE_GAMES=0 pnpm --filter @irchiinnuss/beside-cue-app exec vite build
+pnpm --filter @irchiinnuss/beside-cue-app exec cap sync ios
+cd apps/beside-cue/ios/App
+xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+  -archivePath build/BesideCue.xcarchive archive
+```
+
+That archive uses the canonical `App/Info.plist`. The build fails if the copied
+web tree still contains any game, model, runtime, or games-profile marker. The
+unsigned games test profile stays a separate command and plist:
+
+```bash
+pnpm --filter @irchiinnuss/beside-cue-app native:games -- --platform ios --build
+cd apps/beside-cue/ios/App
+xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  BESIDE_CUE_INFO_PLIST_PATH=build/games/Info.plist \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
+The games build also checks the stamped SHA-256 manifest immediately before
+Xcode copies resources, so changing or dropping a declared offline asset after
+Capacitor sync stops the package.
+
 ## Art pipeline
 
 - `public/games/journey/`: three parallax layers (far starfield, screen-blended

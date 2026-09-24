@@ -25,11 +25,19 @@ export const requiredGameAssets = [
   ...GLASS_GAME_REQUIRED_FILES.map((asset) => `games/${asset}`),
 ] as const
 
+export const nativeGamesChecksumFile = 'native-games-profile.sha256'
+
 const gitLfsPointerHeader = 'version https://git-lfs.github.com/spec/v1'
 
 interface GamesBundleDigest {
   indexSha256: string
   assetSha256: Readonly<Record<string, string>>
+}
+
+function gamesChecksumManifest(bundle: GamesBundleDigest): string {
+  return `${requiredGameAssets
+    .map((asset) => `${bundle.assetSha256[asset]}  ${asset}`)
+    .join('\n')}\n`
 }
 
 export function parseOptions(args: string[]): NativeGamesOptions {
@@ -121,7 +129,9 @@ export function stageGamesProfile(
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, plist)
   }
-  if (!prepareOnly) {
+  if (bundle !== undefined) {
+    const checksums = gamesChecksumManifest(bundle)
+    writeFileSync(resolve(output, nativeGamesChecksumFile), checksums)
     writeFileSync(
       resolve(output, 'native-games-profile.json'),
       `${JSON.stringify(
@@ -131,6 +141,7 @@ export function stageGamesProfile(
           platform,
           indexSha256: bundle?.indexSha256,
           assetSha256: bundle?.assetSha256,
+          checksumSha256: createHash('sha256').update(checksums).digest('hex'),
           assets: requiredGameAssets,
         },
         null,
@@ -158,6 +169,7 @@ export function verifySyncedGamesProfile(
     platform?: string
     indexSha256?: string
     assetSha256?: unknown
+    checksumSha256?: string
     assets?: unknown
   }
   if (
@@ -179,6 +191,21 @@ export function verifySyncedGamesProfile(
   const stampedSha256 = marker.assetSha256 as Record<string, unknown>
   const source = verifyGamesBundle(resolve(appDirectory, 'dist'))
   const synced = verifyGamesBundle(output)
+  const sourceChecksums = gamesChecksumManifest(source)
+  const checksumPath = resolve(appDirectory, 'dist', nativeGamesChecksumFile)
+  const syncedChecksumPath = resolve(output, nativeGamesChecksumFile)
+  if (
+    !existsSync(checksumPath) ||
+    readFileSync(checksumPath, 'utf8') !== sourceChecksums ||
+    marker.checksumSha256 !==
+      createHash('sha256').update(sourceChecksums).digest('hex')
+  )
+    throw new Error('Source games profile checksum manifest does not match')
+  if (
+    !existsSync(syncedChecksumPath) ||
+    readFileSync(syncedChecksumPath, 'utf8') !== sourceChecksums
+  )
+    throw new Error(`Synced ${platform} games checksum manifest differs`)
   for (const asset of requiredGameAssets) {
     if (
       typeof stampedSha256[asset] !== 'string' ||

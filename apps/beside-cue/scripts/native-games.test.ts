@@ -3,16 +3,18 @@
 // ============================================================
 
 import { glassGameAssetPath } from '@irchiinnuss/glass-game/assets'
+import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
-import { gamesInfoPlist, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
+import { gamesInfoPlist, nativeGamesChecksumFile, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
 const opalineAsset = `games/${glassGameAssetPath('opaline-v6')}`
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url))
+const iosGuard = resolve('ios/App/scripts/validate-native-games-profile.sh')
 
 function fixture(): string {
   const directory = mkdtempSync(resolve(tmpdir(), 'beside-cue-native-'))
@@ -24,6 +26,18 @@ function put(directory: string, path: string, value = 'fixture'): void {
   const target = resolve(directory, path)
   mkdirSync(dirname(target), { recursive: true })
   writeFileSync(target, value)
+}
+
+function runIosGuard(directory: string, plist: string) {
+  return spawnSync('/bin/sh', [iosGuard], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      BESIDE_CUE_INFO_PLIST_PATH: plist,
+      INFOPLIST_FILE: plist,
+      SRCROOT: resolve(directory, 'ios/App'),
+    },
+  })
 }
 
 afterEach(() => {
@@ -227,6 +241,11 @@ describe('explicit native games profile', () => {
     expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
       opalineAsset,
     )
+    cpSync(resolve(directory, 'dist'), nativePublic, { recursive: true })
+    rmSync(resolve(nativePublic, nativeGamesChecksumFile))
+    expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
+      'checksum manifest',
+    )
   })
 
   it('rejects a copied marker for the other native platform', () => {
@@ -244,6 +263,59 @@ describe('explicit native games profile', () => {
     expect(() => verifySyncedGamesProfile(directory, 'ios')).toThrow(
       'does not match its bundle',
     )
+  })
+
+  it('blocks a stale games sync from a default iOS store build', () => {
+    const directory = fixture()
+    const canonical = readFileSync(resolve('ios/App/App/Info.plist'), 'utf8')
+    put(directory, 'ios/App/App/Info.plist', canonical)
+    put(directory, 'ios/App/App/public/index.html', 'store')
+
+    const clean = runIosGuard(directory, 'App/Info.plist')
+    expect(clean.status, clean.stderr).toBe(0)
+
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    stageGamesProfile(directory, 'ios', false)
+    cpSync(
+      resolve(directory, 'dist'),
+      resolve(directory, 'ios/App/App/public'),
+      { recursive: true },
+    )
+
+    const stale = runIosGuard(directory, 'App/Info.plist')
+    expect(stale.status).not.toBe(0)
+    expect(stale.stderr).toContain('Store profile contains games assets')
+    expect(stale.stderr).toContain('run cap sync ios')
+  })
+
+  it('accepts only an intact iOS games sync with the generated plist', () => {
+    const directory = fixture()
+    const canonical = readFileSync(resolve('ios/App/App/Info.plist'), 'utf8')
+    put(directory, 'ios/App/App/Info.plist', canonical)
+    for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
+    stageGamesProfile(directory, 'ios', false)
+    cpSync(
+      resolve(directory, 'dist'),
+      resolve(directory, 'ios/App/App/public'),
+      { recursive: true },
+    )
+
+    const valid = runIosGuard(directory, 'build/games/Info.plist')
+    expect(valid.status, valid.stderr).toBe(0)
+
+    put(directory, `ios/App/App/public/${opalineAsset}`, 'corrupt')
+    const corrupt = runIosGuard(directory, 'build/games/Info.plist')
+    expect(corrupt.status).not.toBe(0)
+    expect(corrupt.stderr).toContain(
+      'Games profile assets do not match the stamped checksums',
+    )
+
+    expect(
+      readFileSync(
+        resolve(directory, 'ios/App/App/public', nativeGamesChecksumFile),
+        'utf8',
+      ),
+    ).toContain(opalineAsset)
   })
 
   it('keeps canonical store permissions off and scopes the generated plist selector to the app target', () => {
@@ -274,6 +346,15 @@ describe('explicit native games profile', () => {
     const project = readFileSync(
       resolve('ios/App/App.xcodeproj/project.pbxproj'),
       'utf8',
+    )
+    expect(project).toContain('Validate Native Games Profile')
+    expect(project).toContain(
+      '$SRCROOT/scripts/validate-native-games-profile.sh',
+    )
+    const targetPhases = project.split('buildPhases = (')[1]?.split(');')[0]
+    expect(targetPhases).toContain('Validate Native Games Profile')
+    expect(targetPhases?.indexOf('Validate Native Games Profile')).toBeLessThan(
+      targetPhases?.indexOf('Resources') ?? -1,
     )
     const selected = project
       .split('buildSettings = {')
