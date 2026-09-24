@@ -13,6 +13,14 @@ The durable execution record is
 its final integration/CI checkpoint is authoritative for this batch. Plans are
 mirrored under `<user-dotfiles>/personal/besidecue/glass-adventure/`.
 
+## Active pre-merge review
+
+The owner requested a graphics/microphone recovery and independent review pass
+before closing PR807. Follow [PR807-PREMERGE-REVIEW-2026-09-24.md](./PR807-PREMERGE-REVIEW-2026-09-24.md)
+for this pass; the previous batch's green CI does not certify these new changes.
+The next PR should include another Floating Museum art pass for visible
+triangulation and architectural detail. Roadmap 9 still waits for acceptance.
+
 ## What is playable
 
 The shared package supplies the web `/glass-game` route and the BesideCue native

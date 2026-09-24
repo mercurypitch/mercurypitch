@@ -8,6 +8,21 @@ Use the HTTPS LAN host for tablet microphone testing. The standalone path skips
 app onboarding. The playtest server disables hot reload; a manual page reload
 is enough to restart a play session, but edited source needs a server restart.
 
+## Short pre-merge recovery check
+
+1. Cold-open the current Cloudway link in Chrome. If startup graphics fail, use
+   the loading screen's **Retry**. Your checkpoint should remain intact. Report
+   any recurring mailbox/texture warning; the specific driver failure has not
+   been reproduced locally.
+2. At a singing station, try the microphone. **Use it here** transfers a mic
+   held by another cooperating same-origin app tab. **Try again** retries a
+   permission/device error after its stated cause is addressed. The game cannot
+   reset OS permissions or seize capture from unrelated apps. The optional
+   melody practice has the same recovery controls.
+3. In an Encore, select **Keep a recording of my next melody**, sing, then try
+   **Sing again**. The second attempt must not record unless you opt in again.
+   Check playback/Stop and switching away/returning once.
+
 ## Suggested order
 
 1. **Museum map:** `/glass-game/?campaign=1`. Orbit and zoom around Twin Galleries
