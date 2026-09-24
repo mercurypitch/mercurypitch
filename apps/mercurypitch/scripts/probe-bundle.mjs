@@ -3887,6 +3887,75 @@ async function walkAlleyMic(browser, args, frame) {
   return [`[${frame.width}x${frame.height}] ${step}`]
 }
 
+// ── A door under a practice scope that hides its room (item 9) ──
+//
+// "I practice" = Guitar hides the Sing tab from the WEB bar, and the web's App
+// Mode guard bounced a hidden tab back home with a toast. Under the native
+// build the doors reach their rooms whatever the scope says: the Sing door
+// once opened, covered, reached Sing and was sent straight back to the alley.
+async function walkAlleyScope(browser, args, frame) {
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  let step = null
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.addInitScript(() => {
+      localStorage.setItem('pitchperfect_practice_scope', '"guitar"')
+    })
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="rooms-alley"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    // Past the guard's start-up grace, so a bounce would say so in a toast.
+    await page.waitForTimeout(2500)
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'scope guitar: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page
+      .locator('[data-testid="sing-room"]')
+      .waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS })
+    await page.waitForTimeout(1500)
+    const after = await page.evaluate(() => ({
+      hash: window.location.hash,
+      room: document.querySelector('[data-testid="sing-room"]') !== null,
+      alley: document.querySelector('[data-testid="rooms-alley"]') !== null,
+      toast: document.body.innerText.includes('hidden by your App Mode'),
+      scope: localStorage.getItem('pitchperfect_practice_scope'),
+    }))
+    if (
+      !after.hash.includes('singing') ||
+      !after.room ||
+      after.alley ||
+      after.toast
+    ) {
+      throw new Error(`scope guitar: ${JSON.stringify(after)}`)
+    }
+    step = `alley under "I practice" = ${after.scope}: the Sing door reached ${after.hash} and stayed, no App Mode toast`
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  return [`[${frame.width}x${frame.height}] ${step}`]
+}
+
 async function pressBack(page) {
   return page.evaluate(() => {
     const back = window.mpShellBack
@@ -4210,6 +4279,13 @@ async function main() {
       } catch (error) {
         failures.push(
           `[${frame.width}x${frame.height}] alley mic: ${error.message}`,
+        )
+      }
+      try {
+        steps.push(...(await walkAlleyScope(browser, args, frame)))
+      } catch (error) {
+        failures.push(
+          `[${frame.width}x${frame.height}] alley scope: ${error.message}`,
         )
       }
     }

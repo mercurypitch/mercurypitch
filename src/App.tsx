@@ -257,7 +257,8 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { appModeBounce } from '@/features/tabs/app-mode-guard'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -1946,18 +1947,22 @@ const AppShell: Component<AppProps> = (props) => {
   })
 
   const appMountedAt = performance.now()
+  // Never under the native build (app-mode-guard.ts says why).
   createEffect(() => {
     const scope = practiceScope()
     const mode = uiMode()
     if (walkthroughActive()) return
     if (labTab() !== null) return
-    if (isTabVisible(activeTab(), scope, mode)) return
+    if (appModeBounce(activeTab(), scope, mode, IS_NATIVE_BUILD) === null) {
+      return
+    }
     queueMicrotask(() => {
       const s = untrack(practiceScope)
       const m = untrack(uiMode)
       if (untrack(walkthroughActive)) return
       if (untrack(labTab) !== null) return
-      if (isTabVisible(untrack(activeTab), s, m)) return
+      const target = appModeBounce(untrack(activeTab), s, m, IS_NATIVE_BUILD)
+      if (target === null) return
       // Drop one-shot intents aimed at the hidden tab.
       setJamRoomToJoin(null)
       setPendingDrill(null)
@@ -1974,7 +1979,7 @@ const AppShell: Component<AppProps> = (props) => {
           { channel: 'app-mode-guard' },
         )
       }
-      void handleTabChange(scopeHomeTab(s))
+      void handleTabChange(target)
     })
   })
 
