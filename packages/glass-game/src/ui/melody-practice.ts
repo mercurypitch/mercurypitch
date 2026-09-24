@@ -7,9 +7,11 @@ import type { MelodyJudge, MelodyJudgePolicy, MelodyJudgeSnapshot, } from '../co
 import { createMelodyJudge } from '../core/melody-judge'
 import type { MelodyReferencePlayer } from '../core/melody-reference'
 import type { GlassGameHost, GlassVoiceSession } from '../host'
+import type { MelodyPracticeRecordingAdapter } from './melody-microphone-lifecycle'
+import { createMelodyMicrophoneRecovery, createMelodyPracticeRecordingLifecycle, } from './melody-microphone-lifecycle'
 import { feedbackCopy, idleCopy } from './melody-practice-copy'
 import type { MicrophoneIssue } from './mic-error'
-import { microphoneIssue, microphoneTakeoverTimedOut } from './mic-error'
+import { microphoneIssue } from './mic-error'
 
 export type MelodyPracticeMode =
   | 'idle'
@@ -42,11 +44,7 @@ export interface MelodyPracticeConfiguration {
   transposeSemitones?: number
 }
 
-/** Host-owned recording taps this exact session; it must not open a second mic. */
-export interface MelodyPracticeRecordingAdapter {
-  start(session: GlassVoiceSession): void
-  stop(session: GlassVoiceSession, outcome: 'complete' | 'cancelled'): void
-}
+export type { MelodyPracticeRecordingAdapter } from './melody-microphone-lifecycle'
 
 export interface MelodyPracticeOptions {
   host: Pick<
@@ -142,7 +140,6 @@ export function createMelodyPractice(
   let contour: CompiledMelody | null = null
   let judge: MelodyJudge | null = null
   let voice: GlassVoiceSession | null = null
-  let recordingSession: GlassVoiceSession | null = null
   let stopObserving: (() => void) | null = null
   let reference: MelodyReferencePlayer | null = null
   let releaseHeld = false
@@ -154,6 +151,7 @@ export function createMelodyPractice(
   let lastSequence = -Infinity
   let lastCaptureSeconds = -Infinity
   let evidenceCapturedAfterMs = -Infinity
+  const recording = createMelodyPracticeRecordingLifecycle(options.recording)
   const initial = idleCopy(options.melody)
   let state: MelodyPracticeSnapshot = {
     mode: 'idle',
@@ -245,23 +243,12 @@ export function createMelodyPractice(
     current?.dispose()
   }
 
-  const stopRecording = (outcome: 'complete' | 'cancelled'): void => {
-    const current = recordingSession
-    recordingSession = null
-    if (current === null) return
-    try {
-      options.recording?.stop(current, outcome)
-    } catch {
-      // Recording is optional; its cleanup cannot strand the owned microphone.
-    }
-  }
-
   const stopVoice = (outcome: 'complete' | 'cancelled' = 'cancelled'): void => {
     stopObserving?.()
     stopObserving = null
     const current = voice
     voice = null
-    stopRecording(outcome)
+    recording.stop(outcome)
     current?.stop()
     resetEvidence()
     judge = null
@@ -335,18 +322,7 @@ export function createMelodyPractice(
     markEvidenceBoundary()
     judge = createMelodyJudge(contour, options.judgePolicy)
     const session = voice
-    try {
-      options.recording?.start(session)
-      if (options.recording !== undefined) recordingSession = session
-    } catch {
-      // Optional local recording must never block the pitch practice itself.
-      recordingSession = null
-      try {
-        options.recording?.stop(session, 'cancelled')
-      } catch {
-        // The voice session still remains owned and will be released normally.
-      }
-    }
+    recording.start(session)
     const judgeSnapshot = judge.snapshot()
     const copy = feedbackCopy(judgeSnapshot)
     emit({
@@ -572,55 +548,31 @@ export function createMelodyPractice(
     }
   }
 
-  const releaseUnusedTakeover = async (): Promise<void> => {
-    try {
-      await options.host.releaseUnusedMicrophoneTakeover?.()
-    } catch {
-      // The shared manager's next acquisition rechecks the lock either way.
-    }
-  }
-
-  const recoverMicrophone = async (): Promise<boolean> => {
-    const issue = state.microphoneIssue
-    const takeOver = options.host.takeOverMicrophone
-    if (
-      disposed ||
-      !foreground ||
-      state.mode !== 'error' ||
-      state.microphoneRecoveryPending ||
-      issue?.action !== 'take-over' ||
-      takeOver === undefined
-    )
-      return false
-    const run = ++generation
-    emit({ microphoneRecoveryPending: true })
-    let moved = false
-    try {
-      moved = await takeOver()
-    } catch {
-      moved = false
-    }
-    if (disposed || run !== generation || !foreground) {
-      if (moved) await releaseUnusedTakeover()
-      return false
-    }
-    if (!moved) {
-      const timeout = microphoneTakeoverTimedOut()
+  const recoverMicrophone = createMelodyMicrophoneRecovery({
+    host: options.host,
+    eligible: () =>
+      !disposed &&
+      foreground &&
+      state.mode === 'error' &&
+      !state.microphoneRecoveryPending &&
+      state.microphoneIssue?.action === 'take-over',
+    beginAttempt: () => ++generation,
+    isCurrentAttempt: (run) => !disposed && run === generation && foreground,
+    setPending: (pending) => emit({ microphoneRecoveryPending: pending }),
+    retry: async () => {
+      await start()
+      return voice !== null
+    },
+    onTimeout: (issue) => {
       emit({
-        message: timeout.message,
+        message: issue.message,
         hint: 'Only another participating tab can hand the microphone over.',
-        error: timeout.message,
-        microphoneIssue: timeout,
-        microphoneRecoveryPending: false,
+        error: issue.message,
+        microphoneIssue: issue,
       })
-      options.onError?.(timeout.message)
-      return false
-    }
-    emit({ microphoneRecoveryPending: false })
-    await start()
-    if (voice === null) await releaseUnusedTakeover()
-    return voice !== null
-  }
+      options.onError?.(issue.message)
+    },
+  })
 
   const hear = async (): Promise<void> => {
     if (
@@ -751,7 +703,7 @@ export function createMelodyPractice(
         return
       const run = ++generation
       stopReference()
-      stopRecording('cancelled')
+      recording.stop('cancelled')
       judge = null
       completionNotified = false
       resetEvidence()
