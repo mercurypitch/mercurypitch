@@ -3329,12 +3329,25 @@ async function walkAlley(browser, args, frame) {
     // Covered, the open cannot be called off: the room is being mounted. A
     // rail tab in the wait for the room's background once left Progress under
     // an opaque clone for up to 1.7 s. The clone has to get out of the way.
-    // The room's picture never decodes here, so the clone is still waiting
-    // on it when Progress is tapped: a room that draws fast would reveal on
-    // its own and prove nothing.
+    // The room's background never shows up here (its mark is taken off as
+    // it mounts, as for a room still loading), so the clone is still waiting
+    // on it when Progress is tapped. A room that draws fast would reveal on
+    // its own, and one that mounts and then unmounts ends the wait by being
+    // gone: only the open's own watch on the tab can end this one.
     await page.evaluate(() => {
-      window.__mpDecode = HTMLImageElement.prototype.decode
-      HTMLImageElement.prototype.decode = () => new Promise(() => undefined)
+      const strip = (root) => {
+        for (const el of root.querySelectorAll('[data-room-background]')) {
+          el.removeAttribute('data-room-background')
+        }
+      }
+      strip(document)
+      window.__mpUnmark = new MutationObserver(() => strip(document))
+      window.__mpUnmark.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-room-background'],
+      })
     })
     await tapDoor(page, 'sing')
     await waitPhase(
@@ -3358,7 +3371,7 @@ async function walkAlley(browser, args, frame) {
       clone: document.querySelector('[data-testid="alley-morph"]') !== null,
     }))
     await page.evaluate(() => {
-      HTMLImageElement.prototype.decode = window.__mpDecode
+      window.__mpUnmark.disconnect()
     })
     if (
       coveredAt.clone !== 'covered' ||
@@ -4001,7 +4014,9 @@ async function walkAlleyScope(browser, args, frame) {
     })
     await page.addInitScript(seed, args.theme)
     await page.addInitScript(() => {
-      localStorage.setItem('pitchperfect_practice_scope', '"guitar"')
+      // Stored bare: a string setting is not JSON, and '"guitar"' fails the
+      // validator and reads back as 'all', which no guard ever bounces.
+      localStorage.setItem('pitchperfect_practice_scope', 'guitar')
     })
     await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
     await page.locator('#root.loaded').waitFor({
@@ -4013,12 +4028,24 @@ async function walkAlleyScope(browser, args, frame) {
       .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
     // Past the guard's start-up grace, so a bounce would say so in a toast.
     await page.waitForTimeout(2500)
+    // The scope has to have taken: the rail's stage slot follows it.
+    const stage = (
+      await page.locator('[data-rail-item="stage"]').innerText()
+    ).trim()
+    if (!stage.includes('Guitar')) {
+      throw new Error(
+        `scope guitar: not applied, the rail's stage reads "${stage}"`,
+      )
+    }
     await tapDoor(page, 'sing')
     await waitPhase(page, 'alive', 'sing', 'scope guitar: select Sing')
     await page.locator('[data-testid="alley-enter"]').tap()
+    // Not thrown on: a bounced room never attaches, and the state below says
+    // where it went instead.
     await page
       .locator('[data-testid="sing-room"]')
       .waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS })
+      .catch(() => undefined)
     await page.waitForTimeout(1500)
     const after = await page.evaluate(() => ({
       hash: window.location.hash,
@@ -4035,7 +4062,7 @@ async function walkAlleyScope(browser, args, frame) {
     ) {
       throw new Error(`scope guitar: ${JSON.stringify(after)}`)
     }
-    step = `alley under "I practice" = ${after.scope}: the Sing door reached ${after.hash} and stayed, no App Mode toast`
+    step = `alley under "I practice" = ${after.scope} (rail stage "${stage}"): the Sing door reached ${after.hash} and stayed, no App Mode toast`
   } catch (error) {
     failures.push(error.message)
   } finally {
