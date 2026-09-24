@@ -12,6 +12,8 @@ const state = vi.hoisted(() => {
     render: vi.fn(),
     setSize: vi.fn(),
     setPixelRatio: vi.fn(),
+    reflectionProbeRender: Symbol('reflection-probe-render'),
+    shadowNeedsUpdateAtProbeRender: [] as boolean[],
     shadowNeedsUpdateAtRender: [] as boolean[],
     getError: vi.fn((): number => 0),
     listeners: new Map<string, EventListener>(),
@@ -62,6 +64,12 @@ vi.mock('three', async (original) => ({
       getError: state.getError,
     })
     render = (...args: unknown[]) => {
+      if (args[0] === state.reflectionProbeRender) {
+        state.shadowNeedsUpdateAtProbeRender.push(this.shadowMap.needsUpdate)
+        // Three consumes a requested shadow update inside the probe render.
+        this.shadowMap.needsUpdate = false
+        return
+      }
       state.shadowNeedsUpdateAtRender.push(this.shadowMap.needsUpdate)
       return state.render(...args)
     }
@@ -70,12 +78,13 @@ vi.mock('three', async (original) => ({
   },
 }))
 vi.mock('./environment', () => ({
-  createMuseumEnvironment: () => ({
+  createMuseumEnvironment: (renderer: { render: (scene: symbol) => void }) => ({
     load: () => {
       if (state.environmentLoadFailure) throw state.environmentLoadFailure
       return Promise.resolve()
     },
     capture: () => {
+      renderer.render(state.reflectionProbeRender)
       if (state.loseContext)
         state.listeners.get('webglcontextlost')?.(new Event('webglcontextlost'))
       throw new Error('optional cube allocation failed')
@@ -159,6 +168,7 @@ afterEach(() => {
   state.render.mockClear()
   state.setSize.mockClear()
   state.setPixelRatio.mockClear()
+  state.shadowNeedsUpdateAtProbeRender.length = 0
   state.shadowNeedsUpdateAtRender.length = 0
   state.getError.mockReset().mockReturnValue(0)
   state.rendererDispose.mockClear()
@@ -260,6 +270,47 @@ it('applies balanced pixels and reuses at most one shadow frame', async () => {
     shadowReuses: 1,
   })
 
+  renderer.dispose()
+})
+
+it('initializes a balanced shadow for probe and playable frames after each renderer attempt', async () => {
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const renderer = createGlassRenderer(
+      browserFixture(),
+      GLASSWORKS,
+      (id) => id,
+      { renderQuality: 'balanced' },
+    )
+    await renderer.ready
+    expect(state.shadowNeedsUpdateAtProbeRender.at(-1)).toBe(true)
+
+    renderer.render(snapshot, 0.016)
+    renderer.render(snapshot, 0.016)
+    expect(state.shadowNeedsUpdateAtRender.slice(-2)).toEqual([true, false])
+    renderer.dispose()
+  }
+
+  expect(state.shadowNeedsUpdateAtProbeRender).toEqual([true, true])
+})
+
+it('invalidates the first manual shadow after switching high to balanced', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'high' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  renderer.render(snapshot, 0.016)
+  renderer.setRenderQuality('balanced')
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, true, false])
   renderer.dispose()
 })
 

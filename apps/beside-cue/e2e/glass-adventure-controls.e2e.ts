@@ -159,7 +159,7 @@ test('mouse orbit releases, pause cancels a held drag, and keyboard motion stops
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
-test('wheel zoom and a short side step complete the same heading turn @smoke', async ({
+test('wheel zoom preserves brief side steps and follows sustained turns @smoke', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 640, height: 480 })
@@ -171,9 +171,28 @@ test('wheel zoom and a short side step complete the same heading turn @smoke', a
   for (const wheel of [-1_100, 2_350, -1_250]) {
     await page.mouse.wheel(0, wheel)
     await page.clock.runFor(32)
+    const beforeTap = await value(page, 'camera-yaw')
+    const tapStart = [
+      await value(page, 'player-x'),
+      await value(page, 'player-z'),
+    ]
+    await page.keyboard.down('KeyA')
+    await page.clock.runFor(150)
+    await page.keyboard.up('KeyA')
+    await page.clock.runFor(700)
+    expect(
+      Math.hypot(
+        (await value(page, 'player-x')) - tapStart[0],
+        (await value(page, 'player-z')) - tapStart[1],
+      ),
+    ).toBeGreaterThan(0.15)
+    expect(await value(page, 'camera-yaw')).toBeCloseTo(beforeTap, 5)
+
+    // A sustained side input commits a deliberate turn, which completes even
+    // after key-up. A brief correction above must not commit that same turn.
     const start = [await value(page, 'player-x'), await value(page, 'player-z')]
     await page.keyboard.down('KeyA')
-    await page.clock.runFor(200)
+    await page.clock.runFor(450)
     await page.keyboard.up('KeyA')
     await page.clock.runFor(1_200)
     const dx = (await value(page, 'player-x')) - start[0]
@@ -193,14 +212,14 @@ test('wheel zoom and a short side step complete the same heading turn @smoke', a
   await page.clock.runFor(1_200)
   expect(await value(page, 'camera-yaw')).toBeCloseTo(manualYaw, 5)
   // Move immediately after a second look gesture, without waiting out a long
-  // quiet timer. The short movement must still leave a turn to finish.
+  // quiet timer. Sustained intent must still leave a turn to finish.
   await page.mouse.down()
   await page.mouse.move(430, 250, { steps: 3 })
   await page.mouse.up()
   await page.clock.runFor(32)
   const start = [await value(page, 'player-x'), await value(page, 'player-z')]
   await page.keyboard.down('KeyA')
-  await page.clock.runFor(200)
+  await page.clock.runFor(450)
   await page.keyboard.up('KeyA')
   await page.clock.runFor(1_200)
   const heading = Math.atan2(

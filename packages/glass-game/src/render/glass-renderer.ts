@@ -200,6 +200,10 @@ function createGlassRendererInstance(
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = PCFShadowMap
   renderer.shadowMap.autoUpdate = renderQuality.shadowFrameInterval === 1
+  // The reflection probe renders before the playable-frame cadence runs.
+  // Prime a manual shadow map so Balanced never samples Three's placeholder
+  // texture during that first offscreen pass.
+  if (!renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true
   let pixelRatio = effectiveGlassPixelRatio(
     window.devicePixelRatio,
     renderQuality,
