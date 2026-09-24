@@ -500,8 +500,13 @@ export const RoomsAlley: Component = () => {
     window.addEventListener('keydown', onKey)
     onCleanup(() => window.removeEventListener('keydown', onKey))
 
-    // The app going to the background takes the door's sound with it.
+    // The app going to the background takes the door's sound with it, and
+    // coming back leaves the ambient's context suspect (alley-audio.ts).
     const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') {
+        ambientInstance?.recover()
+        return
+      }
       if (document.visibilityState !== 'hidden') return
       const phase = alley().phase
       if (phase === 'selected' || phase === 'alive') {
@@ -545,6 +550,9 @@ export const RoomsAlley: Component = () => {
       dispatch({ type: 'leave' })
       void quiet(REDUCED_MS)
     }
+    // Its context and decoded buffers go once the last fade has run; the
+    // next door tap rebuilds them.
+    ambientInstance?.dispose()
     // The Sing door's clip lets go of its decoder: an unmounted <video> with
     // a src keeps its buffer and its hardware decoder until it is collected.
     releaseClip()

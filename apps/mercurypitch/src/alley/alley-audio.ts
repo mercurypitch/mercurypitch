@@ -67,6 +67,19 @@ export interface AlleyAmbient {
    * orders a room's microphone after it.
    */
   stoppedAt: () => number | null
+  /**
+   * The page is visible again after being hidden. iOS can leave a context
+   * reporting 'running' on a dead output after that (audio-unlock.ts), and a
+   * resume does not bring it back: the next door tap replaces it, inside its
+   * gesture, instead of starting a silent source on it.
+   */
+  recover: () => void
+  /**
+   * The alley has gone. Once every fade has finished, close the context and
+   * drop the decoded buffers (about 10 MB of PCM for the two rooms); the next
+   * door tap rebuilds both. A start in between keeps them.
+   */
+  dispose: () => void
 }
 
 interface Voice {
@@ -89,9 +102,36 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
   let lastStop: number | null = null
   const buffers = new Map<AmbientKind, Promise<AudioBuffer>>()
   const releases = new Set<Promise<void>>()
+  /**
+   * The context cannot be trusted to sound: iOS interrupted it (a call, Siri,
+   * Control Center), a resume inside a tap left it not running, or the page
+   * came back from the background. The next tap replaces it.
+   */
+  let stale = false
+
+  const retire = (): void => {
+    const old = ctx
+    ctx = null
+    stale = false
+    if (old !== null && old.state !== 'closed') {
+      void old.close().catch(() => {})
+    }
+  }
 
   const ensureContext = (): AudioContext | null => {
-    if (ctx === null || ctx.state === 'closed') ctx = deps.createContext()
+    // Replaced here, inside the tap: a context made anywhere else is born
+    // suspended on iOS. 'interrupted' is WebKit's own state, not in the type.
+    const interrupted = (ctx?.state as string | undefined) === 'interrupted'
+    if (ctx !== null && (stale || interrupted)) retire()
+    if (ctx === null || ctx.state === 'closed') {
+      const made = deps.createContext()
+      made?.addEventListener('statechange', () => {
+        if ((made.state as string) === 'interrupted' && ctx === made) {
+          stale = true
+        }
+      })
+      ctx = made
+    }
     return ctx
   }
 
@@ -175,6 +215,9 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
 
     void Promise.all([activation.catch(() => {}), buffer(live, kind)])
       .then(([, decoded]) => {
+        // Resumed inside the tap and still not running: this one is not
+        // coming back, and the next tap makes another.
+        if (live.state !== 'running' && ctx === live) stale = true
         if (mine !== token || voice.releasing) return
         const source = live.createBufferSource()
         source.buffer = decoded
@@ -208,9 +251,25 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     return Promise.all([...releases]).then(() => undefined)
   }
 
+  const recover = (): void => {
+    if (ctx !== null) stale = true
+  }
+
+  const dispose = (): void => {
+    const at = token
+    void Promise.all([...releases]).then(() => {
+      // Something started since: the alley is back, and so is its sound.
+      if (token !== at || current !== null) return
+      buffers.clear()
+      retire()
+    })
+  }
+
   return {
     start,
     stop,
+    recover,
+    dispose,
     sounding: () => (current?.releasing === false ? current.kind : null),
     level: () => (audible?.source ? audible.gain.gain.value : 0),
     sourcesStarted: () => started,

@@ -26,7 +26,12 @@ vi.mock('./alley-audio', async (importOriginal) => {
     ...real,
     createAlleyAmbient: vi.fn((deps: AlleyAudio.AmbientDeps) => {
       const ambient = real.createAlleyAmbient(deps)
-      return { ...ambient, stop: vi.fn(ambient.stop) }
+      return {
+        ...ambient,
+        stop: vi.fn(ambient.stop),
+        recover: vi.fn(ambient.recover),
+        dispose: vi.fn(ambient.dispose),
+      }
     }),
   }
 })
@@ -74,13 +79,14 @@ async function mountAlley() {
     if (found === null || found === undefined) throw new Error(`${testid}?`)
     return found
   }
-  /** The ambient's stop(), once a door tap has created it. */
-  const ambientStop = () => {
+  /** The ambient, once a door tap has created it. */
+  const ambientMade = (): AlleyAudio.AlleyAmbient => {
     const made = vi.mocked(audio.createAlleyAmbient).mock.results.at(-1)
     if (made === undefined) throw new Error('no ambient yet')
-    return vi.mocked((made.value as AlleyAudio.AlleyAmbient).stop)
+    return made.value as AlleyAudio.AlleyAmbient
   }
-  return { el, welcome, store, nav, shell, ambientStop }
+  const ambientStop = () => vi.mocked(ambientMade().stop)
+  return { el, welcome, store, nav, shell, ambientStop, ambientMade }
 }
 
 beforeEach(() => {
@@ -423,6 +429,33 @@ describe('a door picked, then covered by the shell', () => {
     expect(shell.shellCovered()).toBe(true)
     shell.popScreen()
     expect(shell.shellCovered()).toBe(false)
+  })
+})
+
+describe("the ambient's context", () => {
+  it('is let go when the alley unmounts', async () => {
+    const { el, ambientMade } = await mountAlley()
+    el('alley-door-sing').click()
+    const ambient = ambientMade()
+
+    view?.unmount()
+    view = null
+
+    expect(ambient.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('is suspect once the page comes back from the background', async () => {
+    const { el, ambientMade } = await mountAlley()
+    el('alley-door-sing').click()
+    const ambient = ambientMade()
+    const visibility = vi.spyOn(document, 'visibilityState', 'get')
+
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(ambient.recover).not.toHaveBeenCalled()
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(ambient.recover).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -20,6 +20,19 @@ function fakeContext(log: Call[]) {
       ctx.state = 'suspended'
       log.push(['suspend'])
     }),
+    close: vi.fn(async () => {
+      ctx.state = 'closed'
+      log.push(['close'])
+    }),
+    listeners: [] as Array<() => void>,
+    addEventListener: (type: string, listener: () => void) => {
+      if (type === 'statechange') ctx.listeners.push(listener)
+    },
+    /** What WebKit does to a context a phone call takes over. */
+    interrupt: () => {
+      ctx.state = 'interrupted' as AudioContextState
+      for (const listener of ctx.listeners) listener()
+    },
     decodeAudioData: vi.fn(async (bytes: ArrayBuffer) => ({ bytes })),
     createGain: () => {
       const param = {
@@ -219,5 +232,140 @@ describe('the alley ambient', () => {
     await done
     await settle()
     expect(ctx.suspend).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("the ambient's context over its life", () => {
+  // Each createContext() is a new fake, as a real one would be.
+  let contexts: Array<ReturnType<typeof fakeContext>>
+  let loads: number
+  let log: Call[]
+
+  const make = (onResume?: (c: ReturnType<typeof fakeContext>) => void) =>
+    createAlleyAmbient({
+      createContext: () => {
+        const made = fakeContext(log)
+        if (onResume !== undefined) {
+          made.resume = vi.fn(async () => onResume(made))
+        }
+        contexts.push(made)
+        return made as unknown as AudioContext
+      },
+      load: async () => {
+        loads += 1
+        return new ArrayBuffer(8)
+      },
+      activate: async (target: AmbientActivation) => {
+        const init = target.init()
+        await init
+        await target.resume()
+      },
+    })
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    contexts = []
+    loads = 0
+    log = []
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('replaces a context iOS left interrupted, inside the next tap', async () => {
+    const ambient = make()
+    ambient.start('sing', 600)
+    await settle()
+    expect(contexts).toHaveLength(1)
+
+    // A call comes in; the door is tapped again once it is over.
+    contexts[0].interrupt()
+    ambient.start('ear', 600)
+
+    // Synchronously, inside the tap: the old one closed, a new one made.
+    expect(contexts).toHaveLength(2)
+    expect(contexts[0].close).toHaveBeenCalledTimes(1)
+    await settle()
+    expect(log).toContainEqual(['source1.start', 1, true])
+    expect(ambient.sounding()).toBe('ear')
+  })
+
+  it('replaces one that an interruption left reporting running', async () => {
+    const ambient = make()
+    ambient.start('sing', 600)
+    await settle()
+    contexts[0].interrupt()
+    // WebKit's quirk: back to 'running' after the interruption, output dead.
+    contexts[0].state = 'running'
+
+    ambient.start('ear', 600)
+    expect(contexts).toHaveLength(2)
+  })
+
+  it('replaces one that a resume inside a tap left not running', async () => {
+    const ambient = make(() => undefined)
+    ambient.start('sing', 600)
+    await settle()
+    expect(contexts[0].state).toBe('suspended')
+
+    ambient.start('ear', 600)
+    expect(contexts).toHaveLength(2)
+  })
+
+  it('replaces one after the page came back from the background', async () => {
+    const ambient = make()
+    ambient.start('sing', 600)
+    await settle()
+    void ambient.stop(120)
+    await vi.advanceTimersByTimeAsync(200)
+
+    ambient.recover()
+    ambient.start('sing', 600)
+    expect(contexts).toHaveLength(2)
+  })
+
+  it('keeps a healthy one from tap to tap', async () => {
+    const ambient = make()
+    ambient.start('sing', 600)
+    await settle()
+    ambient.start('ear', 600)
+    expect(contexts).toHaveLength(1)
+  })
+
+  it('lets go of its context and buffers once the alley has gone', async () => {
+    const ambient = make()
+    ambient.start('sing', 600)
+    await settle()
+    expect(loads).toBe(1)
+
+    void ambient.stop(520)
+    ambient.dispose()
+    // The fade runs out first: nothing is closed under it.
+    await settle()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(contexts[0].close).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(520 + RELEASE_SLACK_MS - 300)
+    await settle()
+    expect(contexts[0].close).toHaveBeenCalledTimes(1)
+
+    // The next tap rebuilds both.
+    ambient.start('sing', 600)
+    await settle()
+    expect(contexts).toHaveLength(2)
+    expect(loads).toBe(2)
+  })
+
+  it('keeps them when a tap came back before the fade ran out', async () => {
+    const ambient = make()
+    ambient.start('sing', 600)
+    await settle()
+    void ambient.stop(520)
+    ambient.dispose()
+    ambient.start('sing', 600)
+    await vi.advanceTimersByTimeAsync(1000)
+    await settle()
+    expect(contexts[0].close).not.toHaveBeenCalled()
+    expect(loads).toBe(1)
   })
 })
