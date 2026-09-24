@@ -188,18 +188,24 @@ test('moves a live app-tab microphone lease into Glassworks @smoke', async ({
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390)
-  const alertBox = await alert.boundingBox()
-  const tuneBox = await page
-    .getByRole('button', { name: 'Camera tuning' })
-    .boundingBox()
-  if (alertBox === null || tuneBox === null)
-    throw new Error('Recovery alert and tuning control must both be laid out.')
-  expect(
-    alertBox.x < tuneBox.x + tuneBox.width &&
-      alertBox.x + alertBox.width > tuneBox.x &&
-      alertBox.y < tuneBox.y + tuneBox.height &&
-      alertBox.y + alertBox.height > tuneBox.y,
-  ).toBe(false)
+  for (const width of [320, 390, 540, 600]) {
+    await page.setViewportSize({ width, height: 844 })
+    const alertBox = await alert.boundingBox()
+    const tuneBox = await page
+      .getByRole('button', { name: 'Camera tuning' })
+      .boundingBox()
+    if (alertBox === null || tuneBox === null)
+      throw new Error(
+        'Recovery alert and tuning control must both be laid out.',
+      )
+    expect(
+      alertBox.x < tuneBox.x + tuneBox.width &&
+        alertBox.x + alertBox.width > tuneBox.x &&
+        alertBox.y < tuneBox.y + tuneBox.height &&
+        alertBox.y + alertBox.height > tuneBox.y,
+    ).toBe(false)
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
   await captureProof(page, testInfo, 'glassworks-mic-handoff-phone')
 
   await action.click()

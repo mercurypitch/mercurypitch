@@ -212,7 +212,7 @@
   cursor: wait;
   opacity: 0.68;
 }
-@media (max-width: 520px) {
+@media (max-width: 600px) {
   .error {
     /* Clear the complete utility rail, including the development Tune action. */
     top: calc(max(18px, env(safe-area-inset-top)) + 220px);
