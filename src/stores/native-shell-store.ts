@@ -195,6 +195,15 @@ export function roomArrivalHeld(): boolean {
   return arrivalHolds() > 0
 }
 
+/**
+ * Tests only: drop every hold. The count is module state, so a case that
+ * throws between a hold and its release would otherwise hold every later
+ * case in the file.
+ */
+export function resetRoomArrivalHolds(): void {
+  setArrivalHolds(0)
+}
+
 /** Hold every room's arrival until the returned release is called. */
 export function holdRoomArrival(): () => void {
   setArrivalHolds((count) => count + 1)

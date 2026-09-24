@@ -18,7 +18,7 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
-import { holdRoomArrival, nativeRunControls } from '@/stores/native-shell-store'
+import { holdRoomArrival, nativeRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import type { MelodyItem, NoteName } from '@/types'
 import { dispatchSingRoom, singRoomContext } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
@@ -198,6 +198,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   dispatchSingRoom({ type: 'leave' })
+  // A case that throws between a hold and its release leaves no hold behind.
+  resetRoomArrivalHolds()
 })
 
 describe('the room when the melody runs out', () => {
