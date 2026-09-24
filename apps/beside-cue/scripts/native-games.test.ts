@@ -2,6 +2,7 @@
 // Native games profile tests — preserve store inputs and reject mismatched web output
 // ============================================================
 
+import { glassGameAssetPath } from '@irchiinnuss/glass-game/assets'
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
@@ -10,6 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { gamesInfoPlist, parseOptions, requiredGameAssets, stageGamesProfile, verifySyncedGamesProfile, } from './native-games.ts'
 
 const temporary: string[] = []
+const opalineAsset = `games/${glassGameAssetPath('opaline-v6')}`
 const publicDirectory = fileURLToPath(new URL('../public/', import.meta.url))
 
 function fixture(): string {
@@ -164,14 +166,14 @@ describe('explicit native games profile', () => {
     for (const asset of requiredGameAssets) put(directory, `dist/${asset}`)
     put(
       directory,
-      'dist/games/adventure-v6/opaline-echo-amphora.glb',
+      `dist/${opalineAsset}`,
       'version https://git-lfs.github.com/spec/v1\n' +
         'oid sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n' +
         'size 123456\n',
     )
 
     expect(() => stageGamesProfile(directory, 'android', false)).toThrow(
-      'Git LFS pointer for games/adventure-v6/opaline-echo-amphora.glb',
+      `Git LFS pointer for ${opalineAsset}`,
     )
     expect(
       existsSync(resolve(directory, 'dist/native-games-profile.json')),
@@ -189,14 +191,14 @@ describe('explicit native games profile', () => {
     cpSync(resolve(directory, 'dist'), nativePublic, { recursive: true })
 
     expect(() => verifySyncedGamesProfile(directory, 'android')).not.toThrow()
-    put(nativePublic, 'games/adventure-v6/opaline-echo-amphora.glb', 'corrupx')
+    put(nativePublic, opalineAsset, 'corrupx')
     expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
-      'differs at games/adventure-v6/opaline-echo-amphora.glb',
+      `differs at ${opalineAsset}`,
     )
     cpSync(resolve(directory, 'dist'), nativePublic, { recursive: true })
-    rmSync(resolve(nativePublic, 'games/adventure-v6/opaline-echo-amphora.glb'))
+    rmSync(resolve(nativePublic, opalineAsset))
     expect(() => verifySyncedGamesProfile(directory, 'android')).toThrow(
-      'opaline-echo-amphora.glb',
+      opalineAsset,
     )
   })
 
