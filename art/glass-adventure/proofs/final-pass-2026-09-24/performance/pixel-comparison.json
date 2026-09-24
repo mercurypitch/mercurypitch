@@ -1,0 +1,51 @@
+{
+  "method": "Pillow RGB absolute difference on same-size 1170x2532 actual Chromium screenshots",
+  "comparisons": [
+    {
+      "a": "high-accepted-baseline.png",
+      "b": "balanced-shadow-update.png",
+      "dimensions": [
+        1170,
+        2532
+      ],
+      "changedPixelFraction": 0.5355041789875913,
+      "meanAbsoluteChannelError255": 1.0909694936156231,
+      "rootMeanSquareChannelError255": 3.374828892546187,
+      "peakSignalToNoiseDb": 37.56576843811924,
+      "byteIdentical": false
+    },
+    {
+      "a": "balanced-shadow-update.png",
+      "b": "balanced-shadow-reuse.png",
+      "dimensions": [
+        1170,
+        2532
+      ],
+      "changedPixelFraction": 0.0,
+      "meanAbsoluteChannelError255": 0.0,
+      "rootMeanSquareChannelError255": 0.0,
+      "peakSignalToNoiseDb": null,
+      "byteIdentical": true
+    },
+    {
+      "a": "balanced-shadow-reuse.png",
+      "b": "balanced-movement-start.png",
+      "dimensions": [
+        1170,
+        2532
+      ],
+      "changedPixelFraction": 0.17680054279580346,
+      "meanAbsoluteChannelError255": 0.23462224832682968,
+      "rootMeanSquareChannelError255": 1.2939508019942891,
+      "peakSignalToNoiseDb": 45.89244832667134,
+      "byteIdentical": false
+    }
+  ],
+  "sha256": {
+    "high-accepted-baseline.png": "ddc416cccbe706610d61d219a50b29c6506368e2ec59eb37d1f09ea071efd0be",
+    "balanced-shadow-update.png": "fa453bcdffe3e36b1a7e7df53c2717bf63d5686ccbe17aba4a989f300c6f8469",
+    "balanced-shadow-reuse.png": "fa453bcdffe3e36b1a7e7df53c2717bf63d5686ccbe17aba4a989f300c6f8469",
+    "balanced-movement-start.png": "b6d6e42d4c0d1c3d7ff732758913d02d4e1041993ff554796e95e38640f3c938",
+    "quality-selector-phone.png": "396450fa5c31375259f92b0aa5997b1ff6c8552cd3b9c3c3cc219f6ada8fadae"
+  }
+}

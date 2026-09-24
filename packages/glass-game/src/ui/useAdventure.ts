@@ -9,6 +9,8 @@ import type { GlassGameHost, MuseumAudioPreferences } from '../host'
 import type { LoadingProgress } from '../loading-progress'
 import type { GlassRenderer } from '../render/glass-renderer'
 import { createGlassRenderer } from '../render/glass-renderer'
+import type { GlassRenderQualityPreference, GlassRenderQualityProfile, } from '../render/render-quality'
+import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } from '../render/render-quality'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { initialAdventureNotice } from './adventure-notice'
 import type { CameraComfortSettings } from './camera-comfort'
@@ -44,6 +46,13 @@ export function useAdventure(
   const [cameraComfort, setCameraComfort] = createSignal(
     parseCameraComfort(host.readPreference(CAMERA_COMFORT_PREFERENCE)),
   )
+  const [renderQualityPreference, setRenderQualityPreference] = createSignal(
+    parseGlassRenderQualityPreference(
+      host.readPreference(GLASS_RENDER_QUALITY_PREFERENCE),
+    ),
+  )
+  const [renderQualityProfile, setRenderQualityProfile] =
+    createSignal<GlassRenderQualityProfile>('high')
   const [snapshot, setSnapshot] = createSignal(initialSnapshot)
   const [completionPresented, setCompletionPresented] = createSignal(
     initialSnapshot.complete,
@@ -400,6 +409,15 @@ export function useAdventure(
     renderer?.setFollowSmoothness(normalized.followSmoothnessSeconds)
   }
 
+  function changeRenderQuality(next: GlassRenderQualityPreference): void {
+    const preference = parseGlassRenderQualityPreference(next)
+    setRenderQualityPreference(preference)
+    host.writePreference(GLASS_RENDER_QUALITY_PREFERENCE, preference)
+    renderer?.setRenderQuality(preference)
+    const profile = renderer?.getRenderQuality().profile
+    if (profile !== undefined) setRenderQualityProfile(profile)
+  }
+
   function gameplayGesture(): void {
     if (!ready()) return
     soundscape.activate()
@@ -450,6 +468,7 @@ export function useAdventure(
       attempt = createGlassRenderer(mount(), level, host.assetUrl, {
         reducedMotion,
         followSmoothnessSeconds: cameraComfort().followSmoothnessSeconds,
+        renderQuality: renderQualityPreference(),
         onLoadingProgress: (progress) => {
           loading.reportProgress(generation, progress)
         },
@@ -464,6 +483,7 @@ export function useAdventure(
           failRendererAttempt(generation, GRAPHICS_LOAD_ERROR, attempt)
         },
       })
+      setRenderQualityProfile(attempt.getRenderQuality().profile)
     } catch {
       loading.fail(generation, GRAPHICS_SUPPORT_ERROR)
       return
@@ -727,6 +747,9 @@ export function useAdventure(
     changeNarration,
     cameraComfort,
     changeCameraComfort,
+    renderQualityPreference,
+    renderQualityProfile,
+    changeRenderQuality,
     gameplayGesture,
     silenceForEncore: () => {
       clearNarrationCaption()

@@ -305,7 +305,12 @@ it('culls room rendering without removing camera solids and restores a newly ent
   camera.lookAt(24, 1.5, -10)
   const selection = museum.updateRoomVisibility({ x: 20, y: 0, z: -10 }, camera)
   expect(selection.visibleRoomIds.has(roomId)).toBe(true)
+  expect(selection.shadowVisibilityChanged).toBe(true)
   expect(roomGroup.visible).toBe(true)
+  expect(
+    museum.updateRoomVisibility({ x: 20, y: 0, z: -10 }, camera)
+      .shadowVisibilityChanged,
+  ).toBe(false)
 
   disposeObject(museum.root, museum.materialLibrary.materials)
   museum.materialLibrary.dispose()

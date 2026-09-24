@@ -21,7 +21,7 @@ Commit and push each coherent stage; keep #861 open for owner acceptance.
   playback matching the same key and pace judged by the microphone exercise.
   Preserve masters/receipts and a listenable audition; validate decoded references
   and negative controls through the actual pitch/judge path.
-- [ ] 4. Mobile rendering: measure pass and pixel costs, implement bounded quality
+- [x] 4. Mobile rendering: measure pass and pixel costs, implement bounded quality
   policy and avoid redundant work without blindly decimating accepted source art.
   Compare matched frames and preserve shadows, glass and animation. Desktop
   counters and screenshots do not establish physical-tablet FPS or heat.
@@ -70,3 +70,15 @@ images must come from the real runtime, not only offline render scenes.
   sustained lateral intent earns smooth follow after 240 ms. Root reviewed the
   intent boundary and integration. 39 focused unit cases and two real keyboard/
   touch browser cases passed; physical-device comfort remains owner acceptance.
+
+- Mobile quality stage: root reviewed the stable Auto/High/Balanced selection,
+  one-frame shadow reuse and immediate invalidation. 43 focused unit tests,
+  real touch/persistence/320–1280 px host checks, actual-raster comparison and a
+  production app build passed. Measured Balanced two-frame work fell 18.15% in
+  submitted triangles and 40.93% in target pixels; this is not device FPS.
+  UI copy was polished and the selector screenshot refreshed after review.
+- Museum implementation and matched per-island captures are complete, with 37
+  focused tests and scoped lint passing. Independent review remains pending.
+- The required combined pre-push preparation/typecheck has not run for this new
+  five-pass batch yet. Earlier gate receipts belong to the starting `3eb1ccf5`
+  mobile-flow batch and must not be mistaken for final validation of these edits.

@@ -112,6 +112,32 @@
   color: #fffced;
 }
 
+.quality {
+  min-width: 0;
+  margin: 4px 0 10px;
+  padding: 10px;
+  border: 1px solid rgb(57 125 117 / 32%);
+  border-radius: 14px;
+}
+
+.quality legend {
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quality .presets {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 8px 0;
+}
+
+.qualityStatus,
+.quality small {
+  color: #58746d;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .row {
   gap: 5px;
   padding: 9px 0;
