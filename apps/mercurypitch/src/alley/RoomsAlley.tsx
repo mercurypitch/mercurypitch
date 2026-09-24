@@ -34,7 +34,7 @@ import { activateAudioPlayback } from '@/lib/audio-unlock'
 import { exposeForE2E } from '@/lib/test-utils'
 import { holdRoomArrival, registerSkipTarget, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { shellCovered } from '../shell/run-shell-store'
-import { goToTab, registerDoorOpen } from '../shell/shell-navigation'
+import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
 import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
@@ -432,27 +432,30 @@ export const RoomsAlley: Component = () => {
     // "Skip to main content" lands here: <main> is empty on this tab.
     if (root !== undefined) onCleanup(registerSkipTarget(root))
 
-    // Escape puts a door back, as a tap on the plate does: the card goes and
-    // the ambient fades out.
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return
-      const phase = alley().phase
-      // Mid-grow it is Back: the open is called off and the alley stays.
-      if (phase === 'opening') {
-        if (cancelOpen()) event.preventDefault()
-        return
-      }
-      if (phase !== 'selected' && phase !== 'alive') return
-      event.preventDefault()
-      const door = alley().door
+    // Escape and Back put a door back, as a tap on the plate does: the card
+    // goes and the ambient fades out. True when there was one to put back.
+    const putBack = (): boolean => {
+      const state = alley()
+      if (state.phase !== 'selected' && state.phase !== 'alive') return false
       clear()
       // The card that had focus is gone: focus goes back to the door it was
       // for, not to <body>, so the next Tab starts where the reader was.
       root
         ?.querySelector<HTMLButtonElement>(
-          `.mp-alley__key[data-door="${door}"]`,
+          `.mp-alley__key[data-door="${state.door}"]`,
         )
         ?.focus({ preventScroll: true })
+      return true
+    }
+    onCleanup(registerDoorClear(putBack))
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      // Mid-grow it is Back: the open is called off and the alley stays.
+      if (alley().phase === 'opening') {
+        if (cancelOpen()) event.preventDefault()
+        return
+      }
+      if (putBack()) event.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     onCleanup(() => window.removeEventListener('keydown', onKey))

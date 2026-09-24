@@ -96,6 +96,27 @@ export function cancelDoorOpen(): boolean {
   return cancel?.() === true
 }
 
+// ── A door picked ────────────────────────────────────────────
+//
+// A door selected on the alley puts up its card, its Enter and a dim over
+// everything else: the alley's own overlay. Back puts the door back into the
+// plate, exactly as Escape does. Without this the press fell through to
+// 'history' (leaving Rooms) or, at the root, 'minimize' (backgrounding the
+// app) — with the card still up.
+
+let doorClear: (() => boolean) | null = null
+
+/**
+ * Register the alley's "put the picked door back". It answers true when a
+ * door was picked and is now back; the returned function unregisters it.
+ */
+export function registerDoorClear(clear: () => boolean): () => void {
+  doorClear = clear
+  return () => {
+    if (doorClear === clear) doorClear = null
+  }
+}
+
 /**
  * Go to a tab, parking a run on the way out if this is the room it belongs
  * to. Sound stops and the microphone is released on the same frame, with
@@ -129,6 +150,7 @@ export function returnToRun(): void {
 
 export type BackOutcome =
   | 'door-open'
+  | 'door-cleared'
   | 'column'
   | 'sheet'
   | 'alert'
@@ -195,6 +217,13 @@ export function performBack(host: BackHost): BackOutcome {
   // the alley stays. Never 'minimize' — the app is not at its root, it is
   // half-way into a room.
   if (cancelDoorOpen()) return 'door-open'
+  // A door picked is the alley's overlay: the press puts it back. Never
+  // 'history' or 'minimize' while the card is up. Only with nothing of the
+  // shell's over it — a sheet or a pushed screen covering the alley has
+  // already put the door back (`shellCovered`), and outranks it anyway.
+  if (!shellOverlayOpen() && pushed() === null && doorClear?.() === true) {
+    return 'door-cleared'
+  }
   // The room's overlay, between the More sheet and a pushed screen. Asked
   // only once nothing the shell owns wants the press, and asking is closing.
   if (

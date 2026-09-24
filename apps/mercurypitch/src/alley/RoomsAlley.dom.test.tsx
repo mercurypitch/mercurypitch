@@ -385,6 +385,20 @@ describe('the keyboard', () => {
     expect(document.activeElement).toBe(el('alley-door-sing'))
   })
 
+  it('Back puts a picked door back, as Escape does, and never leaves', async () => {
+    const { el, nav } = await mountAlley()
+    el('alley-door-sing').click()
+    expect(el('rooms-alley').dataset.phase).toBe('alive')
+    const back = { canGoBack: true, back: vi.fn(), minimize: vi.fn() }
+
+    expect(nav.performBack(back)).toBe('door-cleared')
+
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+    expect(back.back).not.toHaveBeenCalled()
+    expect(back.minimize).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(el('alley-door-sing'))
+  })
+
   it('Escape mid-open calls the open off, as Back does', async () => {
     const { el, store, nav } = await mountAlley()
     el('alley-door-sing').click()

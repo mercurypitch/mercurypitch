@@ -9,7 +9,7 @@ import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { canGoBack, installHistoryDepth } from './history-depth'
 import { openColumn, openMore, pushed, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
-import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorOpen, resolveBack, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
+import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorClear, registerDoorOpen, resolveBack, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
 
 // Only for the ORDER of the first four outcomes, which never reach history.
 // Everything about leaving the room is driven through the real host below:
@@ -159,6 +159,49 @@ describe('a door open in flight', () => {
 
   it('an open that refuses the cancel is not a handled press', () => {
     registerDoorOpen(() => false)
+    expect(performBack(host(false))).toBe('minimize')
+  })
+})
+
+describe('a door picked on the alley', () => {
+  // The card, its Enter and the dim are the alley's overlay. Back fell
+  // through to 'history' (leaving Rooms) or 'minimize' (backgrounding the
+  // app) with the card still up, while Escape put the door back.
+  it('Back puts it back and reports the press handled, at the root', () => {
+    const clear = vi.fn(() => true)
+    unregister = registerDoorClear(clear)
+    const back = host(false)
+
+    expect(performBack(back)).toBe('door-cleared')
+    expect(clear).toHaveBeenCalledTimes(1)
+    expect(back.minimize).not.toHaveBeenCalled()
+    expect(back.back).not.toHaveBeenCalled()
+  })
+
+  it('Back puts it back rather than leaving Rooms, with history behind', () => {
+    unregister = registerDoorClear(() => true)
+    const back = host(true)
+
+    expect(performBack(back)).toBe('door-cleared')
+    expect(back.back).not.toHaveBeenCalled()
+  })
+
+  it('with no door picked, the press goes on down the order', () => {
+    unregister = registerDoorClear(() => false)
+    expect(performBack(host(false))).toBe('minimize')
+  })
+
+  it('the More sheet outranks it', () => {
+    const clear = vi.fn(() => true)
+    unregister = registerDoorClear(clear)
+    openMore()
+
+    expect(performBack(host(false))).toBe('sheet')
+    expect(clear).not.toHaveBeenCalled()
+  })
+
+  it('an alley that has gone takes its door with it', () => {
+    registerDoorClear(() => true)()
     expect(performBack(host(false))).toBe('minimize')
   })
 })

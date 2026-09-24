@@ -3310,6 +3310,32 @@ async function walkAlley(browser, args, frame) {
       `alley Sing picked then More: ambient ${under.alley.level}, clip paused with no source, alley ${under.alley.phase}; More closed, alley ${back.phase} at ${back.level}`,
     )
 
+    // ── Back with a door picked (PR 859 review, item 6) ────────
+    // The card is the alley's overlay: Back puts the door back, as Escape
+    // does. It once fell through to 'history' or, at the root, 'minimize'.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'Back over a door: select Sing')
+    const pickedHash = await page.evaluate(() => window.location.hash)
+    const backAnswer = await pressBack(page)
+    const afterBack = await page.evaluate(() => ({
+      hash: window.location.hash,
+      alley: window.mpAlley(),
+      card: document.querySelector('[data-testid="alley-card"]') !== null,
+    }))
+    if (
+      backAnswer !== 'door-cleared' ||
+      afterBack.hash !== pickedHash ||
+      afterBack.alley.phase !== 'rest' ||
+      afterBack.card
+    ) {
+      throw new Error(
+        `Back over a door: answered '${backAnswer}', ${JSON.stringify({ pickedHash, ...afterBack })}`,
+      )
+    }
+    steps.push(
+      `alley Sing picked then Back: answered '${backAnswer}', still on ${afterBack.hash}, alley ${afterBack.alley.phase}, no card`,
+    )
+
     // ── Reduced motion ────────────────────────────────────────
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page
