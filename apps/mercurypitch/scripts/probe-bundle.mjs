@@ -1805,36 +1805,51 @@ async function walkRound2(page, ctx, steps) {
       `the grabber's target is ${grabber.width}x${grabber.height}, under 44`,
     )
   }
-  // The box says 44x44 whatever clips it, so the box is not the question.
-  // Review N2: centred on the 16px band, the target reached 13px above the
-  // panel, `.panel`'s own overflow clipped that, and a tap 4px below the
-  // panel's top edge landed on the BACKDROP. Asked of the page, not the box:
-  // whose element is under the thumb, down the target's centre line?
+  // Whose element is under the thumb, asked of the page rather than the box.
+  // The grabber answers at the band's centre; the sheet's first content row
+  // answers 2 px into itself. Hung from the panel's top edge (0143fe56) the
+  // 44 px target reached 16 px down over the first row of every sheet, and a
+  // tap there closed the web More-tabs sheet instead of switching tab
+  // (PR 859 review, item 7): the pre-PR placement, centred on the band and
+  // clipped by the panel, is back.
   const reach = await page.evaluate(() => {
     const panel = document.querySelector('[data-testid="sheet-panel"]')
     const hit = document.querySelector('[data-testid="sheet-handle"]')
-    if (panel === null || hit === null) return null
-    const top = panel.getBoundingClientRect().top
+    const first = panel?.children[1]
+    if (panel === null || hit === null || first === undefined) return null
+    const band = hit.parentElement.getBoundingClientRect()
     const box = hit.getBoundingClientRect()
     const x = box.left + box.width / 2
-    return [4, 22, 40].map((dy) => {
-      const node = document.elementFromPoint(x, top + dy)
+    const at = (y) => {
+      const node = document.elementFromPoint(x, y)
       return {
-        dy,
         grabber: node !== null && hit.contains(node),
+        row: node !== null && first.contains(node),
         what:
           node === null
             ? 'nothing'
             : (node.getAttribute('data-testid') ?? node.tagName.toLowerCase()),
       }
-    })
+    }
+    const rowTop = first.getBoundingClientRect().top
+    const r = (b) => [b.top, b.bottom].map((n) => Math.round(n * 10) / 10)
+    return {
+      boxes: {
+        panel: r(panel.getBoundingClientRect()),
+        band: r(band),
+        hit: r(box),
+        row: r(first.getBoundingClientRect()),
+      },
+      centre: at(band.top + band.height / 2),
+      row: at(rowTop + 2),
+      hitBottom: Math.round((box.bottom - rowTop) * 10) / 10,
+    }
   })
   if (reach === null)
     throw new Error('no sheet panel to measure the grabber in')
-  const missed = reach.filter((point) => !point.grabber)
-  if (missed.length > 0) {
+  if (!reach.centre.grabber || !reach.row.row) {
     throw new Error(
-      `a tap on the grabber's centre line lands on ${missed.map((point) => `${point.what} at +${point.dy}px`).join(', ')}, not the grabber`,
+      `the grabber's centre line: band centre ${reach.centre.what}, first row +2px ${reach.row.what} (target bottom ${reach.hitBottom}px from the row; ${JSON.stringify(reach.boxes)})`,
     )
   }
   // …and it costs the sheet nothing. R7 first shipped the target as the
@@ -1869,7 +1884,7 @@ async function walkRound2(page, ctx, steps) {
     'the sheet after a tap on its grabber',
   )
   steps.push(
-    `sheet: the grabber is ${grabber.width}x${grabber.height} over a ${band.height}px band, the grabber is under the thumb at +4, +22 and +40px, content still ${contentTop}px down, and a tap closes`,
+    `sheet: the grabber is ${grabber.width}x${grabber.height} over a ${band.height}px band, the grabber answers at the band's centre and the first row 2px into itself, content still ${contentTop}px down, and a tap closes`,
   )
 
   // ── R4: the pill opens Your takes, and Remove removes one ──
