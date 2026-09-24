@@ -30,3 +30,10 @@ describe('every color-mix() in alley.css', () => {
     }
   })
 })
+
+describe("the Ear Lab's drift", () => {
+  it("pivots in the paint img's own coordinates", () => {
+    const rule = /\.is-drifting \.mp-alley__paint img\s*\{([^}]*)\}/u.exec(CSS)
+    expect(rule?.[1]).toMatch(/transform-origin:\s*var\(--px\) var\(--py\)/u)
+  })
+})

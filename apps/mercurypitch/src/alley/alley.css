@@ -256,8 +256,11 @@
   }
 }
 
+/* In the img's own box, not the screen's: the img is drawn from (-ox, -oy),
+   and a screen-space origin put the pivot that far from the door, so the
+   bay slid sideways instead of breathing (--px/--py, RoomsAlley.tsx). */
 .mp-alley__door.is-drifting .mp-alley__paint img {
-  transform-origin: var(--cx) var(--cy);
+  transform-origin: var(--px) var(--py);
 }
 
 .mp-alley__door.is-alive.is-drifting .mp-alley__paint img {

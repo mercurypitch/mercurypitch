@@ -365,6 +365,35 @@ describe('a measure', () => {
   })
 })
 
+describe("the Ear Lab's drift", () => {
+  it.each([
+    [393, 852],
+    [852, 393],
+  ])('pivots on the door centre at %i x %i', async (w, h) => {
+    vi.stubGlobal('innerWidth', w)
+    vi.stubGlobal('innerHeight', h)
+    const { el } = await mountAlley()
+    const ear = el('rooms-alley').querySelector<HTMLElement>(
+      '.mp-alley__door[data-door="ear"]',
+    )
+    const img = ear?.querySelector<HTMLImageElement>('.mp-alley__paint img')
+    if (ear === null || ear === undefined || img === null || img === undefined)
+      throw new Error('no Ear Lab paint')
+    const px = (name: string): number =>
+      Number.parseFloat(ear.style.getPropertyValue(name))
+    // The origin, taken back to the screen through the img's own offset, is
+    // the door's centre.
+    expect(Number.parseFloat(img.style.left) + px('--px')).toBeCloseTo(
+      px('--cx'),
+      1,
+    )
+    expect(Number.parseFloat(img.style.top) + px('--py')).toBeCloseTo(
+      px('--cy'),
+      1,
+    )
+  })
+})
+
 describe('the plate file', () => {
   it('is the 1x on a DPR 3 screen on its side, where the band draws it small', async () => {
     vi.stubGlobal('innerWidth', 852)

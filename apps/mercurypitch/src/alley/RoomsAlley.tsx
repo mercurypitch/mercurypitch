@@ -683,6 +683,10 @@ export const RoomsAlley: Component = () => {
                 style={{
                   '--cx': `${door().cx}px`,
                   '--cy': `${door().cy}px`,
+                  // The same centre in the paint <img>'s own box, which starts
+                  // at (-ox, -oy): where the Ear Lab's drift pivots.
+                  '--px': `${door().cx + fit().ox}px`,
+                  '--py': `${door().cy + fit().oy}px`,
                   '--sx': `${Math.round((door().quad[2][0] + door().quad[3][0]) / 2)}px`,
                   '--sy': `${Math.round((door().quad[2][1] + door().quad[3][1]) / 2)}px`,
                   '--sw': `${Math.round((door().x1 - door().x0) * 2.4)}px`,
