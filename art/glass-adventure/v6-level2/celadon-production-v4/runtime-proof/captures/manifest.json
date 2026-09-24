@@ -1,0 +1,84 @@
+{
+  "capturedAt": "2026-09-24T01:16:32.671Z",
+  "server": "http://127.0.0.1:5363",
+  "url": "http://127.0.0.1:5363/glass-game/?layout=twin-galleries",
+  "viewport": {
+    "width": 1024,
+    "height": 768,
+    "deviceScaleFactor": 1
+  },
+  "rasterization": "Recorded frames use the shipped Twin Galleries Three/WebGL2 renderer at full resolution with the original draw methods restored; navigation and real-audio challenge input temporarily suppress raster draw calls to keep SwiftShader timing bounded.",
+  "encounter": {
+    "id": "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+    "label": "Celadon lark decanter",
+    "preservedCompletedBeforeCapture": [
+      "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn"
+    ]
+  },
+  "levelId": "glassworks-twin-galleries/twin-galleries",
+  "checkpointId": "glassworks-twin-galleries/twin-galleries/cool/checkpoint/entry",
+  "completedMainExhibits": 2,
+  "player": {
+    "x": 11.557447482063692,
+    "y": 0,
+    "z": 12.096037511825562
+  },
+  "cameraYaw": 0.29139027255178396,
+  "freeze": {
+    "armedAt": 33011.59999999404,
+    "freezeAt": 33171.59999999404,
+    "frozenAt": 33182,
+    "frozen": true,
+    "animationCallbacks": 349,
+    "completedAnimationCallbacks": 349,
+    "lastAnimationTimestamp": 33177.8,
+    "now": 33215.40000000596,
+    "blockReason": "fracture",
+    "rasterMinimized": false,
+    "rasterSize": {
+      "width": 1024,
+      "height": 768
+    },
+    "drawSuppressed": false
+  },
+  "renderer": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "width": 1024,
+    "height": 768
+  },
+  "asset": {
+    "path": "/games/adventure-v6/celadon-lark-decanter-fracture-v4.glb",
+    "status": 200,
+    "bytes": 5820204,
+    "sha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346",
+    "matchesLocal": true
+  },
+  "screenshots": [
+    {
+      "file": "celadon-lark-decanter-game-distance-intact-v4.png",
+      "sha256": "13eb9328dd5484f4444c5f5886d9cf2c907f34883d9794de8396496b9f5717c5"
+    },
+    {
+      "file": "celadon-lark-decanter-game-distance-fracture-v4.png",
+      "sha256": "9047993ff308ab1e9c99bfdeb24d9067fc275ae3c678d1ea9a037b0b148ea158"
+    }
+  ],
+  "savedProgress": {
+    "version": 2,
+    "levelId": "glassworks-twin-galleries/twin-galleries",
+    "checkpointId": "glassworks-twin-galleries/twin-galleries/cool/checkpoint/entry",
+    "completedBreakableIds": [
+      "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+      "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter"
+    ],
+    "finished": false,
+    "rewards": {
+      "version": 1,
+      "discoveredEncounterIds": [],
+      "collectedCoinIds": [],
+      "qualityResults": [],
+      "collectedPortraitIds": []
+    }
+  },
+  "errors": []
+}

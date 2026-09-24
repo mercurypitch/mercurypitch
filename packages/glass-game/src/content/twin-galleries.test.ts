@@ -352,11 +352,7 @@ describe('Twin Galleries blockout', () => {
       yaw: -Math.PI / 2,
       coveredSolidIds: [ids.harpBase],
     })
-    expect(TWIN_GALLERIES_V6_HANDOFF.exhibits).toMatchObject({
-      'upper-decanter': {
-        currentPrefabId: 'glassworks-journey-fluted',
-      },
-    })
+    expect(TWIN_GALLERIES_V6_HANDOFF.exhibits).toEqual({})
     expect(TWIN_GALLERIES_V6_HANDOFF.integratedExhibits).toEqual({
       'lower-urn': {
         currentPrefabId: 'twin-galleries-amber-urn',
@@ -369,6 +365,12 @@ describe('Twin Galleries blockout', () => {
         assetRecipeId: 'opaline-v6',
         source:
           'art/glass-adventure/v6-level2/exports/opaline-echo-amphora-fracture-v2.glb',
+      },
+      'upper-decanter': {
+        currentPrefabId: 'twin-galleries-celadon-decanter',
+        assetRecipeId: 'celadon-lark-decanter-fracture-v4',
+        source:
+          'art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-v4.glb',
       },
     })
     expect(
@@ -386,8 +388,18 @@ describe('Twin Galleries blockout', () => {
         'twin-tone-harp-v6',
         'opaline-v6',
         'amber-v6',
+        'celadon-lark-decanter-fracture-v4',
       ]),
     )
+    expect(
+      TWIN_GALLERIES.breakables.find((item) => item.id === ids.upper),
+    ).toMatchObject({
+      id: ids.upper,
+      label: 'Celadon lark decanter',
+      variant: 'celadon-lark-decanter-fracture-v4',
+      optional: false,
+      requiresCompleted: [ids.lower],
+    })
   })
 
   it('keeps the harp base physical while leaving the court route clear', () => {

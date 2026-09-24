@@ -1,0 +1,470 @@
+{
+  "schema": 1,
+  "status": "geometry and GLB reimport validated; visual proof pending",
+  "assetId": "celadon-lark-decanter",
+  "preparedInput": "sources/celadon-lark-decanter-cavity-v4.blend",
+  "preparedSha256": "e04c5af3e54c1d9e2231e540427060b2bceddfe812019a58973df1ddb4e119fb",
+  "units": "metres",
+  "up": "+Y in GLB; +Z in Blender source",
+  "root": "breakable_l2_high_celadon_decanter",
+  "intact": "breakable_l2_high_celadon_decanter_intact",
+  "shards": [
+    "breakable_l2_high_celadon_decanter_shard_000",
+    "breakable_l2_high_celadon_decanter_shard_001",
+    "breakable_l2_high_celadon_decanter_shard_002",
+    "breakable_l2_high_celadon_decanter_shard_003",
+    "breakable_l2_high_celadon_decanter_shard_004",
+    "breakable_l2_high_celadon_decanter_shard_005",
+    "breakable_l2_high_celadon_decanter_shard_006",
+    "breakable_l2_high_celadon_decanter_shard_007",
+    "breakable_l2_high_celadon_decanter_shard_008",
+    "breakable_l2_high_celadon_decanter_shard_009",
+    "breakable_l2_high_celadon_decanter_shard_010",
+    "breakable_l2_high_celadon_decanter_shard_011",
+    "breakable_l2_high_celadon_decanter_shard_012",
+    "breakable_l2_high_celadon_decanter_shard_013",
+    "breakable_l2_high_celadon_decanter_shard_014",
+    "breakable_l2_high_celadon_decanter_shard_015",
+    "breakable_l2_high_celadon_decanter_shard_016",
+    "breakable_l2_high_celadon_decanter_shard_017"
+  ],
+  "collider": "COLLIDER_breakable_l2_high_celadon_decanter",
+  "meshChecks": [
+    {
+      "triangles": 26576,
+      "vertices": 13290,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.01669667484159872
+    },
+    {
+      "triangles": 1320,
+      "vertices": 662,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0010603214541677675
+    },
+    {
+      "triangles": 1032,
+      "vertices": 518,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004797177390595818
+    },
+    {
+      "triangles": 1786,
+      "vertices": 895,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.000947342961739428
+    },
+    {
+      "triangles": 1402,
+      "vertices": 703,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0012077200628445612
+    },
+    {
+      "triangles": 5162,
+      "vertices": 2581,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0005032367790449157
+    },
+    {
+      "triangles": 3328,
+      "vertices": 1666,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0014001284530412493
+    },
+    {
+      "triangles": 1446,
+      "vertices": 725,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.001233930964637238
+    },
+    {
+      "triangles": 1486,
+      "vertices": 745,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.001048374660294951
+    },
+    {
+      "triangles": 1694,
+      "vertices": 849,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0009303766176541658
+    },
+    {
+      "triangles": 1038,
+      "vertices": 521,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004945598603086949
+    },
+    {
+      "triangles": 2604,
+      "vertices": 1304,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0012178230014535097
+    },
+    {
+      "triangles": 1490,
+      "vertices": 747,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.001129812529301532
+    },
+    {
+      "triangles": 1572,
+      "vertices": 788,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0008677930838871093
+    },
+    {
+      "triangles": 5412,
+      "vertices": 2706,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0006134362205040485
+    },
+    {
+      "triangles": 1192,
+      "vertices": 598,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0011034830204640798
+    },
+    {
+      "triangles": 1480,
+      "vertices": 742,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0007084069216909486
+    },
+    {
+      "triangles": 1478,
+      "vertices": 741,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0010482092825160056
+    },
+    {
+      "triangles": 2172,
+      "vertices": 1088,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.000702001118030436
+    }
+  ],
+  "fracture": {
+    "method": "Manifold3D convex Voronoi clipping of the measured semantic cavity shell; every shard is an independently closed solid.",
+    "seedCoordinatesBlenderZUp": [
+      [
+        1.1177544379280029e-17,
+        0.18254315853118896,
+        0.5057322978973389
+      ],
+      [
+        -0.02887032926082611,
+        -0.10774553567171097,
+        1.145617127418518
+      ],
+      [
+        -0.007783008739352226,
+        -0.11874576658010483,
+        0.0
+      ],
+      [
+        -3.466401934682684e-17,
+        -0.18870213627815247,
+        0.4449370205402374
+      ],
+      [
+        0.015289459377527237,
+        -0.03691202029585838,
+        0.7923386096954346
+      ],
+      [
+        -0.06762197613716125,
+        0.07710809260606766,
+        0.2278110235929489
+      ],
+      [
+        0.18739578127861023,
+        0.0,
+        0.42756691575050354
+      ],
+      [
+        -0.1397472620010376,
+        -0.01839807629585266,
+        0.5665275454521179
+      ],
+      [
+        0.007774315308779478,
+        0.11861313134431839,
+        0.0020000000949949026
+      ],
+      [
+        0.021755816414952278,
+        0.10937387496232986,
+        1.1422322988510132
+      ],
+      [
+        0.08360070735216141,
+        -0.09532833099365234,
+        0.2625511884689331
+      ],
+      [
+        -0.1485641896724701,
+        -0.0732637494802475,
+        0.35808661580085754
+      ],
+      [
+        0.13416850566864014,
+        -0.008793868124485016,
+        0.6273228526115417
+      ],
+      [
+        -0.046147480607032776,
+        0.009179304353892803,
+        0.9834094643592834
+      ],
+      [
+        -0.15293841063976288,
+        0.10219017416238785,
+        0.418881893157959
+      ],
+      [
+        -2.5050443549674297e-17,
+        -0.1363682597875595,
+        0.6273228526115417
+      ],
+      [
+        0.07007928192615509,
+        0.14210672676563263,
+        0.34071654081344604
+      ],
+      [
+        -0.028384840115904808,
+        0.08361904323101044,
+        0.6707480549812317
+      ]
+    ],
+    "volumeRelativeError": 6.645544512083096e-09,
+    "backend": {
+      "backend": "manifold3d 3.5.3",
+      "inputVolume": 0.016696674841598525,
+      "inputTriangles": 26526,
+      "meshes": [
+        {
+          "key": "shard_000",
+          "triangles": 1320,
+          "volume": 0.0010603214571670342
+        },
+        {
+          "key": "shard_001",
+          "triangles": 1032,
+          "volume": 0.00047971774655192456
+        },
+        {
+          "key": "shard_002",
+          "triangles": 1786,
+          "volume": 0.000947342974369037
+        },
+        {
+          "key": "shard_003",
+          "triangles": 1402,
+          "volume": 0.0012077200886070002
+        },
+        {
+          "key": "shard_004",
+          "triangles": 5162,
+          "volume": 0.0005032367787124629
+        },
+        {
+          "key": "shard_005",
+          "triangles": 3328,
+          "volume": 0.001400128459259746
+        },
+        {
+          "key": "shard_006",
+          "triangles": 1446,
+          "volume": 0.001233930981500994
+        },
+        {
+          "key": "shard_007",
+          "triangles": 1486,
+          "volume": 0.001048374646021731
+        },
+        {
+          "key": "shard_008",
+          "triangles": 1694,
+          "volume": 0.0009303766096271229
+        },
+        {
+          "key": "shard_009",
+          "triangles": 1038,
+          "volume": 0.0004945598533315096
+        },
+        {
+          "key": "shard_010",
+          "triangles": 2604,
+          "volume": 0.001217823051757892
+        },
+        {
+          "key": "shard_011",
+          "triangles": 1490,
+          "volume": 0.0011298125386559135
+        },
+        {
+          "key": "shard_012",
+          "triangles": 1572,
+          "volume": 0.000867793088295398
+        },
+        {
+          "key": "shard_013",
+          "triangles": 5412,
+          "volume": 0.000613436210429674
+        },
+        {
+          "key": "shard_014",
+          "triangles": 1192,
+          "volume": 0.001103483018096872
+        },
+        {
+          "key": "shard_015",
+          "triangles": 1480,
+          "volume": 0.0007084069375965244
+        },
+        {
+          "key": "shard_016",
+          "triangles": 1478,
+          "volume": 0.0010482092854970538
+        },
+        {
+          "key": "shard_017",
+          "triangles": 2172,
+          "volume": 0.0007020011161209653
+        }
+      ],
+      "relativeVolumeError": 1.9740305393887516e-14
+    }
+  },
+  "packedBlenderSource": {
+    "file": "sources/celadon-lark-decanter-fracture-v4.blend",
+    "bytes": 11719317,
+    "sha256": "301cdba45fcb131d77f1c5b77ddf39e42ce609407456c270baf4e427b82c27d2"
+  },
+  "bundle": {
+    "file": "exports/celadon-lark-decanter-fracture-v4.glb",
+    "bytes": 5820204,
+    "sha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346"
+  },
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "toolchain": {
+      "blender": "5.2.2 LTS (d13f752e3b9c)",
+      "backendPython": "3.14.7",
+      "manifold3d": "3.5.3",
+      "backendNumpy": "2.5.3",
+      "scratchPythonPath": "/tmp/glass-museum-manifold",
+      "scratchPathCommitted": false,
+      "buildScript": {
+        "file": "art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py",
+        "sha256": "3e2d52b8f476b6c31436b60291102d90d72c261012292ea9b8f270e60ed7fb15"
+      },
+      "sharedPipeline": {
+        "file": "art/glass-adventure/v6-level2/finalize_vessels.py",
+        "sha256": "c1fb255e9a361e6dbca747eee6c9fcc1a899d74e45eeb145ddf755184b8baa4b"
+      },
+      "attributeRepair": {
+        "file": "art/glass-adventure/production/repair_export_attributes.py",
+        "sha256": "ec2e4f27b72027e2e7b64604fa002bcc1d8d55504e17694068faf05e1159639e"
+      }
+    },
+    "commands": {
+      "prepare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase prepare",
+      "fracture": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase fracture",
+      "validate": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase validate",
+      "render": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase render",
+      "compare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase compare"
+    },
+    "paidProviderRequest": null,
+    "providerSpend": "No new provider request; reuses the receipted regenerated-v2 donors."
+  },
+  "gameplayReadiness": "Geometry-authored candidate; runtime collider/placement and gameplay fracture behavior still require integration review.",
+  "sourceStrategy": "Clean dense donor supplied measured exterior relief and scallops; authored textured donor supplied the PBR transfer; neither donor topology ships.",
+  "attributeRepair": {
+    "file": "exports/celadon-lark-decanter-fracture-attribute-repair-v4.json",
+    "source": "sources/celadon-lark-decanter-fracture-v4-pre-attribute-repair.glb",
+    "removedUnusedTangentAccessors": 35,
+    "protectedStreams": 220,
+    "geometrySignatureUnchanged": true
+  },
+  "validationReport": "exports/celadon-lark-decanter-fracture-validation-v4.json"
+}

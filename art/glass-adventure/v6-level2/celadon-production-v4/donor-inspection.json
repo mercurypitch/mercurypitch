@@ -1,0 +1,988 @@
+{
+  "schema": 1,
+  "assetId": "celadon-lark-decanter",
+  "purpose": "Establish whether the clean donor is a reliable shape/normal master and whether the textured donor remains close enough for atlas transfer.",
+  "cleanProjectionMaster": {
+    "file": "meshy/celadon-lark-decanter-regenerated-v2-pre-remesh.glb",
+    "bytes": 7283672,
+    "sha256": "fb84bd6270f49e65c08dc5024b2e89b074de751529984a73eb502ce31bdffe45",
+    "normalization": {
+      "uniformScale": 0.6057656912504278,
+      "sourceFootCentre": [
+        -0.0009541362524032593,
+        0.0009124279022216797,
+        -0.950843095779419
+      ],
+      "boundsMetres": {
+        "min": [
+          -0.1889037787914276,
+          -0.18885940313339233,
+          0.0
+        ],
+        "max": [
+          0.1889037936925888,
+          0.18885940313339233,
+          1.149999976158142
+        ]
+      },
+      "dimensionsMetres": [
+        0.3778075575828552,
+        0.37771880626678467,
+        1.149999976158142
+      ]
+    },
+    "topology": {
+      "triangles": 404658,
+      "vertices": 202249,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0027637152015113995
+    },
+    "centralVerticalRayZMetres": [],
+    "radialCrossSections": [
+      {
+        "zMetres": 0.002,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11568829756999303,
+            "medianMetres": 0.11581383525816726,
+            "maximumMetres": 0.11591227352619171
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11877812203285602,
+            "medianMetres": 0.11886808874411994,
+            "maximumMetres": 0.11902073950776362
+          }
+        ]
+      },
+      {
+        "zMetres": 0.05182608695652174,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05716816444428283,
+            "medianMetres": 0.05723380850113866,
+            "maximumMetres": 0.05734898895025253
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.06040737899517632,
+            "medianMetres": 0.0605153055339738,
+            "maximumMetres": 0.06060883402824402
+          }
+        ]
+      },
+      {
+        "zMetres": 0.10165217391304347,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.0399597166007026,
+            "medianMetres": 0.04008630288484684,
+            "maximumMetres": 0.04017994094267717
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.042642295360565186,
+            "medianMetres": 0.042776674044601,
+            "maximumMetres": 0.042891704496271
+          }
+        ]
+      },
+      {
+        "zMetres": 0.1514782608695652,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05027200888004996,
+            "medianMetres": 0.05054771651859133,
+            "maximumMetres": 0.050831422649162364
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05222753841185769,
+            "medianMetres": 0.05255611031041169,
+            "maximumMetres": 0.05271281470667198
+          }
+        ]
+      },
+      {
+        "zMetres": 0.20130434782608694,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05533192092628581,
+            "medianMetres": 0.056726998394833326,
+            "maximumMetres": 0.05770052224397659
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05625148110006987,
+            "medianMetres": 0.057679291874259186,
+            "maximumMetres": 0.05870470032095909
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.06642092764377594,
+            "medianMetres": 0.07594592466894654,
+            "maximumMetres": 0.08282699196196501
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.0693942978978157,
+            "medianMetres": 0.07901552861118769,
+            "maximumMetres": 0.0856464159298134
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.07836047559976578,
+            "medianMetres": 0.0784551277756691,
+            "maximumMetres": 0.07859767228364944
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.08863392472267151,
+            "medianMetres": 0.08872256428003311,
+            "maximumMetres": 0.08880340307950974
+          }
+        ]
+      },
+      {
+        "zMetres": 0.25113043478260866,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.08060637461627285,
+            "medianMetres": 0.0809078984762554,
+            "maximumMetres": 0.08177758008241653
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.08154222159906391,
+            "medianMetres": 0.08185875101652333,
+            "maximumMetres": 0.0826883539557457
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.09100430458784103,
+            "medianMetres": 0.11195651368890294,
+            "maximumMetres": 0.1187345211180715
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.09374310076236725,
+            "medianMetres": 0.11482449416335858,
+            "maximumMetres": 0.1215605621411361
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.11171934753656387,
+            "medianMetres": 0.11178971081972122,
+            "maximumMetres": 0.11186908185482025
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.12166623026132584,
+            "medianMetres": 0.12178820744156837,
+            "maximumMetres": 0.12180957198143005
+          }
+        ]
+      },
+      {
+        "zMetres": 0.3009565217391304,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.1003237556274366,
+            "medianMetres": 0.10104980496113275,
+            "maximumMetres": 0.10258544236421585
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.10125877292493866,
+            "medianMetres": 0.10195242171197741,
+            "maximumMetres": 0.10347451269626617
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11460325866937637,
+            "medianMetres": 0.14179274163095543,
+            "maximumMetres": 0.1491405641861343
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11725196987390518,
+            "medianMetres": 0.144388098482695,
+            "maximumMetres": 0.1517204781506074
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.13949283957481384,
+            "medianMetres": 0.1396077200770378,
+            "maximumMetres": 0.13963058590888977
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.1488063633441925,
+            "medianMetres": 0.14890297502279282,
+            "maximumMetres": 0.14894311130046844
+          }
+        ]
+      },
+      {
+        "zMetres": 0.35078260869565214,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11830551820348907,
+            "medianMetres": 0.11862979391094305,
+            "maximumMetres": 0.11981192231178284
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11919407438944357,
+            "medianMetres": 0.11953137594979527,
+            "maximumMetres": 0.12080476433038712
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.1375432014465332,
+            "medianMetres": 0.15716236175890222,
+            "maximumMetres": 0.16663220174115576
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.14015759527683258,
+            "medianMetres": 0.15948426205245908,
+            "maximumMetres": 0.1691960893664826
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.16020354628562927,
+            "medianMetres": 0.16028552502393723,
+            "maximumMetres": 0.16031621396541595
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.16905319690704346,
+            "medianMetres": 0.169078066945076,
+            "maximumMetres": 0.16915591061115265
+          }
+        ]
+      },
+      {
+        "zMetres": 0.4006086956521739,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.13669285890138108,
+            "medianMetres": 0.13689769583520972,
+            "maximumMetres": 0.139445960521698
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.13761044552333482,
+            "medianMetres": 0.13778797637579995,
+            "maximumMetres": 0.14048917591571808
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.15647858381271362,
+            "medianMetres": 0.17728528002652202,
+            "maximumMetres": 0.18538733859426104
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.15870648622512817,
+            "medianMetres": 0.17991011328006112,
+            "maximumMetres": 0.18792013238209895
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.17434769868850708,
+            "medianMetres": 0.17438287287950516,
+            "maximumMetres": 0.1744917929172516
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.18291735649108887,
+            "medianMetres": 0.18292482197284698,
+            "maximumMetres": 0.18308664858341217
+          }
+        ]
+      },
+      {
+        "zMetres": 0.4504347826086956,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.15353227633768157,
+            "medianMetres": 0.15390546483354814,
+            "maximumMetres": 0.1560717523097992
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.15442956166905428,
+            "medianMetres": 0.15480351014439891,
+            "maximumMetres": 0.15698914229869843
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.17334690690040588,
+            "medianMetres": 0.1824573076010632,
+            "maximumMetres": 0.1872480798091685
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.17554213106632233,
+            "medianMetres": 0.18430947153579355,
+            "maximumMetres": 0.18954716932201351
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.18055959045886993,
+            "medianMetres": 0.18065620213747025,
+            "maximumMetres": 0.18103671073913574
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.1887970268726349,
+            "medianMetres": 0.18883498013019562,
+            "maximumMetres": 0.18885187804698944
+          }
+        ]
+      },
+      {
+        "zMetres": 0.5002608695652173,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.1397494656407351,
+            "medianMetres": 0.1401961878750268,
+            "maximumMetres": 0.1424468755722046
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.14066206854545926,
+            "medianMetres": 0.14112280285721268,
+            "maximumMetres": 0.14343120157718658
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.1620134673532481,
+            "medianMetres": 0.1806148294676928,
+            "maximumMetres": 0.18802035758785787
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.1650570100381315,
+            "medianMetres": 0.18322381126249687,
+            "maximumMetres": 0.19058495117289725
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.1747581511735916,
+            "medianMetres": 0.17479604482650757,
+            "maximumMetres": 0.17489928007125854
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.18363440036773682,
+            "medianMetres": 0.18380562961101532,
+            "maximumMetres": 0.18384848535060883
+          }
+        ]
+      },
+      {
+        "zMetres": 0.5500869565217391,
+        "hitCounts": {
+          "4": 28,
+          "6": 4
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11803143415812846,
+            "medianMetres": 0.11831165466913171,
+            "maximumMetres": 0.11955868452787399
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11895369253804336,
+            "medianMetres": 0.11924309053419407,
+            "maximumMetres": 0.12055803090333939
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.1397714658920186,
+            "medianMetres": 0.15315195663769343,
+            "maximumMetres": 0.16514416510763014
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.14286406514412808,
+            "medianMetres": 0.15631811727202916,
+            "maximumMetres": 0.1680334369401732
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.16146554052829742,
+            "medianMetres": 0.16147122532129288,
+            "maximumMetres": 0.16173821687698364
+          },
+          {
+            "sampleCount": 4,
+            "minimumMetres": 0.17071489989757538,
+            "medianMetres": 0.17078018188476562,
+            "maximumMetres": 0.17079390585422516
+          }
+        ]
+      },
+      {
+        "zMetres": 0.5999130434782608,
+        "hitCounts": {
+          "4": 30,
+          "6": 2
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.09552639822518195,
+            "medianMetres": 0.09586594506870655,
+            "maximumMetres": 0.09701503813266754
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.09647198672186837,
+            "medianMetres": 0.09683533653012202,
+            "maximumMetres": 0.09794136881828308
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.11815757514319186,
+            "medianMetres": 0.126050473939476,
+            "maximumMetres": 0.1360986960664839
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.12187294711095739,
+            "medianMetres": 0.1293736996952784,
+            "maximumMetres": 0.15104356408119202
+          },
+          {
+            "sampleCount": 2,
+            "minimumMetres": 0.14028020203113556,
+            "medianMetres": 0.14034397900104523,
+            "maximumMetres": 0.1404077559709549
+          },
+          {
+            "sampleCount": 2,
+            "minimumMetres": 0.1508694738149643,
+            "medianMetres": 0.15087540447711945,
+            "maximumMetres": 0.1508813351392746
+          }
+        ]
+      },
+      {
+        "zMetres": 0.6497391304347826,
+        "hitCounts": {
+          "4": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.07408069984132334,
+            "medianMetres": 0.07437993787338887,
+            "maximumMetres": 0.07485984265804291
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.07501549263201672,
+            "medianMetres": 0.0753421523681295,
+            "maximumMetres": 0.07582186162471771
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.08975118610651392,
+            "medianMetres": 0.09674475383623973,
+            "maximumMetres": 0.10998155176639557
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.09313519133658561,
+            "medianMetres": 0.10036288076906312,
+            "maximumMetres": 0.13265755772590637
+          }
+        ]
+      },
+      {
+        "zMetres": 0.6995652173913043,
+        "hitCounts": {
+          "4": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.053772154513348686,
+            "medianMetres": 0.05413740688668589,
+            "maximumMetres": 0.054633647203445435
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05469942155747066,
+            "medianMetres": 0.05506381063238476,
+            "maximumMetres": 0.05559353902935982
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.0661844281237693,
+            "medianMetres": 0.06974946574858026,
+            "maximumMetres": 0.0804186537861824
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.06939290430189826,
+            "medianMetres": 0.07321407465038846,
+            "maximumMetres": 0.08416461199522018
+          }
+        ]
+      },
+      {
+        "zMetres": 0.7493913043478261,
+        "hitCounts": {
+          "4": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.0364265011108977,
+            "medianMetres": 0.03658025217528949,
+            "maximumMetres": 0.036865975707769394
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.037326606576748064,
+            "medianMetres": 0.03749296356263673,
+            "maximumMetres": 0.03774634003639221
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.047294053947361296,
+            "medianMetres": 0.0493793790268211,
+            "maximumMetres": 0.053310688585042953
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05043737795913075,
+            "medianMetres": 0.05254649299674502,
+            "maximumMetres": 0.05682874098420143
+          }
+        ]
+      },
+      {
+        "zMetres": 0.7992173913043478,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.035439744597369933,
+            "medianMetres": 0.03610315303530302,
+            "maximumMetres": 0.03706645158632267
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.038429115639404765,
+            "medianMetres": 0.039030902493064526,
+            "maximumMetres": 0.040000467566916116
+          }
+        ]
+      },
+      {
+        "zMetres": 0.8490434782608695,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.030919257727620844,
+            "medianMetres": 0.031153525055456977,
+            "maximumMetres": 0.03209654789347869
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.03385942517250221,
+            "medianMetres": 0.03400324791624204,
+            "maximumMetres": 0.03507909597013242
+          }
+        ]
+      },
+      {
+        "zMetres": 0.8988695652173913,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.030939513893238263,
+            "medianMetres": 0.031180923464848735,
+            "maximumMetres": 0.03211499240805827
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.03385362738742547,
+            "medianMetres": 0.03405048345379966,
+            "maximumMetres": 0.035101855268328305
+          }
+        ]
+      },
+      {
+        "zMetres": 0.9486956521739129,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.034701680620396046,
+            "medianMetres": 0.03490288537122389,
+            "maximumMetres": 0.03553257498668539
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.0375747541290901,
+            "medianMetres": 0.03784013890429884,
+            "maximumMetres": 0.03848397127393351
+          }
+        ]
+      },
+      {
+        "zMetres": 0.9985217391304347,
+        "hitCounts": {
+          "2": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.04585159197449684,
+            "medianMetres": 0.045936203384798785,
+            "maximumMetres": 0.0460050138872539
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.04671178758144379,
+            "medianMetres": 0.046782911238748004,
+            "maximumMetres": 0.046874504536390305
+          }
+        ]
+      },
+      {
+        "zMetres": 1.0483478260869565,
+        "hitCounts": {
+          "4": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.029987957328557968,
+            "medianMetres": 0.031654698415962856,
+            "maximumMetres": 0.03273487828232527
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.03309125453233719,
+            "medianMetres": 0.03481443829201497,
+            "maximumMetres": 0.03617129789108088
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.04627921171440266,
+            "medianMetres": 0.04820129142783955,
+            "maximumMetres": 0.050895448980406474
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.04954310444195013,
+            "medianMetres": 0.05155183053933025,
+            "maximumMetres": 0.05400732993007196
+          }
+        ]
+      },
+      {
+        "zMetres": 1.0981739130434782,
+        "hitCounts": {
+          "4": 32
+        },
+        "radialHits": [
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.05200592800974846,
+            "medianMetres": 0.05583599835036984,
+            "maximumMetres": 0.05981611325026327
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.055599577724933624,
+            "medianMetres": 0.05956433012088473,
+            "maximumMetres": 0.0637187423564319
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.06636129384259705,
+            "medianMetres": 0.0711691937488371,
+            "maximumMetres": 0.0771210640668869
+          },
+          {
+            "sampleCount": 32,
+            "minimumMetres": 0.07031302352771544,
+            "medianMetres": 0.07492390902857436,
+            "maximumMetres": 0.08127347379922867
+          }
+        ]
+      },
+      {
+        "zMetres": 1.148,
+        "hitCounts": {
+          "0": 24,
+          "2": 8
+        },
+        "radialHits": [
+          {
+            "sampleCount": 8,
+            "minimumMetres": 0.09892198312011902,
+            "medianMetres": 0.09900190982851506,
+            "maximumMetres": 0.09911976351454292
+          },
+          {
+            "sampleCount": 8,
+            "minimumMetres": 0.10668631462862829,
+            "medianMetres": 0.10681464385481242,
+            "maximumMetres": 0.10708902196541349
+          }
+        ]
+      }
+    ],
+    "topRimProfile": {
+      "sectors": 64,
+      "populated": 64,
+      "minimumSectorMaximumMetres": 1.1356842517852783,
+      "maximumSectorMaximumMetres": 1.149999976158142,
+      "sectorMaximumZMetres": [
+        1.1356842517852783,
+        1.141831874847412,
+        1.1475039720535278,
+        1.1497583389282227,
+        1.1499087810516357,
+        1.1487387418746948,
+        1.143923282623291,
+        1.136793851852417,
+        1.1367034912109375,
+        1.1429494619369507,
+        1.1484843492507935,
+        1.1499545574188232,
+        1.1498548984527588,
+        1.1477160453796387,
+        1.1422322988510132,
+        1.1372244358062744,
+        1.136237382888794,
+        1.1416033506393433,
+        1.1475098133087158,
+        1.149688482284546,
+        1.149999976158142,
+        1.148653268814087,
+        1.1441688537597656,
+        1.1368590593338013,
+        1.1358907222747803,
+        1.1429309844970703,
+        1.148620843887329,
+        1.1499826908111572,
+        1.1497385501861572,
+        1.14766526222229,
+        1.141042709350586,
+        1.1372692584991455,
+        1.1380338668823242,
+        1.1415761709213257,
+        1.1477577686309814,
+        1.1497433185577393,
+        1.1498358249664307,
+        1.1485764980316162,
+        1.1434309482574463,
+        1.136610984802246,
+        1.1368744373321533,
+        1.1439459323883057,
+        1.1491801738739014,
+        1.1499650478363037,
+        1.1496951580047607,
+        1.147231936454773,
+        1.1421369314193726,
+        1.1367230415344238,
+        1.1383342742919922,
+        1.1419233083724976,
+        1.1472980976104736,
+        1.149722933769226,
+        1.1499722003936768,
+        1.1487762928009033,
+        1.1440436840057373,
+        1.1364367008209229,
+        1.137831449508667,
+        1.143893837928772,
+        1.1486608982086182,
+        1.1498953104019165,
+        1.1497242450714111,
+        1.147361397743225,
+        1.1414706707000732,
+        1.1357988119125366
+      ]
+    }
+  },
+  "texturedTransferSource": {
+    "file": "meshy/celadon-lark-decanter-regenerated-v2.glb",
+    "bytes": 11300716,
+    "sha256": "04f6d35af846a10609c72e5fd11437ca7523f99e31fda8ca26e0302728e8b2e2",
+    "normalization": {
+      "uniformScale": 0.6058853074198204,
+      "sourceFootCentre": [
+        -0.0011275112628936768,
+        0.001042976975440979,
+        -0.9507960677146912
+      ],
+      "boundsMetres": {
+        "min": [
+          -0.1888359785079956,
+          -0.18881750106811523,
+          0.0
+        ],
+        "max": [
+          0.1888359785079956,
+          0.18881748616695404,
+          1.1500000953674316
+        ]
+      },
+      "dimensionsMetres": [
+        0.3776719570159912,
+        0.37763500213623047,
+        1.1500000953674316
+      ]
+    },
+    "topology": {
+      "triangles": 12375,
+      "vertices": 6144,
+      "nonManifoldEdges": 23,
+      "nonManifoldVertices": 22,
+      "nonContiguousEdges": 23,
+      "selfIntersectionPairs": 187,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.002769539353423351
+    },
+    "materials": [
+      {
+        "name": "Material_0",
+        "images": [
+          {
+            "name": "Image_3",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorSpace": "sRGB"
+          },
+          {
+            "name": "Image_0",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorSpace": "sRGB"
+          },
+          {
+            "name": "Image_1",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorSpace": "Non-Color"
+          },
+          {
+            "name": "normal",
+            "dimensions": [
+              2048,
+              2048
+            ],
+            "colorSpace": "Non-Color"
+          }
+        ]
+      }
+    ],
+    "uvLayers": [
+      "UVMap"
+    ],
+    "distanceToCleanMaster": {
+      "method": "bidirectional nearest-vertex samples; source exterior retained as reference",
+      "finalToSourceMetres": {
+        "min": 4.470348358154297e-08,
+        "p05": 9.670268127592864e-06,
+        "p50": 8.631872333353385e-05,
+        "p95": 0.0002011943426623473,
+        "p99": 0.00023945828987052663,
+        "max": 0.0005421884125098586
+      },
+      "sourceToFinalMetres": {
+        "min": 0.0,
+        "p05": 2.1229642879916358e-05,
+        "p50": 0.00022894829453434795,
+        "p95": 0.0007390677463263268,
+        "p99": 0.001037049610167741,
+        "max": 0.0018063035095110536
+      },
+      "sourceSampleCount": 10113
+    }
+  }
+}

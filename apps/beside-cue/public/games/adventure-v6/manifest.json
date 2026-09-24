@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Original Twin Galleries paintings, preserved listening-court harp, and approved hollow vessel fractures.",
+  "description": "Original Twin Galleries paintings, preserved listening-court harp, and approved hollow amber, opaline, and celadon vessel fractures.",
   "sourceReceipt": "art/glass-adventure/v6-level2/imagegen-receipt.json",
   "encoding": "Full-resolution RGB WebP, quality 88, method 6. Source masters unchanged.",
   "assets": [
@@ -88,6 +88,26 @@
       "collision": "The embedded collider is validation-only; gameplay uses the authored exhibit mount and loads only declared intact and shard nodes.",
       "bytes": 3741768,
       "attributeRepair": "art/glass-adventure/attribute-repair-v1/reports/adventure-v6-amber-cadence-urn.json"
+    },
+    {
+      "id": "celadon-lark-decanter-fracture-v4",
+      "file": "celadon-lark-decanter-fracture-v4.glb",
+      "node": "breakable_l2_high_celadon_decanter",
+      "intactNode": "breakable_l2_high_celadon_decanter_intact",
+      "shardPrefix": "breakable_l2_high_celadon_decanter_shard_",
+      "shardCount": 18,
+      "source": "art/glass-adventure/v6-level2/celadon-production-v4/sources/celadon-lark-decanter-fracture-v4.blend",
+      "sourceSha256": "301cdba45fcb131d77f1c5b77ddf39e42ce609407456c270baf4e427b82c27d2",
+      "runtimeSource": "art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-v4.glb",
+      "sha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346",
+      "dimensions": [0.3776974081993103, 0.3776567578315735, 1.149999976158142],
+      "intactTriangles": 26512,
+      "triangles": 63592,
+      "textureCount": 3,
+      "maximumTextureDimensions": [1024, 1024],
+      "collision": "The embedded collider is validation-only; gameplay uses the existing required-display mount and loads only the declared intact and 18 independently closed shard nodes.",
+      "bytes": 5820204,
+      "attributeRepair": "art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-attribute-repair-v4.json"
     }
   ]
 }

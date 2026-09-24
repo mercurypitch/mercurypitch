@@ -313,7 +313,7 @@ export const TWIN_GALLERIES_SOURCE: AuthoredLevelSource = {
       id: 'upper-decanter',
       roomId: 'cool',
       mountId: 'required-display',
-      prefabId: 'glassworks-journey-fluted',
+      prefabId: 'twin-galleries-celadon-decanter',
       label: 'Celadon lark decanter',
       optional: false,
       requiresCompleted: ['lower-urn'],

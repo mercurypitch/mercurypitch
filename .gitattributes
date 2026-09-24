@@ -18,3 +18,9 @@ apps/beside-cue/public/games/journey-map-v7/*.glb filter=lfs diff=lfs merge=lfs 
 apps/beside-cue/public/games/cloudway-v3/*.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/journey-map-v8/*.glb filter=lfs diff=lfs merge=lfs -text
 apps/beside-cue/public/games/journey-map-v9/*.glb filter=lfs diff=lfs merge=lfs -text
+
+# Accepted generated museum/platform delivery bundles.
+apps/beside-cue/public/games/adventure-v6/celadon-lark-decanter-fracture-v4.glb filter=lfs diff=lfs merge=lfs -text
+apps/beside-cue/public/games/journey-map-v10/*.glb filter=lfs diff=lfs merge=lfs -text
+apps/beside-cue/public/games/cloudway-v6/*.glb filter=lfs diff=lfs merge=lfs -text
+apps/beside-cue/public/games/cloudway-v7/*.glb filter=lfs diff=lfs merge=lfs -text

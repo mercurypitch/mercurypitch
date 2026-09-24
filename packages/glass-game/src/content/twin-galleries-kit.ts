@@ -127,6 +127,12 @@ export const TWIN_GALLERIES_AMBER_URN = {
   variant: 'amber-v6',
 }
 
+export const TWIN_GALLERIES_CELADON_DECANTER = {
+  ...GLASSWORKS_JOURNEY_AMPHORA,
+  id: 'twin-galleries-celadon-decanter',
+  variant: 'celadon-lark-decanter-fracture-v4',
+}
+
 const listeningBridgeBays = flattenBays([
   museumScreenBay({
     id: 'west-south-screen',
@@ -209,15 +215,9 @@ export const TWIN_GALLERIES_LISTENING_BRIDGE_ROOM: RoomPrefab = {
   audioRegions: ENCLOSED_ENTRY_ROOM.audioRegions,
 }
 
-/** Exact handoff seams for V6 sources that are not yet runtime-safe. */
+/** Exact source seams for V6 exhibits integrated into the Twin Galleries. */
 export const TWIN_GALLERIES_V6_HANDOFF = {
-  exhibits: {
-    'upper-decanter': {
-      currentPrefabId: 'glassworks-journey-fluted',
-      futureSource:
-        'art/glass-adventure/v6-level2/exports/celadon-lark-decanter-game-v1.glb',
-    },
-  },
+  exhibits: {},
   integratedExhibits: {
     'lower-urn': {
       currentPrefabId: TWIN_GALLERIES_AMBER_URN.id,
@@ -230,6 +230,12 @@ export const TWIN_GALLERIES_V6_HANDOFF = {
       assetRecipeId: TWIN_GALLERIES_OPALINE_ECHO.variant,
       source:
         'art/glass-adventure/v6-level2/exports/opaline-echo-amphora-fracture-v2.glb',
+    },
+    'upper-decanter': {
+      currentPrefabId: TWIN_GALLERIES_CELADON_DECANTER.id,
+      assetRecipeId: TWIN_GALLERIES_CELADON_DECANTER.variant,
+      source:
+        'art/glass-adventure/v6-level2/celadon-production-v4/exports/celadon-lark-decanter-fracture-v4.glb',
     },
   },
 } as const
@@ -258,6 +264,7 @@ export const TWIN_GALLERIES_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     },
     [TWIN_GALLERIES_OPALINE_ECHO.id]: TWIN_GALLERIES_OPALINE_ECHO,
     [TWIN_GALLERIES_AMBER_URN.id]: TWIN_GALLERIES_AMBER_URN,
+    [TWIN_GALLERIES_CELADON_DECANTER.id]: TWIN_GALLERIES_CELADON_DECANTER,
   },
   availableAssetRecipeIds: [
     ...GLASSWORKS_JOURNEY_AUTHORING_CATALOG.availableAssetRecipeIds,
@@ -267,6 +274,7 @@ export const TWIN_GALLERIES_AUTHORING_CATALOG: LevelAuthoringCatalog = {
     'twin-tone-harp-v6',
     'opaline-v6',
     'amber-v6',
+    'celadon-lark-decanter-fracture-v4',
     'portrait-interval',
   ],
 }

@@ -1,0 +1,389 @@
+{
+  "capturedAt": "2026-09-24T01:01:14.202Z",
+  "server": "http://127.0.0.1:5363",
+  "viewport": {
+    "width": 1024,
+    "height": 768,
+    "deviceScaleFactor": 1
+  },
+  "rasterization": "Recorded frames use the shipped Three/WebGL2 renderer at full resolution with the original draw methods restored; navigation and real-audio challenge input temporarily suppress raster draw calls to keep SwiftShader timing bounded.",
+  "scope": "Short visual proof of the three final portrait prefabs during their live authored fracture state.",
+  "proofs": [
+    {
+      "id": "awakened-muse",
+      "title": "Glassworks Journey",
+      "url": "http://127.0.0.1:5363/glass-game/?layout=journey",
+      "encounterId": "glassworks-journey/journey/portrait/encounter/portrait-finale",
+      "checkpointId": "glassworks-journey/journey/portrait/checkpoint/entry",
+      "completedMainExhibits": 4,
+      "sceneState": {
+        "checkpointId": "glassworks-journey/journey/portrait/checkpoint/entry",
+        "player": {
+          "x": 21.345872707366944,
+          "y": 0,
+          "z": 50.62605920882466
+        },
+        "cameraYaw": -2.220666776206845,
+        "challengeCamera": {
+          "mode": "holding",
+          "encounterId": "glassworks-journey/journey/portrait/encounter/portrait-finale",
+          "progress": 1,
+          "settled": true,
+          "safeBottomFraction": 0.3602091471354167,
+          "position": {
+            "x": 18.81073221486361,
+            "y": 0.7311601244355078,
+            "z": 49.436852129398524
+          },
+          "target": {
+            "x": 21.345872707366944,
+            "y": 0.08478666729291083,
+            "z": 51.36355890370106
+          },
+          "mercFrame": {
+            "minX": -0.5339877558649606,
+            "maxX": -0.16203261281878112,
+            "minY": -0.1860006160292576,
+            "maxY": 0.3345168284041343
+          },
+          "targetFrame": {
+            "minX": 0.06855907750309131,
+            "maxX": 0.4582324481745224,
+            "minY": 0.0868848682583651,
+            "maxY": 0.7398959899642088
+          },
+          "combinedFrame": {
+            "minX": -0.5339877558649606,
+            "maxX": 0.4582324481745224,
+            "minY": -0.1860006160292576,
+            "maxY": 0.7398959899642088
+          },
+          "safeBottomNdc": -0.20958170572916662,
+          "side": -1,
+          "clearance": 1,
+          "occluded": false
+        }
+      },
+      "screenshot": "awakened-muse-fracture.png",
+      "screenshotSha256": "024b9d3f5e5038c714a53a6e974c0677a49c62794c288e2515b8e13a94103d45",
+      "freeze": {
+        "armedAt": 13018.5,
+        "freezeAt": 13268.5,
+        "frozenAt": 15815.800000011921,
+        "frozen": true,
+        "animationCallbacks": 256,
+        "completedAnimationCallbacks": 256,
+        "lastAnimationTimestamp": 13988.2,
+        "now": 15818.100000023842,
+        "blockReason": "fracture",
+        "rasterMinimized": false,
+        "rasterSize": {
+          "width": 1024,
+          "height": 768
+        },
+        "drawSuppressed": false
+      },
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "width": 1024,
+        "height": 768
+      },
+      "assets": [
+        {
+          "path": "/games/adventure/legend-slab.glb",
+          "status": 200,
+          "bytes": 709632,
+          "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+          "matchesLocal": true
+        },
+        {
+          "path": "/games/adventure-v5/painting-portrait.webp",
+          "status": 200,
+          "bytes": 251160,
+          "sha256": "914051374a8521f9397f6c4a1b90d878cb5d4b9d6f55f7bf2e1835cd84ec5b8d",
+          "matchesLocal": true
+        }
+      ],
+      "savedProgress": {
+        "version": 2,
+        "levelId": "glassworks-journey/journey",
+        "checkpointId": "glassworks-journey/journey/portrait/checkpoint/entry",
+        "completedBreakableIds": [
+          "glassworks-journey/journey/vestibule/encounter/vestibule-goblet",
+          "glassworks-journey/journey/garden/encounter/garden-decanter",
+          "glassworks-journey/journey/archive/encounter/archive-carafe",
+          "glassworks-journey/journey/portrait/encounter/portrait-finale"
+        ],
+        "finished": false,
+        "rewards": {
+          "version": 1,
+          "discoveredEncounterIds": [],
+          "collectedCoinIds": [],
+          "qualityResults": [
+            {
+              "encounterId": "glassworks-journey/journey/portrait/encounter/portrait-finale",
+              "grade": 3,
+              "challengeRevision": 1,
+              "policyRevision": 1,
+              "contentRevision": 3,
+              "evidenceVersion": "pitch-accuracy-v1",
+              "reliableSeconds": 1.877,
+              "meanAbsoluteCents": 0
+            }
+          ],
+          "collectedPortraitIds": [
+            "glassworks-awakened-muse"
+          ]
+        }
+      },
+      "errors": []
+    },
+    {
+      "id": "interval",
+      "title": "Twin Galleries",
+      "url": "http://127.0.0.1:5363/glass-game/?layout=twin-galleries",
+      "encounterId": "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair",
+      "checkpointId": "glassworks-twin-galleries/twin-galleries/portrait/checkpoint/entry",
+      "completedMainExhibits": 4,
+      "sceneState": {
+        "checkpointId": "glassworks-twin-galleries/twin-galleries/portrait/checkpoint/entry",
+        "player": {
+          "x": 12.612526847142982,
+          "y": 0,
+          "z": 36.288112535476685
+        },
+        "cameraYaw": 2.4917222041778446,
+        "challengeCamera": {
+          "mode": "holding",
+          "encounterId": "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair",
+          "progress": 1,
+          "settled": true,
+          "safeBottomFraction": 0.4266153971354167,
+          "position": {
+            "x": 13.986427987014082,
+            "y": 0.7311602331041194,
+            "z": 33.56771858080102
+          },
+          "target": {
+            "x": 11.918928581460573,
+            "y": -0.04557689369621652,
+            "z": 36.288112535476685
+          },
+          "mercFrame": {
+            "minX": -0.4727738510437722,
+            "maxX": -0.128249431653266,
+            "minY": -0.07437295268284701,
+            "maxY": 0.3974960521335891
+          },
+          "targetFrame": {
+            "minX": 0.05007160839861097,
+            "maxX": 0.41871830471975424,
+            "minY": 0.160982230968417,
+            "maxY": 0.7803664120636363
+          },
+          "combinedFrame": {
+            "minX": -0.4727738510437722,
+            "maxX": 0.41871830471975424,
+            "minY": -0.07437295268284701,
+            "maxY": 0.7803664120636363
+          },
+          "safeBottomNdc": -0.07676920572916662,
+          "side": -1,
+          "clearance": 1,
+          "occluded": false
+        }
+      },
+      "screenshot": "interval-fracture.png",
+      "screenshotSha256": "837e6a743aba92d5a3120e28a87a16852d34fd2819febd47b575d386dbaa4e05",
+      "freeze": {
+        "armedAt": 14526.700000017881,
+        "freezeAt": 14776.700000017881,
+        "frozenAt": 16828.20000001788,
+        "frozen": true,
+        "animationCallbacks": 329,
+        "completedAnimationCallbacks": 329,
+        "lastAnimationTimestamp": 14920.6,
+        "now": 16829.59999999404,
+        "blockReason": "fracture",
+        "rasterMinimized": false,
+        "rasterSize": {
+          "width": 1024,
+          "height": 768
+        },
+        "drawSuppressed": false
+      },
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "width": 1024,
+        "height": 768
+      },
+      "assets": [
+        {
+          "path": "/games/adventure/legend-slab.glb",
+          "status": 200,
+          "bytes": 709632,
+          "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+          "matchesLocal": true
+        },
+        {
+          "path": "/games/adventure-v6/interval-between.webp",
+          "status": 200,
+          "bytes": 479278,
+          "sha256": "7810c0cfbf8456785bc44f06fa03d3c2de668e4d9aec3e903f2160c3f112802a",
+          "matchesLocal": true
+        }
+      ],
+      "savedProgress": {
+        "version": 2,
+        "levelId": "glassworks-twin-galleries/twin-galleries",
+        "checkpointId": "glassworks-twin-galleries/twin-galleries/portrait/checkpoint/entry",
+        "completedBreakableIds": [
+          "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+          "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter",
+          "glassworks-twin-galleries/twin-galleries/court/encounter/bridge-pair",
+          "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair"
+        ],
+        "finished": false,
+        "rewards": {
+          "version": 1,
+          "discoveredEncounterIds": [],
+          "collectedCoinIds": [],
+          "qualityResults": [
+            {
+              "encounterId": "glassworks-twin-galleries/twin-galleries/portrait/encounter/portrait-pair",
+              "grade": 3,
+              "challengeRevision": 1,
+              "policyRevision": 1,
+              "contentRevision": 1,
+              "evidenceVersion": "pitch-accuracy-v1",
+              "reliableSeconds": 1.899,
+              "meanAbsoluteCents": 20.2
+            }
+          ],
+          "collectedPortraitIds": [
+            "twin-galleries-interval"
+          ]
+        }
+      },
+      "errors": []
+    },
+    {
+      "id": "wave-keeper",
+      "title": "Resonance Conservatory",
+      "url": "http://127.0.0.1:5363/glass-game/?layout=conservatory",
+      "encounterId": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/encounter/keeper-finale",
+      "checkpointId": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+      "completedMainExhibits": 4,
+      "sceneState": {
+        "checkpointId": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+        "player": {
+          "x": 12.6462266239287,
+          "y": 0,
+          "z": 51.230352363586434
+        },
+        "cameraYaw": 2.491722204177845,
+        "challengeCamera": {
+          "mode": "holding",
+          "encounterId": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/encounter/keeper-finale",
+          "progress": 1,
+          "settled": true,
+          "safeBottomFraction": 0.4266153971354167,
+          "position": {
+            "x": 14.032845073433288,
+            "y": 0.7311602331041193,
+            "z": 48.471054200981364
+          },
+          "target": {
+            "x": 11.935778469853432,
+            "y": -0.054617499863868074,
+            "z": 51.230352363586434
+          },
+          "mercFrame": {
+            "minX": -0.47425891726565594,
+            "maxX": -0.13415579791270305,
+            "minY": -0.06774585816378527,
+            "maxY": 0.3974617150875372
+          },
+          "targetFrame": {
+            "minX": 0.0550409609214773,
+            "maxX": 0.41821529172250776,
+            "minY": 0.16546841312682783,
+            "maxY": 0.7742200176761138
+          },
+          "combinedFrame": {
+            "minX": -0.47425891726565594,
+            "maxX": 0.41821529172250776,
+            "minY": -0.06774585816378527,
+            "maxY": 0.7742200176761138
+          },
+          "safeBottomNdc": -0.07676920572916662,
+          "side": -1,
+          "clearance": 1,
+          "occluded": false
+        }
+      },
+      "screenshot": "wave-keeper-fracture.png",
+      "screenshotSha256": "126bba24efabe2434c6189d369caf7538fb9c196b8d39a3dec5e6b4047c9d2dc",
+      "freeze": {
+        "armedAt": 18918.80000001192,
+        "freezeAt": 19168.80000001192,
+        "frozenAt": 24082.70000001788,
+        "frozen": true,
+        "animationCallbacks": 458,
+        "completedAnimationCallbacks": 458,
+        "lastAnimationTimestamp": 20157.5,
+        "now": 24084.40000000596,
+        "blockReason": "fracture",
+        "rasterMinimized": false,
+        "rasterSize": {
+          "width": 1024,
+          "height": 768
+        },
+        "drawSuppressed": false
+      },
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "width": 1024,
+        "height": 768
+      },
+      "assets": [
+        {
+          "path": "/games/adventure/legend-slab.glb",
+          "status": 200,
+          "bytes": 709632,
+          "sha256": "4c99c0c07578e434fc63def7c520253216c70c2b1c4b618c6d233875fd221b79",
+          "matchesLocal": true
+        },
+        {
+          "path": "/games/adventure-v7/wave-keeper.webp",
+          "status": 200,
+          "bytes": 500112,
+          "sha256": "2412dea62981a20f2549c426937d55ba0fec3be908d5aeb65cc95d2d4da58e3b",
+          "matchesLocal": true
+        }
+      ],
+      "savedProgress": {
+        "version": 2,
+        "levelId": "glassworks-resonance-conservatory/resonance-conservatory",
+        "checkpointId": "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/checkpoint/entry",
+        "completedBreakableIds": [
+          "glassworks-resonance-conservatory/resonance-conservatory/foyer/encounter/entrance-goblet",
+          "glassworks-resonance-conservatory/resonance-conservatory/fern-house/encounter/fern-wave",
+          "glassworks-resonance-conservatory/resonance-conservatory/orchid-house/encounter/orchid-wave",
+          "glassworks-resonance-conservatory/resonance-conservatory/wave-salon/encounter/keeper-finale"
+        ],
+        "finished": false,
+        "rewards": {
+          "version": 1,
+          "discoveredEncounterIds": [],
+          "collectedCoinIds": [],
+          "qualityResults": [],
+          "collectedPortraitIds": [
+            "conservatory-wave-keeper"
+          ]
+        }
+      },
+      "errors": []
+    }
+  ]
+}

@@ -140,6 +140,16 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     fallbackShape: 'rounded',
     fragmentBudget: 18,
   },
+  'celadon-lark-decanter-fracture-v4': {
+    ...CLEAR_GLASS,
+    bundle: 'celadon-lark-decanter-fracture-v4',
+    intactNode: 'breakable_l2_high_celadon_decanter_intact',
+    shardPrefix: 'breakable_l2_high_celadon_decanter_shard_',
+    shardCount: 18,
+    displayHeight: 1.15,
+    fallbackShape: 'rounded',
+    fragmentBudget: 18,
+  },
   portrait: {
     ...CLEAR_GLASS,
     bundle: 'legend-slab',

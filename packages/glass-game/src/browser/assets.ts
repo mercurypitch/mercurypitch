@@ -56,6 +56,8 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   'twin-tone-harp-v6': 'adventure-v6/twin-tone-resonance-harp.glb',
   'opaline-v6': 'adventure-v6/opaline-echo-amphora-qa-v2.glb',
   'amber-v6': 'adventure-v6/amber-cadence-urn-qa-v2.glb',
+  'celadon-lark-decanter-fracture-v4':
+    'adventure-v6/celadon-lark-decanter-fracture-v4.glb',
   'painting-listening-garden-v7': 'adventure-v7/listening-garden.webp',
   'painting-wave-keeper-v7': 'adventure-v7/wave-keeper.webp',
   'floating-museum-mystery-portrait-v5': 'journey-map-v5/mystery-muse.webp',

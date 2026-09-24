@@ -1,0 +1,321 @@
+{
+  "schema": 1,
+  "status": "passed geometry and GLB reimport gates; proof review remains separate",
+  "assetId": "celadon-lark-decanter",
+  "bundleSha256": "76ca793d5d9c7ef2d301ce9c85694f577c96844cb21fdb4ade67832df2925346",
+  "bundleBytes": 5820204,
+  "nodes": {
+    "root": "breakable_l2_high_celadon_decanter",
+    "intact": "breakable_l2_high_celadon_decanter_intact",
+    "shards": [
+      "breakable_l2_high_celadon_decanter_shard_000",
+      "breakable_l2_high_celadon_decanter_shard_001",
+      "breakable_l2_high_celadon_decanter_shard_002",
+      "breakable_l2_high_celadon_decanter_shard_003",
+      "breakable_l2_high_celadon_decanter_shard_004",
+      "breakable_l2_high_celadon_decanter_shard_005",
+      "breakable_l2_high_celadon_decanter_shard_006",
+      "breakable_l2_high_celadon_decanter_shard_007",
+      "breakable_l2_high_celadon_decanter_shard_008",
+      "breakable_l2_high_celadon_decanter_shard_009",
+      "breakable_l2_high_celadon_decanter_shard_010",
+      "breakable_l2_high_celadon_decanter_shard_011",
+      "breakable_l2_high_celadon_decanter_shard_012",
+      "breakable_l2_high_celadon_decanter_shard_013",
+      "breakable_l2_high_celadon_decanter_shard_014",
+      "breakable_l2_high_celadon_decanter_shard_015",
+      "breakable_l2_high_celadon_decanter_shard_016",
+      "breakable_l2_high_celadon_decanter_shard_017"
+    ],
+    "collider": "COLLIDER_breakable_l2_high_celadon_decanter"
+  },
+  "meshes": [
+    {
+      "triangles": 26512,
+      "vertices": 13258,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.01669667484155238,
+      "name": "breakable_l2_high_celadon_decanter_intact"
+    },
+    {
+      "triangles": 1320,
+      "vertices": 662,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0010603214541677675,
+      "name": "breakable_l2_high_celadon_decanter_shard_000"
+    },
+    {
+      "triangles": 1024,
+      "vertices": 514,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004797177390728276,
+      "name": "breakable_l2_high_celadon_decanter_shard_001"
+    },
+    {
+      "triangles": 1786,
+      "vertices": 895,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.000947342961739428,
+      "name": "breakable_l2_high_celadon_decanter_shard_002"
+    },
+    {
+      "triangles": 1402,
+      "vertices": 703,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0012077200628445612,
+      "name": "breakable_l2_high_celadon_decanter_shard_003"
+    },
+    {
+      "triangles": 5162,
+      "vertices": 2581,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0005032367790449157,
+      "name": "breakable_l2_high_celadon_decanter_shard_004"
+    },
+    {
+      "triangles": 3328,
+      "vertices": 1666,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0014001284530412493,
+      "name": "breakable_l2_high_celadon_decanter_shard_005"
+    },
+    {
+      "triangles": 1446,
+      "vertices": 725,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.001233930964637238,
+      "name": "breakable_l2_high_celadon_decanter_shard_006"
+    },
+    {
+      "triangles": 1486,
+      "vertices": 745,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.001048374660294951,
+      "name": "breakable_l2_high_celadon_decanter_shard_007"
+    },
+    {
+      "triangles": 1694,
+      "vertices": 849,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0009303766176541658,
+      "name": "breakable_l2_high_celadon_decanter_shard_008"
+    },
+    {
+      "triangles": 1032,
+      "vertices": 518,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0004945598603086949,
+      "name": "breakable_l2_high_celadon_decanter_shard_009"
+    },
+    {
+      "triangles": 2604,
+      "vertices": 1304,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0012178230014535097,
+      "name": "breakable_l2_high_celadon_decanter_shard_010"
+    },
+    {
+      "triangles": 1490,
+      "vertices": 747,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.001129812529301532,
+      "name": "breakable_l2_high_celadon_decanter_shard_011"
+    },
+    {
+      "triangles": 1572,
+      "vertices": 788,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0008677930838871093,
+      "name": "breakable_l2_high_celadon_decanter_shard_012"
+    },
+    {
+      "triangles": 5412,
+      "vertices": 2706,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0006134362205040485,
+      "name": "breakable_l2_high_celadon_decanter_shard_013"
+    },
+    {
+      "triangles": 1192,
+      "vertices": 598,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0011034830204640798,
+      "name": "breakable_l2_high_celadon_decanter_shard_014"
+    },
+    {
+      "triangles": 1480,
+      "vertices": 742,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0007084069216909486,
+      "name": "breakable_l2_high_celadon_decanter_shard_015"
+    },
+    {
+      "triangles": 1478,
+      "vertices": 741,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.0010482092825160056,
+      "name": "breakable_l2_high_celadon_decanter_shard_016"
+    },
+    {
+      "triangles": 2172,
+      "vertices": 1088,
+      "nonManifoldEdges": 0,
+      "nonManifoldVertices": 0,
+      "nonContiguousEdges": 0,
+      "selfIntersectionPairs": 0,
+      "blenderMeshInvalid": false,
+      "signedVolume": 0.000702001118030436,
+      "name": "breakable_l2_high_celadon_decanter_shard_017"
+    }
+  ],
+  "intactTriangles": 26512,
+  "triangleTotalIncludingShards": 63592,
+  "volumeRelativeError": 6.6419758804716916e-09,
+  "dimensionsMetres": [
+    0.3776974081993103,
+    0.3776567578315735,
+    1.149999976158142
+  ],
+  "dimensionMaxErrorMetres": 0.0,
+  "centralMouthRayZMetres": [
+    0.18400001525878906,
+    1.4901161193847656e-08
+  ],
+  "materialSlots": [
+    "cavity_surface",
+    "celadon_shell",
+    "glass_cut"
+  ],
+  "physicalMaterials": {
+    "cavity_surface": {
+      "transmission": 0.0,
+      "ior": null,
+      "baseColorTexture": false
+    },
+    "celadon_shell": {
+      "transmission": 0.0,
+      "ior": null,
+      "baseColorTexture": true
+    },
+    "glass_cut": {
+      "transmission": 0.0,
+      "ior": null,
+      "baseColorTexture": false
+    }
+  },
+  "transmissionMask": null,
+  "uv0NormalsPreserved": true,
+  "renderPrimitiveCount": 54,
+  "normalMappedRenderPrimitiveCount": 19,
+  "tangentsOnAllNormalMappedPrimitives": true,
+  "renderPrimitivesWithoutUnusedTangents": 35,
+  "colliderPrimitiveCount": 1,
+  "colliderTangentsRequired": false,
+  "colliderHasTangents": false,
+  "embeddedImages": 3,
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "toolchain": {
+      "blender": "5.2.2 LTS (d13f752e3b9c)",
+      "backendPython": "3.14.7",
+      "manifold3d": "3.5.3",
+      "backendNumpy": "2.5.3",
+      "scratchPythonPath": "/tmp/glass-museum-manifold",
+      "scratchPathCommitted": false,
+      "buildScript": {
+        "file": "art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py",
+        "sha256": "3e2d52b8f476b6c31436b60291102d90d72c261012292ea9b8f270e60ed7fb15"
+      },
+      "sharedPipeline": {
+        "file": "art/glass-adventure/v6-level2/finalize_vessels.py",
+        "sha256": "c1fb255e9a361e6dbca747eee6c9fcc1a899d74e45eeb145ddf755184b8baa4b"
+      },
+      "attributeRepair": {
+        "file": "art/glass-adventure/production/repair_export_attributes.py",
+        "sha256": "ec2e4f27b72027e2e7b64604fa002bcc1d8d55504e17694068faf05e1159639e"
+      }
+    },
+    "commands": {
+      "prepare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase prepare",
+      "fracture": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase fracture",
+      "validate": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase validate",
+      "render": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase render",
+      "compare": "rtk proxy blender -b --factory-startup --python art/glass-adventure/v6-level2/celadon-production-v4/build_celadon_v4.py -- --phase compare"
+    },
+    "paidProviderRequest": null,
+    "providerSpend": "No new provider request; reuses the receipted regenerated-v2 donors."
+  },
+  "scope": "Closedness, orientation, self-intersection, volume reconstruction, open-mouth ray, bounds, node names, materials, and embedded GLB resources."
+}

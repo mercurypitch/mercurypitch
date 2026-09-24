@@ -1276,8 +1276,27 @@ def validate(slug: str, config: dict[str, object]) -> dict[str, object]:
         for mesh_index in rendered_mesh_indices
         for primitive in encoded["meshes"][mesh_index]["primitives"]
     ]
-    if not all("TANGENT" in primitive["attributes"] for primitive in rendered_primitives):
-        raise ValueError("A rendered intact/shard primitive lost tangent data")
+    def uses_normal_texture(primitive: dict[str, object]) -> bool:
+        material_index = primitive.get("material")
+        if material_index is None:
+            return False
+        material = encoded["materials"][material_index]
+        if "normalTexture" in material:
+            return True
+        return any(
+            "NormalTexture" in key or "normalTexture" in key
+            for extension in material.get("extensions", {}).values()
+            for key in extension
+        )
+
+    normal_mapped_primitives = [
+        primitive for primitive in rendered_primitives if uses_normal_texture(primitive)
+    ]
+    if not all(
+        "TANGENT" in primitive["attributes"]
+        for primitive in normal_mapped_primitives
+    ):
+        raise ValueError("A normal-mapped intact/shard primitive lost tangent data")
     collider_mesh_index = node_mesh_indices[manifest["collider"]]
     collider_primitives = encoded["meshes"][collider_mesh_index]["primitives"]
     report = {
@@ -1315,7 +1334,13 @@ def validate(slug: str, config: dict[str, object]) -> dict[str, object]:
         "transmissionMask": transmission_mask_report,
         "uv0NormalsPreserved": True,
         "renderPrimitiveCount": len(rendered_primitives),
-        "tangentsOnEveryRenderedPrimitive": True,
+        "normalMappedRenderPrimitiveCount": len(normal_mapped_primitives),
+        "tangentsOnAllNormalMappedPrimitives": True,
+        "renderPrimitivesWithoutUnusedTangents": sum(
+            not uses_normal_texture(primitive)
+            and "TANGENT" not in primitive["attributes"]
+            for primitive in rendered_primitives
+        ),
         "colliderPrimitiveCount": len(collider_primitives),
         "colliderTangentsRequired": False,
         "colliderHasTangents": all(

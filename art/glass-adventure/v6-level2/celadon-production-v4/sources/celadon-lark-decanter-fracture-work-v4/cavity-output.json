@@ -1,0 +1,15 @@
+{
+  "backend": "manifold3d 3.5.3",
+  "exteriorInputVolumeCubicMetres": 0.03993732218363516,
+  "cutterVolumeCubicMetres": 0.024052870346960367,
+  "shellVolumeCubicMetres": 0.016696674795576443,
+  "removedCavityVolumeCubicMetres": 0.023240647388058717,
+  "exteriorInputTriangles": 24960,
+  "cutterTriangles": 1440,
+  "shellTriangles": 26576,
+  "materialFaceCounts": {
+    "0": 25096,
+    "1": 1480,
+    "2": 0
+  }
+}
