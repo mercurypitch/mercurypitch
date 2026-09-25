@@ -72,16 +72,9 @@ const PLATFORMS: readonly PlatformDefinition[] = [
     0.34,
     { renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest },
   ),
-  deck(
-    'arrival',
-    0,
-    ARRIVAL_ROW_Z[1],
-    PEARL_WIDTH,
-    PEARL_DEPTH,
-    0,
-    0.34,
-    { renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest },
-  ),
+  deck('arrival', 0, ARRIVAL_ROW_Z[1], PEARL_WIDTH, PEARL_DEPTH, 0, 0.34, {
+    renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
+  }),
   deck(
     'arrival-court',
     0,
