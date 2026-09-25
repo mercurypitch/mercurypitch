@@ -1,4 +1,4 @@
-// Crystal Promenade traversal study — prove authored turns, waiting rests, timed glass and saved recovery.
+// Crystal Promenade traversal proof — exercise the certified scroll, two-speed glass, voice rests and saved recovery.
 import { describe, expect, it } from 'vitest'
 import { CLOUDWAY_CRYSTAL_PROMENADE_STUDY as LEVEL } from '../content/cloudway-laboratory'
 import { createGlassGame } from './game'
@@ -9,6 +9,7 @@ function visit(dt: number, saved?: unknown) {
   let sequence = 0
   let respawns = 0
   const visited = new Set<string>()
+  const firstWarning = new Map<string, number>()
 
   function step(x = 0, z = 0, jump = false) {
     seconds += dt
@@ -18,7 +19,11 @@ function visit(dt: number, saved?: unknown) {
       seconds * 1000,
     )
     respawns += events.filter((e) => e.type === 'respawn').length
-    const support = game.snapshot().player.supportPlatformId
+    const state = game.snapshot()
+    for (const platform of state.platformStates ?? [])
+      if (platform.phase === 'warning' && !firstWarning.has(platform.id))
+        firstWarning.set(platform.id, seconds)
+    const support = state.player.supportPlatformId
     if (support != null) visited.add(support)
     return events
   }
@@ -27,7 +32,7 @@ function visit(dt: number, saved?: unknown) {
     for (let i = 0; i < Math.ceil(duration / dt); i++) step()
   }
 
-  function reach(x: number, z: number, settle = true) {
+  function reach(x: number, z: number, settle = true, jumpGaps = true) {
     for (let frame = 0; frame < Math.ceil(15 / dt); frame++) {
       const state = game.snapshot()
       if (state.complete) return
@@ -61,7 +66,7 @@ function visit(dt: number, saved?: unknown) {
       step(
         nx * magnitude,
         nz * magnitude,
-        (edge || raised) && state.player.grounded,
+        ((edge && jumpGaps) || raised) && state.player.grounded,
       )
     }
     throw new Error(
@@ -110,138 +115,132 @@ function visit(dt: number, saved?: unknown) {
     platform,
     sing,
     visited,
+    firstWarning,
+    elapsed: () => seconds,
     respawns: () => respawns,
   }
 }
 
-describe('Crystal Promenade simulation study', () => {
+const Z = {
+  arrival: -10,
+  approach: -8.14,
+  scroll: -7.401252972,
+  scrollCatch: -6.662505944,
+  rose: -5.232505944,
+  amethyst: -3.342505944,
+  final: -1.912505944,
+}
+
+function savedAt(checkpointId: string, completedBreakableIds: string[] = []) {
+  return {
+    version: 2,
+    levelId: LEVEL.id,
+    checkpointId,
+    completedBreakableIds,
+    finished: false,
+  }
+}
+
+function crossScroll(v: ReturnType<typeof visit>) {
+  v.reach(0, Z.approach)
+  v.waitFor(
+    () =>
+      v.platform('scroll-deck')?.phase === 'extended' &&
+      (v.platform('scroll-deck')?.phaseProgress ?? 1) < 0.05,
+  )
+  // Walk onto the actual short-Z support, rather than jumping over its art.
+  v.reach(0, Z.scroll, true, false)
+  expect(v.game.snapshot().player.supportPlatformId).toBe('scroll-deck')
+  v.reach(0, Z.scrollCatch, true, false)
+}
+
+describe('Crystal Promenade first playable slice', () => {
   it.each([1 / 60, 1 / 30])(
-    'traverses the bent course at %s seconds/frame without a fall',
+    'crosses each support and completes three safe-rest encounters without a fall at %s seconds/frame',
     (dt) => {
       const v = visit(dt)
-      v.reach(-4.8, -19.6)
+      v.reach(-0.55, Z.arrival)
+      expect(v.game.snapshot().player.supportPlatformId).toBe('arrival')
       v.sing('voice-home')
-      // Avoid the arrival plinth, then take the left bend.
-      v.reach(-3.9, -19.1)
-      v.reach(-5, -16.8)
-      v.reach(-6, -13.9)
-      v.reach(-6, -10.6)
-      v.reach(-5, -7.7)
+      v.reach(0, Z.arrival)
+      crossScroll(v)
       expect(v.game.snapshot().checkpointId).toBe('scroll-save')
-      v.reach(-3.7, -7.4)
-      v.waitFor(
-        () =>
-          v.platform('scroll-deck')?.phase === 'extended' &&
-          (v.platform('scroll-deck')?.phaseProgress ?? 1) < 0.05,
-      )
-      v.reach(3.7, -7.4)
-      v.reach(4.1, -4.2, false)
-      v.reach(4.7, -1.8, false)
-      v.reach(4, 0.4)
+      v.reach(-0.45, Z.scrollCatch)
+      expect(v.game.snapshot().player.supportPlatformId).toBe('scroll-catch')
       v.sing('voice-third')
-      // Pass the urn on its west side; a checkpoint belongs to the static garden.
-      v.reach(3, 1)
-      v.reach(3, 2.7)
-      v.reach(4, 2.6)
-      expect(v.game.snapshot().checkpointId).toBe('garden-save')
-      v.reach(4, 3.25)
-      v.waitFor(() => (v.platform('aurora-raft')?.offset.z ?? Infinity) < 0.001)
-      v.reach(4, 5.6)
-      expect(v.game.snapshot().player.supportPlatformId).toBe('aurora-raft')
-      v.waitFor(() => (v.platform('aurora-raft')?.offset.z ?? 0) > 1.79)
-      v.reach(4, 8.25)
-      v.reach(4, 11)
-      v.reach(3, 13.5)
-      v.reach(2.5, 15.3)
-      v.reach(2, 17.1)
-      v.reach(1, 19)
+      v.reach(0, Z.scrollCatch)
+      v.reach(0, Z.rose, false)
+      v.reach(0, Z.amethyst, false)
+      v.reach(0, Z.final)
       expect(v.game.snapshot().checkpointId).toBe('final-save')
+      v.reach(0.85, Z.final)
+      for (let frame = 0; frame < Math.ceil(0.5 / dt); frame++) v.step(0, 1)
       expect(v.game.snapshot().complete).toBe(false)
-      v.reach(0.3, 20.3)
+      expect(v.game.snapshot().player.position.z).toBeLessThan(
+        (LEVEL.exit.minZ + LEVEL.exit.maxZ) / 2,
+      )
+      v.reach(-0.45, Z.final)
+      expect(v.game.snapshot().player.supportPlatformId).toBe('final-catch')
       v.sing('voice-fifth')
-      v.reach(1.1, 20.3)
-      v.reach(1.1, 21.9)
+      v.reach(0.85, Z.final)
+      v.reach(0.85, Z.final + 0.23)
+      v.rest(1)
       expect(v.game.snapshot().complete).toBe(true)
       expect(v.respawns()).toBe(0)
       expect([...v.visited]).toEqual(
         expect.arrayContaining([
-          'frost-bend',
+          'arrival',
+          'scroll-approach',
           'scroll-deck',
+          'scroll-catch',
           'rose-step',
           'amethyst-step',
-          'aurora-raft',
-          'stair-one',
-          'stair-two',
-          'stair-three',
+          'final-catch',
         ]),
       )
     },
   )
 
-  it.each([1 / 60, 1 / 30])(
-    'can return from an explored finale to its first unbroken vase at %s seconds/frame',
-    (dt) => {
-      const v = visit(dt, {
-        version: 2,
-        levelId: LEVEL.id,
-        checkpointId: 'final-save',
-        completedBreakableIds: [],
-        finished: false,
-      })
-      v.reach(2, 17.1)
-      v.reach(2.5, 15.3)
-      v.reach(3, 13.5)
-      v.reach(4, 11)
-      v.reach(4, 9.95)
-      v.waitFor(() => (v.platform('aurora-raft')?.offset.z ?? 0) > 1.799)
-      v.reach(4, 8)
-      expect(v.game.snapshot().player.supportPlatformId).toBe('aurora-raft')
-      v.waitFor(() => (v.platform('aurora-raft')?.offset.z ?? Infinity) < 0.001)
-      v.reach(4, 5.2)
-      v.reach(4, 3.2)
-      v.reach(3, 2.7)
-      v.reach(3, 0.4)
-      v.reach(4, -0.1)
-      v.reach(4.7, -1.8, false)
-      v.reach(4.1, -4.2, false)
-      v.reach(3.7, -7.4)
-      v.reach(2.1, -7.4)
-      v.waitFor(
-        () =>
-          v.platform('scroll-deck')?.phase === 'extended' &&
-          (v.platform('scroll-deck')?.phaseProgress ?? 1) < 0.05,
-      )
-      v.reach(-3.7, -7.4)
-      v.reach(-5, -7.7)
-      v.reach(-6, -10.6)
-      v.reach(-6, -13.9)
-      v.reach(-5, -16.8)
-      v.reach(-3.9, -19.1)
-      v.reach(-4.8, -19.6)
-      expect(v.respawns()).toBe(0)
-      expect(v.game.snapshot().nextRequiredBreakableId).toBe('voice-home')
-      expect(v.game.beginEncounter('voice-home', 60)).toBe(true)
+  it.each([
+    { id: 'rose-step', targetZ: Z.rose, warningSeconds: 2 },
+    { id: 'amethyst-step', targetZ: Z.amethyst, warningSeconds: 4 },
+  ] as const)(
+    '$id removes support after $warningSeconds seconds, then restores on checkpoint recovery',
+    ({ id, targetZ, warningSeconds }) => {
+      const dt = 1 / 60
+      const v = visit(dt, savedAt('final-save', ['voice-home', 'voice-third']))
+      v.reach(0, Z.amethyst, false)
+      if (id === 'rose-step') v.reach(0, targetZ, false)
+      v.waitFor(() => v.game.snapshot().player.supportPlatformId === id)
+      const contactedAt = v.firstWarning.get(id)
+      expect(contactedAt).toBeDefined()
+      v.waitFor(() => v.platform(id)?.phase === 'released', warningSeconds + 1)
+      const contactDuration = v.elapsed() - contactedAt!
+      expect(contactDuration).toBeGreaterThanOrEqual(warningSeconds - dt * 2)
+      expect(contactDuration).toBeLessThanOrEqual(warningSeconds + dt * 2)
+      expect(v.game.snapshot().player.supportPlatformId).not.toBe(id)
+      v.waitFor(() => v.respawns() === 1)
+      expect(v.game.snapshot().checkpointId).toBe('final-save')
+      expect(v.platform('rose-step')?.phase).toBe('intact')
+      expect(v.platform('amethyst-step')?.phase).toBe('intact')
+      expect(v.game.snapshot().complete).toBe(false)
+      const restored = createGlassGame(LEVEL, v.game.saveProgress())
+      expect(restored.snapshot().player.position.x).toBe(0)
+      expect(restored.snapshot().player.position.y).toBe(0)
+      expect(restored.snapshot().player.position.z).toBeCloseTo(Z.final, 12)
     },
   )
 
-  it('restores an explored garden without awarding unbroken targets or unlocking its exit', () => {
+  it('does not award missing voice targets or unlock the exit from an explored finale', () => {
     const v = visit(1 / 60, {
-      version: 2,
-      levelId: LEVEL.id,
-      checkpointId: 'garden-save',
-      completedBreakableIds: [],
+      ...savedAt('final-save'),
       finished: true,
     })
     expect(v.game.snapshot()).toMatchObject({
-      checkpointId: 'garden-save',
       complete: false,
       completedBreakableIds: [],
     })
-    expect(v.game.beginEncounter('voice-third', 60)).toBe(false)
-    for (let i = 0; i < 300 && v.respawns() === 0; i++) v.step(1)
-    expect(v.respawns()).toBe(1)
-    const restored = createGlassGame(LEVEL, v.game.saveProgress())
-    expect(restored.snapshot().player.position).toEqual({ x: 4, y: 0, z: 2.6 })
-    expect(restored.snapshot().complete).toBe(false)
+    expect(v.game.beginEncounter('voice-fifth', 60)).toBe(false)
+    expect(v.game.snapshot().nextRequiredBreakableId).toBe('voice-home')
   })
 })
