@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "amethyst-crackle-slow",
+  "operation": "image-to-3d",
+  "state": "in-progress",
+  "source": {
+    "file": "source-assets/references/amethyst-crackle-slow.png",
+    "sha256": "1316c16bf53f7b88adfae55d25cce726456a9d3791a0b7abaf4f9e4a77f6fd66",
+    "bytes": 1952442,
+    "dimensions": [
+      1409,
+      1116
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One broad rectangular lavender-purple crystal glass platform, opalescent pink reflections, silver-gold fine geometric triangular lattice contained inside the thick translucent glass, delicate gold rounded corner clasps, faceted solid underside, perfectly flat top. Width 2.4 depth 1.9 thickness .5. No debris, spikes or pedestal. This is the strong four-second breakaway platform. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:21:43.081636+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3605,
+  "submissionStartedAtUtc": "2026-09-25T12:21:43.081653+00:00",
+  "taskId": "01a0d883-ae83-7169-acc1-b1d37cfa0578",
+  "submittedAtUtc": "2026-09-25T12:21:47.161366+00:00",
+  "balanceAfterSubmit": 3565,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d883-ae83-7169-acc1-b1d37cfa0578",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 80,
+    "created_at": 1790338906959,
+    "started_at": 1790338906966,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:25:19.344233+00:00"
+}

@@ -6,7 +6,7 @@
 
 ## Provider production
 
-The owner authorized uploads and credits. Proton Pass CLI currently reports no authenticated session; zero jobs submitted for this batch. Once restored, use the existing scoped credential template; never print its contents or export the key into the parent session.
+The owner authorized uploads and credits. Scoped Proton Pass access was restored on 25 September 2026; the balance read 3,685 credits before this batch. Use the existing scoped credential template; never print its contents or export the key into the parent session. Per-asset receipts are the live production authority.
 
 ```sh
 rtk proxy python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py prepare
@@ -15,7 +15,7 @@ rtk proxy timeout 240 pass-cli run --env-file /home/maff/.dotfiles/personal/irch
 rtk proxy timeout 900 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py resume --asset gilt-scroll-bridge
 ```
 
-Repeat for the exact catalogue IDs, with bounded concurrency and balance checks. Prepare is offline. Submission records intent before POST and refuses duplication. Resume reads one existing task and archives it when complete, without submitting again. If POST is uncertain, use `reconcile` and compare safe task metadata before modifying the receipt. Model and texture URLs are used in memory only; archive files with hashes.
+Repeat for the exact catalogue IDs, with bounded concurrency and balance checks. Prepare is offline. An exclusive per-asset source lock serializes worktrees on this host. Submission records durable intent in the shared source receipt before POST and refuses duplication; the Git receipt is a sanitized mirror. Resume reads one existing task and archives it when complete, without submitting again. If POST is uncertain, use `reconcile` and compare safe task metadata before modifying the receipt. Model and texture URLs are used in memory only; archive files with hashes.
 
 The official [Meshy Image-to-3D API](https://docs.meshy.ai/en/api/image-to-3d), checked 25 September 2026, supports `meshy-7.1`, `geometry_resolution:4k`, and `texture_resolution:8k`. Each request preserves dense geometry (`should_remesh:false`) and asks for PBR maps. The current pricing estimate is 40 credits each; provider consumed credits are the authority. No repeated charged regeneration without inspecting the first result.
 
