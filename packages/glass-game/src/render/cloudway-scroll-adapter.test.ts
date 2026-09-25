@@ -1,7 +1,7 @@
 // Cloudway scroll adapter tests — semantic donor roles follow authoritative extent snapshots without mutating source art.
 
 import type { Mesh as MeshType, Object3D } from 'three'
-import { BoxGeometry, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Texture, Vector3, } from 'three'
+import { BoxGeometry, BufferGeometry, Group, Line, LineBasicMaterial, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Texture, Vector3, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { PlatformDefinition, PlatformRuntimeSnapshot } from '../contracts'
 import { CLOUDWAY_SCROLL_ROLE_NAMES, createCloudwayScrollAdapter, } from './cloudway-scroll-adapter'
@@ -244,6 +244,29 @@ function disposeFixture(
 }
 
 describe('Cloudway semantic scroll adapter', () => {
+  it('rejects unsupported line renderables without disposing source-owned resources', () => {
+    const fixture = donor()
+    const materials = semanticMaterials()
+    const line = new Line(
+      new BufferGeometry().setFromPoints([new Vector3(), new Vector3(1, 0, 0)]),
+      new LineBasicMaterial(),
+    )
+    line.name = 'UnexpectedEtchingLine'
+    role(fixture.source, CLOUDWAY_SCROLL_ROLE_NAMES.deck).add(line)
+    const geometryDispose = vi.spyOn(line.geometry, 'dispose')
+    const materialDispose = vi.spyOn(line.material, 'dispose')
+    expect(() =>
+      createCloudwayScrollAdapter({
+        source: fixture.source,
+        platform: platform(),
+        materials: materialBindings(fixture.source, materials),
+      }),
+    ).toThrow('unsupported renderable')
+    expect(geometryDispose).not.toHaveBeenCalled()
+    expect(materialDispose).not.toHaveBeenCalled()
+    disposeFixture(fixture, materials)
+  })
+
   it('uses authoritative full and minimum extents while rollers translate without stretching', () => {
     const fixture = donor()
     const target = platform()
