@@ -4,7 +4,10 @@
   justify-content: space-between;
   gap: 16px;
   min-height: 50px;
-  padding: 7px 12px;
+  /* Each side at least the inset there: on its side a phone has its notch,
+     or its island, at one end of the toolbar. The web's insets are 0. */
+  padding: 7px max(12px, var(--safe-right, 0px)) 7px
+    max(12px, var(--safe-left, 0px));
   background: color-mix(in srgb, var(--bg-secondary) 82%, var(--bg-primary));
   border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
 }
