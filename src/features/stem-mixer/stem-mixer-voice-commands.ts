@@ -12,9 +12,11 @@
 // (audio time), unlike the beat-based global transport.
 
 import type { Accessor } from 'solid-js'
-import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, keyMatchesStemLabel, KNOWN_STEM_KEYS, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, stemDisplayName, stemSpokenNames, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
+import { ABSOLUTE_MINUTES_PHRASES, ABSOLUTE_SECONDS_PHRASES, BACK_MINUTES_PHRASES, BACK_SECONDS_PHRASES, END_PHRASES, FIND_MY_KEY_PHRASES, FORWARD_MINUTES_PHRASES, FORWARD_SECONDS_PHRASES, KEY_DOWN_PHRASES, KEY_ORIGINAL_PHRASES, KEY_UP_PHRASES, keyMatchesStemLabel, KNOWN_STEM_KEYS, LOOP_CLEAR_PHRASES, LOOP_OFF_PHRASES, LOOP_ON_PHRASES, LOOP_RANGE_PHRASES, LOOP_SET_A_PHRASES, LOOP_SET_B_PHRASES, LOOP_TOGGLE_PHRASES, MIDDLE_PHRASES, PAUSE_PHRASES, PLAY_PHRASES, RESTART_PHRASES, SEEK_START_PHRASES, SPEED_FASTER_PHRASES, SPEED_MULTIPLIER_PHRASES, SPEED_PRESETS, SPEED_SLOWER_PHRASES, SPEED_SPOKEN_PHRASES, stemDisplayName, stemSpokenNames, STOP_PHRASES, } from '@/features/voice-control/shared-phrases'
 import type { VoiceCommand, VoiceCommandResult, } from '@/features/voice-control/types'
 import { voiceFailure } from '@/features/voice-control/types'
+import { formatKeyShift, KEY_SHIFT_MAX, KEY_SHIFT_MIN, } from '@/lib/key-shift/key-shift'
+import type { FindMyKeyResult } from './useStemMixerKeyController'
 
 export interface StemMixerVoiceTrack {
   label: string
@@ -60,6 +62,13 @@ export interface StemMixerVoiceDeps {
     /** Jump to a random queue entry; false when there is nothing to jump to. */
     random: () => boolean
   }
+  /** The karaoke key in semitones; 0 is the song's own key. */
+  keyShift: Accessor<number>
+  setKeyShift: (semitones: number) => void
+  /** The same "Find my key" the key control's button runs. */
+  findMyKey: () => FindMyKeyResult
+  /** Why the key cannot change right now (Pitch Studio, no engine), if so. */
+  keyShiftDisabledReason?: Accessor<string | undefined>
   /** The "Songs" rail — the songs-and-playlists sidebar. */
   songsSidebar: {
     isOpen: Accessor<boolean>
@@ -75,6 +84,9 @@ const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
 
 const formatSpeed = (multiplier: number): string =>
   `Speed ${String(multiplier)}x`
+
+const formatKey = (semitones: number): string =>
+  `Key ${formatKeyShift(semitones)}`
 
 export function createStemMixerVoiceCommands(
   deps: StemMixerVoiceDeps,
@@ -210,6 +222,45 @@ export function createStemMixerVoiceCommands(
         Math.min(Math.max(nearest + direction, 0), SPEED_STEPS.length - 1)
       ],
     )
+  }
+
+  // ── Key (semitones, the singer's) ──────────────────────────
+
+  const keyBlocked = (): VoiceCommandResult | null => {
+    const reason = deps.keyShiftDisabledReason?.()
+    return reason === undefined ? null : voiceFailure(reason)
+  }
+
+  const stepKey = (direction: 1 | -1): VoiceCommandResult => {
+    const blocked = keyBlocked()
+    if (blocked !== null) return blocked
+    const current = deps.keyShift()
+    if (direction > 0 && current >= KEY_SHIFT_MAX)
+      return voiceFailure(`Key already ${formatKeyShift(current)}, the highest`)
+    if (direction < 0 && current <= KEY_SHIFT_MIN)
+      return voiceFailure(`Key already ${formatKeyShift(current)}, the lowest`)
+    deps.setKeyShift(current + direction)
+    return formatKey(current + direction)
+  }
+
+  const originalKey = (): VoiceCommandResult => {
+    const blocked = keyBlocked()
+    if (blocked !== null) return blocked
+    if (deps.keyShift() === 0)
+      return voiceFailure('Already in the original key')
+    deps.setKeyShift(0)
+    return 'Original key'
+  }
+
+  const findMyKey = (): VoiceCommandResult => {
+    const blocked = keyBlocked()
+    if (blocked !== null) return blocked
+    const result = deps.findMyKey()
+    if (result === 'needs-range') return 'Pick your voice type'
+    if (result === 'detecting') return 'Finding the melody first'
+    if (result === 'no-melody')
+      return voiceFailure('The melody cannot be found on this device')
+    return formatKey(deps.keyShift())
   }
 
   const setLoopRange = (
@@ -515,6 +566,30 @@ export function createStemMixerVoiceCommands(
       label: 'Loop range',
       phrases: LOOP_RANGE_PHRASES,
       run: (args) => setLoopRange(args.n, args.m),
+    },
+    {
+      id: 'karaoke.keyUp',
+      label: 'Key up',
+      phrases: KEY_UP_PHRASES,
+      run: () => stepKey(1),
+    },
+    {
+      id: 'karaoke.keyDown',
+      label: 'Key down',
+      phrases: KEY_DOWN_PHRASES,
+      run: () => stepKey(-1),
+    },
+    {
+      id: 'karaoke.keyOriginal',
+      label: 'Original key',
+      phrases: KEY_ORIGINAL_PHRASES,
+      run: originalKey,
+    },
+    {
+      id: 'karaoke.findMyKey',
+      label: 'Find my key',
+      phrases: FIND_MY_KEY_PHRASES,
+      run: findMyKey,
     },
     {
       id: 'karaoke.speedFaster',

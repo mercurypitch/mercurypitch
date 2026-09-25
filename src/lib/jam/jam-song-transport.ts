@@ -24,6 +24,13 @@
 // the shared audio-unlock listeners, so any tap in the room resumes the
 // context, and a singer has tapped several times (picking the song,
 // waiting for the transfer) before they reach for Play.
+//
+// Not always: a guest who has not tapped yet gets the host's Play as a
+// message, and the tap that follows cannot help, because resume() lands
+// after the tap's own handler has run. Natively, the song is in its
+// ORIGINAL key whatever the room's is, so a song left playing that way is
+// handed over the moment the context runs -- a cut and a fade-in, once,
+// rather than the wrong key for the rest of the song. See `adopt`.
 
 import { closeEnvelope, dipEnvelope, ENVELOPE_DEFAULTS, openEnvelope, } from '@/lib/preview-player'
 
@@ -36,6 +43,11 @@ export interface JamSongTransportDeps {
   element: () => HTMLAudioElement | undefined
   /** The shared engine context, or null before it exists. */
   context: () => AudioContext | null
+  /** Where the enveloped backing goes: the room's key graph, else the
+   *  speakers. */
+  output?: (ctx: AudioContext) => AudioNode
+  /** The backing goes through the graph from now on, for good. Once. */
+  onAttach?: () => void
   attackMs?: number
   releaseMs?: number
   seekFadeMs?: number
@@ -54,8 +66,33 @@ export interface JamSongTransport {
   seek(toSec: number): void
   /** True once the element is routed through the gain graph. */
   enveloped(): boolean
+  /**
+   * Hand a song already playing natively to the graph: now if the context
+   * runs, else as soon as it starts to. For a context made after the song
+   * began; a play that finds the context asleep arranges this itself.
+   */
+  adopt(): void
   /** Drop the graph's own nodes. The element belongs to the caller. */
   dispose(): void
+}
+
+/**
+ * The engine's context, made as the stage mounts so the first Play can
+ * already go through the graph: constructing the engine makes none, only
+ * its `init()` does. Made before any tap, it starts suspended, and the
+ * stage's unlock listeners resume it on the first one. Null where no
+ * context can be made; the element then plays natively.
+ */
+export async function prepareEngineContext(engine: {
+  init: () => Promise<void>
+  getAudioContext: () => AudioContext | null
+}): Promise<AudioContext | null> {
+  try {
+    await engine.init()
+  } catch {
+    return null
+  }
+  return engine.getAudioContext()
 }
 
 export function createJamSongTransport(
@@ -72,6 +109,8 @@ export function createJamSongTransport(
   let wantPlaying = false
   let pauseTimer: ReturnType<typeof setTimeout> | undefined
   let seekTimer: ReturnType<typeof setTimeout> | undefined
+  /** The asleep context a natively playing song waits on. */
+  let watched: AudioContext | null = null
   /** Bumped by every transport edge, so a dip still in flight when the
    *  next one lands knows the gain is no longer its to lift. */
   let revision = 0
@@ -88,6 +127,15 @@ export function createJamSongTransport(
     seekTimer = undefined
   }
 
+  /** The room's key graph, or the speakers when it cannot be had. */
+  const outputFor = (c: AudioContext): AudioNode => {
+    try {
+      return deps.output?.(c) ?? c.destination
+    } catch {
+      return c.destination
+    }
+  }
+
   /**
    * Build the graph, once, and only against a context that is actually
    * running. Returns false when the element must keep playing natively.
@@ -95,29 +143,71 @@ export function createJamSongTransport(
    * `createMediaElementSource` throws if the element already belongs to
    * another graph — a real possibility after a hot reload — and a throw
    * here must leave the element playing rather than take the room down.
+   * Handing the element over is permanent, so its gain is wired first: a
+   * failure after the hand-over would be silence. A key graph that cannot
+   * be had sends the backing to the speakers, in the original key.
    */
   const attach = (el: HTMLAudioElement): boolean => {
     if (gain !== null && ctx !== null) return true
     const candidate = deps.context()
     if (candidate === null || candidate.state !== 'running') return false
+    let g: GainNode | null = null
     try {
-      const src = candidate.createMediaElementSource(el)
-      const g = candidate.createGain()
+      g = candidate.createGain()
       // Silent until the envelope opens: the element is about to start,
       // and the first audible sample must not be at full scale.
       g.gain.value = 0
+      g.connect(outputFor(candidate))
+      const src = candidate.createMediaElementSource(el)
       src.connect(g)
-      g.connect(candidate.destination)
       ctx = candidate
       source = src
       gain = g
+      deps.onAttach?.()
       return true
     } catch {
+      g?.disconnect()
       return false
     }
   }
 
   const playing = (el: HTMLAudioElement): boolean => !el.paused && !el.ended
+
+  const unwatch = (): void => {
+    watched?.removeEventListener('statechange', onStateChange)
+    watched = null
+  }
+
+  const watch = (c: AudioContext): void => {
+    if (watched === c) return
+    unwatch()
+    watched = c
+    c.addEventListener('statechange', onStateChange)
+  }
+
+  const adopt = (): void => {
+    if (disposed) return
+    const el = deps.element()
+    if (gain !== null || el === undefined || !wantPlaying || !playing(el)) {
+      unwatch()
+      return
+    }
+    const c = deps.context()
+    if (c === null) return
+    if (c.state !== 'running') {
+      watch(c)
+      return
+    }
+    unwatch()
+    // The element's own output stops here; the envelope brings the song
+    // back from silence.
+    if (attach(el) && gain !== null && ctx !== null)
+      openEnvelope(gain, ctx, attackS)
+  }
+
+  function onStateChange(): void {
+    if (watched?.state === 'running') adopt()
+  }
 
   return {
     play() {
@@ -133,6 +223,10 @@ export function createJamSongTransport(
       clearPauseTimer()
 
       const enveloped = attach(el)
+      if (!enveloped) {
+        const asleep = deps.context()
+        if (asleep !== null && asleep.state !== 'running') watch(asleep)
+      }
       const g = gain
       const c = ctx
       if (enveloped && g !== null && c !== null) {
@@ -220,11 +314,14 @@ export function createJamSongTransport(
 
     enveloped: () => gain !== null,
 
+    adopt,
+
     dispose() {
       if (disposed) return
       disposed = true
       clearPauseTimer()
       clearSeekTimer()
+      unwatch()
       // The element is the stage's, and Solid is tearing it down anyway.
       // Only the nodes this module made are its to release.
       source?.disconnect()

@@ -14,23 +14,36 @@
 //   fade.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createJamSongTransport } from '@/lib/jam/jam-song-transport'
+import { createJamSongTransport, prepareEngineContext, } from '@/lib/jam/jam-song-transport'
 
 interface FakeGain {
   value: number
   ramps: { kind: string; to: number; at: number }[]
   disconnected: boolean
+  connectedTo: unknown[]
 }
 
 function makeContext(state: AudioContextState = 'running') {
   const gains: FakeGain[] = []
   const sources: { el: unknown; disconnected: boolean }[] = []
+  const listeners = new Set<() => void>()
   const ctx = {
     currentTime: 0,
     state,
     destination: { kind: 'destination' },
+    addEventListener(type: string, fn: () => void) {
+      if (type === 'statechange') listeners.add(fn)
+    },
+    removeEventListener(type: string, fn: () => void) {
+      if (type === 'statechange') listeners.delete(fn)
+    },
     createGain() {
-      const g: FakeGain = { value: 1, ramps: [], disconnected: false }
+      const g: FakeGain = {
+        value: 1,
+        ramps: [],
+        disconnected: false,
+        connectedTo: [],
+      }
       gains.push(g)
       const note = (kind: string) => (to: number, at: number) => {
         g.ramps.push({ kind, to, at })
@@ -55,7 +68,9 @@ function makeContext(state: AudioContextState = 'running') {
             g.value = v
           },
         },
-        connect: () => undefined,
+        connect: (target: unknown) => {
+          g.connectedTo.push(target)
+        },
         disconnect: () => {
           g.disconnected = true
         },
@@ -72,7 +87,20 @@ function makeContext(state: AudioContextState = 'running') {
       }
     },
   }
-  return { ctx: ctx as unknown as AudioContext, raw: ctx, gains, sources }
+  /** What a resume() looks like from outside: the state flips, then the
+   *  context says so. */
+  const setState = (next: AudioContextState) => {
+    ctx.state = next
+    for (const fn of [...listeners]) fn()
+  }
+  return {
+    ctx: ctx as unknown as AudioContext,
+    raw: ctx,
+    gains,
+    sources,
+    setState,
+    listening: () => listeners.size,
+  }
 }
 
 function makeElement() {
@@ -311,5 +339,160 @@ describe('dispose', () => {
     expect(state.pauses).toBe(0)
     await transport.play()
     expect(state.plays).toBe(1)
+  })
+})
+
+describe('the room key', () => {
+  it('sends the backing through the room’s key graph when it has one', async () => {
+    const fake = makeContext()
+    const { el } = makeElement()
+    const keyGraphInput = { kind: 'key graph' }
+    const asked: unknown[] = []
+    const transport = createJamSongTransport({
+      element: () => el,
+      context: () => fake.ctx,
+      output: (ctx) => {
+        asked.push(ctx)
+        return keyGraphInput as unknown as AudioNode
+      },
+    })
+
+    await transport.play()
+
+    expect(asked).toEqual([fake.ctx])
+    expect(fake.gains[0]!.connectedTo).toEqual([keyGraphInput])
+  })
+
+  it('goes straight to the speakers without one', async () => {
+    const { fake, transport } = setup()
+
+    await transport.play()
+
+    expect(fake.gains[0]!.connectedTo).toEqual([fake.raw.destination])
+  })
+
+  it('goes straight to the speakers when the key graph cannot be had', async () => {
+    const fake = makeContext()
+    const { el, state } = makeElement()
+    const transport = createJamSongTransport({
+      element: () => el,
+      context: () => fake.ctx,
+      output: () => {
+        throw new Error('worklet node refused')
+      },
+    })
+
+    await transport.play()
+
+    // The original key, still without the pop -- and never an element
+    // handed to a graph that leads nowhere.
+    expect(transport.enveloped()).toBe(true)
+    expect(fake.gains[0]!.connectedTo).toEqual([fake.raw.destination])
+    expect(state.plays).toBe(1)
+  })
+})
+
+describe('a song already playing natively', () => {
+  // The host's Play reaches a guest who has not tapped yet -- an iPhone,
+  // typically -- so the song starts natively, in the ORIGINAL key, whatever
+  // the room's is. The tap that follows resumes the context, but resume()
+  // lands after the tap's own handler has run, so nothing in that handler
+  // can attach. Left there, the guest hears one key for the whole song
+  // while the lanes and the score are in another.
+  it('goes through the graph once the suspended context starts running', async () => {
+    const { fake, transport } = setup({ contextState: 'suspended' })
+    await transport.play()
+    expect(transport.enveloped()).toBe(false)
+
+    fake.setState('running')
+
+    expect(transport.enveloped()).toBe(true)
+    expect(fake.sources).toHaveLength(1)
+    // In from silence, not at full scale.
+    expect(fake.gains[0]!.ramps.at(-1)).toMatchObject({ kind: 'exp', to: 1 })
+  })
+
+  it('leaves a paused song alone when the context wakes', async () => {
+    const { fake, transport } = setup({ contextState: 'suspended' })
+    await transport.play()
+    transport.pause()
+
+    fake.setState('running')
+
+    expect(transport.enveloped()).toBe(false)
+    expect(fake.sources).toHaveLength(0)
+  })
+
+  it('hands over a song that began before the context existed', async () => {
+    // A guest joining mid-song: the stage mounts into a playing room, and
+    // the song starts before the engine has made its context.
+    const fake = makeContext()
+    const { el } = makeElement()
+    let context: AudioContext | null = null
+    const transport = createJamSongTransport({
+      element: () => el,
+      context: () => context,
+    })
+    await transport.play()
+    expect(transport.enveloped()).toBe(false)
+
+    context = fake.ctx
+    transport.adopt()
+
+    expect(transport.enveloped()).toBe(true)
+  })
+
+  it('tells the stage once, when the backing starts going through the graph', async () => {
+    const fake = makeContext('suspended')
+    const { el } = makeElement()
+    const onAttach = vi.fn()
+    const transport = createJamSongTransport({
+      element: () => el,
+      context: () => fake.ctx,
+      onAttach,
+    })
+    await transport.play()
+    expect(onAttach).not.toHaveBeenCalled()
+
+    fake.setState('running')
+    await transport.play()
+
+    expect(onAttach).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops listening to the context once disposed', async () => {
+    const { fake, transport } = setup({ contextState: 'suspended' })
+    await transport.play()
+
+    transport.dispose()
+    fake.setState('running')
+
+    expect(fake.sources).toHaveLength(0)
+    expect(fake.listening()).toBe(0)
+  })
+})
+
+describe('prepareEngineContext', () => {
+  it('makes the engine’s context, which constructing the engine does not', async () => {
+    const fake = makeContext('suspended')
+    let made: AudioContext | null = null
+    const engine = {
+      init: () => {
+        made = fake.ctx
+        return Promise.resolve()
+      },
+      getAudioContext: () => made,
+    }
+
+    expect(await prepareEngineContext(engine)).toBe(fake.ctx)
+  })
+
+  it('leaves the element to play natively where no context can be made', async () => {
+    const engine = {
+      init: () => Promise.reject(new Error('no audio output')),
+      getAudioContext: () => null,
+    }
+
+    expect(await prepareEngineContext(engine)).toBeNull()
   })
 })

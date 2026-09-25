@@ -112,6 +112,7 @@
     "lightningcss": "^1.32.0",
     "mediabunny": "^1.52.2",
     "onnxruntime-web": "^1.25.1",
+    "signalsmith-stretch": "^1.3.2",
     "solid-js": "^1.9.12",
     "typegpu": "^0.11.9",
     "uqr": "^0.1.3",

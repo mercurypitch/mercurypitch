@@ -13,14 +13,18 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { activateAudioPlayback, installAudioUnlock } from '@/lib/audio-unlock'
+import { deviceClass } from '@/lib/device-tier'
 import { createJamGuidePlayer } from '@/lib/jam/jam-guide-player'
+import { createJamKeyShift, heardPositionSec, heardRoomKey, } from '@/lib/jam/jam-key-shift'
 import { advanceJamLineScoreTracker, EMPTY_JAM_LINE_SCORE_TRACKER, } from '@/lib/jam/jam-line-score-tracker'
 import { scoreLiveLine } from '@/lib/jam/jam-line-scoring'
-import { createJamSongTransport } from '@/lib/jam/jam-song-transport'
+import { createJamSongTransport, prepareEngineContext, } from '@/lib/jam/jam-song-transport'
 import { jamSplitBounds, jamSplitShare, resetJamSplitShare, setJamSplitShare, } from '@/lib/jam/jam-view-prefs'
 import { followMediaClock } from '@/lib/jam/media-clock'
+import { transposeNotes } from '@/lib/key-shift/key-shift'
 import { initAudioEngine } from '@/stores/app-store'
-import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamLineIsMine, jamPeerId, jamPitchHistory, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamGuideVolume, setJamSongMediaDurationSec, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { jamError, jamExercisePaused, jamExercisePlaying, jamGuideVolume, jamIsHost, jamKeyShiftAvailable, jamLineIsMine, jamPeerId, jamPitchHistory, jamRoomKeyShift, jamShowPitch, jamSong, jamSongHostTarget, jamSongLineScores, jamSongPause, jamSongPositionSec, jamSongSeek, jamSongSeekRequest, jamSongStop, recordJamLineScore, setJamError, setJamExercisePaused, setJamGuideVolume, setJamKeyShiftAvailable, setJamSongMediaDurationSec, setJamSongPositionSec, songIsPlayableHere, } from '@/stores/jam-store'
+import { showNotification } from '@/stores/notifications-store'
 import { JamGuideVocal } from './JamGuideVocal'
 import { JamPeerLanes } from './JamPeerLanes'
 import { JamSongLyrics } from './JamSongLyrics'
@@ -114,6 +118,27 @@ export const JamSongStage: Component = () => {
   const guideVolume = jamGuideVolume
 
   /**
+   * The room's key. The host sets it, and every peer shifts its own audio
+   * to it: the backing track and the guide vocal both connect through the
+   * key graph, which goes straight through at the original key. See
+   * jam-key-shift.ts.
+   */
+  const keyShift = createJamKeyShift({
+    // Phones and televisions take the lighter engine setting.
+    preset: deviceClass() === 'desktop' ? 'default' : 'cheaper',
+    onUnavailable: (error) => {
+      setJamKeyShiftAvailable(false)
+      if (error === undefined) return
+      console.warn('[Jam] key change unavailable:', error)
+      showNotification(
+        'Changing the key is not available right now, so the song plays in its original key.',
+        'warning',
+      )
+    },
+  })
+  onCleanup(() => keyShift.dispose())
+
+  /**
    * The guide vocal plays through Web Audio, NOT a second <audio> element.
    *
    * TV browsers run one hardware media pipeline, so a second element's
@@ -124,6 +149,7 @@ export const JamSongStage: Component = () => {
   let engineContext: AudioContext | null = null
   const guidePlayer = createJamGuidePlayer({
     context: () => engineContext,
+    output: keyShift.guideOutput,
   })
   onCleanup(() => guidePlayer.dispose())
 
@@ -136,11 +162,52 @@ export const JamSongStage: Component = () => {
    * practice consists of. See jam-song-transport.ts for why it attaches
    * to the graph lazily rather than on mount.
    */
+  const [backingInGraph, setBackingInGraph] = createSignal(false)
   const transport = createJamSongTransport({
     element: () => audioRef,
     context: () => engineContext,
+    output: keyShift.backingOutput,
+    onAttach: () => setBackingInGraph(true),
   })
   onCleanup(() => transport.dispose())
+
+  /**
+   * The key this device plays: the room's once the backing goes through the
+   * key graph, the original until then (a song started before the context
+   * ran plays natively) or where the key cannot change at all.
+   */
+  const heardKey = () =>
+    heardRoomKey(jamRoomKeyShift(), {
+      available: jamKeyShiftAvailable(),
+      backingInGraph: backingInGraph(),
+    })
+
+  // What the key graph is told: the key this device plays -- so the guide
+  // never comes out in the room's key over a backing still in the original
+  // -- whether the guide is heard at all (a muted guide's shifter is left
+  // out of the path), and whether the song is sounding (a re-route then
+  // dips).
+  const songSounding = () => jamExercisePlaying() && !jamExercisePaused()
+  createEffect(() => {
+    keyShift.apply({
+      semitones: heardKey(),
+      vocalAudible: hasGuideVocal() && jamGuideVolume() > 0,
+      playing: songSounding(),
+    })
+  })
+
+  /** The line to sing, in the key it is heard in -- drawn and scored. */
+  const shownNotes = createMemo(() =>
+    transposeNotes(jamSong()?.notes ?? [], heardKey()),
+  )
+  /** The words and the lanes follow what is heard, not the element. */
+  const heardPosition = createMemo(() =>
+    heardPositionSec(
+      jamSongPositionSec(),
+      keyShift.latencySec(),
+      songSounding(),
+    ),
+  )
 
   // The timeline outside this stage reads the element's length from the
   // store. It belongs to ONE song: a new source has not reported yet, and
@@ -164,14 +231,19 @@ export const JamSongStage: Component = () => {
    *
    * Otherwise one exists only once the guide vocal has been unmuted, and
    * a singer who never touches the guide would get the un-enveloped path
-   * for the whole session -- which is to say, the pop. Constructing the
-   * engine does not start it; the unlock listeners below resume it on the
-   * first tap in the room.
+   * for the whole session -- which is to say, the pop, and a room key that
+   * never reaches the backing. The engine makes its context in `init()`,
+   * not when it is constructed. Made before any tap, it starts suspended;
+   * the unlock listeners below resume it on the first tap in the room.
    */
   onMount(() => {
-    void initAudioEngine().then((engine) => {
-      engineContext ??= engine.getAudioContext()
-    })
+    void initAudioEngine()
+      .then(prepareEngineContext)
+      .then((made) => {
+        engineContext ??= made
+        // A room joined mid-song is already playing, natively.
+        transport.adopt()
+      })
   })
 
   /**
@@ -204,7 +276,7 @@ export const JamSongStage: Component = () => {
 
   createEffect(() => {
     const song = jamSong()
-    const pos = jamSongPositionSec()
+    const pos = heardPosition()
     const step = advanceJamLineScoreTracker(lineScoreTracker, {
       songId: song?.id ?? null,
       lines: song?.lines ?? [],
@@ -236,7 +308,7 @@ export const JamSongStage: Component = () => {
         scoreLiveLine(
           song.lines,
           completed.index,
-          song.notes,
+          shownNotes(),
           jamPitchHistory()[mine],
           { atMs: completed.atMs, positionSec: completed.positionSec },
         ),
@@ -597,7 +669,7 @@ export const JamSongStage: Component = () => {
               scores={jamSongLineScores}
               onSeek={jamIsHost() ? (to) => seekTo(to) : undefined}
               lines={song().lines}
-              positionSec={jamSongPositionSec}
+              positionSec={heardPosition}
               playing={() => jamExercisePlaying() && !jamExercisePaused()}
               showNotes={false}
               // Everybody gets it, guests included: the transport is the
@@ -623,8 +695,8 @@ export const JamSongStage: Component = () => {
               />
               <JamPeerLanes
                 myPeerId={jamPeerId}
-                notes={() => song().notes}
-                positionSec={jamSongPositionSec}
+                notes={shownNotes}
+                positionSec={heardPosition}
               />
             </Show>
           </div>

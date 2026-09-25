@@ -20,6 +20,8 @@ import type { Component } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, Show, } from 'solid-js'
 import { KaraokePlaylistOverlay } from '@/components/KaraokePlaylistOverlay'
 import { KaraokePlaylistSummary } from '@/components/KaraokePlaylistSummary'
+import type { KeyShiftBinding } from '@/components/key-shift/KeyShiftControl'
+import { KeyShiftControl } from '@/components/key-shift/KeyShiftControl'
 import { LyricsSongPicker } from '@/components/LyricsSongPicker'
 import type { LyricsUploadResult } from '@/components/LyricsUploader'
 import { LyricsUploader, LyricsUploaderStyles, } from '@/components/LyricsUploader'
@@ -41,6 +43,7 @@ import type { RibbonNote } from '@/features/stem-mixer/zen-pitch-ribbon'
 import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-surface'
 import { getRestDotCount, leadInProgress } from '@/lib/canonical-lrc'
 import { formatBytes } from '@/lib/fetch-progress'
+import { formatKeyShift } from '@/lib/key-shift/key-shift'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
@@ -168,6 +171,12 @@ export interface KaraokeMobileStageProps {
   }
   micPitch?: () => DetectedPitch | null
   ribbonNotes?: () => RibbonNote[]
+
+  /** The singer's key. The bar has no room for a stepper — the mic and the
+      music level fill the left slot — so the right slot carries one button
+      that opens a sheet with the stepper and "Find my key". Without it the
+      right slot stays empty spacing. */
+  keyControl?: KeyShiftBinding
 
   /** Attach user-supplied lyrics when none were found (paste or file).
       Reuses the studio's lyrics controller, so they parse, sync, persist,
@@ -385,6 +394,7 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
 
   // ── In-stage song sheet ───────────────────────────────────────
   const [sheetOpen, setSheetOpen] = createSignal(false)
+  const [keySheetOpen, setKeySheetOpen] = createSignal(false)
 
   // ── Add-lyrics fallback sheet (shown from the no-lyrics state) ──
   const [addLyricsOpen, setAddLyricsOpen] = createSignal(false)
@@ -955,7 +965,12 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
           <span>{formatTime(scrub() ?? props.elapsed())}</span>
           <span>-{formatTime(remaining())}</span>
         </div>
-        <div class={styles.transport}>
+        <div
+          class={styles.transport}
+          classList={{
+            [styles.transportWithKey]: props.keyControl !== undefined,
+          }}
+        >
           {/* Left slot: what you put in and what you get back — your mic,
               and the backing level beside it. They are a pair on purpose:
               the level exists because turning the mic on is what makes the
@@ -1042,12 +1057,35 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
               <NextIcon />
             </button>
           </div>
-          {/* Right slot: empty, and that is its job — it mirrors the left
-              one's width so the play button stays dead centre. */}
-          <div
-            class={`${styles.transportSide} ${styles.transportSpacer}`}
-            aria-hidden="true"
-          />
+          <Show
+            when={props.keyControl}
+            fallback={
+              // Right slot: empty, and that is its job — it mirrors the left
+              // one's width so the play button stays dead centre.
+              <div
+                class={`${styles.transportSide} ${styles.transportSpacer}`}
+                aria-hidden="true"
+              />
+            }
+          >
+            {(key) => (
+              <div class={`${styles.transportSide} ${styles.transportKeySlot}`}>
+                <button
+                  class={styles.keyBtn}
+                  classList={{ [styles.keyBtnOn]: key().value() !== 0 }}
+                  data-testid="mobile-key-shift"
+                  onClick={() => setKeySheetOpen(true)}
+                  title="Change the key to suit your voice"
+                  aria-label={`Key ${formatKeyShift(key().value())}. Change the key`}
+                >
+                  <span class={styles.keyBtnCaption}>Key</span>
+                  <span class={styles.keyBtnValue}>
+                    {formatKeyShift(key().value())}
+                  </span>
+                </button>
+              </div>
+            )}
+          </Show>
         </div>
       </div>
 
@@ -1127,6 +1165,34 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
             </Show>
           </div>
         </div>
+      </Show>
+
+      {/* ── Key sheet ──────────────────────────────────────── */}
+      <Show when={props.keyControl}>
+        {(key) => (
+          <Sheet
+            isOpen={keySheetOpen()}
+            close={() => setKeySheetOpen(false)}
+            ariaLabel="Key"
+          >
+            <p class={styles.sheetKicker}>Key</p>
+            <div class={styles.keySheetBody}>
+              <KeyShiftControl
+                value={key().value()}
+                onChange={key().onChange}
+                keyLabel={key().keyLabel()}
+                suggestion={key().suggestion()}
+                onFindKey={key().onFindKey}
+                disabledReason={key().disabledReason()}
+                size="touch"
+              />
+              <p class={styles.keySheetNote}>
+                {key().disabledReason() ??
+                  'Moves the song up or down to suit your voice. The speed stays the same.'}
+              </p>
+            </div>
+          </Sheet>
+        )}
       </Show>
 
       {/* ── Song sheet ─────────────────────────────────────── */}

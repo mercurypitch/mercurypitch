@@ -38,3 +38,13 @@ export const [karaokeStemDenoise, setKaraokeStemDenoise] =
     deserializer: (raw) => raw !== 'false',
     serializer: (value) => (value ? 'true' : 'false'),
   })
+
+/**
+ * Leave the drums at their own pitch when the key of a song changes.
+ *
+ * Drums carry no key, and a pitch shifter smears their attack, so by default
+ * they are only delayed to stay in time with the shifted stems. Off sends
+ * them through the shifter with everything else.
+ */
+export const [karaokeKeyKeepDrums, setKaraokeKeyKeepDrums] =
+  createPersistedSignal<boolean>('pitchperfect_karaoke_key_keep_drums', true)

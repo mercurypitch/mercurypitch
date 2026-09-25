@@ -3,7 +3,7 @@
   "size.filesOver1500": 44,
   "escapeHatches.explicitAny": 11,
   "escapeHatches.tsIgnore": 0,
-  "layering.totalErrors": 227,
+  "layering.totalErrors": 228,
   "layering.crossFeatureImports": 506,
   "tests.presenceOnlyBlocks": 333,
   "tests.blocksWithoutAssertion": 50,

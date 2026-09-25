@@ -12,6 +12,7 @@
 // jamSongPositionSec is only meaningful while a song is loaded.
 
 import type { JamSongMessage, JamSongNote, LyricsLineTiming, } from '@/lib/jam/types'
+import { clampKeyShift } from '@/lib/key-shift/key-shift'
 
 /** Where a song's audio lives, and what every peer must be able to reach. */
 export interface JamSongStems {
@@ -52,6 +53,12 @@ export interface JamSong {
    * being told that the host can make one.
    */
   pitchGuide?: 'unavailable'
+  /**
+   * The room's key in semitones, set by the host and carried with the
+   * manifest; absent is the song's own key. Every peer shifts its own
+   * backing track and guide vocal to it.
+   */
+  keyShift?: number
   durationSec: number
   /**
    * Where the audio came from, which decides whether the room can run it
@@ -63,6 +70,16 @@ export interface JamSong {
 
 /** A song as it crosses the wire: the host's manifest. */
 type WireSong = NonNullable<JamSongMessage['song']>
+
+/**
+ * A key off the wire. The manifest is a peer's word, so only a number the
+ * shifter can reach counts, and 0 is no key at all.
+ */
+function wireKeyShift(value: unknown): Pick<JamSong, 'keyShift'> {
+  if (typeof value !== 'number') return {}
+  const keyShift = clampKeyShift(value)
+  return keyShift === 0 ? {} : { keyShift }
+}
 
 /**
  * A song as a guest holds it.
@@ -85,6 +102,7 @@ export function songFromWire(incoming: WireSong): JamSong {
     ...(incoming.pitchGuide === 'unavailable'
       ? { pitchGuide: 'unavailable' as const }
       : {}),
+    ...wireKeyShift(incoming.keyShift),
     origin: 'url',
   }
 }
@@ -93,15 +111,16 @@ export function songFromWire(incoming: WireSong): JamSong {
  * The song already loaded, after the host re-sent its manifest.
  *
  * A re-send under the same id is news about the song, never a new song: the
- * host found the words, worked out the notes, or learned there is no pitch
- * guide to be had. The flag follows the manifest both ways, so a Try again
- * that worked takes "no pitch guide" back off every guest's screen.
+ * host found the words, worked out the notes, moved the key, or learned
+ * there is no pitch guide to be had. The flag follows the manifest both
+ * ways, so a Try again that worked takes "no pitch guide" back off every
+ * guest's screen.
  */
 export function sameSongUpdated(
   prev: JamSong,
   incoming: WireSong | undefined,
 ): JamSong {
-  const { pitchGuide: _stale, ...rest } = prev
+  const { pitchGuide: _stale, keyShift: _staleKey, ...rest } = prev
   return {
     ...rest,
     lines: incoming?.lines ?? prev.lines,
@@ -109,7 +128,53 @@ export function sameSongUpdated(
     ...(incoming?.pitchGuide === 'unavailable'
       ? { pitchGuide: 'unavailable' as const }
       : {}),
+    // The key follows the manifest both ways too: a re-send without one is
+    // the host going back to the original key.
+    ...wireKeyShift(incoming === undefined ? prev.keyShift : incoming.keyShift),
   }
+}
+
+/** The host's manifest for the song on stage, with the room's part map. */
+export function songManifest(
+  song: JamSong,
+  parts: Record<number, string>,
+): WireSong {
+  return {
+    id: song.id,
+    title: song.title,
+    artist: song.artist,
+    stems: song.stems,
+    lines: song.lines,
+    notes: song.notes,
+    durationSec: song.durationSec,
+    ...(song.pitchGuide === undefined ? {} : { pitchGuide: song.pitchGuide }),
+    ...(song.keyShift === undefined ? {} : { keyShift: song.keyShift }),
+    parts,
+  }
+}
+
+/**
+ * Whether a re-sent manifest moved nothing but the key.
+ *
+ * A guest starts its take over when the words, the notes or the parts move
+ * under it. A key change moves none of them: the lines already sung were
+ * scored against the same notes, in the key they were sung in.
+ */
+export function onlyKeyChanged(
+  prev: JamSong,
+  parts: Record<number, string>,
+  incoming: WireSong,
+): boolean {
+  const same = (a: unknown, b: unknown) =>
+    JSON.stringify(a) === JSON.stringify(b)
+  return (
+    (wireKeyShift(incoming.keyShift).keyShift ?? 0) !== (prev.keyShift ?? 0) &&
+    same(incoming.lines, prev.lines) &&
+    same(incoming.notes ?? prev.notes, prev.notes) &&
+    same(incoming.parts ?? {}, parts) &&
+    (incoming.pitchGuide === 'unavailable') ===
+      (prev.pitchGuide === 'unavailable')
+  )
 }
 
 /**
