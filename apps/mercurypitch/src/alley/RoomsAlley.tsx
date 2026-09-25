@@ -37,17 +37,18 @@ import { currentTab, shellCovered } from '../shell/run-shell-store'
 import { goToTab, registerDoorClear, registerDoorOpen, } from '../shell/shell-navigation'
 import type { AlleyAmbient } from './alley-audio'
 import { createAlleyAmbient } from './alley-audio'
-import { ALLEY_COPY, DOOR_LINE, doorLabel, doorTitle } from './alley-copy'
+import { ALLEY_COPY, doorLabel } from './alley-copy'
 import type { DoorOpen } from './alley-entry'
 import { OPEN_MS, openDoor, REDUCED_MS } from './alley-entry'
 import type { AlleyFrame, DoorLayout } from './alley-geometry'
-import { alleyFit, artBox, dimPath, doorBox, layoutDoors, matrix3d, PANEL_WIDTH, pickDoor, placePanel, quadIn, rectToQuad, spillAt, tapBand, } from './alley-geometry'
+import { alleyFit, dimPath, layoutDoors, pickDoor, placePanel, tapBand, } from './alley-geometry'
 import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
-import type { Quad } from './alley-plate'
 import type { DoorKey } from './alley-plate'
 import { ALLEY_PLATE, DOORS, doorSpec, isEnterable, plateSourceFor, } from './alley-plate'
 import { markWelcomeSeen, welcomeSeen } from './alley-welcome'
+import { AlleyCard } from './AlleyCard'
+import { AlleyDoor } from './AlleyDoor'
 
 /** The ambient's fades (S4 §2): in over 600 ms, out over 520 from the open. */
 const FADE_IN_MS = 600
@@ -599,9 +600,6 @@ export const RoomsAlley: Component = () => {
     releaseClip()
   })
 
-  const quadCss = (quad: Quad): string =>
-    `polygon(${quad.map((p) => `${p[0]}px ${p[1]}px`).join(', ')})`
-
   return (
     <div
       ref={root}
@@ -662,101 +660,24 @@ export const RoomsAlley: Component = () => {
         {/* Over the static specs, not the layout: a resize must move the
             doors, not rebuild them — a rebuilt Sing door is a new <video>. */}
         <For each={DOORS}>
-          {(spec) => {
-            const door = (): DoorLayout => layoutOf(spec.key)
-            const artW = (): number => artBox(door()).w
-            const artH = (): number => artBox(door()).h
-            // The door is its own box, not the screen: what it draws is
-            // placed in that box's coordinates (doorBox says why).
-            const box = createMemo(() => doorBox(door()))
-            const quad = (): Quad => quadIn(door().quad, box().x, box().y)
-            const spill = (): { x: number; y: number; w: number } =>
-              spillAt(door())
-            const points = (): string =>
-              quad()
-                .map((p) => `${p[0]},${p[1]}`)
-                .join(' ')
-            return (
-              <div
-                class="mp-alley__door"
-                data-door={spec.key}
-                data-locked={spec.tab === null ? 'yes' : 'no'}
-                classList={{
-                  'is-lifted': isLifted(alley(), spec.key),
-                  'is-selected': selected() === spec.key,
-                  'is-alive': aliveDoor() === spec.key,
-                  'is-settling':
-                    alley().phase === 'settling' && alley().door === spec.key,
-                  'is-drifting': spec.drift,
-                }}
-                style={{
-                  left: `${box().x}px`,
-                  top: `${box().y}px`,
-                  width: `${box().w}px`,
-                  height: `${box().h}px`,
-                  '--cx': `${door().cx - box().x}px`,
-                  '--cy': `${door().cy - box().y}px`,
-                  // The same centre in the paint <img>'s own box, which starts
-                  // at (-ox, -oy) on screen: where the Ear Lab's drift pivots.
-                  '--px': `${door().cx + fit().ox}px`,
-                  '--py': `${door().cy + fit().oy}px`,
-                  '--sx': `${spill().x - box().x}px`,
-                  '--sy': `${spill().y - box().y}px`,
-                  '--sw': `${spill().w}px`,
-                  '--spill': spec.spill,
-                }}
-              >
-                <div
-                  class="mp-alley__paint"
-                  style={{ 'clip-path': quadCss(quad()) }}
-                >
-                  <img
-                    src={plate()}
-                    alt=""
-                    style={{
-                      ...plateStyle(),
-                      left: `${-fit().ox - box().x}px`,
-                      top: `${-fit().oy - box().y}px`,
-                    }}
-                  />
-                </div>
-                <Show when={spec.clip !== null}>
-                  <div
-                    class="mp-alley__art"
-                    style={{
-                      width: `${artW()}px`,
-                      height: `${artH()}px`,
-                      transform: matrix3d(rectToQuad(artW(), artH(), quad())),
-                    }}
-                  >
-                    <video
-                      ref={(element) => {
-                        singVideo = element
-                        element.muted = true
-                        element.defaultMuted = true
-                      }}
-                      class="mp-alley__clip"
-                      muted
-                      loop
-                      playsinline
-                      preload="auto"
-                      disablepictureinpicture
-                      tabIndex={-1}
-                      data-testid="alley-clip"
-                    />
-                  </div>
-                </Show>
-                <svg
-                  class="mp-alley__rim"
-                  viewBox={`0 0 ${box().w} ${box().h}`}
-                >
-                  <polygon class="mp-alley__rim-halo" points={points()} />
-                  <polygon class="mp-alley__rim-line" points={points()} />
-                </svg>
-                <div class="mp-alley__spill" />
-              </div>
-            )
-          }}
+          {(spec) => (
+            <AlleyDoor
+              spec={spec}
+              layout={() => layoutOf(spec.key)}
+              fit={fit}
+              plateSrc={plate}
+              plateStyle={plateStyle}
+              lifted={() => isLifted(alley(), spec.key)}
+              selected={() => selected() === spec.key}
+              alive={() => aliveDoor() === spec.key}
+              settling={() =>
+                alley().phase === 'settling' && alley().door === spec.key
+              }
+              clipRef={(element) => {
+                singVideo = element
+              }}
+            />
+          )}
         </For>
         <svg class="mp-alley__dim" viewBox={`0 0 ${size().w} ${size().h}`}>
           <path
@@ -818,51 +739,16 @@ export const RoomsAlley: Component = () => {
         </For>
       </div>
 
-      <div
-        ref={panel}
-        class="mp-alley__panel"
-        classList={{ 'is-shown': cardDoor() !== null }}
-        style={{ width: `${PANEL_WIDTH}px` }}
-        data-testid="alley-panel"
-        aria-hidden={cardDoor() === null}
-      >
-        <Show when={cardDoor()}>
-          {(key) => (
-            <>
-              <div
-                ref={card}
-                class="mp-alley__card"
-                tabIndex={-1}
-                role="group"
-                aria-label={doorTitle(key(), roomName(doorSpec(key()).roomId))}
-                data-testid="alley-card"
-              >
-                <Show when={!isEnterable(key())}>
-                  <div class="mp-alley__eyebrow" data-testid="alley-eyebrow">
-                    {ALLEY_COPY.comingSoon}
-                  </div>
-                </Show>
-                <div class="mp-alley__name" data-testid="alley-name">
-                  {doorTitle(key(), roomName(doorSpec(key()).roomId))}
-                </div>
-                <div class="mp-alley__line" data-testid="alley-line">
-                  {DOOR_LINE[key()]}
-                </div>
-              </div>
-              <Show when={isEnterable(key())}>
-                <button
-                  type="button"
-                  class="mp-alley__enter"
-                  data-testid="alley-enter"
-                  onClick={() => open()}
-                >
-                  {ALLEY_COPY.enter}
-                </button>
-              </Show>
-            </>
-          )}
-        </Show>
-      </div>
+      <AlleyCard
+        panelRef={(element) => {
+          panel = element
+        }}
+        cardRef={(element) => {
+          card = element
+        }}
+        door={cardDoor}
+        onEnter={open}
+      />
     </div>
   )
 }
