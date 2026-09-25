@@ -120,26 +120,32 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           adventure.voiceEncounterId()),
     ),
   )
+  const contextualMessagesAvailable = createMemo(
+    () =>
+      !adventure.paused() &&
+      !adventure.tutorial() &&
+      !adventure.snapshot().complete &&
+      adventure.inspection() === null,
+  )
   const progressGuidance = createMemo(() =>
+    contextualMessagesAvailable() &&
     adventure.voiceMode() === 'off' &&
     adventure.snapshot().phase !== 'shattering'
       ? deriveAdventureProgressGuidance(level, adventure.snapshot())
       : undefined,
   )
   const visibleNotice = createMemo(() =>
+    contextualMessagesAvailable() &&
     adventure.notice() &&
     !active() &&
-    !adventure.tutorial() &&
-    !adventure.paused() &&
     adventure.snapshot().phase !== 'shattering'
       ? adventure.notice()
       : '',
   )
   const visibleNarrationCaption = createMemo(() =>
+    contextualMessagesAvailable() &&
     adventure.narrationCaption() &&
-    adventure.voiceMode() === 'off' &&
-    !adventure.tutorial() &&
-    !adventure.paused()
+    adventure.voiceMode() === 'off'
       ? adventure.narrationCaption()
       : '',
   )
