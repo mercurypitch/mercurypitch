@@ -369,3 +369,55 @@ describe("the ambient's context over its life", () => {
     expect(loads).toBe(1)
   })
 })
+
+describe('an ambient that does not start', () => {
+  let log: Call[]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    log = []
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  // The catch that ends a failed start used to be empty. That is how the
+  // iOS status-0 read stayed invisible through two device rounds: the door
+  // was silent and nothing anywhere said why.
+  it.each(['load', 'decode'] as const)(
+    'says so when the %s fails, naming the room, the file and the error',
+    async (stage) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const failure = new Error(`${stage} failed`)
+      const ctx = fakeContext(log)
+      if (stage === 'decode') {
+        ctx.decodeAudioData = vi.fn(async () => {
+          throw failure
+        })
+      }
+      const ambient = createAlleyAmbient({
+        createContext: () => ctx as unknown as AudioContext,
+        load: async () => {
+          if (stage === 'load') throw failure
+          return new ArrayBuffer(8)
+        },
+        activate: async (target: AmbientActivation) => {
+          await target.init()
+          await target.resume()
+        },
+      })
+      ambient.start('sing', 600)
+      await settle()
+      expect(warn).toHaveBeenCalledWith(
+        '[alley] ambient did not start',
+        'sing',
+        AMBIENT_URL.sing,
+        failure,
+      )
+      expect(ambient.sounding()).toBeNull()
+      expect(ambient.sourcesStarted()).toBe(0)
+    },
+  )
+})

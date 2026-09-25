@@ -135,6 +135,16 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     return ctx
   }
 
+  /** Every start that ends without a source says why, on the console. */
+  const didNotStart = (kind: AmbientKind, error: unknown): void => {
+    console.warn(
+      '[alley] ambient did not start',
+      kind,
+      AMBIENT_URL[kind],
+      error,
+    )
+  }
+
   const buffer = (context: AudioContext, kind: AmbientKind) => {
     let pending = buffers.get(kind)
     if (pending === undefined) {
@@ -235,9 +245,12 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
           now + Math.max(fadeMs, 1) / 1000,
         )
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         // No decoder for this file, or no file: the door stays silent, which
-        // is a door without an ambient rather than a broken one.
+        // is a door without an ambient rather than a broken one. But said out
+        // loud: this catch was empty, and that is how the iOS status-0 read
+        // stayed invisible through two device rounds.
+        didNotStart(kind, error)
         if (current === voice) current = null
         gain.disconnect()
       })
