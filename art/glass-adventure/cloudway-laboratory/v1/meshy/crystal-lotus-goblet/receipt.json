@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "crystal-lotus-goblet",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "in-progress",
   "source": {
     "file": "source-assets/references/crystal-lotus-goblet.png",
     "sha256": "2f3b53f25eeb2dd0e07a102ba784769e5099fa0348b2ee2fa51463070ed27ec4",
@@ -48,9 +48,29 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:54:45.082839+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3125,
+  "submissionStartedAtUtc": "2026-09-25T12:54:45.082850+00:00",
+  "taskId": "01a0d8a1-ecb1-74cc-a830-b2e723162d09",
+  "submittedAtUtc": "2026-09-25T12:54:49.082177+00:00",
+  "balanceAfterSubmit": 3085,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8a1-ecb1-74cc-a830-b2e723162d09",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 58,
+    "created_at": 1790340888910,
+    "started_at": 1790340888922,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:57:45.594872+00:00"
 }

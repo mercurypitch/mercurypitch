@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "aurora-glide-raft",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/aurora-glide-raft.png",
     "sha256": "7df25bf505963e877680c82f5520905f883765be51ebaa1dc38e6112a2f4a622",
@@ -48,9 +48,158 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:39:16.807281+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3405,
+  "submissionStartedAtUtc": "2026-09-25T12:39:16.807292+00:00",
+  "taskId": "01a0d893-c2a8-751d-a175-e0e07f27244f",
+  "submittedAtUtc": "2026-09-25T12:39:23.042337+00:00",
+  "balanceAfterSubmit": 3365,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d893-c2a8-751d-a175-e0e07f27244f",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790339962854,
+    "started_at": 1790339962868,
+    "finished_at": 1790340240526,
+    "expires_at": 1790599440526,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:45:31.107091+00:00",
+  "finalStatus": {
+    "id": "01a0d893-c2a8-751d-a175-e0e07f27244f",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790339962854,
+    "started_at": 1790339962868,
+    "finished_at": 1790340240526,
+    "expires_at": 1790599440526,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/aurora-glide-raft/dense-donor.glb",
+      "bytes": 53867572,
+      "sha256": "f498f437f77eb68975affe6190faae0c78931a890a7563ace6c3946f7adaa17a",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 175986,
+      "triangles": 302054
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-base_color.png",
+        "bytes": 61082002,
+        "sha256": "8ae5c368ebaa9a05670a7671456388e858af8368299a518a8b6b44065312ea56",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-metallic.png",
+        "bytes": 6422414,
+        "sha256": "47d1e5b2bed9faea8583720da27a4835a593a8cf05a3aec51bbcf7c16fe79893",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-normal.png",
+        "bytes": 12523489,
+        "sha256": "1c00bdd82ca620ef0dade93c3a343a7776d19041e918de6b0a50cae9a4e74958",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-roughness.png",
+        "bytes": 5795904,
+        "sha256": "2c57f993a8669f77c9d894f1e0c1c779e8af4c959b3a6a4b876e2dcd314a4b72",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/aurora-glide-raft/preview.png",
+      "bytes": 69589,
+      "sha256": "1a3ec98ced6f90bb92998fd3803a3bb69cb3c744f7b8d61f3b0959e8e1c5af56",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:45:38.887743+00:00",
+  "balanceAfterArchive": 3325,
+  "observedBalanceDeltaFinal": 80,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:45:39.734530+00:00"
 }

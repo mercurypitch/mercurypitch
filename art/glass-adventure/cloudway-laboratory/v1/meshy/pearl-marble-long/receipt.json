@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "pearl-marble-long",
   "operation": "image-to-3d",
-  "state": "in-progress",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/pearl-marble-long.png",
     "sha256": "9778846007db620a09ac376fdb5491762d47f274733ef8787f3d0272def1be29",
@@ -53,7 +53,7 @@
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
   "balanceBefore": 3525,
   "submissionStartedAtUtc": "2026-09-25T12:31:14.930365+00:00",
   "taskId": "01a0d88c-6836-71fb-8115-7d0a4122d976",
@@ -63,14 +63,143 @@
   "lastStatus": {
     "id": "01a0d88c-6836-71fb-8115-7d0a4122d976",
     "type": "image-to-3d",
-    "status": "IN_PROGRESS",
-    "progress": 99,
+    "status": "SUCCEEDED",
+    "progress": 100,
     "created_at": 1790339479883,
     "started_at": 1790339479889,
-    "finished_at": 0,
-    "expires_at": 0,
+    "finished_at": 1790339678349,
+    "expires_at": 1790598878349,
     "consumed_credits": 40,
     "geometry_resolution": "4k"
   },
-  "lastCheckedAtUtc": "2026-09-25T12:34:27.270432+00:00"
+  "lastCheckedAtUtc": "2026-09-25T12:36:03.160849+00:00",
+  "finalStatus": {
+    "id": "01a0d88c-6836-71fb-8115-7d0a4122d976",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790339479883,
+    "started_at": 1790339479889,
+    "finished_at": 1790339678349,
+    "expires_at": 1790598878349,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/pearl-marble-long/dense-donor.glb",
+      "bytes": 38103628,
+      "sha256": "311736f3b8d645d715adffb87ef6102bf867f655c80f4bf13335e9dff300bf14",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 68577,
+      "triangles": 112284
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/pearl-marble-long/textures/set-0-base_color.png",
+        "bytes": 45262022,
+        "sha256": "7e79e1fdb13dc82ef36ec68a14f60a983b770a452e313350f2494617ecf65361",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/pearl-marble-long/textures/set-0-metallic.png",
+        "bytes": 4778376,
+        "sha256": "c5c79150be27c7c0c2ef2f70907165a33cf275206009527d516e200f19c09764",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/pearl-marble-long/textures/set-0-normal.png",
+        "bytes": 9449076,
+        "sha256": "d539aafd1a6597813a1be6800c2f24e47d30782a09356db9c542adc3d0693233",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/pearl-marble-long/textures/set-0-roughness.png",
+        "bytes": 4304653,
+        "sha256": "0cc24627d11eb4920d86d693e6a5ab64aceecc6c3c16109bc6e9640eb6d7362e",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/pearl-marble-long/preview.png",
+      "bytes": 37114,
+      "sha256": "06abcca931d4b7617c6c1eba7fdecd294642fa210785639c64b196716f811325",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:36:10.548685+00:00",
+  "balanceAfterArchive": 3445,
+  "observedBalanceDeltaFinal": 80,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:36:11.400667+00:00"
 }

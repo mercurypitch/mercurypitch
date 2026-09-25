@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "celadon-harp-urn",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "in-progress",
   "source": {
     "file": "source-assets/references/celadon-harp-urn.png",
     "sha256": "16c30fb686f3177d105f1c99ab08bfb4ba68de43f79b1d73d4ab4ee9ce34f2a7",
@@ -48,9 +48,29 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:54:23.438496+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3205,
+  "submissionStartedAtUtc": "2026-09-25T12:54:23.438510+00:00",
+  "taskId": "01a0d8a1-9814-7000-8b96-8f5b8f81a22e",
+  "submittedAtUtc": "2026-09-25T12:54:27.519504+00:00",
+  "balanceAfterSubmit": 3165,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8a1-9814-7000-8b96-8f5b8f81a22e",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 45,
+    "created_at": 1790340867282,
+    "started_at": 1790340867289,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:57:29.227753+00:00"
 }

@@ -25,12 +25,16 @@ function setMode(mode) {
       : `references/${id}.png`
     image.alt = `${card.querySelector('h3').textContent} — ${model ? 'Meshy source preview' : 'modeling reference'}`
     caption.textContent = model
-      ? 'Meshy source preview · Blender review pending'
+      ? 'Meshy source preview · game preparation pending'
       : archived
         ? 'Reference · dense source archived'
-        : receipt?.taskId
-          ? 'Reference · Meshy production in progress'
-          : 'Reference · 3D production pending'
+        : ['failed', 'canceled', 'submission-unconfirmed'].includes(
+              receipt?.state,
+            )
+          ? 'Reference · production needs review'
+          : receipt?.taskId
+            ? 'Reference · Meshy production in progress'
+            : 'Reference · 3D production pending'
   }
 }
 
@@ -70,8 +74,7 @@ const archived = [...receipts.values()].filter(
 ).length
 const running = [...receipts.values()].filter(
   (receipt) =>
-    receipt.taskId &&
-    !['archived', 'failed', 'canceled'].includes(receipt.state),
+    receipt.taskId && ['submitted', 'in-progress'].includes(receipt.state),
 ).length
 const attention = [...receipts.values()].filter((receipt) =>
   ['failed', 'canceled', 'submission-unconfirmed'].includes(receipt.state),
