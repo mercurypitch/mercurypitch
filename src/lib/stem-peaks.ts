@@ -6,6 +6,12 @@
 // bucketing (multi-minute WAVs are ~35 MB of PCM each — the cards only
 // need the outline), so showing six waveforms costs kilobytes, not
 // hundreds of megabytes. Decodes run sequentially for the same reason.
+//
+// The bytes are read through the shared packaged-asset rule
+// (@irchiinnuss/mobile-runtime/asset-fetch), because one of the URLs is a
+// file inside the native bundle: the example a guided exercise plays.
+
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 
 /** Reduce channel data to `buckets` max-|sample| values, normalized to
  *  the loudest bucket (0..1). Pure — exported for tests. */
@@ -53,9 +59,9 @@ export function getStemPeaks(url: string): Promise<Float32Array> {
   const hit = cache.get(url)
   if (hit) return hit
   const job = (decodeQueue = decodeQueue.then(async () => {
-    const resp = await fetch(url)
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-    const bytes = await resp.arrayBuffer()
+    // Not `resp.ok`: the guided exercise's example is a bundled mp3, and iOS
+    // serves a packaged media file with status 0 and the whole body.
+    const bytes = await fetchAssetBytes(url)
     // A plain AudioContext decodes without a user gesture (only playback
     // needs one); reused so we don't leak one context per stem.
     sharedCtx ??= new AudioContext()

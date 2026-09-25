@@ -5,6 +5,9 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort'
 import solid from 'eslint-plugin-solid'
 import tseslint from 'typescript-eslint'
 
+const MOBILE_RUNTIME_IN_WEB =
+  'The web app may import only @irchiinnuss/mobile-runtime/asset-fetch; the rest wraps Capacitor plugins. Reach native features through NativeShellApi.'
+
 export default defineConfig(
   {
     ignores: [
@@ -350,6 +353,38 @@ export default defineConfig(
     files: ['src/lib/model-cache.ts'],
     rules: {
       'no-restricted-globals': 'off',
+    },
+  },
+  // The web app depends on @irchiinnuss/mobile-runtime for ONE plugin-free
+  // entry: the packaged-asset read rule. Every other entry wraps a Capacitor
+  // plugin, and the web bundle must never carry one; the native shell hands
+  // those to shared code through NativeShellApi (src/stores/native-shell-store.ts).
+  //
+  // The bare name is a `path`, not a pattern: patterns follow gitignore rules,
+  // and a child of an excluded name cannot be re-included by a `!` line.
+  {
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@irchiinnuss/mobile-runtime',
+              message: MOBILE_RUNTIME_IN_WEB,
+            },
+          ],
+          patterns: [
+            {
+              group: [
+                '@irchiinnuss/mobile-runtime/*',
+                '!@irchiinnuss/mobile-runtime/asset-fetch',
+              ],
+              message: MOBILE_RUNTIME_IN_WEB,
+            },
+          ],
+        },
+      ],
     },
   },
 )
