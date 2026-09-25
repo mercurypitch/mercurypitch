@@ -11,7 +11,7 @@ import { createEffect, createSignal, Show } from 'solid-js'
 import { isLaunchPromoOpen, LAUNCH_PROMO, } from '@/components/billing/launch-promo'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { MeResponse } from '@/db/services/auth-service'
-import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
+import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { showNotification } from '@/stores/notifications-store'
@@ -69,9 +69,8 @@ export const HeaderAccount: Component = () => {
     })()
   })
 
-  const provider = (): string => me()?.user.authProvider ?? 'anonymous'
   const isUpgraded = (): boolean =>
-    provider() === 'password' || provider() === 'google'
+    isRegisteredProvider(me()?.user.authProvider)
   const name = (): string => {
     const n = String(me()?.profile?.displayName ?? '').trim()
     return n !== '' ? n : 'Account'

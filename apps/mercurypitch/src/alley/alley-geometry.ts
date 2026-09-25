@@ -491,17 +491,32 @@ export interface SourceRect {
   readonly h: number
 }
 
-/** What `object-fit: cover` shows of a vw x vh video in a w x h box. */
+/**
+ * What `object-fit: cover` shows of a vw x vh video in a w x h box — or
+ * `background-size: cover` of a picture, at `background-position: focus`
+ * (fractions; centred unless given).
+ */
 export function coverCrop(
   vw: number,
   vh: number,
   w: number,
   h: number,
+  focus: readonly [number, number] = [0.5, 0.5],
 ): SourceRect {
   const scale = Math.max(w / vw, h / vh)
   const cw = w / scale
   const ch = h / scale
-  return { x: (vw - cw) / 2, y: (vh - ch) / 2, w: cw, h: ch }
+  return { x: (vw - cw) * focus[0], y: (vh - ch) * focus[1], w: cw, h: ch }
+}
+
+/**
+ * What an element showing crop `r` shows of it inside its own box once it is
+ * scaled by `k` about its centre: the same centre, `1 / k` of the size.
+ */
+export function scaleCrop(r: SourceRect, k: number): SourceRect {
+  const w = r.w / k
+  const h = r.h / k
+  return { x: r.x + (r.w - w) / 2, y: r.y + (r.h - h) / 2, w, h }
 }
 
 export function lerpRect(a: SourceRect, b: SourceRect, t: number): SourceRect {

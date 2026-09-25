@@ -4,7 +4,9 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-  padding: 22px 34px 40px;
+  /* At least the inset on a side with a notch or an island in it. */
+  padding: 22px max(34px, var(--safe-right, 0px)) 40px
+    max(34px, var(--safe-left, 0px));
   min-height: 100%;
 }
 
@@ -183,7 +185,8 @@
 @container (max-width: 860px) {
   .bench {
     gap: 14px;
-    padding: 14px 14px 20px;
+    padding: 14px max(14px, var(--safe-right, 0px)) 20px
+      max(14px, var(--safe-left, 0px));
   }
 
   .title {

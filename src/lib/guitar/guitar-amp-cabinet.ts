@@ -1,4 +1,5 @@
 // Guitar amp cabinet loads one licensed, full-length IR lazily and shares decoded kernels by sample rate.
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import cabinetUrl from '@/assets/audio/guitar/cookie-monster.wav?url'
 
 export type GuitarAmpCabinetStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -58,9 +59,12 @@ async function fetchKernel(): Promise<ArrayBuffer> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 10_000)
   try {
-    const response = await fetch(cabinetUrl, { signal: controller.signal })
-    if (!response.ok) throw new Error('Cabinet could not be loaded')
-    const data = await response.arrayBuffer()
+    // Not `response.ok`: a native build serves this bundled .wav from inside
+    // the app, and iOS answers a packaged media file with status 0 and the
+    // whole body. The exact size and checksum below still guard the bytes.
+    const data = await fetchAssetBytes(cabinetUrl, {
+      signal: controller.signal,
+    })
     if (data.byteLength !== 172_304) throw new Error('Cabinet size is invalid')
     const digest = await globalThis.crypto.subtle.digest('SHA-256', data)
     const hash = Array.from(new Uint8Array(digest), (value) =>

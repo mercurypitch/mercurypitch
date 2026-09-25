@@ -984,96 +984,101 @@ export const SettingsPanel: Component = () => {
             </Show>
           </div>
 
-          {/* Voice Control Section */}
-          <div
-            class={styles.settingsSection}
-            data-settings-anchor="voice-control"
-          >
-            <h3 class={styles.settingsSectionTitle}>Voice Control</h3>
-            <div class={styles.settingsDivider} />
-            <p class={styles.settingsDesc} data-tour="voice.what">
-              Control playback with your voice: turn on the mic pill
-              (bottom-left, or press V), then speak a command — "play", "pause",
-              "from the top", "loop off". Navigation works too: "go to karaoke",
-              "go to guitar night", "go home". To see every phrase, press
-              Shift+V or ask aloud: "what can I say".
-            </p>
-            <p class={styles.settingsDesc} data-tour="voice.sing">
-              Forgotten what a song is called? Say "what song is this" and sing
-              a few bars — Mercury Sing listens, matches it against your
-              library, and you pick from the results by saying "sing number
-              two".
-            </p>
-            <div class={styles.settingsActionRow}>
-              <button
-                type="button"
-                class={styles.settingsActionBtn}
-                data-testid="settings-voice-commands"
-                data-tour="voice.list"
-                onClick={openVoiceCommandList}
-              >
-                <FileText size={16} />
-                Command list
-              </button>
-              <button
-                type="button"
-                class={styles.settingsActionBtn}
-                data-testid="settings-voice-tour"
-                onClick={() => startVoiceTour()}
-              >
-                <Sparkles size={16} />
-                Take the tour
-              </button>
-            </div>
+          {/* Voice Control Section. Not in the native app: voice control has
+              no place there yet (no pill, and V does nothing), so its
+              instructions, command list, tour and engine would all be about
+              something the app cannot do. */}
+          {IS_NATIVE_BUILD ? null : (
+            <div
+              class={styles.settingsSection}
+              data-settings-anchor="voice-control"
+            >
+              <h3 class={styles.settingsSectionTitle}>Voice Control</h3>
+              <div class={styles.settingsDivider} />
+              <p class={styles.settingsDesc} data-tour="voice.what">
+                Control playback with your voice: turn on the mic pill
+                (bottom-left, or press V), then speak a command — "play",
+                "pause", "from the top", "loop off". Navigation works too: "go
+                to karaoke", "go to guitar night", "go home". To see every
+                phrase, press Shift+V or ask aloud: "what can I say".
+              </p>
+              <p class={styles.settingsDesc} data-tour="voice.sing">
+                Forgotten what a song is called? Say "what song is this" and
+                sing a few bars — Mercury Sing listens, matches it against your
+                library, and you pick from the results by saying "sing number
+                two".
+              </p>
+              <div class={styles.settingsActionRow}>
+                <button
+                  type="button"
+                  class={styles.settingsActionBtn}
+                  data-testid="settings-voice-commands"
+                  data-tour="voice.list"
+                  onClick={openVoiceCommandList}
+                >
+                  <FileText size={16} />
+                  Command list
+                </button>
+                <button
+                  type="button"
+                  class={styles.settingsActionBtn}
+                  data-testid="settings-voice-tour"
+                  onClick={() => startVoiceTour()}
+                >
+                  <Sparkles size={16} />
+                  Take the tour
+                </button>
+              </div>
 
-            <div class={styles.settingsRow}>
-              <label for="voice-engine-select">Recognition Engine</label>
-              <SafeSelect
-                id="voice-engine-select"
-                value={voiceControlEngine()}
-                onChange={(e) => {
-                  setVoiceControlEngine(
-                    e.currentTarget.value as VoiceControlEngine,
-                  )
-                }}
-              >
-                <option value="webspeech">Browser (Web Speech API)</option>
-                <option value="local">On-device (Whisper)</option>
-                <option value="moonshine">
-                  On-device (Moonshine, experimental)
-                </option>
-              </SafeSelect>
-              <small>
-                Browser is instant to start but needs Chrome, Edge or Safari and
-                a network. On-device downloads a small model once, then works
-                offline and keeps audio on this machine; the pill shows its
-                speech-to-text time. Moonshine is an alternative on-device model
-                for comparing latency against Whisper.
-              </small>
-            </div>
-
-            <div class={styles.settingsRow} data-tour="voice.wake-word">
-              <label for="voice-wake-word">
-                Require "Mercury" While Playing
-              </label>
-              <label class={styles.settingsToggle}>
-                <input
-                  type="checkbox"
-                  id="voice-wake-word"
-                  checked={voiceWakeWordWhilePlaying()}
+              <div class={styles.settingsRow}>
+                <label for="voice-engine-select">Recognition Engine</label>
+                <SafeSelect
+                  id="voice-engine-select"
+                  value={voiceControlEngine()}
                   onChange={(e) => {
-                    setVoiceWakeWordWhilePlaying(e.currentTarget.checked)
+                    setVoiceControlEngine(
+                      e.currentTarget.value as VoiceControlEngine,
+                    )
                   }}
-                />
-                <span class={styles.settingsSlider} />
-              </label>
-              <small>
-                While a track is playing, commands must start with "Mercury"
-                ("Mercury, from the top") so backing-track lyrics cannot drive
-                the transport through speakers.
-              </small>
+                >
+                  <option value="webspeech">Browser (Web Speech API)</option>
+                  <option value="local">On-device (Whisper)</option>
+                  <option value="moonshine">
+                    On-device (Moonshine, experimental)
+                  </option>
+                </SafeSelect>
+                <small>
+                  Browser is instant to start but needs Chrome, Edge or Safari
+                  and a network. On-device downloads a small model once, then
+                  works offline and keeps audio on this machine; the pill shows
+                  its speech-to-text time. Moonshine is an alternative on-device
+                  model for comparing latency against Whisper.
+                </small>
+              </div>
+
+              <div class={styles.settingsRow} data-tour="voice.wake-word">
+                <label for="voice-wake-word">
+                  Require "Mercury" While Playing
+                </label>
+                <label class={styles.settingsToggle}>
+                  <input
+                    type="checkbox"
+                    id="voice-wake-word"
+                    checked={voiceWakeWordWhilePlaying()}
+                    onChange={(e) => {
+                      setVoiceWakeWordWhilePlaying(e.currentTarget.checked)
+                    }}
+                  />
+                  <span class={styles.settingsSlider} />
+                </label>
+                <small>
+                  While a track is playing, commands must start with "Mercury"
+                  ("Mercury, from the top") so backing-track lyrics cannot drive
+                  the transport through speakers.
+                </small>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Accuracy Bands Section */}
           <div class={styles.settingsSection}>

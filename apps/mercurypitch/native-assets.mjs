@@ -146,6 +146,36 @@ export const NATIVE_ASSETS = [
       "The Retro Analog Studio cover in all four variants — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one.",
   },
 
+  // ── The Ear Lab's own room ───────────────────────────────────
+  //
+  // The landscape file above ships for the Home rail. This is the room
+  // itself held upright: without it the Ear Lab drew no photograph on a
+  // phone in portrait, and a door's open had no picture to end on (device
+  // round 4).
+  {
+    glob: 'ear-lab/regulator-room-portrait.webp',
+    reason:
+      "The Regulator Room in portrait, the Ear Lab's default room: the room draws it on its [data-room-background] (src/features/ear-lab/EarRoomShell.tsx via the 'ear' surface in src/lib/backgrounds/background-catalog.ts), and the Ear Lab door's open ends on it (apps/mercurypitch/src/alley/alley-entry.ts).",
+  },
+
+  // ── The Ear Lab's other free room ────────────────────────────
+  //
+  // A free room is the player's to pick, and the Ear Lab has two. The
+  // Glasshouse Bench was never listed, so picked in the app it drew no
+  // photograph, and the door's open, which ends on the room's own picture,
+  // fell back to the plate's grow (device round 4). Both orientations: a
+  // phone held sideways picks the other one.
+  {
+    glob: 'ear-lab/glasshouse-bench-landscape.webp',
+    reason:
+      "The Glasshouse Bench on its side, the Ear Lab's second free room: the room draws the one picked on its [data-room-background] (src/features/ear-lab/EarRoomShell.tsx via the 'ear' surface in src/lib/backgrounds/background-catalog.ts), and the Ear Lab door's open ends on it (apps/mercurypitch/src/alley/alley-entry.ts).",
+  },
+  {
+    glob: 'ear-lab/glasshouse-bench-portrait.webp',
+    reason:
+      'The Glasshouse Bench held upright: the same room, drawn and opened onto the same way as its landscape file above.',
+  },
+
   // ── The alley: the Rooms tab and the welcome (S4) ───────────
   //
   // Bundled at full quality on purpose (owner, 23 Sep 2026): the alley is the

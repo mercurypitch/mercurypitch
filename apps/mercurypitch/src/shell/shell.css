@@ -105,8 +105,8 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 0 max(16px, var(--safe-left)) calc(var(--safe-bottom) + 8px)
-    max(16px, var(--safe-right));
+  padding: 0 max(16px, var(--safe-right)) calc(var(--safe-bottom) + 8px)
+    max(16px, var(--safe-left));
   /* The dock is a frame: only its controls take taps, so the stage keeps the
      pixels between them. */
   pointer-events: none;
@@ -375,6 +375,15 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+  /* A slot, not a surface: only a chip or a column that is showing takes a
+     tap. Empty, its 56 x 64 box sat over the bottom-right of every tab and
+     took the taps meant for what was under it, most of the Ear Lab's Ear
+     Report among them. */
+  pointer-events: none;
+}
+
+.mp-corner > * {
+  pointer-events: auto;
 }
 
 .mp-chip {
@@ -592,8 +601,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-left)) 4px
-    max(12px, var(--safe-right));
+  padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-right)) 4px
+    max(12px, var(--safe-left));
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
@@ -685,7 +694,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: calc(var(--safe-top) + 4px) 12px 8px;
+  /* Each side at least the inset there: a phone on its side has its notch,
+     or its island, at one end of the bar. */
+  padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-right)) 8px
+    max(12px, var(--safe-left));
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-secondary);
 }
@@ -711,7 +723,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 16px max(16px, var(--safe-right)) 16px max(16px, var(--safe-left));
 }
 
 .mp-dev__section {
@@ -751,6 +763,75 @@
 .mp-dev__row-sub {
   font: 400 13px/18px var(--font-body, sans-serif);
   color: var(--text-secondary);
+}
+
+.mp-dev__row:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* The Audio section (AudioDiagnosticsPanel): live readings, a label and a
+   value on one line where they fit and wrapped where they do not, then the
+   copied report, selectable because it is the clipboard's fallback. */
+.mp-dev__audio {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mp-dev__readout,
+.mp-dev__report {
+  margin: 0;
+  border: 1px solid var(--border-color, rgba(230, 237, 243, 0.12));
+  border-radius: 12px;
+  background: var(--bg-secondary, #161b22);
+  color: var(--text-primary);
+}
+
+.mp-dev__readout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+}
+
+.mp-dev__readout-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+
+.mp-dev__readout dt {
+  flex: 0 0 7.5rem;
+  font: 600 13px/18px var(--font-body, sans-serif);
+  color: var(--text-secondary);
+}
+
+.mp-dev__readout dd {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  font:
+    400 13px/18px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  overflow-wrap: anywhere;
+}
+
+.mp-dev__report {
+  max-height: 40vh;
+  padding: 12px;
+  overflow: auto;
+  font:
+    400 11px/16px ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* ---------- the More sheet's tiles ---------- */

@@ -13,7 +13,7 @@
 import type { Component } from 'solid-js'
 import { createResource, For, onMount, Show } from 'solid-js'
 import { SupporterBadge } from '@/components/billing/SupporterBadge'
-import { fetchMe, restoreAuth } from '@/db/services/auth-service'
+import { fetchMe, isRegisteredProvider, restoreAuth, } from '@/db/services/auth-service'
 import type { PricingPlan } from '@/db/services/billing-service'
 import { fetchBillingMe, fetchPricing, formatPrice, formatSupportDuration, startCheckout, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
@@ -84,10 +84,8 @@ export const DonatePanel: Component = () => {
       ? (pricing()?.donations ?? [])
       : []
 
-  const isUpgraded = (): boolean => {
-    const provider = account()?.user.authProvider
-    return provider === 'password' || provider === 'google'
-  }
+  const isUpgraded = (): boolean =>
+    isRegisteredProvider(account()?.user.authProvider)
   const isManagedTestAccount = (): boolean =>
     account()?.user.isTestAccount === true
   const supporter = () => supporterEntitlement(me() ?? null)

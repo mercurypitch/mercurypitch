@@ -44,7 +44,10 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 22px;
+  /* Each side at least the inset there: on its side a phone has its notch,
+     or its island, at one end of the drill. Here and below. */
+  padding: 12px max(22px, var(--safe-right, 0px)) 12px
+    max(22px, var(--safe-left, 0px));
   border-bottom: 1px solid var(--stage-line);
   background: linear-gradient(180deg, rgb(10 11 13 / 70%), rgb(10 11 13 / 20%));
 }
@@ -218,7 +221,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 22px 34px 14px;
+  padding: 22px max(34px, var(--safe-right, 0px)) 14px
+    max(34px, var(--safe-left, 0px));
   min-height: 0;
 }
 
@@ -298,7 +302,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 14px;
   align-items: stretch;
-  margin: 0 34px 26px;
+  margin: 0 max(34px, var(--safe-right, 0px)) 26px
+    max(34px, var(--safe-left, 0px));
   padding: 12px;
   border: 1px solid var(--stage-brass-line);
   border-radius: 8px;
@@ -797,7 +802,8 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: 26px 34px;
+  padding: 26px max(34px, var(--safe-right, 0px)) 26px
+    max(34px, var(--safe-left, 0px));
   overflow: auto;
 }
 
@@ -994,7 +1000,8 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    padding: 8px 12px;
+    padding: 8px max(12px, var(--safe-right, 0px)) 8px
+      max(12px, var(--safe-left, 0px));
     gap: 10px;
     /* Opaque: a sticky bar over scrolling plates must not ghost. */
     background: #0a0b0d;
@@ -1015,7 +1022,8 @@
   }
 
   .body {
-    padding: 14px 14px 10px;
+    padding: 14px max(14px, var(--safe-right, 0px)) 10px
+      max(14px, var(--safe-left, 0px));
   }
 
   .figure {
@@ -1058,7 +1066,8 @@
     z-index: 2;
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
-    margin: 0 10px 10px;
+    margin: 0 max(10px, var(--safe-right, 0px)) 10px
+      max(10px, var(--safe-left, 0px));
     padding: 8px;
     background: #0c0e11;
   }
@@ -1161,7 +1170,8 @@
   }
 
   .plateHost {
-    padding: 16px 12px;
+    padding: 16px max(12px, var(--safe-right, 0px)) 16px
+      max(12px, var(--safe-left, 0px));
   }
 
   .plateValue {
@@ -1243,7 +1253,8 @@
 @media (max-height: 560px) {
   .bar {
     gap: 10px;
-    padding: 6px 14px;
+    padding: 6px max(14px, var(--safe-right, 0px)) 6px
+      max(14px, var(--safe-left, 0px));
   }
 
   /* Almost nothing: the bar above draws its own rule and the console below
@@ -1254,7 +1265,8 @@
      the tallest the console gets — where the drill came to 398 in a 394
      porthole and the instrument was already on its floor. */
   .body {
-    padding: 4px 16px 2px;
+    padding: 4px max(16px, var(--safe-right, 0px)) 2px
+      max(16px, var(--safe-left, 0px));
   }
 
   .figure {
@@ -1276,7 +1288,8 @@
   }
 
   .console {
-    margin: 0 10px 4px;
+    margin: 0 max(10px, var(--safe-right, 0px)) 4px
+      max(10px, var(--safe-left, 0px));
     padding: 6px 10px;
     gap: 6px;
   }

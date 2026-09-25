@@ -9,7 +9,10 @@
   /* In normal flow above the canvas — HUD cards (score corners, accuracy
      panel, the 3D status chip) keep the full canvas top to themselves. */
   position: relative;
-  margin: 8px 8px 6px;
+  /* Each side at least the inset there: on its side a phone has its notch,
+     or its island, at one end of the bar. The web's insets are 0. */
+  margin: 8px max(8px, var(--safe-right, 0px)) 6px
+    max(8px, var(--safe-left, 0px));
   display: flex;
   align-items: center;
   flex-wrap: wrap;

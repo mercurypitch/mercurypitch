@@ -65,6 +65,27 @@ describe('guitar cabinet ownership', () => {
     unsubscribe()
   })
 
+  // The cabinet is a Vite-bundled .wav, so a native build serves it from
+  // inside the app. Capacitor's iOS scheme handler answers a non-Range media
+  // GET with a bare URLResponse: `ok: false, status: 0`, the whole file.
+  it('accepts the whole file with status 0, the way iOS serves a packaged wav', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: false,
+        status: 0,
+        arrayBuffer: async () => original.slice(0),
+      })),
+    )
+    const cabinet = await import('./guitar-amp-cabinet')
+    const decoder = context()
+    await expect(
+      cabinet.loadGuitarAmpCabinet(decoder.context),
+    ).resolves.toMatchObject({ sampleRate: 48_000 })
+    expect(decoder.decodeAudioData.mock.calls[0]?.[0]).toEqual(original)
+    expect(cabinet.getGuitarAmpCabinetStatus()).toBe('ready')
+  })
+
   it('rejects a same-sized changed IR before decoding rather than silently changing the audition', async () => {
     const altered = new Uint8Array(original.slice(0))
     altered[200] ^= 1

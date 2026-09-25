@@ -25,6 +25,7 @@ vi.mock('@/db/services/auth-service', () => ({
   requestPasswordReset: vi.fn(),
   isTwofaChallenge: () => false,
   takeGoogleTwofaChallenge: vi.fn((): string | null => null),
+  takeNativeTwofaChallenge: vi.fn((): string | null => null),
 }))
 vi.mock('@/db/services/auth-mfa-service', () => ({ verifyTwofa: vi.fn() }))
 vi.mock('@/db/services/voiceprint-service', () => ({

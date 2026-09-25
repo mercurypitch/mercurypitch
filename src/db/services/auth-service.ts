@@ -37,7 +37,7 @@ export interface AuthUserInfo {
   id: string
   createdAt: string
   updatedAt: string
-  authProvider: 'anonymous' | 'password' | 'google'
+  authProvider: 'anonymous' | 'password' | 'google' | 'apple'
   email: string | null
   emailVerified: boolean
   lastLoginAt: string | null
@@ -111,7 +111,23 @@ export function hasValidToken(): boolean {
 }
 
 /**
- * True when the held token belongs to a REAL account (password/Google).
+ * True for a provider that names a real account — password, Google, Apple,
+ * and whichever one the worker adds next — and false for the anonymous device
+ * identity or no provider at all.
+ *
+ * The one test for it, deliberately phrased as "not anonymous", which is how
+ * the worker's own gates ask. Surfaces that listed the providers they knew
+ * about filed a Sign in with Apple account under anonymous and offered its
+ * owner the account they were already signed into.
+ */
+export function isRegisteredProvider(
+  provider: string | null | undefined,
+): boolean {
+  return provider != null && provider !== 'anonymous'
+}
+
+/**
+ * True when the held token belongs to a REAL account.
  * Lazily provisioned anonymous identities hold valid tokens too, so
  * hasValidToken() alone cannot answer "do they still need to create an
  * account?" — asking it that quietly removed the account offer for
@@ -120,7 +136,7 @@ export function hasValidToken(): boolean {
 export function hasUpgradedAccount(): boolean {
   if (!hasValidToken()) return false
   const payload = decodeToken(getAuthToken() ?? '')
-  return payload != null && payload.provider !== 'anonymous'
+  return payload != null && isRegisteredProvider(payload.provider)
 }
 
 /**
@@ -391,6 +407,10 @@ async function postSignIn(
   // Anonymous provisioning is not a sign-in and must never leave one.
   if (route === 'login' || route === 'register') {
     rememberSignInMethod('password')
+  } else if (route === 'google' || route === 'apple') {
+    // The native sheets. The web Google redirect never comes through here; it
+    // records itself in consumeGoogleRedirect.
+    rememberSignInMethod(route)
   }
   if (isTwofaChallenge(outcome)) {
     // Deliberately no token to store and no authChanged(): the password was
@@ -632,9 +652,11 @@ export async function loginWithGoogle(idToken: string): Promise<SignInOutcome> {
 /**
  * What the Sign in with Apple ceremony hands back, on its way to the worker.
  *
- * `nonce` is the RAW nonce this client generated, not the SHA-256 the request
- * was made with: Apple puts the hash in the identity token and the worker
- * compares the two. `user` arrives ONLY on the very first authorisation for
+ * `nonce` is the raw nonce this client generated, and it is the same string the
+ * request to Apple carried: the plugin passes it on unhashed, Apple echoes it
+ * into the identity token's `nonce` claim, and the worker checks the two are
+ * equal (see native-sign-in.ts). There is no SHA-256 step anywhere in this
+ * flow. `user` arrives ONLY on the very first authorisation for
  * this Apple ID and never again — Apple gives the name once, to whoever asked
  * first — so it is forwarded rather than kept for later.
  */
@@ -893,6 +915,26 @@ export function consumeGoogleRedirect(): void {
 export function takeGoogleTwofaChallenge(): string | null {
   const ceremony = pendingGoogleTwofa
   pendingGoogleTwofa = null
+  return ceremony
+}
+
+let pendingNativeTwofa: string | null = null
+
+/**
+ * Park the ceremony a native sheet came back owing a code for.
+ *
+ * For a surface with no code field of its own (the Home strip): it parks the
+ * ceremony and opens the modal, which takes it on opening and starts on its
+ * code pane, the way it picks up a Google redirect's.
+ */
+export function parkNativeTwofaChallenge(ceremony: string): void {
+  pendingNativeTwofa = ceremony
+}
+
+/** The parked native ceremony, if any. One-shot, like the Google one. */
+export function takeNativeTwofaChallenge(): string | null {
+  const ceremony = pendingNativeTwofa
+  pendingNativeTwofa = null
   return ceremony
 }
 

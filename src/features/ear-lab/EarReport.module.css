@@ -12,7 +12,9 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 22px 30px 40px;
+  /* Each side at least the inset there (a phone on its side). */
+  padding: 22px max(30px, var(--safe-right, 0px)) 40px
+    max(30px, var(--safe-left, 0px));
 }
 
 .rangeRow {
@@ -188,7 +190,8 @@
 @container (max-width: 860px) {
   .body {
     gap: 12px;
-    padding: 12px 12px 28px;
+    padding: 12px max(12px, var(--safe-right, 0px)) 28px
+      max(12px, var(--safe-left, 0px));
   }
 
   .grid {

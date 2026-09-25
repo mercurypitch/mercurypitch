@@ -266,6 +266,13 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Rule:** tolerate that suspended event only while the new unlock is pending and no sources have started. Native suspension preparation and genuine interruption must still cancel. Reproduce the ordering with an actual AudioContext, not only synchronous mocks.
 **See:** `packages/glass-game/src/browser/museum-output.ts`, `art/glass-adventure/audio/v1/verify_runtime.mjs`
 
+### Read packaged media through `fetchAssetBytes`, never `if (!response.ok) throw`
+
+**Symptom:** packaged audio silent on iOS, fine on Android and on the web. The alley's ambients played nothing in TestFlight 0.5.0 (336), and nothing on the phone said why.
+**Cause:** Capacitor's iOS `WebViewAssetHandler` answers a non-Range GET for a media extension (m4a, mp3, wav, …) with a bare `URLResponse`, so WebKit reports `ok: false, status: 0` with the whole body; Android answers 200. The loader threw on `!response.ok` and its empty catch swallowed it. Beside Cue hit the same thing three weeks earlier, and the rule lived only in its code.
+**Rule:** read packaged assets through `fetchAssetBytes` (or `fetchAssetRead`) from `@irchiinnuss/mobile-runtime/asset-fetch`: a 2xx, or status 0 with a non-empty body. Never `if (!response.ok) throw` on a bundled file, and warn on failure: a loader's catch is never empty. The bundle probe answers packaged media with status 0, and the Developer screen's Audio section shows each fetch, decode and failure on a device.
+**See:** `packages/mobile-runtime/src/asset-fetch.ts`, `apps/mercurypitch/scripts/probe-bundle.mjs`, `apps/mercurypitch/src/shell/AudioDiagnosticsPanel.tsx`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build

@@ -4,6 +4,7 @@
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as AuthService from '@/db/services/auth-service'
 
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
 
@@ -14,7 +15,10 @@ const mocks = vi.hoisted(() => ({
   openAuthModal: vi.fn(),
   isLaunchPromoOpen: vi.fn(() => true),
 }))
-vi.mock('@/db/services/auth-service', () => ({
+vi.mock('@/db/services/auth-service', async (importOriginal) => ({
+  // Real, because which providers count as an account is under test here.
+  isRegisteredProvider: (await importOriginal<typeof AuthService>())
+    .isRegisteredProvider,
   restoreAuth: mocks.restoreAuth,
   fetchMe: mocks.fetchMe,
   logout: mocks.logout,
@@ -48,6 +52,24 @@ describe('HeaderAccount', () => {
 
     expect(await screen.findByText('Maff')).toBeInTheDocument()
     expect(screen.getByTestId('header-logout')).toBeInTheDocument()
+  })
+
+  it('shows a Sign in with Apple account as signed in', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: {
+        authProvider: 'apple',
+        email: 'x7qk2m9vtd@privaterelay.appleid.com',
+      },
+      profile: { displayName: 'Ada Lovelace' },
+    })
+    render(() => <HeaderAccount />)
+
+    // The account pill, carrying the name the account has: the same header
+    // any other account gets.
+    const pill = await screen.findByTestId('header-account')
+    expect(pill).toHaveTextContent('Ada Lovelace')
+    expect(screen.getByTestId('header-logout')).toBeInTheDocument()
+    expect(screen.queryByTestId('header-signin')).not.toBeInTheDocument()
   })
 
   // Sign-out sits a thumb's width from the button people press to check who

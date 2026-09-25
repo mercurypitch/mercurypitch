@@ -17,11 +17,15 @@
 // CONSTRUCTION A (owner decision 2): a door shows the plate's own pixels.
 // Nothing here names a room photograph. A new alley is this file and nothing
 // else — the geometry, the rim, the dim, the tap routing and the open are all
-// derived from these numbers at runtime.
+// derived from these numbers at runtime. What an open door ends on is the
+// room's own picture, and that is the room's to choose: `roomBackground`
+// names only the background surface it is chosen from and how the room draws
+// it (alley-room.ts).
 
 import type { NamedRoomId } from '@/features/rooms/room-names'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_EAR_LAB, TAB_SINGING } from '@/features/tabs/constants'
+import type { BackgroundSurface } from '@/lib/backgrounds/background-catalog'
 
 export type DoorKey = 'ear' | 'piano' | 'drums' | 'karaoke' | 'sing' | 'guitar'
 
@@ -29,6 +33,19 @@ export type Point = readonly [number, number]
 export type Quad = readonly [Point, Point, Point, Point]
 
 export type AmbientKind = 'sing' | 'ear'
+
+/**
+ * How the room behind an open door draws its own picture: the element it
+ * marks `data-room-background`, a box the size of the screen, painted
+ * `background-size: cover` at the picture's focal point. The open ends on
+ * exactly that, so the hand-over does not jump.
+ */
+export interface RoomBackground {
+  /** The background surface whose controller picks the room's picture. */
+  readonly surface: BackgroundSurface
+  /** The element's own `transform: scale()`, about its centre. */
+  readonly scale: number
+}
 
 export interface DoorSpec {
   readonly key: DoorKey
@@ -44,6 +61,8 @@ export interface DoorSpec {
   readonly drift: boolean
   /** The room's light on the cobbles under the door. */
   readonly spill: string
+  /** The picture the open ends on; null for a door that is not open yet. */
+  readonly roomBackground: RoomBackground | null
   readonly quad: Quad
 }
 
@@ -93,6 +112,11 @@ export const DOORS: readonly DoorSpec[] = [
     clip: null,
     drift: true,
     spill: 'rgba(255, 176, 96, 0.50)',
+    roomBackground: {
+      surface: 'ear',
+      // EarRoomShell.module.css `.roomPlate`: `transform: scale(1.012)`.
+      scale: 1.012,
+    },
     quad: [
       [228, 724],
       [279, 708],
@@ -108,6 +132,7 @@ export const DOORS: readonly DoorSpec[] = [
     clip: null,
     drift: false,
     spill: 'rgba(255, 168, 88, 0.48)',
+    roomBackground: null,
     quad: [
       [296, 701],
       [361, 680],
@@ -123,6 +148,7 @@ export const DOORS: readonly DoorSpec[] = [
     clip: null,
     drift: false,
     spill: 'rgba(226, 226, 224, 0.36)',
+    roomBackground: null,
     quad: [
       [382, 681],
       [463, 653],
@@ -138,6 +164,7 @@ export const DOORS: readonly DoorSpec[] = [
     clip: null,
     drift: false,
     spill: 'rgba(255, 84, 96, 0.46)',
+    roomBackground: null,
     quad: [
       [489, 639],
       [590, 588],
@@ -153,6 +180,7 @@ export const DOORS: readonly DoorSpec[] = [
     clip: DOOR_CLIP_SING,
     drift: false,
     spill: 'rgba(96, 220, 226, 0.46)',
+    roomBackground: { surface: 'sing', scale: 1 },
     quad: [
       [635, 580],
       [732, 534],
@@ -168,6 +196,7 @@ export const DOORS: readonly DoorSpec[] = [
     clip: null,
     drift: false,
     spill: 'rgba(255, 176, 72, 0.58)',
+    roomBackground: null,
     quad: [
       [792, 511],
       [982, 419],

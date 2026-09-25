@@ -102,9 +102,11 @@ export interface NativeShellApi {
    *
    * It lives on the shell rather than in the room for the same reason
    * `pushSettings` does: the call is `openAppSettings()` from
-   * `@irchiinnuss/mobile-runtime/platform`, a package only the app depends
-   * on, and the web build must not so much as resolve it. Optional, so a room
-   * that finds no shell (or an older one) simply has no button to offer.
+   * `@irchiinnuss/mobile-runtime/platform`, which wraps Capacitor plugins,
+   * and the web build must never import it. (The web app depends on the
+   * package for its plugin-free `asset-fetch` entry alone, and
+   * eslint.config.js refuses every other entry under src/.) Optional, so a
+   * room that finds no shell (or an older one) simply has no button to offer.
    */
   openAppSettings?: () => Promise<boolean>
 }

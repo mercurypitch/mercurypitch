@@ -26,6 +26,9 @@ importers:
       '@irchiinnuss/glass-game':
         specifier: workspace:*
         version: link:packages/glass-game
+      '@irchiinnuss/mobile-runtime':
+        specifier: workspace:*
+        version: link:packages/mobile-runtime
       '@irchiinnuss/pitch-engine':
         specifier: workspace:*
         version: link:packages/pitch-engine

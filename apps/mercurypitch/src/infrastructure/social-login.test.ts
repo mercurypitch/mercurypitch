@@ -63,9 +63,14 @@ describe('initialize', () => {
   it('sends the apple block on iOS, with the empty redirect iOS wants', async () => {
     const options = await initializedWith('ios')
 
+    // `useProperTokenExchange` is what makes the plugin hand back
+    // `result.authorizationCode`. Without it the code never reaches the
+    // Worker, no refresh token is stored, and deleting the account cannot
+    // revoke the Apple grant.
     expect(options.apple).toEqual({
       clientId: 'com.irchiinnuss.mercurypitch',
       redirectUrl: '',
+      useProperTokenExchange: true,
     })
   })
 

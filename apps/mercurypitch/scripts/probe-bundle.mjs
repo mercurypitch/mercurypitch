@@ -22,6 +22,11 @@
 // never left `browsing`: it watched a signal nothing writes, and every
 // screenshot of the rail looked perfect.
 //
+// ON ITS SIDE, TOO. After the frames, every surface is walked again on the
+// two phones turned sideways, with their own notch and home-indicator insets
+// set through the DevTools protocol (probe-landscape.mjs). `--landscape-only`
+// walks that half alone.
+//
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
@@ -31,6 +36,7 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
@@ -76,6 +82,7 @@ function parseArgs(argv) {
     theme: 'dark',
     headed: false,
     chromeOnly: false,
+    landscapeOnly: false,
     dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
@@ -85,6 +92,7 @@ function parseArgs(argv) {
     else if (flag === '--theme') args.theme = argv[(i += 1)]
     else if (flag === '--headed') args.headed = true
     else if (flag === '--chrome-only') args.chromeOnly = true
+    else if (flag === '--landscape-only') args.landscapeOnly = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
@@ -162,8 +170,43 @@ async function repaintRate(page, ms = 1000) {
  */
 const API_HOSTS = /^https:\/\/api(?:-dev)?\.mercurypitch\.com\//u
 
+/**
+ * Packaged media, answered the way the iPhone answers it (device round 4).
+ *
+ * Capacitor's iOS scheme handler answers a non-Range GET for a bundled media
+ * file with a bare URLResponse, so WebKit hands the page `ok: false, status:
+ * 0` and the whole body. Chromium answers 200, which is how a loader that
+ * threw on `!response.ok` walked green here while the phone played no
+ * ambient. So a same-origin, non-Range fetch of one of the handler's media
+ * extensions gets the real response behind a Proxy reporting status 0. Only
+ * a success is re-dressed: a missing file on iOS is a network error, never a
+ * status-0 body. Runs in the page, so it cannot close over anything here.
+ */
+function emulateIosPackagedMedia() {
+  const MEDIA = /\.(m4v|mov|mp4|aac|ac3|aiff|au|flac|m4a|mp3|wav)$/iu
+  const realFetch = window.fetch.bind(window)
+  window.fetch = async (input, init) => {
+    const response = await realFetch(input, init)
+    const request = input instanceof Request ? input : null
+    const url = new URL(request?.url ?? String(input), window.location.href)
+    const headers = new Headers(init?.headers ?? request?.headers)
+    const packaged =
+      url.origin === window.location.origin && MEDIA.test(url.pathname)
+    if (!packaged || headers.has('range') || !response.ok) return response
+    return new Proxy(response, {
+      get(target, key) {
+        if (key === 'status') return 0
+        if (key === 'ok') return false
+        const value = Reflect.get(target, key, target)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+  }
+}
+
 async function isolate(context) {
   await context.route(API_HOSTS, (route) => route.abort('internetdisconnected'))
+  await context.addInitScript(emulateIosPackagedMedia)
   return context
 }
 
@@ -467,6 +510,31 @@ async function walkChrome(page, ctx) {
     await page.waitForTimeout(400)
     await shoot(page, ctx, `tab-${id}`)
     steps.push(`rail: ${id} selected`)
+
+    // The corner slot is empty here, and an empty slot is not a surface. Its
+    // 56 x 64 box sat over most of the bridge's Ear Report and took the tap
+    // (device round 4): the button answered only along its right edge.
+    if (id === 'ear') {
+      const under = await page.evaluate(() => {
+        const report = [...document.querySelectorAll('button')].find((b) =>
+          (b.textContent ?? '').includes('Ear Report'),
+        )
+        if (report === undefined) return 'there is no Ear Report'
+        const box = report.getBoundingClientRect()
+        const hit = document.elementFromPoint(
+          box.left + box.width / 2,
+          box.top + box.height / 2,
+        )
+        if (hit !== null && report.contains(hit)) return null
+        return `its centre is under ${hit?.getAttribute('data-testid') ?? hit?.tagName}`
+      })
+      if (under !== null) {
+        throw new Error(
+          `ear: the bridge's Ear Report cannot be tapped: ${under}`,
+        )
+      }
+      steps.push("ear: the bridge's Ear Report takes a tap at its centre")
+    }
 
     // The web page header is a band of prose the native design does not have —
     // and under a room header it is a second title bar. Absent, not merely
@@ -2771,8 +2839,132 @@ async function mediaPlaying(page) {
   )
 }
 
+// ── The open's last frame is the room's own picture (device round 4) ──
+//
+// The Ear Lab's door grew the plate's tuning forks, about fourteen times
+// their drawn size and blurred, and only then did the real room replace
+// them. The clone now ends on the room's picture, and this is the proof: in
+// one frame, once the clone has covered and the room's [data-room-background]
+// is up under it, the clone holds that element's own picture — decoded,
+// whole, the door's content under it at 0 — drawn to within half a pixel of
+// where the element draws it (cover at its focal point, then the element's
+// own transform). Sampled every frame from before Enter: the window between
+// the room mounting and the clone going is a few hundred milliseconds.
+function watchHandOver() {
+  window.__mpHandOver = null
+  const deadline = performance.now() + 8000
+  const r2 = (n) => Math.round(n * 100) / 100
+  const sample = () => {
+    if (window.__mpHandOver !== null || performance.now() > deadline) return
+    const clone = document.querySelector('[data-testid="alley-morph"]')
+    const el = document.querySelector('[data-room-background]')
+    const phase = clone?.dataset.phase
+    const style = el === null ? null : getComputedStyle(el)
+    const url =
+      style === null
+        ? null
+        : (/url\(\s*(['"]?)(.*?)\1\s*\)/u.exec(style.backgroundImage)?.[2] ??
+          null)
+    if (
+      clone === null ||
+      url === null ||
+      (phase !== 'covered' && phase !== 'revealing')
+    ) {
+      requestAnimationFrame(sample)
+      return
+    }
+    const img = clone.querySelector('[data-testid="alley-morph-room"]')
+    let expected = null
+    let drawn = null
+    if (img !== null && img.naturalWidth > 0) {
+      // The element's own box, from its transformed rect and its transform.
+      const m = /matrix\(([^)]+)\)/u.exec(style.transform)
+      const [a, , , d, e, f] =
+        m === null ? [1, 0, 0, 1, 0, 0] : m[1].split(',').map(Number)
+      const [ox, oy] = style.transformOrigin.split(' ').map(Number.parseFloat)
+      const box = el.getBoundingClientRect()
+      const w = box.width / a
+      const h = box.height / d
+      const x = box.left - ox * (1 - a) - e
+      const y = box.top - oy * (1 - d) - f
+      const [fx, fy] = style.backgroundPosition
+        .split(' ')
+        .map((v) => Number.parseFloat(v) / 100)
+      const iw = img.naturalWidth
+      const ih = img.naturalHeight
+      const s = Math.max(w / iw, h / ih)
+      const left = (w - iw * s) * fx
+      const top = (h - ih * s) * fy
+      expected = [
+        x + ox + a * (left - ox) + e,
+        y + oy + d * (top - oy) + f,
+        a * iw * s,
+        d * ih * s,
+      ].map(r2)
+      const b = img.getBoundingClientRect()
+      drawn = [b.left, b.top, b.width, b.height].map(r2)
+    }
+    window.__mpHandOver = {
+      phase,
+      room: clone.dataset.room ?? null,
+      url: new URL(url, window.location.href).href,
+      size: style.backgroundSize,
+      src: img === null ? null : img.currentSrc || img.src,
+      complete: img?.complete ?? false,
+      natural: img === null ? null : [img.naturalWidth, img.naturalHeight],
+      opacity: img === null ? null : getComputedStyle(img).opacity,
+      door: [...clone.children]
+        .filter((c) => c !== img)
+        .map((c) => `${c.className} ${getComputedStyle(c).opacity}`),
+      expected,
+      drawn,
+    }
+  }
+  requestAnimationFrame(sample)
+}
+
+/** What `watchHandOver` saw, asserted; the note goes into the step line. */
+async function assertHandOver(page, what) {
+  const got = await page
+    .waitForFunction(() => window.__mpHandOver, null, { timeout: 8000 })
+    .then((handle) => handle.jsonValue())
+    .catch(() => null)
+  if (got === null) {
+    throw new Error(
+      `${what}: never saw the clone covered over the room's own background`,
+    )
+  }
+  const problems = []
+  if (got.src !== got.url) {
+    problems.push(`the clone holds ${got.src}, the room draws ${got.url}`)
+  }
+  if (!got.complete || !(got.natural?.[0] > 0)) {
+    problems.push('the picture in the clone is not decoded')
+  }
+  if (got.opacity !== '1') problems.push(`the picture is at ${got.opacity}`)
+  if (got.door.some((layer) => !layer.endsWith(' 0'))) {
+    problems.push(`the door's own layers are still up: ${got.door.join(', ')}`)
+  }
+  if (got.size !== 'cover') problems.push(`the room draws at ${got.size}`)
+  const off =
+    got.expected === null || got.drawn === null
+      ? Number.POSITIVE_INFINITY
+      : Math.max(...got.expected.map((v, i) => Math.abs(v - got.drawn[i])))
+  if (!(off <= 0.5)) {
+    problems.push(
+      `drawn at ${JSON.stringify(got.drawn)}, the room draws at ${JSON.stringify(got.expected)}`,
+    )
+  }
+  if (problems.length > 0) {
+    throw new Error(`${what}: ${problems.join('; ')} (${JSON.stringify(got)})`)
+  }
+  const file = got.url.replace(/^.*\//u, '')
+  return `the clone's last frame (${got.phase}) is the room's own ${file} ${got.natural.join('x')}, at opacity ${got.opacity}, the door's layers at 0, within ${Math.round(off * 100) / 100} px of where the room draws it`
+}
+
 /** The door opens: the clone is up, then the room is, and the clone goes. */
-async function walkOpen(page, ctx, name) {
+async function walkOpen(page, ctx, name, room = '[data-testid="sing-room"]') {
+  await page.evaluate(watchHandOver)
   await page.locator('[data-testid="alley-enter"]').tap()
   const mid = await page.evaluate(() => {
     const clone = document.querySelector('[data-testid="alley-morph"]')
@@ -2788,16 +2980,16 @@ async function walkOpen(page, ctx, name) {
   await shoot(page, ctx, `${name}-mid`)
   await page
     .waitForFunction(
-      () =>
+      (selector) =>
         document.querySelector('[data-testid="alley-morph"]') === null &&
-        document.querySelector('[data-testid="sing-room"]') !== null,
-      null,
+        document.querySelector(selector) !== null,
+      room,
       { timeout: 8000 },
     )
     .catch(() => {
       throw new Error(`${name}: the room never replaced the clone`)
     })
-  return mid
+  return { ...mid, handOver: await assertHandOver(page, name) }
 }
 
 async function walkAlley(browser, args, frame) {
@@ -3023,6 +3215,7 @@ async function walkAlley(browser, args, frame) {
     steps.push(
       `alley open: clone grew (${mid.content}), then the Sing room, clone gone, ambient 0; ${note}`,
     )
+    steps.push(`alley open, Sing: ${mid.handOver}`)
 
     // ── Back ──────────────────────────────────────────────────
     const outcome = await pressBack(page)
@@ -3068,6 +3261,24 @@ async function walkAlley(browser, args, frame) {
     await page.waitForTimeout(400)
     await shoot(page, ctx, 'alley-ear-alive')
     steps.push(`alley Ear Lab at x = 8: selected, no eyebrow, Enter; ${note}`)
+
+    // ── The Ear Lab opens onto its own room (device round 4) ──
+    const earOpen = await walkOpen(
+      page,
+      ctx,
+      'alley-ear-open',
+      '[data-testid="ear-room-shell"]',
+    )
+    if (earOpen.motion !== 'grow' || earOpen.content !== 'paint') {
+      throw new Error(`Ear Lab open: the clone was ${JSON.stringify(earOpen)}`)
+    }
+    await shoot(page, ctx, 'alley-ear-room')
+    steps.push(`alley open, Ear Lab: ${earOpen.handOver}`)
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('Ear Lab open: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await waitPhase(page, 'rest', null, 'Ear Lab open: back at rest')
 
     // ── Karaoke: locked ───────────────────────────────────────
     await tapDoor(page, 'karaoke')
@@ -3411,6 +3622,7 @@ async function walkAlley(browser, args, frame) {
     steps.push(
       `alley reduced motion: a crossfade, no transform on the clone; ${note}`,
     )
+    steps.push(`alley reduced motion, Sing: ${still.handOver}`)
     if ((await pressBack(page)) !== 'history') {
       throw new Error('reduced: Back did not return to the alley')
     }
@@ -4385,7 +4597,7 @@ async function main() {
     // Every frame is walked even when an earlier one failed: "it broke at 390"
     // and "it broke at both" are different reports, and the second one is the
     // one that says the fix is not a width rule.
-    for (const frame of FRAMES) {
+    for (const frame of args.landscapeOnly ? [] : FRAMES) {
       const result = await walkFrame(browser, args, frame)
       steps.push(...result.steps)
       failures.push(...result.failures)
@@ -4436,12 +4648,31 @@ async function main() {
           )
         }
       }
-      for (const frame of SAFE_TOP_FRAMES) {
+      for (const frame of args.landscapeOnly ? [] : SAFE_TOP_FRAMES) {
         try {
           steps.push(...(await walkAlleySafeTop(browser, args, frame)))
         } catch (error) {
           failures.push(
             `[${frame.width}x${frame.height}] alley safe top: ${error.message}`,
+          )
+        }
+      }
+      const kit = {
+        isolate,
+        seed,
+        shoot,
+        bootTimeoutMs: BOOT_TIMEOUT_MS,
+        stepTimeoutMs: STEP_TIMEOUT_MS,
+        runTimeoutMs: RUN_TIMEOUT_MS,
+      }
+      for (const frame of LANDSCAPE_INSET_FRAMES) {
+        try {
+          steps.push(
+            ...(await walkLandscapeSurfaces(browser, args, frame, kit)),
+          )
+        } catch (error) {
+          failures.push(
+            `[${frame.width}x${frame.height}] on its side: ${error.message}`,
           )
         }
       }
@@ -4459,7 +4690,7 @@ async function main() {
     return
   }
   console.log(
-    `\nprobe-bundle: every step passed (${args.theme}, ${FRAMES.length} frames).`,
+    `\nprobe-bundle: every step passed (${args.theme}, ${args.landscapeOnly ? 'landscape only' : `${FRAMES.length} frames`}).`,
   )
 }
 

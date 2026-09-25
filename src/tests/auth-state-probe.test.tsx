@@ -13,6 +13,7 @@ import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { describe, expect, it, vi } from 'vitest'
 import { AccountSection } from '@/components/account/AccountSection'
 import { HeaderAccount } from '@/components/account/HeaderAccount'
+import type * as AuthService from '@/db/services/auth-service'
 import type { MeResponse } from '@/db/services/auth-service'
 
 vi.mock('@/lib/defaults', async (importOriginal) => ({
@@ -20,9 +21,11 @@ vi.mock('@/lib/defaults', async (importOriginal) => ({
   API_BASE_URL: 'http://api.test',
 }))
 
-vi.mock('@/db/services/auth-service', () => {
+vi.mock('@/db/services/auth-service', async (importOriginal) => {
   let resolveMe: (me: MeResponse | null) => void = () => {}
   return {
+    isRegisteredProvider: (await importOriginal<typeof AuthService>())
+      .isRegisteredProvider,
     restoreAuth: () => Promise.resolve(true),
     fetchMe: () =>
       new Promise<MeResponse | null>((resolve) => {

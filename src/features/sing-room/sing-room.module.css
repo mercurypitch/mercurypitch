@@ -109,8 +109,11 @@
   flex-direction: column;
   gap: 12px;
   /* The room header's 52px sits above; the band (rail or transport) below. */
-  padding: calc(var(--safe-top, 0px) + 52px + 8px) 16px
-    calc(var(--tabbar-total, 64px) + 12px);
+  /* Each side at least the inset there: on its side, a phone has its notch
+     or its island at one end of the room. */
+  padding: calc(var(--safe-top, 0px) + 52px + 8px)
+    max(16px, var(--safe-right, 0px)) calc(var(--tabbar-total, 64px) + 12px)
+    max(16px, var(--safe-left, 0px));
 }
 
 /* Row 1: key · mic · song (R3).
@@ -489,7 +492,7 @@
   position: absolute;
   z-index: 12;
   top: calc(var(--safe-top, 0px) + 108px);
-  left: 20px;
+  left: max(20px, var(--safe-left, 0px));
   max-width: 230px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -533,8 +536,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: calc(var(--safe-top, 0px) + 24px) 20px
-    calc(var(--safe-bottom, 0px) + 24px);
+  padding: calc(var(--safe-top, 0px) + 24px) max(20px, var(--safe-right, 0px))
+    calc(var(--safe-bottom, 0px) + 24px) max(20px, var(--safe-left, 0px));
   background: var(--bg-primary, #0d1117);
 }
 

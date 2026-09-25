@@ -13,6 +13,7 @@
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { createPersistedSignal } from '@/lib/storage'
 import { singingCaptureActive } from '@/stores/mic-store'
 import { showActionNotification, showNotification, } from '@/stores/notifications-store'
@@ -536,6 +537,9 @@ export function useVoiceControlController(
   }
 
   createEffect(() => {
+    // Nothing listens in the native app (see onMount below), so there is
+    // nothing to hold off, and the end of a take must not start it.
+    if (IS_NATIVE_BUILD) return
     const singing = singingCaptureActive()
     if (singing) {
       if (untrack(suspendedForSinging) || !untrack(enabled)) return
@@ -557,6 +561,8 @@ export function useVoiceControlController(
   // running under the new engine's label.
   let lastEngine = untrack(voiceControlEngine)
   createEffect(() => {
+    // Nor does a switch start one there (see onMount below).
+    if (IS_NATIVE_BUILD) return
     const engine = voiceControlEngine()
     if (engine === lastEngine) return
     lastEngine = engine
@@ -598,6 +604,13 @@ export function useVoiceControlController(
   })
 
   onMount(() => {
+    // Not in the native app. Voice control has no place there yet: no pill,
+    // and no header for one to dock in. A flag left on, or synced from the
+    // web, would open a recognizer that nothing on screen shows or can stop,
+    // so nothing starts by itself there: not this, not the end of a sung
+    // take, not an engine switch (the two effects above). The flag is read
+    // and never written, so the web, and the sync that carries it, keeps it.
+    if (IS_NATIVE_BUILD) return
     if (!enabled()) return
     // A document that starts while a model load is still marked in flight is
     // a document that came back from a content-process kill. Starting the

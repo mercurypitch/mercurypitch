@@ -11,6 +11,16 @@
 // Android's local server returns an explicit 200 for the same asset. The
 // portable success condition for these packaged reads is therefore a normal
 // success status OR status 0 with a non-empty body.
+//
+// Shared, because the rule is a fact about the WebView and not about one
+// app. Beside Cue found it on 4 Sep 2026 (its onboarding was silent on
+// iOS); Mercury Pitch shipped the same `if (!response.ok) throw` three weeks
+// later in the alley's ambient loader and in the guided exercise waveform,
+// and both were silent on iOS for the same reason. Every packaged read of a
+// media file goes through here.
+//
+// Plugin-free on purpose: nothing below imports Capacitor, so the web app
+// can read its own bundled media through this entry too.
 
 /** What a caller needs from a Response. Narrow on purpose: this is what
  * makes the whole thing testable without a network or a WebView. */
@@ -23,9 +33,9 @@ export interface AssetResponse {
 /**
  * Did this response actually fail?
  *
- * Status 0 with a body is a success on a custom scheme, and there is no
- * opaque cross-origin response also reports 0, but its body is unreadable or
- * empty and this helper rejects that after the read.
+ * Status 0 with a body is a success on a custom scheme. An opaque
+ * cross-origin response also reports 0, but its body is unreadable or empty,
+ * and this helper rejects that after the read.
  */
 export const assetResponseFailed = (response: AssetResponse): boolean =>
   !response.ok && response.status !== 0
@@ -54,9 +64,33 @@ export const readAssetBytes = async (
   return bytes
 }
 
-/** `fetch`, then the two checks above. The shape both audio loaders
- * inject in tests, so neither has its own copy of this rule. */
+/** `fetch`, then the two checks above. The shape every packaged-media
+ * loader uses or injects in tests, so none has its own copy of this rule. */
 export const fetchAssetBytes = async (
   url: string,
   init?: RequestInit,
 ): Promise<ArrayBuffer> => readAssetBytes(url, await fetch(url, init))
+
+/** A packaged read, with what the response said about itself. */
+export interface AssetRead {
+  readonly bytes: ArrayBuffer
+  /** 0 on iOS for a packaged media file, 200 everywhere else. */
+  readonly status: number
+  readonly ok: boolean
+}
+
+/**
+ * `fetchAssetBytes`, keeping the status the bytes arrived with.
+ *
+ * For a loader that reports its reads (the alley's ambient does, to the
+ * device's audio diagnostics): "status 0, ok false, 266161 bytes" beside a
+ * decoded buffer is the one line that tells the iOS shape apart from a 200.
+ */
+export const fetchAssetRead = async (
+  url: string,
+  init?: RequestInit,
+): Promise<AssetRead> => {
+  const response = await fetch(url, init)
+  const bytes = await readAssetBytes(url, response)
+  return { bytes, status: response.status, ok: response.ok }
+}

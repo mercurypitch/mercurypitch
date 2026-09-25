@@ -40,7 +40,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1rem;
+  /* Each side at least the inset there, the kit's max(1rem, inset): a phone
+     on its side has its notch, or its island, at one end of the header. The
+     row is wider than that phone and scrolls sideways (overflow-x below), so
+     the inset is the margin, not the padding: the box it scrolls in stops at
+     each inset, and nothing in the row passes under the notch, at rest or
+     scrolled. The padding makes up the rest of the gutter. The web's insets
+     are 0: no margin, and the 1rem of padding it always had. */
+  margin: 0 var(--safe-right, 0px) 0 var(--safe-left, 0px);
+  padding: 0.5rem max(0px, 1rem - var(--safe-right, 0px)) 0.5rem
+    max(0px, 1rem - var(--safe-left, 0px));
   background: var(--bg-primary);
   min-height: 0;
   flex-shrink: 0;

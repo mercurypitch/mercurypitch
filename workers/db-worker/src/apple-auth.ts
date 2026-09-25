@@ -18,6 +18,7 @@
 // signature checks (passkeys.ts) on crypto.subtle; Apple adds RS256 for their
 // tokens and ES256 for ours.
 
+import { isApplePrivateRelayAddress } from './apple-relay'
 import type { Env } from './auth'
 
 const APPLE_ISSUER = 'https://appleid.apple.com'
@@ -62,9 +63,6 @@ export function appleClientIds(env: Env): string[] {
     .map((entry) => entry.trim())
     .filter((entry) => entry !== '')
 }
-
-/** The relay domain Apple issues when the signer hides their address. */
-export const APPLE_PRIVATE_RELAY_DOMAIN = '@privaterelay.appleid.com'
 
 const encoder = new TextEncoder()
 
@@ -322,7 +320,7 @@ export async function verifyAppleIdentityToken(
     emailVerified: appleBoolean(claims.email_verified),
     isPrivateEmail:
       appleBoolean(claims.is_private_email) ||
-      (email?.toLowerCase().endsWith(APPLE_PRIVATE_RELAY_DOMAIN) ?? false),
+      isApplePrivateRelayAddress(email),
   }
 }
 

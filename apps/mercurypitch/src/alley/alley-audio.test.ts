@@ -1,9 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { activateAudioPlayback } from '@/lib/audio-unlock'
 import type { AmbientActivation } from './alley-audio'
 import { AMBIENT_LEVEL, createAlleyAmbient, GAIN_FLOOR, RELEASE_SLACK_MS, } from './alley-audio'
 import { AMBIENT_URL } from './alley-plate'
 
 type Call = [string, ...unknown[]]
+
+/** What the app's `fetchAssetRead` hands back: the bytes and their status. */
+const read = (status = 200) => ({
+  bytes: new ArrayBuffer(8),
+  status,
+  ok: status === 200,
+})
 
 /** A context that records what is scheduled on it, and nothing else. */
 function fakeContext(log: Call[]) {
@@ -85,7 +93,7 @@ describe('the alley ambient', () => {
       },
       load: async (url) => {
         loads.push(url)
-        return new ArrayBuffer(8)
+        return read()
       },
       activate: async (target: AmbientActivation) => {
         activations += 1
@@ -253,7 +261,7 @@ describe("the ambient's context over its life", () => {
       },
       load: async () => {
         loads += 1
-        return new ArrayBuffer(8)
+        return read()
       },
       activate: async (target: AmbientActivation) => {
         const init = target.init()
@@ -367,5 +375,257 @@ describe("the ambient's context over its life", () => {
     await settle()
     expect(contexts[0].close).not.toHaveBeenCalled()
     expect(loads).toBe(1)
+  })
+})
+
+describe('an ambient that does not start', () => {
+  let log: Call[]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    log = []
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  // The catch that ends a failed start used to be empty. That is how the
+  // iOS status-0 read stayed invisible through two device rounds: the door
+  // was silent and nothing anywhere said why.
+  it.each(['load', 'decode'] as const)(
+    'says so when the %s fails, naming the room, the file and the error',
+    async (stage) => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const failure = new Error(`${stage} failed`)
+      const ctx = fakeContext(log)
+      if (stage === 'decode') {
+        ctx.decodeAudioData = vi.fn(async () => {
+          throw failure
+        })
+      }
+      const ambient = createAlleyAmbient({
+        createContext: () => ctx as unknown as AudioContext,
+        load: async () => {
+          if (stage === 'load') throw failure
+          return read()
+        },
+        activate: async (target: AmbientActivation) => {
+          await target.init()
+          await target.resume()
+        },
+      })
+      ambient.start('sing', 600)
+      await settle()
+      expect(warn).toHaveBeenCalledWith(
+        '[alley] ambient did not start',
+        'sing',
+        AMBIENT_URL.sing,
+        failure,
+      )
+      expect(ambient.sounding()).toBeNull()
+      expect(ambient.sourcesStarted()).toBe(0)
+    },
+  )
+
+  // A context that cannot be made (too many open, a WebView that refuses)
+  // throws inside `init`, which rejects the activation. start() used to
+  // return early with that promise unhandled, and on the native build an
+  // unhandled rejection is what index.html's watchdog paints as "Mercury
+  // Pitch did not start" -- over an app that is running.
+  it('handles a context that could not be made, and says so', async () => {
+    vi.useRealTimers()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => void unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    const refused = new Error('The AudioContext could not be created')
+    try {
+      const ambient = createAlleyAmbient({
+        createContext: () => {
+          throw refused
+        },
+        load: async () => read(),
+        // The app's own activation, so the rejection has the app's shape.
+        activate: (target) => activateAudioPlayback(target),
+      })
+      expect(() => ambient.start('sing', 600)).not.toThrow()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+      expect(unhandled).toEqual([])
+      expect(warn).toHaveBeenCalledWith(
+        '[alley] ambient did not start',
+        'sing',
+        AMBIENT_URL.sing,
+        refused,
+      )
+      expect(ambient.sounding()).toBeNull()
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+})
+
+describe("the ambient's report to the device's audio diagnostics", () => {
+  type Reported = [string, Record<string, unknown>, boolean]
+  let log: Call[]
+  let events: Reported[]
+
+  const make = (ctx: ReturnType<typeof fakeContext>, status = 0) =>
+    createAlleyAmbient({
+      createContext: () => ctx as unknown as AudioContext,
+      load: async () => read(status),
+      activate: async (target: AmbientActivation) => {
+        await target.init()
+        await target.resume()
+      },
+      report: (event, detail = {}, failed = false) =>
+        void events.push([event, detail, failed]),
+    })
+
+  const named = (event: string) => events.filter(([e]) => e === event)
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    log = []
+    events = []
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('reports each step of a start, with the facts that tell them apart', async () => {
+    const ctx = fakeContext(log)
+    const ambient = make(ctx)
+    expect(ambient.context()).toBeNull()
+    ambient.start('sing', 600)
+    await settle()
+
+    expect(events[0]?.[0]).toBe('context')
+    expect(events[0]?.[1]).toMatchObject({ state: 'suspended' })
+    expect(named('activated')).toEqual([
+      ['activated', { state: 'running', currentTime: 1 }, false],
+    ])
+    // The iOS shape, said out loud: status 0, not ok, and every byte.
+    expect(named('fetched')).toEqual([
+      [
+        'fetched',
+        {
+          url: AMBIENT_URL.sing,
+          status: 0,
+          ok: false,
+          bytes: 8,
+          ms: expect.any(Number),
+        },
+        false,
+      ],
+    ])
+    expect(named('decoded')).toHaveLength(1)
+    expect(named('decoded')[0]?.[1]).toMatchObject({ url: AMBIENT_URL.sing })
+    expect(events.at(-1)).toEqual([
+      'started',
+      { kind: 'sing', state: 'running', currentTime: 1 },
+      false,
+    ])
+    expect(events.some(([, , failed]) => failed)).toBe(false)
+    expect(ambient.context()).toEqual({
+      state: 'running',
+      sampleRate: undefined,
+      currentTime: 1,
+    })
+  })
+
+  it('reports the stop, an interruption, the stale context and its retirement', async () => {
+    const contexts: Array<ReturnType<typeof fakeContext>> = []
+    const ambient = createAlleyAmbient({
+      createContext: () => {
+        const made = fakeContext(log)
+        contexts.push(made)
+        return made as unknown as AudioContext
+      },
+      load: async () => read(),
+      activate: async (target: AmbientActivation) => {
+        await target.init()
+        await target.resume()
+      },
+      report: (event, detail = {}, failed = false) =>
+        void events.push([event, detail, failed]),
+    })
+    ambient.start('ear', 600)
+    await settle()
+    const stopped = ambient.stop(120)
+    vi.advanceTimersByTime(120 + RELEASE_SLACK_MS)
+    await stopped
+    expect(named('stopped')).toEqual([['stopped', { kind: 'ear' }, false]])
+
+    contexts[0]?.interrupt()
+    expect(named('statechange').at(-1)?.[1]).toEqual({ state: 'interrupted' })
+    expect(named('stale')).toEqual([
+      ['stale', { reason: 'interrupted' }, false],
+    ])
+    ambient.start('sing', 600)
+    expect(named('retired')).toEqual([
+      ['retired', { state: 'interrupted' }, false],
+    ])
+    expect(named('context')).toHaveLength(2)
+  })
+
+  it('reports a context the tap could not start as a failure', async () => {
+    const ctx = fakeContext(log)
+    // A resume inside the tap that leaves it suspended: the source still
+    // starts, on a clock that does not move, and nothing is heard.
+    ctx.resume = vi.fn(async () => undefined)
+    make(ctx).start('sing', 600)
+    await settle()
+    expect(named('stale')).toEqual([
+      [
+        'stale',
+        { reason: 'not running after resume', state: 'suspended' },
+        true,
+      ],
+    ])
+  })
+
+  it('reports a failed decode as a failure, with the error', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ctx = fakeContext(log)
+    const broken = new DOMException(
+      'Unable to decode audio data',
+      'EncodingError',
+    )
+    ctx.decodeAudioData = vi.fn(async () => {
+      throw broken
+    })
+    make(ctx).start('sing', 600)
+    await settle()
+    expect(named('decode-failed')).toEqual([
+      [
+        'decode-failed',
+        { url: AMBIENT_URL.sing, error: broken, ms: expect.any(Number) },
+        true,
+      ],
+    ])
+    expect(named('started')).toEqual([])
+  })
+
+  it('reports a context that could not be made', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const refused = new Error('too many contexts')
+    const ambient = createAlleyAmbient({
+      createContext: () => {
+        throw refused
+      },
+      load: async () => read(),
+      activate: async (target: AmbientActivation) => {
+        await target.init()
+      },
+      report: (event, detail = {}, failed = false) =>
+        void events.push([event, detail, failed]),
+    })
+    ambient.start('sing', 600)
+    await settle()
+    expect(events).toEqual([['context-failed', { error: refused }, true]])
   })
 })

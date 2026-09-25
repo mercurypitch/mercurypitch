@@ -568,3 +568,18 @@
 .mp-alley-morph__paint {
   transform-origin: 0 0;
 }
+
+/* The room's own picture, over the door's content (alley-entry.ts). Drawn at
+   its own pixel size (inline) and placed by its crop transform alone, which
+   ends exactly where the room's [data-room-background] draws it. A layer of
+   its own, so the grow moves it rather than repainting it every frame. */
+.mp-alley-morph__room {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  max-width: none;
+  max-height: none;
+  transform-origin: 0 0;
+  will-change: transform, opacity;
+}

@@ -80,10 +80,7 @@ describe('signInWithApple', () => {
 
     await signInWithApple()
 
-    const sent = login.mock.calls[0] as unknown as [
-      string,
-      { nonce?: string; scopes?: string[] },
-    ]
+    const sent = login.mock.calls[0] as unknown as [string, { nonce?: string }]
     const posted = mocks.loginWithApple.mock.calls[0][0] as { nonce?: string }
     expect(sent[0]).toBe('apple')
     expect(sent[1].nonce).toMatch(/^[A-Za-z0-9_-]{43}$/)
@@ -92,16 +89,36 @@ describe('signInWithApple', () => {
     expect(posted.nonce).toBe(sent[1].nonce)
   })
 
+  it('leaves the scopes to the plugin', async () => {
+    // Its default asks Apple for [.fullName, .email]. A list passed here is
+    // cast unchecked to Apple's scope type, and 'name' is not known to be
+    // the full-name scope: the sheet might then never offer the name.
+    const login = bridgeReturning({
+      result: { idToken: 'apple-jwt', profile: { user: 'a' } },
+    })
+
+    await signInWithApple()
+
+    const sent = login.mock.calls[0] as unknown as [string, object]
+    expect(sent[1]).toEqual({ nonce: expect.any(String) })
+  })
+
   it('forwards the name and email Apple only ever sends once', async () => {
+    // The plugin's own answer, as SocialLoginPlugin.swift resolves it with
+    // `useProperTokenExchange` on: the code is `authorizationCode`, and
+    // `accessToken` is null. Without the flag the same code comes back as
+    // `accessToken.token` instead, where nothing here reads it.
     bridgeReturning({
+      provider: 'apple',
       result: {
+        accessToken: null,
         idToken: 'apple-jwt',
         authorizationCode: 'code-1',
         profile: {
-          user: 'a',
+          user: '000999.fake.0001',
+          email: 'ada@example.com',
           givenName: 'Ada',
           familyName: 'Lovelace',
-          email: 'ada@example.com',
         },
       },
     })
@@ -118,18 +135,60 @@ describe('signInWithApple', () => {
     })
   })
 
-  it('omits the user block entirely on a later sign-in', async () => {
-    // Apple sends nothing the second time. An empty name object would ask the
-    // worker to overwrite a real display name with undefined.
+  it('sends the name and email again on a later sign-in, from the plugin', async () => {
+    // Apple sends them once, but the plugin answers every later sign-in the
+    // same way: the name from what it cached for this Apple user (UserDefaults,
+    // AppleProvider.swift) and the email decoded from the identity token. So
+    // `user` goes up every time; the Worker lets it fill only a default handle.
     bridgeReturning({
-      result: { idToken: 'apple-jwt', profile: { user: 'a' } },
+      provider: 'apple',
+      result: {
+        accessToken: null,
+        idToken: 'apple-jwt',
+        authorizationCode: 'code-2',
+        profile: {
+          user: '000999.fake.0001',
+          email: 'ada@example.com',
+          givenName: 'Ada',
+          familyName: 'Lovelace',
+        },
+      },
     })
 
     await signInWithApple()
 
     expect(mocks.loginWithApple.mock.calls[0][0]).toMatchObject({
-      user: undefined,
+      authorizationCode: 'code-2',
+      user: {
+        name: { firstName: 'Ada', lastName: 'Lovelace' },
+        email: 'ada@example.com',
+      },
     })
+  })
+
+  it('sends no empty name when the plugin has none cached', async () => {
+    // A device that never saw the first authorization has only the email from
+    // the token. An empty name object would ask the worker to overwrite a
+    // display name with nothing.
+    bridgeReturning({
+      provider: 'apple',
+      result: {
+        accessToken: null,
+        idToken: 'apple-jwt',
+        authorizationCode: 'code-3',
+        profile: {
+          user: '000999.fake.0001',
+          email: 'ada@example.com',
+          givenName: null,
+          familyName: null,
+        },
+      },
+    })
+
+    await signInWithApple()
+
+    const posted = mocks.loginWithApple.mock.calls[0][0] as { user?: object }
+    expect(posted.user).toEqual({ email: 'ada@example.com' })
   })
 
   it('calls a dismissed sheet cancelled, not a failure', async () => {

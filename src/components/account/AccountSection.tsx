@@ -19,7 +19,7 @@ import { MercuryCheckbox } from '@/components/MercuryCheckbox'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
+import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { setNewsletterOptIn } from '@/db/services/newsletter-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
@@ -28,6 +28,7 @@ import { API_BASE_URL } from '@/lib/defaults'
 import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
+import { isApplePrivateRelayAddress } from '../../../workers/db-worker/src/apple-relay'
 import styles from './AccountSection.module.css'
 import { EmailVerificationRow } from './EmailVerificationRow'
 import { PasskeySettings } from './PasskeySettings'
@@ -290,8 +291,18 @@ export const AccountSection: Component = () => {
   }
 
   const provider = (): string => me()?.user.authProvider ?? 'anonymous'
-  const isUpgraded = (): boolean =>
-    provider() === 'password' || provider() === 'google'
+  const isUpgraded = (): boolean => isRegisteredProvider(provider())
+  /** How the card names the way in. A password account says "email". */
+  const providerName = (): string => {
+    switch (provider()) {
+      case 'google':
+        return 'Google'
+      case 'apple':
+        return 'Apple'
+      default:
+        return 'email'
+    }
+  }
   const isTestAccount = (): boolean => me()?.user.isTestAccount === true
   const testAccountExpiry = (): string => {
     const value = me()?.user.testAccountExpiresAt
@@ -329,7 +340,7 @@ export const AccountSection: Component = () => {
               <span class={styles.accountType}>
                 {isTestAccount()
                   ? 'Managed test account'
-                  : `Signed in with ${provider() === 'google' ? 'Google' : 'email'}`}
+                  : `Signed in with ${providerName()}`}
               </span>
               <div class={styles.accountIdentity}>
                 <Show
@@ -441,6 +452,15 @@ export const AccountSection: Component = () => {
                   </button>
                 </div>
               </div>
+              {/* Apple minted this address and the singer never typed it,
+                  yet an emailed code to it is the only way into the account
+                  where there is no Apple sheet. */}
+              <Show when={isApplePrivateRelayAddress(me()?.user.email)}>
+                <p class={styles.relayNote} data-testid="account-relay-note">
+                  Your private Apple address. Keep a note of it: it signs you in
+                  with an email code on the web or Android.
+                </p>
+              </Show>
               <Show when={isTestAccount() && testAccountExpiry() !== ''}>
                 <p class={styles.testAccountNote}>
                   Campaign access expires {testAccountExpiry()}. Purchases are

@@ -124,7 +124,10 @@
   justify-content: space-between;
   gap: 16px;
   min-height: 60px;
-  padding: 10px 22px;
+  /* A phone on its side has the notch, or the island, at one end of every
+     row: each side gutter here and below is at least the inset there. */
+  padding: 10px max(22px, var(--safe-right, 0px)) 10px
+    max(22px, var(--safe-left, 0px));
   background: linear-gradient(180deg, rgb(10 11 13 / 92%), rgb(10 11 13 / 72%));
   border-bottom: 1px solid var(--ear-line);
 }
@@ -134,7 +137,8 @@
    60 px floor holding a row of 44 px chips apart from the room. */
 .sessionBarBare {
   min-height: 0;
-  padding: 10px 16px 0;
+  padding: 10px max(16px, var(--safe-right, 0px)) 0
+    max(16px, var(--safe-left, 0px));
   background: none;
   border-bottom: 0;
 }
@@ -298,7 +302,8 @@
   align-items: center;
   gap: 16px;
   min-height: 92px;
-  padding: 12px 22px;
+  padding: 12px max(22px, var(--safe-right, 0px)) 12px
+    max(22px, var(--safe-left, 0px));
   background: linear-gradient(180deg, #111318, #0b0c0f);
   border-top: 1px solid var(--ear-brass-line);
   box-shadow: 0 -12px 30px rgb(0 0 0 / 40%);
@@ -444,7 +449,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 18px 14px;
+  /* Its right edge is the screen's; the left one is too once it is a sheet
+     (the compact rules below). */
+  padding: 18px max(18px, var(--safe-right, 0px)) 14px 18px;
   border-bottom: 1px solid var(--ear-line);
 }
 
@@ -492,7 +499,7 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 56px;
-  padding: 10px 18px;
+  padding: 10px max(18px, var(--safe-right, 0px)) 10px 18px;
   border: 0;
   border-bottom: 1px solid var(--ear-line);
   background: none;
@@ -551,7 +558,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px 18px 24px;
+  padding: 16px max(18px, var(--safe-right, 0px)) 24px 18px;
 }
 
 /* The app's latency wizard, skinned through the tokens it already reads:
@@ -753,7 +760,8 @@
 @container (max-width: 860px) {
   .sessionBar {
     min-height: 56px;
-    padding: 8px 14px;
+    padding: 8px max(14px, var(--safe-right, 0px)) 8px
+      max(14px, var(--safe-left, 0px));
     gap: 10px;
   }
 
@@ -799,7 +807,8 @@
     grid-template-areas: 'today primary instruments report';
     gap: 6px;
     min-height: 66px;
-    padding: 6px 8px;
+    padding: 6px max(8px, var(--safe-right, 0px)) 6px
+      max(8px, var(--safe-left, 0px));
   }
 
   .bridgeButton {
@@ -876,6 +885,19 @@
   .rackOpen {
     transform: translateY(0);
   }
+
+  /* Across the whole width now, so its left gutter meets the notch too. */
+  .rackHead,
+  .rackPanel,
+  .rackRow {
+    padding-left: max(18px, var(--safe-left, 0px));
+  }
+
+  /* Above the native rail (below), and never taller than the room left
+     over: 80% of a 393 px screen on its side reached past its top. */
+  :global(:root[data-native-shell]) .rack {
+    max-height: min(80%, calc(100% - var(--tabbar-total) - 12px));
+  }
 }
 
 /* The app's own tab bar overlays the bottom of the viewport on phones. */
@@ -903,7 +925,8 @@
 @media (max-height: 700px) {
   .sessionBar {
     min-height: 48px;
-    padding: 5px 12px;
+    padding: 5px max(12px, var(--safe-right, 0px)) 5px
+      max(12px, var(--safe-left, 0px));
   }
 
   .sessionTitle {
@@ -912,13 +935,28 @@
 
   .bridge {
     min-height: 58px;
-    padding: 4px 8px;
+    padding: 4px max(8px, var(--safe-right, 0px)) 4px
+      max(8px, var(--safe-left, 0px));
   }
 
   .bridgeButton,
   .primary {
     min-height: 48px;
   }
+}
+
+/* ── Under the native shell ──────────────────────────────────── */
+
+/* The native rail is reserved at every width (mobile-kit.css), not only
+   under the phone rule above: a phone on its side is 844 to 932 px wide,
+   and there the rail sat over the bridge and over the rack's last rows
+   (device round 4). */
+:global(:root[data-native-shell]) .shell {
+  padding-bottom: var(--tabbar-total);
+}
+
+:global(:root[data-native-shell]) .rack {
+  bottom: var(--tabbar-total);
 }
 
 @media (prefers-reduced-motion: reduce) {

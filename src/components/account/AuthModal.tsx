@@ -17,7 +17,7 @@ import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } fr
 import { requestLoginCode, verifyLoginCode, } from '@/db/services/auth-email-code-service'
 import { verifyTwofa } from '@/db/services/auth-mfa-service'
 import { passkeysAvailable, signInWithPasskey, } from '@/db/services/auth-passkey-service'
-import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
+import { isTwofaChallenge, loginWithPassword, registerWithPassword, requestPasswordReset, takeGoogleTwofaChallenge, takeNativeTwofaChallenge, } from '@/db/services/auth-service'
 import { adoptDeviceVoiceprints } from '@/db/services/voiceprint-service'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { appleSignInOffered, nativeGoogleSignInOffered, webGoogleSignInOffered, } from '@/features/account/sign-in-methods'
@@ -146,6 +146,12 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
     const googleCeremony = takeGoogleTwofaChallenge()
     if (googleCeremony !== null) {
       setCeremony(googleCeremony)
+      setPane('twofa')
+    }
+    // Likewise a native sheet's, parked by a surface with no code field.
+    const nativeCeremony = takeNativeTwofaChallenge()
+    if (nativeCeremony !== null) {
+      setCeremony(nativeCeremony)
       setPane('twofa')
     }
   })
