@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "pearl-marble-long",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "in-progress",
   "source": {
     "file": "source-assets/references/pearl-marble-long.png",
     "sha256": "9778846007db620a09ac376fdb5491762d47f274733ef8787f3d0272def1be29",
@@ -48,9 +48,29 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:31:14.930352+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3525,
+  "submissionStartedAtUtc": "2026-09-25T12:31:14.930365+00:00",
+  "taskId": "01a0d88c-6836-71fb-8115-7d0a4122d976",
+  "submittedAtUtc": "2026-09-25T12:31:20.059445+00:00",
+  "balanceAfterSubmit": 3485,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d88c-6836-71fb-8115-7d0a4122d976",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 99,
+    "created_at": 1790339479883,
+    "started_at": 1790339479889,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:34:27.270432+00:00"
 }

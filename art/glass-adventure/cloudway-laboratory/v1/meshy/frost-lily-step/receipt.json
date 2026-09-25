@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "frost-lily-step",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "in-progress",
   "source": {
     "file": "source-assets/references/frost-lily-step.png",
     "sha256": "f4faa77644dfd73656d5a2cd67bc9500f18bc58111dc5c86d750c68d8ddfedf5",
@@ -48,9 +48,29 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:31:03.463346+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3565,
+  "submissionStartedAtUtc": "2026-09-25T12:31:03.463357+00:00",
+  "taskId": "01a0d88c-3b91-73b4-8eee-d587f6d77d76",
+  "submittedAtUtc": "2026-09-25T12:31:07.816191+00:00",
+  "balanceAfterSubmit": 3525,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d88c-3b91-73b4-8eee-d587f6d77d76",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 58,
+    "created_at": 1790339467639,
+    "started_at": 1790339467646,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:34:19.783187+00:00"
 }
