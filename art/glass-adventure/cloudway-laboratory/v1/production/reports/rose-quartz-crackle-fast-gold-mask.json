@@ -1,0 +1,51 @@
+{
+  "schema": "cloudway-rose-gold-mask/v1",
+  "assetId": "rose-quartz-crackle-fast",
+  "status": "visual-mask candidate; Blender multi-view acceptance pending",
+  "method": {
+    "signals": [
+      "warm gold base-color relation",
+      "independent metallic support"
+    ],
+    "thresholds8Bit": {
+      "redMinimum": 70,
+      "greenMinimum": 42,
+      "redMinusGreenMinimum": 8,
+      "greenMinusBlueMinimum": 6,
+      "redMinusBlueMinimum": 28,
+      "metallicMinimum": 88
+    },
+    "edgeExpansionPixels": 3,
+    "edgeBlurRadiusPixels": 1.15,
+    "guardrail": "This mask does not use metallic pixels alone. Geometry-space corner regions are added separately in Blender and the combined result must pass PBR, clay, mask, and transmission review."
+  },
+  "inputs": [
+    {
+      "role": "base_color",
+      "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-base_color.png",
+      "sha256": "c887dbe9d154df63360357af6ef9a84762e501cfff4ad0eef18493a841292187"
+    },
+    {
+      "role": "metallic",
+      "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-metallic.png",
+      "sha256": "ef50939b6b7e6907796ff3dd71165b22d21d0ab866b9a12c4bdaf4a0526b4738"
+    }
+  ],
+  "output": {
+    "file": "source-assets/production/rose-quartz-crackle-fast/rose-gold-mask-v1.png",
+    "bytes": 2735469,
+    "sha256": "86f4a82802d3f9d1ae060be05fb224aab5966cf261d0580ea9220b6ee30c237a",
+    "dimensions": [
+      8192,
+      8192
+    ],
+    "selectedPixelsBeforeEdgeExpansion": 18543131,
+    "selectedFractionBeforeEdgeExpansion": 0.276314184,
+    "colorCandidateFraction": 0.792428747,
+    "metallicCandidateFraction": 0.281333387
+  },
+  "proofs": [
+    "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/gold-mask-atlas.png",
+    "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/gold-mask-overlay.png"
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "schema": "cloudway-rose-crackle-semantic-candidate-audit/v1",
+  "assetId": "rose-quartz-crackle-fast",
+  "status": "reopen audit passed; visual and runtime acceptance remain pending",
+  "candidateBlend": {
+    "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-semantic-candidate.blend",
+    "bytes": 147845660,
+    "sha256": "466bf34ff8331b89a56f3108ca52147b3bbd07b286c80bf785eef1996b187ed2",
+    "reopened": true
+  },
+  "sourceIntegrity": {
+    "denseMasterSha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+    "denseMasterUnchanged": true,
+    "semanticMaskSha256": "86f4a82802d3f9d1ae060be05fb224aab5966cf261d0580ea9220b6ee30c237a",
+    "decimation": false,
+    "newCapsOnDenseSource": 0
+  },
+  "runtimeContract": {
+    "platformAdapterMetadataPresent": false,
+    "candidateRuntimeBindingPresent": false,
+    "acceptanceRequired": true
+  },
+  "roles": {
+    "crystalBody": {
+      "object": "RoseCrystalBody",
+      "role": "closed-crystal-body",
+      "mesh": "RoseCrystalBodyGeometry",
+      "material": "RoseCrystalAndFramework_CompositeReview",
+      "hiddenRenderAtRest": false,
+      "hiddenViewportAtRest": false,
+      "topology": {
+        "vertices": 259335,
+        "edges": 778113,
+        "polygons": 518742,
+        "triangles": 518742,
+        "edgeFaceIncidence": {
+          "2": 778113
+        },
+        "orientationMismatches": 0,
+        "closedOrientedTwoManifold": true,
+        "finitePositions": true
+      },
+      "cornerSemanticFaces": 161430
+    },
+    "goldFramework": {
+      "object": "RoseGoldFramework",
+      "role": "persistent-gold-framework",
+      "mesh": "RoseCrystalBodyGeometry",
+      "material": "RoseGoldFramework_ProviderPBR",
+      "hiddenRenderAtRest": true,
+      "hiddenViewportAtRest": false
+    },
+    "contactPlane": {
+      "object": "RoseContactPlane",
+      "role": "walkable-contact-plane",
+      "mesh": "RoseContactPlaneGeometry",
+      "hiddenRenderAtRest": true,
+      "hiddenViewportAtRest": true,
+      "dimensionsMetres": [
+        1.6399999856948853,
+        1.6399999856948853
+      ],
+      "topBlenderZ": 0.0,
+      "finitePositions": true
+    },
+    "shards": {
+      "root": "RoseShardCandidate",
+      "count": 12,
+      "names": [
+        "RoseCrystalShard_00",
+        "RoseCrystalShard_01",
+        "RoseCrystalShard_02",
+        "RoseCrystalShard_03",
+        "RoseCrystalShard_04",
+        "RoseCrystalShard_05",
+        "RoseCrystalShard_06",
+        "RoseCrystalShard_07",
+        "RoseCrystalShard_08",
+        "RoseCrystalShard_09",
+        "RoseCrystalShard_10",
+        "RoseCrystalShard_11"
+      ],
+      "allClosedOrientedTwoManifold": true,
+      "boundsBlenderXYZ": {
+        "min": [
+          -0.8199999928474426,
+          -0.8199999928474426,
+          -0.24400000274181366
+        ],
+        "max": [
+          0.8199999928474426,
+          0.8199999928474426,
+          -0.004000000189989805
+        ]
+      },
+      "totalVertices": 120,
+      "totalTriangles": 192,
+      "sourceGeometry": "new authored Voronoi prisms"
+    }
+  },
+  "materials": {
+    "semanticMaskImage": "rose-quartz-crackle-fast__gold_semantic_mask_v1",
+    "semanticMaskPacked": true,
+    "semanticMaskDimensions": [
+      8192,
+      8192
+    ],
+    "restCompositeAvoidsCoplanarRoleSurfaces": true,
+    "metallicTextureUsedAsSoleClassifier": false,
+    "providerRoughnessAppliedToTransmissiveCrystal": false
+  },
+  "proofs": [
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/provider-pbr-game-camera.png",
+      "sha256": "1a02d3019c6c8bf751bb2ffbb0edd59ed19f9bc122b7bfdcaa65739b99066d22",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/provider-clay-game-camera.png",
+      "sha256": "0e977f868fba893a0482d684784bed20e3f3772489d93b65de8a93c498bf9567",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/candidate-pbr-game-camera.png",
+      "sha256": "92611537658a7964f6fdae715f11c0e97f8ca5a575637eaf5c3ac3ddb2b19993",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/candidate-clay-game-camera.png",
+      "sha256": "2469679a65d21ef2df4d21f432ba309c4d6d1919f9cf3a276537e079f528200b",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/semantic-mask-game-camera.png",
+      "sha256": "c47a5f6fa468ca71b93cbb58361c3a462f70951fe52b3f922a5a937abfc0eab1",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/candidate-beauty-game-camera.png",
+      "sha256": "eba6eb1ae6ff28de9ba3e79be2dbc10703f67affead15b041744d5d09e0a1eeb",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/provider-pbr-close.png",
+      "sha256": "9863e28dd0f536f634a539ff31c82e7410f5574f13cc83408404fa7f4928b489",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/provider-clay-close.png",
+      "sha256": "dff8865b9dba4d3d7315bc7e6c4fc83c99396fb7d16dbe3de84223ede20f8327",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/candidate-pbr-close.png",
+      "sha256": "45e89a9515917ffc079bc1976795affdff0bb20a0868dfbc138538c5da99b9b3",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/candidate-clay-close.png",
+      "sha256": "467f152f36b2f154960748d712ab7e3b776e51a057f4ec36b596940a7e3a3c2c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/semantic-mask-close.png",
+      "sha256": "cd94a3499f87154141ba2b1c18bb830aed393faf63fc6d9699708dc3356a1014",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/candidate-beauty-close.png",
+      "sha256": "5fd78c32e410e0f70f1c3ea6c734e04dcc878346ce29ea02e4367a7ac6352930",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/semantic-candidate/candidate-shards-exploded-game-camera.png",
+      "sha256": "dbecc5e76b9e2e3f3cb27169f108e3f31b31edbd7bb90df3cb2c5cc2ed2f6089",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ]
+}

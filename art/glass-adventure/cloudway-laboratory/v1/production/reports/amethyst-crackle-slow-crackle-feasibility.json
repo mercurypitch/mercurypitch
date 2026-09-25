@@ -1,0 +1,207 @@
+{
+  "schema": "cloudway-crackle-donor-feasibility/v1",
+  "assetId": "amethyst-crackle-slow",
+  "status": "read-only donor audit; no semantic derivative accepted",
+  "scope": {
+    "master": "source-assets/blender/amethyst-crackle-slow/amethyst-crackle-slow-dense-master.blend",
+    "masterSha256": "bde6370fb1847686336d81b3c9073f535b9cd9a89ca8e130f0f1bd40a45a67a0",
+    "masterBytes": 171247689,
+    "sourceTopologyMutation": false,
+    "semanticDerivativeWritten": false
+  },
+  "geometry": {
+    "vertices": 787132,
+    "triangles": 1433588,
+    "boundsMetresBlenderZUp": {
+      "min": [
+        -0.849999995,
+        -0.58901367,
+        -0.267587874
+      ],
+      "max": [
+        0.849999995,
+        0.58901367,
+        0.018793795
+      ],
+      "dimensions": [
+        1.699999989,
+        1.178027339,
+        0.286381668
+      ]
+    },
+    "reportedLooseConnectivity": {
+      "count": 3244,
+      "largestVertexCounts": [
+        5462,
+        4099,
+        3405,
+        3029,
+        3011,
+        2644,
+        2613,
+        2575,
+        2571,
+        2562,
+        2479,
+        2327
+      ],
+      "largestVertexFractions": [
+        0.006939116,
+        0.005207513,
+        0.004325831,
+        0.003848147,
+        0.00382528,
+        0.00335903,
+        0.003319647,
+        0.00327137,
+        0.003266288,
+        0.003254854,
+        0.003149408,
+        0.002956302
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "sourceIndexTopology": {
+      "uniqueEdges": 2217476,
+      "boundaryEdges": 134188,
+      "twoFaceEdges": 2083288,
+      "nonManifoldEdges": 0,
+      "inconsistentTwoFaceOrientationEdges": 0,
+      "maximumFaceIncidence": 2,
+      "collapsedTriangleEdges": 0,
+      "closedOrientedTwoManifold": false
+    },
+    "exactPositionWeldAudit": {
+      "method": "Exact float32 position welding only. It reconnects duplicated UV/normal seams without merging merely nearby authored geometry.",
+      "sourceVertices": 787132,
+      "uniquePositionVertices": 716088,
+      "duplicatedPositionVertices": 71044,
+      "largestCoincidentVertexMultiplicity": 7,
+      "trianglesCollapsedByExactWeld": 0,
+      "edgeIncidence": {
+        "uniqueEdges": 2150382,
+        "boundaryEdges": 0,
+        "twoFaceEdges": 2150382,
+        "nonManifoldEdges": 0,
+        "inconsistentTwoFaceOrientationEdges": 0,
+        "maximumFaceIncidence": 2,
+        "collapsedTriangleEdges": 0,
+        "closedOrientedTwoManifold": true
+      },
+      "connectedComponents": {
+        "count": 1,
+        "largestVertexCounts": [
+          716088
+        ],
+        "largestVertexFractions": [
+          1.0
+        ],
+        "interpretation": "Exact-position connectivity can disprove UV-chart fragmentation, but does not assign crystal or gold semantics."
+      }
+    }
+  },
+  "surface": {
+    "materialContract": {
+      "slotCount": 1,
+      "materials": [
+        {
+          "name": "amethyst-crackle-slow__provider_full_pbr",
+          "surfaceRenderMethod": "DITHERED",
+          "sourceAppearance": "provider opaque PBR",
+          "glassTransmissionAuthored": false
+        }
+      ],
+      "faceMaterialIndices": [
+        0
+      ],
+      "uvLayers": [
+        "UVMap"
+      ],
+      "semanticMaterialSlotsPresent": false,
+      "interpretation": "The provider's single opaque PBR slot spans crystal and gold. Metallic pixels and UV or connectivity islands are not semantic role evidence."
+    },
+    "reportedContactCandidate": {
+      "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+      "rawBoundsBlenderZUp": {
+        "min": [
+          -0.952374995,
+          -0.659124017,
+          -0.161331996
+        ],
+        "max": [
+          0.95164001,
+          0.660277009,
+          0.159418002
+        ]
+      },
+      "rawDimensionsBlenderZUp": [
+        1.904015005,
+        1.319401026,
+        0.320749998
+      ],
+      "landingRawZ": 0.138368783,
+      "heightToleranceRaw": 0.002505859,
+      "patchTriangles": 169348,
+      "patchAreaRawSquareUnits": 1.819959,
+      "patchBoundsRaw": {
+        "min": [
+          -0.937182009,
+          -0.640509009,
+          0.132826
+        ],
+        "max": [
+          0.93750602,
+          0.644311011,
+          0.147765994
+        ]
+      },
+      "patchDimensionsRaw": [
+        1.874688029,
+        1.28482002,
+        0.014939994
+      ],
+      "horizontalCoverage": [
+        0.984597298,
+        0.973790375
+      ],
+      "relativePatchHeightSpread": 0.046578312,
+      "broadCandidate": true,
+      "flatCandidate": false,
+      "screeningStatus": "needs-review",
+      "landingReviewZMetres": 0.0,
+      "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+    },
+    "verticalRayAudit": {
+      "method": "A 31x31 vertical-ray grid over the inset 86% of the source XY bounds. Top offsets include raised ornament and are not a collider definition.",
+      "samples": 961,
+      "topHits": 961,
+      "topCoverage": 1.0,
+      "misses": 0,
+      "pairedTopBottomHits": 961,
+      "unpairedTopHits": 0,
+      "topOffsetFromLandingPlaneMillimetres": {
+        "min": -12.488566,
+        "p05": -5.939715,
+        "median": -0.202417,
+        "p95": 1.670934,
+        "max": 2.34548
+      },
+      "topHitsWithin2mmOfLandingPlaneFraction": 0.901145,
+      "topHitsWithin5mmOfLandingPlaneFraction": 0.941727,
+      "visualThicknessMillimetres": {
+        "min": 228.245482,
+        "p05": 239.141494,
+        "median": 246.144459,
+        "p95": 250.076123,
+        "max": 250.739269
+      }
+    }
+  },
+  "semanticReadiness": {
+    "crystalBodyRole": "missing",
+    "goldClaspRole": "missing",
+    "authoredClosedShards": "missing",
+    "safeAutomaticClassification": false,
+    "blockingReason": "Crystal, gold framework, and ornament share one opaque material and one unlabeled mesh. Authored semantic face regions and closed shard volumes are required before runtime material or fracture binding."
+  }
+}
