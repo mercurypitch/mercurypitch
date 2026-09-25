@@ -1388,6 +1388,13 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 If local and CI counts differ, compare the exact tested merge revision with the feature head: newly landed main tests are included by CI even before a local rebase. An absence query can assert its null result explicitly instead of being mislabeled by the collector as a presence-only document-membership assertion.
 **See:** `scripts/code-metrics.mjs:testShapeMetrics`, `packages/glass-game/src/ui/voice-challenge.test.ts`.
 
+### Isolate every renderable mesh in Blender comparison proofs
+
+**Symptom:** both the original crystal and its replacement showed polygonal holes, while intact glass looked rough and opaque.
+**Cause:** hiding fracture parent empties left their assembled mesh children visible through source and intact comparison renders.
+**Rule:** apply an explicit renderable-mesh allowlist for each view and save that inventory with the proof. Do not infer child visibility from a hidden parent or change materials until the isolated source comparison is clean.
+**See:** `art/glass-adventure/cloudway-laboratory/v1/production/rose_crackle_runtime_visuals.py`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
