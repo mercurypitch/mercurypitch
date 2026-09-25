@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "amethyst-hourglass",
   "operation": "image-to-3d",
-  "state": "in-progress",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/amethyst-hourglass.png",
     "sha256": "d5a1e296d1cb2c95a62cb230c04b9c76055967681fe4693a4a9162dcb9613e27",
@@ -47,30 +47,161 @@
     "actualSourceOfTruth": "provider consumed_credits"
   },
   "authorization": {
-    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "source": "Owner explicitly authorized the 20-asset batch and credits; after the provider returned a zero-credit server error, root explicitly authorized one bounded retry in this collaboration",
     "asserted": true,
-    "appliedAtUtc": "2026-09-25T12:54:34.847759+00:00"
+    "retryOfTaskId": "01a0d8a1-c4ba-7561-b032-ab77ad07d29c",
+    "retryLimit": 1,
+    "appliedAtUtc": "2026-09-25T13:20:29.696833+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
-  "balanceBefore": 3165,
-  "submissionStartedAtUtc": "2026-09-25T12:54:34.847769+00:00",
-  "taskId": "01a0d8a1-c4ba-7561-b032-ab77ad07d29c",
-  "submittedAtUtc": "2026-09-25T12:54:38.721685+00:00",
-  "balanceAfterSubmit": 3125,
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 2925,
+  "submissionStartedAtUtc": "2026-09-25T13:20:29.696847+00:00",
+  "taskId": "01a0d8b9-7e68-7748-bb74-e2a4c00b3fd9",
+  "submittedAtUtc": "2026-09-25T13:20:32.144367+00:00",
+  "balanceAfterSubmit": 2885,
   "observedBalanceDeltaAtSubmit": 40,
   "lastStatus": {
-    "id": "01a0d8a1-c4ba-7561-b032-ab77ad07d29c",
+    "id": "01a0d8b9-7e68-7748-bb74-e2a4c00b3fd9",
     "type": "image-to-3d",
-    "status": "IN_PROGRESS",
-    "progress": 67,
-    "created_at": 1790340878553,
-    "started_at": 1790340878561,
-    "finished_at": 0,
-    "expires_at": 0,
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790342431929,
+    "started_at": 1790342431935,
+    "finished_at": 1790342797890,
+    "expires_at": 1790601997890,
     "consumed_credits": 40,
     "geometry_resolution": "4k"
   },
-  "lastCheckedAtUtc": "2026-09-25T12:57:38.708354+00:00"
+  "lastCheckedAtUtc": "2026-09-25T13:26:58.513474+00:00",
+  "finalStatus": {
+    "id": "01a0d8b9-7e68-7748-bb74-e2a4c00b3fd9",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790342431929,
+    "started_at": 1790342431935,
+    "finished_at": 1790342797890,
+    "expires_at": 1790601997890,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/amethyst-hourglass/dense-donor.glb",
+      "bytes": 51698892,
+      "sha256": "1742ebe03267bd4c142bf7da537894cf7b24d9f297981b3c53a7dfa449dfb662",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 218634,
+      "triangles": 392452
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-base_color.png",
+        "bytes": 58274155,
+        "sha256": "da8daae98d564e81dddcd969ce6dc6ffcd7310a829017d101e890fce2421d9e1",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-metallic.png",
+        "bytes": 6564764,
+        "sha256": "84a40b3a9e82ea668e68e0aaaf77b328fceb33b04f0968d93cdfc97f767a392c",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-normal.png",
+        "bytes": 11680104,
+        "sha256": "59609fe2deb940caa6520b8b12378a3712a0b836ec61fba0db10f19eeb36cc13",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-hourglass/textures/set-0-roughness.png",
+        "bytes": 3506428,
+        "sha256": "51734b3bc4b5f8c8d82d89ef97e9b0c122fca78f7b7878696ef73891e97b59e0",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/amethyst-hourglass/preview.png",
+      "bytes": 167291,
+      "sha256": "d537abc32c6f4c29cd4ecb03f8aa7e1740fb1730ad18ff197cd2124448f7032e",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T13:27:06.473174+00:00",
+  "balanceAfterArchive": 2885,
+  "observedBalanceDeltaFinal": 40,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T13:27:07.291994+00:00"
 }
