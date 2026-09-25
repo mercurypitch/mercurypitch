@@ -116,3 +116,6 @@ public/marketing/
 /voice-type-test.html
 /vocal-remover.html
 /which-singer-has-my-vocal-range.html
+
+# Private local authoring tool; the app consumes authored level data only.
+/art/glass-adventure/level-studio/v1

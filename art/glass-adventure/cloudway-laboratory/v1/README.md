@@ -1,8 +1,29 @@
 # Cloudway laboratory kit
 
-[Open visual catalogue](review.html) · [Task list](TASKS.md) · [Blender review](BLENDER-REVIEW.md) · [Integration spec](INTEGRATION-SPEC.md) · [Level studio](../../level-studio/v1/index.html)
+[Open visual catalogue](review.html) · [Task list](TASKS.md) · [Blender review](BLENDER-REVIEW.md) · [Integration spec](INTEGRATION-SPEC.md)
 
 20 distinct single-object references were generated with the built-in ChatGPT image tool and visually inspected. `catalogue.json` retains every final prompt, output path and SHA-256. References are source art, not game models.
+
+## Local review and authoring
+
+The level studio is a separate private tool at
+`<user-dotfiles>/besidecue/glass-adventure/tools/cloudway-level-studio/v1`.
+It is not part of this public checkout or the application build. An optional
+ignored symlink at `art/glass-adventure/level-studio/v1` preserves the owner's
+existing local review URL and browser drafts. The studio exports bounded JSON
+design specifications; the game consumes deliberately authored level data.
+
+The catalogue's `vite.config.mjs` serves this review tree without HMR or watching.
+Its explicit filesystem roots allow the creative source mount and optional
+private studio only; set `CLOUDWAY_ASSET_ROOT` or `CLOUDWAY_STUDIO_ROOT` when
+those locations differ. From an absolute checkout path stored in `GLASS_REPO`:
+
+```sh
+rtk proxy timeout 18000 "$GLASS_REPO/node_modules/.bin/vite" "$GLASS_REPO" --config "$GLASS_REPO/art/glass-adventure/cloudway-laboratory/v1/vite.config.mjs" --host 0.0.0.0 --port 5633 --strictPort
+```
+
+Open `/art/glass-adventure/cloudway-laboratory/v1/review.html`. The process stops
+after five hours, terminal closure or Ctrl+C; an occupied port fails explicitly.
 
 ## Provider production
 

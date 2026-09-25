@@ -14,6 +14,8 @@ Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a secon
 - [x] Two-row message queue; actual path-open events only; mobile/tablet/desktop proof. Includes modal/pause/tutorial visibility review.
 - [x] Review and push bug fixes to #861 (`a9544afb`, pushed 25 September 2026), including accessibility-contract and module-size CI repairs. All CI checks including PR Gate passed.
 - [x] Browser level studio: grid placement, transforms, undo, validation, JSON export/import and local drafts. Four real mouse/touch/import/geometry browser cases pass; source and proofs reviewed.
+- [x] Move the level studio into private dotfiles at the owner's request; preserve the local alias/drafts and verify all four browser cases from its standalone location. Only authored level data belongs in the application.
+- [ ] Later: audition configurable branching crystal interiors, travelling light and lava-lamp motion. Private planning brief: `<user-dotfiles>/besidecue/glass-adventure/CRYSTAL-INTERIOR-EFFECTS.md`. Keep this independent of the current course delivery.
 - [x] Generate and inspect 10 platform reference images (catalogue tracks each).
 - [x] Generate and inspect 10 object reference images.
 - [x] Twenty dense Meshy originals archived and independently rehashed: requested 7.1 / 4K geometry / 8K texture / PBR / no remesh. Returned 4K geometry, 8K color and 4K auxiliary maps; provider does not echo its model ID. 800 credits total, final balance 2,885.
@@ -44,7 +46,7 @@ No blanket decimation to hit a polygon number. Provider completion means donor a
 
 ## Remote checkpoint
 
-Draft PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains the editor, scroll simulation, reference catalogue, production recipes and receipt mirrors. It is stacked on the open #861 fixes; neither PR has merge approval in this batch. Current playtest art is not replaced by these unaccepted donors.
+Draft PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains scroll simulation, reference catalogue, production recipes and receipt mirrors. The editor was moved into private dotfiles at the owner's request. This PR is stacked on the open #861 fixes; neither PR has merge approval in this batch. Current playtest art is not replaced by these unaccepted donors.
 
 ## Source-quality checkpoint
 
