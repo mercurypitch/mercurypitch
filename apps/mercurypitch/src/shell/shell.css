@@ -601,8 +601,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-left)) 4px
-    max(12px, var(--safe-right));
+  padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-right)) 4px
+    max(12px, var(--safe-left));
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
