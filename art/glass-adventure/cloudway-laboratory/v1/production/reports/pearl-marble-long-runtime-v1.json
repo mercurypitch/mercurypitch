@@ -1,8 +1,16 @@
 {
   "schema": 1,
   "assetId": "pearl-marble-long",
-  "status": "runtime export prepared; live-render acceptance pending",
+  "status": "accepted for Crystal Promenade first-slice rendering; device performance validation pending",
   "scope": "Dense topology is preserved. Runtime textures are bounded derivatives; archived full maps and packed master remain unchanged.",
+  "acceptance": {
+    "decision": "accepted for the compact first-slice arrival, approach, catch and exit rests",
+    "proofs": [
+      "source-assets/proofs/runtime/crystal-promenade-first-slice/2026-09-25-a60d0a23/browser-proof.json",
+      "source-assets/proofs/runtime/crystal-promenade-first-slice/2026-09-25-final-pair/accepted-pair-route.png"
+    ],
+    "scope": "Actual GLTFLoader, Meshopt and WebGL course renders matched the reviewed Pearl derivative and placement. The software-renderer captures prove visual integration only; device performance remains a separate crossing check."
+  },
   "source": {
     "denseMaster": "source-assets/blender/pearl-marble-long/pearl-marble-long-dense-master.blend",
     "denseMasterSha256": "d8f879a18ca1b3483d94a15fdaee4c15ddce24c99790810aa5db682857af18e2",

@@ -77,6 +77,10 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
     'cloudway-laboratory-v1/pearl-marble-long/pearl-marble-long-runtime-v1.glb',
   'gilt-scroll-bridge-runtime-v1':
     'cloudway-laboratory-v1/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.glb',
+  'cloudway-lab-rose-crackle-v1':
+    'cloudway-laboratory-v1/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-v1.glb',
+  'cloudway-lab-amethyst-crackle-v1':
+    'cloudway-laboratory-v1/amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1.glb',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',

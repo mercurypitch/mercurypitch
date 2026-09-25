@@ -377,12 +377,14 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
     outline: false,
     suspendedHull: false,
   },
-  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.rosePending]: {
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseCrackle]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle,
     body: 'glass',
     outline: false,
     suspendedHull: false,
   },
-  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystPending]: {
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystCrackle]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle,
     body: 'glass',
     outline: false,
     suspendedHull: false,

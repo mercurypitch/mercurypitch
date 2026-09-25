@@ -1,4 +1,4 @@
-// Cloudway laboratory renderer tests — accepted dense donors install together while pending art keeps its gameplay fallback.
+// Cloudway laboratory renderer tests — accepted dense donors install together or retain the complete gameplay fallback.
 
 import type { InstancedMesh as InstancedMeshType, Mesh as MeshType, } from 'three'
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
@@ -7,7 +7,7 @@ import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STU
 import type { LevelDefinition } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
-import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_ROOT_NAMES, } from './cloudway-laboratory-catalog'
+import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_ROOT_NAMES, } from './cloudway-laboratory-catalog'
 import { createCloudwayLaboratoryPlatformRenderer } from './cloudway-laboratory-platforms'
 import { disposeMaterials, disposeObject } from './dispose'
 import { createMaterialLibrary } from './material-library'
@@ -163,6 +163,112 @@ function scrollDonor(): Group {
   return source
 }
 
+function crackleDonor(key: 'roseCrackle' | 'amethystCrackle'): Group {
+  const isRose = key === 'roseCrackle'
+  const source = new Group()
+  source.name = CLOUDWAY_LAB_ROOT_NAMES[key]
+  const width = 1.64
+  const depth = isRose ? 1.64 : 1.1
+  const height = isRose ? 0.24 : 0.25
+  const materialKinds = isRose
+    ? {
+        CloudwayLab_RoseQuartz__glass: 'glass',
+        CloudwayLab_RoseQuartz__framework: 'opaque',
+        CloudwayLab_RoseQuartz__internal_detail: 'opaque',
+        CloudwayLab_RoseQuartz__corner_provider_pbr: 'opaque',
+        CloudwayLab_RoseQuartz__ivory: 'opaque',
+      }
+    : {
+        CloudwayLab_Amethyst__glass: 'glass',
+        CloudwayLab_Amethyst__framework: 'opaque',
+        CloudwayLab_Amethyst__internal_detail: 'opaque',
+        CloudwayLab_Amethyst__corner_provider_pbr: 'opaque',
+        CloudwayLab_Amethyst__luminous_accent: 'opaque',
+      }
+  const authoredMaterials = new Map(
+    Object.entries(materialKinds).map(([name, kind]) => {
+      const material =
+        kind === 'glass'
+          ? new MeshPhysicalMaterial({
+              metalness: 0,
+              roughness: 0.1,
+              transmission: 0.8,
+            })
+          : new MeshStandardMaterial({ metalness: 0.5, roughness: 0.35 })
+      material.name = name
+      return [name, material]
+    }),
+  )
+  const materialNames = [...authoredMaterials.keys()]
+  const addMesh = (owner: Group, name: string, materialName: string) => {
+    const mesh = new Mesh(
+      new BoxGeometry(0.2, height, 0.2),
+      authoredMaterials.get(materialName)!,
+    )
+    mesh.name = name
+    mesh.position.y = -height / 2
+    owner.add(mesh)
+  }
+  const prefix = source.name
+  const persistent = new Group()
+  persistent.name = `${prefix}__persistent`
+  for (let index = 2; index < materialNames.length; index++)
+    addMesh(
+      persistent,
+      `${prefix}PersistentMesh${index}`,
+      materialNames[index]!,
+    )
+  source.add(persistent)
+  const intact = new Group()
+  intact.name = `${prefix}__intact`
+  addMesh(intact, `${prefix}IntactGlass`, materialNames[0]!)
+  addMesh(intact, `${prefix}IntactDetail`, materialNames[1]!)
+  source.add(intact)
+  const contact = new Group()
+  contact.name = `${prefix}__contact`
+  addMesh(contact, `${prefix}Contact`, materialNames[1]!)
+  source.add(contact)
+  const shardNames: string[] = []
+  for (let index = 0; index < 18; index++) {
+    const shard = new Group()
+    shard.name = `${prefix}__shard_${String(index).padStart(3, '0')}`
+    shard.position.set((index % 6) * 0.02, 0, Math.floor(index / 6) * 0.02)
+    addMesh(shard, `${prefix}ShardMesh${index}`, materialNames[0]!)
+    source.add(shard)
+    shardNames.push(shard.name)
+  }
+  source.userData.platform_adapter_json = JSON.stringify({
+    version: 1,
+    coordinates: {
+      upAxis: '+Y',
+      units: 'metres',
+      origin: 'top-centre-of-fully-extended-support',
+    },
+    support: { state: 'intact', topY: 0, width, depth },
+    motion: {
+      kind: 'crackle',
+      roles: {
+        persistent: [persistent.name],
+        intactGlass: intact.name,
+        contact: contact.name,
+        shards: shardNames,
+      },
+      materials: Object.fromEntries(
+        materialNames.map((name, index) => [`region${index}`, name]),
+      ),
+    },
+  })
+  source.userData.collider_json = JSON.stringify({
+    shape: 'box',
+    width,
+    depth,
+    height,
+    topY: 0,
+    center: [0, -height / 2, 0],
+  })
+  return source
+}
+
 function allMeshes(root: Group): MeshType[] {
   const result: MeshType[] = []
   root.traverse((object) => {
@@ -184,7 +290,7 @@ function disposeTestScene(
 }
 
 describe('Cloudway laboratory platform renderer', () => {
-  it('declares only the two accepted runtime bundles for the first slice', () => {
+  it('declares the four accepted runtime bundles for the first slice', () => {
     const plan = createMuseumAssetLoadPlan(CLOUDWAY_CRYSTAL_PROMENADE_STUDY)
     for (const bundle of Object.values(CLOUDWAY_LAB_BUNDLE_IDS)) {
       expect(plan.bundles.filter((id) => id === bundle)).toEqual([bundle])
@@ -192,10 +298,10 @@ describe('Cloudway laboratory platform renderer', () => {
         `bundle:${bundle}`,
       ])
     }
-    expect(plan.bundles).toHaveLength(2)
+    expect(plan.bundles).toHaveLength(4)
   })
 
-  it('commits accepted donors together, instances repeated rests and preserves pending fallbacks', () => {
+  it('commits accepted donors together and instances repeated rests', () => {
     const level = CLOUDWAY_CRYSTAL_PROMENADE_STUDY
     const palette = materials()
     const library = createMaterialLibrary()
@@ -211,10 +317,15 @@ describe('Cloudway laboratory platform renderer', () => {
     )
     const pearl = pearlDonor()
     const scroll = scrollDonor()
+    const rose = crackleDonor('roseCrackle')
+    const amethyst = crackleDonor('amethystCrackle')
 
     renderer.install(pearl, CLOUDWAY_LAB_BUNDLE_IDS.pearlRest)
     expect(floorById.get('scroll-approach')?.children).toHaveLength(1)
     renderer.install(scroll, CLOUDWAY_LAB_BUNDLE_IDS.scroll)
+    renderer.install(rose, CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle)
+    expect(floorById.get('scroll-deck')?.children).toHaveLength(1)
+    renderer.install(amethyst, CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle)
     const snapshot = createGlassGame(level).snapshot()
     renderer.update(snapshot)
 
@@ -226,14 +337,20 @@ describe('Cloudway laboratory platform renderer', () => {
       'scroll-approach',
       'scroll-deck',
       'scroll-catch',
+      'rose-step',
+      'amethyst-step',
       'final-catch',
     ])
       expect(floorById.get(id)?.children).toHaveLength(0)
-    for (const id of ['rose-step', 'amethyst-step'])
-      expect(floorById.get(id)?.children).toHaveLength(1)
 
     const installed = scene.getObjectByName('cloudway-laboratory-platform-art')
     expect(installed?.visible).toBe(true)
+    expect(installed?.getObjectByName('rose-step__crackle-art')?.visible).toBe(
+      true,
+    )
+    expect(
+      installed?.getObjectByName('amethyst-step__crackle-art')?.visible,
+    ).toBe(true)
     const batches: InstancedMeshType[] = []
     installed?.traverse((object) => {
       if (object instanceof InstancedMesh) batches.push(object)
@@ -275,7 +392,7 @@ describe('Cloudway laboratory platform renderer', () => {
     expect(batches[0]!.instanceMatrix.version).toBe(matrixVersion + 1)
 
     renderer.dispose()
-    disposeTestScene(scene, [pearl, scroll], palette, library)
+    disposeTestScene(scene, [pearl, scroll, rose, amethyst], palette, library)
   })
 
   it('keeps every accepted-family fallback when the scroll donor is invalid', () => {
@@ -300,10 +417,7 @@ describe('Cloudway laboratory platform renderer', () => {
       renderer.install(scroll, CLOUDWAY_LAB_BUNDLE_IDS.scroll),
     ).toThrow('ScrollDeckGeometry')
     for (const platform of level.platforms)
-      if (
-        platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest ||
-        platform.renderId === CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll
-      )
+      if (platform.renderId !== undefined)
         expect(floorById.get(platform.id)?.children).toHaveLength(1)
 
     renderer.dispose()
