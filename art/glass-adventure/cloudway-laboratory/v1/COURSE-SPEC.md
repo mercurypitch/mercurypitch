@@ -49,7 +49,7 @@ At the time of this specification, the 20 image references are complete. Meshy a
 
 ## Editable study review
 
-The 27-piece study passes the studio schema and top-view checks with zero warnings. One informational separation describes the raft crossing: the authored moving platform spans it during its travel. This is not a simulation pass. A desktop import/fit screenshot is archived in `source-assets/proofs/course-design-2026-09-25/crystal-promenade-top-view.png`.
+The 27-piece study passes the studio schema and top-view checks with zero warnings. One informational separation describes the raft crossing: the authored moving platform spans it during its travel. This was a top-view check; the subsequent simulation result is recorded below. A desktop import/fit screenshot is archived in `source-assets/proofs/course-design-2026-09-25/crystal-promenade-top-view.png`.
 
 - The moonstone cross is three adjacent support rectangles (`garden-centre`, `garden-west`, `garden-east`), preserving its missing corners. They have no individual asset ID: the runtime adapter must render the single cross donor once across the composite.
 - The ivory terrace has three distinct support elevations, 0.16/0.32/0.48 metres. One accepted stair asset must match these exact tread datums; the study does not repeat a full staircase on every tread.
@@ -57,3 +57,11 @@ The 27-piece study passes the studio schema and top-view checks with zero warnin
 - Rose and amethyst have a 0.5-metre edge gap. The approach and catch gaps remain below 0.8 metres in the sketch. These are provisional values requiring actual movement simulation, especially under a diagonal approach and slow touch input.
 - The raft's static drawing is its near position; it travels 1.8 metres toward the terrace dock. The future runtime adapter needs explicit endpoint dwell rather than treating the editor's total duration as an unspecified easing curve.
 - The final exit requires all three named voice targets. The schema records target order but does not implement exit or composite-asset behavior itself.
+
+## Simulation checkpoint — 25 September 2026
+
+`packages/glass-game/src/content/cloudway-laboratory.ts` holds the unregistered mechanical study. Its scoped traversal test completes the bent route at both 30 and 60 updates per second with zero respawns and measured pitch input at all three safe targets. It visits frost, scroll, both timed crystal steps, raft, and all three terrace treads. The reverse journey from an explored finale to the first unbroken vase also passes at both update rates. Recovery from an explored garden preserves the checkpoint without granting unbroken targets or completion. All five focused cases pass.
+
+Every authored void is explicit, including the half-metre crystal-pair gap. The raft waits 1.5 seconds at each endpoint. The current flat-course controller requires a small jump onto each 0.16-metre terrace tread; the proof includes these jumps. This result covers fixed-step simulation, not touch-camera ease, loaded visual alignment, mobile frame rate or accepted art. The final dimensions must be reconciled with each Blender support surface while preserving ornament proportions.
+
+All three study encounters deliberately use a comfortable held note. The editor's configurable 0/4/7 melody remains a musical design proposal; this study does not pretend that relative melody targets or a final sung phrase are integrated. Existing playable courses and campaign progression are unchanged.
