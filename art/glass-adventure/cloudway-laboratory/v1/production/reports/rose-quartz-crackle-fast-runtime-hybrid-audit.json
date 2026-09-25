@@ -1,0 +1,1230 @@
+{
+  "schema": "cloudway-rose-crackle-runtime-hybrid-audit/v1",
+  "assetId": "rose-quartz-crackle-fast",
+  "status": "fresh-open candidate audit passed; visual acceptance and GLB export remain pending",
+  "candidate": {
+    "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-hybrid-candidate.blend",
+    "bytes": 174176717,
+    "sha256": "c176e4dae5e9938c3bb562299b8fe9f14d10dc3b8b522cee31ea9ee2f3a64b0a"
+  },
+  "denseMasterSha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+  "metadata": {
+    "version": 1,
+    "coordinates": {
+      "upAxis": "+Y",
+      "units": "metres",
+      "origin": "top-centre-of-fully-extended-support"
+    },
+    "support": {
+      "state": "intact",
+      "topY": 0,
+      "width": 1.64,
+      "depth": 1.64
+    },
+    "motion": {
+      "kind": "crackle",
+      "roles": {
+        "persistent": [
+          "CloudwayLab_RoseQuartzCrackleFast__persistent"
+        ],
+        "intactGlass": "CloudwayLab_RoseQuartzCrackleFast__intact",
+        "contact": "CloudwayLab_RoseQuartzCrackleFast__contact",
+        "shards": [
+          "CloudwayLab_RoseQuartzCrackleFast__shard_000",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_001",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_002",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_003",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_004",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_005",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_006",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_007",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_008",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_009",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_010",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_011",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_012",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_013",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_014",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_015",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_016",
+          "CloudwayLab_RoseQuartzCrackleFast__shard_017"
+        ]
+      },
+      "materials": {
+        "glass": "CloudwayLab_RoseQuartz__glass",
+        "framework": "CloudwayLab_RoseQuartz__framework",
+        "internalDetail": "CloudwayLab_RoseQuartz__internal_detail",
+        "ivory": "CloudwayLab_RoseQuartz__ivory",
+        "cornerDetail": "CloudwayLab_RoseQuartz__corner_provider_pbr"
+      }
+    }
+  },
+  "collider": {
+    "shape": "box",
+    "width": 1.64,
+    "depth": 1.64,
+    "height": 0.24,
+    "topY": 0,
+    "center": [
+      0,
+      -0.12,
+      0
+    ]
+  },
+  "contact": {
+    "vertices": [
+      [
+        -0.82,
+        -0.82,
+        0.0
+      ],
+      [
+        -0.82,
+        0.82,
+        0.0
+      ],
+      [
+        0.82,
+        -0.82,
+        0.0
+      ],
+      [
+        0.82,
+        0.82,
+        0.0
+      ]
+    ],
+    "rendered": false
+  },
+  "materials": {
+    "persistent": [
+      "CloudwayLab_RoseQuartz__corner_provider_pbr",
+      "CloudwayLab_RoseQuartz__framework",
+      "CloudwayLab_RoseQuartz__ivory"
+    ],
+    "intact": [
+      "CloudwayLab_RoseQuartz__glass",
+      "CloudwayLab_RoseQuartz__internal_detail"
+    ]
+  },
+  "geometry": {
+    "shell": {
+      "vertices": 56,
+      "polygons": 71,
+      "triangles": 108,
+      "uniqueEdges": 125,
+      "boundaryEdges": 0,
+      "nonTwoFaceEdges": 0,
+      "orientationMismatchEdges": 0,
+      "signedVolume": 0.471703550096,
+      "closedOriented": true,
+      "bounds": {
+        "min": [
+          -0.779999971,
+          -0.779999971,
+          -0.200000003
+        ],
+        "max": [
+          0.779999971,
+          0.779999971,
+          -0.003076301
+        ]
+      }
+    },
+    "internalDetail": {
+      "vertices": 277628,
+      "polygons": 518742,
+      "triangles": 518742,
+      "uniqueEdges": 795410,
+      "boundaryEdges": 34594,
+      "nonTwoFaceEdges": 34594,
+      "orientationMismatchEdges": 0,
+      "signedVolume": 0.707953273482,
+      "closedOriented": false,
+      "bounds": {
+        "min": [
+          -0.849023521,
+          -0.850000024,
+          -0.254047483
+        ],
+        "max": [
+          0.849023521,
+          0.850000024,
+          0.006514043
+        ]
+      }
+    },
+    "sourceCornerDetail": {
+      "vertices": 73207,
+      "polygons": 133900,
+      "triangles": 133900,
+      "uniqueEdges": 206830,
+      "boundaryEdges": 11960,
+      "nonTwoFaceEdges": 11960,
+      "orientationMismatchEdges": 0,
+      "signedVolume": 0.085816731929,
+      "closedOriented": false,
+      "bounds": {
+        "min": [
+          -0.852419615,
+          -0.853400052,
+          -0.251047492
+        ],
+        "max": [
+          0.852419615,
+          0.853400052,
+          0.009514042
+        ]
+      }
+    },
+    "shards": [
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_000",
+        "geometry": "RoseRuntimeShardGlass_000",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_000",
+        "assembledTranslationBlenderZUp": [
+          -0.665408432,
+          -0.619669199,
+          -0.133750007
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027500004,
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.022286791969,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.15459156,
+              -0.200330809,
+              -0.106250003
+            ],
+            "max": [
+              0.15459156,
+              0.200330809,
+              0.106250003
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 34021,
+          "polygons": 63078,
+          "triangles": 63078,
+          "uniqueEdges": 96976,
+          "boundaryEdges": 4718,
+          "nonTwoFaceEdges": 4718,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.021432762288,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.183491111,
+              -0.230330825,
+              -0.116504624
+            ],
+            "max": [
+              0.243636549,
+              0.252864659,
+              0.140264049
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_001",
+        "geometry": "RoseRuntimeShardGlass_001",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_001",
+        "assembledTranslationBlenderZUp": [
+          -0.376357496,
+          -0.624724329,
+          -0.134749562
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029499114,
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.025310526999,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.204680592,
+              -0.195275649,
+              -0.105250448
+            ],
+            "max": [
+              0.204680592,
+              0.195275649,
+              0.105250448
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 11715,
+          "polygons": 21706,
+          "triangles": 21706,
+          "uniqueEdges": 33369,
+          "boundaryEdges": 1620,
+          "nonTwoFaceEdges": 1620,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.017718203333,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.234996259,
+              -0.220270872,
+              -0.115539879
+            ],
+            "max": [
+              0.253026575,
+              0.218502849,
+              0.137184486
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_002",
+        "geometry": "RoseRuntimeShardGlass_002",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_002",
+        "assembledTranslationBlenderZUp": [
+          -0.025903122,
+          -0.585481524,
+          -0.135083929
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030167863,
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.030786598158,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.224775717,
+              -0.234518468,
+              -0.104916066
+            ],
+            "max": [
+              0.224775717,
+              0.234518468,
+              0.104916066
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 8233,
+          "polygons": 15508,
+          "triangles": 15508,
+          "uniqueEdges": 23708,
+          "boundaryEdges": 892,
+          "nonTwoFaceEdges": 892,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.019247605056,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.275410801,
+              -0.259175718,
+              -0.115292892
+            ],
+            "max": [
+              0.255858332,
+              0.25711289,
+              0.137583062
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_003",
+        "geometry": "RoseRuntimeShardGlass_003",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_003",
+        "assembledTranslationBlenderZUp": [
+          0.390575349,
+          -0.614004254,
+          -0.133861855
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027723715,
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.029100616292,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.280171275,
+              -0.205995768,
+              -0.10613814
+            ],
+            "max": [
+              0.280171275,
+              0.205995768,
+              0.10613814
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 16488,
+          "polygons": 30843,
+          "triangles": 30843,
+          "uniqueEdges": 47269,
+          "boundaryEdges": 2009,
+          "nonTwoFaceEdges": 2009,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.023636087651,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.317348719,
+              -0.235762119,
+              -0.117476329
+            ],
+            "max": [
+              0.323412776,
+              0.221586138,
+              0.138299763
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_004",
+        "geometry": "RoseRuntimeShardGlass_004",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_004",
+        "assembledTranslationBlenderZUp": [
+          0.609829187,
+          -0.520591617,
+          -0.134341598
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.028683186,
+        "topology": {
+          "vertices": 34,
+          "polygons": 38,
+          "triangles": 64,
+          "uniqueEdges": 70,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.032412061355,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.210170805,
+              -0.299408346,
+              -0.105658412
+            ],
+            "max": [
+              0.210170805,
+              0.299408346,
+              0.105658412
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 35167,
+          "polygons": 65394,
+          "triangles": 65394,
+          "uniqueEdges": 100435,
+          "boundaryEdges": 4688,
+          "nonTwoFaceEdges": 4688,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.031398127347,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.276824951,
+              -0.329348683,
+              -0.115899682
+            ],
+            "max": [
+              0.238634288,
+              0.347294599,
+              0.140827984
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_005",
+        "geometry": "RoseRuntimeShardGlass_005",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_005",
+        "assembledTranslationBlenderZUp": [
+          -0.668827891,
+          -0.223662585,
+          -0.135244131
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030488253,
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.023823062584,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.151172131,
+              -0.21239683,
+              -0.104755878
+            ],
+            "max": [
+              0.151172131,
+              0.21239683,
+              0.104755878
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 15242,
+          "polygons": 28521,
+          "triangles": 28521,
+          "uniqueEdges": 43704,
+          "boundaryEdges": 1845,
+          "nonTwoFaceEdges": 1845,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.016818507772,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.175949752,
+              -0.249471992,
+              -0.115069389
+            ],
+            "max": [
+              0.213767558,
+              0.247785479,
+              0.137758434
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_006",
+        "geometry": "RoseRuntimeShardGlass_006",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_006",
+        "assembledTranslationBlenderZUp": [
+          -0.301652759,
+          -0.241612822,
+          -0.134164065
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.028328136,
+        "topology": {
+          "vertices": 43,
+          "polygons": 50,
+          "triangles": 82,
+          "uniqueEdges": 91,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.032894029816,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.217712596,
+              -0.236381918,
+              -0.10583593
+            ],
+            "max": [
+              0.217712596,
+              0.236381918,
+              0.10583593
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 1783,
+          "polygons": 3171,
+          "triangles": 3171,
+          "uniqueEdges": 4932,
+          "boundaryEdges": 351,
+          "nonTwoFaceEdges": 351,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.013329865948,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.308740526,
+              -0.280479223,
+              -0.115844458
+            ],
+            "max": [
+              0.244627595,
+              0.242489025,
+              0.136621282
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_007",
+        "geometry": "RoseRuntimeShardGlass_007",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_007",
+        "assembledTranslationBlenderZUp": [
+          0.145571589,
+          -0.290875703,
+          -0.133980662
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027961321,
+        "topology": {
+          "vertices": 46,
+          "polygons": 52,
+          "triangles": 88,
+          "uniqueEdges": 96,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.032402680609,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.254086822,
+              -0.234536171,
+              -0.10601934
+            ],
+            "max": [
+              0.254086822,
+              0.234536171,
+              0.10601934
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 2341,
+          "polygons": 4337,
+          "triangles": 4337,
+          "uniqueEdges": 6660,
+          "boundaryEdges": 309,
+          "nonTwoFaceEdges": 309,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.012944264857,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.3001737,
+              -0.261735648,
+              -0.11602962
+            ],
+            "max": [
+              0.32545206,
+              0.25924468,
+              0.136499405
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_008",
+        "geometry": "RoseRuntimeShardGlass_008",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_008",
+        "assembledTranslationBlenderZUp": [
+          0.559125006,
+          -0.15576309,
+          -0.135182366
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030364722,
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.034091486671,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.260874987,
+              -0.247513711,
+              -0.104817644
+            ],
+            "max": [
+              0.260874987,
+              0.247513711,
+              0.104817644
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 6119,
+          "polygons": 11331,
+          "triangles": 11331,
+          "uniqueEdges": 17416,
+          "boundaryEdges": 839,
+          "nonTwoFaceEdges": 839,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.017722254987,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.303359181,
+              -0.25384903,
+              -0.114901051
+            ],
+            "max": [
+              0.284219503,
+              0.266538292,
+              0.137616396
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_009",
+        "geometry": "RoseRuntimeShardGlass_009",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_009",
+        "assembledTranslationBlenderZUp": [
+          -0.603567898,
+          0.154701263,
+          -0.134566486
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029132962,
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.034616578901,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.216432065,
+              -0.233665049,
+              -0.105433524
+            ],
+            "max": [
+              0.216432065,
+              0.233665049,
+              0.105433524
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 9708,
+          "polygons": 17777,
+          "triangles": 17777,
+          "uniqueEdges": 27417,
+          "boundaryEdges": 1503,
+          "nonTwoFaceEdges": 1503,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.020937656766,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.240856588,
+              -0.256950796,
+              -0.11571759
+            ],
+            "max": [
+              0.259400934,
+              0.250784487,
+              0.137054011
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_010",
+        "geometry": "RoseRuntimeShardGlass_010",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_010",
+        "assembledTranslationBlenderZUp": [
+          -0.182056755,
+          0.118805684,
+          -0.133773401
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027546793,
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.036366869026,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.229410022,
+              -0.251027286,
+              -0.106226608
+            ],
+            "max": [
+              0.229410022,
+              0.251027286,
+              0.106226608
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 2636,
+          "polygons": 4964,
+          "triangles": 4964,
+          "uniqueEdges": 7585,
+          "boundaryEdges": 278,
+          "nonTwoFaceEdges": 278,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.014624019524,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.270555556,
+              -0.298019826,
+              -0.116238669
+            ],
+            "max": [
+              0.266846538,
+              0.309609294,
+              0.136292145
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_011",
+        "geometry": "RoseRuntimeShardGlass_011",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_011",
+        "assembledTranslationBlenderZUp": [
+          0.254308611,
+          0.108415246,
+          -0.134917051
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029834099,
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.032265222942,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.231503248,
+              -0.247138202,
+              -0.105082951
+            ],
+            "max": [
+              0.231503248,
+              0.247138202,
+              0.105082951
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 1609,
+          "polygons": 3040,
+          "triangles": 3040,
+          "uniqueEdges": 4637,
+          "boundaryEdges": 154,
+          "nonTwoFaceEdges": 154,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.012932465159,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.260858476,
+              -0.310464084,
+              -0.115095913
+            ],
+            "max": [
+              0.241745353,
+              0.300272107,
+              0.137394771
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_012",
+        "geometry": "RoseRuntimeShardGlass_012",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_012",
+        "assembledTranslationBlenderZUp": [
+          0.63600117,
+          0.207985416,
+          -0.134949058
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029898122,
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.02668329772,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.183998823,
+              -0.241588041,
+              -0.105050936
+            ],
+            "max": [
+              0.183998823,
+              0.241588041,
+              0.105050936
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 12601,
+          "polygons": 23570,
+          "triangles": 23570,
+          "uniqueEdges": 36122,
+          "boundaryEdges": 1534,
+          "nonTwoFaceEdges": 1534,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.019446731797,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.204876006,
+              -0.281269103,
+              -0.115419716
+            ],
+            "max": [
+              0.208477676,
+              0.263436854,
+              0.137374178
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_013",
+        "geometry": "RoseRuntimeShardGlass_013",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_013",
+        "assembledTranslationBlenderZUp": [
+          -0.637072682,
+          0.576112866,
+          -0.133784115
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027568221,
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.032306337904,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.182927296,
+              -0.243887126,
+              -0.106215894
+            ],
+            "max": [
+              0.182927296,
+              0.243887126,
+              0.106215894
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 45540,
+          "polygons": 84449,
+          "triangles": 84449,
+          "uniqueEdges": 129828,
+          "boundaryEdges": 6309,
+          "nonTwoFaceEdges": 6309,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.031972208842,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.211950839,
+              -0.272936821,
+              -0.116291285
+            ],
+            "max": [
+              0.210073888,
+              0.273887157,
+              0.140280321
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_014",
+        "geometry": "RoseRuntimeShardGlass_014",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_014",
+        "assembledTranslationBlenderZUp": [
+          -0.259023726,
+          0.549919605,
+          -0.134527341
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029054679,
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.039816926698,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.245894015,
+              -0.270080388,
+              -0.105472662
+            ],
+            "max": [
+              0.245894015,
+              0.270080388,
+              0.105472662
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 10577,
+          "polygons": 19442,
+          "triangles": 19442,
+          "uniqueEdges": 29952,
+          "boundaryEdges": 1578,
+          "nonTwoFaceEdges": 1578,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.022764668827,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.272453666,
+              -0.291919768,
+              -0.115804002
+            ],
+            "max": [
+              0.251926303,
+              0.293551505,
+              0.137072846
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_015",
+        "geometry": "RoseRuntimeShardGlass_015",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_015",
+        "assembledTranslationBlenderZUp": [
+          0.106625222,
+          0.581804693,
+          -0.135197699
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030395396,
+        "topology": {
+          "vertices": 37,
+          "polygons": 43,
+          "triangles": 70,
+          "uniqueEdges": 78,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.035161607792,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.293213487,
+              -0.2381953,
+              -0.104802303
+            ],
+            "max": [
+              0.293213487,
+              0.2381953,
+              0.104802303
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 23648,
+          "polygons": 43426,
+          "triangles": 43426,
+          "uniqueEdges": 66959,
+          "boundaryEdges": 3640,
+          "nonTwoFaceEdges": 3640,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.02785881462,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.330159426,
+              -0.341212928,
+              -0.115198731
+            ],
+            "max": [
+              0.31283778,
+              0.262427151,
+              0.137654915
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_016",
+        "geometry": "RoseRuntimeShardGlass_016",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_016",
+        "assembledTranslationBlenderZUp": [
+          0.357729316,
+          0.47603786,
+          -0.134008363
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.028016724,
+        "topology": {
+          "vertices": 25,
+          "polygons": 29,
+          "triangles": 46,
+          "uniqueEdges": 52,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.030078206252,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.254916012,
+              -0.273639083,
+              -0.105991639
+            ],
+            "max": [
+              0.254916012,
+              0.273639083,
+              0.105991639
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 1185,
+          "polygons": 2073,
+          "triangles": 2073,
+          "uniqueEdges": 3235,
+          "boundaryEdges": 251,
+          "nonTwoFaceEdges": 251,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.012215712578,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.26693055,
+              -0.36337471,
+              -0.116014406
+            ],
+            "max": [
+              0.257853389,
+              0.300829649,
+              0.136402264
+            ]
+          }
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_017",
+        "geometry": "RoseRuntimeShardGlass_017",
+        "surfaceDetail": "RoseRuntimeShardSurfaceDetail_017",
+        "assembledTranslationBlenderZUp": [
+          0.609331608,
+          0.628124833,
+          -0.13412948
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.02825895,
+        "topology": {
+          "vertices": 31,
+          "polygons": 36,
+          "triangles": 58,
+          "uniqueEdges": 65,
+          "boundaryEdges": 0,
+          "nonTwoFaceEdges": 0,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.025718291487,
+          "closedOriented": true,
+          "bounds": {
+            "min": [
+              -0.21066837,
+              -0.19187513,
+              -0.10587053
+            ],
+            "max": [
+              0.21066837,
+              0.19187513,
+              0.10587053
+            ]
+          }
+        },
+        "surfaceDetailTopology": {
+          "vertices": 40870,
+          "polygons": 76112,
+          "triangles": 76112,
+          "uniqueEdges": 116856,
+          "boundaryEdges": 5376,
+          "nonTwoFaceEdges": 5376,
+          "orientationMismatchEdges": 0,
+          "signedVolume": 0.027627962126,
+          "closedOriented": false,
+          "bounds": {
+            "min": [
+              -0.257973105,
+              -0.22295478,
+              -0.119918004
+            ],
+            "max": [
+              0.239691913,
+              0.221122503,
+              0.140639052
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "fractureCapClearance": {
+    "closedVolumeMaximumAfterBevelBlenderZ": -0.027500004,
+    "minimumRayAuditedProviderTopBlenderZ": 0.000214204,
+    "minimumSeparationMetres": 0.027714208
+  },
+  "proofHashesVerified": 12,
+  "checks": [
+    "authoritative platform_adapter_json only",
+    "strict collider_json box schema",
+    "exact direct role roots and contiguous 18 shard names",
+    "closed oriented inner shell and shard glass volumes",
+    "exact dense provider intact exterior preserves archived UVs and remains non-collision",
+    "open provider-PBR shard details partition every intact exterior face exactly once",
+    "evaluated closed-glass caps remain at least 27.5 mm inward of ray-audited top relief",
+    "open non-collision source corner cutout preserves provider UVs under persistent",
+    "provider top lattice hides atomically with the intact exterior",
+    "each shard root at its local assembled AABB centre",
+    "explicit glass, internal detail, framework, corner detail, and ivory material bindings",
+    "exact 1.64m non-rendered contact rectangle with no ornament",
+    "dense master and proof hashes unchanged"
+  ]
+}
