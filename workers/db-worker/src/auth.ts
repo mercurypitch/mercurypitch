@@ -1108,6 +1108,82 @@ function defaultDisplayName(userId: string): string {
   return `Singer-${userId.slice(0, 4)}`
 }
 
+/**
+ * The handle joining a board mints (src/features/challenges/board-consent.ts)
+ * and the boards fall back to: six characters of the id where
+ * `defaultDisplayName` takes four. Also a name nobody chose.
+ */
+function boardDisplayName(userId: string): string {
+  return `Singer-${userId.slice(0, 6)}`
+}
+
+/**
+ * Replace a default handle with a provider's name, and nothing else: either
+ * the `defaultDisplayName` the profile was created with or the
+ * `boardDisplayName` a board gave it. A name the singer chose is theirs,
+ * including one chosen while still anonymous.
+ */
+async function replaceDefaultHandle(
+  db: D1Database,
+  userId: string,
+  name: string | null | undefined,
+): Promise<void> {
+  if (!name) return
+  await db
+    .prepare(
+      'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName IN (?, ?)',
+    )
+    .bind(
+      name,
+      nowIso(),
+      userId,
+      defaultDisplayName(userId),
+      boardDisplayName(userId),
+    )
+    .run()
+}
+
+/**
+ * `replaceDefaultHandle` for an existing account, and only with Apple's name.
+ * Apple sends the name once, at the first authorization and with the singer's
+ * consent in its own sheet, so a sign-in that carries one may be the only
+ * chance to keep it. Not Google: its name comes with every sign-in, and a
+ * Google singer who kept the default handle has not asked to be renamed.
+ */
+async function fillDefaultDisplayName(
+  db: D1Database,
+  userId: string,
+  identity: FederatedIdentity,
+): Promise<void> {
+  if (identity.provider !== 'apple') return
+  await replaceDefaultHandle(db, userId, identity.name)
+}
+
+/**
+ * Record Apple's `sub` on the account an Apple sign-in reached, in the column
+ * Apple's notifications look it up by (apple-routes.ts) and step 1 of
+ * `resolveFederatedUser` matches. `providerId` is not enough: it keeps
+ * whichever provider linked the account first, so an account Google linked
+ * first holds Google's id there.
+ *
+ * OR IGNORE is a guard no sign-in should need: step 1 matches appleSub, so
+ * each write goes either to the account step 1 found or to one chosen after
+ * step 1 found none holding the id. Should two accounts still meet on the
+ * UNIQUE index, the one holding the id keeps it and the sign-in succeeds
+ * rather than failing with a 500.
+ */
+async function recordAppleSub(
+  db: D1Database,
+  userId: string,
+  identity: FederatedIdentity,
+): Promise<void> {
+  if (identity.provider !== 'apple') return
+  await db
+    .prepare('UPDATE OR IGNORE users SET appleSub = ? WHERE id = ?')
+    .bind(identity.sub, userId)
+    .run()
+}
+
 // Fire the account welcome email — best-effort, never blocks or fails signup.
 // Skipped in PR previews, when Resend is unconfigured or when the account has
 // no email (anonymous).
@@ -1905,7 +1981,10 @@ export async function reissueLegacySession(
  */
 export interface FederatedIdentity {
   provider: 'google' | 'apple'
-  /** The provider's stable subject id — `users.providerId`. */
+  /**
+   * The provider's stable subject id: what `users.providerId` holds for the
+   * provider that linked the account first, and `users.appleSub` for Apple.
+   */
   sub: string
   email?: string | null
   emailVerified: boolean
@@ -1918,6 +1997,41 @@ export interface FederatedIdentity {
   linkableByEmail: boolean
   name?: string | null
   picture?: string | null
+}
+
+/**
+ * Step 1 of `resolveFederatedUser`: the account a returning user of THIS
+ * provider already holds.
+ *
+ * The provider filter matters: the unique index is (authProvider,
+ * providerId), so a bare `providerId = ?` asks a different question from the
+ * one the schema answers, and the day a second provider mints a `sub` that
+ * collides with a first provider's, it hands over somebody else's account. An
+ * account that adopted a provider through step 2 keeps its own authProvider,
+ * so the pair does not find it: step 2 does, by the address.
+ *
+ * Apple's also matches appleSub. That column holds nothing but subs Apple
+ * verified (recordAppleSub writes it for Apple alone), so it asks no other
+ * provider's question, and it finds the account that adopted this identity
+ * even once the address no longer leads there: Hide My Email chosen on a
+ * later authorization, or an Apple ID that moved to another address.
+ */
+function findLinkedAccount(
+  db: D1Database,
+  identity: FederatedIdentity,
+): Promise<UserRow | null> {
+  if (identity.provider === 'apple') {
+    return db
+      .prepare(
+        "SELECT * FROM users WHERE (authProvider = 'apple' AND providerId = ?) OR appleSub = ?",
+      )
+      .bind(identity.sub, identity.sub)
+      .first<UserRow>()
+  }
+  return db
+    .prepare('SELECT * FROM users WHERE authProvider = ? AND providerId = ?')
+    .bind(identity.provider, identity.sub)
+    .first<UserRow>()
 }
 
 /**
@@ -1939,54 +2053,61 @@ export async function resolveFederatedUser(
   env: Env,
 ): Promise<{ row: UserRow; isNew: boolean }> {
   const provider = identity.provider
-  // 1. Returning user of THIS provider. The filter matters: the unique index
-  // is (authProvider, providerId), so a bare `providerId = ?` asks a
-  // different question from the one the schema answers, and the day a second
-  // provider mints a `sub` that collides with a first provider's, it hands
-  // over somebody else's account. An account that adopted a provider through
-  // step 2 keeps authProvider 'password' and is found there instead.
-  const linked = await env.DB.prepare(
-    'SELECT * FROM users WHERE authProvider = ? AND providerId = ?',
-  )
-    .bind(provider, identity.sub)
-    .first<UserRow>()
+  // 1. Returning user of THIS provider: findLinkedAccount says what that
+  // means, and why Apple's also matches appleSub.
+  const linked = await findLinkedAccount(env.DB, identity)
   if (linked) {
     assertAccountActive(linked)
+    // Fills the column in on an Apple account from before migration 0050, so
+    // the notification route's providerId fallback has less to find each time.
+    await recordAppleSub(env.DB, linked.id, identity)
+    await fillDefaultDisplayName(env.DB, linked.id, identity)
     return { row: linked, isNew: false }
   }
 
   const email = identity.email?.toLowerCase() || undefined
   const emailVerified = identity.emailVerified
+  // The account already holding this address, if any. `users.email` is
+  // UNIQUE, so this one row answers both questions below: whether step 2 may
+  // adopt it, and whether a created account may carry the address.
+  const holder =
+    email === undefined ? null : await findUserByEmail(env.DB, email)
 
-  // 2. Auto-link to an existing account with the same verified email
+  // 2. Auto-link to an existing account with the same address — only when
+  // both sides have proven it. The provider's word covers this identity; the
+  // account's own emailVerified covers the account, because registering with
+  // a password proves nothing about the mailbox.
   const linkable = Boolean(email) && emailVerified && identity.linkableByEmail
-  if (email && linkable) {
-    const byEmail = await findUserByEmail(env.DB, email)
-    if (byEmail) {
-      assertAccountActive(byEmail)
-      await env.DB.prepare(
-        'UPDATE users SET providerId = ?, emailVerified = 1, updatedAt = ? WHERE id = ?',
-      )
-        .bind(identity.sub, nowIso(), byEmail.id)
-        .run()
-      return {
-        row: (await findUserById(env.DB, byEmail.id)) as UserRow,
-        isNew: false,
-      }
+  if (linkable && holder !== null && holder.emailVerified === 1) {
+    assertAccountActive(holder)
+    // COALESCE keeps an id the account already holds. `providerId` has room
+    // for one, so a second provider adopting the same account overwrote the
+    // first's, and after that the two flipped it on every sign-in. The second
+    // needs no id stored to sign in: it reaches the account here, by the
+    // address. Apple's is recorded all the same, in appleSub: its
+    // notifications name the account by that id alone, and step 1 finds the
+    // account by it once the address no longer leads here.
+    await env.DB.prepare(
+      'UPDATE users SET providerId = COALESCE(providerId, ?), emailVerified = 1, updatedAt = ? WHERE id = ?',
+    )
+      .bind(identity.sub, nowIso(), holder.id)
+      .run()
+    await recordAppleSub(env.DB, holder.id, identity)
+    await fillDefaultDisplayName(env.DB, holder.id, identity)
+    return {
+      row: (await findUserById(env.DB, holder.id)) as UserRow,
+      isNew: false,
     }
   }
 
   // Everything below CREATES, and `users.email` is UNIQUE. The address can
   // already belong to somebody else here — an Apple private-relay address a
-  // password account was registered under, or any address we declined to link
-  // on — and carrying it into the INSERT or the UPDATE turns a sign-in into a
-  // 500 that nothing the person does will clear. The identity still gets its
-  // account; only the address is dropped. Step 2 proves the address free when
-  // it runs, which is why this asks only when it did not.
-  const emailFree =
-    email === undefined ||
-    linkable ||
-    (await findUserByEmail(env.DB, email)) === null
+  // password account was registered under, an account that never confirmed
+  // it, or any address we declined to link on — and carrying it into the
+  // INSERT or the UPDATE turns a sign-in into a 500 that nothing the person
+  // does will clear. The identity still gets its account; only the address is
+  // dropped, and the account holding it is left exactly as it was.
+  const emailFree = holder === null
   if (!emailFree) {
     console.info(
       `[auth] a ${provider} identity arrived with an address another account already holds; storing it without one`,
@@ -2013,6 +2134,13 @@ export async function resolveFederatedUser(
           anon.id,
         )
         .run()
+      await recordAppleSub(env.DB, anon.id, identity)
+      // The anonymous profile already exists, so ensureProfile's INSERT OR
+      // IGNORE would never apply this name: write it, for either provider, but
+      // only over a default handle. A name the singer chose while anonymous (on
+      // a board, or in the profile) stays. The password upgrade writes outright
+      // because there the singer types the name on our own sign-up form.
+      await replaceDefaultHandle(env.DB, anon.id, identity.name)
       await sendWelcomeEmail(env, storedEmail, identity.name)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,
@@ -2032,6 +2160,7 @@ export async function resolveFederatedUser(
     email: storedEmail,
     emailVerified: storedEmailVerified,
   })
+  await recordAppleSub(env.DB, id, identity)
   await ensureProfile(
     env.DB,
     id,

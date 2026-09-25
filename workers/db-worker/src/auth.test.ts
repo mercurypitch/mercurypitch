@@ -334,6 +334,22 @@ class AuthStatement {
       return { success: true, meta: { changes: 1 } }
     }
 
+    // Step 2 of resolveFederatedUser: an existing account adopts the
+    // provider's subject by address, keeping an id it already holds.
+    if (
+      this.sql ===
+      'UPDATE users SET providerId = COALESCE(providerId, ?), emailVerified = 1, updatedAt = ? WHERE id = ?'
+    ) {
+      const [providerId, updatedAt, id] = this.values
+      const user = this.db.user(String(id))
+      Object.assign(user, {
+        providerId: user.providerId ?? String(providerId),
+        emailVerified: 1,
+        updatedAt: String(updatedAt),
+      })
+      return { success: true, meta: { changes: 1 } }
+    }
+
     if (this.sql.startsWith("UPDATE users SET authProvider = 'google'")) {
       const [providerId, email, emailVerified, updatedAt, id] = this.values
       Object.assign(this.db.user(String(id)), {
@@ -357,6 +373,27 @@ class AuthStatement {
     }
 
     if (this.sql.startsWith('INSERT OR IGNORE INTO userProfiles')) {
+      return { success: true, meta: { changes: 1 } }
+    }
+
+    // The provider's name for an account: written outright when an anonymous
+    // account is upgraded, and otherwise only over a default handle, which
+    // the trailing `AND displayName IN (?, ?)` carries.
+    if (
+      this.sql ===
+        'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?' ||
+      this.sql ===
+        'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName IN (?, ?)'
+    ) {
+      const [displayName, updatedAt, id, ...onlyOver] = this.values
+      const profile = this.db.profiles.get(String(id))
+      if (
+        profile === undefined ||
+        (onlyOver.length > 0 && !onlyOver.includes(profile.displayName))
+      ) {
+        return { success: true, meta: { changes: 0 } }
+      }
+      Object.assign(profile, { displayName, updatedAt })
       return { success: true, meta: { changes: 1 } }
     }
 
@@ -905,6 +942,9 @@ describe('suspended account authentication', () => {
       { email: 'suspended-google-autolink@example.com', password: 'secret123' },
       env,
     )
+    // Confirmed, so this account is one Google could adopt at all and the
+    // suspension is what stops it.
+    db.user(String(auth.userId)).emailVerified = 1
     db.user(String(auth.userId)).suspendedAt = new Date().toISOString()
     stubGoogleClaims('suspended-google-autolink')
 
@@ -1289,6 +1329,69 @@ describe('db-worker account creation classification', () => {
     expect(auth).toMatchObject({
       isNew: true,
       user: { id: ANONYMOUS_DEVICE_ID, authProvider: 'google' },
+    })
+  })
+})
+
+describe('Google and a password account under the same address', () => {
+  // stubGoogleClaims('x') vouches for x@example.com.
+  async function registerPassword(
+    email: string,
+    env: Env,
+  ): Promise<{ userId: string }> {
+    const registered = await postAuth(
+      'register',
+      { email, password: 'Sing1ngPass' },
+      env,
+    )
+    return { userId: String(registered.userId) }
+  }
+
+  it('never adopts the account while its address is unconfirmed', async () => {
+    // Registering takes no proof of the mailbox, so Google vouching for the
+    // address says nothing about who typed it into that form.
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { userId } = await registerPassword(
+      'google-unconfirmed@example.com',
+      env,
+    )
+    expect(db.user(userId).emailVerified).toBe(0)
+    stubGoogleClaims('google-unconfirmed')
+
+    const signedIn = await postAuth('google', { idToken: 'token' }, env)
+
+    expect(signedIn.userId).not.toBe(userId)
+    expect(db.user(userId)).toMatchObject({
+      authProvider: 'password',
+      providerId: null,
+      emailVerified: 0,
+    })
+    // users.email is UNIQUE and the address is the other account's, so the
+    // Google account is stored without one.
+    expect(db.user(String(signedIn.userId))).toMatchObject({
+      authProvider: 'google',
+      providerId: 'google-unconfirmed',
+      email: null,
+    })
+  })
+
+  it('adopts the account once its address is confirmed', async () => {
+    const db = new AuthDatabase()
+    const env = makeEnv(db)
+    const { userId } = await registerPassword(
+      'google-confirmed@example.com',
+      env,
+    )
+    db.user(userId).emailVerified = 1
+    stubGoogleClaims('google-confirmed')
+
+    const signedIn = await postAuth('google', { idToken: 'token' }, env)
+
+    expect(signedIn.userId).toBe(userId)
+    expect(db.user(userId)).toMatchObject({
+      authProvider: 'password',
+      providerId: 'google-confirmed',
     })
   })
 })

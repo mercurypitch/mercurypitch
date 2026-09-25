@@ -16,9 +16,9 @@
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
 import type { Env } from '../src/auth'
-import { resetAppleJwksCache } from '../src/apple-auth'
+import { resetAppleJwksCache, storeAppleRefreshToken } from '../src/apple-auth'
 import worker from '../src/index'
-import { applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { applyMigration, applyMigrations, applyMigrationsAfter, SqliteD1Database, } from './sqlite-d1'
 
 const CLIENT_ID = 'com.irchiinnuss.mercurypitch'
 const KEY_ID = 'INTEGRATIONKID'
@@ -173,6 +173,7 @@ interface UserRow {
   emailVerified: number
   tokenVersion: number
   appleRefreshToken: string | null
+  appleSub: string | null
 }
 
 function userBySub(sub: string): UserRow | undefined {
@@ -185,10 +186,74 @@ function userById(id: string): UserRow {
   return sqlite.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow
 }
 
-function freshDatabase(overrides: Partial<Env> = {}): void {
+function displayNameOf(id: string): string | undefined {
+  const row = sqlite
+    .prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+    .get(id) as { displayName: string } | undefined
+  return row?.displayName
+}
+
+/**
+ * What following the emailed confirm link does to the row. Registering proves
+ * nothing about the mailbox, so a test that needs a confirmed address has to
+ * say so; the link itself carries a random token only the mailbox ever sees.
+ */
+function confirmAddress(id: string): void {
+  sqlite.prepare('UPDATE users SET emailVerified = 1 WHERE id = ?').run(id)
+}
+
+async function registerPasswordAccount(
+  fields: Record<string, unknown> = {},
+): Promise<string> {
+  const registered = await post('/api/auth/register', {
+    email: 'apple-singer@example.com',
+    password: PASSWORD,
+    ...fields,
+  })
+  expect(registered.status).toBe(200)
+  const { userId } = (await registered.json()) as { userId: string }
+  expect(userById(userId).emailVerified).toBe(0)
+  return userId
+}
+
+/** The anonymous device, renamed by the singer before signing in. */
+async function anonymousDeviceNamed(displayName: string): Promise<void> {
+  const anonymous = await post('/api/auth/anonymous', {
+    deviceId: DEVICE_ID,
+    deviceSecret: DEVICE_SECRET,
+  })
+  expect(anonymous.status).toBe(200)
+  const { token } = (await anonymous.json()) as { token: string }
+  const renamed = await request(`/api/userProfiles/${DEVICE_ID}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ displayName }),
+  })
+  expect(renamed.status).toBe(200)
+}
+
+/**
+ * `released`, when given, holds rows a build from before one migration left
+ * behind: every earlier migration runs, then `rows`, then that migration and
+ * everything after it, since the worker these tests call is today's.
+ */
+function freshDatabase(
+  overrides: Partial<Env> = {},
+  released?: { before: string; rows: (db: DatabaseSync) => void },
+): void {
   sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys = ON')
-  applyMigrations(sqlite)
+  if (released === undefined) {
+    applyMigrations(sqlite)
+  } else {
+    applyMigrations(sqlite, released.before)
+    released.rows(sqlite)
+    applyMigration(sqlite, released.before)
+    applyMigrationsAfter(sqlite, released.before)
+  }
   perksSqlite = new DatabaseSync(':memory:')
   perksSqlite.exec(
     'CREATE TABLE perkGrants (email TEXT, perkId TEXT, revokedAt TEXT)',
@@ -260,6 +325,8 @@ describe('POST /api/auth/apple', () => {
     expect(first.isNew).toBe(true)
     const created = userBySub(APPLE_SUB)
     expect(created?.authProvider).toBe('apple')
+    // Where Apple's notifications look for the account.
+    expect(created?.appleSub).toBe(APPLE_SUB)
     expect(created?.email).toBe('apple-singer@example.com')
     expect(created?.emailVerified).toBe(1)
     expect(
@@ -292,15 +359,28 @@ describe('POST /api/auth/apple', () => {
     expect(signedIn.isNew).toBe(true)
     expect(userById(DEVICE_ID).authProvider).toBe('apple')
     expect(userById(DEVICE_ID).providerId).toBe(APPLE_SUB)
+    expect(userById(DEVICE_ID).appleSub).toBe(APPLE_SUB)
   })
 
-  it('adopts a password account with the same verified address', async () => {
-    const registered = await post('/api/auth/register', {
-      email: 'apple-singer@example.com',
-      password: PASSWORD,
-    })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
+  it('never adopts a password account whose address was not confirmed', async () => {
+    // Registering asks for no proof of the mailbox, so Apple vouching for the
+    // address says nothing about who typed it into that form.
+    const userId = await registerPasswordAccount()
+
+    const signedIn = await signInWithApple()
+    expect(signedIn.userId).not.toBe(userId)
+    const untouched = userById(userId)
+    expect(untouched.providerId).toBeNull()
+    expect(untouched.authProvider).toBe('password')
+    expect(untouched.emailVerified).toBe(0)
+    // The address stays with the account that holds it: users.email is
+    // UNIQUE, so the Apple account is stored without one.
+    expect(userById(String(signedIn.userId)).email).toBeNull()
+  })
+
+  it('adopts a password account once its address is confirmed', async () => {
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
 
     const signedIn = await signInWithApple()
     expect(signedIn.userId).toBe(userId)
@@ -310,13 +390,12 @@ describe('POST /api/auth/apple', () => {
   it('never adopts an account on the strength of a private relay address', async () => {
     // The relay address is minted per app and per Apple ID. Treating it as
     // proof of the mailbox would hand over any account that happened to be
-    // registered under it.
-    const registered = await post('/api/auth/register', {
+    // registered under it. Confirmed here, so the relay rule is the only
+    // thing standing between the two accounts.
+    const userId = await registerPasswordAccount({
       email: 'relay-user@privaterelay.appleid.com',
-      password: PASSWORD,
     })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
+    confirmAddress(userId)
 
     const response = await post('/api/auth/apple', {
       identityToken: await identityToken({
@@ -396,6 +475,298 @@ describe('POST /api/auth/apple', () => {
       identityToken: await identityToken(),
     })
     expect(response.status).toBe(501)
+  })
+})
+
+describe('the name Apple sends once', () => {
+  // In the request body at the first authorization only: never in the
+  // identity token, and never again unless the singer revokes the app.
+  const ADA = { user: { name: { firstName: 'Ada', lastName: 'Lovelace' } } }
+
+  beforeEach(() => freshDatabase())
+
+  it('names the anonymous account the sign-in upgrades', async () => {
+    const anonymous = await post('/api/auth/anonymous', {
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(anonymous.status).toBe(200)
+    expect(displayNameOf(DEVICE_ID)).toBe('Singer-0000')
+
+    const signedIn = await signInWithApple({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+      ...ADA,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Ada Lovelace')
+  })
+
+  it('keeps a name the singer chose while still anonymous', async () => {
+    await anonymousDeviceNamed('Maff')
+
+    const signedIn = await signInWithApple({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+      ...ADA,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Maff')
+  })
+
+  it('fills the default name when a later authorization carries one', async () => {
+    const first = await signInWithApple()
+    const userId = String(first.userId)
+    expect(displayNameOf(userId)).toBe(`Singer-${userId.slice(0, 4)}`)
+
+    const second = await signInWithApple(ADA)
+    expect(second.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Ada Lovelace')
+  })
+
+  it('never overwrites a name the singer chose', async () => {
+    const first = await signInWithApple()
+    const userId = String(first.userId)
+    const renamed = await request(`/api/userProfiles/${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${String(first.token)}`,
+      },
+      body: JSON.stringify({ displayName: 'Countess of Numbers' }),
+    })
+    expect(renamed.status).toBe(200)
+
+    const again = await signInWithApple(ADA)
+    expect(again.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Countess of Numbers')
+  })
+
+  it('names the confirmed account it adopts while that has only the default', async () => {
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect(displayNameOf(userId)).toBe(`Singer-${userId.slice(0, 4)}`)
+
+    const signedIn = await signInWithApple(ADA)
+    expect(signedIn.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Ada Lovelace')
+  })
+
+  it('fills the six-character default the boards write as well', async () => {
+    // Joining a board creates the profile as `Singer-<first 6 of the id>`
+    // (board-consent.ts), where the Worker's own default takes 4. Both are a
+    // handle nobody chose.
+    const first = await signInWithApple()
+    const userId = String(first.userId)
+    sqlite
+      .prepare('UPDATE userProfiles SET displayName = ? WHERE id = ?')
+      .run(`Singer-${userId.slice(0, 6)}`, userId)
+
+    const again = await signInWithApple(ADA)
+    expect(again.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Ada Lovelace')
+  })
+})
+
+describe('Google on the same account', () => {
+  // Google's route checks its token with Google's tokeninfo endpoint, answered
+  // here with the claims each test sets. Apple's endpoints stay with stubApple.
+  const GOOGLE_CLIENT = 'test-google-client'
+  const GOOGLE_SUB = '100000000000000000001'
+  let googleClaims: Record<string, unknown>
+
+  beforeEach(() => {
+    freshDatabase({ GOOGLE_CLIENT_IDS: GOOGLE_CLIENT, ...signinSecrets })
+    googleClaims = {
+      aud: GOOGLE_CLIENT,
+      sub: GOOGLE_SUB,
+      email: 'apple-singer@example.com',
+      email_verified: 'true',
+    }
+    const apple = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | Request, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input.url
+        if (url !== 'https://www.googleapis.com/oauth2/v3/tokeninfo') {
+          return apple(input, init)
+        }
+        return new Response(JSON.stringify(googleClaims), { status: 200 })
+      }),
+    )
+  })
+
+  async function signInWithGoogle(
+    body: Record<string, unknown> = {},
+  ): Promise<Record<string, unknown>> {
+    const response = await post('/api/auth/google', {
+      idToken: 'google-token',
+      ...body,
+    })
+    expect(response.status).toBe(200)
+    return (await response.json()) as Record<string, unknown>
+  }
+
+  it('keeps the Apple id when Google adopts the same account', async () => {
+    // Both providers vouch for the confirmed address, so both reach the one
+    // account. `providerId` holds one id, and overwritten on every adoption
+    // it flipped between the two, so each sign-in undid the other's link.
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+
+    expect((await signInWithApple()).userId).toBe(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    expect(userById(userId).providerId).toBe(APPLE_SUB)
+    expect((await signInWithApple()).userId).toBe(userId)
+  })
+
+  it('leaves a returning Google singer on the default handle', async () => {
+    // Apple sends its name once, with consent given in its own sheet. A Google
+    // singer who kept the default handle has not asked to be renamed.
+    const first = await signInWithGoogle()
+    const userId = String(first.userId)
+    const handle = `Singer-${userId.slice(0, 4)}`
+    expect(displayNameOf(userId)).toBe(handle)
+
+    googleClaims.name = 'Ada Lovelace'
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe(handle)
+  })
+
+  it('names the anonymous account it upgrades', async () => {
+    const anonymous = await post('/api/auth/anonymous', {
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(anonymous.status).toBe(200)
+    googleClaims.name = 'Ada Lovelace'
+
+    const signedIn = await signInWithGoogle({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Ada Lovelace')
+  })
+
+  it('keeps a name the singer chose while still anonymous', async () => {
+    await anonymousDeviceNamed('Maff')
+    googleClaims.name = 'Ada Lovelace'
+
+    const signedIn = await signInWithGoogle({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Maff')
+  })
+
+  it.each(['consent-revoked', 'account-delete'] as const)(
+    'signs out an account Google linked first on %s',
+    async (type) => {
+      // Google created the account, so providerId holds Google's id, and it
+      // keeps it when Apple adopts the account by address. Apple's
+      // notification names Apple's id and nothing else: looked up in
+      // providerId alone it found no account, and every session and the
+      // stored grant outlived the singer's withdrawal.
+      vi.spyOn(console, 'info').mockImplementation(() => {})
+      const userId = String((await signInWithGoogle()).userId)
+      const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+      expect(signedIn.userId).toBe(userId)
+      const before = userById(userId)
+      expect(before.providerId).toBe(GOOGLE_SUB)
+      expect(before.appleRefreshToken).not.toBeNull()
+
+      const response = await post('/api/auth/apple/notifications', {
+        payload: await notificationToken({ type, sub: APPLE_SUB }),
+      })
+      expect(response.status).toBe(200)
+
+      const after = userById(userId)
+      expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+      expect(after.appleRefreshToken).toBeNull()
+      // Google's id stays: it is how Google finds this account again.
+      expect(after.providerId).toBe(GOOGLE_SUB)
+      const me = await request('/api/auth/me', {
+        headers: { Authorization: `Bearer ${String(signedIn.token)}` },
+      })
+      expect(me.status).toBe(401)
+    },
+  )
+
+  it('still finds an account both adopted after Google signs in again', async () => {
+    // A password account both providers adopt by address, Google first, so
+    // providerId holds Google's id and every Google sign-in comes back through
+    // the adoption step. Only Apple writes appleSub: if Google wrote it too,
+    // its next sign-in would put Google's id there in place of Apple's.
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+    expect(signedIn.userId).toBe(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    const before = userById(userId)
+    expect(before.providerId).toBe(GOOGLE_SUB)
+
+    const response = await post('/api/auth/apple/notifications', {
+      payload: await notificationToken({
+        type: 'consent-revoked',
+        sub: APPLE_SUB,
+      }),
+    })
+    expect(response.status).toBe(200)
+
+    const after = userById(userId)
+    expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+    expect(after.appleRefreshToken).toBeNull()
+  })
+
+  it('still signs out an account Apple linked first once Google adopts it too', async () => {
+    // The order COALESCE fixed: Apple's id reaches providerId first and stays
+    // there when Google adopts the account, so either column finds it.
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+    expect(signedIn.userId).toBe(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    const before = userById(userId)
+    expect(before.providerId).toBe(APPLE_SUB)
+
+    const response = await post('/api/auth/apple/notifications', {
+      payload: await notificationToken({
+        type: 'consent-revoked',
+        sub: APPLE_SUB,
+      }),
+    })
+    expect(response.status).toBe(200)
+
+    const after = userById(userId)
+    expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+    expect(after.appleRefreshToken).toBeNull()
+    const me = await request('/api/auth/me', {
+      headers: { Authorization: `Bearer ${String(signedIn.token)}` },
+    })
+    expect(me.status).toBe(401)
+  })
+
+  it('never finds a Google identity through appleSub', async () => {
+    // Step 1 matches appleSub for Apple alone: the column holds only subs
+    // Apple verified. A Google sub that happens to spell the same string must
+    // not reach the account, which is the collision step 1's (authProvider,
+    // providerId) pair exists to refuse. The account below matches the Apple
+    // sub through appleSub and nothing else: its authProvider is 'password'.
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithApple()).userId).toBe(userId)
+    expect(userById(userId).appleSub).toBe(APPLE_SUB)
+
+    googleClaims.sub = APPLE_SUB
+    googleClaims.email = 'google-twin@example.com'
+    const google = await signInWithGoogle()
+    expect(google.userId).not.toBe(userId)
+    expect(userById(String(google.userId)).authProvider).toBe('google')
   })
 })
 
@@ -617,12 +988,8 @@ describe('an account that adopted the Apple identity by address', () => {
     // 'password' with the Apple sub in providerId, so the filtered lookup
     // walked straight past it: withdrawing consent did nothing at all, and
     // every session on the account stayed live.
-    const registered = await post('/api/auth/register', {
-      email: 'apple-singer@example.com',
-      password: PASSWORD,
-    })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
 
     const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
     expect(signedIn.userId).toBe(userId)
@@ -659,13 +1026,9 @@ describe('an account that adopted the Apple identity by address', () => {
     // a different mailbox entirely, so it has nothing to apply here — and
     // applying it would send this account's password reset to an address
     // Apple can switch off.
-    const registered = await post('/api/auth/register', {
-      email: 'apple-singer@example.com',
-      password: PASSWORD,
-    })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
-    await signInWithApple()
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithApple()).userId).toBe(userId)
 
     const response = await post('/api/auth/apple/notifications', {
       payload: await notificationToken({
@@ -679,6 +1042,144 @@ describe('an account that adopted the Apple identity by address', () => {
     const after = userById(userId)
     expect(after.email).toBe('apple-singer@example.com')
     expect(after.emailVerified).toBe(1)
+  })
+
+  it.each([
+    [
+      'under a private relay address',
+      {
+        email: 'relay-abc@privaterelay.appleid.com',
+        is_private_email: 'true',
+      },
+    ],
+    [
+      'after the Apple ID moves to another address',
+      { email: 'moved-apple-id@example.com' },
+    ],
+  ] as const)(
+    'brings the same Apple ID back to the account it adopted, %s',
+    async (_when, claims) => {
+      // Hide My Email chosen on a later authorization, or an Apple ID that
+      // moved: the same sub, an address that no longer leads here. Neither
+      // the pair (authProvider is 'password') nor the address reaches the
+      // account, and a new, empty one used to be made beside it. It holds
+      // Apple's sub in appleSub, which step 1 matches.
+      const userId = await registerPasswordAccount()
+      confirmAddress(userId)
+      expect((await signInWithApple()).userId).toBe(userId)
+
+      const again = await signInWithApple({
+        identityToken: await identityToken(claims),
+      })
+      expect(again.userId).toBe(userId)
+      expect(again.isNew).toBe(false)
+      expect(sqlite.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({
+        n: 1,
+      })
+    },
+  )
+
+  it('brings the same Apple ID back when its new address belongs to another account', async () => {
+    // The address the Apple ID moved to is another confirmed account's. The
+    // sign-in used to adopt that one and write the same sub into its
+    // providerId as well, which the (authProvider, providerId) index refused:
+    // a 500 on every attempt.
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithApple()).userId).toBe(userId)
+    const other = await registerPasswordAccount({
+      email: 'moved-apple-id@example.com',
+    })
+    confirmAddress(other)
+
+    const again = await signInWithApple({
+      identityToken: await identityToken({
+        email: 'moved-apple-id@example.com',
+      }),
+    })
+    expect(again.userId).toBe(userId)
+    expect(userById(other).providerId).toBeNull()
+    expect(userById(other).appleSub).toBeNull()
+  })
+})
+
+describe('an Apple account from before the appleSub column', () => {
+  // As a build without migration 0050 left it: Apple's sub in providerId and
+  // nowhere else. The migration adds the column empty and back-fills nothing.
+  // A relay address, the common case, so the adoption step can never reach
+  // the row either: only the (authProvider, providerId) half of step 1 does.
+  const RELEASED_ID = '00000000-0000-4000-8000-0000000000c3'
+  const RELAY = {
+    email: 'relay-abc@privaterelay.appleid.com',
+    is_private_email: 'true',
+  }
+
+  beforeEach(() => {
+    freshDatabase(signinSecrets, {
+      before: '0050_apple_sub.sql',
+      rows: (db) => {
+        const now = new Date().toISOString()
+        db.prepare(
+          `INSERT INTO users
+             (id, createdAt, updatedAt, authProvider, providerId, email,
+              emailVerified, passwordHash, lastLoginAt, tokenVersion)
+           VALUES (?, ?, ?, 'apple', ?, ?, 1, NULL, ?, 1)`,
+        ).run(RELEASED_ID, now, now, APPLE_SUB, RELAY.email, now)
+        db.prepare(
+          `INSERT INTO userProfiles (id, createdAt, updatedAt, displayName, joinDate)
+           VALUES (?, ?, ?, 'Ada Lovelace', ?)`,
+        ).run(RELEASED_ID, now, now, now)
+      },
+    })
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+  })
+
+  it('comes out of the migration with the column empty, under a unique index', () => {
+    expect(userById(RELEASED_ID).appleSub).toBeNull()
+    expect(userById(RELEASED_ID).providerId).toBe(APPLE_SUB)
+    // Partial, so the NULL on every other account is not in it at all.
+    expect(
+      sqlite
+        .prepare("SELECT * FROM pragma_index_list('users') WHERE name = ?")
+        .get('idx_users_appleSub'),
+    ).toMatchObject({ unique: 1, partial: 1 })
+  })
+
+  it.each(['consent-revoked', 'account-delete'] as const)(
+    'is still found by %s before it signs in again, through providerId',
+    async (type) => {
+      // The grant a sign-in on the released build stored. Any sign-in now
+      // would fill appleSub, so the notification comes first.
+      await storeAppleRefreshToken(
+        env,
+        RELEASED_ID,
+        CLIENT_ID,
+        'apple-refresh-token',
+      )
+      const before = userById(RELEASED_ID)
+      expect(before.appleSub).toBeNull()
+      expect(before.appleRefreshToken).not.toBeNull()
+
+      const response = await post('/api/auth/apple/notifications', {
+        payload: await notificationToken({ type, sub: APPLE_SUB }),
+      })
+      expect(response.status).toBe(200)
+
+      const after = userById(RELEASED_ID)
+      expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+      expect(after.appleRefreshToken).toBeNull()
+    },
+  )
+
+  it('fills the column on its next sign-in', async () => {
+    // Once every such row has signed in again, the notification route's
+    // providerId fallback has nothing left to find.
+    const signedIn = await signInWithApple({
+      identityToken: await identityToken(RELAY),
+    })
+    expect(signedIn.userId).toBe(RELEASED_ID)
+    expect(signedIn.isNew).toBe(false)
+    expect(userById(RELEASED_ID).appleSub).toBe(APPLE_SUB)
   })
 })
 
