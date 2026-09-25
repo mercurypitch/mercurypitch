@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glassworks / A journey made from a melody</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #183e3b;
+        --gold: #ac8141;
+        --paper: #f8f5eb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: #e8ece4;
+        font-family: system-ui, sans-serif;
+      }
+      header {
+        background: var(--ink);
+        color: var(--paper);
+        padding: 30px max(24px, calc((100vw - 1380px) / 2));
+        border-bottom: 4px solid var(--gold);
+      }
+      .eyebrow {
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #e4c991;
+      }
+      h1 {
+        font:
+          normal clamp(30px, 4vw, 49px)/1.12 Georgia,
+          serif;
+        margin: 12px 0;
+      }
+      header p {
+        max-width: 900px;
+        margin: 0;
+        color: #d1dfd4;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 1428px;
+        margin: auto;
+        padding: 24px;
+      }
+      nav {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+      button {
+        font: inherit;
+        color: var(--ink);
+        background: var(--paper);
+        border: 1px solid #b9bfac;
+        border-radius: 7px;
+        padding: 12px 17px;
+        cursor: pointer;
+        min-height: 44px;
+      }
+      button[aria-pressed='true'] {
+        color: white;
+        background: var(--ink);
+        border-color: var(--ink);
+      }
+      button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid #be8735;
+        outline-offset: 4px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 275px;
+        gap: 20px;
+        align-items: start;
+      }
+      figure {
+        margin: 0;
+        background: var(--paper);
+        border: 1px solid #d0c7b3;
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      figcaption {
+        padding: 15px 24px;
+        border-top: 1px solid #e0d8c6;
+        font-size: 13px;
+        color: #657360;
+        line-height: 1.5;
+      }
+      aside {
+        padding: 25px 22px;
+        background: var(--paper);
+        border-top: 3px solid var(--gold);
+        border-radius: 4px;
+      }
+      aside .eyebrow {
+        color: #8a6632;
+      }
+      h2 {
+        font:
+          normal 27px/1.2 Georgia,
+          serif;
+        margin: 10px 0 14px;
+      }
+      h3 {
+        font-size: 13px;
+        margin: 23px 0 7px;
+        text-transform: uppercase;
+        letter-spacing: 0.09em;
+      }
+      aside p {
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0 0 14px;
+      }
+      .notes {
+        display: flex;
+        gap: 7px;
+        padding: 8px 0;
+        flex-wrap: wrap;
+      }
+      .note {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        background: #e1ece3;
+        border: 1px solid #b0c7b4;
+        border-radius: 50%;
+        font-size: 13px;
+      }
+      .muted {
+        color: #667464;
+      }
+      a {
+        color: #225d58;
+        text-underline-offset: 3px;
+      }
+      .below {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-top: 23px;
+      }
+      .below article {
+        padding: 20px;
+        border: 1px solid #c6cebe;
+        border-radius: 8px;
+      }
+      .below h3 {
+        margin-top: 0;
+      }
+      .below p {
+        margin-bottom: 0;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+      footer {
+        margin: 24px 0 6px;
+        color: #637161;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      @media (max-width: 1000px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        aside {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0 24px;
+        }
+        aside h2 {
+          grid-column: 1 / -1;
+        }
+        .below {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        main {
+          padding: 14px;
+        }
+        header {
+          padding: 25px 18px;
+        }
+        button {
+          flex: 1 1 40%;
+          font-size: 13px;
+          padding: 10px;
+        }
+        aside {
+          display: block;
+        }
+        figcaption {
+          padding: 12px 16px;
+        }
+      }
+      @media print {
+        header {
+          background: white;
+          color: var(--ink);
+        }
+        header p,
+        .eyebrow {
+          color: var(--ink);
+        }
+        nav {
+          display: none;
+        }
+        .layout {
+          display: block;
+        }
+        .below {
+          display: block;
+        }
+        figure {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="eyebrow">
+        Glassworks / Level design study / 25 September 2026
+      </div>
+      <h1>A journey made from a melody.</h1>
+      <p>
+        Learn five notes through a frosted garden. Open two real barriers. Bring
+        the whole phrase to the final portrait. Compare the routes before
+        choosing one to build.
+      </p>
+    </header>
+    <main>
+      <nav aria-label="Compare route proposals">
+        <button type="button" data-view="current" aria-pressed="false">
+          Current footprint
+        </button>
+        <button type="button" data-view="a" aria-pressed="true">
+          A / Thawing Song
+        </button>
+        <button type="button" data-view="b" aria-pressed="false">
+          B / Switchback
+        </button>
+        <button type="button" data-view="c" aria-pressed="false">
+          C / Braided Garden
+        </button>
+        <button type="button" data-view="kit" aria-pressed="false">
+          Platform + wall roles
+        </button>
+      </nav>
+      <div class="layout">
+        <figure>
+          <a
+            id="full"
+            href="route-thawing-song.svg"
+            target="_blank"
+            rel="noopener"
+            aria-label="Open the selected drawing at full size"
+          >
+            <img
+              id="drawing"
+              src="route-thawing-song.svg"
+              alt="The Thawing Song: five safe singing stations curve around a garden. Stations two and four open frost walls; the final portrait asks for all five notes."
+              width="1100"
+              height="740"
+            />
+          </a>
+          <figcaption id="caption">
+            Proposal A. Encounter and reveal diagram, not a validated jump
+            layout. Open the drawing to inspect it at full size.
+          </figcaption>
+        </figure>
+        <aside aria-live="polite" aria-atomic="true">
+          <div class="eyebrow" id="status">Recommended candidate</div>
+          <h2 id="name">The Thawing Song</h2>
+          <div>
+            <p id="summary">
+              A gentle crescent around a hidden garden, with long runs, offset
+              steps and broad places to sing. Each voice stop builds the phrase.
+            </p>
+            <h3>The lesson</h3>
+            <div
+              class="notes"
+              id="notes"
+              aria-label="Semitone offsets from the root"
+            >
+              <span class="note">0</span><span class="note">+2</span
+              ><span class="note">+4</span><span class="note">+2</span
+              ><span class="note">0</span>
+            </div>
+            <p class="muted" id="lesson">
+              Up, up, down, home. The whole phrase moves into the singer's
+              comfortable range.
+            </p>
+          </div>
+          <div>
+            <h3>Why this route</h3>
+            <p id="benefit">
+              A clear musical payoff and two meaningful reveals, without adding
+              a timer to singing.
+            </p>
+            <h3>What needs proving</h3>
+            <p id="risk">
+              Actual jumps, phone camera space, gate bypasses and singing
+              fairness still need a playable blockout.
+            </p>
+            <a href="../../plans/MELODY-CLOUDWAY-LEVEL-DESIGN-2026-09-25.md"
+              >Read the complete proposal</a
+            >
+          </div>
+        </aside>
+      </div>
+      <div class="below">
+        <article>
+          <h3>Truthful Merc reactions</h3>
+          <p>
+            The current game treats some required breaks as path openings. The
+            planned correction uses the actual outcome. Ordinary breaks
+            celebrate; only a real gate or exit opening gets that line.
+          </p>
+        </article>
+        <article>
+          <h3>Platforms with a purpose</h3>
+          <p>
+            Keep broad landings. Add long causeways and deliberate cross-steps.
+            Rendered orientation, collision, intentional gaps and safe camera
+            space must agree.
+          </p>
+        </article>
+        <article>
+          <h3>One selected candidate</h3>
+          <p>
+            Keep today's route for comparison. Build one approved design under a
+            new development ID, then decide whether it replaces the intro. No
+            campaign or unlock changes are made here.
+          </p>
+        </article>
+      </div>
+      <footer>
+        Planning artifacts only. Proposals are schematic; current platform
+        footprints are measured from source c4632528. No gameplay, narration,
+        progress or asset files were changed by this study. No microphone access
+        or audio is requested by this page.
+      </footer>
+    </main>
+    <script>
+      const views = {
+        current: {
+          file: 'route-current.svg',
+          name: 'Today’s Cloudway',
+          status: 'Measured source baseline',
+          summary:
+            'Eleven platforms form a mostly forward route with modest sideways offsets. They are all present before any singing.',
+          notes: ['0', '0', '0'],
+          lesson:
+            'All three required voice challenges currently use the same comfortable note.',
+          benefit:
+            'Forgiving landing areas and a useful physics comparison. The finale alone opens the exit.',
+          risk: 'The route and repeated voice task do not yet tell a musical story.',
+          caption:
+            'Current footprint: the same scale on X and Z. Raft shown at its authored origin; scenery omitted.',
+          alt: 'A measured top view of all eleven current platforms. Most travel proceeds in one direction, and the frost steps are wider across the route than along it.',
+        },
+        a: {
+          file: 'route-thawing-song.svg',
+          name: 'The Thawing Song',
+          status: 'Recommended candidate',
+          summary:
+            'A gentle crescent around a hidden garden, with long runs, offset steps and broad places to sing. Each voice stop builds the phrase.',
+          notes: ['0', '+2', '+4', '+2', '0'],
+          lesson:
+            'Up, up, down, home. The whole phrase moves into the singer’s comfortable range.',
+          benefit:
+            'A clear musical payoff and two meaningful reveals, without adding a timer to singing.',
+          risk: 'Actual jumps, phone camera space, gate bypasses and singing fairness still need a playable blockout.',
+          caption:
+            'Proposal A. Encounter and reveal diagram, not a validated jump layout. Open the drawing to inspect it at full size.',
+          alt: 'The Thawing Song: five safe singing stations curve around a garden. Stations two and four open frost walls; the final portrait asks for all five notes.',
+        },
+        b: {
+          file: 'route-switchback.svg',
+          name: 'Switchback Conservatory',
+          status: 'Alternative: stronger turns',
+          summary:
+            'Three terraces create distinct left and right turns. Frosted screens hint at the next court, then reveal it when sung open.',
+          notes: ['0', '+2', '+4', '+2', '0'],
+          lesson:
+            'The same phrase and five safe learning stops; geometry changes the journey, not the notes.',
+          benefit:
+            'The strongest contrast to the current mostly straight route, with clear spatial chapters.',
+          risk: 'More wall occlusion and camera-turn testing. Turns happen on wide pads before jumping.',
+          caption:
+            'Proposal B. Turn-and-reveal schematic; intermediate pieces and gaps need runtime validation.',
+          alt: 'A switchback path through broad courts. Two frosted screens divide three terraces, five note stations teach the phrase, and a final portrait completes it.',
+        },
+        c: {
+          file: 'route-braided.svg',
+          name: 'The Braided Garden',
+          status: 'Alternative: exploration',
+          summary:
+            'A clearly marked main path teaches the phrase. An optional crackle-platform discovery branches out and rejoins before the next required note.',
+          notes: ['0', '+2', '+4', '+2', '0'],
+          lesson:
+            'Optional vases do not insert another note or become a hidden requirement.',
+          benefit:
+            'A little choice and replay curiosity while the main lesson stays readable and safe.',
+          risk: 'More signposting and anti-skip validation. Keep this on paper until the first route feels right.',
+          caption:
+            'Proposal C. Solid route is required; dashed branch is optional. A schematic, not physical geometry.',
+          alt: 'A melody route around a garden with a dashed optional crackle-platform detour. The main path still contains all required notes and both frost walls.',
+        },
+        kit: {
+          file: 'platform-roles.svg',
+          name: 'A small, useful kit',
+          status: 'Components for the chosen route',
+          summary:
+            'Use broad square pads for singing and turning, longer decks for travel, and cross-steps for deliberate redirection.',
+          notes: [],
+          lesson:
+            'A long musical note does not automatically demand a long jump.',
+          benefit:
+            'A few reusable roles give each platform a reason to exist and keep the visual family coherent.',
+          risk: 'Rotating only the mesh creates false footing. Wall art and collision must open together.',
+          caption:
+            'Role diagrams and a wall elevation. Sizes and headroom remain subject to the actual movement model.',
+          alt: 'Three platform families aligned to travel direction and a frosted wall under an arch with side supports, a low resonant target and a safe singing deck.',
+        },
+      }
+      const buttons = [...document.querySelectorAll('[data-view]')]
+      function selectView(key) {
+        const view = views[key]
+        if (!view) return
+        for (const button of buttons)
+          button.setAttribute(
+            'aria-pressed',
+            String(button.dataset.view === key),
+          )
+        for (const field of [
+          'name',
+          'status',
+          'summary',
+          'lesson',
+          'benefit',
+          'risk',
+          'caption',
+        ])
+          document.getElementById(field).textContent = view[field]
+        document.getElementById('drawing').src = view.file
+        document.getElementById('drawing').alt = view.alt
+        document.getElementById('full').href = view.file
+        document.getElementById('notes').replaceChildren(
+          ...view.notes.map((value) => {
+            const node = document.createElement('span')
+            node.className = 'note'
+            node.textContent = value
+            return node
+          }),
+        )
+        history.replaceState(null, '', `#${key}`)
+      }
+      for (const button of buttons)
+        button.addEventListener('click', () => selectView(button.dataset.view))
+      selectView(location.hash.slice(1) || 'a')
+    </script>
+  </body>
+</html>

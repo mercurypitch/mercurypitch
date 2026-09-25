@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="740" viewBox="0 0 1100 740" role="img" aria-labelledby="title desc">
+<title id="title">Current Cloudway / measured footprint</title><desc id="desc">Actual X/Z proportions. Travel is upward on this sheet; decorative overhangs are omitted.</desc>
+<defs>
+ <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#e4dfcf" stroke-width=".5"/></pattern>
+ <pattern id="ice" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#c8e8eb"/><path d="M0 9L9 0" stroke="#79b4bf" stroke-width="1"/></pattern>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="#ac8141"/></marker>
+</defs>
+<rect width="1100" height="740" rx="16" fill="#f8f5eb"/>
+<rect x="24" y="90" width="1052" height="554" fill="url(#grid)" rx="10"/>
+<g font-family="Arial, sans-serif">
+<text x="32" y="41" font-size="28" fill="#183e3b" text-anchor="start" font-family="Georgia, serif">Current Cloudway / measured footprint</text>
+<text x="32" y="68" font-size="14" fill="#5f7065" text-anchor="start" >Actual X/Z proportions. Travel is upward on this sheet; decorative overhangs are omitted.</text>
+<rect x="200.5" y="559.0" width="51.0" height="51.0" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="205.5" y="564.0" width="41.0" height="41.0" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="265.5" y="589.5" font-size="13" fill="#183e3b" text-anchor="start" >Arrival</text>
+<circle cx="226.0" cy="584.5" r="8" fill="#183e3b"/>
+<rect x="210.25" y="525.25" width="36.0" height="26.250000000000007" rx="7" fill="url(#ice)" stroke="#ac8141" stroke-width="2"/><rect x="215.25" y="530.25" width="26.0" height="16.250000000000007" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="260.25" y="543.375" font-size="13" fill="#183e3b" text-anchor="start" >Frost 1</text>
+<rect x="219.25" y="490.75" width="36.0" height="26.25" rx="7" fill="url(#ice)" stroke="#ac8141" stroke-width="2"/><rect x="224.25" y="495.75" width="26.0" height="16.25" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="269.25" y="508.875" font-size="13" fill="#183e3b" text-anchor="start" >Frost 2</text>
+<rect x="220.75" y="439.0" width="51.0" height="43.50000000000001" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="225.75" y="444.0" width="41.0" height="33.50000000000001" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="285.75" y="465.75" font-size="13" fill="#183e3b" text-anchor="start" >Recovery</text>
+<rect x="233.2" y="415.0" width="42.0" height="23.999999999999993" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="238.2" y="420.0" width="32.0" height="13.999999999999993" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="289.2" y="432.0" font-size="13" fill="#183e3b" text-anchor="start" >Raft dock</text>
+<rect x="247.75" y="382.0" width="27.0" height="23.999999999999993" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="252.75" y="387.0" width="17.0" height="13.999999999999993" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="288.75" y="399.0" font-size="13" fill="#183e3b" text-anchor="start" >Raft (origin)</text>
+<rect x="256.3" y="303.25000000000006" width="42.0" height="42.000000000000014" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="261.3" y="308.25000000000006" width="32.0" height="32.000000000000014" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="312.3" y="329.25000000000006" font-size="13" fill="#183e3b" text-anchor="start" >Singing dock</text>
+<circle cx="277.3" cy="324.25000000000006" r="8" fill="#183e3b"/>
+<rect x="272.2" y="270.25" width="27.0" height="24.74999999999998" rx="7" fill="#ede5cd" stroke="#ac8141" stroke-width="2"/><rect x="277.2" y="275.25" width="17.0" height="14.749999999999979" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="313.2" y="287.625" font-size="13" fill="#183e3b" text-anchor="start" >Crackle 1</text>
+<rect x="270.7" y="223.0" width="45" height="39.00000000000002" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="275.7" y="228.0" width="35" height="29.00000000000002" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="329.7" y="247.5" font-size="13" fill="#183e3b" text-anchor="start" >Recovery</text>
+<rect x="287.2" y="190.0" width="27.0" height="24.74999999999998" rx="7" fill="#ede5cd" stroke="#ac8141" stroke-width="2"/><rect x="292.2" y="195.0" width="17.0" height="14.749999999999979" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="328.2" y="207.375" font-size="13" fill="#183e3b" text-anchor="start" >Crackle 2</text>
+<rect x="275.8" y="115.0" width="60" height="66.74999999999999" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="280.8" y="120.0" width="50" height="56.749999999999986" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="349.8" y="153.375" font-size="13" fill="#183e3b" text-anchor="start" >Finale</text>
+<circle cx="305.8" cy="148.375" r="8" fill="#183e3b"/>
+<path d="M164 590V140" fill="none" stroke="#ac8141" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<text x="150" y="373" font-size="14" fill="#ac8141" text-anchor="end" >+Z</text>
+<text x="555" y="148" font-size="24" fill="#183e3b" text-anchor="start" font-family="Georgia, serif">What the playtest is revealing</text>
+<text x="555" y="195" font-size="16" fill="#183e3b" text-anchor="start" >11 platforms, all available before singing.</text>
+<text x="555" y="235" font-size="16" fill="#183e3b" text-anchor="start" >Three required voice stops: the same comfortable note.</text>
+<text x="555" y="275" font-size="16" fill="#183e3b" text-anchor="start" >Only the final portrait opens access: the exit.</text>
+<text x="555" y="315" font-size="16" fill="#183e3b" text-anchor="start" >Crescent changes X position, not platform orientation.</text>
+<text x="555" y="355" font-size="16" fill="#183e3b" text-anchor="start" >Frost steps: 2.40 wide x 1.75 along travel.</text>
+<text x="555" y="395" font-size="16" fill="#183e3b" text-anchor="start" >Safe broad pads are useful; repetition is the issue.</text>
+<rect x="571.5" y="486.5" width="105" height="65" rx="7" fill="url(#ice)" stroke="#ac8141" stroke-width="2"/><rect x="576.5" y="491.5" width="95" height="55" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="704" y="517" font-size="16" fill="#183e3b" text-anchor="start" >Current frost footprint</text>
+<text x="704" y="542" font-size="14" fill="#62795e" text-anchor="start" >Wide landing, short forward run</text>
+<text x="32" y="683" font-size="15" fill="#183e3b" text-anchor="start" >Source baseline, not a new design. Same scale on X and Z; raft shown at its authored origin.</text>
+<text x="32" y="713" font-size="11" fill="#ac8141" text-anchor="start" >GLASSWORKS  /  DESIGN STUDY  /  25 SEPTEMBER 2026</text>
+</g></svg>
