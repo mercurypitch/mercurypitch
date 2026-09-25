@@ -699,6 +699,40 @@ describe('camera-relative traversal', () => {
     wall.geometry.dispose()
     wall.material.dispose()
   })
+  it('stops testing decorative meshes below the lowest platform underside', () => {
+    const rig = createAdventureCamera(OPEN_ROOM)
+    const state = createGlassGame(OPEN_ROOM).snapshot()
+    const decoration = new Mesh(
+      new BoxGeometry(2, 3, 0.3),
+      new MeshBasicMaterial(),
+    )
+    let raycasts = 0
+    decoration.raycast = () => {
+      raycasts++
+    }
+    rig.setOccluders([decoration])
+
+    rig.update(state, FRAME)
+    expect(raycasts).toBeGreaterThan(0)
+
+    raycasts = 0
+    rig.update(
+      {
+        ...state,
+        player: {
+          ...state.player,
+          grounded: false,
+          position: { ...state.player.position, y: -0.41 },
+          velocity: { ...state.player.velocity, y: -1 },
+        },
+      },
+      FRAME,
+    )
+    expect(raycasts).toBe(0)
+
+    decoration.geometry.dispose()
+    decoration.material.dispose()
+  })
   it('lifts a wall-compressed boom while preserving the chosen pitch', () => {
     const rig = createAdventureCamera(GLASSWORKS)
     const state = createGlassGame(GLASSWORKS).snapshot()
