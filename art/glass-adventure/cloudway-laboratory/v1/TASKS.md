@@ -22,6 +22,7 @@ Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a secon
 - [ ] Blender finalization: material separation, contact planes, preserved silhouettes, runtime maps, packed source.
 - [ ] Scroll bridge extension has matching visual and walkable deck. Semantic adapter and transactional metadata validation are implemented/tested; the deliberate Blender cut/cap derivative is complete; the planar physical-glass inset has passed Blender optical review; final contact certification and live binding remain pending. Per-mesh bindings preserve glass, etching and mixed ivory/gold within each motion role.
 - [ ] Beautiful rose and lavender timed platforms, 2s/4s with a real gap and safe approach.
+- [x] Rose semantic/contact feasibility checkpoint, independent reopen audit and 13 proof views saved. Visual review rejected the broad pale lattice, corner tabs, insufficient sparkle and block-like shard silhouettes; source remains unchanged. Amethyst remains audit-only. This checkpoint does not complete the timed-platform art task.
 - [ ] Exploratory second course with turns, safe rest/voice areas, asset exhibits and checkpoints.
 - [ ] Editor JSON maps explicitly to authored level data; export is a spec, not a playability guarantee.
 - [ ] Review runtime costs, no hovering/intersections/inverted normals, repeat props instanced; actual loaded-asset proofs.

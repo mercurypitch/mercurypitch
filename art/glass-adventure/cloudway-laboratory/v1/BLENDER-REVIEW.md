@@ -47,14 +47,26 @@ Source proof files are under
 Both source donors are fused closed surfaces. Their raised gold lattice spans
 the top and sides as well as corner fittings; treating all but the corners as
 glass would discard important art. Gold isolation therefore needs reviewed
-geometry regions, not thresholding metallic texture pixels.
+geometry regions and color evidence, not a metallic-pixel threshold alone.
 
 The Rose contact screen found a largely flat surface, with small ornament
 protrusions requiring a deliberate support decision. Amethyst contains deeper
 shallow depressions; a flat collision plane alone does not certify a matching
-visible landing. A Rose candidate is being prepared first to establish the
-crystal-body, retained-lattice and closed-shard method before applying it to
-Amethyst. Neither is a finished fracture asset yet.
+visible landing. The Rose semantic candidate now preserves the dense surface,
+uses a color/metallic mask with explicit corner regions, and includes an authored
+contact plane and twelve closed shard prototypes. Its fresh-open audit passes;
+that proves source preservation and structure, not finished appearance.
+
+Root reviewed the pastel beauty and exploded-shard views. The gold lattice is
+too broad and pale, two fused corner transitions leave visible tabs, and the
+regular block-like shard silhouettes do not yet match the crystalline reference.
+Internal faceting and sparkle also need work. This is an unaccepted art study:
+it must not be registered or exported as finished game art. The next pass must
+resolve the corner boundaries and design varied, deliberate crystal fractures
+while retaining the original dense donor. See
+[the crackle feasibility assessment](production/CRACKLE-FEASIBILITY.md) for
+evidence and the rejected mask-expansion experiment. Amethyst remains audit-only
+and requires its own material/contact study. Neither is a finished fracture asset.
 
 ## Remaining source masters
 
