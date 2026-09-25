@@ -342,13 +342,15 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     void Promise.all([activated, buffer(live, kind)])
       .then(([, decoded]) => {
         // Resumed inside the tap and still not running: this one is not
-        // coming back, and the next tap makes another.
+        // coming back, and the next tap makes another. A failure, not a
+        // note: the source below starts on a clock that does not move.
         if (live.state !== 'running' && ctx === live) {
           stale = true
-          report('stale', {
-            reason: 'not running after resume',
-            state: live.state,
-          })
+          report(
+            'stale',
+            { reason: 'not running after resume', state: live.state },
+            true,
+          )
         }
         if (mine !== token || voice.releasing) return
         const source = live.createBufferSource()

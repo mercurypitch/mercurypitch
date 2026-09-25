@@ -572,6 +572,22 @@ describe("the ambient's report to the device's audio diagnostics", () => {
     expect(named('context')).toHaveLength(2)
   })
 
+  it('reports a context the tap could not start as a failure', async () => {
+    const ctx = fakeContext(log)
+    // A resume inside the tap that leaves it suspended: the source still
+    // starts, on a clock that does not move, and nothing is heard.
+    ctx.resume = vi.fn(async () => undefined)
+    make(ctx).start('sing', 600)
+    await settle()
+    expect(named('stale')).toEqual([
+      [
+        'stale',
+        { reason: 'not running after resume', state: 'suspended' },
+        true,
+      ],
+    ])
+  })
+
   it('reports a failed decode as a failure, with the error', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     const ctx = fakeContext(log)
