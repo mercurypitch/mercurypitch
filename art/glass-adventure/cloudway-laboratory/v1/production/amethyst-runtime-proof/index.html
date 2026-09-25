@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amethyst crackle runtime delivery proof</title>
+    <style>
+      html,
+      body,
+      #stage {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+      body {
+        background: #111026;
+        color: #f6f1ff;
+        font:
+          14px/1.45 system-ui,
+          sans-serif;
+      }
+      canvas {
+        display: block;
+      }
+      aside {
+        position: fixed;
+        inset: 20px auto auto 20px;
+        max-width: 430px;
+        padding: 14px 16px;
+        border: 1px solid #ad92e6;
+        border-radius: 10px;
+        background: rgb(19 15 42 / 88%);
+        backdrop-filter: blur(10px);
+      }
+      strong {
+        color: #e9d9ff;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 12px;
+        margin: 8px 0 0;
+      }
+      dt {
+        color: #bba9e7;
+      }
+      dd {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <aside>
+      <strong>Amethyst crackle · matched runtime delivery proof</strong>
+      <dl>
+        <dt>Status</dt>
+        <dd id="status">Loading</dd>
+        <dt>Asset</dt>
+        <dd id="asset">—</dd>
+        <dt>View</dt>
+        <dd id="view">Intact</dd>
+        <dt>Materials</dt>
+        <dd id="materials">—</dd>
+        <dt>Triangles</dt>
+        <dd id="triangles">—</dd>
+      </dl>
+    </aside>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
