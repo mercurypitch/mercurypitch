@@ -4,7 +4,7 @@ import type { PlatformDefinition, SolidPropDefinition } from '../contracts'
 import type { AuthoredLevelSource, LevelAuthoringDiagnostic, RoomPlacement, RoomPrefab, } from './contracts'
 import type { CompiledRoom } from './internal'
 import { mapActivation, mapEncounterRefs, runtimeRoomId, sortedById, } from './internal'
-import { transformBoundsXZ, transformPoint, transformYaw } from './transform'
+import { transformBoundsXZ, transformPlatformScrollAxis, transformPoint, transformYaw, } from './transform'
 
 function transformPlatform(
   source: AuthoredLevelSource,
@@ -23,7 +23,15 @@ function transformPlatform(
             yawQuarterTurns: placement.yawQuarterTurns,
           }),
         }
-      : platform.behavior
+      : platform.behavior?.kind === 'scroll'
+        ? {
+            ...platform.behavior,
+            axis: transformPlatformScrollAxis(
+              platform.behavior.axis,
+              placement.yawQuarterTurns,
+            ),
+          }
+        : platform.behavior
   return {
     ...platform,
     ...transformBoundsXZ(platform, placement),

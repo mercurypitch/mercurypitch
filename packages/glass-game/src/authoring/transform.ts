@@ -1,6 +1,6 @@
 // Room transforms — translation and cardinal yaw applied uniformly to authored data.
 
-import type { Bounds3, BoundsXZ, Vec3 } from '../contracts'
+import type { Bounds3, BoundsXZ, PlatformScrollAxis, Vec3 } from '../contracts'
 import type { QuarterTurn, RoomPlacement } from './contracts'
 
 const TAU = Math.PI * 2
@@ -34,6 +34,14 @@ export function normalizeYaw(yaw: number): number {
 
 export function transformYaw(yaw: number, quarterTurns: QuarterTurn): number {
   return normalizeYaw(yaw + quarterTurns * (Math.PI / 2))
+}
+
+/** Maps a prefab-local scroll axis onto compiled world-aligned bounds. */
+export function transformPlatformScrollAxis(
+  axis: PlatformScrollAxis,
+  quarterTurns: QuarterTurn,
+): PlatformScrollAxis {
+  return quarterTurns % 2 === 0 ? axis : axis === 'x' ? 'z' : 'x'
 }
 
 export function transformPoint(
