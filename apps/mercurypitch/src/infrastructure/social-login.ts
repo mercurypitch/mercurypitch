@@ -36,6 +36,15 @@
 // all, and `redirectUrl: ''` is what its docs prescribe for iOS to keep it
 // from attempting a redirect.
 //
+// `useProperTokenExchange: true` changes only what comes back. In the
+// plugin's iOS source (AppleProvider.swift, 8.5.7) it puts the authorization
+// code in `result.authorizationCode` and leaves `accessToken` null, where the
+// default hands the same code back disguised as `accessToken.token`. It does
+// no exchange of its own and needs no redirect: the only network call the
+// provider makes is behind a non-empty `redirectUrl`. The Worker trades the
+// code for the refresh token that account deletion revokes (guideline
+// 5.1.1(v)); without the flag, native-sign-in.ts never sees a code to send.
+//
 // On Android that same block kills the whole call. `SocialLoginPlugin.java`
 // reads `apple` FIRST (its `initialize` handler, before it ever looks at
 // `google`) and runs `shouldRejectMissingAppleRedirectUrl` on it: an empty
@@ -87,6 +96,9 @@ export function createSocialLoginBridge(): SocialLoginBridge {
                 // Empty string, per the plugin's own note: anything else
                 // makes iOS attempt a redirect it has nowhere to land.
                 redirectUrl: '',
+                // Return the authorization code as `authorizationCode` — see
+                // the header. The Worker, not the plugin, exchanges it.
+                useProperTokenExchange: true,
               },
             }
           : {}),

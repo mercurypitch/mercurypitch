@@ -93,15 +93,21 @@ describe('signInWithApple', () => {
   })
 
   it('forwards the name and email Apple only ever sends once', async () => {
+    // The plugin's own answer, as SocialLoginPlugin.swift resolves it with
+    // `useProperTokenExchange` on: the code is `authorizationCode`, and
+    // `accessToken` is null. Without the flag the same code comes back as
+    // `accessToken.token` instead, where nothing here reads it.
     bridgeReturning({
+      provider: 'apple',
       result: {
+        accessToken: null,
         idToken: 'apple-jwt',
         authorizationCode: 'code-1',
         profile: {
-          user: 'a',
+          user: '000999.fake.0001',
+          email: 'ada@example.com',
           givenName: 'Ada',
           familyName: 'Lovelace',
-          email: 'ada@example.com',
         },
       },
     })
