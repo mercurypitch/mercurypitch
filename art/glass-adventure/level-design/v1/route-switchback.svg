@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="740" viewBox="0 0 1100 740" role="img" aria-labelledby="title desc">
+<title id="title">B / The Switchback Conservatory</title><desc id="desc">Stronger left/right changes, with space to turn before jumping. Schematic, not to scale.</desc>
+<defs>
+ <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#e4dfcf" stroke-width=".5"/></pattern>
+ <pattern id="ice" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#c8e8eb"/><path d="M0 9L9 0" stroke="#79b4bf" stroke-width="1"/></pattern>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="#ac8141"/></marker>
+</defs>
+<rect width="1100" height="740" rx="16" fill="#f8f5eb"/>
+<rect x="24" y="90" width="1052" height="554" fill="url(#grid)" rx="10"/>
+<g font-family="Arial, sans-serif">
+<text x="32" y="41" font-size="28" fill="#183e3b" text-anchor="start" font-family="Georgia, serif">B / The Switchback Conservatory</text>
+<text x="32" y="68" font-size="14" fill="#5f7065" text-anchor="start" >Stronger left/right changes, with space to turn before jumping. Schematic, not to scale.</text>
+<path d="M159 554H360V363H734V180H968" fill="none" stroke="#ac8141" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<ellipse cx="500" cy="520" rx="120" ry="59" fill="#dae4d3" stroke="#adbe9e" stroke-width="2"/>
+<ellipse cx="500" cy="520" rx="104" ry="43" fill="none" stroke="#b9c9ad" stroke-dasharray="4 8"/>
+<text x="500" y="517" font-size="19" fill="#4d6b51" text-anchor="middle" font-family="Georgia, serif">Lower garden</text>
+
+<ellipse cx="503" cy="264" rx="132" ry="59" fill="#dae4d3" stroke="#adbe9e" stroke-width="2"/>
+<ellipse cx="503" cy="264" rx="116" ry="43" fill="none" stroke="#b9c9ad" stroke-dasharray="4 8"/>
+<text x="503" y="261" font-size="19" fill="#4d6b51" text-anchor="middle" font-family="Georgia, serif">Upper garden</text>
+
+<rect x="222.0" y="531.0" width="72" height="46" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="227.0" y="536.0" width="62" height="36" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="331.5" y="443.0" width="57" height="70" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="336.5" y="448.0" width="47" height="60" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="436.0" y="340.5" width="62" height="45" rx="7" fill="url(#ice)" stroke="#ac8141" stroke-width="2"/><rect x="441.0" y="345.5" width="52" height="35" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="516.0" y="340.5" width="62" height="45" rx="7" fill="url(#ice)" stroke="#ac8141" stroke-width="2"/><rect x="521.0" y="345.5" width="52" height="35" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="705.0" y="231.5" width="56" height="73" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="710.0" y="236.5" width="46" height="63" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="812.5" y="159.0" width="65" height="42" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="817.5" y="164.0" width="55" height="32" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="72.0" y="516.0" width="146" height="76" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="77.0" y="521.0" width="136" height="66" rx="4" fill="none" stroke="#d4c4a4"/>
+<circle cx="84" cy="526" r="16" fill="#183e3b"/>
+<text x="84" y="532" font-size="16" fill="#fffaf0" text-anchor="middle" >1</text>
+<text x="145" y="549" font-size="15" fill="#183e3b" text-anchor="middle" >Arrival goblet</text>
+<text x="145" y="573" font-size="13" fill="#6b715f" text-anchor="middle" >Root / 0</text>
+<rect x="287.0" y="325.0" width="146" height="76" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="292.0" y="330.0" width="136" height="66" rx="4" fill="none" stroke="#d4c4a4"/>
+<circle cx="299" cy="335" r="16" fill="#183e3b"/>
+<text x="299" y="341" font-size="16" fill="#fffaf0" text-anchor="middle" >2</text>
+<text x="360" y="358" font-size="15" fill="#183e3b" text-anchor="middle" >First screen</text>
+<text x="360" y="382" font-size="13" fill="#6b715f" text-anchor="middle" >Up / +2</text>
+<rect x="296" y="316" width="128" height="10" rx="3" fill="url(#ice)" stroke="#548a97" stroke-width="2"/>
+<text x="360" y="302" font-size="10" fill="#417b87" text-anchor="middle" >VOICE-OPENED FROST WALL</text>
+<rect x="662.0" y="325.0" width="146" height="76" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="667.0" y="330.0" width="136" height="66" rx="4" fill="none" stroke="#d4c4a4"/>
+<circle cx="674" cy="335" r="16" fill="#183e3b"/>
+<text x="674" y="341" font-size="16" fill="#fffaf0" text-anchor="middle" >3</text>
+<text x="735" y="358" font-size="15" fill="#183e3b" text-anchor="middle" >Upper court vase</text>
+<text x="735" y="382" font-size="13" fill="#6b715f" text-anchor="middle" >Peak / +4</text>
+<rect x="662.0" y="132.0" width="146" height="76" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="667.0" y="137.0" width="136" height="66" rx="4" fill="none" stroke="#d4c4a4"/>
+<circle cx="674" cy="142" r="16" fill="#183e3b"/>
+<text x="674" y="148" font-size="16" fill="#fffaf0" text-anchor="middle" >4</text>
+<text x="735" y="165" font-size="15" fill="#183e3b" text-anchor="middle" >Second screen</text>
+<text x="735" y="189" font-size="13" fill="#6b715f" text-anchor="middle" >Down / +2</text>
+<rect x="671" y="123" width="128" height="10" rx="3" fill="url(#ice)" stroke="#548a97" stroke-width="2"/>
+<text x="735" y="109" font-size="10" fill="#417b87" text-anchor="middle" >VOICE-OPENED FROST WALL</text>
+<rect x="892.0" y="140.0" width="146" height="76" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="897.0" y="145.0" width="136" height="66" rx="4" fill="none" stroke="#d4c4a4"/>
+<circle cx="904" cy="150" r="16" fill="#183e3b"/>
+<text x="904" y="156" font-size="16" fill="#fffaf0" text-anchor="middle" >5</text>
+<text x="965" y="173" font-size="15" fill="#183e3b" text-anchor="middle" >Home-note goblet</text>
+<text x="965" y="197" font-size="13" fill="#6b715f" text-anchor="middle" >Home / 0</text>
+<path d="M965 225V425" fill="none" stroke="#ac8141" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<rect x="938.0" y="254.0" width="54" height="76" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="943.0" y="259.0" width="44" height="66" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="880.0" y="437.0" width="170" height="96" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="885.0" y="442.0" width="160" height="86" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="965" y="471" font-size="17" fill="#183e3b" text-anchor="middle" font-family="Georgia, serif">Portrait pavilion</text>
+<text x="965" y="494" font-size="12" fill="#6b715f" text-anchor="middle" >Sing the whole phrase</text>
+<text x="965" y="516" font-size="13" fill="#ac8141" text-anchor="middle" >0  /  +2  /  +4  /  +2  /  0</text>
+<ellipse cx="965" cy="553" rx="25" ry="15" fill="none" stroke="#ac8141" stroke-width="4"/>
+<text x="1004" y="557" font-size="12" fill="#183e3b" text-anchor="start" >Exit opens</text>
+<text x="182" y="168" font-size="20" fill="#183e3b" text-anchor="start" font-family="Georgia, serif">Wide court → turn → visible landing</text>
+<text x="182" y="198" font-size="14" fill="#62795e" text-anchor="start" >More spatial variety; more camera and wall-clearance QA.</text>
+<text x="32" y="683" font-size="15" fill="#183e3b" text-anchor="start" >The phrase rises and returns; physical height is authored independently from pitch.</text>
+<text x="32" y="713" font-size="11" fill="#ac8141" text-anchor="start" >GLASSWORKS  /  DESIGN STUDY  /  25 SEPTEMBER 2026</text>
+</g></svg>
