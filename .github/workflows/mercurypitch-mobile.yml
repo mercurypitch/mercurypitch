@@ -44,6 +44,8 @@ on:
       - 'public/drum-night/pocket-console-landscape.webp'
       - 'public/ear-lab/regulator-room-landscape.webp'
       - 'public/ear-lab/regulator-room-portrait.webp'
+      - 'public/ear-lab/glasshouse-bench-landscape.webp'
+      - 'public/ear-lab/glasshouse-bench-portrait.webp'
       - 'public/exercises/examples/**'
       - 'public/guitar-night/velvet-rehearsal.webp'
       - 'public/jam/room-stage.webp'
@@ -135,7 +137,7 @@ jobs:
       signing-env-prefix: MERCURYPITCH
       profile-build-setting: MERCURYPITCH_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
-      changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|legends)/|public/exercises/examples/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/regulator-room-(landscape|portrait)|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|public/sing/retro-analog-studio[^/]*\.webp$|public/rooms/alley/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
+      changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|legends)/|public/exercises/examples/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/(regulator-room|glasshouse-bench)-(landscape|portrait)|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|public/sing/retro-analog-studio[^/]*\.webp$|public/rooms/alley/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
       # Exported to the build and to assert-bundle alike, so the check reads
       # the same answer the build compiled in. Every build is dev -- the debug
       # APK, the simulator app, the ad-hoc IPA -- and the store binaries take
