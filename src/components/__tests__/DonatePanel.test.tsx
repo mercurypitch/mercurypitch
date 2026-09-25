@@ -4,6 +4,7 @@
 
 import { fireEvent, render, screen, waitFor } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type * as AuthService from '@/db/services/auth-service'
 
 vi.mock('@/db/services/billing-service', async (importOriginal) => {
   // Keep the formatters real; stub the network calls.
@@ -16,7 +17,10 @@ vi.mock('@/db/services/billing-service', async (importOriginal) => {
   }
 })
 
-vi.mock('@/db/services/auth-service', () => ({
+vi.mock('@/db/services/auth-service', async (importOriginal) => ({
+  // Real, because which providers may check out is under test here.
+  isRegisteredProvider: (await importOriginal<typeof AuthService>())
+    .isRegisteredProvider,
   restoreAuth: vi.fn().mockResolvedValue(true),
   fetchMe: vi.fn(),
 }))
@@ -132,6 +136,27 @@ describe('DonatePanel', () => {
     )
     expect(screen.getByTestId('donate-button')).toBeDisabled()
     expect(screen.getByTestId('donate-button').textContent).toContain('Soon')
+  })
+
+  it('lets a Sign in with Apple account donate', async () => {
+    vi.mocked(fetchPricing).mockResolvedValue(pricing([plan({})]))
+    vi.mocked(fetchBillingMe).mockResolvedValue(null)
+    vi.mocked(fetchMe).mockResolvedValue({
+      user: {
+        authProvider: 'apple',
+        email: 'x7qk2m9vtd@privaterelay.appleid.com',
+      },
+      profile: { displayName: 'Ada Lovelace' },
+    } as never)
+
+    render(() => <DonatePanel />)
+
+    // A live button that says Donate, which the worker would refuse to an
+    // anonymous visitor, and no prompt to create an account first.
+    const button = await screen.findByTestId('donate-button')
+    expect(button).toBeEnabled()
+    expect(button).toHaveTextContent('Donate')
+    expect(screen.queryByTestId('donate-signin')).not.toBeInTheDocument()
   })
 
   // The worker 403s anonymous checkouts, so never show them a live button.

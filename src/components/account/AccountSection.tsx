@@ -19,7 +19,7 @@ import { MercuryCheckbox } from '@/components/MercuryCheckbox'
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
 import type { MeResponse } from '@/db/services/auth-service'
-import { fetchMe, logout, restoreAuth } from '@/db/services/auth-service'
+import { fetchMe, isRegisteredProvider, logout, restoreAuth, } from '@/db/services/auth-service'
 import { fetchBillingMe, supporterEntitlement, supporterPlanId, } from '@/db/services/billing-service'
 import { setNewsletterOptIn } from '@/db/services/newsletter-service'
 import { authVersion, getUserId } from '@/db/services/user-service'
@@ -290,8 +290,18 @@ export const AccountSection: Component = () => {
   }
 
   const provider = (): string => me()?.user.authProvider ?? 'anonymous'
-  const isUpgraded = (): boolean =>
-    provider() === 'password' || provider() === 'google'
+  const isUpgraded = (): boolean => isRegisteredProvider(provider())
+  /** How the card names the way in. A password account says "email". */
+  const providerName = (): string => {
+    switch (provider()) {
+      case 'google':
+        return 'Google'
+      case 'apple':
+        return 'Apple'
+      default:
+        return 'email'
+    }
+  }
   const isTestAccount = (): boolean => me()?.user.isTestAccount === true
   const testAccountExpiry = (): string => {
     const value = me()?.user.testAccountExpiresAt
@@ -329,7 +339,7 @@ export const AccountSection: Component = () => {
               <span class={styles.accountType}>
                 {isTestAccount()
                   ? 'Managed test account'
-                  : `Signed in with ${provider() === 'google' ? 'Google' : 'email'}`}
+                  : `Signed in with ${providerName()}`}
               </span>
               <div class={styles.accountIdentity}>
                 <Show

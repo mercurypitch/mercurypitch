@@ -6,13 +6,14 @@
 // and the pages would disagree about who is signed in.
 
 import { createEffect, createRoot, createSignal } from 'solid-js'
+import type { AuthUserInfo } from '@/db/services/auth-service'
 import { fetchMe, hasValidToken, logout as authLogout, } from '@/db/services/auth-service'
 import { fetchBillingMe } from '@/db/services/billing-service'
 import { authVersion } from '@/db/services/user-service'
 
 export interface StandaloneAccount {
   email: string | null
-  provider: 'anonymous' | 'password' | 'google'
+  provider: AuthUserInfo['authProvider']
 }
 
 const [account, setAccount] = createSignal<StandaloneAccount | null>(null)

@@ -9,6 +9,7 @@
 
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as AuthService from '@/db/services/auth-service'
 import type * as BillingService from '@/db/services/billing-service'
 import type * as BackgroundAccess from '@/lib/backgrounds/background-access'
 import type * as Defaults from '@/lib/defaults'
@@ -56,7 +57,11 @@ const dbMocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/db/services/auth-service', () => ({
+vi.mock('@/db/services/auth-service', async (importOriginal) => ({
+  // The real predicate: which providers count as an account is the
+  // behaviour these tests are about.
+  isRegisteredProvider: (await importOriginal<typeof AuthService>())
+    .isRegisteredProvider,
   restoreAuth: mocks.restoreAuth,
   deleteAccount: vi.fn(async () => undefined),
   fetchMe: mocks.fetchMe,
@@ -87,6 +92,15 @@ const anonymousMe = {
 const passwordMe = {
   user: { authProvider: 'password', email: 'maff@example.com' },
   profile: { displayName: 'Maff' },
+}
+
+/** Sign in with Apple, under the private relay address Apple hands out. */
+const appleMe = {
+  user: {
+    authProvider: 'apple',
+    email: 'x7qk2m9vtd@privaterelay.appleid.com',
+  },
+  profile: { displayName: 'Ada Lovelace' },
 }
 
 beforeEach(() => {
@@ -122,6 +136,26 @@ describe('AccountSection', () => {
     const email = await screen.findByTestId('account-email')
     expect(email.textContent).toBe('maff@example.com')
     expect(screen.getByTestId('account-display-name').textContent).toBe('Maff')
+  })
+
+  // Every provider but the device identity is an account. An allow-list of
+  // the two that existed filed a Sign in with Apple account under anonymous
+  // and offered its owner an account they already had.
+  it('shows a Sign in with Apple account as signed in', async () => {
+    mocks.fetchMe.mockResolvedValue(appleMe)
+    render(() => <AccountSection />)
+
+    expect(await screen.findByText('Signed in with Apple')).toBeTruthy()
+    expect(screen.getByTestId('account-display-name').textContent).toBe(
+      'Ada Lovelace',
+    )
+    expect(screen.getByTestId('account-email').textContent).toBe(
+      'x7qk2m9vtd@privaterelay.appleid.com',
+    )
+    expect(screen.queryByTestId('show-login')).toBeNull()
+    expect(
+      screen.queryByText('You are practicing on an anonymous account.'),
+    ).toBeNull()
   })
 
   // Sign-out sits beside the line that says who you are, and it ends a

@@ -37,7 +37,7 @@ export interface AuthUserInfo {
   id: string
   createdAt: string
   updatedAt: string
-  authProvider: 'anonymous' | 'password' | 'google'
+  authProvider: 'anonymous' | 'password' | 'google' | 'apple'
   email: string | null
   emailVerified: boolean
   lastLoginAt: string | null
@@ -111,7 +111,23 @@ export function hasValidToken(): boolean {
 }
 
 /**
- * True when the held token belongs to a REAL account (password/Google).
+ * True for a provider that names a real account — password, Google, Apple,
+ * and whichever one the worker adds next — and false for the anonymous device
+ * identity or no provider at all.
+ *
+ * The one test for it, deliberately phrased as "not anonymous", which is how
+ * the worker's own gates ask. Surfaces that listed the providers they knew
+ * about filed a Sign in with Apple account under anonymous and offered its
+ * owner the account they were already signed into.
+ */
+export function isRegisteredProvider(
+  provider: string | null | undefined,
+): boolean {
+  return provider != null && provider !== 'anonymous'
+}
+
+/**
+ * True when the held token belongs to a REAL account.
  * Lazily provisioned anonymous identities hold valid tokens too, so
  * hasValidToken() alone cannot answer "do they still need to create an
  * account?" — asking it that quietly removed the account offer for
@@ -120,7 +136,7 @@ export function hasValidToken(): boolean {
 export function hasUpgradedAccount(): boolean {
   if (!hasValidToken()) return false
   const payload = decodeToken(getAuthToken() ?? '')
-  return payload != null && payload.provider !== 'anonymous'
+  return payload != null && isRegisteredProvider(payload.provider)
 }
 
 /**

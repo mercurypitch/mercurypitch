@@ -23,7 +23,7 @@ import { createEffect, createSignal, Show } from 'solid-js'
 import { Key, X } from '@/components/icons'
 import { signInWithPasskey } from '@/db/services/auth-passkey-service'
 import type { MeResponse } from '@/db/services/auth-service'
-import { fetchMe, restoreAuth } from '@/db/services/auth-service'
+import { fetchMe, isRegisteredProvider, restoreAuth, } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { NativeSignInError, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { nativeGoogleSignInOffered } from '@/features/account/sign-in-methods'
@@ -79,9 +79,7 @@ export const ReturningSignIn: Component = () => {
     })()
   })
 
-  const provider = (): string => me()?.user.authProvider ?? 'anonymous'
-  const signedIn = (): boolean =>
-    provider() === 'password' || provider() === 'google'
+  const signedIn = (): boolean => isRegisteredProvider(me()?.user.authProvider)
 
   const visible = (): boolean => eligible() && resolved() && !signedIn()
 

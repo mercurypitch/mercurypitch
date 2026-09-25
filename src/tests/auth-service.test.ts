@@ -15,7 +15,7 @@ vi.mock('@/stores/notifications-store', () => ({
 }))
 
 import type { AuthResponse } from '@/db/services/auth-service'
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, handleCloudSessionRejected, hasValidToken, isTwofaChallenge, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
 import { showNotification } from '@/stores/notifications-store'
@@ -77,6 +77,26 @@ describe('token storage', () => {
     expect(hasValidToken()).toBe(false)
     setAuthToken(makeToken(3600))
     expect(hasValidToken()).toBe(true)
+  })
+})
+
+describe('which providers are an account', () => {
+  it('counts every provider but the device identity', () => {
+    // Phrased as "not anonymous", the way the worker's own gates ask, so a
+    // provider added later is an account without anybody listing it here.
+    for (const provider of ['password', 'google', 'apple', 'a-future-one']) {
+      expect(isRegisteredProvider(provider)).toBe(true)
+    }
+    for (const provider of ['anonymous', null, undefined]) {
+      expect(isRegisteredProvider(provider)).toBe(false)
+    }
+  })
+
+  it('reads a held Sign in with Apple session as a real account', () => {
+    setAuthToken(makeToken(3600, 'apple'))
+    expect(hasUpgradedAccount()).toBe(true)
+    setAuthToken(makeToken(3600, 'anonymous'))
+    expect(hasUpgradedAccount()).toBe(false)
   })
 })
 

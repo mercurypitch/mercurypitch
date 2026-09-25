@@ -7,6 +7,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as AuthService from '@/db/services/auth-service'
 import type * as LastSignIn from '@/lib/last-sign-in'
 
 const mocks = vi.hoisted(() => ({
@@ -25,7 +26,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
 
-vi.mock('@/db/services/auth-service', () => ({
+vi.mock('@/db/services/auth-service', async (importOriginal) => ({
+  // Real, because which providers count as signed in is under test here.
+  isRegisteredProvider: (await importOriginal<typeof AuthService>())
+    .isRegisteredProvider,
   restoreAuth: () => mocks.restoreAuth(),
   fetchMe: () => mocks.fetchMe(),
 }))
@@ -144,6 +148,23 @@ describe('when it stays out of the way', () => {
     render(() => <ReturningSignIn />)
 
     await waitFor(() => expect(mocks.fetchMe).toHaveBeenCalled())
+    expect(screen.queryByTestId('returning-signin')).toBeNull()
+  })
+
+  it('says nothing to somebody signed in with Apple', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      user: {
+        authProvider: 'apple',
+        email: 'x7qk2m9vtd@privaterelay.appleid.com',
+      },
+      profile: { displayName: 'Ada Lovelace' },
+    })
+    render(() => <ReturningSignIn />)
+
+    await waitFor(() => expect(mocks.fetchMe).toHaveBeenCalled())
+    // A macrotask, so the answer has landed and the strip has had its chance
+    // to render: waiting on the call alone could assert before either.
+    await new Promise((resolve) => setTimeout(resolve, 0))
     expect(screen.queryByTestId('returning-signin')).toBeNull()
   })
 
