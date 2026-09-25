@@ -38,6 +38,44 @@ async function openVisit(page: Page): Promise<void> {
   )
 }
 
+async function openGarden(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    for (const method of [
+      'clear',
+      'drawArrays',
+      'drawArraysInstanced',
+      'drawElements',
+      'drawElementsInstanced',
+    ])
+      Object.defineProperty(WebGL2RenderingContext.prototype, method, {
+        configurable: true,
+        value: () => undefined,
+      })
+    const prefix = 'beside-cue:glass-adventure:'
+    localStorage.setItem(`${prefix}tutorial`, 'seen')
+    localStorage.setItem(
+      `${prefix}progress:glassworks-journey/journey`,
+      JSON.stringify({
+        version: 1,
+        levelId: 'glassworks-journey/journey',
+        checkpointId: 'glassworks-journey/journey/garden/checkpoint/entry',
+        completedBreakableIds: [
+          'glassworks-journey/journey/vestibule/encounter/vestibule-goblet',
+        ],
+      }),
+    )
+  })
+  const response = await page.goto('/glass-game/?layout=journey', {
+    waitUntil: 'domcontentloaded',
+  })
+  expect(response?.status()).toBe(200)
+  await expect(page.getByTestId('glass-adventure')).toHaveAttribute(
+    'data-ready',
+    'true',
+    { timeout: 60_000 },
+  )
+}
+
 async function messageLayout(page: Page) {
   return page.getByTestId('glass-message-stack').evaluate((stack) => {
     const stackBox = stack.getBoundingClientRect()
@@ -176,4 +214,34 @@ test('stacks two current messages and clears them for the voice challenge @smoke
       await context.close()
     }
   }
+})
+
+test('hides contextual messages behind pause, tutorial and artwork dialogs @smoke', async ({
+  page,
+}) => {
+  await openGarden(page)
+  const stack = page.getByTestId('glass-message-stack')
+  await expect(stack).toBeVisible()
+
+  await page.getByRole('button', { name: 'Pause game' }).click()
+  const pause = page.getByRole('dialog', { name: 'Take a little breath.' })
+  await expect(pause).toBeVisible()
+  await expect(stack).toHaveCount(0)
+  await pause.getByRole('button', { name: 'Back to the museum' }).click()
+  await expect(stack).toBeVisible()
+
+  await page.getByRole('button', { name: 'How to play' }).click()
+  const tutorial = page.getByRole('dialog').filter({
+    has: page.getByRole('button', { name: 'Skip tutorial' }),
+  })
+  await expect(tutorial).toBeVisible()
+  await expect(stack).toHaveCount(0)
+  await tutorial.getByRole('button', { name: 'Skip tutorial' }).click()
+  await expect(stack).toBeVisible()
+
+  await page.getByRole('button', { name: 'View nearby artwork' }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'The garden between notes' }),
+  ).toBeVisible()
+  await expect(stack).toHaveCount(0)
 })
