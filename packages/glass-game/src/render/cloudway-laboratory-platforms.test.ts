@@ -271,7 +271,7 @@ describe('Cloudway laboratory platform renderer', () => {
         (id) => id !== 'final-catch',
       ),
     })
-    expect(batches[0]!.count).toBe(2)
+    expect(batches[0]!.count).toBe(6)
     expect(batches[0]!.instanceMatrix.version).toBe(matrixVersion + 1)
 
     renderer.dispose()
