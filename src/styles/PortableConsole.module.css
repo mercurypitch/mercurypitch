@@ -177,7 +177,9 @@
    the component about overlays that cannot be brought back. */
 .handle {
   position: fixed;
-  right: 0.35rem;
+  /* Clear of the notch, or the island, on a phone on its side. Not of the
+     home indicator: raised by that, it would sit on the rail's More. */
+  right: max(0.35rem, var(--safe-right, 0px));
   bottom: 0.35rem;
   z-index: 2147483002;
 

@@ -375,6 +375,15 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+  /* A slot, not a surface: only a chip or a column that is showing takes a
+     tap. Empty, its 56 x 64 box sat over the bottom-right of every tab and
+     took the taps meant for what was under it, most of the Ear Lab's Ear
+     Report among them. */
+  pointer-events: none;
+}
+
+.mp-corner > * {
+  pointer-events: auto;
 }
 
 .mp-chip {
@@ -685,7 +694,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: calc(var(--safe-top) + 4px) 12px 8px;
+  /* Each side at least the inset there: a phone on its side has its notch,
+     or its island, at one end of the bar. */
+  padding: calc(var(--safe-top) + 4px) max(12px, var(--safe-right)) 8px
+    max(12px, var(--safe-left));
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-secondary);
 }
@@ -711,7 +723,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 16px max(16px, var(--safe-right)) 16px max(16px, var(--safe-left));
 }
 
 .mp-dev__section {

@@ -4,7 +4,9 @@
 .card {
   position: absolute;
   top: 12px;
-  left: 16px;
+  /* Placed against the body's padding box, which reaches the screen's edge:
+     at least the inset there (a phone on its side). */
+  left: max(16px, var(--safe-left, 0px));
   z-index: 1;
   width: min(300px, 32%);
   padding: 10px 12px 8px;
@@ -120,8 +122,8 @@
    over the instrument. */
 .cardCompact {
   top: 8px;
-  right: 10px;
-  left: 10px;
+  right: max(10px, var(--safe-right, 0px));
+  left: max(10px, var(--safe-left, 0px));
   width: auto;
   padding: 6px 10px;
 }

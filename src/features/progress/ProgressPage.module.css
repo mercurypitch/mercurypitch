@@ -30,6 +30,10 @@
   width: 100%;
   min-width: 0;
   min-height: 100%;
+  /* The sections centre in what the side insets leave: on its side a phone
+     has its notch, or its island, at one end of the page. The ground behind
+     them stays full width. */
+  padding-inline: var(--safe-left, 0px) var(--safe-right, 0px);
   overflow: clip;
   color: var(--progress-ink);
   background:

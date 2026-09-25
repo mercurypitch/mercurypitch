@@ -22,6 +22,11 @@
 // never left `browsing`: it watched a signal nothing writes, and every
 // screenshot of the rail looked perfect.
 //
+// ON ITS SIDE, TOO. After the frames, every surface is walked again on the
+// two phones turned sideways, with their own notch and home-indicator insets
+// set through the DevTools protocol (probe-landscape.mjs). `--landscape-only`
+// walks that half alone.
+//
 // Native plugins do not exist here: `@capacitor/*` answers `Unimplemented`,
 // which the platform wrappers already turn into a no-op, so nothing in this
 // walk depends on one.
@@ -31,6 +36,7 @@ import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+import { LANDSCAPE_INSET_FRAMES, walkLandscapeSurfaces, } from './probe-landscape.mjs'
 import { parseRoomNames } from './room-names-source.mjs'
 import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
@@ -76,6 +82,7 @@ function parseArgs(argv) {
     theme: 'dark',
     headed: false,
     chromeOnly: false,
+    landscapeOnly: false,
     dist: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
@@ -85,6 +92,7 @@ function parseArgs(argv) {
     else if (flag === '--theme') args.theme = argv[(i += 1)]
     else if (flag === '--headed') args.headed = true
     else if (flag === '--chrome-only') args.chromeOnly = true
+    else if (flag === '--landscape-only') args.landscapeOnly = true
     else if (flag === '--dist') args.dist = argv[(i += 1)]
     else throw new Error(`probe-bundle: unknown argument ${flag}`)
   }
@@ -467,6 +475,31 @@ async function walkChrome(page, ctx) {
     await page.waitForTimeout(400)
     await shoot(page, ctx, `tab-${id}`)
     steps.push(`rail: ${id} selected`)
+
+    // The corner slot is empty here, and an empty slot is not a surface. Its
+    // 56 x 64 box sat over most of the bridge's Ear Report and took the tap
+    // (device round 4): the button answered only along its right edge.
+    if (id === 'ear') {
+      const under = await page.evaluate(() => {
+        const report = [...document.querySelectorAll('button')].find((b) =>
+          (b.textContent ?? '').includes('Ear Report'),
+        )
+        if (report === undefined) return 'there is no Ear Report'
+        const box = report.getBoundingClientRect()
+        const hit = document.elementFromPoint(
+          box.left + box.width / 2,
+          box.top + box.height / 2,
+        )
+        if (hit !== null && report.contains(hit)) return null
+        return `its centre is under ${hit?.getAttribute('data-testid') ?? hit?.tagName}`
+      })
+      if (under !== null) {
+        throw new Error(
+          `ear: the bridge's Ear Report cannot be tapped: ${under}`,
+        )
+      }
+      steps.push("ear: the bridge's Ear Report takes a tap at its centre")
+    }
 
     // The web page header is a band of prose the native design does not have —
     // and under a room header it is a second title bar. Absent, not merely
@@ -4529,7 +4562,7 @@ async function main() {
     // Every frame is walked even when an earlier one failed: "it broke at 390"
     // and "it broke at both" are different reports, and the second one is the
     // one that says the fix is not a width rule.
-    for (const frame of FRAMES) {
+    for (const frame of args.landscapeOnly ? [] : FRAMES) {
       const result = await walkFrame(browser, args, frame)
       steps.push(...result.steps)
       failures.push(...result.failures)
@@ -4580,12 +4613,31 @@ async function main() {
           )
         }
       }
-      for (const frame of SAFE_TOP_FRAMES) {
+      for (const frame of args.landscapeOnly ? [] : SAFE_TOP_FRAMES) {
         try {
           steps.push(...(await walkAlleySafeTop(browser, args, frame)))
         } catch (error) {
           failures.push(
             `[${frame.width}x${frame.height}] alley safe top: ${error.message}`,
+          )
+        }
+      }
+      const kit = {
+        isolate,
+        seed,
+        shoot,
+        bootTimeoutMs: BOOT_TIMEOUT_MS,
+        stepTimeoutMs: STEP_TIMEOUT_MS,
+        runTimeoutMs: RUN_TIMEOUT_MS,
+      }
+      for (const frame of LANDSCAPE_INSET_FRAMES) {
+        try {
+          steps.push(
+            ...(await walkLandscapeSurfaces(browser, args, frame, kit)),
+          )
+        } catch (error) {
+          failures.push(
+            `[${frame.width}x${frame.height}] on its side: ${error.message}`,
           )
         }
       }
@@ -4603,7 +4655,7 @@ async function main() {
     return
   }
   console.log(
-    `\nprobe-bundle: every step passed (${args.theme}, ${FRAMES.length} frames).`,
+    `\nprobe-bundle: every step passed (${args.theme}, ${args.landscapeOnly ? 'landscape only' : `${FRAMES.length} frames`}).`,
   )
 }
 
