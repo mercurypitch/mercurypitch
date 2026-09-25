@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "assetId": "frost-lily-step",
+  "status": "runtime export prepared; live-render acceptance pending",
+  "scope": "Dense topology is preserved. Runtime textures are bounded derivatives; archived full maps and packed master remain unchanged.",
+  "source": {
+    "denseMaster": "source-assets/blender/frost-lily-step/frost-lily-step-dense-master.blend",
+    "denseMasterSha256": "23509d843bc518cdc721ed8e1f1ea986fb25b54add5fbeec462fc023b20c585b",
+    "donorSha256": "8ac87902a43f9be9e7735726b8504ccce6716eb3086d439d07a1f1dd8d0eb5f4"
+  },
+  "runtime": {
+    "file": "source-assets/runtime/frost-lily-step/frost-lily-step-runtime-v1.glb",
+    "bytes": 3340644,
+    "sha256": "8674c1d802a3825c5bd1e02945ef7243aa7d6e94328ca31358baac75956b6368",
+    "bundleId": "cloudway-lab-frost-lily-step-v1",
+    "rootNode": "CloudwayLab_FrostLilyStep",
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materialNames": [
+      "CloudwayLab_FrostLilyStep__provider_pbr"
+    ],
+    "resourceBudget": {
+      "embeddedImageBytes": 971142,
+      "meshoptDecodedBufferBytes": 8178684,
+      "otherBufferBytes": 0,
+      "estimatedRgba8BaseLevelTextureBytes": 25165824,
+      "estimatedRgba8MipmappedTextureBytes": 33554432,
+      "scope": "Texture estimates include base color, normal and packed metallic/roughness. Browser residency is measured separately."
+    }
+  },
+  "geometry": {
+    "vertices": 194437,
+    "triangles": 355472,
+    "polygons": 355472,
+    "runtimeBoundsMetres": {
+      "minimum": [
+        -0.903678834,
+        -0.353698492,
+        -1.200000048
+      ],
+      "maximum": [
+        0.903678834,
+        0.035248309,
+        1.200000048
+      ]
+    },
+    "positionQuantizationStepUpperBoundMetres": 3.6622e-05,
+    "decimated": false,
+    "remeshed": false
+  },
+  "textures": {
+    "policy": {
+      "color": 2048,
+      "data": 1024,
+      "quality": 88
+    },
+    "images": [
+      {
+        "role": "base_color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "sourceMapsUnchanged": true
+  },
+  "compression": {
+    "method": "EXT_meshopt_compression",
+    "level": "high",
+    "quantizationVolume": "mesh",
+    "positionBits": 16,
+    "normalBits": 12,
+    "texcoordBits": 14,
+    "triangleCountPreserved": true
+  },
+  "contact": {
+    "declaration": {
+      "kind": "rectangle",
+      "width": 1.65,
+      "depth": 2.2,
+      "topY": 0,
+      "height": 0.3
+    },
+    "audit": {
+      "status": "certified-from-dense-runtime-geometry",
+      "sampleCount": 49,
+      "gridPerRectangle": [
+        7,
+        7
+      ],
+      "edgeInsetFraction": 0.01,
+      "maximumHeightErrorMetres": 0.031210542,
+      "minimumUpNormal": 0.957079113,
+      "upNormalMinimum": 0.82,
+      "maximumVisibleRiseAboveContactMetres": 0.031210542,
+      "heightToleranceMetres": 0.035,
+      "maximumOrnamentRiseMetres": 0.12,
+      "scope": "The declared rectangle union has upward-facing dense support near its contact datum across the sampled extent. Ornament may rise above the authored gameplay collider within the reported bound; visible overhangs remain non-colliding."
+    }
+  },
+  "rebuild": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_static_runtime.py -- --asset frost-lily-step"
+}

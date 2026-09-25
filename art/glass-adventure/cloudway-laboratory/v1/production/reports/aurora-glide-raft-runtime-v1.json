@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "assetId": "aurora-glide-raft",
+  "status": "runtime export prepared; live-render acceptance pending",
+  "scope": "Dense topology is preserved. Runtime textures are bounded derivatives; archived full maps and packed master remain unchanged.",
+  "source": {
+    "denseMaster": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-dense-master.blend",
+    "denseMasterSha256": "e64ae128be996d8b41d5b0215d1788a05eab050b0aa2dec7a7fe4b21052ab607",
+    "donorSha256": "f498f437f77eb68975affe6190faae0c78931a890a7563ace6c3946f7adaa17a"
+  },
+  "runtime": {
+    "file": "source-assets/runtime/aurora-glide-raft/aurora-glide-raft-runtime-v1.glb",
+    "bytes": 3008748,
+    "sha256": "4f10382b4bc458ea8e9f26a9fa2d048e0b4a66728d362b9515033d8302b6f5cd",
+    "bundleId": "cloudway-lab-aurora-glide-raft-v1",
+    "rootNode": "CloudwayLab_AuroraGlideRaft",
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materialNames": [
+      "CloudwayLab_AuroraGlideRaft__provider_pbr"
+    ],
+    "resourceBudget": {
+      "embeddedImageBytes": 884598,
+      "meshoptDecodedBufferBytes": 7160048,
+      "otherBufferBytes": 0,
+      "estimatedRgba8BaseLevelTextureBytes": 25165824,
+      "estimatedRgba8MipmappedTextureBytes": 33554432,
+      "scope": "Texture estimates include base color, normal and packed metallic/roughness. Browser residency is measured separately."
+    }
+  },
+  "geometry": {
+    "vertices": 175986,
+    "triangles": 302054,
+    "polygons": 302054,
+    "runtimeBoundsMetres": {
+      "minimum": [
+        -1.350000024,
+        -0.302822262,
+        -0.781185091
+      ],
+      "maximum": [
+        1.349999905,
+        0.009768471,
+        0.78118515
+      ]
+    },
+    "positionQuantizationStepUpperBoundMetres": 4.1199e-05,
+    "decimated": false,
+    "remeshed": false
+  },
+  "textures": {
+    "policy": {
+      "color": 2048,
+      "data": 1024,
+      "quality": 88
+    },
+    "images": [
+      {
+        "role": "base_color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "sourceMapsUnchanged": true
+  },
+  "compression": {
+    "method": "EXT_meshopt_compression",
+    "level": "high",
+    "quantizationVolume": "mesh",
+    "positionBits": 16,
+    "normalBits": 12,
+    "texcoordBits": 14,
+    "triangleCountPreserved": true
+  },
+  "contact": {
+    "declaration": {
+      "kind": "rectangle",
+      "width": 2.55,
+      "depth": 1.4,
+      "topY": 0,
+      "height": 0.28
+    },
+    "audit": {
+      "status": "certified-from-dense-runtime-geometry",
+      "sampleCount": 49,
+      "gridPerRectangle": [
+        7,
+        7
+      ],
+      "edgeInsetFraction": 0.01,
+      "maximumHeightErrorMetres": 0.004680604,
+      "minimumUpNormal": 0.998310983,
+      "upNormalMinimum": 0.82,
+      "maximumVisibleRiseAboveContactMetres": 0.004680604,
+      "heightToleranceMetres": 0.035,
+      "maximumOrnamentRiseMetres": 0.12,
+      "scope": "The declared rectangle union has upward-facing dense support near its contact datum across the sampled extent. Ornament may rise above the authored gameplay collider within the reported bound; visible overhangs remain non-colliding."
+    }
+  },
+  "rebuild": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_static_runtime.py -- --asset aurora-glide-raft"
+}
