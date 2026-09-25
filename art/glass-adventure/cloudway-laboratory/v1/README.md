@@ -53,7 +53,7 @@ Inspect dense donors before reducing anything. The marble/opal tops must have a 
 - Basin: model is intentionally dry; water is a runtime surface/effect.
 - Repeated props: batch compatible geometry/materials by visible region; retain picking identities.
 
-The isolated scroll adapter is implemented and tested; binding waits for an accepted semantic asset. The review page includes matched Blender material and clay source proofs. No production asset is approved merely because its provider job succeeds.
+The scroll adapter is bound to its accepted semantic GLB in the development-only first crossing. The pearl rests use an instanced, source-preserving GLB. Both are real Git LFS files under `apps/beside-cue/public/games/cloudway-laboratory-v1/`; a clean checkout does not need the private source archive to run them. The shared crackle adapter is implemented and tested; final Rose/Amethyst art remains under review. The review page includes matched Blender material and clay source proofs. No production asset is approved merely because its provider job succeeds.
 
 ## Source storage
 

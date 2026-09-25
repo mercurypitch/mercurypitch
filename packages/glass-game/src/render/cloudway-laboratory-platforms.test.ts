@@ -4,8 +4,8 @@ import type { InstancedMesh as InstancedMeshType, Mesh as MeshType, } from 'thre
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
 import { CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS, CLOUDWAY_CRYSTAL_PROMENADE_STUDY, } from '../content/cloudway-laboratory'
-import { createGlassGame } from '../core/game'
 import type { LevelDefinition } from '../contracts'
+import { createGlassGame } from '../core/game'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, CLOUDWAY_LAB_ROOT_NAMES, } from './cloudway-laboratory-catalog'
 import { createCloudwayLaboratoryPlatformRenderer } from './cloudway-laboratory-platforms'
@@ -219,6 +219,10 @@ describe('Cloudway laboratory platform renderer', () => {
     renderer.update(snapshot)
 
     for (const id of [
+      'arrival-entry',
+      'arrival',
+      'arrival-court',
+      'arrival-threshold',
       'scroll-approach',
       'scroll-deck',
       'scroll-catch',
@@ -235,7 +239,7 @@ describe('Cloudway laboratory platform renderer', () => {
       if (object instanceof InstancedMesh) batches.push(object)
     })
     expect(batches).toHaveLength(1)
-    expect(batches[0]?.count).toBe(3)
+    expect(batches[0]?.count).toBe(7)
     const matrixVersion = batches[0]!.instanceMatrix.version
     renderer.update(snapshot)
     expect(batches[0]!.instanceMatrix.version).toBe(matrixVersion)
@@ -248,6 +252,7 @@ describe('Cloudway laboratory platform renderer', () => {
       actualZ.push(position.z)
     }
     const expectedZ = [
+      ...CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.arrivalRows,
       CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollApproach,
       CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.scrollCatch,
       CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS.platformCentres.finalCatch,
