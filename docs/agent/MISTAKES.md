@@ -1512,3 +1512,10 @@ named import inside the one-line-import plugin's output without restoring its sp
 that scoped formatting and lint both pass. Do not rerun every local gate.
 **See:** `scripts/pr-prepare.mjs`, `.prettierrc.json`,
 `packages/glass-game/src/content/cloudway-layouts.ts`.
+
+### Measure evaluated glass clearance beneath source detail
+
+**Symptom:** a beautiful provider crystal became a dark slab or developed triangular dark patches after adding an optical interior; material changes did not restore its source appearance.
+**Cause:** the new glass shell or shard cap occupied the same depth as the retained provider surface. A nominal inset was insufficient when bevel evaluation raised the cap back into the source relief.
+**Rule:** compare source-only, interior-only and combined views with explicit mesh allowlists. Measure clearance after modifiers against the full range of retained surface relief; keep the closed interior inside that envelope. Preserve the original exterior vertices, UVs and split normals when they already provide the approved appearance. Repeat the comparison through the actual GLTFLoader and production adapter before accepting a material change.
+**See:** `art/glass-adventure/cloudway-laboratory/v1/production/prepare_amethyst_crackle_runtime_candidate.py`, `packages/glass-game/src/render/cloudway-crackle-adapter.ts`.
