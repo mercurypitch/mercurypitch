@@ -7,6 +7,7 @@ import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'th
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { shortestAngleDelta, stepAngularResponse, stopAngularResponse, } from './angular-response'
 import { createCameraHeadingIntent } from './camera-heading-intent'
+import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
 import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
 import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
@@ -154,29 +155,7 @@ export function createAdventureCamera(
     reducedMotion: options.reducedMotion === true,
   })
   const enclosure = createEnclosureFraming(level)
-  const lowestPlatformBottom =
-    level.platforms.length === 0
-      ? Number.NEGATIVE_INFINITY
-      : Math.min(
-          ...level.platforms.map(
-            (platform) => platform.top - platform.thickness,
-          ),
-        )
-  const obstacles = level.platforms.map((platform) => ({
-    id: platform.id,
-    box: new Box3(
-      new Vector3(
-        platform.minX - 0.08,
-        platform.top - platform.thickness - 0.08,
-        platform.minZ - 0.08,
-      ),
-      new Vector3(
-        platform.maxX + 0.08,
-        platform.top + 0.08,
-        platform.maxZ + 0.08,
-      ),
-    ),
-  }))
+  const { obstacles, useMeshOccludersAt } = createCameraPlatformOcclusion(level)
 
   function pointBoom(atPitch: number): void {
     direction.set(
@@ -635,13 +614,7 @@ export function createAdventureCamera(
       }
       const activeSolidIds =
         snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
-      // Below every authored platform, Merc cannot recover before the fall
-      // reset. Keep the cheap platform and enclosure bounds, but do not send
-      // the camera boom through decorative render meshes. A dense Cloudway
-      // donor otherwise turns each ray into millions of triangle tests while
-      // Merc is already irreversibly falling.
-      const useMeshOccluders =
-        snapshot.player.position.y >= lowestPlatformBottom
+      const useMeshOccluders = useMeshOccludersAt(snapshot.player.position.y)
       bodyTarget.copy(snapshot.player.position)
       bodyTarget.y += 0.42
       let framedTarget =

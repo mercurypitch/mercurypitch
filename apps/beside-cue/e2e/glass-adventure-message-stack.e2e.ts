@@ -163,10 +163,15 @@ test('stacks two current messages and clears them for the voice challenge @smoke
 
       const sing = page.getByRole('button', { name: /Sing to the glass/ })
       await expect(sing).toBeVisible()
-      await expect(page.getByTestId('glass-message-stack')).toHaveAttribute(
-        'data-message-count',
-        '1',
+      const initialStack = page.getByTestId('glass-message-stack')
+      await expect(initialStack).toHaveRole('status')
+      await expect(initialStack).toHaveAttribute('aria-live', 'polite')
+      await expect(initialStack).toHaveAttribute('aria-atomic', 'false')
+      await expect(initialStack).toHaveAttribute(
+        'aria-label',
+        'Museum guidance',
       )
+      await expect(initialStack).toHaveAttribute('data-message-count', '1')
       if (proofDirectory !== undefined)
         await page.screenshot({
           path: resolve(proofDirectory, `nearby-${viewport.label}.png`),

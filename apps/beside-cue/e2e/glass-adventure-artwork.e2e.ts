@@ -77,13 +77,18 @@ test('artwork offer shares the top header row above guidance and leaves controls
   await page.setViewportSize({ width: 320, height: 640 })
   await openGarden(page)
   const offer = page.getByRole('button', { name: 'View nearby artwork' })
+  const messageStack = page.getByTestId('glass-message-stack')
   const guidance = page.getByTestId('glass-progress-guidance')
   const help = page.getByRole('button', { name: 'How to play' })
   const title = page.getByRole('heading', {
     level: 1,
     name: 'Glassworks Journey',
   })
-  await expect(guidance).toHaveRole('status')
+  await expect(messageStack).toHaveRole('status')
+  await expect(messageStack).toHaveAttribute('aria-live', 'polite')
+  await expect(messageStack).toHaveAttribute('aria-atomic', 'false')
+  await expect(messageStack).toHaveAttribute('aria-label', 'Museum guidance')
+  await expect(guidance).toHaveRole('paragraph')
   await expect(guidance).toHaveAttribute('data-guidance-kind', 'next')
   await expect(guidance).toContainText(
     'Next: Garden decanter. Follow its glowing circle, then tap Sing.',
