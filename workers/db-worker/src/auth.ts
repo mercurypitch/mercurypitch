@@ -1992,8 +1992,12 @@ export async function resolveFederatedUser(
   const linkable = Boolean(email) && emailVerified && identity.linkableByEmail
   if (linkable && holder !== null && holder.emailVerified === 1) {
     assertAccountActive(holder)
+    // COALESCE keeps an id the account already holds. `providerId` has room
+    // for one, so a second provider adopting the same account overwrote the
+    // first's, and after that the two flipped it on every sign-in. The second
+    // needs no id stored: it reaches the account here, by the address.
     await env.DB.prepare(
-      'UPDATE users SET providerId = ?, emailVerified = 1, updatedAt = ? WHERE id = ?',
+      'UPDATE users SET providerId = COALESCE(providerId, ?), emailVerified = 1, updatedAt = ? WHERE id = ?',
     )
       .bind(identity.sub, nowIso(), holder.id)
       .run()

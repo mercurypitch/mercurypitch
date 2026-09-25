@@ -335,14 +335,15 @@ class AuthStatement {
     }
 
     // Step 2 of resolveFederatedUser: an existing account adopts the
-    // provider's subject by address.
+    // provider's subject by address, keeping an id it already holds.
     if (
       this.sql ===
-      'UPDATE users SET providerId = ?, emailVerified = 1, updatedAt = ? WHERE id = ?'
+      'UPDATE users SET providerId = COALESCE(providerId, ?), emailVerified = 1, updatedAt = ? WHERE id = ?'
     ) {
       const [providerId, updatedAt, id] = this.values
-      Object.assign(this.db.user(String(id)), {
-        providerId: String(providerId),
+      const user = this.db.user(String(id))
+      Object.assign(user, {
+        providerId: user.providerId ?? String(providerId),
         emailVerified: 1,
         updatedAt: String(updatedAt),
       })

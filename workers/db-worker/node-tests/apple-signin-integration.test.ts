@@ -185,6 +185,13 @@ function userById(id: string): UserRow {
   return sqlite.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow
 }
 
+function displayNameOf(id: string): string | undefined {
+  const row = sqlite
+    .prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+    .get(id) as { displayName: string } | undefined
+  return row?.displayName
+}
+
 /**
  * What following the emailed confirm link does to the row. Registering proves
  * nothing about the mailbox, so a test that needs a confirmed address has to
@@ -440,13 +447,6 @@ describe('the name Apple sends once', () => {
 
   beforeEach(() => freshDatabase())
 
-  function displayNameOf(id: string): string | undefined {
-    const row = sqlite
-      .prepare('SELECT displayName FROM userProfiles WHERE id = ?')
-      .get(id) as { displayName: string } | undefined
-    return row?.displayName
-  }
-
   it('names the anonymous account the sign-in upgrades', async () => {
     const anonymous = await post('/api/auth/anonymous', {
       deviceId: DEVICE_ID,
@@ -500,6 +500,54 @@ describe('the name Apple sends once', () => {
     const signedIn = await signInWithApple(ADA)
     expect(signedIn.userId).toBe(userId)
     expect(displayNameOf(userId)).toBe('Ada Lovelace')
+  })
+})
+
+describe('Google on the same account', () => {
+  // Google's route checks its token with Google's tokeninfo endpoint, answered
+  // here with the claims each test sets. Apple's endpoints stay with stubApple.
+  const GOOGLE_CLIENT = 'test-google-client'
+  const GOOGLE_SUB = '100000000000000000001'
+  let googleClaims: Record<string, unknown>
+
+  beforeEach(() => {
+    freshDatabase({ GOOGLE_CLIENT_IDS: GOOGLE_CLIENT })
+    googleClaims = {
+      aud: GOOGLE_CLIENT,
+      sub: GOOGLE_SUB,
+      email: 'apple-singer@example.com',
+      email_verified: 'true',
+    }
+    const apple = globalThis.fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | Request, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input.url
+        if (url !== 'https://www.googleapis.com/oauth2/v3/tokeninfo') {
+          return apple(input, init)
+        }
+        return new Response(JSON.stringify(googleClaims), { status: 200 })
+      }),
+    )
+  })
+
+  async function signInWithGoogle(): Promise<Record<string, unknown>> {
+    const response = await post('/api/auth/google', { idToken: 'google-token' })
+    expect(response.status).toBe(200)
+    return (await response.json()) as Record<string, unknown>
+  }
+
+  it('keeps the Apple id when Google adopts the same account', async () => {
+    // Both providers vouch for the confirmed address, so both reach the one
+    // account. `providerId` holds one id, and overwritten on every adoption
+    // it flipped between the two, so each sign-in undid the other's link.
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+
+    expect((await signInWithApple()).userId).toBe(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    expect(userById(userId).providerId).toBe(APPLE_SUB)
+    expect((await signInWithApple()).userId).toBe(userId)
   })
 })
 

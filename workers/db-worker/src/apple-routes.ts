@@ -228,7 +228,9 @@ async function handleAppleNotifications(
   // account that adopted this Apple identity through the verified-email link
   // keeps its ORIGINAL authProvider — 'password', 'google' — with the Apple
   // `sub` in providerId, so the filtered lookup would walk straight past it
-  // and a singer who withdrew consent would keep every live session.
+  // and a singer who withdrew consent would keep every live session. (Only
+  // when Apple linked it first: that link keeps an id already there, so an
+  // account Google linked first holds Google's and is not found here.)
   //
   // Widening is safe on THIS route and nowhere else: `event.sub` arrives
   // inside a payload Apple signed, checked against our own client id, so a
