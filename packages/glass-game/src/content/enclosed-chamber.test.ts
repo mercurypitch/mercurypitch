@@ -1,7 +1,7 @@
 // Enclosed chamber tests — exact wall apertures, camera joins and both held-note gates stay playable.
 
 import { describe, expect, it } from 'vitest'
-import type { Bounds3, GameEvent, GlassGame, MovementInput, SolidPropDefinition, } from '../contracts'
+import type { Bounds3, BreakOutcome, GameEvent, GlassGame, MovementInput, SolidPropDefinition, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
@@ -68,7 +68,11 @@ function walkAxis(game: GlassGame, axis: 'x' | 'z', destination: number): void {
   steps(game, 24)
 }
 
-function sing(game: GlassGame, encounterId: string): void {
+function sing(
+  game: GlassGame,
+  encounterId: string,
+  outcome: BreakOutcome,
+): void {
   expect(game.snapshot().nearbyBreakableId).toBe(encounterId)
   expect(game.beginEncounter(encounterId, 57)).toBe(true)
   const events: GameEvent[] = []
@@ -87,7 +91,7 @@ function sing(game: GlassGame, encounterId: string): void {
       ),
     )
   }
-  expect(events).toContainEqual({ type: 'break', id: encounterId })
+  expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
   steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
   expect(game.snapshot().phase).toBe('idle')
 }
@@ -290,7 +294,7 @@ describe('enclosed chamber content', () => {
     expect(game.snapshot().player.position.x).toBeLessThan(4.3)
     walkAxis(game, 'x', 0)
     walkAxis(game, 'z', -0.05)
-    sing(game, ids.first)
+    sing(game, ids.first, 'path-opened')
     expect(game.snapshot().activeSolidIds).not.toContain(ids.firstGate)
 
     walkAxis(game, 'z', 0)
@@ -301,7 +305,7 @@ describe('enclosed chamber content', () => {
     expect(game.snapshot().player.position.z).toBeGreaterThan(7)
     expect(game.snapshot().player.position.z).toBeLessThan(7.5)
     walkAxis(game, 'z', 5.424917597770692)
-    sing(game, ids.second)
+    sing(game, ids.second, 'path-opened')
     expect(game.snapshot().activeSolidIds).not.toContain(ids.secondGate)
 
     const completionEvents: GameEvent[] = []

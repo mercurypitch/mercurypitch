@@ -117,7 +117,9 @@ describe('reward game integration', () => {
         index * 100,
       )
 
-    expect(events).toEqual([{ type: 'break', id: FINAL_ID }])
+    expect(events).toEqual([
+      { type: 'break', id: FINAL_ID, outcome: 'exit-opened' },
+    ])
     const saveAtBreak = game.saveProgress()
     expect(saveAtBreak.finished).toBe(false)
     expect(saveAtBreak.rewards?.collectedPortraitIds).toEqual(['awakened-muse'])

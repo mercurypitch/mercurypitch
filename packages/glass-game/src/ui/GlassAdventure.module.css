@@ -136,37 +136,42 @@
   width: 20px;
   height: 20px;
 }
-.notice {
+.messageStack {
   position: absolute;
-  top: calc(max(18px, env(safe-area-inset-top)) + 70px);
   left: 50%;
+  bottom: max(48px, calc(env(safe-area-inset-bottom) + 38px));
   transform: translateX(-50%);
+  width: min(440px, calc(100% - 32px));
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+.messageStack p {
   margin: 0;
-  max-width: min(70%, 520px);
+  max-width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 20px #102f3940;
+}
+.messageStackWithOffer {
+  bottom: max(180px, calc(env(safe-area-inset-bottom) + 170px));
+}
+.notice {
+  width: fit-content;
   padding: 9px 17px;
   border-radius: 18px;
   background: #eff6efeb;
-  text-align: center;
   font-size: 14px;
-  box-shadow: 0 3px 16px #143d4b15;
-  pointer-events: none;
 }
 .narrationCaption {
-  position: absolute;
-  left: 50%;
-  bottom: max(88px, calc(env(safe-area-inset-bottom) + 76px));
-  transform: translateX(-50%);
-  margin: 0;
-  max-width: min(72%, 460px);
+  width: fit-content;
   padding: 9px 16px;
   border: 1px solid #fff4;
   border-radius: 18px;
   background: #173f49e8;
   color: #fff9e6;
-  text-align: center;
   font-size: 14px;
-  box-shadow: 0 4px 20px #102f3940;
-  pointer-events: none;
 }
 .narrationCaption strong {
   margin-right: 0.55em;
@@ -279,22 +284,14 @@
   font-size: 14px;
 }
 .progressGuidance {
-  position: absolute;
-  left: 50%;
-  bottom: max(48px, calc(env(safe-area-inset-bottom) + 38px));
-  transform: translateX(-50%);
-  width: min(440px, calc(100% - 32px));
-  margin: 0;
+  width: 100%;
   padding: 10px 15px;
   border: 1px solid #fff5;
   border-radius: 18px;
   background: #173f49e8;
   color: #fff9e6;
-  text-align: center;
   font-size: 13px;
   line-height: 1.35;
-  box-shadow: 0 4px 20px #102f3940;
-  pointer-events: none;
 }
 .progressGuidance strong {
   color: #f0cd7e;
@@ -654,6 +651,12 @@
   .primary kbd {
     display: none;
   }
+  .messageStack {
+    bottom: max(168px, calc(env(safe-area-inset-bottom) + 156px));
+  }
+  .messageStackWithOffer {
+    bottom: max(190px, calc(env(safe-area-inset-bottom) + 178px));
+  }
 }
 @media (max-width: 900px) {
   .topbarArtwork .identity {
@@ -687,13 +690,18 @@
     display: none;
   }
   .notice {
-    max-width: 75%;
     font-size: 12px;
     padding: 8px 12px;
   }
+  .messageStack {
+    bottom: max(168px, calc(env(safe-area-inset-bottom) + 156px));
+    width: min(420px, calc(100% - 28px));
+    gap: 6px;
+  }
+  .messageStackWithOffer {
+    bottom: max(272px, calc(env(safe-area-inset-bottom) + 260px));
+  }
   .narrationCaption {
-    bottom: max(156px, calc(env(safe-area-inset-bottom) + 144px));
-    max-width: 70%;
     padding: 8px 12px;
     font-size: 12px;
   }
@@ -701,8 +709,7 @@
     bottom: max(180px, calc(env(safe-area-inset-bottom) + 165px));
   }
   .progressGuidance {
-    bottom: max(180px, calc(env(safe-area-inset-bottom) + 165px));
-    width: min(420px, calc(100% - 28px));
+    width: 100%;
   }
   .encounter {
     bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
@@ -724,7 +731,6 @@
     display: none;
   }
   .progressGuidance {
-    width: calc(100% - 24px);
     padding: 9px 12px;
     font-size: 12px;
   }
