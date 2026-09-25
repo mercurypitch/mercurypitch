@@ -64,3 +64,13 @@ Reviewed 24 September 2026; confirm version-sensitive settings when producing.
 
 - [Khronos buffers and buffer views](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#buffers-and-buffer-views): standard external-buffer delivery and alignment.
 - [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/): verify the current static-asset size ceiling before preparing delivery.
+
+## Provider part separation
+
+Meshy Auto Split is a printing workflow, not a texture-preserving game-asset partition. Its official API documentation (checked 25 September 2026) says it rebuilds cut parts with flat vertex colors, does not carry the input texture maps into exports, reinforces thin cut regions, and removes collapsed slivers. Keep it separate from the immutable textured donor. A split result may be useful as a guide, but adopting it requires matched silhouette checks and deliberate transfer of surface detail; never treat successful segmentation as proof that the original art survived.
+
+- [Meshy Auto Split API](https://docs.meshy.ai/en/api/auto-split): texture loss, reinforcement, output topology and segmentation behavior.
+
+When splitting in Blender, preserve corner UVs and custom normals as well as positions and triangle connectivity. A topology count alone cannot detect shifted texture seams or changed shading. Record the canonical movement axis separately from the longest geometric dimension; scroll rollers move across their spacing, not along their shafts.
+
+Raw glTF index connectivity can be split at UV seams and hard normals. Thousands of disconnected index components do not imply thousands of independently movable physical parts. A component-based split must also inspect position-welded adjacency and its actual moving joins. Reassembling unchanged triangles proves preservation at the original pose; it does not prove that the retracted or fractured pose has valid boundaries.

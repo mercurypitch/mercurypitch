@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "amethyst-hourglass",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "in-progress",
   "source": {
     "file": "source-assets/references/amethyst-hourglass.png",
     "sha256": "d5a1e296d1cb2c95a62cb230c04b9c76055967681fe4693a4a9162dcb9613e27",
@@ -48,9 +48,29 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:54:34.847759+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3165,
+  "submissionStartedAtUtc": "2026-09-25T12:54:34.847769+00:00",
+  "taskId": "01a0d8a1-c4ba-7561-b032-ab77ad07d29c",
+  "submittedAtUtc": "2026-09-25T12:54:38.721685+00:00",
+  "balanceAfterSubmit": 3125,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8a1-c4ba-7561-b032-ab77ad07d29c",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 67,
+    "created_at": 1790340878553,
+    "started_at": 1790340878561,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:57:38.708354+00:00"
 }

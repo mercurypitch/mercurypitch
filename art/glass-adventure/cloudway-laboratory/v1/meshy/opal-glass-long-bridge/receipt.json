@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "opal-glass-long-bridge",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/opal-glass-long-bridge.png",
     "sha256": "f728aea8099295155427f2e254d5abf1d3014619acd7520a6228b942641a57bc",
@@ -48,9 +48,158 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:46:34.064798+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3325,
+  "submissionStartedAtUtc": "2026-09-25T12:46:34.064812+00:00",
+  "taskId": "01a0d89a-6e21-761e-9a7f-62a155869947",
+  "submittedAtUtc": "2026-09-25T12:46:38.205729+00:00",
+  "balanceAfterSubmit": 3285,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d89a-6e21-761e-9a7f-62a155869947",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340398043,
+    "started_at": 1790340398052,
+    "finished_at": 1790340557224,
+    "expires_at": 1790599757224,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:49:45.455706+00:00",
+  "finalStatus": {
+    "id": "01a0d89a-6e21-761e-9a7f-62a155869947",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340398043,
+    "started_at": 1790340398052,
+    "finished_at": 1790340557224,
+    "expires_at": 1790599757224,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/opal-glass-long-bridge/dense-donor.glb",
+      "bytes": 37279348,
+      "sha256": "cf75128f20a01e1c2aec183bce384e42e0a811eceb7c350e22adac6b9996fd16",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 125293,
+      "triangles": 210848
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-base_color.png",
+        "bytes": 40336105,
+        "sha256": "ac34d7f3c0aadc29d298b2681a7081868e2e1f32dc7d0ac37d011ef862c4293d",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-metallic.png",
+        "bytes": 8204538,
+        "sha256": "3a5f56f12ec4a8463c6cabd134eb66f89f2978c086980ef95ff50233fca47203",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-normal.png",
+        "bytes": 7064889,
+        "sha256": "f701377dc13b0cf9bdf2d8affe13337a759506391686abfb8e36cfcb8d8ba193",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-roughness.png",
+        "bytes": 5103047,
+        "sha256": "5cb27394005c8caa2f72e60c868811c18006f69318917c0e2229eb927aa3bdc4",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/opal-glass-long-bridge/preview.png",
+      "bytes": 36198,
+      "sha256": "8c2270395df9daab68dca9719b3e53d0d5110d2495e11d1bd84b94f352cd3b2b",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:49:53.224555+00:00",
+  "balanceAfterArchive": 3205,
+  "observedBalanceDeltaFinal": 120,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:49:54.026521+00:00"
 }

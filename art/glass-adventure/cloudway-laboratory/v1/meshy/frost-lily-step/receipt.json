@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "frost-lily-step",
   "operation": "image-to-3d",
-  "state": "in-progress",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/frost-lily-step.png",
     "sha256": "f4faa77644dfd73656d5a2cd67bc9500f18bc58111dc5c86d750c68d8ddfedf5",
@@ -53,7 +53,7 @@
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
   "balanceBefore": 3565,
   "submissionStartedAtUtc": "2026-09-25T12:31:03.463357+00:00",
   "taskId": "01a0d88c-3b91-73b4-8eee-d587f6d77d76",
@@ -63,14 +63,143 @@
   "lastStatus": {
     "id": "01a0d88c-3b91-73b4-8eee-d587f6d77d76",
     "type": "image-to-3d",
-    "status": "IN_PROGRESS",
-    "progress": 58,
+    "status": "SUCCEEDED",
+    "progress": 100,
     "created_at": 1790339467639,
     "started_at": 1790339467646,
-    "finished_at": 0,
-    "expires_at": 0,
+    "finished_at": 1790339758040,
+    "expires_at": 1790598958040,
     "consumed_credits": 40,
     "geometry_resolution": "4k"
   },
-  "lastCheckedAtUtc": "2026-09-25T12:34:19.783187+00:00"
+  "lastCheckedAtUtc": "2026-09-25T12:37:54.071325+00:00",
+  "finalStatus": {
+    "id": "01a0d88c-3b91-73b4-8eee-d587f6d77d76",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790339467639,
+    "started_at": 1790339467646,
+    "finished_at": 1790339758040,
+    "expires_at": 1790598958040,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/frost-lily-step/dense-donor.glb",
+      "bytes": 59762456,
+      "sha256": "8ac87902a43f9be9e7735726b8504ccce6716eb3086d439d07a1f1dd8d0eb5f4",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 194437,
+      "triangles": 355472
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-base_color.png",
+        "bytes": 69463380,
+        "sha256": "53572b70a100bb3b150c5f7c826fde44b8ecfe559a3ca34b8296ef6a944105d6",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-metallic.png",
+        "bytes": 6596022,
+        "sha256": "f1b3339d39cb0b4f7bbbac3466bd8c0ba243fc3847be364d77df34f428453e93",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-normal.png",
+        "bytes": 14372987,
+        "sha256": "30070a0b57f3833b9683134dc85c2a1833c749997a758123c495cdb515a11e20",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-roughness.png",
+        "bytes": 6044298,
+        "sha256": "e0f6bddb8349488f450fc65f7aade3391bb99031c49406d3413d907599d294eb",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/frost-lily-step/preview.png",
+      "bytes": 97811,
+      "sha256": "52c0c020033763791f094037a48c3f76b08994f5b40ec2370723a92287a0b292",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:38:02.848502+00:00",
+  "balanceAfterArchive": 3445,
+  "observedBalanceDeltaFinal": 120,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:38:03.689941+00:00"
 }

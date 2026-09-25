@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "camellia-singing-vase",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/camellia-singing-vase.png",
     "sha256": "5440ffba8979e11dc2a859971e2df99c5724b841b55e33b92e1059a97c7c93df",
@@ -48,9 +48,158 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:46:55.310977+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3245,
+  "submissionStartedAtUtc": "2026-09-25T12:46:55.310989+00:00",
+  "taskId": "01a0d89a-c199-73e8-b269-310ad50b0a4a",
+  "submittedAtUtc": "2026-09-25T12:46:59.626808+00:00",
+  "balanceAfterSubmit": 3205,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d89a-c199-73e8-b269-310ad50b0a4a",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340419460,
+    "started_at": 1790340419471,
+    "finished_at": 1790340782531,
+    "expires_at": 1790599982531,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:53:33.997963+00:00",
+  "finalStatus": {
+    "id": "01a0d89a-c199-73e8-b269-310ad50b0a4a",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340419460,
+    "started_at": 1790340419471,
+    "finished_at": 1790340782531,
+    "expires_at": 1790599982531,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/camellia-singing-vase/dense-donor.glb",
+      "bytes": 31970352,
+      "sha256": "51585ccccaca2c2419c27c60fcaa767e1ce943e26cfb48fc8a8ae538e87a20af",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 65497,
+      "triangles": 115656
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-base_color.png",
+        "bytes": 48179260,
+        "sha256": "2bdd4053547c055bcbb0db11b454e74cc171f3d7809ac66eccf67686382b1c4c",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-metallic.png",
+        "bytes": 7541803,
+        "sha256": "b97d8cc0c09215b7845de52b3979b5b30e5b87c08daeadb30410a1aad90e5f1a",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-normal.png",
+        "bytes": 7523846,
+        "sha256": "818d58bde942070a146d37c2c9d18112e68b03cadb95dc8aebc2ed99362374a1",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-roughness.png",
+        "bytes": 3452253,
+        "sha256": "37c13dba90763894d8493d51f577433c1473e4d4fbfce00d8d92fc9b2099283f",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/camellia-singing-vase/preview.png",
+      "bytes": 178460,
+      "sha256": "8fce5eef125c81734af825676fc9098db73457eb38efe8e938bd5ab2b107c6ba",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:53:40.544509+00:00",
+  "balanceAfterArchive": 3205,
+  "observedBalanceDeltaFinal": 40,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:53:41.359319+00:00"
 }

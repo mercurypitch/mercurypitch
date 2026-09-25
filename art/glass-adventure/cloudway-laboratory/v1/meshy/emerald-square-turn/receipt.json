@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "emerald-square-turn",
   "operation": "image-to-3d",
-  "state": "in-progress",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/emerald-square-turn.png",
     "sha256": "857de350e8d813b4df602bb93176527e73613981603a74a351efd5044fd2bf26",
@@ -53,7 +53,7 @@
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
   "balanceBefore": 3485,
   "submissionStartedAtUtc": "2026-09-25T12:31:26.732879+00:00",
   "taskId": "01a0d88c-9670-7773-8e59-2d47135f9cf0",
@@ -63,14 +63,143 @@
   "lastStatus": {
     "id": "01a0d88c-9670-7773-8e59-2d47135f9cf0",
     "type": "image-to-3d",
-    "status": "IN_PROGRESS",
-    "progress": 58,
+    "status": "SUCCEEDED",
+    "progress": 100,
     "created_at": 1790339490611,
     "started_at": 1790339490630,
-    "finished_at": 0,
-    "expires_at": 0,
+    "finished_at": 1790339806635,
+    "expires_at": 1790599006635,
     "consumed_credits": 40,
     "geometry_resolution": "4k"
   },
-  "lastCheckedAtUtc": "2026-09-25T12:34:32.743561+00:00"
+  "lastCheckedAtUtc": "2026-09-25T12:38:09.546967+00:00",
+  "finalStatus": {
+    "id": "01a0d88c-9670-7773-8e59-2d47135f9cf0",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790339490611,
+    "started_at": 1790339490630,
+    "finished_at": 1790339806635,
+    "expires_at": 1790599006635,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/emerald-square-turn/dense-donor.glb",
+      "bytes": 100788972,
+      "sha256": "16f208c8727647170ccabb5807c8f5c2aabd396cde4363fe0e815edb6439d426",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 794451,
+      "triangles": 1413282
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-base_color.png",
+        "bytes": 71539336,
+        "sha256": "dfce01ff3942936b78d122b0841a67891a7c68bf6f1cfc25e95c1796c527e417",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-metallic.png",
+        "bytes": 10321583,
+        "sha256": "5dc276a71dd260c32712bcd6d464e93dcf0a28b49bda8ec0214bac56e92e8b21",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-normal.png",
+        "bytes": 14147215,
+        "sha256": "d80c4eaebe7a5055728654ca32c9e853b8868ef2e77a33b32253a30e92a3fc58",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-roughness.png",
+        "bytes": 9059994,
+        "sha256": "f3bcf5c6fd1a65a509416de4dc10fdb1a892f2848c0ec39301e47ad4d8b19965",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/emerald-square-turn/preview.png",
+      "bytes": 112459,
+      "sha256": "3505d1669ea4820be1ba7c1c3870f7e37c32fe673119d4efdb5a44b23d74f2ee",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:38:19.617108+00:00",
+  "balanceAfterArchive": 3445,
+  "observedBalanceDeltaFinal": 40,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:38:20.489482+00:00"
 }
