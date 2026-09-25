@@ -1109,8 +1109,18 @@ function defaultDisplayName(userId: string): string {
 }
 
 /**
+ * The handle joining a board mints (src/features/challenges/board-consent.ts)
+ * and the boards fall back to: six characters of the id where
+ * `defaultDisplayName` takes four. Also a name nobody chose.
+ */
+function boardDisplayName(userId: string): string {
+  return `Singer-${userId.slice(0, 6)}`
+}
+
+/**
  * Give an existing account the name Apple sent, but only while the profile
- * still carries the `defaultDisplayName` it was created with — a name the
+ * still carries a default handle, either the `defaultDisplayName` it was
+ * created with or the `boardDisplayName` a board gave it — a name the
  * singer chose is theirs. Apple sends the name once, at the first
  * authorization and with the singer's consent in its own sheet, so a sign-in
  * that carries one may be the only chance to keep it. Not Google: its name
@@ -1125,9 +1135,15 @@ async function fillDefaultDisplayName(
   if (identity.provider !== 'apple' || !identity.name) return
   await db
     .prepare(
-      'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName = ?',
+      'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName IN (?, ?)',
     )
-    .bind(identity.name, nowIso(), userId, defaultDisplayName(userId))
+    .bind(
+      identity.name,
+      nowIso(),
+      userId,
+      defaultDisplayName(userId),
+      boardDisplayName(userId),
+    )
     .run()
 }
 

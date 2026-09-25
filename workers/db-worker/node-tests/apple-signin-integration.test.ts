@@ -501,6 +501,21 @@ describe('the name Apple sends once', () => {
     expect(signedIn.userId).toBe(userId)
     expect(displayNameOf(userId)).toBe('Ada Lovelace')
   })
+
+  it('fills the six-character default the boards write as well', async () => {
+    // Joining a board creates the profile as `Singer-<first 6 of the id>`
+    // (board-consent.ts), where the Worker's own default takes 4. Both are a
+    // handle nobody chose.
+    const first = await signInWithApple()
+    const userId = String(first.userId)
+    sqlite
+      .prepare('UPDATE userProfiles SET displayName = ? WHERE id = ?')
+      .run(`Singer-${userId.slice(0, 6)}`, userId)
+
+    const again = await signInWithApple(ADA)
+    expect(again.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Ada Lovelace')
+  })
 })
 
 describe('Google on the same account', () => {

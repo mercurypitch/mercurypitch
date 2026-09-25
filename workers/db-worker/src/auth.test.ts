@@ -377,19 +377,19 @@ class AuthStatement {
     }
 
     // The provider's name for an account: written outright when an anonymous
-    // account is upgraded, and otherwise only over the default name, which
-    // the trailing `AND displayName = ?` carries.
+    // account is upgraded, and otherwise only over a default handle, which
+    // the trailing `AND displayName IN (?, ?)` carries.
     if (
       this.sql ===
         'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?' ||
       this.sql ===
-        'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName = ?'
+        'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName IN (?, ?)'
     ) {
-      const [displayName, updatedAt, id, onlyOver] = this.values
+      const [displayName, updatedAt, id, ...onlyOver] = this.values
       const profile = this.db.profiles.get(String(id))
       if (
         profile === undefined ||
-        (this.values.length === 4 && profile.displayName !== onlyOver)
+        (onlyOver.length > 0 && !onlyOver.includes(profile.displayName))
       ) {
         return { success: true, meta: { changes: 0 } }
       }
