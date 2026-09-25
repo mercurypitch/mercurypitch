@@ -1,6 +1,6 @@
 # Cloudway laboratory kit
 
-[Open visual catalogue](review.html) · [Task list](TASKS.md) · [Integration spec](INTEGRATION-SPEC.md) · [Level studio](../../level-studio/v1/index.html)
+[Open visual catalogue](review.html) · [Task list](TASKS.md) · [Blender review](BLENDER-REVIEW.md) · [Integration spec](INTEGRATION-SPEC.md) · [Level studio](../../level-studio/v1/index.html)
 
 20 distinct single-object references were generated with the built-in ChatGPT image tool and visually inspected. `catalogue.json` retains every final prompt, output path and SHA-256. References are source art, not game models.
 
@@ -51,3 +51,5 @@ The 20 originals were copied with SHA-256 equality checked before replacing the 
 All 20 requested source models are archived: 15,154,026 triangles in total, with 8K base-color maps and complete 4K normal/metallic/roughness maps. Every source GLB, map and provider preview was independently rehashed against its receipt. The 20 successful tasks cost 800 credits; the balance is 2,885. A zero-credit provider failure and its one successful retry are retained in the hourglass attempt history. Requested model 7.1 is recorded; Meshy does not echo that model identifier in these responses.
 
 These are full-quality sources, with no automatic remesh, polygon target or decimation. Later runtime exports will be separate derivatives, compared against the source at the actual game camera and closest allowed inspection distance. Full-size original files, packed source projects and proof images remain under the Proton-linked `source-assets` directory.
+
+All 20 packed Blender source masters now pass fresh-process reopen audits. Raw/review objects retain the same dense mesh data and all four full-resolution maps. The source catalogue exposes matched material and clay proofs for every model (120 saved views across three camera angles and two materials). These checks establish source preservation; semantic glass/fracture exports still require acceptance.
