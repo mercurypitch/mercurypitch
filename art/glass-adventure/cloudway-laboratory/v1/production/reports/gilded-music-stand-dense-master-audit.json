@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "gilded-music-stand",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/gilded-music-stand/gilded-music-stand-dense-master.blend",
+    "bytes": 134637272,
+    "sha256": "dbd39144ad4364f24cd6c5d8edc7fd5b439e005e5f7f829bd3bde71afc3bd6d1",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "4339c901dc5fe9f77ffdfcda21842972f07907467d40a5a231bfa44f1c81cf73",
+  "topology": {
+    "vertices": 435572,
+    "triangles": 799980,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "94d2af2c91811d146c479cccdb204b79c26d79c55d2e7c7ef86cb0386fd7c034",
+    "triangleIndicesInt32Sha256": "645503d64201632b327ba96105ef6470d7d5c6e22536b46789f3e10a83baa0bc"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_GildedMusicStand_DenseMaster",
+    "rawObject": "gilded-music-stand__raw_import",
+    "reviewObject": "gilded-music-stand__normalized_review",
+    "meshData": "gilded-music-stand__dense_mesh",
+    "material": "gilded-music-stand__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "gilded-music-stand__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "359c7a1db4656d51e629608cbf6a524e1f16b428e8bc5e57f8231e23c0262c3f",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "gilded-music-stand__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "a1479580ff19927d8f3d1b8acb6398ec1db46505052d1ad345e4fa94c2b4aafe",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "gilded-music-stand__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "f80f205fd680899902c9f0ba8353252bd48cf221e968b431fbae7fb1fa485da2",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "gilded-music-stand__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "344f91d64cfaae39ca525888d6a5ecf5ae12f6d9f727e41c6a148ae15ecfb848",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/gilded-music-stand/matched-clay-three-quarter.png",
+      "bytes": 438112,
+      "sha256": "d61c04d71c79045354b240a0eee5ce9753088cdf0d73d7b293797971dbccb080",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/gilded-music-stand/matched-clay-top.png",
+      "bytes": 813055,
+      "sha256": "beeb6042065870fbf3e23831ed415273a3ad61a2b6c88b69e0d619b867083eec",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/gilded-music-stand/matched-clay-side.png",
+      "bytes": 420848,
+      "sha256": "b332783e3e3877eedac8d16b2522cc13d66e8ec4c4f60313e869cbc39da8e173",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/gilded-music-stand/matched-pbr-three-quarter.png",
+      "bytes": 460128,
+      "sha256": "1131b643e4a027efc3660f318c48113e60e0e4306ede12ac220b69bfd70f8a5d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/gilded-music-stand/matched-pbr-top.png",
+      "bytes": 1018930,
+      "sha256": "1f6fd82c9a62f479e036564b89c0ece6fdb6aa99d872ecefded7160599515990",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/gilded-music-stand/matched-pbr-side.png",
+      "bytes": 441773,
+      "sha256": "6b36b8de97f90f844b1db47141ec4f3834267de59cd7862eac18820e5b9791fb",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset gilded-music-stand",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

@@ -1,0 +1,362 @@
+{
+  "schema": 1,
+  "assetId": "frosted-scroll-wall",
+  "label": "Frosted Scroll Wall",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/frosted-scroll-wall/dense-donor.glb",
+    "bytes": 83156144,
+    "sha256": "7cfb07546a0f42880029b52ca17baa5001b04a3455b221a173e8a88fc28df855",
+    "taskId": "01a0d89a-9c5b-71b5-907f-45bd5a6f801b",
+    "receipt": {
+      "file": "source-assets/meshy/frosted-scroll-wall/receipt.json",
+      "bytes": 6615,
+      "sha256": "479dceaff573df4976c7ea89d9790888dfd18ac23add5c72d5cd5a8ccfab801e"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 410265,
+    "triangles": 701756,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "d4e6bb57ae5731394991984708728f251382f12fa1084bac64766d692551e6c4",
+    "triangleIndicesInt32Sha256": "6cc0751af3d81b310397f29021071ad9313cdf1489dc3595297f3dd89050e9e2",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 6097,
+      "largestVertexCounts": [
+        2845,
+        2291,
+        2219,
+        2215,
+        2114,
+        2106,
+        2055,
+        1807,
+        1670,
+        1585,
+        1566,
+        1417
+      ],
+      "largestVertexFractions": [
+        0.006934542,
+        0.005584196,
+        0.005408699,
+        0.005398949,
+        0.005152767,
+        0.005133268,
+        0.005008958,
+        0.00440447,
+        0.00407054,
+        0.003863357,
+        0.003817045,
+        0.003453865
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.576715111732,
+        0.0,
+        0.0,
+        0.001086356584
+      ],
+      [
+        0.0,
+        1.576715111732,
+        0.0,
+        -0.006962768268
+      ],
+      [
+        0.0,
+        0.0,
+        1.576715111732,
+        1.501300811768
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.576715111732,
+        0.0,
+        0.0,
+        0.001086356584
+      ],
+      [
+        0.0,
+        1.576715111732,
+        0.0,
+        -0.006962768268
+      ],
+      [
+        0.0,
+        0.0,
+        1.576715111732,
+        1.501300811768
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.355656475,
+        -0.245718435,
+        -3.9e-08
+      ],
+      "max": [
+        1.355656475,
+        0.245718434,
+        3.000000027
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      2.71131295,
+      0.491436869,
+      3.000000066
+    ],
+    "reviewScale": {
+      "basis": "source-height-z",
+      "targetMetres": 3.0,
+      "sourceRawUnits": 1.9026899933815002,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.860486984,
+        -0.151426002,
+        -0.952170014
+      ],
+      "max": [
+        0.859108984,
+        0.160257995,
+        0.950519979
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.719595969,
+      0.311683998,
+      1.902689993
+    ],
+    "baseRawZ": -0.952170014,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "museum frame",
+      "frosted pane",
+      "stable side feet"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Frame, removable pane, feet, and any mounting surfaces are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-base_color.png",
+        "bytes": 71126467,
+        "sha256": "85f96252008814b40de7fe7f633b5ba10c36aeebd4d07861ae51478e98ef4d01",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-normal.png",
+        "bytes": 16295835,
+        "sha256": "38e5ed82b51e210850921bff6c28bbbbd03936dcf3272d8a633a6a5e2821abe3",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-metallic.png",
+        "bytes": 8094832,
+        "sha256": "561376db1db1187e2c33ee7b111f6203e789220ccf31cff7d8a3030e181d7aa9",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/frosted-scroll-wall/textures/set-0-roughness.png",
+        "bytes": 7419053,
+        "sha256": "cb7341982d5d6bfcdabc7884b3d009e7502234a432c4a03746dcc19370ad4eb6",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-clay-three-quarter.png",
+          "bytes": 359177,
+          "sha256": "9e67b1a809956302abad4dc2c6829908190c86dbc88605e4e4485a0538976c0b",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-clay-top.png",
+          "bytes": 582197,
+          "sha256": "3eb5ced2ab4d1a3c07fa7e40a0dd5a1099a794d27956a026514a4ebd462bdd50",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-clay-side.png",
+          "bytes": 416116,
+          "sha256": "64bab868592fcdb489751ac27d63b306d8e460a42a509827b253f4b38b5557a1",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-pbr-three-quarter.png",
+          "bytes": 380465,
+          "sha256": "bef06d456aed00f2e7fc1a78a2a2e741773ff3e5cf0a69a40767b5bc8e67a548",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-pbr-top.png",
+          "bytes": 655653,
+          "sha256": "c45ce647e540f51f3bde826e88086a8d02063f579d9ef31a3db2fef67810b9db",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-pbr-side.png",
+          "bytes": 444127,
+          "sha256": "29f179cb1941a3717b0a0dbfc3dab2b0ce175e0bd3d2d3b47281f71601dfd35e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/frosted-scroll-wall/frosted-scroll-wall-dense-master.blend",
+    "bytes": 136599619,
+    "sha256": "336c030768c557b5d72bdc22dee12669f21d3d534331f92e3d879c421ef357a7",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset frosted-scroll-wall"
+}

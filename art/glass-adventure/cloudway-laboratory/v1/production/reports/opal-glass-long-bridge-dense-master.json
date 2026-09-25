@@ -1,0 +1,442 @@
+{
+  "schema": 1,
+  "assetId": "opal-glass-long-bridge",
+  "label": "Opal Glass Long Bridge",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/opal-glass-long-bridge/dense-donor.glb",
+    "bytes": 37279348,
+    "sha256": "cf75128f20a01e1c2aec183bce384e42e0a811eceb7c350e22adac6b9996fd16",
+    "taskId": "01a0d89a-6e21-761e-9a7f-62a155869947",
+    "receipt": {
+      "file": "source-assets/meshy/opal-glass-long-bridge/receipt.json",
+      "bytes": 6588,
+      "sha256": "02839a5f7453272442484a6b26f63f43a81b390faf58c0e33b0eb323df958312"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 125293,
+    "triangles": 210848,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "a4393edec5c7be4f3cdddf79d13f2ef03d2dfd83901005609089181ebc9cc11b",
+    "triangleIndicesInt32Sha256": "aeb6b89eac96ff02126396eb23e7d342768387c14ef9e80e89811a2923ae9bb9",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 2071,
+      "largestVertexCounts": [
+        940,
+        903,
+        901,
+        812,
+        794,
+        779,
+        720,
+        719,
+        718,
+        710,
+        689,
+        676
+      ],
+      "largestVertexFractions": [
+        0.007502414,
+        0.007207107,
+        0.007191144,
+        0.006480809,
+        0.006337146,
+        0.006217426,
+        0.00574653,
+        0.005738549,
+        0.005730568,
+        0.005666717,
+        0.00549911,
+        0.005395353
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        2.101435184479,
+        0.0,
+        0.0,
+        0.000351967377
+      ],
+      [
+        0.0,
+        2.101435184479,
+        0.0,
+        -0.000222750896
+      ],
+      [
+        0.0,
+        0.0,
+        2.101435184479,
+        -0.24366004765
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        2.101435184479,
+        0.0,
+        0.0,
+        0.000351967377
+      ],
+      [
+        0.0,
+        2.101435184479,
+        0.0,
+        -0.000222750896
+      ],
+      [
+        0.0,
+        0.0,
+        2.101435184479,
+        -0.24366004765
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.999999937,
+        -0.459569156,
+        -0.495540169
+      ],
+      "max": [
+        1.999999937,
+        0.459569156,
+        0.004689659
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      3.999999875,
+      0.919138311,
+      0.500229828
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 4.0,
+      "sourceRawUnits": 1.90346097946167,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.951897979,
+        -0.218586996,
+        -0.119860999
+      ],
+      "max": [
+        0.951563001,
+        0.218798995,
+        0.118180998
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.903460979,
+      0.437385991,
+      0.238041997
+    ],
+    "landingRawZ": 0.115949354,
+    "heightToleranceRaw": 0.001859703,
+    "patchTriangles": 15640,
+    "patchAreaRawSquareUnits": 0.658751802,
+    "patchBoundsRaw": {
+      "min": [
+        -0.946518004,
+        -0.177096993,
+        0.114371002
+      ],
+      "max": [
+        0.9454,
+        0.176743999,
+        0.118100002
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.891918004,
+      0.353840992,
+      0.003729001
+    ],
+    "horizontalCoverage": [
+      0.993935796,
+      0.808990226
+    ],
+    "relativePatchHeightSpread": 0.015665306,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "opal centre deck",
+      "gold perimeter strips",
+      "underside diamonds",
+      "musical staff inlay"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Glass, metal, underside ornaments, and staff inlay are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-base_color.png",
+        "bytes": 40336105,
+        "sha256": "ac34d7f3c0aadc29d298b2681a7081868e2e1f32dc7d0ac37d011ef862c4293d",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-normal.png",
+        "bytes": 7064889,
+        "sha256": "f701377dc13b0cf9bdf2d8affe13337a759506391686abfb8e36cfcb8d8ba193",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-metallic.png",
+        "bytes": 8204538,
+        "sha256": "3a5f56f12ec4a8463c6cabd134eb66f89f2978c086980ef95ff50233fca47203",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/opal-glass-long-bridge/textures/set-0-roughness.png",
+        "bytes": 5103047,
+        "sha256": "5cb27394005c8caa2f72e60c868811c18006f69318917c0e2229eb927aa3bdc4",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-clay-three-quarter.png",
+          "bytes": 346075,
+          "sha256": "329fdd6bccb71210e3d8bad54f4b29b37d9b6110a710c4320700f9b1082e3391",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-clay-top.png",
+          "bytes": 457842,
+          "sha256": "7a46f25c2ad2a056825b9ebd1cc7997b76ce6fb8cd776012f365c42ac68124aa",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-clay-side.png",
+          "bytes": 292389,
+          "sha256": "6c597b90add1fb8d0eadd1c69185fcee42a3807277f9eda44c7396b5557920ec",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-pbr-three-quarter.png",
+          "bytes": 389100,
+          "sha256": "683943de22f3a85c6f675871df3c8b9f6779a453f3a5934f3f44fcb7af2f20cf",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-pbr-top.png",
+          "bytes": 621498,
+          "sha256": "95d36225d3039bd16e092e34141a405c28282af238e90de5ca8f44adaafd4259",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/opal-glass-long-bridge/matched-pbr-side.png",
+          "bytes": 314366,
+          "sha256": "60e86ae3dead1ab2470988b5dfaabf53f164eabcd568817b8d81258a926c7e6e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/opal-glass-long-bridge/opal-glass-long-bridge-dense-master.blend",
+    "bytes": 70682525,
+    "sha256": "d3965b5a8e7582ee067273848e6e6103111baa0076179d307c3a979dffff4561",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset opal-glass-long-bridge",
+  "contactCandidate": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.951897979,
+        -0.218586996,
+        -0.119860999
+      ],
+      "max": [
+        0.951563001,
+        0.218798995,
+        0.118180998
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.903460979,
+      0.437385991,
+      0.238041997
+    ],
+    "landingRawZ": 0.115949354,
+    "heightToleranceRaw": 0.001859703,
+    "patchTriangles": 15640,
+    "patchAreaRawSquareUnits": 0.658751802,
+    "patchBoundsRaw": {
+      "min": [
+        -0.946518004,
+        -0.177096993,
+        0.114371002
+      ],
+      "max": [
+        0.9454,
+        0.176743999,
+        0.118100002
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.891918004,
+      0.353840992,
+      0.003729001
+    ],
+    "horizontalCoverage": [
+      0.993935796,
+      0.808990226
+    ],
+    "relativePatchHeightSpread": 0.015665306,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  }
+}

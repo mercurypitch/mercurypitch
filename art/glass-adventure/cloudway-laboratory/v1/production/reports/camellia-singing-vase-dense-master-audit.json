@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "camellia-singing-vase",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/camellia-singing-vase/camellia-singing-vase-dense-master.blend",
+    "bytes": 72254298,
+    "sha256": "e931ec5da6c7541a9961ffae762cf2bb0bb8d5cb5704df13276fca18f9267bc6",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "51585ccccaca2c2419c27c60fcaa767e1ce943e26cfb48fc8a8ae538e87a20af",
+  "topology": {
+    "vertices": 65497,
+    "triangles": 115656,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "4a76d3bb6f6fd63824d684c169fdaeb6aadbdc7f62bf58b66a01bd391a93655e",
+    "triangleIndicesInt32Sha256": "165164d8434dfeeb6a033e9e0b8ee07bca8693220ddffe16f8fea43341edb354"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_CamelliaSingingVase_DenseMaster",
+    "rawObject": "camellia-singing-vase__raw_import",
+    "reviewObject": "camellia-singing-vase__normalized_review",
+    "meshData": "camellia-singing-vase__dense_mesh",
+    "material": "camellia-singing-vase__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "camellia-singing-vase__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "2bdd4053547c055bcbb0db11b454e74cc171f3d7809ac66eccf67686382b1c4c",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "camellia-singing-vase__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "818d58bde942070a146d37c2c9d18112e68b03cadb95dc8aebc2ed99362374a1",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "camellia-singing-vase__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "b97d8cc0c09215b7845de52b3979b5b30e5b87c08daeadb30410a1aad90e5f1a",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "camellia-singing-vase__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "37c13dba90763894d8493d51f577433c1473e4d4fbfce00d8d92fc9b2099283f",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/camellia-singing-vase/matched-clay-three-quarter.png",
+      "bytes": 434877,
+      "sha256": "a6edfdb00ecb089e051cabba5e69ae12e5ec0752dbefc87d57889f5f44412a6e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/camellia-singing-vase/matched-clay-top.png",
+      "bytes": 703435,
+      "sha256": "492eaaccade4bcee9674dd19c22aa00fbe89640c1a8af742250f4f3b96a5ed09",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/camellia-singing-vase/matched-clay-side.png",
+      "bytes": 402971,
+      "sha256": "cfedeec0be5ab901042f7546e10ae9db5049951dc235f4f0349f52ba314c3f7a",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/camellia-singing-vase/matched-pbr-three-quarter.png",
+      "bytes": 502035,
+      "sha256": "360a0ef6cffe318eb976bdf1310001ac609a61dc808345f58aba0c369e79dbf3",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/camellia-singing-vase/matched-pbr-top.png",
+      "bytes": 1349847,
+      "sha256": "37e92f091e5ded7f544677ee641c0fe7ba256720e8b1621b3207f7390efba739",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/camellia-singing-vase/matched-pbr-side.png",
+      "bytes": 484465,
+      "sha256": "3415ee614b652a61f3bffecb39c991e92e8bf08f184882b26d056f84a700bedb",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset camellia-singing-vase",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

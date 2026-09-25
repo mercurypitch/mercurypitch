@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "pearl-ribbon-lantern",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/pearl-ribbon-lantern/pearl-ribbon-lantern-dense-master.blend",
+    "bytes": 197627807,
+    "sha256": "41fde09a62f445d58ca037808e92b2aa5aef09c0f781f50c55787a505e6253bb",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "b4021d2f018ef8866f61bd6180a4482e33e948c0a7357acbf61fd49dd3d3d789",
+  "topology": {
+    "vertices": 973625,
+    "triangles": 1825540,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "5a2ed5ba296a5bd312b2db910e9fae9065ea0cc2af1f2b51add2e8f7c390ea6b",
+    "triangleIndicesInt32Sha256": "89b44170a6172d930420ad2ddc28923d7bc6bd82f55a726efb2e32675844d3ca"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_PearlRibbonLantern_DenseMaster",
+    "rawObject": "pearl-ribbon-lantern__raw_import",
+    "reviewObject": "pearl-ribbon-lantern__normalized_review",
+    "meshData": "pearl-ribbon-lantern__dense_mesh",
+    "material": "pearl-ribbon-lantern__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "pearl-ribbon-lantern__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "24f8b904c1bf6a06fee5f6de8f543b7392241b201dddde9fc7dd60abdc89d956",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "pearl-ribbon-lantern__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "b8497e4a88981d96689e87976a29df09e06be0c0a25f34e9ff290b7cd4137423",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "pearl-ribbon-lantern__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "2ad21aa55eeca27238a2b3af50977889892dc789e5a283e77d986b56cfe8a958",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "pearl-ribbon-lantern__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "a4f4b5463a4ef8be758a59e819197c1a03f06f338aa0cf0942717962fee6998c",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-clay-three-quarter.png",
+      "bytes": 443698,
+      "sha256": "894cc9deddfd17d03b59337faefd4dd66586f2cf0db0b1ed8dbf6e31582931c3",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-clay-top.png",
+      "bytes": 1089977,
+      "sha256": "0f0ab4306573706686f847367e346706864f24d0af0adb9898125aa96a461580",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-clay-side.png",
+      "bytes": 412378,
+      "sha256": "13b4702e2ebe8b5865844019051e985e8f0a3049b7e05391e071e041eb6d8170",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-pbr-three-quarter.png",
+      "bytes": 459075,
+      "sha256": "7225fa5e054454752c3a8bb20ed61e47922641b64076fe604be00776acdc0007",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-pbr-top.png",
+      "bytes": 1440950,
+      "sha256": "a12f03f2d7b3dd0f6cade34e158894f85028815b4d036f9cd63ce3d02f8595d9",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-pbr-side.png",
+      "bytes": 424775,
+      "sha256": "70515b67e8fae2d2424696568229eca7486d3a95724960b666a876966647252a",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset pearl-ribbon-lantern",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

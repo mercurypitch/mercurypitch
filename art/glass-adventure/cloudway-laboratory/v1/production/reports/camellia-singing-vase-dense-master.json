@@ -1,0 +1,363 @@
+{
+  "schema": 1,
+  "assetId": "camellia-singing-vase",
+  "label": "Camellia Singing Vase",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/camellia-singing-vase/dense-donor.glb",
+    "bytes": 31970352,
+    "sha256": "51585ccccaca2c2419c27c60fcaa767e1ce943e26cfb48fc8a8ae538e87a20af",
+    "taskId": "01a0d89a-c199-73e8-b269-310ad50b0a4a",
+    "receipt": {
+      "file": "source-assets/meshy/camellia-singing-vase/receipt.json",
+      "bytes": 6557,
+      "sha256": "1c947f9b93828ed0ea3446a0d00e0f4eeab3e591a432fbe8d79923191355fb98"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 65497,
+    "triangles": 115656,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "4a76d3bb6f6fd63824d684c169fdaeb6aadbdc7f62bf58b66a01bd391a93655e",
+    "triangleIndicesInt32Sha256": "165164d8434dfeeb6a033e9e0b8ee07bca8693220ddffe16f8fea43341edb354",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 258,
+      "largestVertexCounts": [
+        953,
+        948,
+        939,
+        890,
+        811,
+        784,
+        736,
+        689,
+        648,
+        637,
+        590,
+        589
+      ],
+      "largestVertexFractions": [
+        0.014550285,
+        0.014473945,
+        0.014336534,
+        0.013588409,
+        0.012382247,
+        0.011970014,
+        0.011237156,
+        0.010519566,
+        0.009893583,
+        0.009725636,
+        0.009008046,
+        0.008992778
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        0.52579087019,
+        0.0,
+        0.0,
+        0.00052395073
+      ],
+      [
+        0.0,
+        0.52579087019,
+        0.0,
+        -0.000337558595
+      ],
+      [
+        0.0,
+        0.0,
+        0.52579087019,
+        0.500997185707
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        0.52579087019,
+        0.0,
+        0.0,
+        0.00052395073
+      ],
+      [
+        0.0,
+        0.52579087019,
+        0.0,
+        -0.000337558595
+      ],
+      [
+        0.0,
+        0.0,
+        0.52579087019,
+        0.500997185707
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.343968965,
+        -0.343884583,
+        -4e-09
+      ],
+      "max": [
+        0.343968965,
+        0.343884583,
+        1.00000005
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      0.68793793,
+      0.687769166,
+      1.000000054
+    ],
+    "reviewScale": {
+      "basis": "source-height-z",
+      "targetMetres": 1.0,
+      "sourceRawUnits": 1.9018969535827637,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.655189991,
+        -0.653391004,
+        -0.952844977
+      ],
+      "max": [
+        0.65319699,
+        0.654675007,
+        0.949051976
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.308386981,
+      1.30806601,
+      1.901896954
+    ],
+    "baseRawZ": -0.952844977,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "crystal vessel",
+      "hollow mouth",
+      "gold camellia etching",
+      "foot rings"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Vessel wall, mouth, etching, foot, and any break regions are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-base_color.png",
+        "bytes": 48179260,
+        "sha256": "2bdd4053547c055bcbb0db11b454e74cc171f3d7809ac66eccf67686382b1c4c",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-normal.png",
+        "bytes": 7523846,
+        "sha256": "818d58bde942070a146d37c2c9d18112e68b03cadb95dc8aebc2ed99362374a1",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-metallic.png",
+        "bytes": 7541803,
+        "sha256": "b97d8cc0c09215b7845de52b3979b5b30e5b87c08daeadb30410a1aad90e5f1a",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/camellia-singing-vase/textures/set-0-roughness.png",
+        "bytes": 3452253,
+        "sha256": "37c13dba90763894d8493d51f577433c1473e4d4fbfce00d8d92fc9b2099283f",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/camellia-singing-vase/matched-clay-three-quarter.png",
+          "bytes": 434877,
+          "sha256": "a6edfdb00ecb089e051cabba5e69ae12e5ec0752dbefc87d57889f5f44412a6e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/camellia-singing-vase/matched-clay-top.png",
+          "bytes": 703435,
+          "sha256": "492eaaccade4bcee9674dd19c22aa00fbe89640c1a8af742250f4f3b96a5ed09",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/camellia-singing-vase/matched-clay-side.png",
+          "bytes": 402971,
+          "sha256": "cfedeec0be5ab901042f7546e10ae9db5049951dc235f4f0349f52ba314c3f7a",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/camellia-singing-vase/matched-pbr-three-quarter.png",
+          "bytes": 502035,
+          "sha256": "360a0ef6cffe318eb976bdf1310001ac609a61dc808345f58aba0c369e79dbf3",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/camellia-singing-vase/matched-pbr-top.png",
+          "bytes": 1349847,
+          "sha256": "37e92f091e5ded7f544677ee641c0fe7ba256720e8b1621b3207f7390efba739",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/camellia-singing-vase/matched-pbr-side.png",
+          "bytes": 484465,
+          "sha256": "3415ee614b652a61f3bffecb39c991e92e8bf08f184882b26d056f84a700bedb",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/camellia-singing-vase/camellia-singing-vase-dense-master.blend",
+    "bytes": 72254298,
+    "sha256": "e931ec5da6c7541a9961ffae762cf2bb0bb8d5cb5704df13276fca18f9267bc6",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset camellia-singing-vase"
+}

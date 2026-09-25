@@ -1,0 +1,442 @@
+{
+  "schema": 1,
+  "assetId": "emerald-square-turn",
+  "label": "Emerald Square Turn",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/emerald-square-turn/dense-donor.glb",
+    "bytes": 100788972,
+    "sha256": "16f208c8727647170ccabb5807c8f5c2aabd396cde4363fe0e815edb6439d426",
+    "taskId": "01a0d88c-9670-7773-8e59-2d47135f9cf0",
+    "receipt": {
+      "file": "source-assets/meshy/emerald-square-turn/receipt.json",
+      "bytes": 6521,
+      "sha256": "7a50b4bccf7e4a5b8afe940c3bca0892efcff735487af56158ea41d239cfd373"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 794451,
+    "triangles": 1413282,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "dc6a274222bfd98a69b7e9ef2c451acd1197fb50c15e48c6b4a691092bfc68d0",
+    "triangleIndicesInt32Sha256": "0fd2ef504452921b4ed31f895d76465ed48578f3742867bece2b2904bc14619a",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 6453,
+      "largestVertexCounts": [
+        5698,
+        5157,
+        3192,
+        2957,
+        2809,
+        2797,
+        2743,
+        2601,
+        2558,
+        2386,
+        2361,
+        2259
+      ],
+      "largestVertexFractions": [
+        0.007172249,
+        0.006491275,
+        0.004017869,
+        0.003722067,
+        0.003535775,
+        0.00352067,
+        0.003452699,
+        0.003273959,
+        0.003219834,
+        0.003003332,
+        0.002971864,
+        0.002843473
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.57674407959,
+        0.0,
+        0.0,
+        0.001317335526
+      ],
+      [
+        0.0,
+        1.57674407959,
+        0.0,
+        -0.001107663265
+      ],
+      [
+        0.0,
+        0.0,
+        1.57674407959,
+        -0.121220342815
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.57674407959,
+        0.0,
+        0.0,
+        0.001317335526
+      ],
+      [
+        0.0,
+        1.57674407959,
+        0.0,
+        -0.001107663265
+      ],
+      [
+        0.0,
+        0.0,
+        1.57674407959,
+        -0.121220342815
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.500000008,
+        -1.498486345,
+        -0.341370083
+      ],
+      "max": [
+        1.500000008,
+        1.498486345,
+        0.097338459
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      3.000000015,
+      2.996972691,
+      0.438708543
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 3.0,
+      "sourceRawUnits": 1.902655005455017,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.952162981,
+        -0.94966501,
+        -0.139623001
+      ],
+      "max": [
+        0.950492024,
+        0.951070011,
+        0.138613999
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.902655005,
+      1.900735021,
+      0.278237
+    ],
+    "landingRawZ": 0.076880164,
+    "heightToleranceRaw": 0.002173727,
+    "patchTriangles": 106692,
+    "patchAreaRawSquareUnits": 2.587638906,
+    "patchBoundsRaw": {
+      "min": [
+        -0.906974018,
+        -0.906885028,
+        0.074193001
+      ],
+      "max": [
+        0.907369018,
+        0.907224,
+        0.081288002
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.814343035,
+      1.814109027,
+      0.007095002
+    ],
+    "horizontalCoverage": [
+      0.953584875,
+      0.954425003
+    ],
+    "relativePatchHeightSpread": 0.02549985,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "marble pad",
+      "compass mosaic",
+      "scalloped fascia",
+      "corner rosettes"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. The compass treatment may have relief, and no region is authoring-separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-base_color.png",
+        "bytes": 71539336,
+        "sha256": "dfce01ff3942936b78d122b0841a67891a7c68bf6f1cfc25e95c1796c527e417",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-normal.png",
+        "bytes": 14147215,
+        "sha256": "d80c4eaebe7a5055728654ca32c9e853b8868ef2e77a33b32253a30e92a3fc58",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-metallic.png",
+        "bytes": 10321583,
+        "sha256": "5dc276a71dd260c32712bcd6d464e93dcf0a28b49bda8ec0214bac56e92e8b21",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/emerald-square-turn/textures/set-0-roughness.png",
+        "bytes": 9059994,
+        "sha256": "f3bcf5c6fd1a65a509416de4dc10fdb1a892f2848c0ec39301e47ad4d8b19965",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/emerald-square-turn/matched-clay-three-quarter.png",
+          "bytes": 498963,
+          "sha256": "ab2e008cc46904410d0daf5486ad4d9b9ccde12b27b5b4d2ef466da2020ba44d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/emerald-square-turn/matched-clay-top.png",
+          "bytes": 568103,
+          "sha256": "2c4f934fc74a01a7ccec3c2b565717e49c49c4f5a4aedbd546ec5ea68c3ae82f",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/emerald-square-turn/matched-clay-side.png",
+          "bytes": 391937,
+          "sha256": "49c48e08265a73bad5797d84547b50d5b2572783dbda5b07c09d45b4a5d44808",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/emerald-square-turn/matched-pbr-three-quarter.png",
+          "bytes": 715809,
+          "sha256": "f5ac33208aa0652e84855f1bce5301dad95a1f86cd1b1f9f8b396d925c7d6406",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/emerald-square-turn/matched-pbr-top.png",
+          "bytes": 1656285,
+          "sha256": "688b367be362276ea82c93c6a76ef61deb60d2e35b15f9f8d6d358f4f33a9977",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/emerald-square-turn/matched-pbr-side.png",
+          "bytes": 513540,
+          "sha256": "02908f67bfcfe0483f196a574395e9aa630ad8d6ea249f9fc622c809a9cbcaac",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/emerald-square-turn/emerald-square-turn-dense-master.blend",
+    "bytes": 173115725,
+    "sha256": "8e3958862276d21ab90729bb35b51e7d2dbf406c7a73e5ffd393e44128c2df6a",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset emerald-square-turn",
+  "contactCandidate": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.952162981,
+        -0.94966501,
+        -0.139623001
+      ],
+      "max": [
+        0.950492024,
+        0.951070011,
+        0.138613999
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.902655005,
+      1.900735021,
+      0.278237
+    ],
+    "landingRawZ": 0.076880164,
+    "heightToleranceRaw": 0.002173727,
+    "patchTriangles": 106692,
+    "patchAreaRawSquareUnits": 2.587638906,
+    "patchBoundsRaw": {
+      "min": [
+        -0.906974018,
+        -0.906885028,
+        0.074193001
+      ],
+      "max": [
+        0.907369018,
+        0.907224,
+        0.081288002
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.814343035,
+      1.814109027,
+      0.007095002
+    ],
+    "horizontalCoverage": [
+      0.953584875,
+      0.954425003
+    ],
+    "relativePatchHeightSpread": 0.02549985,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  }
+}

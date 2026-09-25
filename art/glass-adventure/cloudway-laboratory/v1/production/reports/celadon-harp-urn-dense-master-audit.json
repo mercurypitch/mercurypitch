@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "celadon-harp-urn",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/celadon-harp-urn/celadon-harp-urn-dense-master.blend",
+    "bytes": 133063459,
+    "sha256": "fc8fa0bc7601a51438f195d44307ad42a17d2afbf9511c028d6061aff140c8f9",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "1b7e062fc46c50a68750e0d3a9ace3d66744faaccac27b7dddc7ceb98fe1489d",
+  "topology": {
+    "vertices": 433200,
+    "triangles": 816580,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "e8d0544a3f129b91759ce9b1e114f6b6996d0d992350a9de872ef02d4744d7cd",
+    "triangleIndicesInt32Sha256": "60de74508787fd757e21309c4964d7c9a1b21f4bd3594f6ea0847e6271db2252"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_CeladonHarpUrn_DenseMaster",
+    "rawObject": "celadon-harp-urn__raw_import",
+    "reviewObject": "celadon-harp-urn__normalized_review",
+    "meshData": "celadon-harp-urn__dense_mesh",
+    "material": "celadon-harp-urn__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "celadon-harp-urn__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "96393da92989c44b7abe95fd80282366619159e54aa9844128411e87fa8443fa",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "celadon-harp-urn__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "8673adc571dcbb04dac2ec2d44480f90fc1211b0aede97f9046f81230e455418",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "celadon-harp-urn__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "4da58cf99715f705c5cabee5cb3d6ef24f54384cf6d0650cb56992edff75d8de",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "celadon-harp-urn__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "bdc704e41161c40051055bb4c79731094acda2bb82b592d557e18fa322af073e",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/celadon-harp-urn/matched-clay-three-quarter.png",
+      "bytes": 453605,
+      "sha256": "e96a0b5e1cb9360dec1eecdfc98be6ae025dfb964d166b4f3c2ad2f3156ef397",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/celadon-harp-urn/matched-clay-top.png",
+      "bytes": 947457,
+      "sha256": "78ed7cf1657e1ec6a69ba7a8d0ece52bffc1fa8b6a53301562c676d973bb85be",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/celadon-harp-urn/matched-clay-side.png",
+      "bytes": 438289,
+      "sha256": "af9afe2dd7c4b4bbc539e9bfaf7c8b509a40c59b8e63ca414fa08056c294cac8",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/celadon-harp-urn/matched-pbr-three-quarter.png",
+      "bytes": 503632,
+      "sha256": "80bd92fe959af9cb2550cc38fec562e3bbd627ed2cba2540235d299d3357f41a",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/celadon-harp-urn/matched-pbr-top.png",
+      "bytes": 1390480,
+      "sha256": "1069b810e50e69a2d6dc77cd7e5918c48b0d4cd587884340322e2ba220699ec1",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/celadon-harp-urn/matched-pbr-side.png",
+      "bytes": 493047,
+      "sha256": "964806fcdadca69f637fe2b0b1b673cb064c3112d1e6c40759c70f3c90a7c42a",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset celadon-harp-urn",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

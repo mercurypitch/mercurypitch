@@ -92,6 +92,90 @@ def audit(asset: str) -> dict[str, Any]:
         root.get("glassTransmissionAuthored") is False,
         f"{asset}: source master falsely claims glass",
     )
+    configured_contact = config.get("contactKind")
+    placement_summary = None
+    if configured_contact is not None:
+        require(
+            root.get("contactKind") == configured_contact,
+            f"{asset}: root contact kind changed",
+        )
+        require(
+            root.get("walkableSurfaceCertified") is False,
+            f"{asset}: root falsely certifies a walkable surface",
+        )
+        require(
+            root.get("mountContactCertified") is False,
+            f"{asset}: root falsely certifies mount contact",
+        )
+        placement = external_report.get("placement")
+        require(isinstance(placement, dict), f"{asset}: placement report is absent")
+        require(
+            placement.get("contactKind") == configured_contact,
+            f"{asset}: placement contact kind changed",
+        )
+        require(
+            review.get("contactKind") == configured_contact,
+            f"{asset}: review contact kind changed",
+        )
+        require(
+            review.get("walkableSurfaceCertified") is False,
+            f"{asset}: review falsely certifies a walkable surface",
+        )
+        if configured_contact == "resting-base":
+            require(
+                "contactCandidate" not in external_report,
+                f"{asset}: non-walkable prop reports a landing candidate",
+            )
+            require(
+                placement.get("walkable") is False,
+                f"{asset}: resting-base placement is marked walkable",
+            )
+            require(
+                placement.get("contactCertification") == "not-established",
+                f"{asset}: resting-base contact is falsely certified",
+            )
+            require(
+                review.get("restingBaseBlenderZ") == 0.0,
+                f"{asset}: resting base is not anchored at Z=0",
+            )
+            require(
+                "landingCandidateBlenderZ" not in review,
+                f"{asset}: non-walkable prop retains a landing marker",
+            )
+            review_min_z = external_report["geometry"][
+                "reviewBoundsBlenderZUpMetres"
+            ]["min"][2]
+            require(
+                abs(float(review_min_z)) <= 1e-7,
+                f"{asset}: normalized resting base is not at Z=0",
+            )
+        else:
+            require(
+                configured_contact == "landing-candidate",
+                f"{asset}: unsupported contact kind",
+            )
+            require(
+                external_report.get("contactCandidate") == placement,
+                f"{asset}: landing report compatibility field changed",
+            )
+            require(
+                placement.get("walkableSurfaceCertified") is False,
+                f"{asset}: landing candidate is falsely certified",
+            )
+            require(
+                review.get("landingCandidateBlenderZ") == 0.0,
+                f"{asset}: landing candidate is not anchored at Z=0",
+            )
+            require(
+                "restingBaseBlenderZ" not in review,
+                f"{asset}: platform retains a resting-base marker",
+            )
+        placement_summary = {
+            "contactKind": configured_contact,
+            "walkableSurfaceCertified": False,
+            "mountContactCertified": False,
+            "reviewAnchorZMetres": 0.0,
+        }
 
     positions, triangles = PREPARE.mesh_arrays(raw.data)
     topology = PREPARE.topology_record(positions, triangles)
@@ -209,6 +293,8 @@ def audit(asset: str) -> dict[str, Any]:
             f"audit_dense_master.py -- --asset {asset}"
         ),
     }
+    if placement_summary is not None:
+        report["placement"] = placement_summary
     PREPARE.durable_json(paths["audit"], report)
     PREPARE.durable_json(paths["auditMirror"], report)
     print("CLOUDWAY_DENSE_MASTER_AUDIT=" + json.dumps(report), flush=True)

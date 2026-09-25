@@ -62,6 +62,276 @@ ASSETS: dict[str, dict[str, Any]] = {
             "Crystal, clasps, and any future shards are not authoring-separated."
         ),
     },
+    "frost-lily-step": {
+        "label": "Frost Lily Step",
+        "root": "Cloudway_FrostLilyStep_DenseMaster",
+        "targetLongDimensionMetres": 2.40,
+        "contactKind": "landing-candidate",
+        "expectedRegions": ["ice body", "gold clasps", "lily engraving"],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Ice, clasps, and the faint top engraving are not authoring-separated."
+        ),
+    },
+    "pearl-marble-long": {
+        "label": "Pearl Marble Long",
+        "root": "Cloudway_PearlMarbleLong_DenseMaster",
+        "targetLongDimensionMetres": 3.50,
+        "contactKind": "landing-candidate",
+        "expectedRegions": [
+            "marble deck",
+            "gold border inlays",
+            "teal end medallions",
+            "curved fascia",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Deck, inlays, medallions, and fascia are not authoring-separated."
+        ),
+    },
+    "emerald-square-turn": {
+        "label": "Emerald Square Turn",
+        "root": "Cloudway_EmeraldSquareTurn_DenseMaster",
+        "targetLongDimensionMetres": 3.00,
+        "contactKind": "landing-candidate",
+        "expectedRegions": [
+            "marble pad",
+            "compass mosaic",
+            "scalloped fascia",
+            "corner rosettes",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "The compass treatment may have relief, and no region is authoring-separated."
+        ),
+    },
+    "moonstone-cross-landing": {
+        "label": "Moonstone Cross Landing",
+        "root": "Cloudway_MoonstoneCrossLanding_DenseMaster",
+        "targetLongDimensionMetres": 3.00,
+        "contactKind": "landing-candidate",
+        "expectedRegions": [
+            "moonstone slab",
+            "gold sun inlay",
+            "pearl crescent inlays",
+            "carved underside",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Slab, inlays, and underside ornament are not authoring-separated."
+        ),
+    },
+    "aurora-glide-raft": {
+        "label": "Aurora Glide Raft",
+        "root": "Cloudway_AuroraGlideRaft_DenseMaster",
+        "targetLongDimensionMetres": 2.70,
+        "contactKind": "landing-candidate",
+        "expectedRegions": [
+            "opal deck",
+            "gold wave inlays",
+            "corner fittings",
+            "faceted underside",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Deck, fittings, inlays, and future motion anchors are not separated."
+        ),
+    },
+    "ivory-stair-terrace": {
+        "label": "Ivory Stair Terrace",
+        "root": "Cloudway_IvoryStairTerrace_DenseMaster",
+        "targetLongDimensionMetres": 3.00,
+        "contactKind": "landing-candidate",
+        "expectedRegions": [
+            "three stair treads",
+            "gold nosing",
+            "carved side panels",
+            "top landing",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Individual treads, nosing, panels, and collision steps are not separated."
+        ),
+    },
+    "opal-glass-long-bridge": {
+        "label": "Opal Glass Long Bridge",
+        "root": "Cloudway_OpalGlassLongBridge_DenseMaster",
+        "targetLongDimensionMetres": 4.00,
+        "contactKind": "landing-candidate",
+        "expectedRegions": [
+            "opal centre deck",
+            "gold perimeter strips",
+            "underside diamonds",
+            "musical staff inlay",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Glass, metal, underside ornaments, and staff inlay are not separated."
+        ),
+    },
+    "frosted-scroll-wall": {
+        "label": "Frosted Scroll Wall",
+        "root": "Cloudway_FrostedScrollWall_DenseMaster",
+        "targetHeightMetres": 3.00,
+        "contactKind": "resting-base",
+        "expectedRegions": ["museum frame", "frosted pane", "stable side feet"],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Frame, removable pane, feet, and any mounting surfaces are not separated."
+        ),
+    },
+    "camellia-singing-vase": {
+        "label": "Camellia Singing Vase",
+        "root": "Cloudway_CamelliaSingingVase_DenseMaster",
+        "targetHeightMetres": 1.00,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "crystal vessel",
+            "hollow mouth",
+            "gold camellia etching",
+            "foot rings",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Vessel wall, mouth, etching, foot, and any break regions are not separated."
+        ),
+    },
+    "celadon-harp-urn": {
+        "label": "Celadon Harp Urn",
+        "root": "Cloudway_CeladonHarpUrn_DenseMaster",
+        "targetHeightMetres": 1.00,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "jade vessel",
+            "harp handles",
+            "hollow mouth",
+            "gold fern inlays",
+            "stable foot",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Vessel, handles, mouth, inlays, foot, and break regions are not separated."
+        ),
+    },
+    "amethyst-hourglass": {
+        "label": "Amethyst Hourglass",
+        "root": "Cloudway_AmethystHourglass_DenseMaster",
+        "targetHeightMetres": 1.20,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "crystal bulbs",
+            "gilt columns",
+            "ivory top and base discs",
+            "sand volume",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Bulbs, sand, columns, discs, and timing parts are not authoring-separated."
+        ),
+    },
+    "crystal-lotus-goblet": {
+        "label": "Crystal Lotus Goblet",
+        "root": "Cloudway_CrystalLotusGoblet_DenseMaster",
+        "targetHeightMetres": 0.45,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "lotus crystal bowl",
+            "hollow mouth",
+            "gold stem",
+            "round foot",
+            "lip etching",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Bowl, petals, stem, foot, etching, and break regions are not separated."
+        ),
+    },
+    "pearl-ribbon-lantern": {
+        "label": "Pearl Ribbon Lantern",
+        "root": "Cloudway_PearlRibbonLantern_DenseMaster",
+        "targetHeightMetres": 1.40,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "pearl glass body",
+            "gold ribbon ribs",
+            "stem and marble foot",
+            "lotus finial",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Glass, ribbons, stem, foot, finial, and any light region are not separated."
+        ),
+    },
+    "gilded-music-stand": {
+        "label": "Gilded Music Stand",
+        "root": "Cloudway_GildedMusicStand_DenseMaster",
+        "targetHeightMetres": 1.35,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "blank score board",
+            "openwork music rest",
+            "sun medallion",
+            "tripod legs",
+            "stable feet",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Board, rest, medallion, legs, feet, and any adjustment joints are not separated."
+        ),
+    },
+    "vine-marble-balustrade": {
+        "label": "Vine Marble Balustrade",
+        "root": "Cloudway_VineMarbleBalustrade_DenseMaster",
+        "targetLongDimensionMetres": 2.00,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "end posts",
+            "three balusters",
+            "top rail",
+            "ivy sprig",
+            "flat architectural base",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Posts, balusters, rail, base, and accents are not separated; the preview "
+            "does not visibly confirm the requested ivy sprig."
+        ),
+    },
+    "rose-mirror-panel": {
+        "label": "Rose Mirror Panel",
+        "root": "Cloudway_RoseMirrorPanel_DenseMaster",
+        "targetHeightMetres": 2.10,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "gold frame",
+            "rose glass inlays",
+            "mirror panel",
+            "two stable feet",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Frame, inlays, mirror surface, feet, and mounting regions are not separated."
+        ),
+    },
+    "singing-fountain-basin": {
+        "label": "Singing Fountain Basin",
+        "root": "Cloudway_SingingFountainBasin_DenseMaster",
+        "targetLongDimensionMetres": 2.40,
+        "contactKind": "resting-base",
+        "expectedRegions": [
+            "dry marble basin",
+            "gold rim",
+            "central lotus bowl",
+            "teal mosaic",
+            "shell spouts",
+            "stable base",
+        ],
+        "sourceLimitation": (
+            "The provider source is one opaque exported mesh and one material. "
+            "Basin, rim, bowl, mosaic, spouts, base, and any interaction regions are "
+            "not separated."
+        ),
+    },
 }
 PBR_ROLES = ("base_color", "normal", "metallic", "roughness")
 
@@ -346,6 +616,60 @@ def contact_candidate(points: np.ndarray, triangles: np.ndarray) -> dict[str, An
         "screeningStatus": (
             "broad-flat-candidate" if looks_broad and looks_flat else "needs-review"
         ),
+    }
+
+
+def resting_base_placement(points: np.ndarray) -> dict[str, Any]:
+    low = points.min(axis=0)
+    high = points.max(axis=0)
+    dimensions = high - low
+    if not np.all(np.isfinite(dimensions)) or np.any(dimensions <= 0):
+        raise ValueError("Dense donor has invalid world-space bounds")
+    return {
+        "contactKind": "resting-base",
+        "walkable": False,
+        "method": (
+            "Normalize the lowest source-space bound to Z=0 for review placement. "
+            "No inferred upper patch or gameplay landing surface is produced."
+        ),
+        "rawBoundsBlenderZUp": {
+            "min": [round(float(value), 9) for value in low],
+            "max": [round(float(value), 9) for value in high],
+        },
+        "rawDimensionsBlenderZUp": [round(float(value), 9) for value in dimensions],
+        "baseRawZ": round(float(low[2]), 9),
+        "baseReviewZMetres": 0.0,
+        "screeningStatus": "uncertified-resting-base",
+        "contactCertification": "not-established",
+        "warning": (
+            "Z=0 is a review placement anchor only. Support footprint, stability, mount "
+            "points, collision, and runtime placement remain unverified."
+        ),
+    }
+
+
+def review_scale(
+    config: dict[str, Any], dimensions: np.ndarray
+) -> tuple[float, dict[str, Any]]:
+    target_height = config.get("targetHeightMetres")
+    target_long = config.get("targetLongDimensionMetres")
+    if (target_height is None) == (target_long is None):
+        raise ValueError("Asset config must choose exactly one review scale target")
+    if target_height is not None:
+        target = float(target_height)
+        source_dimension = float(dimensions[2])
+        basis = "source-height-z"
+    else:
+        target = float(target_long)
+        source_dimension = float(max(dimensions[0], dimensions[1]))
+        basis = "source-horizontal-long-dimension"
+    if not math.isfinite(target) or target <= 0 or source_dimension <= 0:
+        raise ValueError("Asset config has an invalid review scale target")
+    return target / source_dimension, {
+        "basis": basis,
+        "targetMetres": target,
+        "sourceRawUnits": source_dimension,
+        "runtimeScaleCertified": False,
     }
 
 
@@ -661,7 +985,25 @@ def build(asset: str) -> dict[str, Any]:
     ):
         raise ValueError(f"{asset}: imported topology differs from archived evidence")
     world = world_positions(positions, raw.matrix_world)
-    contact = contact_candidate(world, triangles)
+    contact_kind = str(config.get("contactKind", "landing-candidate"))
+    if contact_kind == "resting-base":
+        placement = resting_base_placement(world)
+        anchor_raw_z = float(placement["baseRawZ"])
+    elif contact_kind == "landing-candidate":
+        contact = contact_candidate(world, triangles)
+        placement = {
+            "contactKind": "landing-candidate",
+            "walkableSurfaceCertified": False,
+            **contact,
+            "landingReviewZMetres": 0.0,
+            "warning": (
+                "The measured patch is a review candidate. It is not a collider or "
+                "proof that a player can stand on every visible upper surface."
+            ),
+        }
+        anchor_raw_z = float(contact["landingRawZ"])
+    else:
+        raise ValueError(f"{asset}: unknown contact kind {contact_kind!r}")
     components = connected_components(raw.data)
 
     raw_collection = bpy.data.collections.new(f"{asset}__raw_source")
@@ -684,12 +1026,12 @@ def build(asset: str) -> dict[str, Any]:
     bounds_low = world.min(axis=0)
     bounds_high = world.max(axis=0)
     dimensions = bounds_high - bounds_low
-    scale = float(config["targetLongDimensionMetres"] / max(dimensions[0], dimensions[1]))
+    scale, scale_record = review_scale(config, dimensions)
     centre = Vector(
         (
             float((bounds_low[0] + bounds_high[0]) * 0.5),
             float((bounds_low[1] + bounds_high[1]) * 0.5),
-            float(contact["landingRawZ"]),
+            anchor_raw_z,
         )
     )
     normalization = Matrix.Scale(scale, 4) @ Matrix.Translation(-centre)
@@ -704,7 +1046,14 @@ def build(asset: str) -> dict[str, Any]:
     root["sourceTopologyMutation"] = False
     root["sourceAppearance"] = "opaque provider PBR"
     root["glassTransmissionAuthored"] = False
-    root["coordinates"] = "Blender Z-up; review landing candidate at Z=0"
+    root["contactKind"] = contact_kind
+    root["walkableSurfaceCertified"] = False
+    root["mountContactCertified"] = False
+    root["coordinates"] = (
+        "Blender Z-up; review resting base at Z=0"
+        if contact_kind == "resting-base"
+        else "Blender Z-up; review landing candidate at Z=0"
+    )
 
     review = raw.copy()
     review.name = f"{asset}__normalized_review"
@@ -715,7 +1064,12 @@ def build(asset: str) -> dict[str, Any]:
     review.hide_viewport = False
     review["role"] = "normalized-dense-review"
     review["uniformScale"] = scale
-    review["landingCandidateBlenderZ"] = 0.0
+    review["contactKind"] = contact_kind
+    review["walkableSurfaceCertified"] = False
+    if contact_kind == "resting-base":
+        review["restingBaseBlenderZ"] = 0.0
+    else:
+        review["landingCandidateBlenderZ"] = 0.0
     review_collection.objects.link(review)
 
     normalized_world = world_positions(positions, review.matrix_world)
@@ -755,6 +1109,7 @@ def build(asset: str) -> dict[str, Any]:
     report = {
         "schema": 1,
         "assetId": asset,
+        "label": config["label"],
         "status": "packed dense source review master; runtime adaptation pending",
         "scope": (
             "Immutable dense-source preservation, geometric screening, and matched "
@@ -783,19 +1138,13 @@ def build(asset: str) -> dict[str, Any]:
             "reviewDimensionsBlenderZUpMetres": [
                 round(float(value), 9) for value in review_high - review_low
             ],
+            "reviewScale": scale_record,
             "uniformScaleOnly": True,
             "decimation": False,
             "remesh": False,
             "sourceAndReviewShareMeshData": raw.data is review.data,
         },
-        "contactCandidate": {
-            **contact,
-            "landingReviewZMetres": 0.0,
-            "warning": (
-                "The measured patch is a review candidate. It is not a collider or "
-                "proof that a player can stand on every visible upper surface."
-            ),
-        },
+        "placement": placement,
         "semanticRegions": {
             "expectedVisibleRegions": config["expectedRegions"],
             "providerOrganization": (
@@ -803,6 +1152,8 @@ def build(asset: str) -> dict[str, Any]:
                 "components have no semantic labels"
             ),
             "separationStatus": "not-established",
+            "materialRegionStatus": "not-separated",
+            "contactOrMountStatus": "not-certified",
             "limitation": config["sourceLimitation"],
         },
         "appearance": {
@@ -842,6 +1193,8 @@ def build(asset: str) -> dict[str, Any]:
             f"prepare_dense_master.py -- --asset {asset}"
         ),
     }
+    if contact_kind == "landing-candidate":
+        report["contactCandidate"] = placement
     durable_json(paths["report"], report)
     durable_json(paths["mirror"], report)
     print("CLOUDWAY_DENSE_MASTER=" + json.dumps(report), flush=True)
