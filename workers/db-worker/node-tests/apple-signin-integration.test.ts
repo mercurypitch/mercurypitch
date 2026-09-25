@@ -549,6 +549,19 @@ describe('Google on the same account', () => {
     expect(userById(userId).providerId).toBe(APPLE_SUB)
     expect((await signInWithApple()).userId).toBe(userId)
   })
+
+  it('leaves a returning Google singer on the default handle', async () => {
+    // Apple sends its name once, with consent given in its own sheet. A Google
+    // singer who kept the default handle has not asked to be renamed.
+    const first = await signInWithGoogle()
+    const userId = String(first.userId)
+    const handle = `Singer-${userId.slice(0, 4)}`
+    expect(displayNameOf(userId)).toBe(handle)
+
+    googleClaims.name = 'Ada Lovelace'
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe(handle)
+  })
 })
 
 describe('the Apple grant', () => {

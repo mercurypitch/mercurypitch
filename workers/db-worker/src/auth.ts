@@ -1109,23 +1109,25 @@ function defaultDisplayName(userId: string): string {
 }
 
 /**
- * Give an existing account the name its sign-in provider sent, but only while
- * the profile still carries the `defaultDisplayName` it was created with — a
- * name the singer chose is theirs. Apple sends the name once, at the first
- * authorization, so a sign-in that carries one may be the only chance to keep
- * it.
+ * Give an existing account the name Apple sent, but only while the profile
+ * still carries the `defaultDisplayName` it was created with — a name the
+ * singer chose is theirs. Apple sends the name once, at the first
+ * authorization and with the singer's consent in its own sheet, so a sign-in
+ * that carries one may be the only chance to keep it. Not Google: its name
+ * comes with every sign-in, and a Google singer who kept the default handle
+ * has not asked to be renamed.
  */
 async function fillDefaultDisplayName(
   db: D1Database,
   userId: string,
-  name: string | null | undefined,
+  identity: FederatedIdentity,
 ): Promise<void> {
-  if (!name) return
+  if (identity.provider !== 'apple' || !identity.name) return
   await db
     .prepare(
       'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName = ?',
     )
-    .bind(name, nowIso(), userId, defaultDisplayName(userId))
+    .bind(identity.name, nowIso(), userId, defaultDisplayName(userId))
     .run()
 }
 
@@ -1973,7 +1975,7 @@ export async function resolveFederatedUser(
     .first<UserRow>()
   if (linked) {
     assertAccountActive(linked)
-    await fillDefaultDisplayName(env.DB, linked.id, identity.name)
+    await fillDefaultDisplayName(env.DB, linked.id, identity)
     return { row: linked, isNew: false }
   }
 
@@ -2001,7 +2003,7 @@ export async function resolveFederatedUser(
     )
       .bind(identity.sub, nowIso(), holder.id)
       .run()
-    await fillDefaultDisplayName(env.DB, holder.id, identity.name)
+    await fillDefaultDisplayName(env.DB, holder.id, identity)
     return {
       row: (await findUserById(env.DB, holder.id)) as UserRow,
       isNew: false,
