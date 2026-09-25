@@ -1118,33 +1118,45 @@ function boardDisplayName(userId: string): string {
 }
 
 /**
- * Give an existing account the name Apple sent, but only while the profile
- * still carries a default handle, either the `defaultDisplayName` it was
- * created with or the `boardDisplayName` a board gave it — a name the
- * singer chose is theirs. Apple sends the name once, at the first
- * authorization and with the singer's consent in its own sheet, so a sign-in
- * that carries one may be the only chance to keep it. Not Google: its name
- * comes with every sign-in, and a Google singer who kept the default handle
- * has not asked to be renamed.
+ * Replace a default handle with a provider's name, and nothing else: either
+ * the `defaultDisplayName` the profile was created with or the
+ * `boardDisplayName` a board gave it. A name the singer chose is theirs,
+ * including one chosen while still anonymous.
  */
-async function fillDefaultDisplayName(
+async function replaceDefaultHandle(
   db: D1Database,
   userId: string,
-  identity: FederatedIdentity,
+  name: string | null | undefined,
 ): Promise<void> {
-  if (identity.provider !== 'apple' || !identity.name) return
+  if (!name) return
   await db
     .prepare(
       'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName IN (?, ?)',
     )
     .bind(
-      identity.name,
+      name,
       nowIso(),
       userId,
       defaultDisplayName(userId),
       boardDisplayName(userId),
     )
     .run()
+}
+
+/**
+ * `replaceDefaultHandle` for an existing account, and only with Apple's name.
+ * Apple sends the name once, at the first authorization and with the singer's
+ * consent in its own sheet, so a sign-in that carries one may be the only
+ * chance to keep it. Not Google: its name comes with every sign-in, and a
+ * Google singer who kept the default handle has not asked to be renamed.
+ */
+async function fillDefaultDisplayName(
+  db: D1Database,
+  userId: string,
+  identity: FederatedIdentity,
+): Promise<void> {
+  if (identity.provider !== 'apple') return
+  await replaceDefaultHandle(db, userId, identity.name)
 }
 
 // Fire the account welcome email — best-effort, never blocks or fails signup.
@@ -2060,16 +2072,12 @@ export async function resolveFederatedUser(
           anon.id,
         )
         .run()
-      // The anonymous profile already exists with its default name, so
-      // ensureProfile's INSERT OR IGNORE would never apply this one: write it,
-      // as the password upgrade writes the name typed at sign-up.
-      if (identity.name) {
-        await env.DB.prepare(
-          'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?',
-        )
-          .bind(identity.name, nowIso(), anon.id)
-          .run()
-      }
+      // The anonymous profile already exists, so ensureProfile's INSERT OR
+      // IGNORE would never apply this name: write it, for either provider, but
+      // only over a default handle. A name the singer chose while anonymous (on
+      // a board, or in the profile) stays. The password upgrade writes outright
+      // because there the singer types the name on our own sign-up form.
+      await replaceDefaultHandle(env.DB, anon.id, identity.name)
       await sendWelcomeEmail(env, storedEmail, identity.name)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,

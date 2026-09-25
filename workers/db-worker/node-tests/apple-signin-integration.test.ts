@@ -215,6 +215,25 @@ async function registerPasswordAccount(
   return userId
 }
 
+/** The anonymous device, renamed by the singer before signing in. */
+async function anonymousDeviceNamed(displayName: string): Promise<void> {
+  const anonymous = await post('/api/auth/anonymous', {
+    deviceId: DEVICE_ID,
+    deviceSecret: DEVICE_SECRET,
+  })
+  expect(anonymous.status).toBe(200)
+  const { token } = (await anonymous.json()) as { token: string }
+  const renamed = await request(`/api/userProfiles/${DEVICE_ID}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ displayName }),
+  })
+  expect(renamed.status).toBe(200)
+}
+
 function freshDatabase(overrides: Partial<Env> = {}): void {
   sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys = ON')
@@ -464,6 +483,18 @@ describe('the name Apple sends once', () => {
     expect(displayNameOf(DEVICE_ID)).toBe('Ada Lovelace')
   })
 
+  it('keeps a name the singer chose while still anonymous', async () => {
+    await anonymousDeviceNamed('Maff')
+
+    const signedIn = await signInWithApple({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+      ...ADA,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Maff')
+  })
+
   it('fills the default name when a later authorization carries one', async () => {
     const first = await signInWithApple()
     const userId = String(first.userId)
@@ -546,8 +577,13 @@ describe('Google on the same account', () => {
     )
   })
 
-  async function signInWithGoogle(): Promise<Record<string, unknown>> {
-    const response = await post('/api/auth/google', { idToken: 'google-token' })
+  async function signInWithGoogle(
+    body: Record<string, unknown> = {},
+  ): Promise<Record<string, unknown>> {
+    const response = await post('/api/auth/google', {
+      idToken: 'google-token',
+      ...body,
+    })
     expect(response.status).toBe(200)
     return (await response.json()) as Record<string, unknown>
   }
@@ -576,6 +612,34 @@ describe('Google on the same account', () => {
     googleClaims.name = 'Ada Lovelace'
     expect((await signInWithGoogle()).userId).toBe(userId)
     expect(displayNameOf(userId)).toBe(handle)
+  })
+
+  it('names the anonymous account it upgrades', async () => {
+    const anonymous = await post('/api/auth/anonymous', {
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(anonymous.status).toBe(200)
+    googleClaims.name = 'Ada Lovelace'
+
+    const signedIn = await signInWithGoogle({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Ada Lovelace')
+  })
+
+  it('keeps a name the singer chose while still anonymous', async () => {
+    await anonymousDeviceNamed('Maff')
+    googleClaims.name = 'Ada Lovelace'
+
+    const signedIn = await signInWithGoogle({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Maff')
   })
 })
 
