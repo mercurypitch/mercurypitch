@@ -145,7 +145,8 @@
   text-transform: uppercase;
 }
 
-.testAccountNote {
+.testAccountNote,
+.relayNote {
   margin: -4px 0 0;
   color: var(--text-secondary, #888);
   font-size: 12px;

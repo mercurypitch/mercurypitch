@@ -158,6 +158,31 @@ describe('AccountSection', () => {
     ).toBeNull()
   })
 
+  // Apple minted the relay address and the singer never typed it, yet it is
+  // the address an emailed code goes to — the only way into this account
+  // from the web or Android, where there is no Apple sheet.
+  it('tells the owner of a relay address to keep a note of it', async () => {
+    mocks.fetchMe.mockResolvedValue(appleMe)
+    render(() => <AccountSection />)
+
+    expect((await screen.findByTestId('account-relay-note')).textContent).toBe(
+      'Your private Apple address. Keep a note of it: it signs you in with an email code on the web or Android.',
+    )
+  })
+
+  it('says nothing of the kind about an address the singer chose', async () => {
+    mocks.fetchMe.mockResolvedValue({
+      ...appleMe,
+      user: { authProvider: 'apple', email: 'ada@example.com' },
+    })
+    render(() => <AccountSection />)
+
+    expect((await screen.findByTestId('account-email')).textContent).toBe(
+      'ada@example.com',
+    )
+    expect(screen.queryByTestId('account-relay-note')).toBeNull()
+  })
+
   // Sign-out sits beside the line that says who you are, and it ends a
   // session mid-practice. The header pill has always asked first; this did
   // not, which meant the same gesture had two different consequences.

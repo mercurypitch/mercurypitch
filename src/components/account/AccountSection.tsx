@@ -28,6 +28,7 @@ import { API_BASE_URL } from '@/lib/defaults'
 import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
+import { isApplePrivateRelayAddress } from '../../../workers/db-worker/src/apple-relay'
 import styles from './AccountSection.module.css'
 import { EmailVerificationRow } from './EmailVerificationRow'
 import { PasskeySettings } from './PasskeySettings'
@@ -451,6 +452,15 @@ export const AccountSection: Component = () => {
                   </button>
                 </div>
               </div>
+              {/* Apple minted this address and the singer never typed it,
+                  yet an emailed code to it is the only way into the account
+                  where there is no Apple sheet. */}
+              <Show when={isApplePrivateRelayAddress(me()?.user.email)}>
+                <p class={styles.relayNote} data-testid="account-relay-note">
+                  Your private Apple address. Keep a note of it: it signs you in
+                  with an email code on the web or Android.
+                </p>
+              </Show>
               <Show when={isTestAccount() && testAccountExpiry() !== ''}>
                 <p class={styles.testAccountNote}>
                   Campaign access expires {testAccountExpiry()}. Purchases are
