@@ -1,4 +1,4 @@
-// Crystal Promenade first slice — a bounded developer route proves the accepted scroll while crackle art remains explicit fallback.
+// Crystal Promenade first slice — a bounded developer route proves accepted scroll and crackle art without loading the full source catalogue.
 
 import type { BreakableDefinition, LevelDefinition, PlatformDefinition, SolidPropDefinition, } from '../contracts'
 import { CLOUDWAY_LAB_PLATFORM_RENDER_IDS } from '../render/cloudway-laboratory-catalog'
@@ -131,7 +131,7 @@ const PLATFORMS: readonly PlatformDefinition[] = [
     renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
   }),
   deck('rose-step', 0, ROSE_Z, ROSE_WIDTH, ROSE_DEPTH, 0, 0.24, {
-    renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.rosePending,
+    renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseCrackle,
     behavior: {
       kind: 'crackle',
       warningSeconds: 2,
@@ -148,7 +148,7 @@ const PLATFORMS: readonly PlatformDefinition[] = [
     0,
     AMETHYST_HEIGHT,
     {
-      renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystPending,
+      renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystCrackle,
       behavior: {
         kind: 'crackle',
         warningSeconds: 4,
@@ -345,8 +345,8 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
     assetRecipeIds: [
       CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
       CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll,
-      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.rosePending,
-      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystPending,
+      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseCrackle,
+      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystCrackle,
       'cloudway-lab-voice',
     ],
   },
