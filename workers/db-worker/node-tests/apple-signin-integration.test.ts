@@ -185,6 +185,29 @@ function userById(id: string): UserRow {
   return sqlite.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow
 }
 
+/**
+ * What following the emailed confirm link does to the row. Registering proves
+ * nothing about the mailbox, so a test that needs a confirmed address has to
+ * say so; the link itself carries a random token only the mailbox ever sees.
+ */
+function confirmAddress(id: string): void {
+  sqlite.prepare('UPDATE users SET emailVerified = 1 WHERE id = ?').run(id)
+}
+
+async function registerPasswordAccount(
+  fields: Record<string, unknown> = {},
+): Promise<string> {
+  const registered = await post('/api/auth/register', {
+    email: 'apple-singer@example.com',
+    password: PASSWORD,
+    ...fields,
+  })
+  expect(registered.status).toBe(200)
+  const { userId } = (await registered.json()) as { userId: string }
+  expect(userById(userId).emailVerified).toBe(0)
+  return userId
+}
+
 function freshDatabase(overrides: Partial<Env> = {}): void {
   sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys = ON')
@@ -294,13 +317,25 @@ describe('POST /api/auth/apple', () => {
     expect(userById(DEVICE_ID).providerId).toBe(APPLE_SUB)
   })
 
-  it('adopts a password account with the same verified address', async () => {
-    const registered = await post('/api/auth/register', {
-      email: 'apple-singer@example.com',
-      password: PASSWORD,
-    })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
+  it('never adopts a password account whose address was not confirmed', async () => {
+    // Registering asks for no proof of the mailbox, so Apple vouching for the
+    // address says nothing about who typed it into that form.
+    const userId = await registerPasswordAccount()
+
+    const signedIn = await signInWithApple()
+    expect(signedIn.userId).not.toBe(userId)
+    const untouched = userById(userId)
+    expect(untouched.providerId).toBeNull()
+    expect(untouched.authProvider).toBe('password')
+    expect(untouched.emailVerified).toBe(0)
+    // The address stays with the account that holds it: users.email is
+    // UNIQUE, so the Apple account is stored without one.
+    expect(userById(String(signedIn.userId)).email).toBeNull()
+  })
+
+  it('adopts a password account once its address is confirmed', async () => {
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
 
     const signedIn = await signInWithApple()
     expect(signedIn.userId).toBe(userId)
@@ -310,13 +345,12 @@ describe('POST /api/auth/apple', () => {
   it('never adopts an account on the strength of a private relay address', async () => {
     // The relay address is minted per app and per Apple ID. Treating it as
     // proof of the mailbox would hand over any account that happened to be
-    // registered under it.
-    const registered = await post('/api/auth/register', {
+    // registered under it. Confirmed here, so the relay rule is the only
+    // thing standing between the two accounts.
+    const userId = await registerPasswordAccount({
       email: 'relay-user@privaterelay.appleid.com',
-      password: PASSWORD,
     })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
+    confirmAddress(userId)
 
     const response = await post('/api/auth/apple', {
       identityToken: await identityToken({
@@ -617,12 +651,8 @@ describe('an account that adopted the Apple identity by address', () => {
     // 'password' with the Apple sub in providerId, so the filtered lookup
     // walked straight past it: withdrawing consent did nothing at all, and
     // every session on the account stayed live.
-    const registered = await post('/api/auth/register', {
-      email: 'apple-singer@example.com',
-      password: PASSWORD,
-    })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
 
     const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
     expect(signedIn.userId).toBe(userId)
@@ -659,13 +689,9 @@ describe('an account that adopted the Apple identity by address', () => {
     // a different mailbox entirely, so it has nothing to apply here — and
     // applying it would send this account's password reset to an address
     // Apple can switch off.
-    const registered = await post('/api/auth/register', {
-      email: 'apple-singer@example.com',
-      password: PASSWORD,
-    })
-    expect(registered.status).toBe(200)
-    const { userId } = (await registered.json()) as { userId: string }
-    await signInWithApple()
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithApple()).userId).toBe(userId)
 
     const response = await post('/api/auth/apple/notifications', {
       payload: await notificationToken({

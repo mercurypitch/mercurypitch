@@ -1957,36 +1957,38 @@ export async function resolveFederatedUser(
 
   const email = identity.email?.toLowerCase() || undefined
   const emailVerified = identity.emailVerified
+  // The account already holding this address, if any. `users.email` is
+  // UNIQUE, so this one row answers both questions below: whether step 2 may
+  // adopt it, and whether a created account may carry the address.
+  const holder =
+    email === undefined ? null : await findUserByEmail(env.DB, email)
 
-  // 2. Auto-link to an existing account with the same verified email
+  // 2. Auto-link to an existing account with the same address — only when
+  // both sides have proven it. The provider's word covers this identity; the
+  // account's own emailVerified covers the account, because registering with
+  // a password proves nothing about the mailbox.
   const linkable = Boolean(email) && emailVerified && identity.linkableByEmail
-  if (email && linkable) {
-    const byEmail = await findUserByEmail(env.DB, email)
-    if (byEmail) {
-      assertAccountActive(byEmail)
-      await env.DB.prepare(
-        'UPDATE users SET providerId = ?, emailVerified = 1, updatedAt = ? WHERE id = ?',
-      )
-        .bind(identity.sub, nowIso(), byEmail.id)
-        .run()
-      return {
-        row: (await findUserById(env.DB, byEmail.id)) as UserRow,
-        isNew: false,
-      }
+  if (linkable && holder !== null && holder.emailVerified === 1) {
+    assertAccountActive(holder)
+    await env.DB.prepare(
+      'UPDATE users SET providerId = ?, emailVerified = 1, updatedAt = ? WHERE id = ?',
+    )
+      .bind(identity.sub, nowIso(), holder.id)
+      .run()
+    return {
+      row: (await findUserById(env.DB, holder.id)) as UserRow,
+      isNew: false,
     }
   }
 
   // Everything below CREATES, and `users.email` is UNIQUE. The address can
   // already belong to somebody else here — an Apple private-relay address a
-  // password account was registered under, or any address we declined to link
-  // on — and carrying it into the INSERT or the UPDATE turns a sign-in into a
-  // 500 that nothing the person does will clear. The identity still gets its
-  // account; only the address is dropped. Step 2 proves the address free when
-  // it runs, which is why this asks only when it did not.
-  const emailFree =
-    email === undefined ||
-    linkable ||
-    (await findUserByEmail(env.DB, email)) === null
+  // password account was registered under, an account that never confirmed
+  // it, or any address we declined to link on — and carrying it into the
+  // INSERT or the UPDATE turns a sign-in into a 500 that nothing the person
+  // does will clear. The identity still gets its account; only the address is
+  // dropped, and the account holding it is left exactly as it was.
+  const emailFree = holder === null
   if (!emailFree) {
     console.info(
       `[auth] a ${provider} identity arrived with an address another account already holds; storing it without one`,
