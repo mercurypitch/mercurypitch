@@ -4631,9 +4631,11 @@ const AppShell: Component<AppProps> = (props) => {
             A phone puts the pill in the header instead — see `header-support`
             above — because down here it covers the bottom of whatever page is
             open. The lab surfaces render no header at all, so there it is
-            still the only place the pill can be, on any width. */}
+            still the only place the pill can be, on any width. The native
+            app mounts it nowhere (hud-placement.ts). */}
         <Show
           when={bottomHudVisible({
+            native: IS_NATIVE_BUILD,
             labOpen: labTab() !== null,
             narrow: isNarrow(),
             headerHidden:

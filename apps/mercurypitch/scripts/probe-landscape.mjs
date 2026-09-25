@@ -36,10 +36,6 @@ export const LANDSCAPE_INSET_FRAMES = [
  * Drawn where one of the rules does not apply, each for its own reason.
  *
  * - The alley's plate is the scene itself, cropped by the alley on purpose.
- * - The floating voice pill mounts on a width test (`isNarrow()`), so a
- *   phone on its side gets it and a phone upright does not; on its side it
- *   sits wholly under the rail's first item. Where voice control belongs in
- *   the native app is the owner's call (round 4 report), not a layout fix.
  * - The test build's console handle keeps to the bottom edge. Raised by the
  *   home indicator's inset it would sit on the rail's More, upright.
  */
@@ -48,7 +44,6 @@ const EXEMPT = [
     selector: '[data-testid="alley-plate"]',
     rules: ['clipped', 'home-indicator', 'covered'],
   },
-  { selector: '[data-testid="voice-control-pill"]', rules: ['covered'] },
   {
     selector: '[data-testid="portable-console-handle"]',
     rules: ['home-indicator'],
