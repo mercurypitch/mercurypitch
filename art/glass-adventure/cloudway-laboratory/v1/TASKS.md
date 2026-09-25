@@ -17,7 +17,7 @@ Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a secon
 - [x] Generate and inspect 10 platform reference images (catalogue tracks each).
 - [x] Generate and inspect 10 object reference images.
 - [x] Twenty dense Meshy originals archived and independently rehashed: requested 7.1 / 4K geometry / 8K texture / PBR / no remesh. Returned 4K geometry, 8K color and 4K auxiliary maps; provider does not echo its model ID. 800 credits total, final balance 2,885.
-- [x] Pilot three packed Blender masters and matched clay/PBR review: original topology and full maps preserved, fresh-process reopen audits pass. These are source masters, not finished glass.
+- [x] All 20 packed Blender masters: original topology and full maps preserved, fresh-process reopen audits pass; 120 matched clay/PBR views saved. Root rehashed every packed project and proof image. These are source masters, not finished glass.
 - [x] Editable 27-piece Crystal Promenade course study: schema/top-view checks, desktop import proof, explicit cross/stair contact regions. Unregistered simulation completes at 30/60 Hz with zero respawns; saved recovery passes. Art/touch validation remains pending.
 - [ ] Blender finalization: material separation, contact planes, preserved silhouettes, runtime maps, packed source.
 - [ ] Scroll bridge extension has matching visual and walkable deck. Semantic adapter and transactional metadata validation are implemented/tested; the deliberate Blender cut/cap derivative is complete; physical glass, final contact certification and live binding remain pending. Per-mesh bindings preserve glass, etching and mixed ivory/gold within each motion role.
@@ -47,6 +47,6 @@ Draft PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains 
 
 ## Source-quality checkpoint
 
-The review catalogue now switches between reference art, provider previews, Blender material proofs and matched clay proofs. Phone/desktop checks show no overflow or script errors. The first three packed masters have hash-verified reopen audits. Remaining masters are being prepared sequentially in the shared source tree, with platform landing planes distinguished from the resting bases of gallery props.
+The review catalogue now switches between reference art, provider previews, Blender material proofs and matched clay proofs. Phone/desktop checks show no overflow or script errors. All 20 packed masters have hash-verified reopen audits, with platform landing candidates distinguished from the resting bases of gallery props. The full-resolution archive and all 120 proof images were rehashed before expanding the catalogue index. Material, contact and fracture acceptance remains explicit in BLENDER-REVIEW.md.
 
 The scroll's first chart-component partition was rejected: UV/hard-normal seams do not define mechanical parts. A deliberate cut/cap derivative retains unaffected dense faces, UVs, ivory/gold appearance and etched detail, and closes the moving pieces. Material authoring is the next gate; neither this derivative nor the pure render adapter is presented as accepted game art. The rose/amethyst donor audit likewise finds one fused closed surface; their gold lattice must be preserved deliberately during crystal-body and shard preparation.
