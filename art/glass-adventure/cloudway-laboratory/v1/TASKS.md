@@ -13,7 +13,7 @@ Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a secon
 - [x] Profile and fix falling stalls; verify repeated falls and respawns. Camera queried dense decorative triangles below every support; skip that path while falling below the world.
 - [x] Two-row message queue; actual path-open events only; mobile/tablet/desktop proof. Includes modal/pause/tutorial visibility review.
 - [x] Review and push bug fixes to #861 (`fc09fe06`, pushed 25 September 2026). CI is running.
-- [ ] Browser level studio: grid placement, transforms, undo, validation, JSON export/import and local drafts.
+- [x] Browser level studio: grid placement, transforms, undo, validation, JSON export/import and local drafts. Four real mouse/touch/import/geometry browser cases pass; source and proofs reviewed.
 - [x] Generate and inspect 10 platform reference images (catalogue tracks each).
 - [x] Generate and inspect 10 object reference images.
 - [ ] Meshy 7.1 4K geometry / 8K texture / PBR originals: receipt before each paid job; archive IDs, outputs, hashes.
@@ -31,8 +31,10 @@ No blanket decimation to hit a polygon number. Provider completion means donor a
 
 ## Production status
 
-20 built-in image-generation references saved with prompts and SHA-256s. Meshy balance could not be read: Proton Pass CLI has no session (25 September 2026 11:31 UTC). Owner login request is pending; no 3D generation claims and no jobs charged in this batch.
+20 built-in image-generation references saved with prompts and SHA-256s. Meshy balance could not be read: Proton Pass CLI has no session (25 September 2026 11:31 UTC). Access was subsequently restored; the balance read 3,685 credits. Highest-quality pilot submissions follow the reviewed receipt/lock safeguard. The per-asset receipts record actual job state; reference completion is not 3D acceptance.
 
 ## Linked implementation brief
 
 [The Crystal Promenade](COURSE-SPEC.md) defines the second course, the role of all 20 designs, safe singing/checkpoint locations, scroll and crackle timing, and the art/runtime acceptance sequence. Implementation remains pending the dense donor and Blender review.
+
+- [x] Scroll core: deterministic four-phase clock, bounded ratios, actual resizing support bounds, quarter-turn authoring transform, pause/reset behavior. Targeted tests plus 784 shared-game tests pass after hydrating the exact LFS assets. The visible split-deck adapter still requires a reviewed donor.

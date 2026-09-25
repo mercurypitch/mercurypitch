@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "celadon-harp-urn",
+  "operation": "image-to-3d",
+  "state": "not-submitted",
+  "source": {
+    "file": "source-assets/references/celadon-harp-urn.png",
+    "sha256": "16c30fb686f3177d105f1c99ab08bfb4ba68de43f79b1d73d4ab4ee9ce34f2a7",
+    "bytes": 2014969,
+    "dimensions": [
+      1312,
+      1199
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One elegant celadon and jade-green translucent glass urn with two graceful harp-shaped golden handles and a small hollow open mouth, fine art nouveau gold fern inlays, smoothly rounded belly and stable low foot. Rich museum quality, no plants, no pedestal. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+}

@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "crystal-lotus-goblet",
+  "operation": "image-to-3d",
+  "state": "not-submitted",
+  "source": {
+    "file": "source-assets/references/crystal-lotus-goblet.png",
+    "sha256": "2f3b53f25eeb2dd0e07a102ba784769e5099fa0348b2ee2fa51463070ed27ec4",
+    "bytes": 2112373,
+    "dimensions": [
+      1024,
+      1536
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "An exquisite tall wine goblet with a wide clear sky-blue crystal bowl cut like overlapping lotus petals, slim warm gold stem, round flat crystalline foot with gold ring, delicately etched star pattern around lip. Hollow open drinking bowl, no liquid, no plinth. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+}

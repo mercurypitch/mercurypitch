@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "ivory-stair-terrace",
+  "operation": "image-to-3d",
+  "state": "not-submitted",
+  "source": {
+    "file": "source-assets/references/ivory-stair-terrace.png",
+    "sha256": "8202aa62460140fa1237d9b80e681470a4eda13bc5ba787caef10ca9530a6977",
+    "bytes": 1972909,
+    "dimensions": [
+      1374,
+      1145
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One standalone short elegant ivory marble stair module with THREE wide deep flat steps, subtle grey veins, thin gold nosing and beautifully carved side panels with restrained art nouveau leaves. Width 3 depth 3 total height .75, each tread flat, open top landing, no handrail or plants. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+}

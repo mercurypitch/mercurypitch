@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "rose-quartz-crackle-fast",
+  "operation": "image-to-3d",
+  "state": "in-progress",
+  "source": {
+    "file": "source-assets/references/rose-quartz-crackle-fast.png",
+    "sha256": "7d8f0b7d89fdd85266996efe8420542f686955e355ec4699375d22365c6a2cdf",
+    "bytes": 2041088,
+    "dimensions": [
+      1412,
+      1114
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One broad rectangular thick rose-pink crystal glass platform with fine golden diamond lattice within translucent glass, beautiful fine luminous rose fissure veins contained within the solid, delicate gold corner clasps, jewel-cut lower facets and a smooth perfectly flat top. Width 2.4 depth 1.9 thickness .4. No broken loose shards, spikes or pedestal. This is the beautiful delicate two-second breakaway platform. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:21:35.197263+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3645,
+  "submissionStartedAtUtc": "2026-09-25T12:21:35.197282+00:00",
+  "taskId": "01a0d883-8fed-75e6-83b1-c2417833bf9b",
+  "submittedAtUtc": "2026-09-25T12:21:40.538925+00:00",
+  "balanceAfterSubmit": 3605,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d883-8fed-75e6-83b1-c2417833bf9b",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 58,
+    "created_at": 1790338900321,
+    "started_at": 1790338900329,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:25:11.099283+00:00"
+}

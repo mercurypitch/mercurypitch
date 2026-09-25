@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "gilded-music-stand",
+  "operation": "image-to-3d",
+  "state": "not-submitted",
+  "source": {
+    "file": "source-assets/references/gilded-music-stand.png",
+    "sha256": "947f19df7bf8f3fd497928989d6066fa9502cdfc260f507f23fb1c295558d555",
+    "bytes": 1736541,
+    "dimensions": [
+      1145,
+      1374
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One elegant art nouveau sheet music stand, warm satin gold curved tripod legs, ivory-and-gold openwork music rest with a subtle sun medallion, blank single ivory score board, broad stable feet. No printed text, no notes, no instrument. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+}

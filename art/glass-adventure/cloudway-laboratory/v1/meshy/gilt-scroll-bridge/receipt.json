@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "gilt-scroll-bridge",
+  "operation": "image-to-3d",
+  "state": "in-progress",
+  "source": {
+    "file": "source-assets/references/gilt-scroll-bridge.png",
+    "sha256": "1f29ae707d1170293d37cda5e5981153ea6098b96ee5e8840d6d509e5960b8e5",
+    "bytes": 2188293,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "A rectangular pale aquamarine glass walking bridge, fully extended flat glass deck with TWO parallel polished warm gold scroll rollers along its left and right sides. Elegant rolled manuscript finials, restrained celestial engravings. End faces open for jumping. No legs, no rail across the ends. Clear mechanically distinct roller housings and center glass deck. Width 2.0 depth 3.0 thickness .25. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:21:05.744193+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3685,
+  "submissionStartedAtUtc": "2026-09-25T12:21:05.744211+00:00",
+  "taskId": "01a0d883-1ce4-766a-befc-22ff4bf72c86",
+  "submittedAtUtc": "2026-09-25T12:21:10.036752+00:00",
+  "balanceAfterSubmit": 3645,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d883-1ce4-766a-befc-22ff4bf72c86",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 99,
+    "created_at": 1790338869850,
+    "started_at": 1790338869859,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:24:59.390705+00:00"
+}

@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "rose-mirror-panel",
+  "operation": "image-to-3d",
+  "state": "not-submitted",
+  "source": {
+    "file": "source-assets/references/rose-mirror-panel.png",
+    "sha256": "9f4da9225f9c203a3c1e7b3ff931dcee37a05d1b56bfdec6e3fa3ad02295332f",
+    "bytes": 1965814,
+    "dimensions": [
+      1145,
+      1374
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One upright ornate rectangular art nouveau mirror frame in warm antique gold and rose glass petal inlays, flat blank desaturated pale silver inner mirror panel with no reflected scene. Two short elegant stable feet. Beautiful controlled ornamental curves, no text, no person. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+}
