@@ -25,6 +25,7 @@
 // SOUND NEVER STARTS ON ARRIVAL. The clip's `play()` and the ambient's
 // context are both started inside the door tap, and nowhere else.
 
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import { hapticTap } from '@irchiinnuss/mobile-runtime/platform'
 import type { Component } from 'solid-js'
 import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
@@ -114,11 +115,9 @@ function ambient(): AlleyAmbient {
           .webkitAudioContext
       return Ctor === undefined ? null : new Ctor()
     },
-    load: async (url) => {
-      const response = await fetch(url)
-      if (!response.ok) throw new Error(`${url}: ${response.status}`)
-      return response.arrayBuffer()
-    },
+    // Not `response.ok`: iOS serves a packaged .m4a with status 0 and the
+    // whole body (@irchiinnuss/mobile-runtime/asset-fetch).
+    load: (url) => fetchAssetBytes(url),
     activate: (target) => activateAudioPlayback(target),
   })
   return ambientInstance
