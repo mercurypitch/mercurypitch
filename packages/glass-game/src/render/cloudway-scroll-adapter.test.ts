@@ -173,6 +173,27 @@ function semanticMaterials() {
   }
 }
 
+function materialBindings(
+  source: Object3D,
+  materials: ReturnType<typeof semanticMaterials>,
+) {
+  const bindings: {
+    mesh: string
+    kind: 'glass' | 'opaque'
+    material: MeshPhysicalMaterial
+  }[] = []
+  source.traverse((object) => {
+    if (!(object as MeshType).isMesh) return
+    const glass = object.name === 'ScrollDeckGlass'
+    bindings.push({
+      mesh: object.name,
+      kind: glass ? 'glass' : 'opaque',
+      material: glass ? materials.glass : materials.gold,
+    })
+  })
+  return bindings
+}
+
 function role(root: Object3D, name: string): Object3D {
   const result = root.getObjectByName(name)
   if (result === undefined) throw new Error(`Missing test role ${name}`)
@@ -230,7 +251,7 @@ describe('Cloudway semantic scroll adapter', () => {
     const adapter = createCloudwayScrollAdapter({
       source: fixture.source,
       platform: target,
-      materials,
+      materials: materialBindings(fixture.source, materials),
     })
     const deck = role(adapter.root, CLOUDWAY_SCROLL_ROLE_NAMES.deck)
     const negative = role(
@@ -313,7 +334,7 @@ describe('Cloudway semantic scroll adapter', () => {
     const adapter = createCloudwayScrollAdapter({
       source: fixture.source,
       platform: target,
-      materials,
+      materials: materialBindings(fixture.source, materials),
     })
     const negative = role(
       adapter.root,
@@ -353,7 +374,7 @@ describe('Cloudway semantic scroll adapter', () => {
     const adapter = createCloudwayScrollAdapter({
       source: fixture.source,
       platform: target,
-      materials,
+      materials: materialBindings(fixture.source, materials),
     })
 
     adapter.update(snapshot(target, 1))
@@ -439,7 +460,7 @@ describe('Cloudway semantic scroll adapter', () => {
         createCloudwayScrollAdapter({
           source: item.fixture.source,
           platform: target,
-          materials,
+          materials: materialBindings(item.fixture.source, materials),
         }),
       ).toThrow(item.message)
       expect(sourceFingerprint(item.fixture.source)).toEqual(before)
@@ -458,7 +479,10 @@ describe('Cloudway semantic scroll adapter', () => {
       createCloudwayScrollAdapter({
         source: fixture.source,
         platform: platform(),
-        materials: { ...materials, glass: opaque as MeshPhysicalMaterial },
+        materials: materialBindings(fixture.source, {
+          ...materials,
+          glass: opaque as MeshPhysicalMaterial,
+        }),
       }),
     ).toThrow('MeshPhysicalMaterial')
     expect(() =>
@@ -468,14 +492,14 @@ describe('Cloudway semantic scroll adapter', () => {
           ...platform(1),
           behavior: { ...platform(1).behavior!, axis: 'x' },
         } as PlatformDefinition,
-        materials,
+        materials: materialBindings(fixture.source, materials),
       }),
     ).toThrow('world axis')
     expect(() =>
       createCloudwayScrollAdapter({
         source: fixture.source,
         platform: { ...platform(), maxX: 11.5 },
-        materials,
+        materials: materialBindings(fixture.source, materials),
       }),
     ).toThrow('support dimensions')
 
@@ -496,7 +520,7 @@ describe('Cloudway semantic scroll adapter', () => {
     const adapter = createCloudwayScrollAdapter({
       source: fixture.source,
       platform: target,
-      materials,
+      materials: materialBindings(fixture.source, materials),
     })
     adapter.update(snapshot(target, 1))
     const ownedGeometries: MeshType['geometry'][] = []
@@ -519,6 +543,120 @@ describe('Cloudway semantic scroll adapter', () => {
     expect(goldDispose).not.toHaveBeenCalled()
     expect(adapter.root.parent).toBeNull()
 
+    disposeFixture(fixture, materials)
+  })
+
+  it('keeps gold stars and frosted etching opaque on the moving glass deck and preserves mixed roller PBR', () => {
+    const fixture = donor()
+    const materials = semanticMaterials()
+    const deck = role(fixture.source, CLOUDWAY_SCROLL_ROLE_NAMES.deck)
+    for (const name of ['DeckGoldStars', 'DeckFrostEtching']) {
+      const detail = new Mesh(
+        new BoxGeometry(0.1, 0.01, 0.1),
+        fixture.providerMaterial,
+      )
+      detail.name = name
+      detail.position.set(0.6, 0.01, 0)
+      deck.add(detail)
+    }
+    const etching = new MeshStandardMaterial({
+      color: '#d7eae9',
+      roughness: 0.8,
+    })
+    const rollerPbr = new MeshStandardMaterial({
+      map: fixture.providerTexture,
+      metalnessMap: fixture.providerTexture,
+      metalness: 1,
+    })
+    const bindings = materialBindings(fixture.source, materials).map(
+      (binding) => ({
+        ...binding,
+        material:
+          binding.mesh === 'DeckFrostEtching'
+            ? etching
+            : binding.mesh.includes('Roller')
+              ? rollerPbr
+              : binding.material,
+      }),
+    )
+    const target = platform()
+    const before = sourceFingerprint(fixture.source)
+    const adapter = createCloudwayScrollAdapter({
+      source: fixture.source,
+      platform: target,
+      materials: bindings,
+    })
+    const stars = role(adapter.root, 'DeckGoldStars') as MeshType
+    const frost = role(adapter.root, 'DeckFrostEtching') as MeshType
+    const roller = firstMesh(
+      role(adapter.root, CLOUDWAY_SCROLL_ROLE_NAMES.negativeRoller),
+    )
+    adapter.update(snapshot(target, 0.25))
+    expect(stars.material).toBe(materials.gold)
+    expect(frost.material).toBe(etching)
+    expect(roller.material).toBe(rollerPbr)
+    expect(rollerPbr.map).toBe(fixture.providerTexture)
+    expect(
+      firstMesh(role(adapter.root, CLOUDWAY_SCROLL_ROLE_NAMES.deck)).material,
+    ).toBe(materials.glass)
+    const detailPosition = new Vector3()
+    stars.getWorldPosition(detailPosition)
+    expect(detailPosition.x).toBeCloseTo(10.15)
+    const etchDispose = vi.spyOn(etching, 'dispose')
+    const rollerDispose = vi.spyOn(rollerPbr, 'dispose')
+    const textureDispose = vi.spyOn(fixture.providerTexture, 'dispose')
+    adapter.dispose()
+    expect(etchDispose).not.toHaveBeenCalled()
+    expect(rollerDispose).not.toHaveBeenCalled()
+    expect(textureDispose).not.toHaveBeenCalled()
+    expect(sourceFingerprint(fixture.source)).toEqual(before)
+    disposeFixture(fixture, materials)
+    disposeMaterials([etching, rollerPbr])
+  })
+
+  it('rejects missing, ambiguous and mismatched mesh material assignments before installation', () => {
+    const fixture = donor()
+    const materials = semanticMaterials()
+    const bindings = materialBindings(fixture.source, materials)
+    const create = (
+      values: Parameters<typeof createCloudwayScrollAdapter>[0]['materials'],
+    ) =>
+      createCloudwayScrollAdapter({
+        source: fixture.source,
+        platform: platform(),
+        materials: values,
+      })
+    expect(() => create(bindings.slice(1))).toThrow(
+      'no reviewed material binding',
+    )
+    expect(() => create([...bindings, bindings[0]!])).toThrow(
+      'unknown or duplicated',
+    )
+    expect(() =>
+      create([...bindings, { ...bindings[0]!, mesh: 'MissingMesh' }]),
+    ).toThrow('unknown or duplicated')
+    expect(() =>
+      create(bindings.map((binding) => ({ ...binding, kind: 'opaque' }))),
+    ).toThrow('fully opaque')
+    expect(() =>
+      create(
+        bindings.map((binding) => ({
+          ...binding,
+          kind: 'opaque',
+          material: materials.gold,
+        })),
+      ),
+    ).toThrow('reviewed glass mesh')
+    materials.glass.transmission = Number.NaN
+    expect(() => create(bindings)).toThrow('invalid transmission')
+    materials.glass.transmission = 0.9
+    const duplicate = new Mesh(
+      new BoxGeometry(0.1, 0.1, 0.1),
+      fixture.providerMaterial,
+    )
+    duplicate.name = 'ScrollDeckGlass'
+    role(fixture.source, CLOUDWAY_SCROLL_ROLE_NAMES.deck).add(duplicate)
+    expect(() => create(bindings)).toThrow('unique nonempty name')
     disposeFixture(fixture, materials)
   })
 })

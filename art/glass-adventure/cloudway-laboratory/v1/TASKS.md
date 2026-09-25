@@ -20,7 +20,7 @@ Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a secon
 - [x] Pilot three packed Blender masters and matched clay/PBR review: original topology and full maps preserved, fresh-process reopen audits pass. These are source masters, not finished glass.
 - [x] Editable 27-piece Crystal Promenade course study: schema/top-view checks, desktop import proof, explicit cross/stair contact regions. Unregistered simulation completes at 30/60 Hz with zero respawns; saved recovery passes. Art/touch validation remains pending.
 - [ ] Blender finalization: material separation, contact planes, preserved silhouettes, runtime maps, packed source.
-- [ ] Scroll bridge extension has matching visual and walkable deck. Semantic adapter and transactional metadata validation are implemented/tested; the fused donor needs deliberate Blender cuts/caps before binding.
+- [ ] Scroll bridge extension has matching visual and walkable deck. Semantic adapter and transactional metadata validation are implemented/tested; the deliberate Blender cut/cap derivative is complete; physical glass, final contact certification and live binding remain pending. Per-mesh bindings preserve glass, etching and mixed ivory/gold within each motion role.
 - [ ] Beautiful rose and lavender timed platforms, 2s/4s with a real gap and safe approach.
 - [ ] Exploratory second course with turns, safe rest/voice areas, asset exhibits and checkpoints.
 - [ ] Editor JSON maps explicitly to authored level data; export is a spec, not a playability guarantee.
@@ -37,7 +37,7 @@ No blanket decimation to hit a polygon number. Provider completion means donor a
 
 ## Linked implementation brief
 
-[The Crystal Promenade](COURSE-SPEC.md) defines the second course, the role of all 20 designs, safe singing/checkpoint locations, scroll and crackle timing, and the art/runtime acceptance sequence. Implementation remains pending the dense donor and Blender review.
+[The Crystal Promenade](COURSE-SPEC.md) defines the second course, the role of all 20 designs, safe singing/checkpoint locations, scroll and crackle timing, and the art/runtime acceptance sequence. The mechanical study is implemented; playable integration remains pending Blender material, contact and export acceptance.
 
 - [x] Scroll core: deterministic four-phase clock, bounded ratios, actual resizing support bounds, quarter-turn authoring transform, pause/reset behavior. Targeted tests plus 784 shared-game tests pass after hydrating the exact LFS assets. The visible split-deck adapter still requires a reviewed donor.
 
