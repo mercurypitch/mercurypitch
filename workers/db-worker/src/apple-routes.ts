@@ -228,7 +228,8 @@ async function handleAppleNotifications(
   // records it in appleSub, including on an account Google linked first,
   // whose providerId keeps Google's id when Apple adopts it by address.
   // providerId is for rows from before migration 0050 added appleSub, which
-  // hold the `sub` there and nowhere else.
+  // hold the `sub` there and nowhere else until their next sign-in fills
+  // appleSub in.
   //
   // No `authProvider = 'apple'` filter on providerId, and that is deliberate.
   // Among those rows are accounts that adopted this Apple identity through
@@ -241,7 +242,8 @@ async function handleAppleNotifications(
   // caller cannot name a subject at all — only Apple can, and only one it
   // issued to us. What a match buys is a sign-out and a dropped grant. The
   // sign-in path keeps the tightened (authProvider, providerId) pair, where
-  // the same widening would hand over the account itself.
+  // the same widening would hand over the account itself; the appleSub it
+  // also matches for Apple holds nothing but subs Apple verified.
   const row = await env.DB.prepare(
     'SELECT id, email FROM users WHERE appleSub = ? OR providerId = ?',
   )

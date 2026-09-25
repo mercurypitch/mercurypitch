@@ -16,7 +16,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
 import type { Env } from '../src/auth'
-import { resetAppleJwksCache } from '../src/apple-auth'
+import { resetAppleJwksCache, storeAppleRefreshToken } from '../src/apple-auth'
 import worker from '../src/index'
 import { applyMigration, applyMigrations, applyMigrationsAfter, SqliteD1Database, } from './sqlite-d1'
 
@@ -750,6 +750,24 @@ describe('Google on the same account', () => {
     })
     expect(me.status).toBe(401)
   })
+
+  it('never finds a Google identity through appleSub', async () => {
+    // Step 1 matches appleSub for Apple alone: the column holds only subs
+    // Apple verified. A Google sub that happens to spell the same string must
+    // not reach the account, which is the collision step 1's (authProvider,
+    // providerId) pair exists to refuse. The account below matches the Apple
+    // sub through appleSub and nothing else: its authProvider is 'password'.
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithApple()).userId).toBe(userId)
+    expect(userById(userId).appleSub).toBe(APPLE_SUB)
+
+    googleClaims.sub = APPLE_SUB
+    googleClaims.email = 'google-twin@example.com'
+    const google = await signInWithGoogle()
+    expect(google.userId).not.toBe(userId)
+    expect(userById(String(google.userId)).authProvider).toBe('google')
+  })
 })
 
 describe('the Apple grant', () => {
@@ -1026,35 +1044,75 @@ describe('an account that adopted the Apple identity by address', () => {
     expect(after.emailVerified).toBe(1)
   })
 
-  it('still signs the same Apple ID in under a private relay address', async () => {
-    // Hide My Email, chosen when authorizing again after withdrawing consent:
-    // Apple's sub is the same, the address is a relay. The adopted account is
-    // reached by neither (its authProvider is 'password', and a relay never
-    // adopts), so the sign-in creates an account of its own. That one cannot
-    // hold the same sub as well, because the index is UNIQUE: the adopted
-    // account keeps it, and the sign-in must not fail on the index.
+  it.each([
+    [
+      'under a private relay address',
+      {
+        email: 'relay-abc@privaterelay.appleid.com',
+        is_private_email: 'true',
+      },
+    ],
+    [
+      'after the Apple ID moves to another address',
+      { email: 'moved-apple-id@example.com' },
+    ],
+  ] as const)(
+    'brings the same Apple ID back to the account it adopted, %s',
+    async (_when, claims) => {
+      // Hide My Email chosen on a later authorization, or an Apple ID that
+      // moved: the same sub, an address that no longer leads here. Neither
+      // the pair (authProvider is 'password') nor the address reaches the
+      // account, and a new, empty one used to be made beside it. It holds
+      // Apple's sub in appleSub, which step 1 matches.
+      const userId = await registerPasswordAccount()
+      confirmAddress(userId)
+      expect((await signInWithApple()).userId).toBe(userId)
+
+      const again = await signInWithApple({
+        identityToken: await identityToken(claims),
+      })
+      expect(again.userId).toBe(userId)
+      expect(again.isNew).toBe(false)
+      expect(sqlite.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({
+        n: 1,
+      })
+    },
+  )
+
+  it('brings the same Apple ID back when its new address belongs to another account', async () => {
+    // The address the Apple ID moved to is another confirmed account's. The
+    // sign-in used to adopt that one and write the same sub into its
+    // providerId as well, which the (authProvider, providerId) index refused:
+    // a 500 on every attempt.
     const userId = await registerPasswordAccount()
     confirmAddress(userId)
     expect((await signInWithApple()).userId).toBe(userId)
+    const other = await registerPasswordAccount({
+      email: 'moved-apple-id@example.com',
+    })
+    confirmAddress(other)
 
-    const relay = await post('/api/auth/apple', {
+    const again = await signInWithApple({
       identityToken: await identityToken({
-        email: 'relay-abc@privaterelay.appleid.com',
-        is_private_email: 'true',
+        email: 'moved-apple-id@example.com',
       }),
     })
-    expect(relay.status).toBe(200)
-    const created = ((await relay.json()) as { userId: string }).userId
-    expect(created).not.toBe(userId)
-    expect(userById(userId).appleSub).toBe(APPLE_SUB)
-    expect(userById(created).appleSub).toBeNull()
+    expect(again.userId).toBe(userId)
+    expect(userById(other).providerId).toBeNull()
+    expect(userById(other).appleSub).toBeNull()
   })
 })
 
 describe('an Apple account from before the appleSub column', () => {
   // As a build without migration 0050 left it: Apple's sub in providerId and
   // nowhere else. The migration adds the column empty and back-fills nothing.
+  // A relay address, the common case, so the adoption step can never reach
+  // the row either: only the (authProvider, providerId) half of step 1 does.
   const RELEASED_ID = '00000000-0000-4000-8000-0000000000c3'
+  const RELAY = {
+    email: 'relay-abc@privaterelay.appleid.com',
+    is_private_email: 'true',
+  }
 
   beforeEach(() => {
     freshDatabase(signinSecrets, {
@@ -1065,8 +1123,8 @@ describe('an Apple account from before the appleSub column', () => {
           `INSERT INTO users
              (id, createdAt, updatedAt, authProvider, providerId, email,
               emailVerified, passwordHash, lastLoginAt, tokenVersion)
-           VALUES (?, ?, ?, 'apple', ?, 'apple-singer@example.com', 1, NULL, ?, 1)`,
-        ).run(RELEASED_ID, now, now, APPLE_SUB, now)
+           VALUES (?, ?, ?, 'apple', ?, ?, 1, NULL, ?, 1)`,
+        ).run(RELEASED_ID, now, now, APPLE_SUB, RELAY.email, now)
         db.prepare(
           `INSERT INTO userProfiles (id, createdAt, updatedAt, displayName, joinDate)
            VALUES (?, ?, ?, 'Ada Lovelace', ?)`,
@@ -1088,12 +1146,16 @@ describe('an Apple account from before the appleSub column', () => {
   })
 
   it.each(['consent-revoked', 'account-delete'] as const)(
-    'is still found by %s, through providerId',
+    'is still found by %s before it signs in again, through providerId',
     async (type) => {
-      // A returning sign-in finds the row by (authProvider, providerId) and
-      // writes nothing to appleSub, so the row is still the pre-0050 shape.
-      const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
-      expect(signedIn.userId).toBe(RELEASED_ID)
+      // The grant a sign-in on the released build stored. Any sign-in now
+      // would fill appleSub, so the notification comes first.
+      await storeAppleRefreshToken(
+        env,
+        RELEASED_ID,
+        CLIENT_ID,
+        'apple-refresh-token',
+      )
       const before = userById(RELEASED_ID)
       expect(before.appleSub).toBeNull()
       expect(before.appleRefreshToken).not.toBeNull()
@@ -1106,12 +1168,19 @@ describe('an Apple account from before the appleSub column', () => {
       const after = userById(RELEASED_ID)
       expect(after.tokenVersion).toBe(before.tokenVersion + 1)
       expect(after.appleRefreshToken).toBeNull()
-      const me = await request('/api/auth/me', {
-        headers: { Authorization: `Bearer ${String(signedIn.token)}` },
-      })
-      expect(me.status).toBe(401)
     },
   )
+
+  it('fills the column on its next sign-in', async () => {
+    // Once every such row has signed in again, the notification route's
+    // providerId fallback has nothing left to find.
+    const signedIn = await signInWithApple({
+      identityToken: await identityToken(RELAY),
+    })
+    expect(signedIn.userId).toBe(RELEASED_ID)
+    expect(signedIn.isNew).toBe(false)
+    expect(userById(RELEASED_ID).appleSub).toBe(APPLE_SUB)
+  })
 })
 
 describe('POST /api/auth/refresh', () => {

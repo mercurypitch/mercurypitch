@@ -9,12 +9,15 @@
 -- notification found nothing, so a singer who withdrew consent kept every
 -- live session and the Apple grant stayed stored.
 --
--- The worker writes `appleSub` on every account an Apple sign-in creates,
--- upgrades or adopts, always from a verified identity token. The route
--- matches it OR providerId, so an Apple account created before this column
--- existed (appleSub NULL, providerId = Apple's `sub`) is still found. Nothing
--- is back-filled: on an adopted account providerId may hold another
--- provider's id, and nothing in the row says which.
+-- The worker writes `appleSub` on every account an Apple sign-in reaches
+-- (created, upgraded, adopted or returned to), always from a verified
+-- identity token, and sign-in matches it as well: an account that adopted the
+-- identity by address is found even once the address no longer leads there.
+-- The route matches it OR providerId, so an Apple account created before
+-- this column existed (appleSub NULL, providerId = Apple's `sub`) is still
+-- found, and its next sign-in fills the column in. Nothing is back-filled
+-- here: on an adopted account providerId may hold another provider's id, and
+-- nothing in the row says which.
 --
 -- UNIQUE, because one Apple ID names one account; partial, so the NULL every
 -- other account carries is not in the index at all. The worker writes with

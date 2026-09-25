@@ -1161,14 +1161,16 @@ async function fillDefaultDisplayName(
 
 /**
  * Record Apple's `sub` on the account an Apple sign-in reached, in the column
- * Apple's notifications look it up by (apple-routes.ts). `providerId` is not
- * enough: it keeps whichever provider linked the account first, so an account
- * Google linked first holds Google's id there.
+ * Apple's notifications look it up by (apple-routes.ts) and step 1 of
+ * `resolveFederatedUser` matches. `providerId` is not enough: it keeps
+ * whichever provider linked the account first, so an account Google linked
+ * first holds Google's id there.
  *
- * OR IGNORE because the index is UNIQUE and another account can already hold
- * this id: one that adopted it by address, when this sign-in reached a
- * different account (under a private relay address, say). That account keeps
- * it, and the sign-in still succeeds.
+ * OR IGNORE is a guard no sign-in should need: step 1 matches appleSub, so
+ * each write goes either to the account step 1 found or to one chosen after
+ * step 1 found none holding the id. Should two accounts still meet on the
+ * UNIQUE index, the one holding the id keeps it and the sign-in succeeds
+ * rather than failing with a 500.
  */
 async function recordAppleSub(
   db: D1Database,
@@ -1998,6 +2000,41 @@ export interface FederatedIdentity {
 }
 
 /**
+ * Step 1 of `resolveFederatedUser`: the account a returning user of THIS
+ * provider already holds.
+ *
+ * The provider filter matters: the unique index is (authProvider,
+ * providerId), so a bare `providerId = ?` asks a different question from the
+ * one the schema answers, and the day a second provider mints a `sub` that
+ * collides with a first provider's, it hands over somebody else's account. An
+ * account that adopted a provider through step 2 keeps its own authProvider,
+ * so the pair does not find it: step 2 does, by the address.
+ *
+ * Apple's also matches appleSub. That column holds nothing but subs Apple
+ * verified (recordAppleSub writes it for Apple alone), so it asks no other
+ * provider's question, and it finds the account that adopted this identity
+ * even once the address no longer leads there: Hide My Email chosen on a
+ * later authorization, or an Apple ID that moved to another address.
+ */
+function findLinkedAccount(
+  db: D1Database,
+  identity: FederatedIdentity,
+): Promise<UserRow | null> {
+  if (identity.provider === 'apple') {
+    return db
+      .prepare(
+        "SELECT * FROM users WHERE (authProvider = 'apple' AND providerId = ?) OR appleSub = ?",
+      )
+      .bind(identity.sub, identity.sub)
+      .first<UserRow>()
+  }
+  return db
+    .prepare('SELECT * FROM users WHERE authProvider = ? AND providerId = ?')
+    .bind(identity.provider, identity.sub)
+    .first<UserRow>()
+}
+
+/**
  * Find-or-create the user for a verified federated identity (Google's POST
  * endpoint, Google's redirect code flow, and Sign in with Apple).
  *
@@ -2016,19 +2053,14 @@ export async function resolveFederatedUser(
   env: Env,
 ): Promise<{ row: UserRow; isNew: boolean }> {
   const provider = identity.provider
-  // 1. Returning user of THIS provider. The filter matters: the unique index
-  // is (authProvider, providerId), so a bare `providerId = ?` asks a
-  // different question from the one the schema answers, and the day a second
-  // provider mints a `sub` that collides with a first provider's, it hands
-  // over somebody else's account. An account that adopted a provider through
-  // step 2 keeps authProvider 'password' and is found there instead.
-  const linked = await env.DB.prepare(
-    'SELECT * FROM users WHERE authProvider = ? AND providerId = ?',
-  )
-    .bind(provider, identity.sub)
-    .first<UserRow>()
+  // 1. Returning user of THIS provider: findLinkedAccount says what that
+  // means, and why Apple's also matches appleSub.
+  const linked = await findLinkedAccount(env.DB, identity)
   if (linked) {
     assertAccountActive(linked)
+    // Fills the column in on an Apple account from before migration 0050, so
+    // the notification route's providerId fallback has less to find each time.
+    await recordAppleSub(env.DB, linked.id, identity)
     await fillDefaultDisplayName(env.DB, linked.id, identity)
     return { row: linked, isNew: false }
   }
@@ -2052,8 +2084,9 @@ export async function resolveFederatedUser(
     // for one, so a second provider adopting the same account overwrote the
     // first's, and after that the two flipped it on every sign-in. The second
     // needs no id stored to sign in: it reaches the account here, by the
-    // address. Apple's is recorded all the same, in appleSub, because its
-    // notifications name the account by that id and nothing else.
+    // address. Apple's is recorded all the same, in appleSub: its
+    // notifications name the account by that id alone, and step 1 finds the
+    // account by it once the address no longer leads here.
     await env.DB.prepare(
       'UPDATE users SET providerId = COALESCE(providerId, ?), emailVerified = 1, updatedAt = ? WHERE id = ?',
     )
