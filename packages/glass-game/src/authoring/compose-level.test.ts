@@ -41,6 +41,7 @@ function transformedFixture(): {
         thickness: 0.25,
         material: 'stone',
         renderId: 'deck',
+        renderQuarterTurns: 3,
         presentation: { role: 'floor', material: 'stone' },
       },
       {
@@ -298,10 +299,12 @@ describe('composeLevel', () => {
       minZ: -7,
       maxZ: -2,
       top: 2,
+      renderQuarterTurns: 0,
     })
     expect(
       level.platforms.find((platform) => platform.id.endsWith('/glide')),
     ).toMatchObject({
+      renderQuarterTurns: 1,
       behavior: {
         kind: 'glide',
         translation: { x: 0, y: 0, z: -2 },
@@ -403,6 +406,7 @@ describe('composeLevel', () => {
               top: 0,
               thickness: 0.2,
               material: 'brass',
+              renderQuarterTurns: 3,
               behavior: {
                 kind: 'scroll',
                 axis: 'x',
@@ -426,6 +430,7 @@ describe('composeLevel', () => {
       minZ: -5,
       maxZ: -3,
       top: 2,
+      renderQuarterTurns: 0,
       behavior: {
         kind: 'scroll',
         axis: 'z',
@@ -472,6 +477,9 @@ describe('composeLevel', () => {
     })
 
     expect(level).toEqual(GLASS_FOUNDATION_STRAIGHT)
+    expect(
+      level.platforms.every((platform) => !('renderQuarterTurns' in platform)),
+    ).toBe(true)
     expect(level.spawn.checkpointId).toBe(
       'glass-foundation/straight/arrival/checkpoint/entry',
     )

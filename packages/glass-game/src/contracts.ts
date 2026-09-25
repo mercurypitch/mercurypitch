@@ -48,6 +48,10 @@ export type PlatformSurfaceDefinition = FrostSurfaceDefinition
 
 export type PlatformScrollAxis = 'x' | 'z'
 
+export const PLATFORM_RENDER_QUARTER_TURNS = [0, 1, 2, 3] as const
+export type PlatformRenderQuarterTurns =
+  (typeof PLATFORM_RENDER_QUARTER_TURNS)[number]
+
 /** Deterministic runtime behaviors; axes are world-space after compilation. */
 export type PlatformBehaviorDefinition =
   | {
@@ -101,6 +105,12 @@ export interface PlatformDefinition extends BoundsXZ {
   material: 'stone' | 'brass'
   /** Optional renderer catalog recipe; has no effect on this solid proxy. */
   renderId?: string
+  /**
+   * Cardinal art orientation around +Y. Prefabs store local turns; room
+   * compilation adds the placement turn so runtime values are world-space.
+   * Collision remains defined exclusively by the axis-aligned bounds.
+   */
+  renderQuarterTurns?: PlatformRenderQuarterTurns
   activation?: SolidActivation
   presentation?: SolidPresentation
   /** Legacy single-encounter bridge activation retained for Glassworks saves. */

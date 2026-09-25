@@ -1,6 +1,6 @@
 // Room transforms — translation and cardinal yaw applied uniformly to authored data.
 
-import type { Bounds3, BoundsXZ, PlatformScrollAxis, Vec3 } from '../contracts'
+import type { Bounds3, BoundsXZ, PlatformRenderQuarterTurns, PlatformScrollAxis, Vec3, } from '../contracts'
 import type { QuarterTurn, RoomPlacement } from './contracts'
 
 const TAU = Math.PI * 2
@@ -42,6 +42,17 @@ export function transformPlatformScrollAxis(
   quarterTurns: QuarterTurn,
 ): PlatformScrollAxis {
   return quarterTurns % 2 === 0 ? axis : axis === 'x' ? 'z' : 'x'
+}
+
+/** Carries prefab-local art orientation into the compiled world orientation. */
+export function transformPlatformRenderQuarterTurns(
+  renderQuarterTurns: PlatformRenderQuarterTurns | undefined,
+  roomQuarterTurns: QuarterTurn,
+): PlatformRenderQuarterTurns | undefined {
+  if (renderQuarterTurns === undefined && roomQuarterTurns === 0)
+    return undefined
+  return (((renderQuarterTurns ?? 0) + roomQuarterTurns) %
+    4) as PlatformRenderQuarterTurns
 }
 
 export function transformPoint(
