@@ -129,7 +129,11 @@ function finishVoiceGlass(game: GlassGame): void {
         sequence * 25,
       ),
     )
-  expect(events).toContainEqual({ type: 'break', id: 'voice-glass' })
+  expect(events).toContainEqual({
+    type: 'break',
+    id: 'voice-glass',
+    outcome: 'celebration',
+  })
 }
 
 describe('authored platform runtime', () => {

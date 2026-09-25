@@ -86,36 +86,41 @@ describe('adventure narration', () => {
     expect(audio.play).toHaveBeenCalledTimes(2)
   })
 
-  it('maps required and optional successes to their approved cues', () => {
+  it('maps real access outcomes and neutral celebrations to approved cues', () => {
     const { audio, subject } = fixture()
-    expect(subject.breakCompleted(false)).toEqual({
+    expect(subject.breakCompleted('path-opened')).toEqual({
       cue: 'required-break',
       caption: 'Beautiful. A new path is open.',
     })
-    expect(subject.breakCompleted(true)).toEqual({
+    expect(subject.breakCompleted('exit-opened')).toEqual({
+      cue: 'required-break',
+      caption: 'Beautiful. A new path is open.',
+    })
+    expect(subject.breakCompleted('celebration')).toEqual({
       cue: 'optional-break',
       caption: 'Gorgeous. Absolutely gorgeous.',
     })
     expect(audio.play).toHaveBeenNthCalledWith(1, 'required-break')
-    expect(audio.play).toHaveBeenNthCalledWith(2, 'optional-break')
+    expect(audio.play).toHaveBeenNthCalledWith(2, 'required-break')
+    expect(audio.play).toHaveBeenNthCalledWith(3, 'optional-break')
   })
 
-  it('alternates required path guidance with shuffled reactions', () => {
+  it('keeps repeated celebrations neutral, including Encore', () => {
     const { audio, subject } = fixture()
 
-    expect(subject.breakCompleted(false).cue).toBe('required-break')
-    expect(subject.breakCompleted(false).cue).toBe('optional-break')
-    expect(subject.breakCompleted(false).cue).toBe('required-break')
+    expect(subject.breakCompleted('celebration').cue).toBe('optional-break')
+    expect(subject.breakCompleted('celebration').cue).toBe(
+      'cracking-performance',
+    )
+    expect(subject.breakCompleted('celebration').cue).toBe('music-to-my-ears')
 
-    expect(audio.play).toHaveBeenNthCalledWith(1, 'required-break')
-    expect(audio.play).toHaveBeenNthCalledWith(2, 'optional-break')
-    expect(audio.play).toHaveBeenNthCalledWith(3, 'required-break')
+    expect(audio.play).not.toHaveBeenCalledWith('required-break')
   })
 
   it('still returns the selected caption while narration is disabled', () => {
     const { audio, subject } = fixture(false)
 
-    expect(subject.breakCompleted(false)).toEqual({
+    expect(subject.breakCompleted('path-opened')).toEqual({
       cue: 'required-break',
       caption: 'Beautiful. A new path is open.',
     })
@@ -128,13 +133,13 @@ describe('adventure narration', () => {
     expect(audio.silenceForVoice).toHaveBeenCalledOnce()
 
     subject.welcomeGesture()
-    subject.breakCompleted(false)
+    subject.breakCompleted('path-opened')
     await quiet
     expect(audio.play).not.toHaveBeenCalled()
 
     subject.releaseVoice()
     expect(audio.play).not.toHaveBeenCalled()
-    subject.breakCompleted(false)
+    subject.breakCompleted('celebration')
     expect(audio.play).toHaveBeenCalledExactlyOnceWith('optional-break')
   })
 
@@ -147,7 +152,7 @@ describe('adventure narration', () => {
 
     await subject.silenceForVoice()
     subject.releaseVoice()
-    subject.breakCompleted(false)
+    subject.breakCompleted('path-opened')
     stale.resolve(false)
     await stale.promise
     subject.welcomeGesture()
@@ -214,17 +219,17 @@ describe('adventure narration', () => {
 
   it('pauses without queuing a replay and disposes once', () => {
     const { audio, subject, allow } = fixture()
-    subject.breakCompleted(false)
+    subject.breakCompleted('path-opened')
     allow(false)
     subject.pause()
     allow(true)
     expect(audio.play).toHaveBeenCalledTimes(1)
-    subject.breakCompleted(true)
+    subject.breakCompleted('celebration')
     expect(audio.play).toHaveBeenCalledTimes(2)
 
     subject.dispose()
     subject.dispose()
-    subject.breakCompleted(false)
+    subject.breakCompleted('path-opened')
     subject.welcomeGesture()
     subject.setEnabled(false)
     void subject.silenceForVoice()

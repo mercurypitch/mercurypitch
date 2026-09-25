@@ -502,6 +502,8 @@ export interface SavedProgress {
   rewards?: SavedRewardProgress
 }
 
+export type BreakOutcome = 'celebration' | 'path-opened' | 'exit-opened'
+
 export type GameEvent =
   | { type: 'landed' }
   | { type: 'jumped' }
@@ -514,7 +516,7 @@ export type GameEvent =
       stepCount: number
     }
   | { type: 'challenge-reset'; id: string; reason: 'wrong-order' }
-  | { type: 'break'; id: string }
+  | { type: 'break'; id: string; outcome: BreakOutcome }
   | { type: 'complete' }
 
 export interface GlassGame {

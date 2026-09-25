@@ -187,7 +187,9 @@ describe('Glassworks simulation', () => {
     expect(game.beginEncounter(goblet, 57)).toBe(true)
     steps(game, 60, { moveX: 1, moveZ: -1, jumpDown: true })
     expect(game.snapshot().player.position).toEqual(parked)
-    expect(sing(game)).toEqual([{ type: 'break', id: goblet }])
+    expect(sing(game)).toEqual([
+      { type: 'break', id: goblet, outcome: 'path-opened' },
+    ])
     expect(game.snapshot().phase).toBe('shattering')
     expect(game.saveProgress().completedBreakableIds).toEqual([goblet])
     expect(game.snapshot().enabledPlatformIds).toContain('arch-bridge')
@@ -271,7 +273,7 @@ describe('Glassworks simulation', () => {
         completedSteps: 2,
         stepCount: 2,
       },
-      { type: 'break', id: goblet },
+      { type: 'break', id: goblet, outcome: 'path-opened' },
     ])
     expect(game.saveProgress().completedBreakableIds).toEqual([goblet])
   })
@@ -566,13 +568,16 @@ describe('Glassworks simulation', () => {
 
   it('traverses both opened bridges and terraces, then an optional display before exiting', () => {
     const game = createGlassGame(GLASSWORKS)
-    const breakNearby = (id: string): void => {
+    const breakNearby = (
+      id: string,
+      outcome: 'celebration' | 'path-opened' | 'exit-opened',
+    ): void => {
       expect(game.beginEncounter(id, 57)).toBe(true)
-      expect(sing(game)).toEqual([{ type: 'break', id }])
+      expect(sing(game)).toEqual([{ type: 'break', id, outcome }])
       steps(game, 180)
     }
     walkToGoblet(game)
-    breakNearby(goblet)
+    breakNearby(goblet, 'path-opened')
     walkAxis(game, 'z', 3.65)
     walkAxis(game, 'x', 1.7)
     walkAxis(game, 'z', 5.15)
@@ -584,15 +589,15 @@ describe('Glassworks simulation', () => {
     expect(game.snapshot().checkpointId).toBe('jump-terrace')
     walkAxis(game, 'z', 5)
     walkAxis(game, 'z', 2.7)
-    breakNearby(vase)
+    breakNearby(vase, 'path-opened')
     walkAxis(game, 'x', 5.5)
     walkAxis(game, 'z', 1.8)
-    breakNearby(hero)
+    breakNearby(hero, 'exit-opened')
     expect(game.snapshot().complete).toBe(false)
     walkAxis(game, 'x', 4.6)
     walkAxis(game, 'z', 4.4)
     const optional = GLASSWORKS.breakables.find((target) => target.optional)!
-    breakNearby(optional.id)
+    breakNearby(optional.id, 'celebration')
     expect(game.saveProgress().completedBreakableIds).toEqual([
       goblet,
       vase,

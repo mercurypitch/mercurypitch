@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { composeLevel } from '../authoring/compose-level'
-import type { Bounds3, GameEvent, GlassGame, MovementInput, PitchTargetId, } from '../contracts'
+import type { Bounds3, BreakOutcome, GameEvent, GlassGame, MovementInput, PitchTargetId, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
@@ -123,7 +123,11 @@ function feedTarget(
   return events
 }
 
-function sing(game: GlassGame, encounterId: string): void {
+function sing(
+  game: GlassGame,
+  encounterId: string,
+  outcome: BreakOutcome = 'path-opened',
+): void {
   expect(game.snapshot().nearbyBreakableId).toBe(encounterId)
   expect(game.beginEncounter(encounterId, { low: 55, high: 62 })).toBe(true)
   const challenge = TWIN_GALLERIES.breakables.find(
@@ -144,7 +148,7 @@ function sing(game: GlassGame, encounterId: string): void {
     events.push(...feedTarget(game, midi, sequence, frameCount))
     sequence += frameCount
   }
-  expect(events).toContainEqual({ type: 'break', id: encounterId })
+  expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
   steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
   expect(game.snapshot().phase).toBe('idle')
 }

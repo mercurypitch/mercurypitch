@@ -4,7 +4,8 @@ import { GALLERY_ENCORES } from '../content/encores'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
-import { AdventureGuidance } from './AdventureGuidance'
+import { scheduleAdventureMessageKinds } from './adventure-message-scheduler'
+import { deriveAdventureProgressGuidance } from './AdventureGuidance'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
@@ -119,6 +120,36 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           adventure.voiceEncounterId()),
     ),
   )
+  const progressGuidance = createMemo(() =>
+    adventure.voiceMode() === 'off' &&
+    adventure.snapshot().phase !== 'shattering'
+      ? deriveAdventureProgressGuidance(level, adventure.snapshot())
+      : undefined,
+  )
+  const visibleNotice = createMemo(() =>
+    adventure.notice() &&
+    !active() &&
+    !adventure.tutorial() &&
+    !adventure.paused() &&
+    adventure.snapshot().phase !== 'shattering'
+      ? adventure.notice()
+      : '',
+  )
+  const visibleNarrationCaption = createMemo(() =>
+    adventure.narrationCaption() &&
+    adventure.voiceMode() === 'off' &&
+    !adventure.tutorial() &&
+    !adventure.paused()
+      ? adventure.narrationCaption()
+      : '',
+  )
+  const messageKinds = createMemo(() =>
+    scheduleAdventureMessageKinds({
+      narration: visibleNarrationCaption() !== '',
+      notice: visibleNotice() !== '',
+      guidance: progressGuidance() !== undefined,
+    }),
+  )
   const showArtworkOffer = createMemo(
     () =>
       adventure.ready() &&
@@ -128,6 +159,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       adventure.nearbyArtwork() !== null &&
       adventure.voiceMode() === 'off' &&
       adventure.snapshot().phase !== 'shattering',
+  )
+  const showEncounterOffer = createMemo(
+    () =>
+      adventure.voiceMode() === 'off' &&
+      adventure.microphoneIssue() === null &&
+      nearby() !== undefined,
   )
   const voiceSteps = createMemo(() => {
     const challenge = active()?.challenge
@@ -411,35 +448,43 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             />
           </Show>
         </div>
-        <Show
-          when={
-            adventure.notice() &&
-            !active() &&
-            !adventure.tutorial() &&
-            !adventure.paused() &&
-            adventure.snapshot().phase !== 'shattering'
-          }
-        >
-          <p class={styles.notice} role="status" data-testid="glass-notice">
-            {adventure.notice()}
-          </p>
-        </Show>
-        <Show
-          when={
-            adventure.narrationCaption() &&
-            !adventure.tutorial() &&
-            !adventure.paused()
-          }
-        >
-          <p
-            class={styles.narrationCaption}
+        <Show when={messageKinds().length > 0}>
+          <div
+            class={styles.messageStack}
+            classList={{
+              [styles.messageStackWithOffer]: showEncounterOffer(),
+            }}
             role="status"
             aria-live="polite"
-            aria-atomic="true"
-            data-testid="merc-narration-caption"
+            aria-atomic="false"
+            aria-label="Museum guidance"
+            data-testid="glass-message-stack"
+            data-message-count={messageKinds().length}
           >
-            <strong>Merc:</strong> {adventure.narrationCaption()}
-          </p>
+            <Show when={messageKinds().includes('narration')}>
+              <p
+                class={styles.narrationCaption}
+                data-testid="merc-narration-caption"
+              >
+                <strong>Merc:</strong> {visibleNarrationCaption()}
+              </p>
+            </Show>
+            <Show when={messageKinds().includes('notice')}>
+              <p class={styles.notice} data-testid="glass-notice">
+                {visibleNotice()}
+              </p>
+            </Show>
+            <Show when={messageKinds().includes('guidance')}>
+              <p
+                class={styles.progressGuidance}
+                data-testid="glass-progress-guidance"
+                data-guidance-kind={progressGuidance()?.kind}
+              >
+                <strong>{progressGuidance()?.heading}</strong>{' '}
+                {progressGuidance()?.detail}
+              </p>
+            </Show>
+          </div>
         </Show>
         <Show when={adventure.error()}>
           <div class={styles.error} role="alert">
@@ -487,21 +532,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               adventure.snapshot().phase === 'shattering'
             }
           />
-          <AdventureGuidance
-            level={level}
-            snapshot={adventure.snapshot()}
-            visible={
-              adventure.voiceMode() === 'off' &&
-              adventure.snapshot().phase !== 'shattering'
-            }
-          />
-          <Show
-            when={
-              adventure.voiceMode() === 'off' &&
-              adventure.microphoneIssue() === null &&
-              nearby()
-            }
-          >
+          <Show when={showEncounterOffer()}>
             <div class={styles.encounterOffer}>
               <span>
                 {nearby()?.optional === true

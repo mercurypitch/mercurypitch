@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { composeLevel } from '../authoring/compose-level'
-import type { Bounds3, GameEvent, GlassGame, MovementInput } from '../contracts'
+import type { Bounds3, BreakOutcome, GameEvent, GlassGame, MovementInput, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { getRequiredRouteBreakableIds } from '../core/progress'
@@ -102,7 +102,11 @@ function walkAxis(game: GlassGame, axis: 'x' | 'z', destination: number): void {
   steps(game, 24)
 }
 
-function sing(game: GlassGame, encounterId: string): void {
+function sing(
+  game: GlassGame,
+  encounterId: string,
+  outcome: BreakOutcome = 'path-opened',
+): void {
   expect(game.snapshot().nearbyBreakableId).toBe(encounterId)
   expect(game.beginEncounter(encounterId, 57)).toBe(true)
   const events: GameEvent[] = []
@@ -121,7 +125,7 @@ function sing(game: GlassGame, encounterId: string): void {
       ),
     )
   }
-  expect(events).toContainEqual({ type: 'break', id: encounterId })
+  expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
   steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
   expect(game.snapshot().phase).toBe('idle')
 }
