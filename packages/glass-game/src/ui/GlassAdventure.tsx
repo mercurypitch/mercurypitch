@@ -4,8 +4,8 @@ import { GALLERY_ENCORES } from '../content/encores'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
-import { scheduleAdventureMessageKinds } from './adventure-message-scheduler'
 import { deriveAdventureProgressGuidance } from './AdventureGuidance'
+import { AdventureMessageStack } from './AdventureMessageStack'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
 import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
@@ -148,13 +148,6 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
     adventure.voiceMode() === 'off'
       ? adventure.narrationCaption()
       : '',
-  )
-  const messageKinds = createMemo(() =>
-    scheduleAdventureMessageKinds({
-      narration: visibleNarrationCaption() !== '',
-      notice: visibleNotice() !== '',
-      guidance: progressGuidance() !== undefined,
-    }),
   )
   const showArtworkOffer = createMemo(
     () =>
@@ -454,44 +447,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             />
           </Show>
         </div>
-        <Show when={messageKinds().length > 0}>
-          <div
-            class={styles.messageStack}
-            classList={{
-              [styles.messageStackWithOffer]: showEncounterOffer(),
-            }}
-            role="status"
-            aria-live="polite"
-            aria-atomic="false"
-            aria-label="Museum guidance"
-            data-testid="glass-message-stack"
-            data-message-count={messageKinds().length}
-          >
-            <Show when={messageKinds().includes('narration')}>
-              <p
-                class={styles.narrationCaption}
-                data-testid="merc-narration-caption"
-              >
-                <strong>Merc:</strong> {visibleNarrationCaption()}
-              </p>
-            </Show>
-            <Show when={messageKinds().includes('notice')}>
-              <p class={styles.notice} data-testid="glass-notice">
-                {visibleNotice()}
-              </p>
-            </Show>
-            <Show when={messageKinds().includes('guidance')}>
-              <p
-                class={styles.progressGuidance}
-                data-testid="glass-progress-guidance"
-                data-guidance-kind={progressGuidance()?.kind}
-              >
-                <strong>{progressGuidance()?.heading}</strong>{' '}
-                {progressGuidance()?.detail}
-              </p>
-            </Show>
-          </div>
-        </Show>
+        <AdventureMessageStack
+          narration={visibleNarrationCaption()}
+          notice={visibleNotice()}
+          guidance={progressGuidance()}
+          withEncounterOffer={showEncounterOffer()}
+        />
         <Show when={adventure.error()}>
           <div class={styles.error} role="alert">
             <div class={styles.errorBody}>

@@ -13,6 +13,7 @@ import type { GlassRenderQualityPreference, GlassRenderQualityProfile, } from '.
 import { GLASS_RENDER_QUALITY_PREFERENCE, parseGlassRenderQualityPreference, } from '../render/render-quality'
 import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../render/resonance-portal'
 import { initialAdventureNotice } from './adventure-notice'
+import { createAdventureTransientMessages } from './adventure-transient-messages'
 import type { CameraComfortSettings } from './camera-comfort'
 import { CAMERA_COMFORT_PREFERENCE, normalizeCameraComfort, parseCameraComfort, serializeCameraComfort, } from './camera-comfort'
 import { createAdventureInput, isAdventureEditableTarget } from './input'
@@ -81,8 +82,11 @@ export function useAdventure(
   const pitch = () => voiceState()?.pitch ?? null
   const target = () => voiceState()?.target ?? null
   const openingNotice = initialAdventureNotice(level, initialSnapshot)
-  const [notice, setNotice] = createSignal(openingNotice)
-  const [narrationCaption, setNarrationCaption] = createSignal('')
+  let alive = true
+  const transientMessages = createAdventureTransientMessages(
+    openingNotice,
+    () => alive,
+  )
   const [paused, setPaused] = createSignal(false)
   const [inspection, setInspection] = createSignal<GalleryArtwork | null>(null)
   const [nearbyArtwork, setNearbyArtwork] = createSignal<string | null>(null)
@@ -105,17 +109,13 @@ export function useAdventure(
     narration.preferences(),
   )
   let renderer: GlassRenderer | null = null
-  let alive = true
   let rendererGeneration = 0
   let frameId = 0
   let lastTime = 0
-  let noticeTimer: ReturnType<typeof setTimeout> | undefined
-  let narrationCaptionTimer: ReturnType<typeof setTimeout> | undefined
   let completionTimer: ReturnType<typeof setTimeout> | undefined
   let reducedMotion = false
   let lastArtworkCheck = 0
   let lastCameraMetricsAt = -Infinity
-  let openingNoticePending = openingNotice !== ''
   const loading = createAdventureLoadingLifecycle({
     minimumVisibleMs: LOADING_PRESENTATION_MS,
     onChange: (state) => {
@@ -128,10 +128,7 @@ export function useAdventure(
       game.setPaused(paused() || tutorial())
       lastTime = 0
       refresh()
-      if (openingNoticePending) {
-        openingNoticePending = false
-        announce(openingNotice)
-      }
+      transientMessages.startOpeningNotice()
     },
   })
   game.setPaused(untrack(tutorial))
@@ -141,44 +138,11 @@ export function useAdventure(
   }
 
   function cancel(): void {
-    clearTransientMessages()
+    transientMessages.clear()
     narration.pause()
     voiceChallenge.cancel()
     input.clear()
     refresh()
-  }
-
-  function announce(message: string): void {
-    clearTimeout(noticeTimer)
-    setNotice(message)
-    noticeTimer = setTimeout(() => {
-      if (alive) setNotice('')
-    }, 5000)
-  }
-
-  function clearNotice(): void {
-    clearTimeout(noticeTimer)
-    noticeTimer = undefined
-    setNotice('')
-  }
-
-  function clearNarrationCaption(): void {
-    clearTimeout(narrationCaptionTimer)
-    narrationCaptionTimer = undefined
-    setNarrationCaption('')
-  }
-
-  function clearTransientMessages(): void {
-    clearNotice()
-    clearNarrationCaption()
-  }
-
-  function showNarrationCaption(caption: string): void {
-    clearNarrationCaption()
-    setNarrationCaption(caption)
-    narrationCaptionTimer = setTimeout(() => {
-      if (alive) setNarrationCaption('')
-    }, 5000)
   }
 
   function presentCompletion(): void {
@@ -205,11 +169,11 @@ export function useAdventure(
           (candidate) => candidate.id === event.id,
         )
         const reaction = narration.breakCompleted(event.outcome)
-        showNarrationCaption(reaction.caption)
+        transientMessages.showNarrationCaption(reaction.caption)
         const authoredNotice = level.guidance?.encounterSuccessNotices?.find(
           (notice) => notice.encounterId === event.id,
         )?.notice
-        announce(
+        transientMessages.announce(
           authoredNotice ??
             (item?.optional === true
               ? 'Optional exhibit opened. Explore, or continue to the exit.'
@@ -222,16 +186,18 @@ export function useAdventure(
       } else if (event.type === 'checkpoint') {
         host.saveProgress(game.saveProgress())
       } else if (event.type === 'complete') {
-        clearTransientMessages()
+        transientMessages.clear()
         host.saveProgress(game.saveProgress())
         input.clear()
         renderer?.cancelHeadingFollow()
         scheduleCompletionFallback()
       } else if (event.type === 'respawn') {
-        clearTransientMessages()
+        transientMessages.clear()
         input.clear()
         renderer?.cancelHeadingFollow()
-        announce('Back on solid ground. Your progress is safe.')
+        transientMessages.announce(
+          'Back on solid ground. Your progress is safe.',
+        )
       }
     }
   }
@@ -272,7 +238,7 @@ export function useAdventure(
       voiceMode() !== 'off'
     )
       return
-    clearTransientMessages()
+    transientMessages.clear()
     setError(null)
     setMicrophoneIssue(null)
     input.clear()
@@ -417,7 +383,7 @@ export function useAdventure(
 
   function changeNarration(enabled: boolean): void {
     narration.setEnabled(enabled)
-    if (!enabled) clearNarrationCaption()
+    if (!enabled) transientMessages.clearNarrationCaption()
     setNarrationPreferences(narration.preferences())
   }
 
@@ -705,7 +671,7 @@ export function useAdventure(
     alive = false
     loading.dispose()
     cancelAnimationFrame(frameId)
-    clearTransientMessages()
+    transientMessages.clear()
     clearTimeout(completionTimer)
     voiceChallenge.dispose()
     soundscape.dispose()
@@ -738,8 +704,8 @@ export function useAdventure(
     voiceStepIndex: () => voiceState()?.stepIndex ?? 0,
     voiceStepCount: () => voiceState()?.stepCount ?? 1,
     voiceStepCharge: () => voiceState()?.stepCharge ?? 0,
-    notice,
-    narrationCaption,
+    notice: transientMessages.notice,
+    narrationCaption: transientMessages.narrationCaption,
     paused,
     inspection,
     nearbyArtwork,
@@ -768,7 +734,7 @@ export function useAdventure(
     changeRenderQuality,
     gameplayGesture,
     silenceForEncore: () => {
-      clearTransientMessages()
+      transientMessages.clear()
       return Promise.all([
         soundscape.silenceForVoice(),
         narration.silenceForVoice(),
@@ -780,7 +746,7 @@ export function useAdventure(
     },
     celebrateEncore: () => {
       const reaction = narration.breakCompleted('celebration')
-      showNarrationCaption(reaction.caption)
+      transientMessages.showNarrationCaption(reaction.caption)
     },
     challengeCamera,
     cameraYaw: () => {
