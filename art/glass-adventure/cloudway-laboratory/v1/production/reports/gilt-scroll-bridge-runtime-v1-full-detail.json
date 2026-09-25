@@ -1,0 +1,802 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge-runtime-v1",
+  "status": "certified-full-detail-export-preserved-for-source-review",
+  "bundle": {
+    "file": "source-assets/runtime/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1-full-detail.glb",
+    "bytes": 102050324,
+    "sha256": "24c5a4eaddcb19cd4d054aee7756b5dd2320b23f08b484664f34d5b2b5552e70",
+    "logicalId": "gilt-scroll-bridge-runtime-v1",
+    "deliveryClass": "source-full-detail",
+    "rootNode": "Cloudway_GiltScrollBridge_RuntimeV1",
+    "decoderPolicy": "plain glTF 2.0 GLB; no Draco or Meshopt decoder",
+    "externalDependencies": []
+  },
+  "coordinates": {
+    "upAxis": "+Y",
+    "units": "metres",
+    "origin": "top-centre-of-fully-extended-support",
+    "localExtensionAxis": "+X",
+    "perpendicularAxis": "+Z",
+    "noNonUniformArtScaling": true
+  },
+  "supportCertification": {
+    "collider": {
+      "shape": "box",
+      "width": 0.757494056,
+      "depth": 2.205964088,
+      "height": 0.1,
+      "topY": 0,
+      "center": [
+        0,
+        -0.05,
+        0
+      ]
+    },
+    "adapter": {
+      "version": 1,
+      "coordinates": {
+        "upAxis": "+Y",
+        "units": "metres",
+        "origin": "top-centre-of-fully-extended-support"
+      },
+      "support": {
+        "state": "fully-extended",
+        "topY": 0,
+        "width": 0.757494056,
+        "depth": 2.205964088
+      },
+      "motion": {
+        "kind": "scroll",
+        "localExtensionAxis": "x",
+        "roles": {
+          "deck": "ScrollDeck",
+          "negativeRoller": "ScrollRollerNegative",
+          "positiveRoller": "ScrollRollerPositive",
+          "persistent": []
+        },
+        "rollerEdgeAnchors": {
+          "negative": [
+            -0.378747028,
+            0,
+            0
+          ],
+          "positive": [
+            0.378747028,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "flatTopBlenderZUpAfterRecentre": {
+      "triangles": 2,
+      "min": [
+        -0.372747034,
+        -1.102982044,
+        0.0
+      ],
+      "max": [
+        0.372747034,
+        1.102982044,
+        0.0
+      ],
+      "dimensions": [
+        0.745494068,
+        2.205964088,
+        0.0
+      ],
+      "centre": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "glassOuterDimensionsMetres": [
+      0.769494056,
+      2.229963927,
+      0.1
+    ],
+    "rollerAnchorSpanMetres": 0.757494056,
+    "glassOverlapUnderEachRollerMetres": 0.006,
+    "widthPolicy": "The motion/collider width terminates at the source cut planes and certified roller anchors. The glass extends 6 mm beneath each roller; its 12 mm edge bevel places the fully flat top 6 mm inside each X anchor. This bounded covered bevel is intentional and recorded rather than enlarging the simple collider to decorative roller geometry.",
+    "depthPolicy": "Collider depth is the exactly centred flat top between the authored 12 mm end bevels. The outer glass and decorative roller bodies extend beyond this support depth.",
+    "landingContactPlanesLocal": {
+      "negativeX": -0.378747028,
+      "positiveX": 0.378747028,
+      "minimumLandingDepth": 2.205964088,
+      "topY": 0
+    },
+    "courseIntegrationFootprint": {
+      "extensionLengthLocalXMetres": 0.757494056,
+      "walkableCorridorWidthLocalZMetres": 2.205964088,
+      "uniformScaleOnly": true,
+      "note": "This donor is a compact crossing: retraction runs along its short local X span, while the long local Z span is the walkable corridor width. Do not stretch it non-uniformly to the provisional 3.0 x 1.8 metre study footprint."
+    },
+    "minimumLengthRatio": 0.25
+  },
+  "roles": {
+    "deck": "ScrollDeck",
+    "negativeRoller": "ScrollRollerNegative",
+    "positiveRoller": "ScrollRollerPositive",
+    "persistent": []
+  },
+  "materialBindings": {
+    "ScrollDeckGeometry": {
+      "kind": "glass",
+      "material": "CloudwayScroll_DeckGlass_v1",
+      "principled": {
+        "metalness": 0.0,
+        "roughness": 0.075000003,
+        "transmission": 0.985000014,
+        "ior": 1.460000038
+      }
+    },
+    "ScrollDeckGoldStarDetailLayer": {
+      "kind": "opaque",
+      "material": "CloudwayScroll_GoldDetail_v1",
+      "principled": {
+        "metalness": 0.879999995,
+        "roughness": 0.200000003,
+        "transmission": 0.0,
+        "ior": 1.5
+      }
+    },
+    "ScrollDeckFrostEtchDetailLayer": {
+      "kind": "glass",
+      "material": "CloudwayScroll_FrostEtch_v1",
+      "principled": {
+        "metalness": 0.0,
+        "roughness": 0.310000002,
+        "transmission": 0.360000014,
+        "ior": 1.429999948
+      }
+    },
+    "ScrollRollerNegativeGeometry": {
+      "kind": "opaque",
+      "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+      "principled": {
+        "metalness": 0.0,
+        "roughness": 0.5,
+        "transmission": 0.0,
+        "ior": 1.450000048
+      }
+    },
+    "ScrollRollerPositiveGeometry": {
+      "kind": "opaque",
+      "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+      "principled": {
+        "metalness": 0.0,
+        "roughness": 0.5,
+        "transmission": 0.0,
+        "ior": 1.450000048
+      }
+    }
+  },
+  "lineage": {
+    "acceptedOpticalCandidate": {
+      "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-transmissive-deck-candidate.blend",
+      "bytes": 143714431,
+      "sha256": "34e919c1bfe1da286c525fc6c413463abbb9702ecfe537553baf50abad3a669b"
+    },
+    "semanticDerivative": {
+      "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-semantic-derivative.blend",
+      "bytes": 143606834,
+      "sha256": "721eb36a482a13f9f57509c0623f3c30c17aa644eabb5182629bad046838174b"
+    },
+    "acceptedCandidateReport": {
+      "file": "art/glass-adventure/cloudway-laboratory/v1/production/reports/gilt-scroll-bridge-scroll-transmissive-deck-candidate.json",
+      "bytes": 19821,
+      "sha256": "df4ced60bd92d39669f9c4931556b500f4fc3a7e702d1209bd3fd533001ee741"
+    },
+    "originalReliefPreservedInSource": true,
+    "rejectedReliefExcludedFromRuntime": true
+  },
+  "geometryPreservation": {
+    "meshFingerprintsBefore": {
+      "ScrollDeckGeometry": {
+        "vertices": 96,
+        "triangles": 188,
+        "positionsFloat32Sha256": "e7dc5a0f580129c868fc5fd0ebcffb6f3cc44b7983a9e39fe2cddc131abcbca3",
+        "trianglesInt32Sha256": "678209de7677551d3cdad546413805d6aa01b5a54e23f0a2d3884bbb5ea950e0",
+        "loops": 384,
+        "cornerNormalsFloat32Sha256": "0baf1f6dc93221db0ca2c36d3a1f15c9c83e04b726517734b71f148b267f9065",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "edade9ca25e4448a5a75976bb023d82803d13edebbd32e1efd943f984e8f7be1"
+        }
+      },
+      "ScrollDeckGoldStarDetailLayer": {
+        "vertices": 480,
+        "triangles": 960,
+        "positionsFloat32Sha256": "edea4d4b2fcaaab21446e67784f50fbc8070929f4b51707b66349e0936c85239",
+        "trianglesInt32Sha256": "659302dcf4813f1ca6847515ad53516947033fd9df126ce877a210fe6f77dba9",
+        "loops": 1920,
+        "cornerNormalsFloat32Sha256": "007b3c40d6bc861295169007af60ac329c285f5f577608b3d04bc59b397e3297",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "393ece4b690a8f7d3803082b1e99e32926b505c6a433337ec9ff1b5e229af32b"
+        }
+      },
+      "ScrollDeckFrostEtchDetailLayer": {
+        "vertices": 3240,
+        "triangles": 6240,
+        "positionsFloat32Sha256": "4b9f7a5a7bdbf785fb6e71e472aa006f9c287a63bceb0178a1f15668b868f42a",
+        "trianglesInt32Sha256": "fa7435c23c490fe7927e26499748f810756695b8d98d5b0a42794664a12b1e1c",
+        "loops": 12480,
+        "cornerNormalsFloat32Sha256": "644034d7f4ac8532ebffce40703da4779455748df349ececcbbec95fce994c6f",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "52aa7bcc284610d9c12b1fe03de15ab94d2033f0cb88d931ac228ff39d5d2ee7"
+        }
+      },
+      "ScrollRollerNegativeGeometry": {
+        "vertices": 151261,
+        "triangles": 265104,
+        "positionsFloat32Sha256": "a716774f883bdf49d7d62267b9957f1ee079e2ea303105e956d02d3eeeefb02e",
+        "trianglesInt32Sha256": "36834cc673fd6544679012db39e3974952a7d39dee9ecac0552d284d7f33c755",
+        "loops": 795312,
+        "cornerNormalsFloat32Sha256": "3a1d1b1955d0adfc10d634ada0d67115857626a82d707c8c95ed49247dfcdb5a",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "657bdc5f63ae9f36c568fe9a82e0622eddc7278e69c381fd2a3ad22e45ee896a"
+        },
+        "sourcePreservationFingerprint": {
+          "vertices": 151261,
+          "triangles": 265104,
+          "loops": 795312,
+          "positionsFloat32Sha256": "a716774f883bdf49d7d62267b9957f1ee079e2ea303105e956d02d3eeeefb02e",
+          "trianglesInt32Sha256": "36834cc673fd6544679012db39e3974952a7d39dee9ecac0552d284d7f33c755",
+          "cornerUvsFloat32Sha256": "657bdc5f63ae9f36c568fe9a82e0622eddc7278e69c381fd2a3ad22e45ee896a",
+          "sourceVertexIdsInt32Sha256": "51041b4a978b40b3e15aac867725045d290dab7de3016a2d8a35467da045ef33",
+          "sourcePolygonIdsInt32Sha256": "0a48b6945148c9ded0da998a7461f8d84a4dd1b2eb7844b9f79d5f866c338473",
+          "sourceLoopIdsInt32Sha256": "c5c203e637076b6a6bd5fd41c64d5dc08de5ea35d2590ae6c68515d60fdb7300",
+          "faceKindsInt32Sha256": "8ccc88f66832d72636757f02775867f3539d37a9c9816cb4bcd42f1c8efc2143"
+        }
+      },
+      "ScrollRollerPositiveGeometry": {
+        "vertices": 144812,
+        "triangles": 254876,
+        "positionsFloat32Sha256": "398569f2d2c8314f80898961374f77ccf5645344cb274fd28148e93d46331463",
+        "trianglesInt32Sha256": "db390aca279ed9c6ee5bf3d738a98fe3e04789808276f90f12c8f2d855ef801f",
+        "loops": 764628,
+        "cornerNormalsFloat32Sha256": "c1fe95916810eb5957d095fbb46a56bc45be84c51a8d23c5253cb58e11ad7ce7",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "2496755fae9042ab491b45b5ac74f8372b53324d5f1f104c86d75061167adba6"
+        },
+        "sourcePreservationFingerprint": {
+          "vertices": 144812,
+          "triangles": 254876,
+          "loops": 764628,
+          "positionsFloat32Sha256": "398569f2d2c8314f80898961374f77ccf5645344cb274fd28148e93d46331463",
+          "trianglesInt32Sha256": "db390aca279ed9c6ee5bf3d738a98fe3e04789808276f90f12c8f2d855ef801f",
+          "cornerUvsFloat32Sha256": "2496755fae9042ab491b45b5ac74f8372b53324d5f1f104c86d75061167adba6",
+          "sourceVertexIdsInt32Sha256": "10d28dfbbad0b5d1231b6d3421f185e57c54c0ec70978a9d2d958aea39cb7eb0",
+          "sourcePolygonIdsInt32Sha256": "23eff57ed9c69b7e14da710c40b4bf0ebb5c96cb476ab648dee68ba3b8f67af5",
+          "sourceLoopIdsInt32Sha256": "70e94ff4f126d9b436f8473f1199dcac110874cbd8781546bd24ccab98673c71",
+          "faceKindsInt32Sha256": "930cccea95601de11aae34c0707d787cbe48158a7883a462c3f9387868ac7f91"
+        }
+      }
+    },
+    "meshFingerprintsAfter": {
+      "ScrollDeckGeometry": {
+        "vertices": 96,
+        "triangles": 188,
+        "positionsFloat32Sha256": "e7dc5a0f580129c868fc5fd0ebcffb6f3cc44b7983a9e39fe2cddc131abcbca3",
+        "trianglesInt32Sha256": "678209de7677551d3cdad546413805d6aa01b5a54e23f0a2d3884bbb5ea950e0",
+        "loops": 384,
+        "cornerNormalsFloat32Sha256": "0baf1f6dc93221db0ca2c36d3a1f15c9c83e04b726517734b71f148b267f9065",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "edade9ca25e4448a5a75976bb023d82803d13edebbd32e1efd943f984e8f7be1"
+        }
+      },
+      "ScrollDeckGoldStarDetailLayer": {
+        "vertices": 480,
+        "triangles": 960,
+        "positionsFloat32Sha256": "edea4d4b2fcaaab21446e67784f50fbc8070929f4b51707b66349e0936c85239",
+        "trianglesInt32Sha256": "659302dcf4813f1ca6847515ad53516947033fd9df126ce877a210fe6f77dba9",
+        "loops": 1920,
+        "cornerNormalsFloat32Sha256": "007b3c40d6bc861295169007af60ac329c285f5f577608b3d04bc59b397e3297",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "393ece4b690a8f7d3803082b1e99e32926b505c6a433337ec9ff1b5e229af32b"
+        }
+      },
+      "ScrollDeckFrostEtchDetailLayer": {
+        "vertices": 3240,
+        "triangles": 6240,
+        "positionsFloat32Sha256": "4b9f7a5a7bdbf785fb6e71e472aa006f9c287a63bceb0178a1f15668b868f42a",
+        "trianglesInt32Sha256": "fa7435c23c490fe7927e26499748f810756695b8d98d5b0a42794664a12b1e1c",
+        "loops": 12480,
+        "cornerNormalsFloat32Sha256": "644034d7f4ac8532ebffce40703da4779455748df349ececcbbec95fce994c6f",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "52aa7bcc284610d9c12b1fe03de15ab94d2033f0cb88d931ac228ff39d5d2ee7"
+        }
+      },
+      "ScrollRollerNegativeGeometry": {
+        "vertices": 151261,
+        "triangles": 265104,
+        "positionsFloat32Sha256": "a716774f883bdf49d7d62267b9957f1ee079e2ea303105e956d02d3eeeefb02e",
+        "trianglesInt32Sha256": "36834cc673fd6544679012db39e3974952a7d39dee9ecac0552d284d7f33c755",
+        "loops": 795312,
+        "cornerNormalsFloat32Sha256": "3a1d1b1955d0adfc10d634ada0d67115857626a82d707c8c95ed49247dfcdb5a",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "657bdc5f63ae9f36c568fe9a82e0622eddc7278e69c381fd2a3ad22e45ee896a"
+        },
+        "sourcePreservationFingerprint": {
+          "vertices": 151261,
+          "triangles": 265104,
+          "loops": 795312,
+          "positionsFloat32Sha256": "a716774f883bdf49d7d62267b9957f1ee079e2ea303105e956d02d3eeeefb02e",
+          "trianglesInt32Sha256": "36834cc673fd6544679012db39e3974952a7d39dee9ecac0552d284d7f33c755",
+          "cornerUvsFloat32Sha256": "657bdc5f63ae9f36c568fe9a82e0622eddc7278e69c381fd2a3ad22e45ee896a",
+          "sourceVertexIdsInt32Sha256": "51041b4a978b40b3e15aac867725045d290dab7de3016a2d8a35467da045ef33",
+          "sourcePolygonIdsInt32Sha256": "0a48b6945148c9ded0da998a7461f8d84a4dd1b2eb7844b9f79d5f866c338473",
+          "sourceLoopIdsInt32Sha256": "c5c203e637076b6a6bd5fd41c64d5dc08de5ea35d2590ae6c68515d60fdb7300",
+          "faceKindsInt32Sha256": "8ccc88f66832d72636757f02775867f3539d37a9c9816cb4bcd42f1c8efc2143"
+        }
+      },
+      "ScrollRollerPositiveGeometry": {
+        "vertices": 144812,
+        "triangles": 254876,
+        "positionsFloat32Sha256": "398569f2d2c8314f80898961374f77ccf5645344cb274fd28148e93d46331463",
+        "trianglesInt32Sha256": "db390aca279ed9c6ee5bf3d738a98fe3e04789808276f90f12c8f2d855ef801f",
+        "loops": 764628,
+        "cornerNormalsFloat32Sha256": "c1fe95916810eb5957d095fbb46a56bc45be84c51a8d23c5253cb58e11ad7ce7",
+        "uvLayersFloat32Sha256": {
+          "UVMap": "2496755fae9042ab491b45b5ac74f8372b53324d5f1f104c86d75061167adba6"
+        },
+        "sourcePreservationFingerprint": {
+          "vertices": 144812,
+          "triangles": 254876,
+          "loops": 764628,
+          "positionsFloat32Sha256": "398569f2d2c8314f80898961374f77ccf5645344cb274fd28148e93d46331463",
+          "trianglesInt32Sha256": "db390aca279ed9c6ee5bf3d738a98fe3e04789808276f90f12c8f2d855ef801f",
+          "cornerUvsFloat32Sha256": "2496755fae9042ab491b45b5ac74f8372b53324d5f1f104c86d75061167adba6",
+          "sourceVertexIdsInt32Sha256": "10d28dfbbad0b5d1231b6d3421f185e57c54c0ec70978a9d2d958aea39cb7eb0",
+          "sourcePolygonIdsInt32Sha256": "23eff57ed9c69b7e14da710c40b4bf0ebb5c96cb476ab648dee68ba3b8f67af5",
+          "sourceLoopIdsInt32Sha256": "70e94ff4f126d9b436f8473f1199dcac110874cbd8781546bd24ccab98673c71",
+          "faceKindsInt32Sha256": "930cccea95601de11aae34c0707d787cbe48158a7883a462c3f9387868ac7f91"
+        }
+      }
+    },
+    "meshPositionsAndTriangleIndicesUnchanged": true,
+    "rollerWorldBoundsBefore": {
+      "ScrollRollerNegativeGeometry": {
+        "min": [
+          -0.62331295,
+          -1.199934363,
+          -0.180370569
+        ],
+        "max": [
+          -0.378746927,
+          1.199999928,
+          0.079482704
+        ]
+      },
+      "ScrollRollerPositiveGeometry": {
+        "min": [
+          0.378746927,
+          -1.199999928,
+          -0.180298612
+        ],
+        "max": [
+          0.621034145,
+          1.199991107,
+          0.08079949
+        ]
+      }
+    },
+    "rollerWorldBoundsAfter": {
+      "ScrollRollerNegativeGeometry": {
+        "min": [
+          -0.623313069,
+          -1.199934363,
+          -0.180370569
+        ],
+        "max": [
+          -0.378746778,
+          1.199999928,
+          0.079482704
+        ]
+      },
+      "ScrollRollerPositiveGeometry": {
+        "min": [
+          0.378746778,
+          -1.199999928,
+          -0.180298612
+        ],
+        "max": [
+          0.621034265,
+          1.199991226,
+          0.08079949
+        ]
+      }
+    },
+    "rollerWorldBoundsMaxDeltaMetres": {
+      "ScrollRollerNegativeGeometry": 1.49e-07,
+      "ScrollRollerPositiveGeometry": 1.49e-07
+    },
+    "roleAnchorTransformCompensation": {
+      "negative": {
+        "role": "ScrollRollerNegative",
+        "anchorBlenderZUp": [
+          -0.378747016,
+          0.0,
+          0.0
+        ],
+        "visibleWorldBoundsBefore": {
+          "ScrollRollerNegativeGeometry": {
+            "min": [
+              -0.62331295,
+              -1.199934363,
+              -0.180370569
+            ],
+            "max": [
+              -0.378746927,
+              1.199999928,
+              0.079482704
+            ]
+          }
+        },
+        "visibleWorldBoundsAfter": {
+          "ScrollRollerNegativeGeometry": {
+            "min": [
+              -0.623313069,
+              -1.199934363,
+              -0.180370569
+            ],
+            "max": [
+              -0.378746778,
+              1.199999928,
+              0.079482704
+            ]
+          }
+        },
+        "visibleBoundsMaxDeltaMetres": 1.49e-07,
+        "childMatricesAfter": {
+          "ScrollRollerNegativeGeometry": [
+            [
+              2.46e-07,
+              1.262490034,
+              0.0,
+              0.378747016
+            ],
+            [
+              -1.262490034,
+              2.46e-07,
+              0.0,
+              -0.000450072
+            ],
+            [
+              0.0,
+              0.0,
+              1.262490034,
+              -0.049938936
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      },
+      "positive": {
+        "role": "ScrollRollerPositive",
+        "anchorBlenderZUp": [
+          0.378747016,
+          0.0,
+          0.0
+        ],
+        "visibleWorldBoundsBefore": {
+          "ScrollRollerPositiveGeometry": {
+            "min": [
+              0.378746927,
+              -1.199999928,
+              -0.180298612
+            ],
+            "max": [
+              0.621034145,
+              1.199991107,
+              0.08079949
+            ]
+          }
+        },
+        "visibleWorldBoundsAfter": {
+          "ScrollRollerPositiveGeometry": {
+            "min": [
+              0.378746778,
+              -1.199999928,
+              -0.180298612
+            ],
+            "max": [
+              0.621034265,
+              1.199991226,
+              0.08079949
+            ]
+          }
+        },
+        "visibleBoundsMaxDeltaMetres": 1.49e-07,
+        "childMatricesAfter": {
+          "ScrollRollerPositiveGeometry": [
+            [
+              2.46e-07,
+              1.262490034,
+              0.0,
+              -0.378747016
+            ],
+            [
+              -1.262490034,
+              2.46e-07,
+              0.0,
+              -0.000450072
+            ],
+            [
+              0.0,
+              0.0,
+              1.262490034,
+              -0.049938936
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      }
+    },
+    "deckRecentre": {
+      "shiftAlongBlenderYMetres": 0.000962615,
+      "flatTopBefore": {
+        "triangles": 2,
+        "min": [
+          -0.372747034,
+          -1.103944659,
+          0.0
+        ],
+        "max": [
+          0.372747034,
+          1.102019429,
+          0.0
+        ],
+        "dimensions": [
+          0.745494068,
+          2.205964088,
+          0.0
+        ],
+        "centre": [
+          0.0,
+          -0.000962615,
+          0.0
+        ]
+      },
+      "flatTopAfter": {
+        "triangles": 2,
+        "min": [
+          -0.372747034,
+          -1.102982044,
+          0.0
+        ],
+        "max": [
+          0.372747034,
+          1.102982044,
+          0.0
+        ],
+        "dimensions": [
+          0.745494068,
+          2.205964088,
+          0.0
+        ],
+        "centre": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "movedObjectLocations": {
+        "ScrollDeckGeometry": [
+          0.0,
+          -5.2e-08,
+          -0.050000001
+        ],
+        "ScrollDeckGoldStarDetailLayer": [
+          0.0,
+          0.000962615,
+          0.0
+        ],
+        "ScrollDeckFrostEtchDetailLayer": [
+          0.0,
+          0.000962615,
+          0.0
+        ]
+      }
+    },
+    "diagnosticCapTrianglesRetained": true,
+    "diagnosticCapMaterialReplacedByReviewedRollerPbr": true,
+    "blanketDecimationUsed": false
+  },
+  "runtimeBlend": {
+    "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.blend",
+    "bytes": 114770164,
+    "sha256": "119a254849aa78f194b94a7d64e8e0fbfef66c81f9b404dbc794f31ab7dfc193",
+    "packed": true,
+    "editableSourceCandidatePreservedSeparately": true
+  },
+  "glbInventory": {
+    "assetVersion": "2.0",
+    "generator": "Khronos glTF Blender I/O v5.2.40",
+    "sceneRootNode": 8,
+    "nodes": 9,
+    "meshes": 5,
+    "materials": [
+      "CloudwayScroll_FrostEtch_v1",
+      "CloudwayScroll_DeckGlass_v1",
+      "CloudwayScroll_GoldDetail_v1",
+      "CloudwayScroll_RollerIvoryGoldPBR_v1"
+    ],
+    "textures": 3,
+    "images": [
+      {
+        "name": "set-0-normal",
+        "mimeType": "image/png",
+        "bytes": 11607872,
+        "sha256": "81c79037a11bad0f6bd96c23b9f7ab18ebc4ce6550ea33ffb1ecdbbe9d2fc122",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "set-0-base_color",
+        "mimeType": "image/png",
+        "bytes": 58101706,
+        "sha256": "7301e6accd7d56a99b22ec9239174185a6993e9d9739de8455d80f3baee83d76",
+        "dimensions": [
+          8192,
+          8192
+        ]
+      },
+      {
+        "name": "gilt-scroll-bridge__metallic-gilt-scroll-bridge__roughness",
+        "mimeType": "image/png",
+        "bytes": 11429678,
+        "sha256": "2b52276e4a1549191ba6b74b469f745fa05f030825d4bc0af3a4572c285b5eeb",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_transmission",
+      "KHR_materials_ior"
+    ],
+    "extensionsRequired": [],
+    "forbiddenGeometryCodecs": [],
+    "externalDependencies": [],
+    "roleTransformsGlTfYUp": {
+      "ScrollRollerNegative": {
+        "translation": [
+          -0.378747016,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "ScrollDeck": {
+        "translation": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "ScrollRollerPositive": {
+        "translation": [
+          0.378747016,
+          0.0,
+          0.0
+        ],
+        "rotation": [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    },
+    "meshRows": {
+      "ScrollDeckGeometry": {
+        "triangles": 188,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        "material": "CloudwayScroll_DeckGlass_v1",
+        "materialIndex": 1
+      },
+      "ScrollDeckGoldStarDetailLayer": {
+        "triangles": 960,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        "material": "CloudwayScroll_GoldDetail_v1",
+        "materialIndex": 2
+      },
+      "ScrollDeckFrostEtchDetailLayer": {
+        "triangles": 6240,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        "material": "CloudwayScroll_FrostEtch_v1",
+        "materialIndex": 0
+      },
+      "ScrollRollerNegativeGeometry": {
+        "triangles": 265104,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+        "materialIndex": 3
+      },
+      "ScrollRollerPositiveGeometry": {
+        "triangles": 254876,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+        "materialIndex": 3
+      }
+    },
+    "totalTriangles": 527368,
+    "metadataStrings": {
+      "collider_json": "{\"shape\":\"box\",\"width\":0.757494056,\"depth\":2.205964088,\"height\":0.1,\"topY\":0,\"center\":[0,-0.05,0]}",
+      "platform_adapter_json": "{\"version\":1,\"coordinates\":{\"upAxis\":\"+Y\",\"units\":\"metres\",\"origin\":\"top-centre-of-fully-extended-support\"},\"support\":{\"state\":\"fully-extended\",\"topY\":0,\"width\":0.757494056,\"depth\":2.205964088},\"motion\":{\"kind\":\"scroll\",\"localExtensionAxis\":\"x\",\"roles\":{\"deck\":\"ScrollDeck\",\"negativeRoller\":\"ScrollRollerNegative\",\"positiveRoller\":\"ScrollRollerPositive\",\"persistent\":[]},\"rollerEdgeAnchors\":{\"negative\":[-0.378747028,0,0],\"positive\":[0.378747028,0,0]}}}"
+    }
+  },
+  "remainingGate": "Bounded texture and meshopt delivery derivative plus actual GLTFLoader, adapter, and WebGL renderer proof.",
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_scroll_runtime_delivery.py"
+}
