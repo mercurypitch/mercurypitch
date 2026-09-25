@@ -215,7 +215,18 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
       resume: () => born.context?.resume() ?? Promise.resolve(),
     })
     const live = born.context
-    if (live === null) return
+    if (live === null) {
+      // No context was made: no constructor on this page, or one that threw
+      // (too many open, a WebView that refuses). A throw rejected the
+      // activation, and returning with it unhandled is an unhandled rejection
+      // -- which the native index.html watchdog paints as "Mercury Pitch did
+      // not start" over an app that is running. Handled, and said.
+      void activation.then(
+        () => didNotStart(kind, new Error('No AudioContext on this page')),
+        (error: unknown) => didNotStart(kind, error),
+      )
+      return
+    }
 
     const gain = live.createGain()
     gain.gain.value = GAIN_FLOOR

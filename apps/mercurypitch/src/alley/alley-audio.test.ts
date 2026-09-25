@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { activateAudioPlayback } from '@/lib/audio-unlock'
 import type { AmbientActivation } from './alley-audio'
 import { AMBIENT_LEVEL, createAlleyAmbient, GAIN_FLOOR, RELEASE_SLACK_MS, } from './alley-audio'
 import { AMBIENT_URL } from './alley-plate'
@@ -420,4 +421,40 @@ describe('an ambient that does not start', () => {
       expect(ambient.sourcesStarted()).toBe(0)
     },
   )
+
+  // A context that cannot be made (too many open, a WebView that refuses)
+  // throws inside `init`, which rejects the activation. start() used to
+  // return early with that promise unhandled, and on the native build an
+  // unhandled rejection is what index.html's watchdog paints as "Mercury
+  // Pitch did not start" -- over an app that is running.
+  it('handles a context that could not be made, and says so', async () => {
+    vi.useRealTimers()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const unhandled: unknown[] = []
+    const onUnhandled = (reason: unknown) => void unhandled.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    const refused = new Error('The AudioContext could not be created')
+    try {
+      const ambient = createAlleyAmbient({
+        createContext: () => {
+          throw refused
+        },
+        load: async () => new ArrayBuffer(8),
+        // The app's own activation, so the rejection has the app's shape.
+        activate: (target) => activateAudioPlayback(target),
+      })
+      expect(() => ambient.start('sing', 600)).not.toThrow()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+      expect(unhandled).toEqual([])
+      expect(warn).toHaveBeenCalledWith(
+        '[alley] ambient did not start',
+        'sing',
+        AMBIENT_URL.sing,
+        refused,
+      )
+      expect(ambient.sounding()).toBeNull()
+    } finally {
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
 })
