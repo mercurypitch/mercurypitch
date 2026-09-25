@@ -4,7 +4,7 @@
 
 import type { Object3D, Texture } from 'three'
 import { LoadingManager, TextureLoader } from 'three'
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
+import type { MeshoptDecoder as MeshoptDecoderValue } from 'three/addons/libs/meshopt_decoder.module.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { LevelDefinition } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
@@ -17,6 +17,38 @@ import type { createMuseum } from './museum'
 import type { TextureRecipe } from './texture-recipe'
 import { configureTexture } from './texture-recipe'
 import type { createVessel } from './vessels'
+
+type MeshoptDecoder = typeof MeshoptDecoderValue
+type LoaderMeshoptDecoder = Pick<
+  MeshoptDecoder,
+  'decodeGltfBufferAsync' | 'supported'
+>
+type MeshoptDecodeArguments = Parameters<
+  MeshoptDecoder['decodeGltfBufferAsync']
+>
+
+let decoderReady: Promise<MeshoptDecoder> | undefined
+
+function loadMeshoptDecoder(): Promise<MeshoptDecoder> {
+  decoderReady ??= import('three/addons/libs/meshopt_decoder.module.js')
+    .then((module) => module.MeshoptDecoder)
+    .catch((error: unknown) => {
+      decoderReady = undefined
+      throw error
+    })
+  return decoderReady
+}
+
+const lazyMeshoptDecoder = {
+  supported: typeof WebAssembly !== 'undefined',
+  decodeGltfBufferAsync: (...args: MeshoptDecodeArguments) => {
+    return loadMeshoptDecoder().then((decoder) => {
+      if (!decoder.supported)
+        throw new Error('Meshopt decoding is unsupported in this runtime.')
+      return decoder.decodeGltfBufferAsync(...args)
+    })
+  },
+} satisfies LoaderMeshoptDecoder
 
 export class RequiredMuseumAssetError extends Error {
   readonly assetId: string
@@ -58,7 +90,7 @@ export async function loadMuseumAssets(
     manager.onError = (url) => failedDependencies.push(url)
     const scene = (
       await new GLTFLoader(manager)
-        .setMeshoptDecoder(MeshoptDecoder)
+        .setMeshoptDecoder(lazyMeshoptDecoder as MeshoptDecoder)
         .loadAsync(assetUrl(id))
     ).scene
     if (failedDependencies.length === 0) return scene
