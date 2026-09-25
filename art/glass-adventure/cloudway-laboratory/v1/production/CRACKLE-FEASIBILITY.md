@@ -30,12 +30,12 @@ square contact plane at Blender Z=0 rather than using the visual mesh as collisi
 
 The candidate roles are:
 
-| Role | Object | Origin | Rest state |
-| --- | --- | --- | --- |
-| Closed crystal body | `RoseCrystalBody` | Exact-weld dense donor surface | Visible with true transmission and a pale-rose lift; opaque provider roughness is excluded from the glass branch |
-| Persistent framework | `RoseGoldFramework` | Same dense surface with the reviewed semantic mask | Hidden because the rest composite binds glass and framework on one surface; shown after fracture |
-| Contact | `RoseContactPlane` | New authored quad | Hidden review/gameplay contract geometry |
-| Shard candidate | `RoseShardCandidate` with 12 children | New closed Voronoi prisms | Hidden review geometry; not an accepted fracture kit |
+| Role                 | Object                                | Origin                                             | Rest state                                                                                                       |
+| -------------------- | ------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Closed crystal body  | `RoseCrystalBody`                     | Exact-weld dense donor surface                     | Visible with true transmission and a pale-rose lift; opaque provider roughness is excluded from the glass branch |
+| Persistent framework | `RoseGoldFramework`                   | Same dense surface with the reviewed semantic mask | Hidden because the rest composite binds glass and framework on one surface; shown after fracture                 |
+| Contact              | `RoseContactPlane`                    | New authored quad                                  | Hidden review/gameplay contract geometry                                                                         |
+| Shard candidate      | `RoseShardCandidate` with 12 children | New closed Voronoi prisms                          | Hidden review geometry; not an accepted fracture kit                                                             |
 
 The rest composite avoids two coincident visible meshes, which removed the black
 depth seams seen in an earlier proof. The provider base color is retained for both
