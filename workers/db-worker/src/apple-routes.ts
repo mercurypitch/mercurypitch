@@ -224,13 +224,17 @@ async function handleAppleNotifications(
     return respond({ error: 'invalid_payload' }, { status: 400 })
   }
 
-  // No `authProvider = 'apple'` filter here, and that is deliberate. An
-  // account that adopted this Apple identity through the verified-email link
-  // keeps its ORIGINAL authProvider — 'password', 'google' — with the Apple
-  // `sub` in providerId, so the filtered lookup would walk straight past it
-  // and a singer who withdrew consent would keep every live session. (Only
-  // when Apple linked it first: that link keeps an id already there, so an
-  // account Google linked first holds Google's and is not found here.)
+  // Two columns, because either can hold Apple's `sub`. Every Apple sign-in
+  // records it in appleSub, including on an account Google linked first,
+  // whose providerId keeps Google's id when Apple adopts it by address.
+  // providerId is for rows from before migration 0050 added appleSub, which
+  // hold the `sub` there and nowhere else.
+  //
+  // No `authProvider = 'apple'` filter on providerId, and that is deliberate.
+  // Among those rows are accounts that adopted this Apple identity through
+  // the verified-email link, which keep their ORIGINAL authProvider —
+  // 'password', 'google' — so the filtered lookup would walk straight past
+  // them and a singer who withdrew consent would keep every live session.
   //
   // Widening is safe on THIS route and nowhere else: `event.sub` arrives
   // inside a payload Apple signed, checked against our own client id, so a
@@ -239,9 +243,9 @@ async function handleAppleNotifications(
   // sign-in path keeps the tightened (authProvider, providerId) pair, where
   // the same widening would hand over the account itself.
   const row = await env.DB.prepare(
-    'SELECT id, email FROM users WHERE providerId = ?',
+    'SELECT id, email FROM users WHERE appleSub = ? OR providerId = ?',
   )
-    .bind(event.sub)
+    .bind(event.sub, event.sub)
     .first<AppleProviderRow>()
   if (row === null) {
     // Nothing to act on: the identity was never linked here, or the account

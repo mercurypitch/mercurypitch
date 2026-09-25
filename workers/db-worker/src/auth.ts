@@ -1159,6 +1159,29 @@ async function fillDefaultDisplayName(
   await replaceDefaultHandle(db, userId, identity.name)
 }
 
+/**
+ * Record Apple's `sub` on the account an Apple sign-in reached, in the column
+ * Apple's notifications look it up by (apple-routes.ts). `providerId` is not
+ * enough: it keeps whichever provider linked the account first, so an account
+ * Google linked first holds Google's id there.
+ *
+ * OR IGNORE because the index is UNIQUE and another account can already hold
+ * this id: one that adopted it by address, when this sign-in reached a
+ * different account (under a private relay address, say). That account keeps
+ * it, and the sign-in still succeeds.
+ */
+async function recordAppleSub(
+  db: D1Database,
+  userId: string,
+  identity: FederatedIdentity,
+): Promise<void> {
+  if (identity.provider !== 'apple') return
+  await db
+    .prepare('UPDATE OR IGNORE users SET appleSub = ? WHERE id = ?')
+    .bind(identity.sub, userId)
+    .run()
+}
+
 // Fire the account welcome email — best-effort, never blocks or fails signup.
 // Skipped in PR previews, when Resend is unconfigured or when the account has
 // no email (anonymous).
@@ -1956,7 +1979,10 @@ export async function reissueLegacySession(
  */
 export interface FederatedIdentity {
   provider: 'google' | 'apple'
-  /** The provider's stable subject id — `users.providerId`. */
+  /**
+   * The provider's stable subject id: what `users.providerId` holds for the
+   * provider that linked the account first, and `users.appleSub` for Apple.
+   */
   sub: string
   email?: string | null
   emailVerified: boolean
@@ -2025,12 +2051,15 @@ export async function resolveFederatedUser(
     // COALESCE keeps an id the account already holds. `providerId` has room
     // for one, so a second provider adopting the same account overwrote the
     // first's, and after that the two flipped it on every sign-in. The second
-    // needs no id stored: it reaches the account here, by the address.
+    // needs no id stored to sign in: it reaches the account here, by the
+    // address. Apple's is recorded all the same, in appleSub, because its
+    // notifications name the account by that id and nothing else.
     await env.DB.prepare(
       'UPDATE users SET providerId = COALESCE(providerId, ?), emailVerified = 1, updatedAt = ? WHERE id = ?',
     )
       .bind(identity.sub, nowIso(), holder.id)
       .run()
+    await recordAppleSub(env.DB, holder.id, identity)
     await fillDefaultDisplayName(env.DB, holder.id, identity)
     return {
       row: (await findUserById(env.DB, holder.id)) as UserRow,
@@ -2072,6 +2101,7 @@ export async function resolveFederatedUser(
           anon.id,
         )
         .run()
+      await recordAppleSub(env.DB, anon.id, identity)
       // The anonymous profile already exists, so ensureProfile's INSERT OR
       // IGNORE would never apply this name: write it, for either provider, but
       // only over a default handle. A name the singer chose while anonymous (on
@@ -2097,6 +2127,7 @@ export async function resolveFederatedUser(
     email: storedEmail,
     emailVerified: storedEmailVerified,
   })
+  await recordAppleSub(env.DB, id, identity)
   await ensureProfile(
     env.DB,
     id,

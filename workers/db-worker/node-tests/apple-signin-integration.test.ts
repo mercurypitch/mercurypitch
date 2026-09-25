@@ -18,7 +18,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vit
 import type { Env } from '../src/auth'
 import { resetAppleJwksCache } from '../src/apple-auth'
 import worker from '../src/index'
-import { applyMigrations, SqliteD1Database } from './sqlite-d1'
+import { applyMigration, applyMigrations, applyMigrationsAfter, SqliteD1Database, } from './sqlite-d1'
 
 const CLIENT_ID = 'com.irchiinnuss.mercurypitch'
 const KEY_ID = 'INTEGRATIONKID'
@@ -173,6 +173,7 @@ interface UserRow {
   emailVerified: number
   tokenVersion: number
   appleRefreshToken: string | null
+  appleSub: string | null
 }
 
 function userBySub(sub: string): UserRow | undefined {
@@ -234,10 +235,25 @@ async function anonymousDeviceNamed(displayName: string): Promise<void> {
   expect(renamed.status).toBe(200)
 }
 
-function freshDatabase(overrides: Partial<Env> = {}): void {
+/**
+ * `released`, when given, holds rows a build from before one migration left
+ * behind: every earlier migration runs, then `rows`, then that migration and
+ * everything after it, since the worker these tests call is today's.
+ */
+function freshDatabase(
+  overrides: Partial<Env> = {},
+  released?: { before: string; rows: (db: DatabaseSync) => void },
+): void {
   sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys = ON')
-  applyMigrations(sqlite)
+  if (released === undefined) {
+    applyMigrations(sqlite)
+  } else {
+    applyMigrations(sqlite, released.before)
+    released.rows(sqlite)
+    applyMigration(sqlite, released.before)
+    applyMigrationsAfter(sqlite, released.before)
+  }
   perksSqlite = new DatabaseSync(':memory:')
   perksSqlite.exec(
     'CREATE TABLE perkGrants (email TEXT, perkId TEXT, revokedAt TEXT)',
@@ -309,6 +325,8 @@ describe('POST /api/auth/apple', () => {
     expect(first.isNew).toBe(true)
     const created = userBySub(APPLE_SUB)
     expect(created?.authProvider).toBe('apple')
+    // Where Apple's notifications look for the account.
+    expect(created?.appleSub).toBe(APPLE_SUB)
     expect(created?.email).toBe('apple-singer@example.com')
     expect(created?.emailVerified).toBe(1)
     expect(
@@ -341,6 +359,7 @@ describe('POST /api/auth/apple', () => {
     expect(signedIn.isNew).toBe(true)
     expect(userById(DEVICE_ID).authProvider).toBe('apple')
     expect(userById(DEVICE_ID).providerId).toBe(APPLE_SUB)
+    expect(userById(DEVICE_ID).appleSub).toBe(APPLE_SUB)
   })
 
   it('never adopts a password account whose address was not confirmed', async () => {
@@ -557,7 +576,7 @@ describe('Google on the same account', () => {
   let googleClaims: Record<string, unknown>
 
   beforeEach(() => {
-    freshDatabase({ GOOGLE_CLIENT_IDS: GOOGLE_CLIENT })
+    freshDatabase({ GOOGLE_CLIENT_IDS: GOOGLE_CLIENT, ...signinSecrets })
     googleClaims = {
       aud: GOOGLE_CLIENT,
       sub: GOOGLE_SUB,
@@ -640,6 +659,96 @@ describe('Google on the same account', () => {
     })
     expect(signedIn.userId).toBe(DEVICE_ID)
     expect(displayNameOf(DEVICE_ID)).toBe('Maff')
+  })
+
+  it.each(['consent-revoked', 'account-delete'] as const)(
+    'signs out an account Google linked first on %s',
+    async (type) => {
+      // Google created the account, so providerId holds Google's id, and it
+      // keeps it when Apple adopts the account by address. Apple's
+      // notification names Apple's id and nothing else: looked up in
+      // providerId alone it found no account, and every session and the
+      // stored grant outlived the singer's withdrawal.
+      vi.spyOn(console, 'info').mockImplementation(() => {})
+      const userId = String((await signInWithGoogle()).userId)
+      const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+      expect(signedIn.userId).toBe(userId)
+      const before = userById(userId)
+      expect(before.providerId).toBe(GOOGLE_SUB)
+      expect(before.appleRefreshToken).not.toBeNull()
+
+      const response = await post('/api/auth/apple/notifications', {
+        payload: await notificationToken({ type, sub: APPLE_SUB }),
+      })
+      expect(response.status).toBe(200)
+
+      const after = userById(userId)
+      expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+      expect(after.appleRefreshToken).toBeNull()
+      // Google's id stays: it is how Google finds this account again.
+      expect(after.providerId).toBe(GOOGLE_SUB)
+      const me = await request('/api/auth/me', {
+        headers: { Authorization: `Bearer ${String(signedIn.token)}` },
+      })
+      expect(me.status).toBe(401)
+    },
+  )
+
+  it('still finds an account both adopted after Google signs in again', async () => {
+    // A password account both providers adopt by address, Google first, so
+    // providerId holds Google's id and every Google sign-in comes back through
+    // the adoption step. Only Apple writes appleSub: if Google wrote it too,
+    // its next sign-in would put Google's id there in place of Apple's.
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+    expect(signedIn.userId).toBe(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    const before = userById(userId)
+    expect(before.providerId).toBe(GOOGLE_SUB)
+
+    const response = await post('/api/auth/apple/notifications', {
+      payload: await notificationToken({
+        type: 'consent-revoked',
+        sub: APPLE_SUB,
+      }),
+    })
+    expect(response.status).toBe(200)
+
+    const after = userById(userId)
+    expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+    expect(after.appleRefreshToken).toBeNull()
+  })
+
+  it('still signs out an account Apple linked first once Google adopts it too', async () => {
+    // The order COALESCE fixed: Apple's id reaches providerId first and stays
+    // there when Google adopts the account, so either column finds it.
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+    expect(signedIn.userId).toBe(userId)
+    expect((await signInWithGoogle()).userId).toBe(userId)
+    const before = userById(userId)
+    expect(before.providerId).toBe(APPLE_SUB)
+
+    const response = await post('/api/auth/apple/notifications', {
+      payload: await notificationToken({
+        type: 'consent-revoked',
+        sub: APPLE_SUB,
+      }),
+    })
+    expect(response.status).toBe(200)
+
+    const after = userById(userId)
+    expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+    expect(after.appleRefreshToken).toBeNull()
+    const me = await request('/api/auth/me', {
+      headers: { Authorization: `Bearer ${String(signedIn.token)}` },
+    })
+    expect(me.status).toBe(401)
   })
 })
 
@@ -916,6 +1025,93 @@ describe('an account that adopted the Apple identity by address', () => {
     expect(after.email).toBe('apple-singer@example.com')
     expect(after.emailVerified).toBe(1)
   })
+
+  it('still signs the same Apple ID in under a private relay address', async () => {
+    // Hide My Email, chosen when authorizing again after withdrawing consent:
+    // Apple's sub is the same, the address is a relay. The adopted account is
+    // reached by neither (its authProvider is 'password', and a relay never
+    // adopts), so the sign-in creates an account of its own. That one cannot
+    // hold the same sub as well, because the index is UNIQUE: the adopted
+    // account keeps it, and the sign-in must not fail on the index.
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect((await signInWithApple()).userId).toBe(userId)
+
+    const relay = await post('/api/auth/apple', {
+      identityToken: await identityToken({
+        email: 'relay-abc@privaterelay.appleid.com',
+        is_private_email: 'true',
+      }),
+    })
+    expect(relay.status).toBe(200)
+    const created = ((await relay.json()) as { userId: string }).userId
+    expect(created).not.toBe(userId)
+    expect(userById(userId).appleSub).toBe(APPLE_SUB)
+    expect(userById(created).appleSub).toBeNull()
+  })
+})
+
+describe('an Apple account from before the appleSub column', () => {
+  // As a build without migration 0050 left it: Apple's sub in providerId and
+  // nowhere else. The migration adds the column empty and back-fills nothing.
+  const RELEASED_ID = '00000000-0000-4000-8000-0000000000c3'
+
+  beforeEach(() => {
+    freshDatabase(signinSecrets, {
+      before: '0050_apple_sub.sql',
+      rows: (db) => {
+        const now = new Date().toISOString()
+        db.prepare(
+          `INSERT INTO users
+             (id, createdAt, updatedAt, authProvider, providerId, email,
+              emailVerified, passwordHash, lastLoginAt, tokenVersion)
+           VALUES (?, ?, ?, 'apple', ?, 'apple-singer@example.com', 1, NULL, ?, 1)`,
+        ).run(RELEASED_ID, now, now, APPLE_SUB, now)
+        db.prepare(
+          `INSERT INTO userProfiles (id, createdAt, updatedAt, displayName, joinDate)
+           VALUES (?, ?, ?, 'Ada Lovelace', ?)`,
+        ).run(RELEASED_ID, now, now, now)
+      },
+    })
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+  })
+
+  it('comes out of the migration with the column empty, under a unique index', () => {
+    expect(userById(RELEASED_ID).appleSub).toBeNull()
+    expect(userById(RELEASED_ID).providerId).toBe(APPLE_SUB)
+    // Partial, so the NULL on every other account is not in it at all.
+    expect(
+      sqlite
+        .prepare("SELECT * FROM pragma_index_list('users') WHERE name = ?")
+        .get('idx_users_appleSub'),
+    ).toMatchObject({ unique: 1, partial: 1 })
+  })
+
+  it.each(['consent-revoked', 'account-delete'] as const)(
+    'is still found by %s, through providerId',
+    async (type) => {
+      // A returning sign-in finds the row by (authProvider, providerId) and
+      // writes nothing to appleSub, so the row is still the pre-0050 shape.
+      const signedIn = await signInWithApple({ authorizationCode: 'code-abc' })
+      expect(signedIn.userId).toBe(RELEASED_ID)
+      const before = userById(RELEASED_ID)
+      expect(before.appleSub).toBeNull()
+      expect(before.appleRefreshToken).not.toBeNull()
+
+      const response = await post('/api/auth/apple/notifications', {
+        payload: await notificationToken({ type, sub: APPLE_SUB }),
+      })
+      expect(response.status).toBe(200)
+
+      const after = userById(RELEASED_ID)
+      expect(after.tokenVersion).toBe(before.tokenVersion + 1)
+      expect(after.appleRefreshToken).toBeNull()
+      const me = await request('/api/auth/me', {
+        headers: { Authorization: `Bearer ${String(signedIn.token)}` },
+      })
+      expect(me.status).toBe(401)
+    },
+  )
 })
 
 describe('POST /api/auth/refresh', () => {
