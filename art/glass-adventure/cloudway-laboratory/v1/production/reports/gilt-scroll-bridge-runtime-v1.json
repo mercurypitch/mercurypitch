@@ -1,0 +1,454 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge-runtime-v1",
+  "status": "bounded-runtime-delivery-real-renderer-proof-passed",
+  "scope": "The accepted full-detail GLB and packed source remain immutable. This delivery derivative keeps all 527,368 triangles, exact semantic nodes, support metadata, and per-mesh material assignments while bounding texture upload size and applying meshopt quantization/compression.",
+  "bundle": {
+    "file": "source-assets/runtime/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.glb",
+    "bytes": 4951124,
+    "sha256": "eb141261cc6dc65a2fd889c0984c0cdb2be8bcbb869e44b45d654845c252edba",
+    "logicalId": "gilt-scroll-bridge-runtime-v1",
+    "rootNode": "Cloudway_GiltScrollBridge_RuntimeV1",
+    "deliveryClass": "bounded-playable-candidate",
+    "externalDependencies": []
+  },
+  "sourceCheckpoints": {
+    "acceptedOpticalCandidate": {
+      "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-transmissive-deck-candidate.blend",
+      "bytes": 143714431,
+      "sha256": "34e919c1bfe1da286c525fc6c413463abbb9702ecfe537553baf50abad3a669b"
+    },
+    "packedRuntimeBlend": {
+      "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.blend",
+      "bytes": 114770164,
+      "sha256": "119a254849aa78f194b94a7d64e8e0fbfef66c81f9b404dbc794f31ab7dfc193"
+    },
+    "fullDetailGlb": {
+      "file": "source-assets/runtime/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1-full-detail.glb",
+      "bytes": 102050324,
+      "sha256": "24c5a4eaddcb19cd4d054aee7756b5dd2320b23f08b484664f34d5b2b5552e70"
+    },
+    "fullDetailReport": {
+      "file": "art/glass-adventure/cloudway-laboratory/v1/production/reports/gilt-scroll-bridge-runtime-v1-full-detail.json",
+      "bytes": 26160,
+      "sha256": "de3ae8f6833a43f463de811bf1ddf3f2c2e857e972d5bc0143c0ac9f4e7e701d"
+    },
+    "sourceFilesUnchanged": true
+  },
+  "coordinates": {
+    "upAxis": "+Y",
+    "units": "metres",
+    "origin": "top-centre-of-fully-extended-support",
+    "localExtensionAxis": "+X",
+    "perpendicularAxis": "+Z",
+    "noNonUniformArtScaling": true
+  },
+  "supportCertification": {
+    "collider": {
+      "shape": "box",
+      "width": 0.757494056,
+      "depth": 2.205964088,
+      "height": 0.1,
+      "topY": 0,
+      "center": [
+        0,
+        -0.05,
+        0
+      ]
+    },
+    "adapter": {
+      "version": 1,
+      "coordinates": {
+        "upAxis": "+Y",
+        "units": "metres",
+        "origin": "top-centre-of-fully-extended-support"
+      },
+      "support": {
+        "state": "fully-extended",
+        "topY": 0,
+        "width": 0.757494056,
+        "depth": 2.205964088
+      },
+      "motion": {
+        "kind": "scroll",
+        "localExtensionAxis": "x",
+        "roles": {
+          "deck": "ScrollDeck",
+          "negativeRoller": "ScrollRollerNegative",
+          "positiveRoller": "ScrollRollerPositive",
+          "persistent": []
+        },
+        "rollerEdgeAnchors": {
+          "negative": [
+            -0.378747028,
+            0,
+            0
+          ],
+          "positive": [
+            0.378747028,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "flatTopBlenderZUpAfterRecentre": {
+      "triangles": 2,
+      "min": [
+        -0.372747034,
+        -1.102982044,
+        0
+      ],
+      "max": [
+        0.372747034,
+        1.102982044,
+        0
+      ],
+      "dimensions": [
+        0.745494068,
+        2.205964088,
+        0
+      ],
+      "centre": [
+        0,
+        0,
+        0
+      ]
+    },
+    "glassOuterDimensionsMetres": [
+      0.769494056,
+      2.229963927,
+      0.1
+    ],
+    "rollerAnchorSpanMetres": 0.757494056,
+    "glassOverlapUnderEachRollerMetres": 0.006,
+    "widthPolicy": "The motion/collider width terminates at the source cut planes and certified roller anchors. The glass extends 6 mm beneath each roller; its 12 mm edge bevel places the fully flat top 6 mm inside each X anchor. This bounded covered bevel is intentional and recorded rather than enlarging the simple collider to decorative roller geometry.",
+    "depthPolicy": "Collider depth is the exactly centred flat top between the authored 12 mm end bevels. The outer glass and decorative roller bodies extend beyond this support depth.",
+    "landingContactPlanesLocal": {
+      "negativeX": -0.378747028,
+      "positiveX": 0.378747028,
+      "minimumLandingDepth": 2.205964088,
+      "topY": 0
+    },
+    "courseIntegrationFootprint": {
+      "extensionLengthLocalXMetres": 0.757494056,
+      "walkableCorridorWidthLocalZMetres": 2.205964088,
+      "uniformScaleOnly": true,
+      "note": "This donor is a compact crossing: retraction runs along its short local X span, while the long local Z span is the walkable corridor width. Do not stretch it non-uniformly to the provisional 3.0 x 1.8 metre study footprint."
+    },
+    "minimumLengthRatio": 0.25
+  },
+  "roles": {
+    "deck": "ScrollDeck",
+    "negativeRoller": "ScrollRollerNegative",
+    "positiveRoller": "ScrollRollerPositive",
+    "persistent": []
+  },
+  "materialBindings": {
+    "ScrollDeckGeometry": {
+      "kind": "glass",
+      "material": "CloudwayScroll_DeckGlass_v1",
+      "principled": {
+        "metalness": 0,
+        "roughness": 0.075000003,
+        "transmission": 0.985000014,
+        "ior": 1.460000038
+      }
+    },
+    "ScrollDeckGoldStarDetailLayer": {
+      "kind": "opaque",
+      "material": "CloudwayScroll_GoldDetail_v1",
+      "principled": {
+        "metalness": 0.879999995,
+        "roughness": 0.200000003,
+        "transmission": 0,
+        "ior": 1.5
+      }
+    },
+    "ScrollDeckFrostEtchDetailLayer": {
+      "kind": "glass",
+      "material": "CloudwayScroll_FrostEtch_v1",
+      "principled": {
+        "metalness": 0,
+        "roughness": 0.310000002,
+        "transmission": 0.360000014,
+        "ior": 1.429999948
+      }
+    },
+    "ScrollRollerNegativeGeometry": {
+      "kind": "opaque",
+      "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+      "principled": {
+        "metalness": 0,
+        "roughness": 0.5,
+        "transmission": 0,
+        "ior": 1.450000048
+      }
+    },
+    "ScrollRollerPositiveGeometry": {
+      "kind": "opaque",
+      "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+      "principled": {
+        "metalness": 0,
+        "roughness": 0.5,
+        "transmission": 0,
+        "ior": 1.450000048
+      }
+    }
+  },
+  "geometry": {
+    "triangles": 527368,
+    "decimated": false,
+    "remeshed": false,
+    "semanticNodesUnchanged": true,
+    "materialAssignmentsUnchanged": true,
+    "meshopt": {
+      "level": "high",
+      "quantizationVolume": "mesh",
+      "positionBits": 16,
+      "normalBits": 12,
+      "texcoordBits": 14,
+      "positionQuantizationStepUpperBoundMetres": 0.000036622,
+      "note": "Compression may reorder encoded vertices and indices; it does not simplify or remove triangles."
+    }
+  },
+  "textures": {
+    "policy": {
+      "baseColorMaximum": 2048,
+      "dataMaximum": 2048,
+      "format": "WebP",
+      "quality": 90
+    },
+    "qualityDecision": {
+      "rejectedDiagnostic": {
+        "baseColorMaximum": 2048,
+        "dataMaximum": 1024,
+        "bundleBytes": 4546908,
+        "sha256": "e11870e8bd49b59c2110ed0a77ab85c2e7a51d30bb3f471214a6e44d17007718",
+        "estimatedRgba8MipmappedTextureBytes": 33554432,
+        "reason": "Matched close-play review showed visible mottling in the ivory inlay relative to the full-detail reference."
+      },
+      "selectedPolicy": "Keep the 2K base-color limit and raise normal plus packed metallic/roughness to 2K. The matched close-play proof restores continuous ivory veining while retaining a bounded delivery budget."
+    },
+    "sourceImages": [
+      {
+        "role": "baseColor",
+        "image": "gilt-scroll-bridge__base_color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "normal",
+        "image": "gilt-scroll-bridge__normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "metallic",
+        "image": "gilt-scroll-bridge__metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "roughness",
+        "image": "gilt-scroll-bridge__roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      }
+    ],
+    "embeddedImages": [
+      {
+        "name": "set-0-normal",
+        "mimeType": "image/webp",
+        "bytes": 214052,
+        "sha256": "8437878737f5165656b9b135b5c8a3a50698a2875074de110726ee98272f2e9b",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "set-0-base_color",
+        "mimeType": "image/webp",
+        "bytes": 757502,
+        "sha256": "f3b4cae2e460278f39c29117ae68ace95156ec50e2d266a81e4cd1dab21befa3",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "gilt-scroll-bridge__metallic-gilt-scroll-bridge__roughness",
+        "mimeType": "image/webp",
+        "bytes": 376826,
+        "sha256": "5aa4257a1f28b620e89dfe5b64c308f680559cb9ac5ac58d8af25874fcb5bc33",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    ],
+    "fullResolutionPackedSourceUnchanged": true
+  },
+  "glbInventory": {
+    "assetVersion": "2.0",
+    "generator": "glTF-Transform v4.4.2",
+    "extensionsUsed": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_materials_clearcoat",
+      "KHR_materials_ior",
+      "KHR_materials_transmission",
+      "KHR_mesh_quantization"
+    ],
+    "extensionsRequired": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "nodes": 9,
+    "meshes": 5,
+    "materials": [
+      "CloudwayScroll_FrostEtch_v1",
+      "CloudwayScroll_DeckGlass_v1",
+      "CloudwayScroll_GoldDetail_v1",
+      "CloudwayScroll_RollerIvoryGoldPBR_v1"
+    ],
+    "meshRows": {
+      "ScrollDeckGeometry": {
+        "triangles": 188,
+        "material": "CloudwayScroll_DeckGlass_v1",
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "ScrollDeckGoldStarDetailLayer": {
+        "triangles": 960,
+        "material": "CloudwayScroll_GoldDetail_v1",
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "ScrollDeckFrostEtchDetailLayer": {
+        "triangles": 6240,
+        "material": "CloudwayScroll_FrostEtch_v1",
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "ScrollRollerNegativeGeometry": {
+        "triangles": 265104,
+        "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "ScrollRollerPositiveGeometry": {
+        "triangles": 254876,
+        "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      }
+    },
+    "totalTriangles": 527368,
+    "images": [
+      {
+        "name": "set-0-normal",
+        "mimeType": "image/webp",
+        "bytes": 214052,
+        "sha256": "8437878737f5165656b9b135b5c8a3a50698a2875074de110726ee98272f2e9b",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "set-0-base_color",
+        "mimeType": "image/webp",
+        "bytes": 757502,
+        "sha256": "f3b4cae2e460278f39c29117ae68ace95156ec50e2d266a81e4cd1dab21befa3",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "name": "gilt-scroll-bridge__metallic-gilt-scroll-bridge__roughness",
+        "mimeType": "image/webp",
+        "bytes": 376826,
+        "sha256": "5aa4257a1f28b620e89dfe5b64c308f680559cb9ac5ac58d8af25874fcb5bc33",
+        "dimensions": [
+          2048,
+          2048
+        ]
+      }
+    ],
+    "resourceBudget": {
+      "bundleBytes": 4951124,
+      "embeddedImageBytes": 1348380,
+      "meshoptDecodedBufferBytes": 12374268,
+      "otherBufferBytes": 0,
+      "estimatedRgba8BaseLevelTextureBytes": 50331648,
+      "estimatedRgba8MipmappedTextureBytes": 67108864,
+      "scope": "Texture estimates include base color, normal, and the packed metallic/roughness image. They are arithmetic upload estimates, not measured device memory or performance."
+    },
+    "metadataStrings": {
+      "collider_json": "{\"shape\":\"box\",\"width\":0.757494056,\"depth\":2.205964088,\"height\":0.1,\"topY\":0,\"center\":[0,-0.05,0]}",
+      "platform_adapter_json": "{\"version\":1,\"coordinates\":{\"upAxis\":\"+Y\",\"units\":\"metres\",\"origin\":\"top-centre-of-fully-extended-support\"},\"support\":{\"state\":\"fully-extended\",\"topY\":0,\"width\":0.757494056,\"depth\":2.205964088},\"motion\":{\"kind\":\"scroll\",\"localExtensionAxis\":\"x\",\"roles\":{\"deck\":\"ScrollDeck\",\"negativeRoller\":\"ScrollRollerNegative\",\"positiveRoller\":\"ScrollRollerPositive\",\"persistent\":[]},\"rollerEdgeAnchors\":{\"negative\":[-0.378747028,0,0],\"positive\":[0.378747028,0,0]}}}"
+    },
+    "externalDependencies": []
+  },
+  "remainingGate": "Playable course integration must still validate landing and collision alignment, and target-device performance remains unmeasured. Those gates are outside this asset delivery proof.",
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "gltfTransform": "4.4.2"
+  },
+  "rebuild": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_scroll_runtime_bundle.py",
+  "browserProof": {
+    "file": "art/glass-adventure/cloudway-laboratory/v1/production/reports/gilt-scroll-bridge-runtime-v1-browser-proof.json",
+    "bytes": 10782,
+    "sha256": "04e2b368d11ba5a92e32b14ffce39c99b9b2555acba800e97f936ad8c5c002e4",
+    "status": "real-gltfloader-adapter-webgl-proof-passed",
+    "runtimeGlbSha256": "eb141261cc6dc65a2fd889c0984c0cdb2be8bcbb869e44b45d654845c252edba"
+  }
+}
