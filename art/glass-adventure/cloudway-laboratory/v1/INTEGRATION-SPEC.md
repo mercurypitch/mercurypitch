@@ -242,10 +242,20 @@ retain a reviewed PBR atlas rather than receiving a uniform gold override. Glass
 metalness to zero and accepts only audited glass-region colour, normal,
 roughness and ambient-occlusion maps. Opaque ornament may use a standard or physical PBR material with its audited
 region maps; a mixed atlas must retain its reviewed metallic channel. Borrowed
-materials and textures are never disposed by the adapter. The deck must contain
+materials and textures are never disposed by the adapter. Intact opaque crackle
+surfaces use adapter-owned material clones for a snapshot-driven warm warning;
+their textures remain shared, and their original emission returns after warning.
+The deck must contain
 at least one physical glass binding; missing, duplicate or unknown mesh bindings
-reject installation. Final Blender materials, export and real-host acceptance
-remain pending.
+reject installation. Actual loader and visual proofs are separate from device
+performance acceptance.
+
+The selected Rose/Amethyst delivery keeps the exact provider-textured exterior
+opaque while intact, and pairs its surface detail with closed physical-glass
+volumes when fractured. This preserves the approved ornament without pretending
+the fused donor has an optically separated glass body. A future interior-light
+effect requires that additional optical material pass; its first audition should
+use the scroll bridge's separately authored transmissive inset.
 
 Dense geometry and original high-resolution maps remain source masters. Runtime
 topology, texture container and resolution decisions follow measurements from
@@ -254,7 +264,7 @@ integration.
 
 ## Renderer and catalogue integration points
 
-The future implementation should use these boundaries:
+The implementation uses these boundaries:
 
 - `content/cloudway-laboratory.ts`: distinct developer-only level and route;
 - `render/cloudway-laboratory-catalog.ts`: stable render IDs, bundle ID, exact
@@ -323,7 +333,8 @@ dense-mesh camera query is most visible.
 - Scroll deck and rollers match the full, minimum and intermediate extents.
 - Crackle shards are closed, consistently wound volumes with cut faces and
   independent pivots.
-- Glass is physically transmissive rather than opaque painted glass.
+- Optical regions use physical transmission; preserved opaque provider surfaces
+  are explicitly identified and are not described as transparent glass.
 - Gold and glass retain separate audited maps, normals, tangents and UVs.
 - The manifest records hashes, dependencies, source lineage and loader needs.
 
@@ -336,7 +347,8 @@ dense-mesh camera query is most visible.
 - Scroll visuals and collision share their centre, top, axis and length ratio at
   zero and one quarter turns.
 - Pausing freezes both the visual and collision extent.
-- Gold roles never scale with the scroll deck or fall with crackle shards.
+- Persistent gold roles never scale with the scroll deck or fall with crackle
+  shards. Source ornament assigned to a shard moves with that shard.
 - Two- and four-second crackle timers start on first support contact, do not
   restart after leaving and relanding, and reset on checkpoint respawn.
 - A deliberate gap remains unsupported throughout every platform phase.

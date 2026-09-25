@@ -1519,3 +1519,17 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the new glass shell or shard cap occupied the same depth as the retained provider surface. A nominal inset was insufficient when bevel evaluation raised the cap back into the source relief.
 **Rule:** compare source-only, interior-only and combined views with explicit mesh allowlists. Measure clearance after modifiers against the full range of retained surface relief; keep the closed interior inside that envelope. Preserve the original exterior vertices, UVs and split normals when they already provide the approved appearance. Repeat the comparison through the actual GLTFLoader and production adapter before accepting a material change.
 **See:** `art/glass-adventure/cloudway-laboratory/v1/production/prepare_amethyst_crackle_runtime_candidate.py`, `packages/glass-game/src/render/cloudway-crackle-adapter.ts`.
+
+### Dispose specialized scene owners before generic traversal
+
+**Symptom:** an adapter's isolated resource tests passed, but full renderer teardown disposed its material and shared textures twice.
+**Cause:** a material clone owned by the adapter still referenced textures owned by the material library. Generic scene disposal ran first and treated that unlisted clone as owning its textures; the adapter and library then performed their own cleanup.
+**Rule:** specialized owners must detach and dispose their scene objects before generic traversal, while shared material ownership remains available. Dispose the library last. Test the complete teardown path with a real shared texture and repeated disposal, rather than only testing an adapter with texture-free fixture materials.
+**See:** `packages/glass-game/src/render/glass-renderer.ts`, `packages/glass-game/src/render/cloudway-crackle-adapter.ts`, `packages/glass-game/src/render/dispose.ts`.
+
+### Meshopt's decoder needs lazy loading and a WebAssembly CSP permission
+
+**Symptom:** unrelated legacy Glass3D browser cases reported CSP page errors after a compressed museum asset was added.
+**Cause:** a static Meshopt decoder import immediately initializes WebAssembly, even when the current level never uses compressed geometry. Beside Cue's `script-src 'self'` forbade that initialization.
+**Rule:** initialize the decoder on the first compressed-buffer request and permit the narrow `wasm-unsafe-eval` source in the application's CSP. Do not add JavaScript `unsafe-eval`. Verify a real compressed GLB under the actual app policy as well as the unaffected legacy route. Preserve concurrent asset downloads and retry a failed dynamic-import request without masking decoder failures.
+**See:** `apps/beside-cue/index.html`, `packages/glass-game/src/render/asset-kit.ts`, `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.
