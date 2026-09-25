@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { alleyFit } from './alley-geometry'
-import { ALLEY_PLATE, DOORS, plateSourceFor } from './alley-plate'
+import { ALLEY_PLATE, DOORS, doorSpec, plateSourceFor } from './alley-plate'
 
 const drawn = (
   w: number,
@@ -26,5 +27,50 @@ describe('which plate file a screen gets', () => {
     const scale = drawn(852, 393, { top: 8, bottom: 321, left: 300 })
     expect(scale * 3).toBeLessThan(1.2)
     expect(plateSourceFor(scale, 3)).toBe(ALLEY_PLATE.src)
+  })
+})
+
+describe('the room an open door ends on', () => {
+  // The open's last frame is the room's own picture drawn where the room's
+  // [data-room-background] draws it (alley-entry.ts), and the door can only
+  // know how from its spec. A room whose stylesheet drifted from it would
+  // hand over with a jump, so the two are read side by side.
+  const rule = (file: string, selector: string): string => {
+    const css = readFileSync(
+      new URL(`../../../../src/features/${file}`, import.meta.url),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\//gu, '')
+    const found = new RegExp(
+      `\\n${selector.replace('.', '\\.')}\\s*\\{([^}]*)\\}`,
+      'u',
+    ).exec(css)
+    if (found === null) throw new Error(`${file}: no ${selector} rule`)
+    return found[1]
+  }
+  const scaleOf = (block: string): number => {
+    const found = /transform:\s*scale\(([\d.]+)\)/u.exec(block)
+    return found === null ? 1 : Number(found[1])
+  }
+
+  it.each([
+    ['sing', 'sing-room/sing-room.module.css', '.cover'],
+    ['ear', 'ear-lab/EarRoomShell.module.css', '.roomPlate'],
+  ] as const)(
+    '%s: its room draws the picture as the door expects',
+    (key, file, selector) => {
+      const block = rule(file, selector)
+      const spec = doorSpec(key).roomBackground
+      expect(spec?.surface).toBe(key)
+      expect(block).toMatch(/background-image:\s*var\(--mp-stage-image\)/u)
+      expect(block).toMatch(/background-size:\s*cover/u)
+      expect(block).toMatch(/background-position:\s*var\(--mp-stage-position/u)
+      expect(spec?.scale).toBe(scaleOf(block))
+    },
+  )
+
+  it('names a room for exactly the doors that open', () => {
+    for (const door of DOORS) {
+      expect(door.roomBackground !== null, door.key).toBe(door.tab !== null)
+    }
   })
 })

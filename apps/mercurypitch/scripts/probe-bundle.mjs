@@ -2771,8 +2771,132 @@ async function mediaPlaying(page) {
   )
 }
 
+// ── The open's last frame is the room's own picture (device round 4) ──
+//
+// The Ear Lab's door grew the plate's tuning forks, about fourteen times
+// their drawn size and blurred, and only then did the real room replace
+// them. The clone now ends on the room's picture, and this is the proof: in
+// one frame, once the clone has covered and the room's [data-room-background]
+// is up under it, the clone holds that element's own picture — decoded,
+// whole, the door's content under it at 0 — drawn to within half a pixel of
+// where the element draws it (cover at its focal point, then the element's
+// own transform). Sampled every frame from before Enter: the window between
+// the room mounting and the clone going is a few hundred milliseconds.
+function watchHandOver() {
+  window.__mpHandOver = null
+  const deadline = performance.now() + 8000
+  const r2 = (n) => Math.round(n * 100) / 100
+  const sample = () => {
+    if (window.__mpHandOver !== null || performance.now() > deadline) return
+    const clone = document.querySelector('[data-testid="alley-morph"]')
+    const el = document.querySelector('[data-room-background]')
+    const phase = clone?.dataset.phase
+    const style = el === null ? null : getComputedStyle(el)
+    const url =
+      style === null
+        ? null
+        : (/url\(\s*(['"]?)(.*?)\1\s*\)/u.exec(style.backgroundImage)?.[2] ??
+          null)
+    if (
+      clone === null ||
+      url === null ||
+      (phase !== 'covered' && phase !== 'revealing')
+    ) {
+      requestAnimationFrame(sample)
+      return
+    }
+    const img = clone.querySelector('[data-testid="alley-morph-room"]')
+    let expected = null
+    let drawn = null
+    if (img !== null && img.naturalWidth > 0) {
+      // The element's own box, from its transformed rect and its transform.
+      const m = /matrix\(([^)]+)\)/u.exec(style.transform)
+      const [a, , , d, e, f] =
+        m === null ? [1, 0, 0, 1, 0, 0] : m[1].split(',').map(Number)
+      const [ox, oy] = style.transformOrigin.split(' ').map(Number.parseFloat)
+      const box = el.getBoundingClientRect()
+      const w = box.width / a
+      const h = box.height / d
+      const x = box.left - ox * (1 - a) - e
+      const y = box.top - oy * (1 - d) - f
+      const [fx, fy] = style.backgroundPosition
+        .split(' ')
+        .map((v) => Number.parseFloat(v) / 100)
+      const iw = img.naturalWidth
+      const ih = img.naturalHeight
+      const s = Math.max(w / iw, h / ih)
+      const left = (w - iw * s) * fx
+      const top = (h - ih * s) * fy
+      expected = [
+        x + ox + a * (left - ox) + e,
+        y + oy + d * (top - oy) + f,
+        a * iw * s,
+        d * ih * s,
+      ].map(r2)
+      const b = img.getBoundingClientRect()
+      drawn = [b.left, b.top, b.width, b.height].map(r2)
+    }
+    window.__mpHandOver = {
+      phase,
+      room: clone.dataset.room ?? null,
+      url: new URL(url, window.location.href).href,
+      size: style.backgroundSize,
+      src: img === null ? null : img.currentSrc || img.src,
+      complete: img?.complete ?? false,
+      natural: img === null ? null : [img.naturalWidth, img.naturalHeight],
+      opacity: img === null ? null : getComputedStyle(img).opacity,
+      door: [...clone.children]
+        .filter((c) => c !== img)
+        .map((c) => `${c.className} ${getComputedStyle(c).opacity}`),
+      expected,
+      drawn,
+    }
+  }
+  requestAnimationFrame(sample)
+}
+
+/** What `watchHandOver` saw, asserted; the note goes into the step line. */
+async function assertHandOver(page, what) {
+  const got = await page
+    .waitForFunction(() => window.__mpHandOver, null, { timeout: 8000 })
+    .then((handle) => handle.jsonValue())
+    .catch(() => null)
+  if (got === null) {
+    throw new Error(
+      `${what}: never saw the clone covered over the room's own background`,
+    )
+  }
+  const problems = []
+  if (got.src !== got.url) {
+    problems.push(`the clone holds ${got.src}, the room draws ${got.url}`)
+  }
+  if (!got.complete || !(got.natural?.[0] > 0)) {
+    problems.push('the picture in the clone is not decoded')
+  }
+  if (got.opacity !== '1') problems.push(`the picture is at ${got.opacity}`)
+  if (got.door.some((layer) => !layer.endsWith(' 0'))) {
+    problems.push(`the door's own layers are still up: ${got.door.join(', ')}`)
+  }
+  if (got.size !== 'cover') problems.push(`the room draws at ${got.size}`)
+  const off =
+    got.expected === null || got.drawn === null
+      ? Number.POSITIVE_INFINITY
+      : Math.max(...got.expected.map((v, i) => Math.abs(v - got.drawn[i])))
+  if (!(off <= 0.5)) {
+    problems.push(
+      `drawn at ${JSON.stringify(got.drawn)}, the room draws at ${JSON.stringify(got.expected)}`,
+    )
+  }
+  if (problems.length > 0) {
+    throw new Error(`${what}: ${problems.join('; ')} (${JSON.stringify(got)})`)
+  }
+  const file = got.url.replace(/^.*\//u, '')
+  return `the clone's last frame (${got.phase}) is the room's own ${file} ${got.natural.join('x')}, at opacity ${got.opacity}, the door's layers at 0, within ${Math.round(off * 100) / 100} px of where the room draws it`
+}
+
 /** The door opens: the clone is up, then the room is, and the clone goes. */
-async function walkOpen(page, ctx, name) {
+async function walkOpen(page, ctx, name, room = '[data-testid="sing-room"]') {
+  await page.evaluate(watchHandOver)
   await page.locator('[data-testid="alley-enter"]').tap()
   const mid = await page.evaluate(() => {
     const clone = document.querySelector('[data-testid="alley-morph"]')
@@ -2788,16 +2912,16 @@ async function walkOpen(page, ctx, name) {
   await shoot(page, ctx, `${name}-mid`)
   await page
     .waitForFunction(
-      () =>
+      (selector) =>
         document.querySelector('[data-testid="alley-morph"]') === null &&
-        document.querySelector('[data-testid="sing-room"]') !== null,
-      null,
+        document.querySelector(selector) !== null,
+      room,
       { timeout: 8000 },
     )
     .catch(() => {
       throw new Error(`${name}: the room never replaced the clone`)
     })
-  return mid
+  return { ...mid, handOver: await assertHandOver(page, name) }
 }
 
 async function walkAlley(browser, args, frame) {
@@ -3023,6 +3147,7 @@ async function walkAlley(browser, args, frame) {
     steps.push(
       `alley open: clone grew (${mid.content}), then the Sing room, clone gone, ambient 0; ${note}`,
     )
+    steps.push(`alley open, Sing: ${mid.handOver}`)
 
     // ── Back ──────────────────────────────────────────────────
     const outcome = await pressBack(page)
@@ -3068,6 +3193,24 @@ async function walkAlley(browser, args, frame) {
     await page.waitForTimeout(400)
     await shoot(page, ctx, 'alley-ear-alive')
     steps.push(`alley Ear Lab at x = 8: selected, no eyebrow, Enter; ${note}`)
+
+    // ── The Ear Lab opens onto its own room (device round 4) ──
+    const earOpen = await walkOpen(
+      page,
+      ctx,
+      'alley-ear-open',
+      '[data-testid="ear-room-shell"]',
+    )
+    if (earOpen.motion !== 'grow' || earOpen.content !== 'paint') {
+      throw new Error(`Ear Lab open: the clone was ${JSON.stringify(earOpen)}`)
+    }
+    await shoot(page, ctx, 'alley-ear-room')
+    steps.push(`alley open, Ear Lab: ${earOpen.handOver}`)
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('Ear Lab open: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await waitPhase(page, 'rest', null, 'Ear Lab open: back at rest')
 
     // ── Karaoke: locked ───────────────────────────────────────
     await tapDoor(page, 'karaoke')
@@ -3411,6 +3554,7 @@ async function walkAlley(browser, args, frame) {
     steps.push(
       `alley reduced motion: a crossfade, no transform on the clone; ${note}`,
     )
+    steps.push(`alley reduced motion, Sing: ${still.handOver}`)
     if ((await pressBack(page)) !== 'history') {
       throw new Error('reduced: Back did not return to the alley')
     }

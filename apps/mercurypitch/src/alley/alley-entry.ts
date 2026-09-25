@@ -9,6 +9,18 @@
 // full screen on a per-frame `matrix3d` (lab §4). No View Transitions API:
 // iOS 16 is the floor.
 //
+// IT ENDS ON THE ROOM'S OWN PICTURE, not on the door's. The plate is drawn at
+// about one device pixel per pixel, so the grow magnified it fourteen times
+// and the Ear Lab opened on a blur of tuning forks (device round 4). The
+// room's picture, decoded since the door was picked (alley-room.ts), goes
+// over the door's content and takes it over by a quarter of the way into the
+// grow, while the door is at most four times its size. Its crop eases from
+// the door's own box to exactly where the room's `[data-room-background]`
+// draws it, so the last frame IS the room's backdrop and the hand-over does
+// not jump. A picture not decoded by Enter leaves the door's content to grow
+// as it always did, and fades in whenever it is ready; nothing half-loaded
+// is ever shown.
+//
 // The clone lives on <body>, not inside the alley, because the alley unmounts
 // the moment the room is navigated to and the clone has to outlast it: it
 // covers the screen, the room mounts under it, the clone waits for the room's
@@ -23,7 +35,8 @@
 
 import type { DoorLayout } from './alley-geometry'
 import type { SourceRect } from './alley-geometry'
-import { artBox, coverCrop, cropTransform, easeOut, fullQuad, invert, lerpQuad, lerpRect, matrix3d, rectToQuad, } from './alley-geometry'
+import { artBox, coverCrop, cropTransform, easeOut, fullQuad, invert, lerpQuad, lerpRect, matrix3d, rectToQuad, scaleCrop, } from './alley-geometry'
+import type { RoomPicture, RoomPictureSource } from './alley-room'
 
 /** The grow. The brief's "about 420 ms"; the lab ran 520. */
 export const OPEN_MS = 420
@@ -42,6 +55,14 @@ export const ARRIVAL_FAILSAFE_MS = 4000
 export const LEAVE_MS = 80
 /** How often a covered clone asks whether the user is still going its way. */
 const AWAY_POLL_MS = 20
+/**
+ * How far into the grow, eased, the room's picture has fully taken over from
+ * the door's content. The ease front-loads the grow: the Ear Lab's door is
+ * four times its size at 0.23, the first frame at 60 Hz.
+ */
+export const ROOM_IN = 0.25
+/** A picture that decoded only after Enter fades in over this. */
+export const ROOM_LATE_MS = 160
 /**
  * The room's background, as every enterable room marks it. The contract is
  * the attribute, not a per-room test id: a room renamed or added without it
@@ -64,6 +85,11 @@ export interface DoorOpenPlan {
     readonly w: number
     readonly h: number
   }
+  /**
+   * The room's own picture (alley-room.ts): decoded by Enter, or on its way.
+   * Null when there is none to end on; the door's content grows alone.
+   */
+  readonly room: RoomPictureSource | null
   /** Resolves once the door's ambient has faded out and stopped. */
   readonly ambientSilent: Promise<void>
   /** The clone covers the screen: mount the room under it. */
@@ -210,6 +236,52 @@ function buildClone(plan: DoorOpenPlan): HTMLDivElement {
   return clone
 }
 
+/** The room's picture in the clone, and where its crop is at a given t. */
+interface RoomLayer {
+  readonly picture: RoomPicture
+  readonly place: (t: number, vw: number, vh: number) => void
+}
+
+/**
+ * The room's picture, over the door's content in the clone. It is drawn at
+ * its own pixel size and placed by a crop transform alone, as the clip is:
+ * at t = 0 the crop is the picture cover-fit to the door's own box, so the
+ * doorway shows it unsquashed, and at t = 1 it is exactly what the room's
+ * element shows of it — cover-fit to the screen at its focal point, and
+ * scaled about the centre as the element is. Under reduced motion there is
+ * no t = 0: the picture is where the room draws it from the start.
+ */
+function roomLayer(
+  clone: HTMLElement,
+  picture: RoomPicture,
+  art: { readonly w: number; readonly h: number },
+  fromDoor: boolean,
+): RoomLayer {
+  const image = picture.image
+  image.className = 'mp-alley-morph__room'
+  image.dataset.testid = 'alley-morph-room'
+  // Decoded already: painted in the frame it is first shown in, not after.
+  image.decoding = 'sync'
+  image.style.width = `${picture.width}px`
+  image.style.height = `${picture.height}px`
+  const start = fromDoor
+    ? coverCrop(picture.width, picture.height, art.w, art.h, picture.focus)
+    : null
+  const place = (t: number, vw: number, vh: number): void => {
+    const end = scaleCrop(
+      coverCrop(picture.width, picture.height, vw, vh, picture.focus),
+      picture.scale,
+    )
+    image.style.transform = cropTransform(
+      start === null ? end : lerpRect(start, end, t),
+      vw,
+      vh,
+    )
+  }
+  clone.appendChild(image)
+  return { picture, place }
+}
+
 /** An open under way: the clone, and the way to call it off. */
 export interface DoorOpen {
   readonly clone: HTMLDivElement
@@ -220,6 +292,8 @@ export interface DoorOpen {
    * the open finishes on its own.
    */
   cancel: () => boolean
+  /** Resolves once the clone is gone, called off or revealed. */
+  readonly done: Promise<void>
 }
 
 /**
@@ -270,6 +344,7 @@ function startOpen(
       'object-fit',
       'transform',
       'transform-origin',
+      'opacity',
     ]) {
       video.style.removeProperty(name)
     }
@@ -284,18 +359,31 @@ function startOpen(
       video.load()
     }
   }
+  // The screen the clone grows to. A rotation mid-open retargets it, so the
+  // grow ends covering the new screen rather than the old one on its side.
+  let vw = plan.width
+  let vh = plan.height
+  const art = artBox(plan.door)
+  // The room's picture, if it decoded by Enter: in the clone from its first
+  // frame, at opacity 0 until the grow starts (under reduced motion, in
+  // place and whole — the clone's own fade is the crossfade).
+  const early = plan.room?.now ?? null
+  let room: RoomLayer | null = null
   let clone: HTMLDivElement
   try {
     clone = buildClone(plan)
+    if (early !== null) {
+      room = roomLayer(clone, early, art, !plan.reduced)
+      early.image.style.opacity = plan.reduced ? '1' : '0'
+      room.place(plan.reduced ? 1 : 0, vw, vh)
+    }
+    clone.dataset.room =
+      early !== null ? 'in' : plan.room === null ? 'none' : 'waiting'
   } catch (error) {
     // The clip may already have moved: it goes home before the throw does.
     putClipBack()
     throw error
   }
-  // The screen the clone grows to. A rotation mid-open retargets it, so the
-  // grow ends covering the new screen rather than the old one on its side.
-  let vw = plan.width
-  let vh = plan.height
   let full = fullQuad(vw, vh)
   const at = (t: number): string =>
     matrix3d(rectToQuad(vw, vh, lerpQuad(plan.door.quad, full, t)))
@@ -310,7 +398,6 @@ function startOpen(
     clip !== null && clip.videoWidth > 0 && clip.videoHeight > 0
       ? { w: clip.videoWidth, h: clip.videoHeight }
       : null
-  const art = artBox(plan.door)
   const doorCrop: SourceRect | null =
     source === null ? null : coverCrop(source.w, source.h, art.w, art.h)
   const cropAt = (t: number): void => {
@@ -339,6 +426,7 @@ function startOpen(
       clone.style.transform = at(1)
       cropAt(1)
     }
+    if (covered || plan.reduced) room?.place(1, vw, vh)
   }
   window.addEventListener('resize', retarget)
 
@@ -365,8 +453,59 @@ function startOpen(
 
   let covered = false
   let cancelled = false
+  let revealing = false
+  let doorHidden = false
+  let progress = 0
+  let lateTimer = 0
   const timers: number[] = []
   let frame = 0
+  let finish: () => void = () => undefined
+  const done = new Promise<void>((resolve) => {
+    finish = resolve
+  })
+
+  /**
+   * The door's own content goes once the room's picture covers it: nothing
+   * shows it any more, and the clip stops decoding frames under it.
+   */
+  const hideDoor = (): void => {
+    if (doorHidden || cancelled) return
+    doorHidden = true
+    for (const layer of clone.children) {
+      if (layer === room?.picture.image) continue
+      if (layer instanceof HTMLElement) layer.style.opacity = '0'
+    }
+    plan.video?.pause()
+  }
+  /**
+   * The picture's crop at eased progress t, and — for a picture that was in
+   * from the start — its opacity: whole by ROOM_IN, when the door goes.
+   */
+  const roomAt = (t: number): void => {
+    if (room === null) return
+    room.place(t, vw, vh)
+    if (room.picture !== early) return
+    const opacity = Math.min(1, t / ROOM_IN)
+    room.picture.image.style.opacity = String(opacity)
+    if (opacity >= 1) hideDoor()
+  }
+  if (plan.reduced && early !== null) hideDoor()
+  // Decoded after Enter: in when it is ready, over whatever the door's
+  // content has grown to by then — never before, so never half-loaded.
+  if (plan.room !== null && early === null) {
+    void plan.room.later.then((picture) => {
+      if (picture === null || cancelled || revealing || !clone.isConnected) {
+        return
+      }
+      room = roomLayer(clone, picture, art, !plan.reduced)
+      room.place(covered || plan.reduced ? 1 : progress, vw, vh)
+      clone.dataset.room = 'in'
+      const fade = plan.reduced ? REDUCED_MS : ROOM_LATE_MS
+      fadeOpacity(picture.image, 0, 1, fade)
+      lateTimer = window.setTimeout(hideDoor, fade)
+    })
+  }
+
   const cover = (): void => {
     if (covered || cancelled) return
     covered = true
@@ -374,6 +513,8 @@ function startOpen(
     cancelAnimationFrame(frame)
     clone.style.transform = plan.reduced ? '' : at(1)
     if (!plan.reduced) cropAt(1)
+    progress = 1
+    roomAt(1)
     clone.style.opacity = '1'
     clone.dataset.phase = 'covered'
     plan.onCovered()
@@ -384,6 +525,7 @@ function startOpen(
     const drawn = await roomDrawn(plan.away)
     // Gone elsewhere: out of the way at once, over whatever is there now.
     const fade = !drawn ? LEAVE_MS : plan.reduced ? REDUCED_MS : REVEAL_MS
+    revealing = true
     clone.dataset.phase = 'revealing'
     fadeOpacity(clone, 1, 0, fade)
     await wait(fade + 20)
@@ -392,8 +534,10 @@ function startOpen(
       plan.video.removeAttribute('src')
       plan.video.load()
     }
+    window.clearTimeout(lateTimer)
     clone.remove()
     window.removeEventListener('resize', retarget)
+    finish()
     await plan.ambientSilent.catch(() => undefined)
     window.clearTimeout(failsafe)
     release()
@@ -403,6 +547,7 @@ function startOpen(
     if (covered || cancelled) return false
     cancelled = true
     for (const timer of timers) window.clearTimeout(timer)
+    window.clearTimeout(lateTimer)
     cancelAnimationFrame(frame)
     // The door is still on screen: its clip goes back where it was.
     putClipBack()
@@ -410,6 +555,7 @@ function startOpen(
     window.removeEventListener('resize', retarget)
     window.clearTimeout(failsafe)
     release()
+    finish()
     return true
   }
 
@@ -425,12 +571,14 @@ function startOpen(
     const tick = (now: number): void => {
       if (covered || cancelled) return
       const t = Math.min(1, (now - t0) / duration)
-      clone.style.transform = at(easeOut(t))
-      cropAt(easeOut(t))
+      progress = easeOut(t)
+      clone.style.transform = at(progress)
+      cropAt(progress)
+      roomAt(progress)
       if (t < 1) frame = requestAnimationFrame(tick)
       else cover()
     }
     frame = requestAnimationFrame(tick)
   }
-  return { clone, cancel }
+  return { clone, cancel, done }
 }

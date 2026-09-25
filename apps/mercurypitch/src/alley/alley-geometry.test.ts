@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DoorLayout } from './alley-geometry'
-import { alleyFit, coverFit, doorBox, easeOut, fullQuad, invert, layoutDoors, lerpQuad, matrix3d, parsePosition, pickDoor, placePanel, project, quadIn, rectToQuad, SPILL_H, spillAt, tapBand, } from './alley-geometry'
+import { alleyFit, coverCrop, coverFit, cropTransform, doorBox, easeOut, fullQuad, invert, layoutDoors, lerpQuad, matrix3d, parsePosition, pickDoor, placePanel, project, quadIn, rectToQuad, scaleCrop, SPILL_H, spillAt, tapBand, } from './alley-geometry'
 import type { Point, Quad } from './alley-plate'
 import { ALLEY_PLATE, DOORS } from './alley-plate'
 
@@ -491,5 +491,70 @@ describe('doorBox', () => {
       [22, 40],
       [0, 38],
     ])
+  })
+})
+
+describe("the room's own picture, as the clone draws it", () => {
+  // The room draws its picture on [data-room-background]: background-size
+  // cover at its focal point, in a box the size of the screen, and the Ear
+  // Lab's element scaled 1.012 about its centre. The clone draws the same
+  // picture at its own pixel size under cropTransform(r). The open ends on
+  // the room, so each picture pixel has to land on the same screen point
+  // both ways, or the hand-over jumps.
+  const byRoom = (
+    p: Point,
+    pic: readonly [number, number],
+    box: readonly [number, number],
+    focus: readonly [number, number],
+    k: number,
+  ): Point => {
+    const s = Math.max(box[0] / pic[0], box[1] / pic[1])
+    const x = (box[0] - pic[0] * s) * focus[0] + p[0] * s
+    const y = (box[1] - pic[1] * s) * focus[1] + p[1] * s
+    return [
+      box[0] / 2 + k * (x - box[0] / 2),
+      box[1] / 2 + k * (y - box[1] / 2),
+    ]
+  }
+  const byClone = (p: Point, transform: string): Point => {
+    const [kx, , , ky, tx, ty] = transform
+      .replace(/^matrix\(|\)$/gu, '')
+      .split(',')
+      .map(Number)
+    return [p[0] * kx + tx, p[1] * ky + ty]
+  }
+
+  it.each([
+    ['the Ear Lab, portrait', [1440, 2560], [393, 852], [0.5, 0.42], 1.012],
+    ['the Ear Lab, on its side', [2048, 1152], [852, 393], [0.5, 0.42], 1.012],
+    ['Sing at DPR 2, portrait', [2160, 3840], [390, 844], [0.5, 0.68], 1],
+    ['Sing, on its side', [3840, 2160], [844, 390], [0.5, 0.68], 1],
+  ] as const)(
+    '%s: every pixel where the room puts it',
+    (_, pic, box, focus, k) => {
+      const crop = scaleCrop(
+        coverCrop(pic[0], pic[1], box[0], box[1], focus),
+        k,
+      )
+      const transform = cropTransform(crop, box[0], box[1])
+      for (const fx of [0, 0.25, 0.5, 0.8, 1]) {
+        for (const fy of [0, 0.3, 0.5, 0.9, 1]) {
+          const p: Point = [pic[0] * fx, pic[1] * fy]
+          const room = byRoom(p, pic, box, focus, k)
+          const clone = byClone(p, transform)
+          expect(clone[0]).toBeCloseTo(room[0], 6)
+          expect(clone[1]).toBeCloseTo(room[1], 6)
+        }
+      }
+    },
+  )
+
+  it('is centred when no focus is given, as the clip always was', () => {
+    expect(coverCrop(1080, 1920, 393, 852)).toEqual(
+      coverCrop(1080, 1920, 393, 852, [0.5, 0.5]),
+    )
+    const low = coverCrop(3840, 2160, 852, 393, [0.5, 0.68])
+    expect(low.w).toBeCloseTo(coverCrop(3840, 2160, 852, 393).w, 9)
+    expect(low.y).toBeCloseTo((2160 - low.h) * 0.68, 9)
   })
 })

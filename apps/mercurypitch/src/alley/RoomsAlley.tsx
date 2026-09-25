@@ -46,6 +46,7 @@ import type { AlleyEvent, AlleyState } from './alley-machine'
 import { ALLEY_REST, alleyReducer, isLifted } from './alley-machine'
 import type { DoorKey } from './alley-plate'
 import { ALLEY_PLATE, DOORS, doorSpec, isEnterable, plateSourceFor, } from './alley-plate'
+import { dropRoom, pickRoom, takeRoom } from './alley-room'
 import { markWelcomeSeen, welcomeSeen } from './alley-welcome'
 import { AlleyCard } from './AlleyCard'
 import { AlleyDoor } from './AlleyDoor'
@@ -254,6 +255,8 @@ export const RoomsAlley: Component = () => {
     }
     void hapticTap()
     const spec = doorSpec(key)
+    // The room's own picture starts decoding now, not on Enter.
+    pickRoom(spec)
     if (before.door !== null && before.door !== key) {
       // Another door was out: its clip stops, its ambient hands over below
       // (or fades out, for a locked door that has none).
@@ -299,12 +302,15 @@ export const RoomsAlley: Component = () => {
     }),
   )
   // Whatever brought the alley back to rest — a clear, a leave, an open
-  // called off with the clip put back in its door — the clip lets go.
+  // called off with the clip put back in its door — the clip lets go, and so
+  // does the room's picture (an open has taken its own over by then).
   createEffect(
     on(
       () => alley().phase,
       (phase) => {
-        if (phase === 'rest') releaseClip()
+        if (phase !== 'rest') return
+        releaseClip()
+        dropRoom()
       },
     ),
   )
@@ -359,6 +365,8 @@ export const RoomsAlley: Component = () => {
     // hash as it mounts, so "elsewhere" is a different hash AND a different
     // tab, or a sheet or screen the shell put over the room.
     let arrivedHash: string | null = null
+    // Held until the clone is gone, not until this unmounts (alley-room.ts).
+    const room = takeRoom(spec)
     let handle: DoorOpen
     try {
       handle = openDoor({
@@ -367,6 +375,7 @@ export const RoomsAlley: Component = () => {
         height: size().h,
         reduced: reduced(),
         video: clip,
+        room: room?.source() ?? null,
         plateSrc: plate(),
         plateBox: {
           x: -fit().ox,
@@ -395,9 +404,11 @@ export const RoomsAlley: Component = () => {
       // openDoor has let the hold go and put the clip back; the door goes
       // back into the plate and the alley takes taps again.
       dispatch({ type: 'cancel' })
+      room?.release()
       console.error('The door did not open:', error)
       return
     }
+    void handle.done.then(() => room?.release())
     const unregister = registerDoorOpen(cancelHere)
     document.addEventListener('pointerdown', onPressOutside, true)
     inFlight = {
@@ -598,6 +609,7 @@ export const RoomsAlley: Component = () => {
     // The Sing door's clip lets go of its decoder: an unmounted <video> with
     // a src keeps its buffer and its hardware decoder until it is collected.
     releaseClip()
+    dropRoom()
   })
 
   return (

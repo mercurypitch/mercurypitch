@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { holdRoomArrival, roomArrivalHeld } from '@/stores/native-shell-store'
 import type { DoorOpenPlan } from './alley-entry'
-import { openDoor } from './alley-entry'
-import { artBox, coverCrop, layoutDoors } from './alley-geometry'
+import { openDoor, ROOM_LATE_MS } from './alley-entry'
+import { artBox, coverCrop, layoutDoors, scaleCrop } from './alley-geometry'
 import { ALLEY_PLATE, DOORS } from './alley-plate'
+import type { RoomPicture, RoomPictureSource } from './alley-room'
 
 const W = 393
 const H = 852
@@ -28,6 +29,7 @@ function plan(over: Partial<DoorOpenPlan> = {}): DoorOpenPlan {
     height: H,
     reduced: false,
     video: null,
+    room: null,
     plateSrc: '/rooms/alley/night-rooms-hero.webp',
     plateBox: { x: -126, y: 0, w: 568, h: 852 },
     ambientSilent: Promise.resolve(),
@@ -383,6 +385,338 @@ describe('a rotation mid-open', () => {
     const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
     expect(values).toHaveLength(16)
     values.forEach((value, i) => expect(value).toBeCloseTo(identity[i], 6))
+    vi.unstubAllGlobals()
+  })
+})
+
+describe("the room's own picture", () => {
+  // The open ends on the room's picture, not the plate's pixels: the Ear
+  // Lab's door grew the tuning forks from a 1024 x 1536 plate to the full
+  // screen, about 14 times their size, and only then did the room replace
+  // them (device round 4).
+  const ear = layoutDoors(ALLEY_PLATE, DOORS, W, H).find((d) => d.key === 'ear')
+
+  function picture(over: Partial<RoomPicture> = {}): RoomPicture {
+    const image = new Image()
+    image.src = '/ear-lab/regulator-room-portrait.webp'
+    return {
+      image,
+      src: image.src,
+      width: 1440,
+      height: 2560,
+      focus: [0.5, 0.42],
+      scale: 1.012,
+      ...over,
+    }
+  }
+  const ready = (p: RoomPicture): RoomPictureSource => ({
+    now: p,
+    later: Promise.resolve(p),
+  })
+
+  function pending(): {
+    source: RoomPictureSource
+    arrive: (p: RoomPicture | null) => void
+  } {
+    let arrive: (p: RoomPicture | null) => void = () => undefined
+    const later = new Promise<RoomPicture | null>((resolve) => {
+      arrive = resolve
+    })
+    return { source: { now: null, later }, arrive: (p) => arrive(p) }
+  }
+  const earPlan = (over: Partial<DoorOpenPlan> = {}): DoorOpenPlan => {
+    if (ear === undefined) throw new Error('no Ear Lab door')
+    return plan({ door: ear, ...over })
+  }
+  /** The source rect a `matrix()` crop lays over the W x H clone. */
+  const shown = (element: HTMLElement) => {
+    const [kx, , , ky, tx, ty] = element.style.transform
+      .replace(/^matrix\(|\)$/gu, '')
+      .split(',')
+      .map(Number)
+    return { x: -tx / kx, y: -ty / ky, w: W / kx, h: H / ky }
+  }
+  const layers = (clone: HTMLElement) => ({
+    room: clone.querySelector<HTMLImageElement>(
+      '[data-testid="alley-morph-room"]',
+    ),
+    paint: clone.querySelector<HTMLElement>('.mp-alley-morph__paint'),
+  })
+  const closeTo = (
+    a: { x: number; y: number; w: number; h: number },
+    b: { x: number; y: number; w: number; h: number },
+  ) => {
+    for (const k of ['x', 'y', 'w', 'h'] as const) {
+      expect(a[k], k).toBeCloseTo(b[k], 3)
+    }
+  }
+  /** Where the Ear Lab's element draws its picture on this screen. */
+  const theRoom = (p: RoomPicture, w = W, h = H) =>
+    scaleCrop(coverCrop(p.width, p.height, w, h, p.focus), p.scale)
+
+  it('is in the clone from Enter, over the door, and not yet showing', () => {
+    if (ear === undefined) throw new Error('no Ear Lab door')
+    const p = picture()
+    const open = openDoor(earPlan({ room: ready(p) }))
+    const { room, paint } = layers(open.clone)
+
+    // The element that decoded, not a copy that would have to decode again.
+    expect(room).toBe(p.image)
+    expect(open.clone.lastElementChild).toBe(p.image)
+    expect(open.clone.dataset.room).toBe('in')
+    expect(p.image.style.opacity).toBe('0')
+    expect(paint?.style.opacity).toBe('')
+    // Cover-fit to the door's own box at the picture's focus: the doorway
+    // shows it unsquashed once it is in.
+    const art = artBox(ear)
+    closeTo(shown(p.image), coverCrop(1440, 2560, art.w, art.h, p.focus))
+  })
+
+  it('has taken over from the plate by the second frame, and the plate goes', async () => {
+    const p = picture()
+    const open = openDoor(earPlan({ room: ready(p) }))
+    const { paint } = layers(open.clone)
+    const frames: Array<[string, string | undefined]> = []
+    for (let i = 0; i < 4; i++) {
+      await vi.advanceTimersByTimeAsync(16)
+      frames.push([p.image.style.opacity, paint?.style.opacity])
+    }
+    // The ease front-loads the grow: the door is four times its size on the
+    // first frame, so the picture is nearly whole there and whole on the
+    // second, when the plate under it is taken away.
+    expect(Number(frames[0][0])).toBeGreaterThan(0.8)
+    expect(frames[0][1]).toBe('')
+    expect(frames[1]).toEqual(['1', '0'])
+    expect(frames[3]).toEqual(['1', '0'])
+  })
+
+  it("ends exactly where the room's element draws it", async () => {
+    const p = picture()
+    const open = openDoor(earPlan({ room: ready(p) }))
+    await vi.advanceTimersByTimeAsync(700)
+
+    expect(open.clone.dataset.phase).toBe('covered')
+    closeTo(shown(p.image), theRoom(p))
+    expect(p.image.style.opacity).toBe('1')
+    expect(layers(open.clone).paint?.style.opacity).toBe('0')
+  })
+
+  it('takes over from the Sing clip the same way, and the clip stops', async () => {
+    const door = document.createElement('div')
+    const video = document.createElement('video')
+    Object.defineProperty(video, 'videoWidth', { value: 1080 })
+    Object.defineProperty(video, 'videoHeight', { value: 1920 })
+    vi.spyOn(video, 'play').mockResolvedValue(undefined)
+    const pause = vi.spyOn(video, 'pause').mockImplementation(() => undefined)
+    door.appendChild(video)
+    document.body.appendChild(door)
+    const p = picture({
+      width: 2160,
+      height: 3840,
+      focus: [0.5, 0.68],
+      scale: 1,
+    })
+
+    const open = openDoor(plan({ video, room: ready(p) }))
+    expect(open.clone.lastElementChild).toBe(p.image)
+    await vi.advanceTimersByTimeAsync(40)
+    expect(p.image.style.opacity).toBe('1')
+    expect(video.style.opacity).toBe('0')
+    expect(pause).toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(700)
+    closeTo(shown(p.image), theRoom(p))
+  })
+
+  it('leaves the door to grow as it did when the picture is not decoded by Enter, and fades it in when it is', async () => {
+    const animate = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'animate', {
+      value: animate,
+      configurable: true,
+    })
+    try {
+      const { source, arrive } = pending()
+      const open = openDoor(earPlan({ room: source }))
+      await vi.advanceTimersByTimeAsync(100)
+      // Nothing half-loaded: no picture at all until it has decoded.
+      expect(layers(open.clone).room).toBeNull()
+      expect(open.clone.dataset.room).toBe('waiting')
+      expect(layers(open.clone).paint?.style.opacity).toBe('')
+
+      const p = picture()
+      arrive(p)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(layers(open.clone).room).toBe(p.image)
+      expect(open.clone.dataset.room).toBe('in')
+      expect(animate).toHaveBeenLastCalledWith(
+        [{ opacity: 0 }, { opacity: 1 }],
+        { duration: ROOM_LATE_MS, easing: 'linear' },
+      )
+      expect(animate.mock.contexts.at(-1)).toBe(p.image)
+      // The plate stays under it until it is whole.
+      expect(layers(open.clone).paint?.style.opacity).toBe('')
+      await vi.advanceTimersByTimeAsync(ROOM_LATE_MS)
+      expect(layers(open.clone).paint?.style.opacity).toBe('0')
+
+      await vi.advanceTimersByTimeAsync(600)
+      expect(open.clone.dataset.phase).toBe('covered')
+      closeTo(shown(p.image), theRoom(p))
+    } finally {
+      delete (HTMLElement.prototype as Partial<HTMLElement>).animate
+    }
+  })
+
+  it('keeps the plate, and the wait for the room, when the picture never comes', async () => {
+    const { source, arrive } = pending()
+    const open = openDoor(earPlan({ room: source }))
+    await vi.advanceTimersByTimeAsync(700)
+    expect(open.clone.dataset.phase).toBe('covered')
+    arrive(null)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(layers(open.clone).room).toBeNull()
+    expect(layers(open.clone).paint?.style.opacity).toBe('')
+    // Today's wait on the room's own background, to its deadline.
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(open.clone.isConnected).toBe(true)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(open.clone.isConnected).toBe(false)
+  })
+
+  it('reduced motion: no grow, the picture where the room draws it, crossfaded in', () => {
+    const animate = vi.fn()
+    Object.defineProperty(HTMLElement.prototype, 'animate', {
+      value: animate,
+      configurable: true,
+    })
+    try {
+      const p = picture()
+      const open = openDoor(earPlan({ reduced: true, room: ready(p) }))
+
+      expect(open.clone.style.transform).toBe('')
+      expect(p.image.style.opacity).toBe('1')
+      closeTo(shown(p.image), theRoom(p))
+      expect(layers(open.clone).paint?.style.opacity).toBe('0')
+      expect(animate.mock.contexts[0]).toBe(open.clone)
+      expect(animate.mock.calls[0]).toEqual([
+        [{ opacity: 0 }, { opacity: 1 }],
+        { duration: 120, easing: 'linear' },
+      ])
+    } finally {
+      delete (HTMLElement.prototype as Partial<HTMLElement>).animate
+    }
+  })
+
+  it('goes with the clone when the open is called off, and the clip comes home clean', async () => {
+    const door = document.createElement('div')
+    const video = document.createElement('video')
+    Object.defineProperty(video, 'videoWidth', { value: 1080 })
+    Object.defineProperty(video, 'videoHeight', { value: 1920 })
+    vi.spyOn(video, 'play').mockResolvedValue(undefined)
+    vi.spyOn(video, 'pause').mockImplementation(() => undefined)
+    door.appendChild(video)
+    document.body.appendChild(door)
+    const p = picture()
+    const open = openDoor(plan({ video, room: ready(p) }))
+    let over = false
+    void open.done.then(() => {
+      over = true
+    })
+    await vi.advanceTimersByTimeAsync(150)
+    expect(video.style.opacity).toBe('0')
+
+    expect(open.cancel()).toBe(true)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(over).toBe(true)
+    expect(open.clone.isConnected).toBe(false)
+    expect(p.image.isConnected).toBe(false)
+    expect(roomArrivalHeld()).toBe(false)
+    expect(video.parentElement).toBe(door)
+    expect(video.getAttribute('style') ?? '').toBe('')
+  })
+
+  it('a picture that arrives after the open was called off shows nowhere', async () => {
+    const door = document.createElement('div')
+    const video = document.createElement('video')
+    vi.spyOn(video, 'play').mockResolvedValue(undefined)
+    vi.spyOn(video, 'pause').mockImplementation(() => undefined)
+    door.appendChild(video)
+    document.body.appendChild(door)
+    const { source, arrive } = pending()
+    const open = openDoor(plan({ video, room: source }))
+    await vi.advanceTimersByTimeAsync(100)
+    open.cancel()
+
+    const p = picture()
+    arrive(p)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(p.image.isConnected).toBe(false)
+    // Not even in the clone that was taken down.
+    expect(p.image.parentElement).toBeNull()
+    // Its late fade did not reach the clip, which is back in its door.
+    expect(video.parentElement).toBe(door)
+    expect(video.style.opacity).toBe('')
+  })
+
+  it('a picture that arrives once the room is showing through stays out of it', async () => {
+    const { source, arrive } = pending()
+    const open = openDoor(earPlan({ room: source }))
+    for (let i = 0; i < 80 && open.clone.dataset.phase !== 'revealing'; i++) {
+      await vi.advanceTimersByTimeAsync(50)
+    }
+    expect(open.clone.dataset.phase).toBe('revealing')
+
+    arrive(picture())
+    await vi.advanceTimersByTimeAsync(0)
+    // The clone is already dissolving into the room: a picture fading in
+    // over it, and the plate under it taken away, would pop mid-dissolve.
+    expect(layers(open.clone).room).toBeNull()
+    expect(layers(open.clone).paint?.style.opacity).toBe('')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(open.clone.isConnected).toBe(false)
+  })
+
+  it('holds the room until the clone is gone and the ambient is silent, as before', async () => {
+    let silence: () => void = () => undefined
+    const ambientSilent = new Promise<void>((resolve) => {
+      silence = resolve
+    })
+    const p = picture()
+    const open = openDoor(earPlan({ room: ready(p), ambientSilent }))
+    let over = false
+    void open.done.then(() => {
+      over = true
+    })
+    await vi.advanceTimersByTimeAsync(700)
+    expect(roomArrivalHeld()).toBe(true)
+    expect(over).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(open.clone.isConnected).toBe(false)
+    expect(over).toBe(true)
+    expect(roomArrivalHeld()).toBe(true)
+    silence()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(roomArrivalHeld()).toBe(false)
+  })
+
+  it('a rotation mid-open ends on the room as drawn on the new screen', async () => {
+    const p = picture()
+    const open = openDoor(earPlan({ room: ready(p) }))
+    await vi.advanceTimersByTimeAsync(150)
+    vi.stubGlobal('innerWidth', 852)
+    vi.stubGlobal('innerHeight', 393)
+    window.dispatchEvent(new Event('resize'))
+    await vi.advanceTimersByTimeAsync(600)
+
+    expect(open.clone.dataset.phase).toBe('covered')
+    const [kx, , , ky, tx, ty] = p.image.style.transform
+      .replace(/^matrix\(|\)$/gu, '')
+      .split(',')
+      .map(Number)
+    closeTo(
+      { x: -tx / kx, y: -ty / ky, w: 852 / kx, h: 393 / ky },
+      theRoom(p, 852, 393),
+    )
     vi.unstubAllGlobals()
   })
 })

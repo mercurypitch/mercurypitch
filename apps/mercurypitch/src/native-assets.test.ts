@@ -15,10 +15,13 @@
 
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import type { PublicBackgroundSource } from '@/lib/backgrounds/background-catalog'
+import { defaultBackground } from '@/lib/backgrounds/background-catalog'
 // @ts-expect-error -- a plain .mjs manifest with no types, on purpose: the
 // same file is read by a Vite config, by a bare-node build script that runs
 // before any install, and by this test.
 import { globToRegExp, NATIVE_ASSETS, resolveNativeAssets, } from '../native-assets.mjs'
+import { DOORS } from './alley/alley-plate'
 
 interface Entry {
   glob: string
@@ -80,5 +83,40 @@ describe('native asset manifest', () => {
 
     expect(mark.test('brand-mark.svg')).toBe(true)
     expect(mark.test('brand-markXsvg')).toBe(false)
+  })
+})
+
+describe('the pictures an open door ends on', () => {
+  // A door's open grows into its room's own picture (alley-entry.ts), and a
+  // room whose picture is not in the binary draws none: the Ear Lab's
+  // portrait file was never listed, so on a phone held upright the room had
+  // no photograph and the open had nothing to end on (device round 4).
+  // Every file of each open door's default room, in both orientations and
+  // at every density the catalogue names, has to ship.
+  const shipped = new Set(
+    (resolveNativeAssets(WEB_PUBLIC) as { files: string[] }).files,
+  )
+  const rooms = DOORS.flatMap((door) =>
+    door.roomBackground === null
+      ? []
+      : [[door.key, door.roomBackground.surface] as const],
+  )
+
+  it('has an open door to check', () => {
+    expect(rooms.map(([key]) => key)).toEqual(['ear', 'sing'])
+  })
+
+  it.each(rooms)('%s: its default room ships whole', (_, surface) => {
+    const background = defaultBackground(surface)
+    expect(background.assetSource.kind).toBe('public')
+    const source = background.assetSource as PublicBackgroundSource
+    const files = [
+      source.landscape,
+      source.landscape2x,
+      source.portrait,
+      source.portrait2x,
+    ].flatMap((file) => (file === undefined ? [] : [file.replace(/^\//u, '')]))
+    expect(files.length).toBeGreaterThan(1)
+    expect(files.filter((file) => !shipped.has(file))).toEqual([])
   })
 })
