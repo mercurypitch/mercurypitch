@@ -1,0 +1,376 @@
+{
+  "schema": 1,
+  "assetId": "rose-quartz-crackle-fast",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/rose-quartz-crackle-fast/dense-donor.glb",
+    "bytes": 62781520,
+    "sha256": "832d0624ba0e95ced733822f82ff58c96ecd479c4bb3ef6db540e4f4f32a6255",
+    "taskId": "01a0d883-8fed-75e6-83b1-c2417833bf9b",
+    "receipt": {
+      "file": "source-assets/meshy/rose-quartz-crackle-fast/receipt.json",
+      "bytes": 6718,
+      "sha256": "ab444655e3f9740decb016b24172c1e730885514849edacf3f66bdaf068d486c"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 277628,
+    "triangles": 518742,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "320c4f16dda145ca1419a4dea98d6b7b5cd882f487a88efffd9e5e9374eaba42",
+    "triangleIndicesInt32Sha256": "cdb8470be3f8788e871a1adca19218fa9d8a9d0264b1379d35e55a10fc7bb027",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 960,
+      "largestVertexCounts": [
+        2534,
+        2389,
+        2308,
+        2238,
+        2196,
+        2194,
+        2191,
+        2145,
+        2076,
+        1932,
+        1916,
+        1909
+      ],
+      "largestVertexFractions": [
+        0.009127321,
+        0.00860504,
+        0.008313283,
+        0.008061147,
+        0.007909865,
+        0.007902661,
+        0.007891855,
+        0.007726166,
+        0.007477632,
+        0.006958952,
+        0.006901321,
+        0.006876108
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        0.891805648804,
+        0.0,
+        0.0,
+        0.000106577296
+      ],
+      [
+        0.0,
+        0.891805648804,
+        0.0,
+        -0.000806638622
+      ],
+      [
+        0.0,
+        0.0,
+        0.891805648804,
+        -0.124972894788
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        0.891805648804,
+        0.0,
+        0.0,
+        0.000106577296
+      ],
+      [
+        0.0,
+        0.891805648804,
+        0.0,
+        -0.000806638622
+      ],
+      [
+        0.0,
+        0.0,
+        0.891805648804,
+        -0.124972894788
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.849023502,
+        -0.850000026,
+        -0.254047489
+      ],
+      "max": [
+        0.849023502,
+        0.850000026,
+        0.006514041
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      1.698047004,
+      1.700000053,
+      0.26056153
+    ],
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "contactCandidate": {
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.952147007,
+        -0.952217996,
+        -0.144733995
+      ],
+      "max": [
+        0.951907992,
+        0.954026997,
+        0.147439003
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.904054999,
+      1.906244993,
+      0.292172998
+    ],
+    "landingRawZ": 0.140134678,
+    "heightToleranceRaw": 0.002282602,
+    "patchTriangles": 55901,
+    "patchAreaRawSquareUnits": 3.418994574,
+    "patchBoundsRaw": {
+      "min": [
+        -0.94155997,
+        -0.94106698,
+        0.137501001
+      ],
+      "max": [
+        0.939913988,
+        0.941668987,
+        0.144363999
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.881473958,
+      1.882735968,
+      0.006862998
+    ],
+    "horizontalCoverage": [
+      0.988140552,
+      0.987667364
+    ],
+    "relativePatchHeightSpread": 0.023489501,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "crystal body",
+      "gold clasps"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "limitation": "The provider source is one opaque exported mesh and one material, with many unlabeled loose geometry components. Crystal, clasps, and any future shards are not authoring-separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-base_color.png",
+        "bytes": 68444424,
+        "sha256": "c887dbe9d154df63360357af6ef9a84762e501cfff4ad0eef18493a841292187",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-normal.png",
+        "bytes": 13747606,
+        "sha256": "ca6742f8497b4059173fc94a58a4fe97da0886e5350ae7bac90426ab0b80c5ec",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-metallic.png",
+        "bytes": 8017562,
+        "sha256": "ef50939b6b7e6907796ff3dd71165b22d21d0ab866b9a12c4bdaf4a0526b4738",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/rose-quartz-crackle-fast/textures/set-0-roughness.png",
+        "bytes": 6389429,
+        "sha256": "1af2372ee0fca5a2bd32c7d01102cb16ddcaec9604440f06c60974c3db56f606",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-three-quarter.png",
+          "bytes": 429615,
+          "sha256": "dbf64d1ca189a004491467ba7aac697fcd7362cd4081b7df247d975af11beeab",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-top.png",
+          "bytes": 317680,
+          "sha256": "a55dea6277eb8e272b5ba42f48d2b59275f026e76f66daa06ccbe7a8a6b2b20e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-side.png",
+          "bytes": 290032,
+          "sha256": "13601bd939dff020143bd37cfbc1c57a3fb47ac6c109b9dfd581483ed7a2ae6c",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-three-quarter.png",
+          "bytes": 660678,
+          "sha256": "18639ec0461d9c366d05bccd4096cf147c74f7bea0448919813e8e25b835ef0e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-top.png",
+          "bytes": 1169101,
+          "sha256": "51e55b8454bf66537d3d398bf30853116cfb31b2d851d277171b84cbb7dfe893",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-side.png",
+          "bytes": 482168,
+          "sha256": "999ea6b12c62c3d62652a4958a3d8644a8203507044ec167a8164f3b2ed7c544",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-dense-master.blend",
+    "bytes": 120956906,
+    "sha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset rose-quartz-crackle-fast"
+}

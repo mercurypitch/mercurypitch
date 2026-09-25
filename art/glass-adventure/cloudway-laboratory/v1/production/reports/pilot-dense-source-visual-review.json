@@ -1,0 +1,366 @@
+{
+  "schema": 1,
+  "reviewedOn": "2026-09-25",
+  "reviewMethod": "Original-resolution inspection of matched clay/provider-PBR three-quarter, top, and side renders, plus fresh headless Blender reopen audits.",
+  "scope": "Dense source preservation and visual source review only. This does not accept transparent glass, semantic part separation, gameplay collision, scroll motion, crackle fracture, or runtime performance.",
+  "sharedSourceFacts": {
+    "providerAlphaMode": "OPAQUE",
+    "providerDoubleSided": true,
+    "providerExtensions": [],
+    "packedMaps": [
+      "base_color",
+      "normal",
+      "metallic",
+      "roughness"
+    ],
+    "trueGlassAuthored": false,
+    "runtimeReady": false
+  },
+  "assets": [
+    {
+      "assetId": "gilt-scroll-bridge",
+      "reviewResult": "retain as dense source review master; final authoring required",
+      "sourceSha256": "8e5f47431de52f70bb89984ca9d5d599a792ad4417e0d6c798653e81710f2e93",
+      "packedBlend": {
+        "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-dense-master.blend",
+        "bytes": 110514860,
+        "sha256": "b7ecb32cd9fcfc5cf2010f7cad283b4968efb6560604aba41068fe1d5c85187d",
+        "allFileImagesPacked": true,
+        "rawAndReviewCollectionsRetained": true
+      },
+      "objectMaterialTopology": {
+        "meshObjects": 1,
+        "primitives": 1,
+        "materialSlots": 1,
+        "looseGeometryComponents": 3083,
+        "semanticPartLabels": false,
+        "note": "One exported mesh/primitive/material contains many unlabeled loose geometry components; component count is not a semantic partition."
+      },
+      "denseTopology": {
+        "vertices": 318135,
+        "triangles": 552106,
+        "vertexPositionsFloat32Sha256": "a95d44b8ebc708aeeafcc20d488be44c7812b25bcb50154a442102cce4bb5ecb",
+        "triangleIndicesInt32Sha256": "621e9a1077ecff85a440891c4d4314c12a0a9714fb1fccd62e22aeec9d501eae",
+        "nonFinitePositionValues": 0,
+        "degenerateTriangles": 0,
+        "decimation": false,
+        "remesh": false
+      },
+      "upperPatchScreen": {
+        "broadCandidate": true,
+        "flatCandidate": true,
+        "screeningStatus": "broad-flat-candidate",
+        "horizontalCoverage": [
+          0.993163607,
+          0.894654039
+        ],
+        "relativePatchHeightSpread": 0.025697424
+      },
+      "visualFindings": {
+        "silhouette": "Three-quarter, top, and side proofs show a broad rectangular deck held between four cylindrical scroll rolls with readable gilt end caps and small feet; no large shell is visibly missing.",
+        "surface": "The central engraving and corner stars remain legible, but the deck and roller bodies read as pale ivory or marble under the opaque provider PBR rather than clear engraved glass.",
+        "contact": "The upper-patch screen found a broad, locally flat candidate, but this is a measurement only and does not establish a gameplay collider or deck motion.",
+        "decision": "Preserve as the reviewed dense source master. Final delivery still needs a deliberately separated clear-glass deck, retained engraved detail, independently authored non-stretching gold rollers, collision, animation, and runtime optimization."
+      },
+      "inspectedProofs": [
+        {
+          "mode": "clay",
+          "view": "three-quarter",
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-three-quarter.png",
+          "sha256": "1814ae645c3767c34a20b5df511ec26dded2f4fbc7922e4a4f680ba9fa85b1e8",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "clay",
+          "view": "top",
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-top.png",
+          "sha256": "974ddcf52fa926452355372c1e4a9e78cf342d5c7bd10958120b47a6ddbb2800",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "clay",
+          "view": "side",
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-side.png",
+          "sha256": "4e5151a251ff224f824cd2e3f44f51d4ea5c2b7f2db1fd37d6ea36e1d19a6595",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "three-quarter",
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-three-quarter.png",
+          "sha256": "ae095e4ff01ec9585b428517b7f8fbbb8a12aacd022f258841b9cde49d01dceb",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "top",
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-top.png",
+          "sha256": "4557fcb04a0f276d87d7486cd65fffd5d89f137869bab2d63400cf796c16f918",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "side",
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-side.png",
+          "sha256": "46834301fe21b4f5cd6e3d01d88a777687da30dc05252c3a7d0002f0a6f90a3d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      ],
+      "freshReopenAudit": {
+        "status": "passed fresh packed-master reopen audit",
+        "packedBlendSha256": "b7ecb32cd9fcfc5cf2010f7cad283b4968efb6560604aba41068fe1d5c85187d",
+        "reopenMutatedFile": false,
+        "packedMapCount": 4,
+        "allPackedMapHashesMatchSource": true
+      }
+    },
+    {
+      "assetId": "rose-quartz-crackle-fast",
+      "reviewResult": "retain as dense source review master; final authoring required",
+      "sourceSha256": "832d0624ba0e95ced733822f82ff58c96ecd479c4bb3ef6db540e4f4f32a6255",
+      "packedBlend": {
+        "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-dense-master.blend",
+        "bytes": 120956906,
+        "sha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+        "allFileImagesPacked": true,
+        "rawAndReviewCollectionsRetained": true
+      },
+      "objectMaterialTopology": {
+        "meshObjects": 1,
+        "primitives": 1,
+        "materialSlots": 1,
+        "looseGeometryComponents": 960,
+        "semanticPartLabels": false,
+        "note": "One exported mesh/primitive/material contains many unlabeled loose geometry components; component count is not a semantic partition."
+      },
+      "denseTopology": {
+        "vertices": 277628,
+        "triangles": 518742,
+        "vertexPositionsFloat32Sha256": "320c4f16dda145ca1419a4dea98d6b7b5cd882f487a88efffd9e5e9374eaba42",
+        "triangleIndicesInt32Sha256": "cdb8470be3f8788e871a1adca19218fa9d8a9d0264b1379d35e55a10fc7bb027",
+        "nonFinitePositionValues": 0,
+        "degenerateTriangles": 0,
+        "decimation": false,
+        "remesh": false
+      },
+      "upperPatchScreen": {
+        "broadCandidate": true,
+        "flatCandidate": true,
+        "screeningStatus": "broad-flat-candidate",
+        "horizontalCoverage": [
+          0.988140552,
+          0.987667364
+        ],
+        "relativePatchHeightSpread": 0.023489501
+      },
+      "visualFindings": {
+        "silhouette": "Three-quarter, top, and side proofs show a coherent square pad with a visually level broad top, quilted diamond pattern, gilt intersections, and reinforced corner clasps; no large shell is visibly missing.",
+        "surface": "Rose color and gilt ornament are strong, but the provider PBR is milky and opaque. The visible seam network is decoration on one source mesh and is not authored fracture topology.",
+        "contact": "The upper-patch screen found a broad, locally flat candidate, but this is a measurement only and does not certify safe standing collision.",
+        "decision": "Preserve as the reviewed dense source master. Final delivery still needs crystal/gold material separation, reviewed glass, authored crackle shards and timing behavior, a stable contact collider, and runtime optimization."
+      },
+      "inspectedProofs": [
+        {
+          "mode": "clay",
+          "view": "three-quarter",
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-three-quarter.png",
+          "sha256": "dbf64d1ca189a004491467ba7aac697fcd7362cd4081b7df247d975af11beeab",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "clay",
+          "view": "top",
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-top.png",
+          "sha256": "a55dea6277eb8e272b5ba42f48d2b59275f026e76f66daa06ccbe7a8a6b2b20e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "clay",
+          "view": "side",
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-side.png",
+          "sha256": "13601bd939dff020143bd37cfbc1c57a3fb47ac6c109b9dfd581483ed7a2ae6c",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "three-quarter",
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-three-quarter.png",
+          "sha256": "18639ec0461d9c366d05bccd4096cf147c74f7bea0448919813e8e25b835ef0e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "top",
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-top.png",
+          "sha256": "51e55b8454bf66537d3d398bf30853116cfb31b2d851d277171b84cbb7dfe893",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "side",
+          "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-side.png",
+          "sha256": "999ea6b12c62c3d62652a4958a3d8644a8203507044ec167a8164f3b2ed7c544",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      ],
+      "freshReopenAudit": {
+        "status": "passed fresh packed-master reopen audit",
+        "packedBlendSha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+        "reopenMutatedFile": false,
+        "packedMapCount": 4,
+        "allPackedMapHashesMatchSource": true
+      }
+    },
+    {
+      "assetId": "amethyst-crackle-slow",
+      "reviewResult": "retain as dense source review master; final authoring required",
+      "sourceSha256": "886548878242005d9e7c39c72f5b1ddc6f62803aa61afaa8f43114c33250f489",
+      "packedBlend": {
+        "file": "source-assets/blender/amethyst-crackle-slow/amethyst-crackle-slow-dense-master.blend",
+        "bytes": 171247689,
+        "sha256": "bde6370fb1847686336d81b3c9073f535b9cd9a89ca8e130f0f1bd40a45a67a0",
+        "allFileImagesPacked": true,
+        "rawAndReviewCollectionsRetained": true
+      },
+      "objectMaterialTopology": {
+        "meshObjects": 1,
+        "primitives": 1,
+        "materialSlots": 1,
+        "looseGeometryComponents": 3244,
+        "semanticPartLabels": false,
+        "note": "One exported mesh/primitive/material contains many unlabeled loose geometry components; component count is not a semantic partition."
+      },
+      "denseTopology": {
+        "vertices": 787132,
+        "triangles": 1433588,
+        "vertexPositionsFloat32Sha256": "6c910acef22fff723c30779aa20ae67e1ed9ec84669265a6e6042df368c4e7a3",
+        "triangleIndicesInt32Sha256": "d067276c1f3139978d0b7198dc6aad9ebdd226657bfdbc244e662abcb3f1c955",
+        "nonFinitePositionValues": 0,
+        "degenerateTriangles": 0,
+        "decimation": false,
+        "remesh": false
+      },
+      "upperPatchScreen": {
+        "broadCandidate": true,
+        "flatCandidate": false,
+        "screeningStatus": "needs-review",
+        "horizontalCoverage": [
+          0.984597298,
+          0.973790375
+        ],
+        "relativePatchHeightSpread": 0.046578312
+      },
+      "visualFindings": {
+        "silhouette": "Three-quarter, top, and side proofs show a coherent rectangular purple crystal pad with a faceted body, irregular gilt line network, and four corner clasps; no large shell is visibly missing.",
+        "surface": "The top carries visible ridges and height variation in both clay and PBR views. Purple facets and gilt ornament read clearly, while the source remains an opaque provider material rather than authored transparent glass.",
+        "contact": "The upper-patch screen found broad coverage but failed the local flatness criterion, matching the visibly uneven top. A separate stable gameplay collider is required before use.",
+        "decision": "Preserve as the reviewed dense source master. Final delivery still needs crystal/gold material separation, reviewed glass, authored crackle shards and timing behavior, a stable contact collider, and runtime optimization."
+      },
+      "inspectedProofs": [
+        {
+          "mode": "clay",
+          "view": "three-quarter",
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-three-quarter.png",
+          "sha256": "551133ba801feb462ca5f83507cec36c141451aa5ec15dab95f3b38264ebba6d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "clay",
+          "view": "top",
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-top.png",
+          "sha256": "745181e4a283ee7e0bbebe04607867ffd07da161b5d51ad7339e802be65c1379",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "clay",
+          "view": "side",
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-side.png",
+          "sha256": "a5e9122044cd96ceff92be60d14db2323de152069dffb4f9d78b8a61cf41728c",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "three-quarter",
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-three-quarter.png",
+          "sha256": "cb6d1d4aad2627c756dc935cb853403c66f042aee76704da903479fe86ab5552",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "top",
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-top.png",
+          "sha256": "c0e053063b53f2b5ef7d925485f54f65d606990cdb8548ef5cb6d938cd78f64b",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        {
+          "mode": "pbr",
+          "view": "side",
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-side.png",
+          "sha256": "d946047623699b540936f93a5d7a0a4b19b4db7e69064f2f2d7449e6331816ac",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      ],
+      "freshReopenAudit": {
+        "status": "passed fresh packed-master reopen audit",
+        "packedBlendSha256": "bde6370fb1847686336d81b3c9073f535b9cd9a89ca8e130f0f1bd40a45a67a0",
+        "reopenMutatedFile": false,
+        "packedMapCount": 4,
+        "allPackedMapHashesMatchSource": true
+      }
+    }
+  ]
+}
