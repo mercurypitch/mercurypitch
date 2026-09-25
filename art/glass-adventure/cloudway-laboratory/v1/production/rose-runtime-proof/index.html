@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rose Quartz crackle runtime proof</title>
+    <style>
+      :root {
+        color: #fff8f5;
+        background: #7f98b7;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-synthesis: none;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+      body {
+        background: radial-gradient(
+          circle at 68% 14%,
+          #cfdfef 0,
+          #8ba5c3 55%,
+          #617997 100%
+        );
+      }
+      #stage {
+        position: fixed;
+        inset: 0;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .proof-card {
+        position: fixed;
+        left: 28px;
+        top: 26px;
+        width: min(400px, calc(100vw - 56px));
+        padding: 18px 20px;
+        border: 1px solid rgba(255, 247, 235, 0.42);
+        border-radius: 16px;
+        background: rgba(54, 36, 54, 0.76);
+        box-shadow: 0 18px 48px rgba(39, 25, 43, 0.28);
+        backdrop-filter: blur(14px);
+      }
+      .eyebrow {
+        color: #ffd89f;
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 0.17em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 7px 0 13px;
+        font-family: Georgia, serif;
+        font-size: 27px;
+        font-weight: 500;
+        line-height: 1.08;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 7px 20px;
+        margin: 0;
+        font-size: 12px;
+      }
+      dt {
+        color: #d7c3d5;
+      }
+      dd {
+        max-width: 220px;
+        margin: 0;
+        overflow: hidden;
+        color: #fffaf0;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #status[data-kind='error'] {
+        color: #ffaea3;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="stage" aria-label="Real Rose crackle renderer proof"></main>
+    <aside class="proof-card">
+      <div class="eyebrow">Actual GLB · production crackle adapter</div>
+      <h1>Rose Quartz Crackle</h1>
+      <dl>
+        <dt>Load state</dt>
+        <dd id="status">Loading runtime bundle…</dd>
+        <dt>Bundle</dt>
+        <dd id="bundle">—</dd>
+        <dt>Phase</dt>
+        <dd id="phase">—</dd>
+        <dt>Renderer triangles</dt>
+        <dd id="triangles">—</dd>
+        <dt>Resident textures</dt>
+        <dd id="textures">—</dd>
+        <dt>View</dt>
+        <dd id="view">Gameplay camera</dd>
+      </dl>
+    </aside>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

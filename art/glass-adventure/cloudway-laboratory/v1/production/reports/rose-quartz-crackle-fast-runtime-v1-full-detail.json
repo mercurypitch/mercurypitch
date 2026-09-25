@@ -1,0 +1,772 @@
+{
+  "schema": 1,
+  "assetId": "cloudway-lab-rose-crackle-v1",
+  "status": "source-full-detail runtime candidate; actual Three renderer acceptance pending",
+  "bundle": {
+    "file": "source-assets/runtime/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-v1-full-detail.glb",
+    "bytes": 135272228,
+    "sha256": "65de20895342a2b00abe69a0bae3e7f5b3846bb70d185b6eda6e6515b081d881",
+    "logicalId": "cloudway-lab-rose-crackle-v1",
+    "deliveryClass": "source-full-detail",
+    "rootNode": "CloudwayLab_RoseQuartzCrackleFast",
+    "decoderPolicy": "plain glTF 2.0 GLB; no Draco or Meshopt decoder",
+    "externalDependencies": []
+  },
+  "coordinates": {
+    "upAxis": "+Y",
+    "units": "metres",
+    "origin": "top-centre-of-fully-extended-support"
+  },
+  "support": {
+    "adapter": {
+      "version": 1,
+      "coordinates": {
+        "upAxis": "+Y",
+        "units": "metres",
+        "origin": "top-centre-of-fully-extended-support"
+      },
+      "support": {
+        "state": "intact",
+        "topY": 0,
+        "width": 1.64,
+        "depth": 1.64
+      },
+      "motion": {
+        "kind": "crackle",
+        "roles": {
+          "persistent": [
+            "CloudwayLab_RoseQuartzCrackleFast__persistent"
+          ],
+          "intactGlass": "CloudwayLab_RoseQuartzCrackleFast__intact",
+          "contact": "CloudwayLab_RoseQuartzCrackleFast__contact",
+          "shards": [
+            "CloudwayLab_RoseQuartzCrackleFast__shard_000",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_001",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_002",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_003",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_004",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_005",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_006",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_007",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_008",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_009",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_010",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_011",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_012",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_013",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_014",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_015",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_016",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_017"
+          ]
+        },
+        "materials": {
+          "glass": "CloudwayLab_RoseQuartz__glass",
+          "framework": "CloudwayLab_RoseQuartz__framework",
+          "internalDetail": "CloudwayLab_RoseQuartz__internal_detail",
+          "ivory": "CloudwayLab_RoseQuartz__ivory",
+          "cornerDetail": "CloudwayLab_RoseQuartz__corner_provider_pbr"
+        }
+      }
+    },
+    "collider": {
+      "shape": "box",
+      "width": 1.64,
+      "depth": 1.64,
+      "height": 0.24,
+      "topY": 0,
+      "center": [
+        0,
+        -0.12,
+        0
+      ]
+    },
+    "uniformScaleOnly": true
+  },
+  "roles": {
+    "persistent": [
+      "CloudwayLab_RoseQuartzCrackleFast__persistent"
+    ],
+    "intactGlass": "CloudwayLab_RoseQuartzCrackleFast__intact",
+    "contact": "CloudwayLab_RoseQuartzCrackleFast__contact",
+    "shards": [
+      "CloudwayLab_RoseQuartzCrackleFast__shard_000",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_001",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_002",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_003",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_004",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_005",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_006",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_007",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_008",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_009",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_010",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_011",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_012",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_013",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_014",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_015",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_016",
+      "CloudwayLab_RoseQuartzCrackleFast__shard_017"
+    ]
+  },
+  "materialBindings": {
+    "RoseRuntimeCrystalShell": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeProviderIntactExterior": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeGoldFramework": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__framework"
+    },
+    "RoseRuntimeIvoryInlays": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__ivory"
+    },
+    "RoseRuntimeSourceCornerFiligree": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__corner_provider_pbr"
+    },
+    "RoseRuntimeShardGlass_000": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_000": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_001": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_001": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_002": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_002": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_003": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_003": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_004": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_004": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_005": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_005": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_006": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_006": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_007": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_007": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_008": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_008": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_009": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_009": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_010": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_010": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_011": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_011": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_012": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_012": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_013": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_013": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_014": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_014": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_015": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_015": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_016": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_016": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    },
+    "RoseRuntimeShardGlass_017": {
+      "kind": "glass",
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "RoseRuntimeShardSurfaceDetail_017": {
+      "kind": "opaque",
+      "material": "CloudwayLab_RoseQuartz__internal_detail"
+    }
+  },
+  "lineage": {
+    "candidateBlend": {
+      "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-hybrid-candidate.blend",
+      "bytes": 174176717,
+      "sha256": "c176e4dae5e9938c3bb562299b8fe9f14d10dc3b8b522cee31ea9ee2f3a64b0a"
+    },
+    "freshOpenAudit": {
+      "file": "art/glass-adventure/cloudway-laboratory/v1/production/reports/rose-quartz-crackle-fast-runtime-hybrid-audit.json",
+      "bytes": 34392,
+      "sha256": "6a37eb17d233eea4ed0575d789095911aaf511d3ec5fc7be6c5b49565c23650f"
+    },
+    "denseMaster": {
+      "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-dense-master.blend",
+      "bytes": 120956906,
+      "sha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+      "allFileImagesPacked": true,
+      "rawAndReviewCollectionsRetained": true
+    },
+    "sourceExteriorDecimated": false,
+    "providerFacePartitionComplete": true
+  },
+  "inventory": {
+    "assetVersion": "2.0",
+    "generator": "Khronos glTF Blender I/O v5.2.40",
+    "sceneRootNode": 62,
+    "nodes": 63,
+    "meshes": 42,
+    "materials": [
+      "CloudwayLab_RoseQuartz__glass",
+      "CloudwayLab_RoseQuartz__internal_detail",
+      "CloudwayLab_RoseQuartz__framework",
+      "CloudwayLab_RoseQuartz__ivory",
+      "CloudwayLab_RoseQuartz__corner_provider_pbr"
+    ],
+    "meshRows": {
+      "RoseRuntimeCrystalShell": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 108,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeProviderIntactExterior": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 518742,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeGoldFramework": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__framework",
+        "triangles": 336,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeIvoryInlays": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__ivory",
+        "triangles": 896,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeSourceCornerFiligree": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__corner_provider_pbr",
+        "triangles": 133900,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_000": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 58,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_000": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 63078,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_001": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 46,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_001": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 21706,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_002": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 58,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_002": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 15508,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_003": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 46,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_003": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 30843,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_004": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 64,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_004": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 65394,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_005": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 46,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_005": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 28521,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_006": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 82,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_006": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 3171,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_007": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 88,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_007": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 4337,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_008": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 58,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_008": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 11331,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_009": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 70,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_009": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 17777,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_010": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 70,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_010": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 4964,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_011": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 70,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_011": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 3040,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_012": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 58,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_012": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 23570,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_013": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 46,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_013": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 84449,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_014": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 58,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_014": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 19442,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_015": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 70,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_015": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 43426,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_016": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 46,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_016": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 2073,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      },
+      "RoseRuntimeShardGlass_017": {
+        "kind": "glass",
+        "material": "CloudwayLab_RoseQuartz__glass",
+        "triangles": 58,
+        "attributes": [
+          "NORMAL",
+          "POSITION"
+        ]
+      },
+      "RoseRuntimeShardSurfaceDetail_017": {
+        "kind": "opaque",
+        "material": "CloudwayLab_RoseQuartz__internal_detail",
+        "triangles": 76112,
+        "attributes": [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ]
+      }
+    },
+    "contactTriangles": 2,
+    "totalVisibleTriangles": 1173816,
+    "images": [
+      {
+        "name": "set-0-normal",
+        "mimeType": "image/png",
+        "bytes": 13747606,
+        "sha256": "ca6742f8497b4059173fc94a58a4fe97da0886e5350ae7bac90426ab0b80c5ec",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "set-0-base_color",
+        "mimeType": "image/png",
+        "bytes": 68444424,
+        "sha256": "c887dbe9d154df63360357af6ef9a84762e501cfff4ad0eef18493a841292187",
+        "dimensions": [
+          8192,
+          8192
+        ]
+      },
+      {
+        "name": "rose-quartz-crackle-fast__metallic-rose-quartz-crackle-fast__roughness",
+        "mimeType": "image/png",
+        "bytes": 11595677,
+        "sha256": "9369a55329e842f3b33b62472e928ebb333317749887961f05d204f5353e7a68",
+        "dimensions": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "textures": 6,
+    "extensionsUsed": [
+      "KHR_materials_clearcoat",
+      "KHR_materials_transmission",
+      "KHR_materials_ior"
+    ],
+    "extensionsRequired": [],
+    "externalDependencies": [],
+    "metadataStrings": {
+      "platform_adapter_json": "{\"version\":1,\"coordinates\":{\"upAxis\":\"+Y\",\"units\":\"metres\",\"origin\":\"top-centre-of-fully-extended-support\"},\"support\":{\"state\":\"intact\",\"topY\":0,\"width\":1.64,\"depth\":1.64},\"motion\":{\"kind\":\"crackle\",\"roles\":{\"persistent\":[\"CloudwayLab_RoseQuartzCrackleFast__persistent\"],\"intactGlass\":\"CloudwayLab_RoseQuartzCrackleFast__intact\",\"contact\":\"CloudwayLab_RoseQuartzCrackleFast__contact\",\"shards\":[\"CloudwayLab_RoseQuartzCrackleFast__shard_000\",\"CloudwayLab_RoseQuartzCrackleFast__shard_001\",\"CloudwayLab_RoseQuartzCrackleFast__shard_002\",\"CloudwayLab_RoseQuartzCrackleFast__shard_003\",\"CloudwayLab_RoseQuartzCrackleFast__shard_004\",\"CloudwayLab_RoseQuartzCrackleFast__shard_005\",\"CloudwayLab_RoseQuartzCrackleFast__shard_006\",\"CloudwayLab_RoseQuartzCrackleFast__shard_007\",\"CloudwayLab_RoseQuartzCrackleFast__shard_008\",\"CloudwayLab_RoseQuartzCrackleFast__shard_009\",\"CloudwayLab_RoseQuartzCrackleFast__shard_010\",\"CloudwayLab_RoseQuartzCrackleFast__shard_011\",\"CloudwayLab_RoseQuartzCrackleFast__shard_012\",\"CloudwayLab_RoseQuartzCrackleFast__shard_013\",\"CloudwayLab_RoseQuartzCrackleFast__shard_014\",\"CloudwayLab_RoseQuartzCrackleFast__shard_015\",\"CloudwayLab_RoseQuartzCrackleFast__shard_016\",\"CloudwayLab_RoseQuartzCrackleFast__shard_017\"]},\"materials\":{\"glass\":\"CloudwayLab_RoseQuartz__glass\",\"framework\":\"CloudwayLab_RoseQuartz__framework\",\"internalDetail\":\"CloudwayLab_RoseQuartz__internal_detail\",\"ivory\":\"CloudwayLab_RoseQuartz__ivory\",\"cornerDetail\":\"CloudwayLab_RoseQuartz__corner_provider_pbr\"}}}",
+      "collider_json": "{\"shape\":\"box\",\"width\":1.64,\"depth\":1.64,\"height\":0.24,\"topY\":0,\"center\":[0,-0.12,0]}"
+    }
+  },
+  "remainingGate": "Load with the real GLTFLoader and production crackle adapter, render intact and released states in WebGL, and compare the intact source finish before catalog registration."
+}
