@@ -427,6 +427,16 @@ function validateRoleTree(
       fail(source, `Role node "${roleRoot.name}" contains no render mesh.`)
   }
   source.traverse((object) => {
+    if (
+      'material' in object &&
+      (!(object as Mesh).isMesh ||
+        'skeleton' in object ||
+        'instanceMatrix' in object)
+    )
+      fail(
+        source,
+        `Node "${object.name}" is an unsupported renderable; export plain Mesh geometry.`,
+      )
     if (!(object as Mesh).isMesh) return
     const owners = roleRoots.filter((roleRoot) => isWithin(object, roleRoot))
     if (owners.length !== 1)

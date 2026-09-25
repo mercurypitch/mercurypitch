@@ -23,11 +23,24 @@ Root review of the first transmissive candidate established actual transmission
 with a blue/coral striped witness below the surface. It also found irregular
 bright marks near the medallion and sharp stripe distortion below it. Removing
 the provider normal map did not remove the defect; retained surface relief and
-corner normals require further inspection. This candidate is not accepted for
-runtime. A clean authored optical inset within the preserved dense frame is an
-appropriate derivative if it removes this defect. Such a rebuild must be recorded
-explicitly and compared against the source silhouette, thickness, detail and
-matched reflection/transmission views.
+corner normals required further inspection. The first candidate was rejected.
+
+The second candidate explicitly replaces the faulty optical relief with a closed
+planar inset inside the unchanged dense frame. Its extent is
+0.769494056 × 2.229963927 × 0.100 metres; its top is Z=0 in Blender. The original
+relief remains hidden and fingerprinted in the editable project as well as in
+the separate preserved source derivative. No nonuniform source scaling was used.
+Root reviewed the new beauty and striped-witness views: the bright patch and
+jagged distortion are gone, and the frame appearance is retained. The fresh-open
+audit passes. This is accepted as a Blender optical/material checkpoint only;
+certified support bounds, final role metadata, runtime export and actual-engine
+proof remain outstanding. The candidate blend SHA-256 is
+`34e919c1bfe1da286c525fc6c413463abbb9702ecfe537553baf50abad3a669b`.
+
+Source proof files are under
+`source-assets/proofs/blender/gilt-scroll-bridge/transmissive-deck-candidate/`;
+`matched-candidate-three-quarter.png` shows appearance and
+`transmission-witness-candidate-top.png` demonstrates the corrected optics.
 
 ## Rose and Amethyst crackle platforms
 
