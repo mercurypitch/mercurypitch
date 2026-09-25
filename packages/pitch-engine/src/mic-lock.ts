@@ -61,11 +61,38 @@ const TAB_ID = generateId()
 
 let channel: BroadcastChannel | null = null
 let heartbeat: ReturnType<typeof setInterval> | null = null
+/** Monotonic identity for this document's successive lock claims. */
+let claimGeneration = 0
 /** Returning a promise is how a handler says "not yet" — see the `yield`
  *  branch in {@link openChannel}. */
 type YieldHandler = () => void | Promise<void>
 let onYieldRequested: YieldHandler | null = null
 const listeners = new Set<LockListener>()
+
+/**
+ * Stop this tab's physical capture before telling another document the lock
+ * is free. This same ordering is required for an explicit handoff and for a
+ * page entering the back-forward cache: either can otherwise let a second
+ * capture start while the old stream is still live.
+ */
+async function stopCaptureThenReleaseLock(): Promise<void> {
+  const generationToRelease = claimGeneration
+  try {
+    await onYieldRequested?.()
+  } catch (error) {
+    // A failed teardown has not established that capture stopped. Keep the
+    // record until a later release or the stale-lock timeout rather than
+    // advertising hardware that may still be live as available.
+    console.warn('[mic-lock] capture teardown failed; keeping lock:', error)
+    return
+  }
+  // The handler may synchronously notify subscribers, and one of them may
+  // claim again before this awaited continuation runs. Only release the claim
+  // that requested teardown; a newer claim can already own a live stream.
+  if (holdsLock() && claimGeneration === generationToRelease) {
+    releaseMicLock()
+  }
+}
 
 function openChannel(): BroadcastChannel | null {
   if (channel !== null) return channel
@@ -80,16 +107,7 @@ function openChannel(): BroadcastChannel | null {
       // is the one thing this module exists to prevent. So the handler is
       // awaited, and a tab that cannot let go simply never releases and the
       // requester times out still blocked.
-      void (async () => {
-        try {
-          await onYieldRequested?.()
-        } catch (error) {
-          // A handler that throws has not necessarily failed to stop, and
-          // holding the lock forever on its behalf helps nobody.
-          console.warn('[mic-lock] yield handler threw:', error)
-        }
-        releaseMicLock()
-      })()
+      void stopCaptureThenReleaseLock()
       return
     }
     notify()
@@ -176,6 +194,7 @@ export function claimMicLock():
   | { outcome: 'granted' }
   | { outcome: 'held-elsewhere'; holder: MicLockRecord } {
   const holder = readMicLock()
+  const alreadyHeld = holder?.tabId === TAB_ID
   if (holder !== null && holder.tabId !== TAB_ID) {
     return { outcome: 'held-elsewhere', holder }
   }
@@ -197,6 +216,8 @@ export function claimMicLock():
   if (settled !== null && settled.tabId !== TAB_ID) {
     return { outcome: 'held-elsewhere', holder: settled }
   }
+
+  if (!alreadyHeld) claimGeneration += 1
 
   if (heartbeat === null) {
     heartbeat = setInterval(() => {
@@ -293,10 +314,16 @@ function notify(): void {
 }
 
 if (typeof window !== 'undefined') {
-  // A closing tab must not leave its record behind for STALE_MS — the next tab
-  // would be told the mic is busy by a tab that no longer exists.
+  // `pagehide` also covers BFCache. Stop the real stream before removing the
+  // record: publishing "free" first can race a second device open, and a
+  // cached document can otherwise retain capture without being destroyed.
   window.addEventListener('pagehide', () => {
-    if (holdsLock()) releaseMicLock()
+    // A MicManager acquire is queued before it claims the lock. Invoke its
+    // handler even when this task observes no record yet, so a pagehide in
+    // that small window queues teardown behind the pending device open.
+    if (onYieldRequested !== null || holdsLock()) {
+      void stopCaptureThenReleaseLock()
+    }
   })
   // Another tab wrote the record. The `storage` event only fires in tabs that
   // did not make the change, which is exactly who needs to re-read it.
@@ -315,6 +342,7 @@ export function resetMicLockForTests(): void {
     heartbeat = null
   }
   onYieldRequested = null
+  claimGeneration = 0
   listeners.clear()
   try {
     localStorage.removeItem(STORAGE_KEY)

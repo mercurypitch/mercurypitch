@@ -174,19 +174,34 @@
   font-weight: 600;
 }
 .error {
+  --error-top: 150px;
   position: absolute;
-  top: 150px;
+  top: var(--error-top);
   left: 50%;
   transform: translateX(-50%);
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   justify-items: center;
   gap: 12px;
   width: min(440px, 80%);
+  max-height: calc(100% - var(--error-top) - 16px);
+  box-sizing: border-box;
   border-radius: 18px;
   background: #fff1dc;
   padding: 18px;
   text-align: center;
   z-index: 5;
+}
+.errorBody {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  box-sizing: border-box;
 }
 .error p {
   margin: 0;
@@ -217,7 +232,7 @@
 @media (max-width: 600px) {
   .error {
     /* Clear the complete utility rail, including the development Tune action. */
-    top: calc(max(18px, env(safe-area-inset-top)) + 220px);
+    --error-top: calc(max(18px, env(safe-area-inset-top)) + 220px);
   }
 }
 .primary {
@@ -740,6 +755,10 @@
   }
 }
 @media (max-height: 500px) {
+  .error {
+    --error-top: max(92px, calc(env(safe-area-inset-top) + 80px));
+    width: min(440px, calc(100% - 150px));
+  }
   .tutorialDrawing {
     display: none;
   }

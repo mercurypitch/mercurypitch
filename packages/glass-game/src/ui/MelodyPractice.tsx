@@ -9,6 +9,7 @@ import type { GlassGameHost } from '../host'
 import type { MelodyPracticeController, MelodyPracticeRecordingAdapter, MelodyPracticeSnapshot, } from './melody-practice'
 import { createMelodyPractice } from './melody-practice'
 import styles from './MelodyPractice.module.css'
+import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
 
 const VIEW_WIDTH = 720
 const VIEW_HEIGHT = 220
@@ -27,6 +28,7 @@ export interface MelodyPracticeProps {
     | 'readPreference'
     | 'writePreference'
     | 'subscribeForeground'
+    | 'microphoneInput'
     | 'takeOverMicrophone'
     | 'releaseUnusedMicrophoneTakeover'
   >
@@ -241,6 +243,10 @@ export function MelodyPractice(props: MelodyPracticeProps) {
   const transpositionChoices = () =>
     props.transpositionChoices ?? DEFAULT_TRANSPOSITION_CHOICES
   const microphoneAction = () => snapshot().microphoneIssue?.action ?? 'none'
+  const retryableMicrophoneIssue = createMemo(() => {
+    const issue = snapshot().microphoneIssue
+    return issue?.action === 'retry' ? issue : null
+  })
   const canRecoverMicrophone = () =>
     microphoneAction() === 'retry' ||
     (microphoneAction() === 'take-over' &&
@@ -391,6 +397,15 @@ export function MelodyPractice(props: MelodyPracticeProps) {
           </span>
         </Show>
       </div>
+
+      <Show when={retryableMicrophoneIssue()}>
+        {(issue) => (
+          <MicrophoneInputRecovery
+            microphoneInput={props.host.microphoneInput}
+            issue={issue()}
+          />
+        )}
+      </Show>
 
       <Show when={props.showConfigurationControls === true}>
         <div class={styles.configuration} aria-label="Melody settings">

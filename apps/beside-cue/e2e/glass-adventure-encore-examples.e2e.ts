@@ -57,9 +57,12 @@ async function attachJson(
   await testInfo.attach(name, { path, contentType: 'application/json' })
 }
 
-async function installCompletedVisit(page: Page): Promise<void> {
+async function installCompletedVisit(
+  page: Page,
+  rejectDefault = false,
+): Promise<void> {
   await page.addInitScript(
-    ({ complete }) => {
+    ({ complete, rejectDefault }) => {
       // This proof owns browser lifecycle and audio ordering; rendered-world
       // pixels are covered separately and would only slow these touch cases.
       if (typeof WebGL2RenderingContext !== 'undefined')
@@ -126,8 +129,27 @@ async function installCompletedVisit(page: Page): Promise<void> {
         return createMediaStreamSource.call(this, stream)
       }
 
-      navigator.mediaDevices.getUserMedia = async () => {
+      if (rejectDefault)
+        navigator.mediaDevices.enumerateDevices = async () => [
+          {
+            deviceId: 'scarlett',
+            groupId: 'input',
+            kind: 'audioinput',
+            label: 'Scarlett microphone',
+            toJSON: () => ({}),
+          },
+        ]
+      navigator.mediaDevices.getUserMedia = async (constraints) => {
         audioEvents.push('get-user-media')
+        const audio = constraints?.audio as MediaTrackConstraints | undefined
+        const deviceId = audio?.deviceId as
+          | ConstrainDOMStringParameters
+          | undefined
+        if (rejectDefault && deviceId?.exact !== 'scarlett')
+          throw new DOMException(
+            'Starting audio capture failed',
+            'NotReadableError',
+          )
         const context = new AudioContext()
         await context.resume()
         const oscillator = context.createOscillator()
@@ -150,7 +172,7 @@ async function installCompletedVisit(page: Page): Promise<void> {
       }
       window.encoreIntegration = { audioEvents, streams }
     },
-    { complete: completeProgress },
+    { complete: completeProgress, rejectDefault },
   )
 }
 
@@ -168,6 +190,45 @@ async function openEncore(page: Page) {
   await expect(dialog).toBeVisible()
   return dialog
 }
+
+test('recovers the encore microphone from its phone dialog @smoke', async ({
+  page,
+}, testInfo) => {
+  await installCompletedVisit(page, true)
+  const dialog = await openEncore(page)
+  await dialog
+    .getByRole('button', { name: 'Sing the melody', exact: true })
+    .tap()
+  const practice = dialog.locator('section[data-mode]')
+  await expect(practice).toHaveAttribute('data-mode', 'error')
+  const picker = dialog.getByRole('combobox', {
+    name: 'Microphone',
+    exact: true,
+  })
+  await expect(picker).toBeVisible()
+  await picker.selectOption('scarlett')
+  await dialog.getByText('Technical details', { exact: true }).tap()
+  await expect(dialog).toContainText('NotReadableError')
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390)
+  await page.screenshot({
+    path: testInfo.outputPath('encore-microphone-recovery-phone.png'),
+  })
+  await dialog.getByRole('button', { name: 'Try again', exact: true }).tap()
+  await expect(practice).toHaveAttribute('data-mode', /reference|singing/, {
+    timeout: 15_000,
+  })
+  expect(
+    await page.evaluate(() => localStorage.getItem('beside-cue:input-device')),
+  ).toBe('scarlett')
+  expect(
+    await page.evaluate(() => window.encoreIntegration.streams.length),
+  ).toBe(1)
+  await dialog
+    .getByRole('button', { name: 'Back to completion card', exact: true })
+    .tap()
+})
 
 test('loads only the selected voice and retries HTTP and decode failures on a phone @smoke', async ({
   page,

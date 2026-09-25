@@ -71,6 +71,61 @@ beforeEach(() => {
 })
 
 describe('browser voice ownership', () => {
+  it('unlocks audio in the gesture and applies the chosen route before acquiring', async () => {
+    const preparation = deferred<undefined>()
+    const opened = vi.fn()
+    const voice = createBrowserVoice({
+      prepareMicrophone: () => preparation.promise,
+      microphoneOpened: opened,
+    })
+    const pending = voice.start()
+    expect(leases[0].unlock).toHaveBeenCalledOnce()
+    expect(mocks.acquire).not.toHaveBeenCalled()
+    preparation.resolve(undefined)
+    await pending
+    expect(mocks.acquire).toHaveBeenCalledOnce()
+    expect(opened).toHaveBeenCalledOnce()
+    voice.stop()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  it('does not acquire after cancellation while preparing the input route', async () => {
+    const preparation = deferred<undefined>()
+    const voice = createBrowserVoice({
+      prepareMicrophone: () => preparation.promise,
+    })
+    const pending = voice.start()
+    await Promise.resolve()
+    voice.stop()
+    preparation.resolve(undefined)
+    await pending
+    expect(mocks.acquire).not.toHaveBeenCalled()
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(leases[0].release).toHaveBeenCalledOnce()
+  })
+
+  it('does not change the route if cancelled before preparation begins', async () => {
+    const prepareMicrophone = vi.fn().mockResolvedValue(undefined)
+    const voice = createBrowserVoice({ prepareMicrophone })
+    const pending = voice.start()
+    voice.stop()
+    await pending
+    expect(prepareMicrophone).not.toHaveBeenCalled()
+    expect(mocks.acquire).not.toHaveBeenCalled()
+  })
+
+  it('releases a successful acquisition even if input confirmation fails', async () => {
+    const voice = createBrowserVoice({
+      microphoneOpened: () => {
+        throw new Error('Confirmation failed')
+      },
+    })
+    await expect(voice.start()).rejects.toThrow('Confirmation failed')
+    expect(mocks.release).toHaveBeenCalledOnce()
+    expect(mocks.create).not.toHaveBeenCalled()
+    expect(leases[0].release).toHaveBeenCalledOnce()
+  })
+
   it('records only by explicit request and reuses the one already-open capture stream', async () => {
     const acquired = {} as MediaStream
     mocks.acquire.mockResolvedValue(acquired)

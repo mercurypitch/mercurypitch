@@ -25,6 +25,13 @@ export interface GlassVoiceSession {
   startRecording?(): GlassVoiceTake
 }
 
+/** An input choice never opens capture; the player's next Start uses it. */
+export interface GlassMicrophoneInput {
+  list(): Promise<readonly { deviceId: string; label: string }[]>
+  selected(): string
+  select(deviceId: string): Promise<void>
+}
+
 export interface GlassSound {
   reference(
     midi: number,
@@ -87,6 +94,7 @@ export interface GlassMercNarration {
 export interface GlassGameHost {
   assetUrl(id: string): string
   createVoice(): GlassVoiceSession
+  microphoneInput?: GlassMicrophoneInput
   /** Ask another cooperating app tab to release its mic before retrying here. */
   takeOverMicrophone?(): Promise<boolean>
   /** Give back a completed handoff if its requesting surface disappeared. */

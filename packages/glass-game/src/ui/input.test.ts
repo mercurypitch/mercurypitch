@@ -2,16 +2,31 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createAdventureInput } from './input'
 
-function keyboardEvent(code: string): KeyboardEvent {
+function keyboardEvent(
+  code: string,
+  target: EventTarget | null = null,
+): KeyboardEvent {
   return {
     code,
-    target: null,
+    target,
     defaultPrevented: false,
     metaKey: false,
     ctrlKey: false,
     altKey: false,
     preventDefault: vi.fn(),
   } as unknown as KeyboardEvent
+}
+
+function editableTarget(kind: 'select' | 'contenteditable'): EventTarget {
+  const target = {
+    isContentEditable: kind === 'contenteditable',
+    closest: vi.fn((selector: string) =>
+      kind === 'select' && selector === 'input, textarea, select'
+        ? target
+        : null,
+    ),
+  }
+  return target as unknown as EventTarget
 }
 
 describe('adventure movement reference intent', () => {
@@ -98,4 +113,18 @@ describe('adventure movement reference intent', () => {
     expect(input.hasMovementIntent()).toBe(false)
     expect(input.consumeMovementReferenceChange()).toBe(false)
   })
+
+  it.each(['select', 'contenteditable'] as const)(
+    'releases a held movement key after focus moves into a %s target',
+    (kind) => {
+      const input = createAdventureInput()
+      input.key(keyboardEvent('KeyW'), true)
+      expect(input.hasMovementIntent()).toBe(true)
+
+      const release = keyboardEvent('KeyW', editableTarget(kind))
+      expect(input.key(release, false)).toBe(true)
+      expect(input.hasMovementIntent()).toBe(false)
+      expect(release.preventDefault).not.toHaveBeenCalled()
+    },
+  )
 })
