@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Glassworks — Cloudway material studies</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f4efe3;
+        color: #173e3c;
+        font-family: system-ui, sans-serif;
+      }
+      main {
+        max-width: 1500px;
+        margin: auto;
+        padding: 44px 5vw 72px;
+      }
+      .eyebrow {
+        font-size: 11px;
+        font-weight: 750;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #87682e;
+      }
+      h1 {
+        font-family: Georgia, serif;
+        font-weight: 400;
+        font-size: clamp(38px, 5vw, 72px);
+        line-height: 1.02;
+        max-width: 830px;
+        margin: 20px 0;
+      }
+      p {
+        line-height: 1.7;
+        max-width: 780px;
+        color: #4e625b;
+      }
+      nav {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin: 25px 0 40px;
+      }
+      nav a {
+        padding: 10px 17px;
+        border: 1px solid #b8ab8e;
+        border-radius: 999px;
+        color: inherit;
+        text-decoration: none;
+      }
+      a:focus-visible {
+        outline: 3px solid #197d78;
+        outline-offset: 4px;
+      }
+      h2 {
+        font-family: Georgia, serif;
+        font-size: 30px;
+        font-weight: 400;
+        margin: 40px 0 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      h2 span {
+        font:
+          11px system-ui,
+          sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #826a3c;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 22px;
+      }
+      .card {
+        background: #fffdf7;
+        color: inherit;
+        text-decoration: none;
+        border: 1px solid #dacdaf;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: transform 0.2s;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+      }
+      .card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        background: #e6e6e4;
+      }
+      .card div {
+        padding: 19px;
+      }
+      .card small {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: #947536;
+      }
+      .card h3 {
+        font-family: Georgia, serif;
+        font-size: 24px;
+        font-weight: 400;
+        margin: 8px 0;
+      }
+      .card p {
+        font-size: 12px;
+        margin: 0;
+      }
+      .status {
+        padding: 15px 20px;
+        border-left: 3px solid #b5954c;
+        background: #eae3d2;
+        font-size: 14px;
+      }
+      .foot {
+        font-size: 13px;
+        margin-top: 40px;
+      }
+      @media (max-width: 850px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 520px) {
+        main {
+          padding: 28px 18px 44px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        h2 {
+          align-items: baseline;
+          flex-wrap: wrap;
+        }
+        .card img {
+          max-height: 380px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">MercuryPitch / Glassworks / Cloudway laboratory</div>
+      <h1>A path of crystal,<br />marble and music.</h1>
+      <p>
+        Ten platform studies and ten gallery objects for the next exploratory
+        Cloudway. Open any image for a closer look. These are modeling
+        references; the finished game assets will be reviewed again after Meshy
+        and Blender.
+      </p>
+      <nav>
+        <a href="#platform">Platforms</a><a href="#object">Objects</a
+        ><a href="../../level-studio/v1/index.html">Open level studio</a
+        ><a href="TASKS.md">Execution plan</a>
+      </nav>
+      <p class="status">
+        All 20 references are saved. Meshy production is waiting for the Proton
+        Pass login to be restored. No new models from this collection are
+        integrated yet.
+      </p>
+      <section id="platform">
+        <h2>Platform studies<span>10 designs</span></h2>
+        <div class="grid">
+          <a
+            class="card"
+            href="references/gilt-scroll-bridge.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/gilt-scroll-bridge.webp"
+              alt="Gilt Scroll Bridge"
+            />
+            <div>
+              <small>PLATFORM 01</small>
+              <h3>Gilt Scroll Bridge</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/rose-quartz-crackle-fast.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/rose-quartz-crackle-fast.webp"
+              alt="Rose Quartz Crackle Fast"
+            />
+            <div>
+              <small>PLATFORM 02</small>
+              <h3>Rose Quartz Crackle Fast</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/amethyst-crackle-slow.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/amethyst-crackle-slow.webp"
+              alt="Amethyst Crackle Slow"
+            />
+            <div>
+              <small>PLATFORM 03</small>
+              <h3>Amethyst Crackle Slow</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/frost-lily-step.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/frost-lily-step.webp"
+              alt="Frost Lily Step"
+            />
+            <div>
+              <small>PLATFORM 04</small>
+              <h3>Frost Lily Step</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/pearl-marble-long.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/pearl-marble-long.webp"
+              alt="Pearl Marble Long"
+            />
+            <div>
+              <small>PLATFORM 05</small>
+              <h3>Pearl Marble Long</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/emerald-square-turn.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/emerald-square-turn.webp"
+              alt="Emerald Square Turn"
+            />
+            <div>
+              <small>PLATFORM 06</small>
+              <h3>Emerald Square Turn</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/moonstone-cross-landing.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/moonstone-cross-landing.webp"
+              alt="Moonstone Cross Landing"
+            />
+            <div>
+              <small>PLATFORM 07</small>
+              <h3>Moonstone Cross Landing</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/aurora-glide-raft.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/aurora-glide-raft.webp"
+              alt="Aurora Glide Raft"
+            />
+            <div>
+              <small>PLATFORM 08</small>
+              <h3>Aurora Glide Raft</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/ivory-stair-terrace.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/ivory-stair-terrace.webp"
+              alt="Ivory Stair Terrace"
+            />
+            <div>
+              <small>PLATFORM 09</small>
+              <h3>Ivory Stair Terrace</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/opal-glass-long-bridge.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/opal-glass-long-bridge.webp"
+              alt="Opal Glass Long Bridge"
+            />
+            <div>
+              <small>PLATFORM 10</small>
+              <h3>Opal Glass Long Bridge</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          >
+        </div>
+      </section>
+      <section id="object">
+        <h2>Gallery objects<span>10 designs</span></h2>
+        <div class="grid">
+          <a
+            class="card"
+            href="references/frosted-scroll-wall.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/frosted-scroll-wall.webp"
+              alt="Frosted Scroll Wall"
+            />
+            <div>
+              <small>OBJECT 01</small>
+              <h3>Frosted Scroll Wall</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/camellia-singing-vase.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/camellia-singing-vase.webp"
+              alt="Camellia Singing Vase"
+            />
+            <div>
+              <small>OBJECT 02</small>
+              <h3>Camellia Singing Vase</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/celadon-harp-urn.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/celadon-harp-urn.webp"
+              alt="Celadon Harp Urn"
+            />
+            <div>
+              <small>OBJECT 03</small>
+              <h3>Celadon Harp Urn</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/amethyst-hourglass.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/amethyst-hourglass.webp"
+              alt="Amethyst Hourglass"
+            />
+            <div>
+              <small>OBJECT 04</small>
+              <h3>Amethyst Hourglass</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/crystal-lotus-goblet.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/crystal-lotus-goblet.webp"
+              alt="Crystal Lotus Goblet"
+            />
+            <div>
+              <small>OBJECT 05</small>
+              <h3>Crystal Lotus Goblet</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/pearl-ribbon-lantern.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/pearl-ribbon-lantern.webp"
+              alt="Pearl Ribbon Lantern"
+            />
+            <div>
+              <small>OBJECT 06</small>
+              <h3>Pearl Ribbon Lantern</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/gilded-music-stand.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/gilded-music-stand.webp"
+              alt="Gilded Music Stand"
+            />
+            <div>
+              <small>OBJECT 07</small>
+              <h3>Gilded Music Stand</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/vine-marble-balustrade.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/vine-marble-balustrade.webp"
+              alt="Vine Marble Balustrade"
+            />
+            <div>
+              <small>OBJECT 08</small>
+              <h3>Vine Marble Balustrade</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/rose-mirror-panel.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/rose-mirror-panel.webp"
+              alt="Rose Mirror Panel"
+            />
+            <div>
+              <small>OBJECT 09</small>
+              <h3>Rose Mirror Panel</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          ><a
+            class="card"
+            href="references/singing-fountain-basin.png"
+            target="_blank"
+            rel="noopener"
+            ><img
+              loading="lazy"
+              src="previews/singing-fountain-basin.webp"
+              alt="Singing Fountain Basin"
+            />
+            <div>
+              <small>OBJECT 10</small>
+              <h3>Singing Fountain Basin</h3>
+              <p>Reference ready · 3D production pending</p>
+            </div></a
+          >
+        </div>
+      </section>
+      <p class="foot">
+        Made with built-in ChatGPT image generation. Original prompts and
+        SHA-256 hashes are in <a href="catalogue.json">the catalogue</a>. Glass
+        depth, motion, contact and fracture will be validated in the real game.
+      </p>
+    </main>
+  </body>
+</html>

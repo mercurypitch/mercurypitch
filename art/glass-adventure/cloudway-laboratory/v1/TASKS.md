@@ -1,0 +1,38 @@
+# Cloudway laboratory execution — 25 September 2026
+
+Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a second exploratory course, and a browser level editor. The earlier melody-route A/B/C choice remains open.
+
+## Work locations
+
+- Bug fixes: `feat/glass-mobile-playability`, PR #861.
+- New editor, models and course: `feat/glass-cloudway-laboratory`, initially based on #861 head `6911bd21`.
+- Preserve existing 5300 playtest during work; review servers have separate ports.
+
+## Active task list
+
+- [x] Profile and fix falling stalls; verify repeated falls and respawns. Camera queried dense decorative triangles below every support; skip that path while falling below the world.
+- [x] Two-row message queue; actual path-open events only; mobile/tablet/desktop proof. Includes modal/pause/tutorial visibility review.
+- [x] Review and push bug fixes to #861 (`fc09fe06`, pushed 25 September 2026). CI is running.
+- [ ] Browser level studio: grid placement, transforms, undo, validation, JSON export/import and local drafts.
+- [x] Generate and inspect 10 platform reference images (catalogue tracks each).
+- [x] Generate and inspect 10 object reference images.
+- [ ] Meshy 7.1 4K geometry / 8K texture / PBR originals: receipt before each paid job; archive IDs, outputs, hashes.
+- [ ] Blender finalization: material separation, contact planes, preserved silhouettes, runtime maps, packed source.
+- [ ] Scroll bridge extension has matching visual and walkable deck.
+- [ ] Beautiful rose and lavender timed platforms, 2s/4s with a real gap and safe approach.
+- [ ] Exploratory second course with turns, safe rest/voice areas, asset exhibits and checkpoints.
+- [ ] Editor JSON maps explicitly to authored level data; export is a spec, not a playability guarantee.
+- [ ] Review runtime costs, no hovering/intersections/inverted normals, repeat props instanced; actual loaded-asset proofs.
+- [ ] Focused tests and browser validation; commit/push stages and present next device test.
+
+## Acceptance
+
+No blanket decimation to hit a polygon number. Provider completion means donor available, not art accepted. Keep generated references, dense originals, PBR maps, packed Blender masters and delivery hashes. Glass transmission and fractures require actual engine material/geometry work, not a painted opaque Meshy texture. The scroll mechanism is deterministic, not physics simulated every frame. Mobile visual/performance claims require device confirmation.
+
+## Production status
+
+20 built-in image-generation references saved with prompts and SHA-256s. Meshy balance could not be read: Proton Pass CLI has no session (25 September 2026 11:31 UTC). Owner login request is pending; no 3D generation claims and no jobs charged in this batch.
+
+## Linked implementation brief
+
+[The Crystal Promenade](COURSE-SPEC.md) defines the second course, the role of all 20 designs, safe singing/checkpoint locations, scroll and crackle timing, and the art/runtime acceptance sequence. Implementation remains pending the dense donor and Blender review.
