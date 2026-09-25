@@ -1,18 +1,18 @@
 # Cloudway laboratory kit
 
-[Open visual catalogue](review.html) · [Task list](TASKS.md) · [Level studio](../../level-studio/v1/index.html)
+[Open visual catalogue](review.html) · [Task list](TASKS.md) · [Integration spec](INTEGRATION-SPEC.md) · [Level studio](../../level-studio/v1/index.html)
 
 20 distinct single-object references were generated with the built-in ChatGPT image tool and visually inspected. `catalogue.json` retains every final prompt, output path and SHA-256. References are source art, not game models.
 
 ## Provider production
 
-The owner authorized uploads and credits. Scoped Proton Pass access was restored on 25 September 2026; the balance read 3,685 credits before this batch. Use the existing scoped credential template; never print its contents or export the key into the parent session. Per-asset receipts are the live production authority.
+The owner authorized uploads and credits. Scoped Proton Pass access was restored on 25 September 2026; the balance read 3,685 credits before this batch. Set `MESHY_CREDENTIAL_TEMPLATE` to the existing private scoped credential-template path (`<user-dotfiles>/irchiinnuss/secrets/meshy-mcp.env.tmpl`); never print its contents or export the key into the parent session. Per-asset receipts are the live production authority.
 
 ```sh
 rtk proxy python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py prepare
-rtk proxy timeout 240 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py balance
-rtk proxy timeout 240 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py submit --asset gilt-scroll-bridge
-rtk proxy timeout 900 pass-cli run --env-file /home/maff/.dotfiles/personal/irchiinnuss/secrets/meshy-mcp.env.tmpl -- python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py resume --asset gilt-scroll-bridge
+rtk proxy timeout 240 pass-cli run --env-file "$MESHY_CREDENTIAL_TEMPLATE" -- python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py balance
+rtk proxy timeout 240 pass-cli run --env-file "$MESHY_CREDENTIAL_TEMPLATE" -- python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py submit --asset gilt-scroll-bridge
+rtk proxy timeout 900 pass-cli run --env-file "$MESHY_CREDENTIAL_TEMPLATE" -- python3 art/glass-adventure/cloudway-laboratory/v1/production/produce.py resume --asset gilt-scroll-bridge
 ```
 
 Repeat for the exact catalogue IDs, with bounded concurrency and balance checks. Prepare is offline. An exclusive per-asset source lock serializes worktrees on this host. Submission records durable intent in the shared source receipt before POST and refuses duplication; the Git receipt is a sanitized mirror. Resume reads one existing task and archives it when complete, without submitting again. If POST is uncertain, use `reconcile` and compare safe task metadata before modifying the receipt. Model and texture URLs are used in memory only; archive files with hashes.
@@ -38,7 +38,7 @@ The runtime adapter is pending actual model inspection. No production asset is a
 
 Large files use the existing Proton Drive creative folder convention:
 
-- Private alias: `~/.dotfiles/personal/besidecue/assets/glass-adventure/cloudway-laboratory/v1/`
+- Private alias: `<user-dotfiles>/besidecue/assets/glass-adventure/cloudway-laboratory/v1/`
 - Resolved local storage: `~/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/`
 - This checkout uses ignored `references` and `source-assets` symlinks into that location. Git contains prompts, hashes, receipts, code, and small WebP preview derivatives.
 - The provider script writes dense models and PBR maps through `source-assets`; Blender masters, renders, turntables and animations must also use that source tree. Runtime assets accepted for shipping remain in the app repository.

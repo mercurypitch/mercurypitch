@@ -1,0 +1,394 @@
+{
+  "schema": "mercurypitch.cloudway-level",
+  "schemaVersion": 1,
+  "id": "crystal-promenade-laboratory",
+  "title": "Crystal Promenade — course study",
+  "grid": {
+    "width": 24,
+    "depth": 48,
+    "cellSize": 0.5
+  },
+  "melody": {
+    "id": "promenade-three-note-study",
+    "title": "Home, third, fifth — provisional",
+    "notes": [
+      {
+        "id": "home",
+        "label": "Home",
+        "semitones": 0
+      },
+      {
+        "id": "third",
+        "label": "Third",
+        "semitones": 4
+      },
+      {
+        "id": "fifth",
+        "label": "Fifth",
+        "semitones": 7
+      }
+    ]
+  },
+  "pieces": [
+    {
+      "id": "arrival",
+      "kind": "platform",
+      "name": "Arrival salon",
+      "x": -4,
+      "y": 0,
+      "z": -20,
+      "width": 4,
+      "depth": 4,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "pearl-marble-long"
+    },
+    {
+      "id": "frost-bend",
+      "kind": "platform",
+      "name": "Frost lily bend",
+      "x": -5,
+      "y": 0,
+      "z": -16.8,
+      "width": 2.4,
+      "depth": 1.9,
+      "rotation": 0,
+      "surface": "frost",
+      "assetId": "frost-lily-step"
+    },
+    {
+      "id": "emerald-turn",
+      "kind": "platform",
+      "name": "Emerald left turn",
+      "x": -6,
+      "y": 0,
+      "z": -13.9,
+      "width": 3,
+      "depth": 3,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "emerald-square-turn"
+    },
+    {
+      "id": "opal-passage",
+      "kind": "platform",
+      "name": "Long opal passage",
+      "x": -6,
+      "y": 0,
+      "z": -10.6,
+      "width": 1.8,
+      "depth": 2.2,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "opal-glass-long-bridge"
+    },
+    {
+      "id": "scroll-approach",
+      "kind": "platform",
+      "name": "Scroll court: safe approach",
+      "x": -5,
+      "y": 0,
+      "z": -7.4,
+      "width": 4,
+      "depth": 3.4,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "pearl-marble-long"
+    },
+    {
+      "id": "scroll-deck",
+      "kind": "platform",
+      "name": "Retracting scroll: cross right",
+      "x": -0.8,
+      "y": 0,
+      "z": -7.4,
+      "width": 3,
+      "depth": 1.8,
+      "rotation": 0,
+      "surface": "scroll",
+      "motion": {
+        "axis": "x",
+        "minLengthRatio": 0.25,
+        "extendedSeconds": 4,
+        "retractedSeconds": 3,
+        "transitionSeconds": 1.5,
+        "initialState": "extended"
+      },
+      "assetId": "gilt-scroll-bridge"
+    },
+    {
+      "id": "scroll-catch",
+      "kind": "platform",
+      "name": "Scroll court: catch landing",
+      "x": 3.4,
+      "y": 0,
+      "z": -7.4,
+      "width": 4,
+      "depth": 3.4,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "pearl-marble-long"
+    },
+    {
+      "id": "rose-step",
+      "kind": "platform",
+      "name": "Rose duet: quick 2 second step",
+      "x": 4.1,
+      "y": 0,
+      "z": -4.2,
+      "width": 2.4,
+      "depth": 1.9,
+      "rotation": 0,
+      "surface": "crackle",
+      "crackleSeconds": 2,
+      "assetId": "rose-quartz-crackle-fast"
+    },
+    {
+      "id": "amethyst-step",
+      "kind": "platform",
+      "name": "Rose duet: patient 4 second step",
+      "x": 4.7,
+      "y": 0,
+      "z": -1.8,
+      "width": 2.4,
+      "depth": 1.9,
+      "rotation": 0,
+      "surface": "crackle",
+      "crackleSeconds": 4,
+      "assetId": "amethyst-crackle-slow"
+    },
+    {
+      "id": "garden-centre",
+      "kind": "platform",
+      "name": "Cross garden: central support",
+      "x": 4,
+      "y": 0,
+      "z": 1.6,
+      "width": 2.4,
+      "depth": 4.4,
+      "rotation": 0,
+      "surface": "stable"
+    },
+    {
+      "id": "garden-west",
+      "kind": "platform",
+      "name": "Cross garden: west support",
+      "x": 2.2,
+      "y": 0,
+      "z": 1.6,
+      "width": 1.2,
+      "depth": 2.4,
+      "rotation": 0,
+      "surface": "stable"
+    },
+    {
+      "id": "garden-east",
+      "kind": "platform",
+      "name": "Cross garden: east support",
+      "x": 5.8,
+      "y": 0,
+      "z": 1.6,
+      "width": 1.2,
+      "depth": 2.4,
+      "rotation": 0,
+      "surface": "stable"
+    },
+    {
+      "id": "aurora-raft",
+      "kind": "platform",
+      "name": "Aurora raft: north crossing",
+      "x": 4,
+      "y": 0,
+      "z": 5.8,
+      "width": 2.6,
+      "depth": 2.4,
+      "rotation": 0,
+      "surface": "glide",
+      "motion": {
+        "axis": "z",
+        "travel": 1.8,
+        "durationSeconds": 4
+      },
+      "assetId": "aurora-glide-raft"
+    },
+    {
+      "id": "terrace-dock",
+      "kind": "platform",
+      "name": "Safe terrace dock",
+      "x": 4,
+      "y": 0,
+      "z": 11,
+      "width": 4,
+      "depth": 3,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "emerald-square-turn"
+    },
+    {
+      "id": "stair-one",
+      "kind": "platform",
+      "name": "Ivory terrace: tread 1",
+      "x": 3,
+      "y": 0.16,
+      "z": 13.5,
+      "width": 3,
+      "depth": 1.8,
+      "rotation": 0,
+      "surface": "stable"
+    },
+    {
+      "id": "stair-two",
+      "kind": "platform",
+      "name": "Ivory terrace: tread 2",
+      "x": 2.5,
+      "y": 0.32,
+      "z": 15.3,
+      "width": 3,
+      "depth": 1.8,
+      "rotation": 0,
+      "surface": "stable"
+    },
+    {
+      "id": "stair-three",
+      "kind": "platform",
+      "name": "Ivory terrace: tread 3",
+      "x": 2,
+      "y": 0.48,
+      "z": 17.1,
+      "width": 3,
+      "depth": 1.8,
+      "rotation": 0,
+      "surface": "stable"
+    },
+    {
+      "id": "final-salon",
+      "kind": "platform",
+      "name": "Final listening salon",
+      "x": 1,
+      "y": 0.48,
+      "z": 20.2,
+      "width": 4,
+      "depth": 4.4,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "pearl-marble-long"
+    },
+    {
+      "id": "start",
+      "kind": "marker",
+      "name": "Start",
+      "x": -4,
+      "y": 0,
+      "z": -21,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "spawn"
+    },
+    {
+      "id": "arrival-save",
+      "kind": "marker",
+      "name": "Arrival checkpoint",
+      "x": -4,
+      "y": 0,
+      "z": -21,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "checkpoint"
+    },
+    {
+      "id": "scroll-save",
+      "kind": "marker",
+      "name": "Scroll checkpoint",
+      "x": -5,
+      "y": 0,
+      "z": -7.7,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "checkpoint"
+    },
+    {
+      "id": "garden-save",
+      "kind": "marker",
+      "name": "Listening garden checkpoint",
+      "x": 4,
+      "y": 0,
+      "z": 2.6,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "checkpoint"
+    },
+    {
+      "id": "final-save",
+      "kind": "marker",
+      "name": "Final terrace checkpoint",
+      "x": 1,
+      "y": 0.48,
+      "z": 19,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "checkpoint"
+    },
+    {
+      "id": "exit",
+      "kind": "marker",
+      "name": "Exit after all three notes",
+      "x": 1,
+      "y": 0.48,
+      "z": 21.4,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "exit"
+    },
+    {
+      "id": "voice-home",
+      "kind": "voiceTarget",
+      "name": "Arrival: sing home",
+      "x": -4.8,
+      "y": 0,
+      "z": -19.6,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "melodyNoteId": "home",
+      "holdSeconds": 1.2
+    },
+    {
+      "id": "voice-third",
+      "kind": "voiceTarget",
+      "name": "Garden: sing the third",
+      "x": 4,
+      "y": 0,
+      "z": 0.4,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "melodyNoteId": "third",
+      "holdSeconds": 1.2,
+      "requiresCompletedIds": [
+        "voice-home"
+      ]
+    },
+    {
+      "id": "voice-fifth",
+      "kind": "voiceTarget",
+      "name": "Finale: sing the fifth",
+      "x": 0.3,
+      "y": 0.48,
+      "z": 20.3,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "melodyNoteId": "fifth",
+      "holdSeconds": 1.2,
+      "requiresCompletedIds": [
+        "voice-third"
+      ]
+    }
+  ]
+}

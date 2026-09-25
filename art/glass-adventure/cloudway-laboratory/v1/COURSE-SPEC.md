@@ -1,6 +1,6 @@
 # Cloudway II — The Crystal Promenade
 
-An exploratory second course for testing the approved platform family, separate from the current introductory Cloudway. This document is the implementation brief; the course is not shipped or playable yet. Its final dimensions depend on the reviewed Meshy donors, support anchors and measured jump envelope.
+An exploratory second course for testing the approved platform family, separate from the current introductory Cloudway. This document is the implementation brief; the course is not shipped or playable yet. Its final dimensions depend on the reviewed Meshy donors, support anchors and measured jump envelope. [The editable course study](crystal-promenade.design.json) imports directly into the Level Studio and contains 27 pieces: 18 support regions, six route markers and three voice targets.
 
 ## Journey and pacing
 
@@ -46,3 +46,14 @@ Required singing takes place only at the arrival, listening garden and final ter
 All full images, dense models, texture masters, Blender projects, turntables and animation masters belong in the shared Proton creative source tree documented in [README.md](README.md). Git holds this specification, metadata, receipts, compact previews and accepted build assets.
 
 At the time of this specification, the 20 image references are complete. Meshy access is restored and production is starting; no new 3D asset has passed Blender or runtime acceptance. The editor and pure scroll timing/collision work can proceed independently, but do not establish that this course is playable.
+
+## Editable study review
+
+The 27-piece study passes the studio schema and top-view checks with zero warnings. One informational separation describes the raft crossing: the authored moving platform spans it during its travel. This is not a simulation pass. A desktop import/fit screenshot is archived in `source-assets/proofs/course-design-2026-09-25/crystal-promenade-top-view.png`.
+
+- The moonstone cross is three adjacent support rectangles (`garden-centre`, `garden-west`, `garden-east`), preserving its missing corners. They have no individual asset ID: the runtime adapter must render the single cross donor once across the composite.
+- The ivory terrace has three distinct support elevations, 0.16/0.32/0.48 metres. One accepted stair asset must match these exact tread datums; the study does not repeat a full staircase on every tread.
+- Scroll motion uses local X, with a fully extended 3-metre deck between safe approaches. The decorative rollers lie outside its certified walkable support.
+- Rose and amethyst have a 0.5-metre edge gap. The approach and catch gaps remain below 0.8 metres in the sketch. These are provisional values requiring actual movement simulation, especially under a diagonal approach and slow touch input.
+- The raft's static drawing is its near position; it travels 1.8 metres toward the terrace dock. The future runtime adapter needs explicit endpoint dwell rather than treating the editor's total duration as an unspecified easing curve.
+- The final exit requires all three named voice targets. The schema records target order but does not implement exit or composite-asset behavior itself.
