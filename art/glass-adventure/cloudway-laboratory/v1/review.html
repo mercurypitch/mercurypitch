@@ -52,7 +52,8 @@
         color: inherit;
         text-decoration: none;
       }
-      a:focus-visible {
+      a:focus-visible,
+      button:focus-visible {
         outline: 3px solid #197d78;
         outline-offset: 4px;
       }
@@ -121,6 +122,28 @@
         background: #eae3d2;
         font-size: 14px;
       }
+      .preview-switch {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .preview-switch button {
+        border: 1px solid #a9956c;
+        border-radius: 999px;
+        padding: 12px 18px;
+        background: transparent;
+        color: #173e3c;
+        font: inherit;
+        cursor: pointer;
+      }
+      .preview-switch button[aria-pressed='true'] {
+        background: #173e3c;
+        color: #fffdf7;
+      }
+      .preview-switch button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
       .foot {
         font-size: 13px;
         margin-top: 40px;
@@ -162,10 +185,17 @@
         ><a href="../../level-studio/v1/index.html">Open level studio</a
         ><a href="TASKS.md">Execution plan</a>
       </nav>
-      <p class="status">
-        All 20 references are saved. The scroll bridge and two crystal steps
-        are in Meshy production with dense 4K geometry and 8K PBR texture
-        requests. No new models from this collection are integrated yet.
+      <div class="preview-switch" role="group" aria-label="Preview type">
+        <button id="showReferences" type="button" aria-pressed="true">
+          Reference images
+        </button>
+        <button id="showModels" type="button" aria-pressed="false" disabled>
+          Model previews
+        </button>
+      </div>
+      <p class="status" id="productionStatus" role="status">
+        All 20 references are saved. Loading production status. These sources
+        still require Blender and game review.
       </p>
       <section id="platform">
         <h2>Platform studies<span>10 designs</span></h2>
@@ -485,5 +515,6 @@
         depth, motion, contact and fracture will be validated in the real game.
       </p>
     </main>
+    <script type="module" src="./review.js"></script>
   </body>
 </html>

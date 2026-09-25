@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "emerald-square-turn",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "in-progress",
   "source": {
     "file": "source-assets/references/emerald-square-turn.png",
     "sha256": "857de350e8d813b4df602bb93176527e73613981603a74a351efd5044fd2bf26",
@@ -48,9 +48,29 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:31:26.732862+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3485,
+  "submissionStartedAtUtc": "2026-09-25T12:31:26.732879+00:00",
+  "taskId": "01a0d88c-9670-7773-8e59-2d47135f9cf0",
+  "submittedAtUtc": "2026-09-25T12:31:30.828158+00:00",
+  "balanceAfterSubmit": 3445,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d88c-9670-7773-8e59-2d47135f9cf0",
+    "type": "image-to-3d",
+    "status": "IN_PROGRESS",
+    "progress": 58,
+    "created_at": 1790339490611,
+    "started_at": 1790339490630,
+    "finished_at": 0,
+    "expires_at": 0,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:34:32.743561+00:00"
 }

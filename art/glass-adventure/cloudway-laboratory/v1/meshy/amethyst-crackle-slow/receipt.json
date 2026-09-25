@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "amethyst-crackle-slow",
   "operation": "image-to-3d",
-  "state": "in-progress",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/amethyst-crackle-slow.png",
     "sha256": "1316c16bf53f7b88adfae55d25cce726456a9d3791a0b7abaf4f9e4a77f6fd66",
@@ -53,7 +53,7 @@
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
   "balanceBefore": 3605,
   "submissionStartedAtUtc": "2026-09-25T12:21:43.081653+00:00",
   "taskId": "01a0d883-ae83-7169-acc1-b1d37cfa0578",
@@ -63,14 +63,143 @@
   "lastStatus": {
     "id": "01a0d883-ae83-7169-acc1-b1d37cfa0578",
     "type": "image-to-3d",
-    "status": "IN_PROGRESS",
-    "progress": 80,
+    "status": "SUCCEEDED",
+    "progress": 100,
     "created_at": 1790338906959,
     "started_at": 1790338906966,
-    "finished_at": 0,
-    "expires_at": 0,
+    "finished_at": 1790339180692,
+    "expires_at": 1790598380692,
     "consumed_credits": 40,
     "geometry_resolution": "4k"
   },
-  "lastCheckedAtUtc": "2026-09-25T12:25:19.344233+00:00"
+  "lastCheckedAtUtc": "2026-09-25T12:27:38.514654+00:00",
+  "finalStatus": {
+    "id": "01a0d883-ae83-7169-acc1-b1d37cfa0578",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790338906959,
+    "started_at": 1790338906966,
+    "finished_at": 1790339180692,
+    "expires_at": 1790598380692,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/amethyst-crackle-slow/dense-donor.glb",
+      "bytes": 98866452,
+      "sha256": "886548878242005d9e7c39c72f5b1ddc6f62803aa61afaa8f43114c33250f489",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 787132,
+      "triangles": 1433588
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-base_color.png",
+        "bytes": 69330482,
+        "sha256": "934761365e9323abb9873f123f647277e7629e72d5bd8492a731e2ec612e8664",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-metallic.png",
+        "bytes": 12510048,
+        "sha256": "5c8252caa4f993855f6b6b25854de7ca0b8dc2b85471ff8e39b67d85bdfc49c9",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-normal.png",
+        "bytes": 14733299,
+        "sha256": "8064853e626ff45b5f54e31491df974205f6b91ef79fe091dfaf2a5cf3ed36f1",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-roughness.png",
+        "bytes": 6383406,
+        "sha256": "ab14a8fca0cb181ebb1a5a76e9e4afa6607f669175e858b14827b085c6024468",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/amethyst-crackle-slow/preview.png",
+      "bytes": 118288,
+      "sha256": "41257589476a87f95bc237fffcf8d81a5de26931de8e8c9f14de657153b8ee78",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:27:48.366748+00:00",
+  "balanceAfterArchive": 3565,
+  "observedBalanceDeltaFinal": 40,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:27:49.214393+00:00"
 }
