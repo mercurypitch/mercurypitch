@@ -18,11 +18,22 @@
 
 import { createPersistedSignal } from './storage'
 
-export type SignInMethod = 'passkey' | 'google' | 'password' | 'emailcode'
+export type SignInMethod =
+  | 'passkey'
+  | 'google'
+  | 'apple'
+  | 'password'
+  | 'emailcode'
 
 const KEY = 'pitchperfect_last_sign_in'
 
-const METHODS: SignInMethod[] = ['passkey', 'google', 'password', 'emailcode']
+const METHODS: SignInMethod[] = [
+  'passkey',
+  'google',
+  'apple',
+  'password',
+  'emailcode',
+]
 
 function isMethod(value: unknown): value is SignInMethod | '' {
   return value === '' || METHODS.includes(value as SignInMethod)
@@ -88,6 +99,8 @@ export function signInMethodLabel(method: SignInMethod): string {
       return 'Sign in with your passkey'
     case 'google':
       return 'Continue with Google'
+    case 'apple':
+      return 'Continue with Apple'
     case 'emailcode':
       return 'Email me a code'
     case 'password':

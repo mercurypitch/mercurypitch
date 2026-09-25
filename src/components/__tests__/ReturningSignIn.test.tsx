@@ -8,9 +8,13 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as AuthService from '@/db/services/auth-service'
+import type * as NativeSignIn from '@/features/account/native-sign-in'
+import type * as SignInMethods from '@/features/account/sign-in-methods'
 import type * as LastSignIn from '@/lib/last-sign-in'
 
 const mocks = vi.hoisted(() => ({
+  appleSignInOffered: vi.fn(() => false),
+  signInWithApple: vi.fn(),
   restoreAuth: vi.fn(async () => undefined),
   fetchMe: vi.fn(),
   signInWithPasskey: vi.fn(),
@@ -32,6 +36,25 @@ vi.mock('@/db/services/auth-service', async (importOriginal) => ({
     .isRegisteredProvider,
   restoreAuth: () => mocks.restoreAuth(),
   fetchMe: () => mocks.fetchMe(),
+}))
+
+// Whether this platform has the Apple sheet. Defaulted to the web, so every
+// spec below keeps describing a browser; the iPhone cases set it. Google stays
+// real, and real is false here: no plugin bridge is registered.
+vi.mock('@/features/account/sign-in-methods', async () => ({
+  ...(await vi.importActual<typeof SignInMethods>(
+    '@/features/account/sign-in-methods',
+  )),
+  appleSignInOffered: () => mocks.appleSignInOffered(),
+}))
+
+vi.mock('@/features/account/native-sign-in', async () => ({
+  // Real apart from the Apple sheet, so `NativeSignInError` is the class the
+  // strip branches on with `instanceof`.
+  ...(await vi.importActual<typeof NativeSignIn>(
+    '@/features/account/native-sign-in',
+  )),
+  signInWithApple: () => mocks.signInWithApple(),
 }))
 
 vi.mock('@/db/services/auth-passkey-service', () => ({
@@ -87,6 +110,7 @@ beforeEach(() => {
   mocks.isFirstRun.mockReturnValue(false)
   mocks.returningPromptDismissed.mockReturnValue(false)
   mocks.passkeysSupported.mockReturnValue(true)
+  mocks.appleSignInOffered.mockReturnValue(false)
 })
 
 afterEach(() => {
@@ -251,6 +275,43 @@ describe('when it offers a way back in', () => {
     expect(action.textContent).toBe('Continue with Google')
     fireEvent.click(action)
     await waitFor(() => expect(mocks.startGoogleSignIn).toHaveBeenCalled())
+  })
+
+  it('opens the Apple sheet on the iPhone that signed in with it', async () => {
+    // The same sheet the form offers, from the strip itself. Sending the
+    // singer to the form instead would make them find Apple a second time.
+    mocks.lastSignInMethod.mockReturnValue('apple')
+    mocks.appleSignInOffered.mockReturnValue(true)
+    mocks.signInWithApple.mockResolvedValue({
+      token: 'jwt',
+      userId: 'u-1',
+      isNew: false,
+      user: { authProvider: 'apple' },
+    })
+    render(() => <ReturningSignIn />)
+
+    const action = await screen.findByTestId('returning-signin-action')
+    expect(action.textContent).toBe('Continue with Apple')
+    fireEvent.click(action)
+
+    await waitFor(() => expect(mocks.signInWithApple).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(mocks.showNotification).toHaveBeenCalledWith('Signed in', 'info'),
+    )
+    expect(mocks.openAuthModal).not.toHaveBeenCalled()
+  })
+
+  it('drops the Apple offer where there is no Apple sheet', async () => {
+    // The web and Android have no Sign in with Apple, so a button there could
+    // only open a form without it. "Another way" stays.
+    mocks.lastSignInMethod.mockReturnValue('apple')
+    render(() => <ReturningSignIn />)
+
+    const strip = await screen.findByTestId('returning-signin')
+    expect(screen.queryByTestId('returning-signin-action')).toBeNull()
+    expect(
+      strip.querySelector('[data-testid="returning-signin-other"]'),
+    ).toBeTruthy()
   })
 
   it('sends the password and mailed-code methods to the form', async () => {

@@ -407,6 +407,10 @@ async function postSignIn(
   // Anonymous provisioning is not a sign-in and must never leave one.
   if (route === 'login' || route === 'register') {
     rememberSignInMethod('password')
+  } else if (route === 'google' || route === 'apple') {
+    // The native sheets. The web Google redirect never comes through here; it
+    // records itself in consumeGoogleRedirect.
+    rememberSignInMethod(route)
   }
   if (isTwofaChallenge(outcome)) {
     // Deliberately no token to store and no authChanged(): the password was
@@ -648,9 +652,11 @@ export async function loginWithGoogle(idToken: string): Promise<SignInOutcome> {
 /**
  * What the Sign in with Apple ceremony hands back, on its way to the worker.
  *
- * `nonce` is the RAW nonce this client generated, not the SHA-256 the request
- * was made with: Apple puts the hash in the identity token and the worker
- * compares the two. `user` arrives ONLY on the very first authorisation for
+ * `nonce` is the raw nonce this client generated, and it is the same string the
+ * request to Apple carried: the plugin passes it on unhashed, Apple echoes it
+ * into the identity token's `nonce` claim, and the worker checks the two are
+ * equal (see native-sign-in.ts). There is no SHA-256 step anywhere in this
+ * flow. `user` arrives ONLY on the very first authorisation for
  * this Apple ID and never again — Apple gives the name once, to whoever asked
  * first — so it is forwarded rather than kept for later.
  */

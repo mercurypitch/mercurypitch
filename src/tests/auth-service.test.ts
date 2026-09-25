@@ -15,9 +15,10 @@ vi.mock('@/stores/notifications-store', () => ({
 }))
 
 import type { AuthResponse } from '@/db/services/auth-service'
-import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
+import { consumeGoogleRedirect, deleteAccount, fetchMe, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, startDriveConnect, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import { getAuthHeaders, getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
+import { lastSignInMethod, rememberSignInMethod } from '@/lib/last-sign-in'
 import { showNotification } from '@/stores/notifications-store'
 
 const trackEventMock = vi.mocked(trackEvent)
@@ -730,6 +731,60 @@ describe('login and register', () => {
     expect(isTwofaChallenge(res)).toBe(true)
     // The token was right and that alone buys nothing, same as password.
     expect(getAuthToken()).toBeNull()
+  })
+})
+
+// The note the Home strip reads to offer the same way back in. The web Google
+// redirect writes it in `consumeGoogleRedirect`; a native sign-in has no
+// redirect, so the route writes it. Without it an iPhone that signed in with
+// Apple is never offered the Apple sheet again.
+describe('the way a native sign-in is remembered', () => {
+  const session = (authProvider: string) => ({
+    token: makeToken(3600, authProvider),
+    userId: 'u',
+    isNew: false,
+    user: { authProvider },
+  })
+
+  beforeEach(() => {
+    // A different method first, so each test proves the route wrote its own.
+    rememberSignInMethod('passkey')
+  })
+
+  it('remembers an Apple sign-in', async () => {
+    mockFetchOnce(200, session('apple'))
+
+    await loginWithApple({ identityToken: 'apple-jwt', nonce: 'n-1' })
+
+    expect(lastSignInMethod()).toBe('apple')
+  })
+
+  it('remembers a native Google sign-in', async () => {
+    mockFetchOnce(200, session('google'))
+
+    await loginWithGoogle('google-id-token')
+
+    expect(lastSignInMethod()).toBe('google')
+  })
+
+  it('remembers it when the account then owes a second factor', async () => {
+    // On the first factor, as the password route does: the account still
+    // gets in this way next time.
+    mockFetchOnce(200, { twofaRequired: true, ceremony: 'ceremony-token' })
+
+    await loginWithApple({ identityToken: 'apple-jwt', nonce: 'n-1' })
+
+    expect(lastSignInMethod()).toBe('apple')
+  })
+
+  it('remembers nothing from a refused sign-in', async () => {
+    mockFetchOnce(401, { error: 'invalid_token' })
+
+    await expect(
+      loginWithApple({ identityToken: 'apple-jwt', nonce: 'n-1' }),
+    ).rejects.toThrow()
+
+    expect(lastSignInMethod()).toBe('passkey')
   })
 })
 

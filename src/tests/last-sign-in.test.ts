@@ -29,7 +29,7 @@ describe('lastSignInMethod', () => {
   it('stores the method and NOTHING else', () => {
     // The privacy property: a rehearsal-room laptop must not tell the next
     // person who practices on it. No name, no address, no user id — the whole
-    // stored value is one of four words.
+    // stored value is one of five words.
     rememberSignInMethod('google')
     const raw = localStorage.getItem(KEY) ?? ''
     expect(raw).toBe('google')
@@ -64,6 +64,16 @@ describe('lastSignInMethod', () => {
     const fresh = await import('@/lib/last-sign-in')
     expect(fresh.lastSignInMethod()).toBe('passkey')
   })
+
+  it('keeps an Apple sign-in across a reload', async () => {
+    // The iPhone app's own way in. A validator that does not know the word
+    // reads it back as "never signed in", and the strip then never offers the
+    // Apple sheet on the one device that uses it.
+    localStorage.setItem(KEY, 'apple')
+    vi.resetModules()
+    const fresh = await import('@/lib/last-sign-in')
+    expect(fresh.lastSignInMethod()).toBe('apple')
+  })
 })
 
 describe('signInMethodLabel', () => {
@@ -73,6 +83,7 @@ describe('signInMethodLabel', () => {
     for (const method of [
       'passkey',
       'google',
+      'apple',
       'emailcode',
       'password',
     ] as const) {
@@ -85,5 +96,11 @@ describe('signInMethodLabel', () => {
   it('names the passkey, because that is the one worth naming', () => {
     expect(signInMethodLabel('passkey')).toBe('Sign in with your passkey')
     expect(signInMethodLabel('google')).toBe('Continue with Google')
+  })
+
+  it('names Apple in the words of the sign-in form', () => {
+    // The form's Apple button says the same, so the strip and the form read
+    // as one way in.
+    expect(signInMethodLabel('apple')).toBe('Continue with Apple')
   })
 })
