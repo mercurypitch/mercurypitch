@@ -1,6 +1,7 @@
 // Glass adventure coordinator — pure movement, encounter ownership and durable route progress.
 
 import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PitchAccuracyGradingPolicy, PlatformDefinition, } from '../contracts'
+import { deriveBreakOutcome } from './break-outcome'
 import type { ChallengeJudge } from './challenge'
 import { createChallengeJudge } from './challenge'
 import type { CourseCollider } from './collision'
@@ -467,7 +468,9 @@ export function createGlassGame(
           ? undefined
           : (encounter.qualityAttempt?.finish() ??
             ungradedQualityResult(level, encounter.qualityPolicy))
+      const completedBefore = new Set(completed)
       completed.add(id)
+      const outcome = deriveBreakOutcome(level, completedBefore, completed)
       refreshActiveBaseSolids()
       rewardProgress = applyEncounterRewards(
         level,
@@ -481,7 +484,7 @@ export function createGlassGame(
         id,
         until: elapsedSeconds + SHATTER_LIFECYCLE_SECONDS,
       }
-      events.push({ type: 'break', id })
+      events.push({ type: 'break', id, outcome })
       return events
     },
     cancelEncounter: cancel,

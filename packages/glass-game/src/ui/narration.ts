@@ -1,11 +1,12 @@
 // Merc narration lifecycle — gameplay cues yield synchronously to voice capture and session stops.
+import type { BreakOutcome } from '../contracts'
 import type { GlassMercNarration, MercNarrationCue, MercNarrationLine, MercNarrationPreferences, } from '../host'
 import { createMercReactionSelector, MERC_PATH_OPEN_LINE, } from './merc-reactions'
 
 export interface AdventureNarration {
   preferences(): MercNarrationPreferences | undefined
   welcomeGesture(): void
-  breakCompleted(optional: boolean): MercNarrationLine
+  breakCompleted(outcome: BreakOutcome): MercNarrationLine
   silenceForVoice(): Promise<void>
   releaseVoice(): void
   pause(): void
@@ -23,7 +24,6 @@ export function createAdventureNarration(
   let welcomeGeneration = 0
   let voiceHeld = false
   let disposed = false
-  let requiredUsesPathOpen = true
   const reactions = createMercReactionSelector(random)
 
   function invalidateWelcomeAttempt(consume = true): void {
@@ -73,12 +73,9 @@ export function createAdventureNarration(
         },
       )
     },
-    breakCompleted(optional) {
+    breakCompleted(outcome) {
       const line =
-        optional || !requiredUsesPathOpen
-          ? reactions.next()
-          : MERC_PATH_OPEN_LINE
-      if (!optional) requiredUsesPathOpen = !requiredUsesPathOpen
+        outcome === 'celebration' ? reactions.next() : MERC_PATH_OPEN_LINE
       play(line.cue)
       return line
     },
