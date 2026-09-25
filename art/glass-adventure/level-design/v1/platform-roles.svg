@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="740" viewBox="0 0 1100 740" role="img" aria-labelledby="title desc">
+<title id="title">Platform roles / gate readability</title><desc id="desc">Concept families for the selected route. Candidate dimensions require collision, camera and device proof.</desc>
+<defs>
+ <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#e4dfcf" stroke-width=".5"/></pattern>
+ <pattern id="ice" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#c8e8eb"/><path d="M0 9L9 0" stroke="#79b4bf" stroke-width="1"/></pattern>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="#ac8141"/></marker>
+</defs>
+<rect width="1100" height="740" rx="16" fill="#f8f5eb"/>
+<rect x="24" y="90" width="1052" height="554" fill="url(#grid)" rx="10"/>
+<g font-family="Arial, sans-serif">
+<text x="32" y="41" font-size="28" fill="#183e3b" text-anchor="start" font-family="Georgia, serif">Platform roles / gate readability</text>
+<text x="32" y="68" font-size="14" fill="#5f7065" text-anchor="start" >Concept families for the selected route. Candidate dimensions require collision, camera and device proof.</text>
+<rect x="101.0" y="192.0" width="128" height="128" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="106.0" y="197.0" width="118" height="118" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="400.0" y="171.0" width="80" height="170" rx="7" fill="#fffdf5" stroke="#ac8141" stroke-width="2"/><rect x="405.0" y="176.0" width="70" height="160" rx="4" fill="none" stroke="#d4c4a4"/>
+<rect x="656.0" y="216.0" width="150" height="80" rx="7" fill="url(#ice)" stroke="#ac8141" stroke-width="2"/><rect x="661.0" y="221.0" width="140" height="70" rx="4" fill="none" stroke="#d4c4a4"/>
+<text x="165" y="160" font-size="19" fill="#183e3b" text-anchor="middle" font-family="Georgia, serif">Singing + turn pad</text>
+<text x="440" y="140" font-size="19" fill="#183e3b" text-anchor="middle" font-family="Georgia, serif">Long causeway</text>
+<text x="731" y="183" font-size="19" fill="#183e3b" text-anchor="middle" font-family="Georgia, serif">Cross-step</text>
+<path d="M165 355V195" fill="none" stroke="#ac8141" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<path d="M440 364V178" fill="none" stroke="#ac8141" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<path d="M731 326V212" fill="none" stroke="#ac8141" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<text x="931" y="250" font-size="15" fill="#183e3b" text-anchor="middle" >Travel</text>
+<text x="931" y="275" font-size="15" fill="#183e3b" text-anchor="middle" >direction</text>
+<path d="M930 224V171" fill="none" stroke="#ac8141" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"  marker-end="url(#arrow)"/>
+<text x="66" y="430" font-size="23" fill="#183e3b" text-anchor="start" font-family="Georgia, serif">A wall that is a real encounter</text>
+<path d="M100 594V491Q229 427 358 491V594" stroke="#b4a78b" stroke-width="22" fill="none"/>
+<rect x="115" y="496" width="228" height="92" rx="4" fill="url(#ice)" stroke="#548a97" stroke-width="2"/>
+<circle cx="229" cy="542" r="18" fill="#f6ead0" stroke="#ac8141" stroke-width="3"/>
+<path d="M74 598H384" stroke="#ac8141" stroke-width="5"/>
+<text x="464" y="473" font-size="16" fill="#183e3b" text-anchor="start" >Safe singing deck before the pane.</text>
+<text x="464" y="506" font-size="16" fill="#183e3b" text-anchor="start" >Side returns + overhead arch prevent jumping around it.</text>
+<text x="464" y="539" font-size="16" fill="#183e3b" text-anchor="start" >Gate parts share a reference, with unique runtime IDs.</text>
+<text x="464" y="572" font-size="16" fill="#183e3b" text-anchor="start" >Only after that gate opens may Merc say a path opened.</text>
+<text x="464" y="605" font-size="12" fill="#62795e" text-anchor="start" >Wall elevation is a diagram; final height follows jump clearance.</text>
+<text x="32" y="683" font-size="15" fill="#183e3b" text-anchor="start" >Never rotate art alone. Keep its collision, visible edges, gaps and landing space consistent.</text>
+<text x="32" y="713" font-size="11" fill="#ac8141" text-anchor="start" >GLASSWORKS  /  DESIGN STUDY  /  25 SEPTEMBER 2026</text>
+</g></svg>

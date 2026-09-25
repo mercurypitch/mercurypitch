@@ -19,6 +19,31 @@ The durable execution record is
 its final integration/CI checkpoint is authoritative for this batch. Plans are
 mirrored under `<user-dotfiles>/personal/besidecue/glass-adventure/`.
 
+## Latest design decision — 25 September 2026
+
+The owner can now select the Scarlett input after the microphone recovery pass.
+Runtime head `c4632528` passed all 48 applicable checks (one expected skip).
+Physical-device acceptance of the whole batch remains open.
+
+New Cloudway feedback has been researched and saved in
+[Melody Cloudway level design](./MELODY-CLOUDWAY-LEVEL-DESIGN-2026-09-25.md).
+It contains the narration cause and correction contract, measured platform
+orientation, three route wireframes, the old 2D compiler comparison, and a
+five-note/two-frost-wall journey ending in a complete melodic portrait.
+
+**Recommendation awaiting selection:** one separately selectable candidate,
+The Thawing Song, using Sunlit steps (0, +2, +4, +2, 0). Keep current Cloudway
+as the comparison; do not create several playable levels. First audition is
+ungraded. Melodic target/challenge integration, attempt persistence and later
+grading/portrait registration are explicit work, not assumed existing features.
+The path-opening narration bug is diagnosed but not yet changed in this
+planning delivery. No new runtime level, asset generation or unlock changes.
+
+Next order: owner selects the route, correct narration semantics, block out the
+selected journey, integrate melody and resumable attempts, then inspect/playtest
+before producing missing art and choosing campaign placement. This design
+exercise does not waive PR #861 device acceptance or approve merging/releasing.
+
 ## Approved final five passes before device tests
 
 The owner approved camera comfort, picture-bearing portrait shatter, matched
