@@ -306,3 +306,7 @@ and judge at 24, 44.1 and 48 kHz; wrong key, constant tone, silence and missed
 anchors do not. Encore alone permits a 400 ms consonant gap, without unvoiced
 progress, and requires 120 ms fresh voiced evidence per anchor. Real singing and
 whether Merc's phrasing feels delightful remain owner listening decisions.
+
+## 25 September — Cloudway laboratory batch
+
+Current execution: [task list](../cloudway-laboratory/v1/TASKS.md). The owner requested fall-stall profiling, a two-row message queue, ten platform designs plus ten props, an exploratory second course (retracting scroll bridge and two-/four-second rose-glass steps) and a browser layout editor with JSON export. Bug fixes stay on #861; new assets/editor/course use `feat/glass-cloudway-laboratory`. The earlier melody-route choice remains unconfirmed.
