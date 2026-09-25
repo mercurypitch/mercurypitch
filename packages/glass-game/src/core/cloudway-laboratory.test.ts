@@ -127,8 +127,8 @@ const Z = {
   scroll: -7.401252972,
   scrollCatch: -6.662505944,
   rose: -5.232505944,
-  amethyst: -3.342505944,
-  final: -1.912505944,
+  amethyst: -3.612505944,
+  final: -2.452505944,
 }
 
 function savedAt(checkpointId: string, completedBreakableIds: string[] = []) {
