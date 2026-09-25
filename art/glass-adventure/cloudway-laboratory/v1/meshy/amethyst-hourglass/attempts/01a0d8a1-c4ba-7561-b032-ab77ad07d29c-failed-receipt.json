@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "amethyst-hourglass",
+  "operation": "image-to-3d",
+  "state": "failed",
+  "source": {
+    "file": "source-assets/references/amethyst-hourglass.png",
+    "sha256": "d5a1e296d1cb2c95a62cb230c04b9c76055967681fe4693a4a9162dcb9613e27",
+    "bytes": 2010358,
+    "dimensions": [
+      1145,
+      1374
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "A freestanding luxurious amethyst hourglass within a warm gilt three-column frame, two distinct purple crystal bulbs with pale rosy sand, broad ivory top and base discs with tiny gold stars, clean polished surfaces. All parts mechanically sensible, no background or pedestal. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:54:34.847759+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review.",
+  "balanceBefore": 3165,
+  "submissionStartedAtUtc": "2026-09-25T12:54:34.847769+00:00",
+  "taskId": "01a0d8a1-c4ba-7561-b032-ab77ad07d29c",
+  "submittedAtUtc": "2026-09-25T12:54:38.721685+00:00",
+  "balanceAfterSubmit": 3125,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8a1-c4ba-7561-b032-ab77ad07d29c",
+    "type": "image-to-3d",
+    "status": "FAILED",
+    "progress": 99,
+    "created_at": 1790340878553,
+    "started_at": 1790340878561,
+    "finished_at": 1790341309657,
+    "expires_at": 1790600509657,
+    "consumed_credits": 0,
+    "geometry_resolution": "4k",
+    "task_error": {
+      "type": "server_error"
+    }
+  },
+  "lastCheckedAtUtc": "2026-09-25T13:02:36.704543+00:00"
+}

@@ -3,7 +3,7 @@
   "provider": "Meshy direct API",
   "assetId": "rose-mirror-panel",
   "operation": "image-to-3d",
-  "state": "not-submitted",
+  "state": "archived",
   "source": {
     "file": "source-assets/references/rose-mirror-panel.png",
     "sha256": "9f4da9225f9c203a3c1e7b3ff931dcee37a05d1b56bfdec6e3fa3ad02295332f",
@@ -48,9 +48,158 @@
   },
   "authorization": {
     "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
-    "asserted": true
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T13:11:01.556044+00:00"
   },
   "credentialsPersisted": false,
   "signedArtifactUrlsPersisted": false,
-  "readiness": "Preflight only. A dense donor archive is still subject to clay, PBR, topology, bake, memory and runtime-scale review."
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3005,
+  "submissionStartedAtUtc": "2026-09-25T13:11:01.556056+00:00",
+  "taskId": "01a0d8b0-d31f-70d7-b791-7553ea66b711",
+  "submittedAtUtc": "2026-09-25T13:11:05.996383+00:00",
+  "balanceAfterSubmit": 2965,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8b0-d31f-70d7-b791-7553ea66b711",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790341865828,
+    "started_at": 1790341865834,
+    "finished_at": 1790342123375,
+    "expires_at": 1790601323375,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T13:16:00.922481+00:00",
+  "finalStatus": {
+    "id": "01a0d8b0-d31f-70d7-b791-7553ea66b711",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790341865828,
+    "started_at": 1790341865834,
+    "finished_at": 1790342123375,
+    "expires_at": 1790601323375,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/rose-mirror-panel/dense-donor.glb",
+      "bytes": 62472704,
+      "sha256": "8d228e17d6626b99885cc34f362378e8a7d296037f21bf4d9c1765b51546bf3a",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 337023,
+      "triangles": 607238
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-mirror-panel/textures/set-0-base_color.png",
+        "bytes": 65056374,
+        "sha256": "87fff70317f30b10d793b397e11fd12e2b0da65205fb8d163f196ae5508507ee",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-mirror-panel/textures/set-0-metallic.png",
+        "bytes": 5876167,
+        "sha256": "cd17aae460474bbeee739e9921407f2fe537bf036dafc29747ba6a96567da0f4",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-mirror-panel/textures/set-0-normal.png",
+        "bytes": 13698895,
+        "sha256": "00021c777b785e2710e33a77432053ff2549a6c61d2a7b797456e96ab64f177c",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/rose-mirror-panel/textures/set-0-roughness.png",
+        "bytes": 5638337,
+        "sha256": "bd5551f8d6036bd5e1c305ab22bde150d6a5a12c3d48f2a25a02cf130c05a333",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/rose-mirror-panel/preview.png",
+      "bytes": 135502,
+      "sha256": "49c5b9a21af25291e4e8be90efb3fc41d473c44a06b4fce46a4e416b4d45e67c",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T13:16:09.909309+00:00",
+  "balanceAfterArchive": 2925,
+  "observedBalanceDeltaFinal": 80,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T13:16:10.757573+00:00"
 }
