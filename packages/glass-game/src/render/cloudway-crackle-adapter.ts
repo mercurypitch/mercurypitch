@@ -1,14 +1,14 @@
 // Cloudway crackle adapter — preserve source surfaces and animate authored shards from simulation snapshots, without live physics.
 
 import type { Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, } from 'three'
-import { Group, Matrix4, Vector3 } from 'three'
+import { Color, Group, Matrix4, Vector3 } from 'three'
 import type { PlatformDefinition, PlatformRuntimeSnapshot } from '../contracts'
 import { validateCloudwayCrackleDonor } from './cloudway-crackle-contract'
 
 export interface CloudwayCrackleMaterialBinding {
   readonly mesh: string
   readonly kind: 'glass' | 'opaque'
-  /** Borrowed PBR material. The adapter owns geometry copies only. */
+  /** Borrowed PBR material. Warning variants are cloned and owned by the adapter. */
   readonly material: MeshStandardMaterial
 }
 
@@ -81,6 +81,28 @@ export function createCloudwayCrackleAdapter(options: {
   root.rotation.y = (validated.turns * Math.PI) / 2
   root.visible = false
   const ownedGeometry = new Set<Mesh['geometry']>()
+  const warningMaterials = new Map<
+    MeshStandardMaterial,
+    {
+      readonly material: MeshStandardMaterial
+      readonly emission: Color
+      readonly intensity: number
+    }
+  >()
+  const warningEmission = new Color()
+
+  function warningMaterial(sourceMaterial: MeshStandardMaterial) {
+    let state = warningMaterials.get(sourceMaterial)
+    if (!state) {
+      state = {
+        material: sourceMaterial.clone(),
+        emission: sourceMaterial.emissive.clone(),
+        intensity: sourceMaterial.emissiveIntensity,
+      }
+      warningMaterials.set(sourceMaterial, state)
+    }
+    return state.material
+  }
 
   // Compute local authored matrices without touching source parent/world state.
   function sourceRelative(node: Object3D): Matrix4 {
@@ -122,7 +144,13 @@ export function createCloudwayCrackleAdapter(options: {
       if (!mesh.isMesh) return
       mesh.geometry = mesh.geometry.clone()
       ownedGeometry.add(mesh.geometry)
-      mesh.material = bindings.get(mesh.name)!
+      const material = bindings.get(mesh.name)!
+      const physical = material as MeshPhysicalMaterial
+      mesh.material =
+        authored === validated.intact &&
+        (!physical.isMeshPhysicalMaterial || physical.transmission === 0)
+          ? warningMaterial(material)
+          : material
       mesh.castShadow = false
       mesh.receiveShadow = true
       mesh.userData.excludeFromCameraCollision = true
@@ -139,6 +167,7 @@ export function createCloudwayCrackleAdapter(options: {
     shards = validated.shards.map(cloneRole)
   } catch (error) {
     ownedGeometry.forEach((geometry) => geometry.dispose())
+    warningMaterials.forEach(({ material }) => material.dispose())
     root.clear()
     throw error
   }
@@ -169,6 +198,21 @@ export function createCloudwayCrackleAdapter(options: {
         snapshot.phase === 'resetting'
           ? 1 - snapshot.phaseProgress
           : snapshot.phaseProgress
+      // A slow warm glow makes first contact and the approaching collapse readable.
+      // Only intact, opaque surfaces change; borrowed textures and shard PBR stay intact.
+      const warning = snapshot.phase === 'warning'
+      const glow = warning
+        ? 0.08 + 0.34 * progress + 0.08 * Math.sin(progress * Math.PI * 2) ** 2
+        : 0
+      warningEmission.setRGB(glow * 0.85, glow * 0.3, glow * 0.06)
+      warningMaterials.forEach(({ material, emission, intensity }) => {
+        material.emissive.copy(emission)
+        material.emissiveIntensity = intensity
+        if (warning) {
+          material.emissive.multiplyScalar(intensity).add(warningEmission)
+          material.emissiveIntensity = 1
+        }
+      })
       intact.motion.visible = !fractured
       intact.motion.rotation.z =
         snapshot.phase === 'warning'
@@ -200,6 +244,8 @@ export function createCloudwayCrackleAdapter(options: {
       root.visible = false
       ownedGeometry.forEach((geometry) => geometry.dispose())
       ownedGeometry.clear()
+      warningMaterials.forEach(({ material }) => material.dispose())
+      warningMaterials.clear()
       root.clear()
       root.removeFromParent()
     },
