@@ -15,7 +15,10 @@ const AMETHYST_DEPTH = 1.1
 const AMETHYST_HEIGHT = 0.25
 const PLATFORM_GAP = 0.25
 
-const ARRIVAL_Z = -10
+// Four unscaled pearl donors make the start court. Their 0.72 m rows touch
+// exactly, and the last row touches the scroll approach at z = -8.5.
+const ARRIVAL_ROW_Z = [-11.02, -10.3, -9.58, -8.86] as const
+const ARRIVAL_Z = ARRIVAL_ROW_Z[1]
 const SCROLL_APPROACH_Z = -8.14
 // The scroll seams touch the pearl rests so the controller can walk onto the
 // dynamic support. Only the dynamic retraction and crackle jumps make gaps.
@@ -59,7 +62,46 @@ function deck(
 }
 
 const PLATFORMS: readonly PlatformDefinition[] = [
-  deck('arrival', 0, ARRIVAL_Z, 4, 3, 0, 0.3, { renderId: 'catch' }),
+  deck(
+    'arrival-entry',
+    0,
+    ARRIVAL_ROW_Z[0],
+    PEARL_WIDTH,
+    PEARL_DEPTH,
+    0,
+    0.34,
+    { renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest },
+  ),
+  deck(
+    'arrival',
+    0,
+    ARRIVAL_ROW_Z[1],
+    PEARL_WIDTH,
+    PEARL_DEPTH,
+    0,
+    0.34,
+    { renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest },
+  ),
+  deck(
+    'arrival-court',
+    0,
+    ARRIVAL_ROW_Z[2],
+    PEARL_WIDTH,
+    PEARL_DEPTH,
+    0,
+    0.34,
+    { renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest },
+  ),
+  deck(
+    'arrival-threshold',
+    0,
+    ARRIVAL_ROW_Z[3],
+    PEARL_WIDTH,
+    PEARL_DEPTH,
+    0,
+    0.34,
+    { renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest },
+  ),
   deck(
     'scroll-approach',
     0,
@@ -162,7 +204,7 @@ function holdTarget(
 }
 
 const BREAKABLES = [
-  holdTarget('voice-home', 'The arrival camellia', -1.35, ARRIVAL_Z, -0.55, []),
+  holdTarget('voice-home', 'The arrival camellia', -1.1, ARRIVAL_Z, -0.45, []),
   holdTarget(
     'voice-third',
     'The scroll-court urn',
@@ -329,6 +371,7 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS = {
   gap: PLATFORM_GAP,
   platformCentres: {
     arrival: ARRIVAL_Z,
+    arrivalRows: ARRIVAL_ROW_Z,
     scrollApproach: SCROLL_APPROACH_Z,
     scroll: SCROLL_Z,
     scrollCatch: SCROLL_CATCH_Z,

@@ -161,6 +161,9 @@ describe('Crystal Promenade first playable slice', () => {
       const v = visit(dt)
       v.reach(-0.55, Z.arrival)
       expect(v.game.snapshot().player.supportPlatformId).toBe('arrival')
+      const home = LEVEL.breakables.find((target) => target.id === 'voice-home')!
+      v.reach(home.anchor.x, home.anchor.z)
+      expect(v.game.snapshot().player.supportPlatformId).toBe('arrival')
       v.sing('voice-home')
       v.reach(0, Z.arrival)
       crossScroll(v)
