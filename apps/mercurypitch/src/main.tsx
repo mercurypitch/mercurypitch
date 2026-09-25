@@ -153,6 +153,16 @@ if (import.meta.env.VITE_PORTABLE_CONSOLE === 'true') {
       render: () => <Panel />,
     })
   })
+  // What the app's sound did, step by step: a TestFlight build has no other
+  // way to say why a room was silent. Same gate, same reason.
+  void import('./shell/AudioDiagnosticsPanel').then((module) => {
+    const Panel = module.AudioDiagnosticsPanel
+    registerDeveloperSection({
+      id: 'audio',
+      title: 'Audio',
+      render: () => <Panel />,
+    })
+  })
 }
 armDeveloperConsole()
 

@@ -107,7 +107,8 @@ function onPressOutside(event: Event): void {
 
 let ambientInstance: AlleyAmbient | null = null
 
-function ambient(): AlleyAmbient {
+/** The alley's one ambient. Exported for the Developer screen's Audio panel. */
+export function ambient(): AlleyAmbient {
   ambientInstance ??= createAlleyAmbient({
     createContext: () => {
       const Ctor =
