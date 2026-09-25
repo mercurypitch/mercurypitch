@@ -217,10 +217,11 @@ function asServerFailure(error: unknown): NativeSignInError {
 /**
  * Sign in with Apple, and adopt the session.
  *
- * `name` and `email` arrive on the FIRST authorisation for this Apple ID and
- * never again — Apple hands them to whoever asks first — so they are
- * forwarded to the worker in the same request rather than stored for a later
- * one that will come back empty.
+ * Apple sends `name` and `email` on the FIRST authorisation for this Apple ID
+ * and never again, so they are forwarded to the worker in the same request.
+ * The plugin answers later sign-ins with its own copy (the name it cached for
+ * this Apple user, the email decoded from the token), so they go up then too,
+ * and the worker lets a name fill only a default handle.
  */
 export async function signInWithApple(): Promise<SignInOutcome> {
   const plugin = await requireBridge()

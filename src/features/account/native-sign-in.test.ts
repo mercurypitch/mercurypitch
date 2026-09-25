@@ -135,18 +135,60 @@ describe('signInWithApple', () => {
     })
   })
 
-  it('omits the user block entirely on a later sign-in', async () => {
-    // Apple sends nothing the second time. An empty name object would ask the
-    // worker to overwrite a real display name with undefined.
+  it('sends the name and email again on a later sign-in, from the plugin', async () => {
+    // Apple sends them once, but the plugin answers every later sign-in the
+    // same way: the name from what it cached for this Apple user (UserDefaults,
+    // AppleProvider.swift) and the email decoded from the identity token. So
+    // `user` goes up every time; the Worker lets it fill only a default handle.
     bridgeReturning({
-      result: { idToken: 'apple-jwt', profile: { user: 'a' } },
+      provider: 'apple',
+      result: {
+        accessToken: null,
+        idToken: 'apple-jwt',
+        authorizationCode: 'code-2',
+        profile: {
+          user: '000999.fake.0001',
+          email: 'ada@example.com',
+          givenName: 'Ada',
+          familyName: 'Lovelace',
+        },
+      },
     })
 
     await signInWithApple()
 
     expect(mocks.loginWithApple.mock.calls[0][0]).toMatchObject({
-      user: undefined,
+      authorizationCode: 'code-2',
+      user: {
+        name: { firstName: 'Ada', lastName: 'Lovelace' },
+        email: 'ada@example.com',
+      },
     })
+  })
+
+  it('sends no empty name when the plugin has none cached', async () => {
+    // A device that never saw the first authorization has only the email from
+    // the token. An empty name object would ask the worker to overwrite a
+    // display name with nothing.
+    bridgeReturning({
+      provider: 'apple',
+      result: {
+        accessToken: null,
+        idToken: 'apple-jwt',
+        authorizationCode: 'code-3',
+        profile: {
+          user: '000999.fake.0001',
+          email: 'ada@example.com',
+          givenName: null,
+          familyName: null,
+        },
+      },
+    })
+
+    await signInWithApple()
+
+    const posted = mocks.loginWithApple.mock.calls[0][0] as { user?: object }
+    expect(posted.user).toEqual({ email: 'ada@example.com' })
   })
 
   it('calls a dismissed sheet cancelled, not a failure', async () => {
