@@ -45,7 +45,7 @@ Required singing takes place only at the arrival, listening garden and final ter
 
 All full images, dense models, texture masters, Blender projects, turntables and animation masters belong in the shared Proton creative source tree documented in [README.md](README.md). Git holds this specification, metadata, receipts, compact previews and accepted build assets.
 
-At the time of this specification, the 20 image references are complete. Meshy access is restored and production is starting; no new 3D asset has passed Blender or runtime acceptance. The editor and pure scroll timing/collision work can proceed independently, but do not establish that this course is playable.
+The 20 image references and 20 dense Meshy originals are complete. Packed Blender source preparation and semantic material/part authoring are in progress; no new asset has passed game acceptance. The editor and pure scroll timing/collision work can proceed independently, but do not establish that this course is playable.
 
 ## Editable study review
 

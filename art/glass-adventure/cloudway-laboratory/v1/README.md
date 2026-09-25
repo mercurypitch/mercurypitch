@@ -32,7 +32,7 @@ Inspect dense donors before reducing anything. The marble/opal tops must have a 
 - Basin: model is intentionally dry; water is a runtime surface/effect.
 - Repeated props: batch compatible geometry/materials by visible region; retain picking identities.
 
-The runtime adapter is pending actual model inspection. No production asset is approved merely because its provider job succeeds.
+The isolated scroll adapter is implemented and tested; binding waits for an accepted semantic asset. The review page includes matched Blender material and clay source proofs. No production asset is approved merely because its provider job succeeds.
 
 ## Source storage
 
@@ -45,3 +45,9 @@ Large files use the existing Proton Drive creative folder convention:
 - On another machine, restore these aliases or set `GLASS_SOURCE_ROOT`; source hashes must still match. Full-size catalogue links require the local source mount. A normal Git checkout still shows the small previews.
 
 The 20 originals were copied with SHA-256 equality checked before replacing the local folder with a symlink. This verifies local storage; it does not prove that the Proton Drive client has finished uploading. The user requested highest source quality: Meshy 7.1 Ultra 4K geometry, 8K texture request, PBR, no remesh or polygon target. Inspect actual returned maps; an 8K request does not guarantee every auxiliary map is 8K. No source quality reduction is part of this batch.
+
+## Dense-source delivery — 25 September 2026
+
+All 20 requested source models are archived: 15,154,026 triangles in total, with 8K base-color maps and complete 4K normal/metallic/roughness maps. Every source GLB, map and provider preview was independently rehashed against its receipt. The 20 successful tasks cost 800 credits; the balance is 2,885. A zero-credit provider failure and its one successful retry are retained in the hourglass attempt history. Requested model 7.1 is recorded; Meshy does not echo that model identifier in these responses.
+
+These are full-quality sources, with no automatic remesh, polygon target or decimation. Later runtime exports will be separate derivatives, compared against the source at the actual game camera and closest allowed inspection distance. Full-size original files, packed source projects and proof images remain under the Proton-linked `source-assets` directory.
