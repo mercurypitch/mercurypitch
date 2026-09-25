@@ -12,8 +12,8 @@
 // a build without the B-side games must not ship them for a context.
 
 import { acquireSharedAudioContext } from '@irchiinnuss/audio-io/shared-audio-context'
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 import type { AudioSourceVariant } from '../content/audio-manifest'
-import { fetchAssetBytes } from './asset-fetch'
 import type { AudioOutputFinishResult, AudioOutputPlayback, AudioOutputPlayRequest, AudioOutputStartResult, AudioSessionOutput, } from './audio-session'
 
 const ENVELOPE_FLOOR = 0.0001
@@ -87,8 +87,8 @@ async function defaultFetchArrayBuffer(
   signal: AbortSignal,
 ): Promise<ArrayBuffer> {
   // Not `response.ok`: on iOS every packaged media file arrives with
-  // status 0 and a complete body. See audio/asset-fetch for the whole
-  // story -- it is why the V2 onboarding was silent on iOS too.
+  // status 0 and a complete body. See @irchiinnuss/mobile-runtime/asset-fetch
+  // for the whole story -- it is why the V2 onboarding was silent on iOS too.
   return fetchAssetBytes(url, { signal })
 }
 

@@ -9,7 +9,7 @@
 // src/audio/web-audio-output.ts).
 
 import { acquireSharedAudioContext } from '@irchiinnuss/audio-io/shared-audio-context'
-import { fetchAssetBytes } from '@/audio/asset-fetch'
+import { fetchAssetBytes } from '@irchiinnuss/mobile-runtime/asset-fetch'
 
 const ENVELOPE_FLOOR = 0.0001
 const ATTACK_SECONDS = 0.09
@@ -65,7 +65,8 @@ export function createCinematicOnboardingAudioClock(
       : undefined
   // Not `response.ok`. On iOS every media file comes back with status 0
   // and the whole body, because Capacitor's scheme handler answers media
-  // with a URLResponse that has no status line -- see audio/asset-fetch.
+  // with a URLResponse that has no status line -- see
+  // @irchiinnuss/mobile-runtime/asset-fetch.
   const readBytes = deps.fetchArrayBuffer ?? fetchAssetBytes
 
   let context: AudioContext | undefined

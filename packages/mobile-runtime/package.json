@@ -41,6 +41,10 @@
     "./platform": {
       "types": "./src/platform.ts",
       "import": "./src/platform.ts"
+    },
+    "./asset-fetch": {
+      "types": "./src/asset-fetch.ts",
+      "import": "./src/asset-fetch.ts"
     }
   },
   "scripts": {
