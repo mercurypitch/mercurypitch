@@ -433,6 +433,76 @@ describe('POST /api/auth/apple', () => {
   })
 })
 
+describe('the name Apple sends once', () => {
+  // In the request body at the first authorization only: never in the
+  // identity token, and never again unless the singer revokes the app.
+  const ADA = { user: { name: { firstName: 'Ada', lastName: 'Lovelace' } } }
+
+  beforeEach(() => freshDatabase())
+
+  function displayNameOf(id: string): string | undefined {
+    const row = sqlite
+      .prepare('SELECT displayName FROM userProfiles WHERE id = ?')
+      .get(id) as { displayName: string } | undefined
+    return row?.displayName
+  }
+
+  it('names the anonymous account the sign-in upgrades', async () => {
+    const anonymous = await post('/api/auth/anonymous', {
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+    })
+    expect(anonymous.status).toBe(200)
+    expect(displayNameOf(DEVICE_ID)).toBe('Singer-0000')
+
+    const signedIn = await signInWithApple({
+      deviceId: DEVICE_ID,
+      deviceSecret: DEVICE_SECRET,
+      ...ADA,
+    })
+    expect(signedIn.userId).toBe(DEVICE_ID)
+    expect(displayNameOf(DEVICE_ID)).toBe('Ada Lovelace')
+  })
+
+  it('fills the default name when a later authorization carries one', async () => {
+    const first = await signInWithApple()
+    const userId = String(first.userId)
+    expect(displayNameOf(userId)).toBe(`Singer-${userId.slice(0, 4)}`)
+
+    const second = await signInWithApple(ADA)
+    expect(second.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Ada Lovelace')
+  })
+
+  it('never overwrites a name the singer chose', async () => {
+    const first = await signInWithApple()
+    const userId = String(first.userId)
+    const renamed = await request(`/api/userProfiles/${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${String(first.token)}`,
+      },
+      body: JSON.stringify({ displayName: 'Countess of Numbers' }),
+    })
+    expect(renamed.status).toBe(200)
+
+    const again = await signInWithApple(ADA)
+    expect(again.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Countess of Numbers')
+  })
+
+  it('names the confirmed account it adopts while that has only the default', async () => {
+    const userId = await registerPasswordAccount()
+    confirmAddress(userId)
+    expect(displayNameOf(userId)).toBe(`Singer-${userId.slice(0, 4)}`)
+
+    const signedIn = await signInWithApple(ADA)
+    expect(signedIn.userId).toBe(userId)
+    expect(displayNameOf(userId)).toBe('Ada Lovelace')
+  })
+})
+
 describe('the Apple grant', () => {
   it('exchanges the authorization code and seals the refresh token', async () => {
     freshDatabase(signinSecrets)

@@ -1108,6 +1108,27 @@ function defaultDisplayName(userId: string): string {
   return `Singer-${userId.slice(0, 4)}`
 }
 
+/**
+ * Give an existing account the name its sign-in provider sent, but only while
+ * the profile still carries the `defaultDisplayName` it was created with — a
+ * name the singer chose is theirs. Apple sends the name once, at the first
+ * authorization, so a sign-in that carries one may be the only chance to keep
+ * it.
+ */
+async function fillDefaultDisplayName(
+  db: D1Database,
+  userId: string,
+  name: string | null | undefined,
+): Promise<void> {
+  if (!name) return
+  await db
+    .prepare(
+      'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName = ?',
+    )
+    .bind(name, nowIso(), userId, defaultDisplayName(userId))
+    .run()
+}
+
 // Fire the account welcome email — best-effort, never blocks or fails signup.
 // Skipped in PR previews, when Resend is unconfigured or when the account has
 // no email (anonymous).
@@ -1952,6 +1973,7 @@ export async function resolveFederatedUser(
     .first<UserRow>()
   if (linked) {
     assertAccountActive(linked)
+    await fillDefaultDisplayName(env.DB, linked.id, identity.name)
     return { row: linked, isNew: false }
   }
 
@@ -1975,6 +1997,7 @@ export async function resolveFederatedUser(
     )
       .bind(identity.sub, nowIso(), holder.id)
       .run()
+    await fillDefaultDisplayName(env.DB, holder.id, identity.name)
     return {
       row: (await findUserById(env.DB, holder.id)) as UserRow,
       isNew: false,
@@ -2015,6 +2038,16 @@ export async function resolveFederatedUser(
           anon.id,
         )
         .run()
+      // The anonymous profile already exists with its default name, so
+      // ensureProfile's INSERT OR IGNORE would never apply this one: write it,
+      // as the password upgrade writes the name typed at sign-up.
+      if (identity.name) {
+        await env.DB.prepare(
+          'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?',
+        )
+          .bind(identity.name, nowIso(), anon.id)
+          .run()
+      }
       await sendWelcomeEmail(env, storedEmail, identity.name)
       return {
         row: (await findUserById(env.DB, anon.id)) as UserRow,

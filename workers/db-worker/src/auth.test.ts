@@ -375,6 +375,27 @@ class AuthStatement {
       return { success: true, meta: { changes: 1 } }
     }
 
+    // The provider's name for an account: written outright when an anonymous
+    // account is upgraded, and otherwise only over the default name, which
+    // the trailing `AND displayName = ?` carries.
+    if (
+      this.sql ===
+        'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ?' ||
+      this.sql ===
+        'UPDATE userProfiles SET displayName = ?, updatedAt = ? WHERE id = ? AND displayName = ?'
+    ) {
+      const [displayName, updatedAt, id, onlyOver] = this.values
+      const profile = this.db.profiles.get(String(id))
+      if (
+        profile === undefined ||
+        (this.values.length === 4 && profile.displayName !== onlyOver)
+      ) {
+        return { success: true, meta: { changes: 0 } }
+      }
+      Object.assign(profile, { displayName, updatedAt })
+      return { success: true, meta: { changes: 1 } }
+    }
+
     if (
       this.sql ===
       'DELETE FROM premiumSupporterGroupMembers WHERE email = ?1 COLLATE NOCASE'
