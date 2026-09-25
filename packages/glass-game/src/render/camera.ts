@@ -6,6 +6,8 @@ import type { Object3D } from 'three'
 import { Box3, MathUtils, PerspectiveCamera, Ray, Raycaster, Vector3, } from 'three'
 import type { GameSnapshot, LevelDefinition } from '../contracts'
 import { shortestAngleDelta, stepAngularResponse, stopAngularResponse, } from './angular-response'
+import { createCameraHeadingIntent } from './camera-heading-intent'
+import { createCameraPlatformOcclusion } from './camera-platform-occlusion'
 import type { ChallengeCameraScreenFrame, ChallengeCameraShot, ChallengeCameraSubjects, } from './challenge-camera'
 import { createChallengeCameraDirector, planChallengeCameraShot, projectChallengeBounds, } from './challenge-camera'
 import { createEnclosureFraming } from './enclosure-framing'
@@ -119,6 +121,7 @@ export function createAdventureCamera(
   let occluders: Object3D[] = []
   let yaw = level.spawn.facingYaw
   const followResponse = { angle: yaw, velocity: 0 }
+  const headingIntent = createCameraHeadingIntent()
   let followSmoothnessSeconds = validFollowSmoothness(
     options.followSmoothnessSeconds,
   )
@@ -152,21 +155,7 @@ export function createAdventureCamera(
     reducedMotion: options.reducedMotion === true,
   })
   const enclosure = createEnclosureFraming(level)
-  const obstacles = level.platforms.map((platform) => ({
-    id: platform.id,
-    box: new Box3(
-      new Vector3(
-        platform.minX - 0.08,
-        platform.top - platform.thickness - 0.08,
-        platform.minZ - 0.08,
-      ),
-      new Vector3(
-        platform.maxX + 0.08,
-        platform.top + 0.08,
-        platform.maxZ + 0.08,
-      ),
-    ),
-  }))
+  const { obstacles, useMeshOccludersAt } = createCameraPlatformOcclusion(level)
 
   function pointBoom(atPitch: number): void {
     direction.set(
@@ -183,6 +172,7 @@ export function createAdventureCamera(
     enabledPlatformIds: readonly string[],
     activeSolidIds: readonly string[],
     constrainToEnclosure: boolean,
+    useMeshOccluders = true,
   ): number {
     ray.set(origin, rayDirection)
     let safeDistance = reach
@@ -209,13 +199,17 @@ export function createAdventureCamera(
           safeDistance = Math.min(safeDistance, volumeDistance)
       }
     }
-    raycaster.set(origin, rayDirection)
-    raycaster.far = safeDistance
-    const obstruction = raycaster.intersectObjects(occluders, false)[0]
-    if (obstruction !== undefined) {
-      const meshDistance = Math.max(0.35, obstruction.distance - 0.1)
-      safeDistance =
-        enclosure === null ? meshDistance : Math.min(safeDistance, meshDistance)
+    if (useMeshOccluders) {
+      raycaster.set(origin, rayDirection)
+      raycaster.far = safeDistance
+      const obstruction = raycaster.intersectObjects(occluders, false)[0]
+      if (obstruction !== undefined) {
+        const meshDistance = Math.max(0.35, obstruction.distance - 0.1)
+        safeDistance =
+          enclosure === null
+            ? meshDistance
+            : Math.min(safeDistance, meshDistance)
+      }
     }
     return safeDistance
   }
@@ -226,6 +220,7 @@ export function createAdventureCamera(
     enabledPlatformIds: readonly string[],
     activeSolidIds: readonly string[],
     constrainToEnclosure: boolean,
+    useMeshOccluders: boolean,
   ): number {
     pointBoom(atPitch)
     return safeRayDistance(
@@ -235,6 +230,7 @@ export function createAdventureCamera(
       enabledPlatformIds,
       activeSolidIds,
       constrainToEnclosure,
+      useMeshOccluders,
     )
   }
 
@@ -244,6 +240,7 @@ export function createAdventureCamera(
     activeSolidIds: readonly string[],
     constrainToEnclosure: boolean,
     normalDistance: number,
+    useMeshOccluders: boolean,
   ): number {
     let bestPitch = pitch
     let bestDistance = normalDistance
@@ -255,6 +252,7 @@ export function createAdventureCamera(
         enabledPlatformIds,
         activeSolidIds,
         constrainToEnclosure,
+        useMeshOccluders,
       )
       if (candidateDistance > bestDistance) {
         bestPitch = candidate
@@ -509,11 +507,13 @@ export function createAdventureCamera(
     rebaseMovement() {
       movementReferenceYaw = yaw
       committedHeading = null
+      headingIntent.rebase()
     },
     cancelHeadingFollow() {
       committedHeading = null
       movementActive = false
       movementReferenceYaw = yaw
+      headingIntent.reset()
       stopAngularResponse(followResponse, yaw)
     },
     setFollowSmoothness(seconds: number) {
@@ -614,6 +614,7 @@ export function createAdventureCamera(
       }
       const activeSolidIds =
         snapshot.activeSolidIds ?? snapshot.enabledPlatformIds
+      const useMeshOccluders = useMeshOccludersAt(snapshot.player.position.y)
       bodyTarget.copy(snapshot.player.position)
       bodyTarget.y += 0.42
       let framedTarget =
@@ -648,8 +649,16 @@ export function createAdventureCamera(
       if (!followsHeading) {
         committedHeading = null
         stopAngularResponse(followResponse, yaw)
-      } else if (movementActive && moving && !orbitActive)
-        committedHeading = facing
+      } else if (!orbitActive) {
+        const requestedHeading = headingIntent.target({
+          elapsedSeconds: safeDt,
+          facingYaw: facing,
+          movementActive,
+          movementReferenceYaw,
+          moving,
+        })
+        if (requestedHeading !== null) committedHeading = requestedHeading
+      }
       // Input intent, rather than velocity, defines one movement contact. A
       // collision can stop Merc without releasing the held key/stick; keeping
       // the basis there avoids turning a wall contact into camera feedback.
@@ -684,6 +693,7 @@ export function createAdventureCamera(
         snapshot.enabledPlatformIds,
         activeSolidIds,
         framedTarget,
+        useMeshOccluders,
       )
       const obstructionTrigger = framedTarget
         ? ENCLOSURE_OBSTRUCTION_TRIGGER_DISTANCE
@@ -703,6 +713,7 @@ export function createAdventureCamera(
             activeSolidIds,
             framedTarget,
             normalDistance,
+            useMeshOccluders,
           )
         : pitch
       renderedPitch = snapPitch
@@ -718,6 +729,7 @@ export function createAdventureCamera(
         snapshot.enabledPlatformIds,
         activeSolidIds,
         framedTarget,
+        useMeshOccluders,
       )
       let renderedDistance = safeDistance
       if (framedTarget) {
@@ -758,7 +770,10 @@ export function createAdventureCamera(
         retainedDirection.multiplyScalar(1 / retainedDistance)
         raycaster.set(target, retainedDirection)
         raycaster.far = retainedDistance
-        if (raycaster.intersectObjects(occluders, false).length === 0) {
+        if (
+          !useMeshOccluders ||
+          raycaster.intersectObjects(occluders, false).length === 0
+        ) {
           camera.position.copy(retainedPosition)
           retained = true
         }

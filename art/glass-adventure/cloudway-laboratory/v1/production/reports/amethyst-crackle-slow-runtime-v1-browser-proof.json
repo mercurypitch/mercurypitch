@@ -1,0 +1,1474 @@
+{
+  "schema": "cloudway-amethyst-runtime-delivery-browser-proof/v1",
+  "assetId": "cloudway-lab-amethyst-crackle-v1",
+  "status": "real-gltfloader-production-adapter-webgl-proof-accepted",
+  "runtimeGlbs": {
+    "fullDetail": {
+      "file": "source-assets/runtime/amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1-full-detail.glb",
+      "bytes": 192669984,
+      "sha256": "70d1aa47f7e98bf3fe89e6d8aa777de9c6c176018b7333697d8895fdafa4a18d"
+    },
+    "bounded2k": {
+      "file": "source-assets/runtime/amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1.glb",
+      "bytes": 19673144,
+      "sha256": "2a9615df89bbac42be86c14f0ca251c34d8937aa3b6ed7990baf50fb07991b4c",
+      "resourceBudget": {
+        "bundleBytes": 19673144,
+        "embeddedImageBytes": 2237168,
+        "meshoptDecodedBufferBytes": 52675298,
+        "otherBufferBytes": 0,
+        "estimatedRgba8BaseLevelTextureBytes": 50331648,
+        "estimatedRgba8MipmappedTextureBytes": 67108864,
+        "scope": "Arithmetic upload estimates for three 2K RGBA textures; not measured device memory."
+      }
+    }
+  },
+  "harness": {
+    "loader": "three/addons/loaders/GLTFLoader.js + three/addons/libs/meshopt_decoder.module.js",
+    "adapter": "packages/glass-game/src/render/cloudway-crackle-adapter.ts",
+    "renderer": "THREE.WebGLRenderer",
+    "rendererIdentity": {
+      "fullDetail": {
+        "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "maxTextureSize": 8192
+      },
+      "bounded2k": {
+        "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "vendor": "Google Inc. (Google)",
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "maxTextureSize": 8192
+      }
+    },
+    "urls": {
+      "fullDetail": "http://127.0.0.1:5636/?asset=full",
+      "bounded2k": "http://127.0.0.1:5636/?asset=bounded"
+    }
+  },
+  "sourceAfterGlTfLoader": {
+    "fullDetail": {
+      "root": "CloudwayLab_AmethystCrackleSlow",
+      "adapterRoot": "amethyst-crackle-full-detail__crackle-art",
+      "assetVariant": "full-detail",
+      "assetUrl": "/amethyst-full-detail.glb",
+      "adapter": "packages/glass-game/src/render/cloudway-crackle-adapter.ts",
+      "reviewedBindings": [
+        {
+          "mesh": "AmethystRuntimeCrystalShell",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeLuminousAccents",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__luminous_accent"
+        },
+        {
+          "mesh": "AmethystRuntimeSourceIntactBody",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimePersistentPerimeter",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__framework"
+        },
+        {
+          "mesh": "AmethystRuntimeSourceCornerFiligree",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__corner_provider_pbr"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_000",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_000",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_001",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_001",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_002",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_002",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_003",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_003",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_004",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_004",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_005",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_005",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_006",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_006",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_007",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_007",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_008",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_008",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_009",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_009",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_010",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_010",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_011",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_011",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_012",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_012",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_013",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_013",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_014",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_014",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_015",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_015",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_016",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_016",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_017",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_017",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        }
+      ],
+      "meshes": [
+        {
+          "mesh": "AmethystRuntimeCrystalShell",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 428
+        },
+        {
+          "mesh": "AmethystRuntimeLuminousAccents",
+          "material": "CloudwayLab_Amethyst__luminous_accent",
+          "triangles": 252
+        },
+        {
+          "mesh": "AmethystRuntimeSourceIntactBody",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 1149701
+        },
+        {
+          "mesh": "AmethystRuntimePersistentPerimeter",
+          "material": "CloudwayLab_Amethyst__framework",
+          "triangles": 112
+        },
+        {
+          "mesh": "AmethystRuntimeSourceCornerFiligree",
+          "material": "CloudwayLab_Amethyst__corner_provider_pbr",
+          "triangles": 283887
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_000",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_000",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 39204
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_001",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_001",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 61750
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_002",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_002",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 61318
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_003",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_003",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 62282
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_004",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_004",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 68014
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_005",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_005",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 49343
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_006",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_006",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 57446
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_007",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_007",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 74195
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_008",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_008",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 84980
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_009",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_009",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 39368
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_010",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_010",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 73673
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_011",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 80
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_011",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 89029
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_012",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 64
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_012",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 66452
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_013",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_013",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 44622
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_014",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_014",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 69295
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_015",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_015",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 71408
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_016",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_016",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 88888
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_017",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_017",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 48434
+        }
+      ],
+      "materials": [
+        {
+          "name": "CloudwayLab_Amethyst__glass",
+          "type": "MeshPhysicalMaterial",
+          "baseColor": [
+            0.5799999833106995,
+            0.4000000059604645,
+            0.7200000286102295
+          ],
+          "transmission": 0.9750000238418579,
+          "metalness": 0,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__luminous_accent",
+          "type": "MeshStandardMaterial",
+          "baseColor": [
+            0.2800000011920929,
+            0.03500000014901161,
+            0.9200000166893005
+          ],
+          "transmission": 0,
+          "metalness": 0.18000000715255737,
+          "emissive": [
+            0.18000000715255737,
+            0.009999999776482582,
+            1
+          ],
+          "emissiveIntensity": 2.200000047683716,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__internal_detail",
+          "type": "MeshStandardMaterial",
+          "baseColor": [
+            1,
+            1,
+            1
+          ],
+          "transmission": 0,
+          "metalness": 1,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__framework",
+          "type": "MeshPhysicalMaterial",
+          "baseColor": [
+            0.699999988079071,
+            0.23999999463558197,
+            0.054999999701976776
+          ],
+          "transmission": 0,
+          "metalness": 0.9300000071525574,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__corner_provider_pbr",
+          "type": "MeshStandardMaterial",
+          "baseColor": [
+            1,
+            1,
+            1
+          ],
+          "transmission": 0,
+          "metalness": 1,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        }
+      ],
+      "initial": {
+        "view": "intact",
+        "phase": "intact",
+        "phaseProgress": 0,
+        "intactVisible": true,
+        "visibleShards": 0,
+        "sourceBodyVisible": true,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "bounded2k": {
+      "root": "CloudwayLab_AmethystCrackleSlow",
+      "adapterRoot": "amethyst-crackle-bounded-2k__crackle-art",
+      "assetVariant": "bounded-2k",
+      "assetUrl": "/amethyst-runtime-v1.glb",
+      "adapter": "packages/glass-game/src/render/cloudway-crackle-adapter.ts",
+      "reviewedBindings": [
+        {
+          "mesh": "AmethystRuntimeCrystalShell",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeLuminousAccents",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__luminous_accent"
+        },
+        {
+          "mesh": "AmethystRuntimeSourceIntactBody",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimePersistentPerimeter",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__framework"
+        },
+        {
+          "mesh": "AmethystRuntimeSourceCornerFiligree",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__corner_provider_pbr"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_000",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_000",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_001",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_001",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_002",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_002",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_003",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_003",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_004",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_004",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_005",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_005",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_006",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_006",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_007",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_007",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_008",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_008",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_009",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_009",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_010",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_010",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_011",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_011",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_012",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_012",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_013",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_013",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_014",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_014",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_015",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_015",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_016",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_016",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_017",
+          "kind": "glass",
+          "material": "CloudwayLab_Amethyst__glass"
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_017",
+          "kind": "opaque",
+          "material": "CloudwayLab_Amethyst__internal_detail"
+        }
+      ],
+      "meshes": [
+        {
+          "mesh": "AmethystRuntimeCrystalShell",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 428
+        },
+        {
+          "mesh": "AmethystRuntimeLuminousAccents",
+          "material": "CloudwayLab_Amethyst__luminous_accent",
+          "triangles": 252
+        },
+        {
+          "mesh": "AmethystRuntimeSourceIntactBody",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 1149701
+        },
+        {
+          "mesh": "AmethystRuntimePersistentPerimeter",
+          "material": "CloudwayLab_Amethyst__framework",
+          "triangles": 112
+        },
+        {
+          "mesh": "AmethystRuntimeSourceCornerFiligree",
+          "material": "CloudwayLab_Amethyst__corner_provider_pbr",
+          "triangles": 283887
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_000",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_000",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 39204
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_001",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_001",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 61750
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_002",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_002",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 61318
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_003",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_003",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 62282
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_004",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_004",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 68014
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_005",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_005",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 49343
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_006",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_006",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 57446
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_007",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_007",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 74195
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_008",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_008",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 84980
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_009",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_009",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 39368
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_010",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 70
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_010",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 73673
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_011",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 80
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_011",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 89029
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_012",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 64
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_012",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 66452
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_013",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_013",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 44622
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_014",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_014",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 69295
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_015",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_015",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 71408
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_016",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 58
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_016",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 88888
+        },
+        {
+          "mesh": "AmethystRuntimeShardGlass_017",
+          "material": "CloudwayLab_Amethyst__glass",
+          "triangles": 46
+        },
+        {
+          "mesh": "AmethystRuntimeShardSurfaceDetail_017",
+          "material": "CloudwayLab_Amethyst__internal_detail",
+          "triangles": 48434
+        }
+      ],
+      "materials": [
+        {
+          "name": "CloudwayLab_Amethyst__glass",
+          "type": "MeshPhysicalMaterial",
+          "baseColor": [
+            0.5799999833106995,
+            0.4000000059604645,
+            0.7200000286102295
+          ],
+          "transmission": 0.9750000238418579,
+          "metalness": 0,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__luminous_accent",
+          "type": "MeshStandardMaterial",
+          "baseColor": [
+            0.2800000011920929,
+            0.03500000014901161,
+            0.9200000166893005
+          ],
+          "transmission": 0,
+          "metalness": 0.18000000715255737,
+          "emissive": [
+            0.18000000715255737,
+            0.009999999776482582,
+            1
+          ],
+          "emissiveIntensity": 2.200000047683716,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__internal_detail",
+          "type": "MeshStandardMaterial",
+          "baseColor": [
+            1,
+            1,
+            1
+          ],
+          "transmission": 0,
+          "metalness": 1,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__framework",
+          "type": "MeshPhysicalMaterial",
+          "baseColor": [
+            0.699999988079071,
+            0.23999999463558197,
+            0.054999999701976776
+          ],
+          "transmission": 0,
+          "metalness": 0.9300000071525574,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        },
+        {
+          "name": "CloudwayLab_Amethyst__corner_provider_pbr",
+          "type": "MeshStandardMaterial",
+          "baseColor": [
+            1,
+            1,
+            1
+          ],
+          "transmission": 0,
+          "metalness": 1,
+          "emissive": [
+            0,
+            0,
+            0
+          ],
+          "emissiveIntensity": 1,
+          "transparent": false
+        }
+      ],
+      "initial": {
+        "view": "intact",
+        "phase": "intact",
+        "phaseProgress": 0,
+        "intactVisible": true,
+        "visibleShards": 0,
+        "sourceBodyVisible": true,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "captures": [
+    {
+      "variant": "full-detail",
+      "view": "intact",
+      "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-intact.png",
+      "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-intact.png",
+      "bytes": 424797,
+      "sha256": "5f1a9570df991e2be16995dc58e1969752d9c024edbd52ee96340c65255780cd",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "view": "intact",
+        "phase": "intact",
+        "phaseProgress": 0,
+        "intactVisible": true,
+        "visibleShards": 0,
+        "sourceBodyVisible": true,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "variant": "full-detail",
+      "view": "close",
+      "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-close.png",
+      "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-close.png",
+      "bytes": 766307,
+      "sha256": "f11b17ab2886f15e762f1d0d8c6542556d122cd58986ac1e9eebeabf08b805ec",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "view": "close",
+        "phase": "intact",
+        "phaseProgress": 0,
+        "intactVisible": true,
+        "visibleShards": 0,
+        "sourceBodyVisible": true,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "variant": "bounded-2k",
+      "view": "intact",
+      "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-intact.png",
+      "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-intact.png",
+      "bytes": 423868,
+      "sha256": "38e33d9fb8621ec9d04090aa91cf6af6f5324ee88596239d125d1fa5018aca40",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "view": "intact",
+        "phase": "intact",
+        "phaseProgress": 0,
+        "intactVisible": true,
+        "visibleShards": 0,
+        "sourceBodyVisible": true,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "variant": "bounded-2k",
+      "view": "close",
+      "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-close.png",
+      "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-close.png",
+      "bytes": 765410,
+      "sha256": "e8d650c55e067455265bafb1f7cecb753236e1122747f652a5d5796daec1186a",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "view": "close",
+        "phase": "intact",
+        "phaseProgress": 0,
+        "intactVisible": true,
+        "visibleShards": 0,
+        "sourceBodyVisible": true,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "variant": "bounded-2k",
+      "view": "fractured",
+      "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-fractured.png",
+      "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-fractured.png",
+      "bytes": 341620,
+      "sha256": "d0b32220dc7111be116c338419e6aa1fb77476757d0c3d3c7b64df928cec273e",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "view": "fractured",
+        "phase": "released",
+        "phaseProgress": 0.26,
+        "intactVisible": false,
+        "visibleShards": 18,
+        "sourceBodyVisible": false,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "matchedComparison": {
+    "gameplay": {
+      "fullDetail": {
+        "variant": "full-detail",
+        "view": "intact",
+        "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-intact.png",
+        "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-intact.png",
+        "bytes": 424797,
+        "sha256": "5f1a9570df991e2be16995dc58e1969752d9c024edbd52ee96340c65255780cd",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "state": {
+          "view": "intact",
+          "phase": "intact",
+          "phaseProgress": 0,
+          "intactVisible": true,
+          "visibleShards": 0,
+          "sourceBodyVisible": true,
+          "persistentVisible": true,
+          "rootScale": [
+            1,
+            1,
+            1
+          ],
+          "rootPosition": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bounded2k": {
+        "variant": "bounded-2k",
+        "view": "intact",
+        "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-intact.png",
+        "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-intact.png",
+        "bytes": 423868,
+        "sha256": "38e33d9fb8621ec9d04090aa91cf6af6f5324ee88596239d125d1fa5018aca40",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "state": {
+          "view": "intact",
+          "phase": "intact",
+          "phaseProgress": 0,
+          "intactVisible": true,
+          "visibleShards": 0,
+          "sourceBodyVisible": true,
+          "persistentVisible": true,
+          "rootScale": [
+            1,
+            1,
+            1
+          ],
+          "rootPosition": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "nearestInspection": {
+      "fullDetail": {
+        "variant": "full-detail",
+        "view": "close",
+        "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-close.png",
+        "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-full-detail-close.png",
+        "bytes": 766307,
+        "sha256": "f11b17ab2886f15e762f1d0d8c6542556d122cd58986ac1e9eebeabf08b805ec",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "state": {
+          "view": "close",
+          "phase": "intact",
+          "phaseProgress": 0,
+          "intactVisible": true,
+          "visibleShards": 0,
+          "sourceBodyVisible": true,
+          "persistentVisible": true,
+          "rootScale": [
+            1,
+            1,
+            1
+          ],
+          "rootPosition": [
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bounded2k": {
+        "variant": "bounded-2k",
+        "view": "close",
+        "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-close.png",
+        "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-close.png",
+        "bytes": 765410,
+        "sha256": "e8d650c55e067455265bafb1f7cecb753236e1122747f652a5d5796daec1186a",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "state": {
+          "view": "close",
+          "phase": "intact",
+          "phaseProgress": 0,
+          "intactVisible": true,
+          "visibleShards": 0,
+          "sourceBodyVisible": true,
+          "persistentVisible": true,
+          "rootScale": [
+            1,
+            1,
+            1
+          ],
+          "rootPosition": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "fracturedBounded2k": {
+      "variant": "bounded-2k",
+      "view": "fractured",
+      "file": "source-assets/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-fractured.png",
+      "absoluteFile": "/home/maff/Documents/root/5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1/proofs/runtime/amethyst-crackle-slow/runtime-v1/amethyst-crackle-slow-runtime-v1-bounded-2k-fractured.png",
+      "bytes": 341620,
+      "sha256": "d0b32220dc7111be116c338419e6aa1fb77476757d0c3d3c7b64df928cec273e",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "view": "fractured",
+        "phase": "released",
+        "phaseProgress": 0.26,
+        "intactVisible": false,
+        "visibleShards": 18,
+        "sourceBodyVisible": false,
+        "persistentVisible": true,
+        "rootScale": [
+          1,
+          1,
+          1
+        ],
+        "rootPosition": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "texturePolicy": {
+      "maximum": 2048,
+      "format": "WebP",
+      "quality": 92
+    },
+    "review": "Root accepted the bounded delivery after matched gameplay and closest-inspection review preserved the source exterior and ornament, and the polished early-fracture view replaced the saturated blue interior with pale lavender glass."
+  },
+  "assertions": {
+    "fullDetailHashMatchesStaticAudit": true,
+    "boundedHashMatchesStaticAudit": true,
+    "exactRootLoadedBoth": true,
+    "expectedVariantsLoaded": true,
+    "exactBindingsFull": true,
+    "exactBindingsBounded": true,
+    "everyTriangleRetainedFull": true,
+    "everyTriangleRetainedBounded": true,
+    "twoMatchedIntactViewsPerBundle": true,
+    "boundedFractureRendered": true,
+    "boundedIntactHiddenOnRelease": true,
+    "boundedSourceBodyHiddenOnRelease": true,
+    "boundedPersistentVisibleOnRelease": true,
+    "intactStatesCorrect": true,
+    "noRuntimeScale": true,
+    "contactTopCentreOrigin": true,
+    "noConsoleErrors": true,
+    "noPageErrors": true
+  },
+  "consoleErrors": {
+    "fullDetail": [],
+    "bounded2k": []
+  },
+  "pageErrors": {
+    "fullDetail": [],
+    "bounded2k": []
+  },
+  "scope": "Actual GLTFLoader with MeshoptDecoder, the shared crackle adapter, and WebGLRenderer prove full-detail and bounded delivery loading, exact material binding, intact/released visibility, pivots, and matched visual comparison. Headless Chromium uses SwiftShader here, so this proof does not certify device performance.",
+  "artReview": {
+    "status": "accepted",
+    "date": "2026-09-25",
+    "scope": "Bounded 2K intact gameplay, nearest inspection, and polished early-fracture visual fidelity.",
+    "note": "Source PBR exterior and ornament remain clear; restrained pale-lavender interior glass replaces the rejected saturated blue treatment."
+  }
+}

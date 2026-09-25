@@ -4,6 +4,7 @@
 
 import type { BufferGeometry, Material, Texture } from 'three'
 import { BoxGeometry, DoubleSide, EdgesGeometry, Group, LatheGeometry, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, PlaneGeometry, RingGeometry, Vector2, Vector3, } from 'three'
+import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, PORTRAIT_EXHIBIT_ENVELOPE, } from '../content/solid-props'
 import type { BreakableDefinition, BreakableSnapshot } from '../contracts'
 import { SHATTER_PRESENTATION_TIMING } from '../core/shatter-presentation'
 import { getBreakableRenderRecipe } from './catalog'
@@ -29,8 +30,15 @@ export function createVesselGeometry(variant: string): BufferGeometry {
   const recipe = getBreakableRenderRecipe(variant)
   const shape = recipe.fallbackShape
   if (shape === 'slab') {
-    const geometry = new BoxGeometry(0.52, 0.75, 0.09, 6, 8, 1)
-    geometry.translate(0, 0.375, 0)
+    const geometry = new BoxGeometry(
+      PORTRAIT_EXHIBIT_ENVELOPE.width,
+      PORTRAIT_EXHIBIT_ENVELOPE.height,
+      PORTRAIT_EXHIBIT_ENVELOPE.depth,
+      6,
+      8,
+      1,
+    )
+    geometry.translate(0, PORTRAIT_EXHIBIT_ENVELOPE.height / 2, 0)
     return fitDisplayHeight(geometry, recipe.displayHeight)
   }
   const profile =
@@ -109,11 +117,12 @@ export function createVessel(
   reducedMotion: boolean,
 ) {
   const recipe = getBreakableRenderRecipe(target.variant)
+  const pictureBearingPortrait = recipe.portraitFracture === 'picture-bearing'
   const root = new Group()
   const materialLibrary = createMaterialLibrary()
   root.name = `vessel-${target.id}`
   root.position.copy(target.position)
-  root.position.y += target.mount?.height ?? 0.255
+  root.position.y += target.mount?.height ?? DEFAULT_EXHIBIT_MOUNT_HEIGHT
   if (target.mount !== undefined) root.rotation.y = target.mount.facingYaw
   if (recipe.faceAnchor === true)
     root.rotation.y = Math.atan2(
@@ -135,27 +144,33 @@ export function createVessel(
     emissive: 0x3fccbe,
     emissiveIntensity: 0,
   })
-  const portrait = new MeshPhysicalMaterial({
+  const portraitPlane = new MeshPhysicalMaterial({
     color: 0xffffff,
     roughness: 0.24,
     metalness: 0.14,
     clearcoat: 1,
     side: DoubleSide,
   })
-  let material: Material | Material[] =
+  const portraitSurface = portraitPlane.clone()
+  portraitSurface.name = recipe.portraitMaterial ?? 'portrait-surface'
+  let intactMaterial: Material | Material[] =
     recipe.portraitTexture !== undefined &&
     recipe.persistentPortrait === undefined
-      ? [glass, portrait]
+      ? [glass, portraitSurface]
       : glass
+  let shardMaterial: Material | Material[] = pictureBearingPortrait
+    ? [glass, portraitSurface]
+    : intactMaterial
   const persistentPortraitRecipe = recipe.persistentPortrait
   let persistentPortrait: Mesh | undefined
+  let portraitReady = false
   if (persistentPortraitRecipe !== undefined) {
     persistentPortrait = new Mesh(
       new PlaneGeometry(
         persistentPortraitRecipe.width,
         persistentPortraitRecipe.height,
       ),
-      portrait,
+      portraitPlane,
     )
     persistentPortrait.name = `persistent-portrait-${target.id}`
     persistentPortrait.position.set(
@@ -197,14 +212,14 @@ export function createVessel(
     shardGroup.clear()
     shardMeshes = []
     cracks = []
-    intact = new Mesh(geometry, material)
+    intact = new Mesh(geometry, intactMaterial)
     intact.name = `vessel-intact-${target.id}`
     intact.castShadow = true
     root.add(intact)
     const pieces =
       authoredPieces ?? fractureGeometry(geometry, recipe.fragmentBudget)
     pieces.forEach((piece, i) => {
-      const mesh = new Mesh(piece.geometry, material)
+      const mesh = new Mesh(piece.geometry, shardMaterial)
       mesh.position.copy(piece.centre)
       mesh.castShadow = true
       const outward = new Vector3(piece.centre.x, 0, piece.centre.z)
@@ -235,7 +250,7 @@ export function createVessel(
   const initialGeometry = createVesselGeometry(target.variant)
   if (
     recipe.portraitTexture !== undefined &&
-    recipe.persistentPortrait === undefined
+    (recipe.persistentPortrait === undefined || pictureBearingPortrait)
   )
     initialGeometry.groups.forEach((group) => {
       group.materialIndex = (group.materialIndex ?? 0) >= 4 ? 1 : 0
@@ -273,28 +288,62 @@ export function createVessel(
       }
       if (authoredMaterials) {
         if (recipe.persistentPortrait === undefined) {
-          material = authoredMaterials
+          intactMaterial = authoredMaterials
+          shardMaterial = authoredMaterials
           for (const imported of authoredMaterials) {
-            if (imported.name !== recipe.portraitMaterial || !portrait.map)
+            if (
+              imported.name !== recipe.portraitMaterial ||
+              !portraitSurface.map
+            )
               continue
             const face = imported as MeshPhysicalMaterial
-            face.map = portrait.map
+            face.map = portraitSurface.map
+            face.needsUpdate = true
+          }
+        } else if (pictureBearingPortrait) {
+          intactMaterial = authoredMaterials.map((imported) =>
+            imported.name === recipe.portraitMaterial ? glass : imported,
+          )
+          shardMaterial = authoredMaterials
+          for (const imported of authoredMaterials) {
+            if (
+              imported.name !== recipe.portraitMaterial ||
+              !portraitSurface.map
+            )
+              continue
+            const face = imported as MeshPhysicalMaterial
+            face.map = portraitSurface.map
             face.needsUpdate = true
           }
         } else {
-          material = authoredMaterials.map((imported) =>
+          intactMaterial = authoredMaterials.map((imported) =>
             imported.name === recipe.portraitMaterial ? glass : imported,
           )
+          shardMaterial = intactMaterial
         }
       }
       install(geometry, authoredPieces)
     },
     setPortrait(texture: Texture) {
-      portrait.map = texture
-      portrait.needsUpdate = true
-      if (persistentPortrait !== undefined) persistentPortrait.visible = true
-      // The same image binding survives onto authored intact and fragment slots.
-      if (recipe.persistentPortrait !== undefined) return
+      // Loaded portraits use the glTF texture convention. The separate artwork
+      // is a native PlaneGeometry, whose UVs need the regular vertical upload.
+      if (persistentPortrait !== undefined) {
+        const planeTexture = pictureBearingPortrait ? texture.clone() : texture
+        if (!planeTexture.flipY) {
+          planeTexture.flipY = true
+          planeTexture.needsUpdate = true
+        }
+        portraitPlane.map?.dispose()
+        portraitPlane.map = planeTexture
+        portraitPlane.needsUpdate = true
+        portraitReady = true
+        persistentPortrait.visible = true
+      }
+      if (recipe.persistentPortrait !== undefined && !pictureBearingPortrait)
+        return
+      portraitSurface.map?.dispose()
+      portraitSurface.map = texture
+      portraitSurface.needsUpdate = true
       for (const imported of materialLibrary.materials) {
         if (imported.name !== recipe.portraitMaterial) continue
         const face = imported as MeshPhysicalMaterial
@@ -335,6 +384,9 @@ export function createVessel(
       const flight = Math.max(0, age - delay)
       shardGroup.visible =
         shattered && !restored && flight < timing.visibleFlightSeconds
+      if (persistentPortrait !== undefined)
+        persistentPortrait.visible =
+          portraitReady && (!pictureBearingPortrait || !shardGroup.visible)
       if (shardGroup.visible)
         for (const shard of shardMeshes) {
           const t = flight * timing.flightTimeScale
@@ -362,12 +414,20 @@ export function createVessel(
       glass.envMap = null
       disposeObject(
         root,
-        new Set([...materialLibrary.materials, glass, portrait, crackMaterial]),
+        new Set([
+          ...materialLibrary.materials,
+          glass,
+          portraitPlane,
+          portraitSurface,
+          crackMaterial,
+        ]),
       )
       materialLibrary.dispose()
       glass.dispose()
-      portrait.map?.dispose()
-      portrait.dispose()
+      portraitPlane.map?.dispose()
+      portraitSurface.map?.dispose()
+      portraitPlane.dispose()
+      portraitSurface.dispose()
       crackMaterial.dispose()
     },
   }

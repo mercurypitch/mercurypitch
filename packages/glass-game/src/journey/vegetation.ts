@@ -5,7 +5,7 @@ import { ConeGeometry, CylinderGeometry, Group, IcosahedronGeometry, InstancedMe
 import type { MuseumJourneyDefinition } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
 import type { VegetationFootprint } from './vegetation-placement'
-import { addInstancedDonor, AUTHORED_CYPRESS_BASE_RADIUS, clearsJourneyLandmarks, clearsVegetationFootprints, createAuthoredFlowerPlacement, rimPoint, sourceFloraPoint, } from './vegetation-placement'
+import { addInstancedDonor, AUTHORED_CYPRESS_BASE_RADIUS, clearsJourneyLandmarks, clearsVegetationFootprints, createAuthoredFlowerPlacement, fitsIslandTerrace, rimPoint, sourceFloraPoint, } from './vegetation-placement'
 
 export { journeyBridgeDistanceXZ } from './vegetation-placement'
 
@@ -94,6 +94,7 @@ export function createJourneyVegetation(
   const authoredRimFlowerTransforms: Matrix4[] = []
   const authoredFlowerFootprints: VegetationFootprint[] = []
   const planterTransforms: Matrix4[] = []
+  const planterFootprints: VegetationFootprint[] = []
 
   for (
     let islandIndex = 0;
@@ -257,10 +258,25 @@ export function createJourneyVegetation(
       }
     }
 
-    for (let index = 0; index < 3; index++) {
-      const angle = Math.PI * (0.16 + index * 0.34) + island.yaw
-      const point = rimPoint(island, angle, 0.72)
-      if (!clearsJourneyLandmarks(definition, point, 0.2)) continue
+    let plantersPlaced = 0
+    for (
+      let candidate = 0;
+      candidate < 144 && plantersPlaced < 2;
+      candidate++
+    ) {
+      const angle = ((candidate % 48) * Math.PI * 2) / 48
+      const inset = [0.7, 0.8, 0.9][Math.floor(candidate / 48)]!
+      const point = rimPoint(island, angle, inset)
+      const scale = 0.42
+      const radius = scale * 0.5
+      if (
+        !clearsJourneyLandmarks(definition, point, radius) ||
+        !fitsIslandTerrace(island, point, radius) ||
+        !clearsVegetationFootprints(point, radius, authoredFlowerFootprints) ||
+        !clearsVegetationFootprints(point, radius, cypressFootprints) ||
+        !clearsVegetationFootprints(point, radius, planterFootprints)
+      )
+        continue
       planterTransforms.push(
         new Matrix4().compose(
           point,
@@ -268,9 +284,11 @@ export function createJourneyVegetation(
             new Vector3(0, 1, 0),
             -angle + Math.PI / 2,
           ),
-          new Vector3(1, 1, 1).multiplyScalar(0.42 + (index % 2) * 0.05),
+          new Vector3(scale, scale, scale),
         ),
       )
+      planterFootprints.push({ position: point.clone(), radius })
+      plantersPlaced++
     }
   }
 

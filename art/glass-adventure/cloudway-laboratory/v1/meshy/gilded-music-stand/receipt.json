@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "gilded-music-stand",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "source-assets/references/gilded-music-stand.png",
+    "sha256": "947f19df7bf8f3fd497928989d6066fa9502cdfc260f507f23fb1c295558d555",
+    "bytes": 1736541,
+    "dimensions": [
+      1145,
+      1374
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "One elegant art nouveau sheet music stand, warm satin gold curved tripod legs, ivory-and-gold openwork music rest with a subtle sun medallion, blank single ivory score board, broad stable feet. No printed text, no notes, no instrument. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T13:04:24.892114+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3085,
+  "submissionStartedAtUtc": "2026-09-25T13:04:24.892127+00:00",
+  "taskId": "01a0d8aa-c529-70f7-a0df-fd967c79c65a",
+  "submittedAtUtc": "2026-09-25T13:04:28.654538+00:00",
+  "balanceAfterSubmit": 3045,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8aa-c529-70f7-a0df-fd967c79c65a",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790341468476,
+    "started_at": 1790341468485,
+    "finished_at": 1790341690907,
+    "expires_at": 1790600890907,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T13:10:11.372561+00:00",
+  "finalStatus": {
+    "id": "01a0d8aa-c529-70f7-a0df-fd967c79c65a",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790341468476,
+    "started_at": 1790341468485,
+    "finished_at": 1790341690907,
+    "expires_at": 1790600890907,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/gilded-music-stand/dense-donor.glb",
+      "bytes": 71510292,
+      "sha256": "4339c901dc5fe9f77ffdfcda21842972f07907467d40a5a231bfa44f1c81cf73",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 435572,
+      "triangles": 799980
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-base_color.png",
+        "bytes": 69393110,
+        "sha256": "359c7a1db4656d51e629608cbf6a524e1f16b428e8bc5e57f8231e23c0262c3f",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-metallic.png",
+        "bytes": 6757866,
+        "sha256": "f80f205fd680899902c9f0ba8353252bd48cf221e968b431fbae7fb1fa485da2",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-normal.png",
+        "bytes": 14878152,
+        "sha256": "a1479580ff19927d8f3d1b8acb6398ec1db46505052d1ad345e4fa94c2b4aafe",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilded-music-stand/textures/set-0-roughness.png",
+        "bytes": 5363255,
+        "sha256": "344f91d64cfaae39ca525888d6a5ecf5ae12f6d9f727e41c6a148ae15ecfb848",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/gilded-music-stand/preview.png",
+      "bytes": 107182,
+      "sha256": "528aebce5d8a54edee8ec0c678a6a91524273c80e96bb233d633701a86cb4195",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T13:10:20.939503+00:00",
+  "balanceAfterArchive": 3005,
+  "observedBalanceDeltaFinal": 80,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T13:10:21.784501+00:00"
+}

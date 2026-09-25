@@ -4,12 +4,16 @@ import { GALLERY_ENCORES } from '../content/encores'
 import { GLASSWORKS } from '../content/glassworks'
 import type { LevelDefinition } from '../contracts'
 import type { GlassGameHost } from '../host'
+import { deriveAdventureProgressGuidance } from './AdventureGuidance'
+import { AdventureMessageStack } from './AdventureMessageStack'
 import { ArtworkInspection, ArtworkOffer } from './ArtworkInspection'
 import { focusDialog, trapDialogKeys } from './dialog-focus'
+import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
 import { createFreshVisitHost } from './fresh-visit-host'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
+import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
 import { ReplayCompletion, RewardSummary } from './RewardSummary'
 import { TouchControls } from './TouchControls'
 import { Tutorial } from './Tutorial'
@@ -90,6 +94,14 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
     () => canvas,
     encoreOpen,
   )
+  const encoreAudioLeases = createEncoreAudioLeaseOwner(
+    adventure.silenceForEncore,
+    adventure.releaseEncore,
+  )
+  const retryableMicrophoneIssue = createMemo(() => {
+    const issue = adventure.microphoneIssue()
+    return issue?.action === 'retry' ? issue : null
+  })
   const loadingPresentationPhase = createMemo<LoadingScreenPhase>(() => {
     const phase = adventure.loadingPhase()
     return phase === 'ready' ? 'awaiting-first-frame' : phase
@@ -108,6 +120,35 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
           adventure.voiceEncounterId()),
     ),
   )
+  const contextualMessagesAvailable = createMemo(
+    () =>
+      !adventure.paused() &&
+      !adventure.tutorial() &&
+      !adventure.snapshot().complete &&
+      adventure.inspection() === null,
+  )
+  const progressGuidance = createMemo(() =>
+    contextualMessagesAvailable() &&
+    adventure.voiceMode() === 'off' &&
+    adventure.snapshot().phase !== 'shattering'
+      ? deriveAdventureProgressGuidance(level, adventure.snapshot())
+      : undefined,
+  )
+  const visibleNotice = createMemo(() =>
+    contextualMessagesAvailable() &&
+    adventure.notice() &&
+    !active() &&
+    adventure.snapshot().phase !== 'shattering'
+      ? adventure.notice()
+      : '',
+  )
+  const visibleNarrationCaption = createMemo(() =>
+    contextualMessagesAvailable() &&
+    adventure.narrationCaption() &&
+    adventure.voiceMode() === 'off'
+      ? adventure.narrationCaption()
+      : '',
+  )
   const showArtworkOffer = createMemo(
     () =>
       adventure.ready() &&
@@ -117,6 +158,12 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       adventure.nearbyArtwork() !== null &&
       adventure.voiceMode() === 'off' &&
       adventure.snapshot().phase !== 'shattering',
+  )
+  const showEncounterOffer = createMemo(
+    () =>
+      adventure.voiceMode() === 'off' &&
+      adventure.microphoneIssue() === null &&
+      nearby() !== undefined,
   )
   const voiceSteps = createMemo(() => {
     const challenge = active()?.challenge
@@ -235,6 +282,8 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
       data-travel-yaw={adventure.desiredTravelYaw() ?? undefined}
       data-look-sensitivity={adventure.cameraComfort().lookSensitivity}
       data-follow-smoothness={adventure.cameraComfort().followSmoothnessSeconds}
+      data-render-quality-preference={adventure.renderQualityPreference()}
+      data-render-quality-profile={adventure.renderQualityProfile()}
       data-challenge-camera-mode={
         adventure.challengeCamera()?.mode ?? 'exploration'
       }
@@ -392,41 +441,31 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
             <CameraTuningPanel
               settings={adventure.cameraComfort()}
               onChange={adventure.changeCameraComfort}
+              renderQualityPreference={adventure.renderQualityPreference()}
+              renderQualityProfile={adventure.renderQualityProfile()}
+              onRenderQualityChange={adventure.changeRenderQuality}
             />
           </Show>
         </div>
-        <Show
-          when={
-            adventure.notice() &&
-            !active() &&
-            !adventure.tutorial() &&
-            !adventure.paused()
-          }
-        >
-          <p class={styles.notice} role="status">
-            {adventure.notice()}
-          </p>
-        </Show>
-        <Show
-          when={
-            adventure.narrationCaption() &&
-            !adventure.tutorial() &&
-            !adventure.paused()
-          }
-        >
-          <p
-            class={styles.narrationCaption}
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            data-testid="merc-narration-caption"
-          >
-            <strong>Merc:</strong> {adventure.narrationCaption()}
-          </p>
-        </Show>
+        <AdventureMessageStack
+          narration={visibleNarrationCaption()}
+          notice={visibleNotice()}
+          guidance={progressGuidance()}
+          withEncounterOffer={showEncounterOffer()}
+        />
         <Show when={adventure.error()}>
           <div class={styles.error} role="alert">
-            <p>{adventure.error()}</p>
+            <div class={styles.errorBody}>
+              <p>{adventure.error()}</p>
+              <Show when={retryableMicrophoneIssue()}>
+                {(issue) => (
+                  <MicrophoneInputRecovery
+                    microphoneInput={props.host.microphoneInput}
+                    issue={issue()}
+                  />
+                )}
+              </Show>
+            </div>
             <Show when={adventure.microphoneRecoveryAction() !== 'none'}>
               <button
                 class={styles.errorAction}
@@ -460,13 +499,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               adventure.snapshot().phase === 'shattering'
             }
           />
-          <Show
-            when={
-              adventure.voiceMode() === 'off' &&
-              adventure.microphoneIssue() === null &&
-              nearby()
-            }
-          >
+          <Show when={showEncounterOffer()}>
             <div class={styles.encounterOffer}>
               <span>
                 {nearby()?.optional === true
@@ -476,6 +509,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
               <button
                 class={styles.primary}
                 type="button"
+                data-testid="glass-sing-action"
                 onClick={() => void adventure.start()}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -763,8 +797,7 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
                   host={props.host}
                   levelId={level.id}
                   encore={definition()}
-                  beforeCapture={adventure.silenceForEncore}
-                  onReleaseVoice={adventure.releaseEncore}
+                  audioLeases={encoreAudioLeases}
                   onComplete={adventure.celebrateEncore}
                   onClose={closeEncore}
                 />

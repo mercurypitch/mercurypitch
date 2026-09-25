@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "crystal-lotus-goblet",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/crystal-lotus-goblet/crystal-lotus-goblet-dense-master.blend",
+    "bytes": 254119624,
+    "sha256": "125f9f40b7336bc8255d8919c2877c129cdd45d68d50a67e6859ee85b5250b1d",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "26f970c2acc6e990cb82fdac0d6ed4dad8b160ce8c6b4c564e18d50858901ff8",
+  "topology": {
+    "vertices": 1735113,
+    "triangles": 3138730,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "83b20a8e0b44dd6367ff491383c33a8c989edae023700d26f3e443fff84e5a44",
+    "triangleIndicesInt32Sha256": "b929b8bf375a34725882ec102cb3035bb5a2fb3eaf3564b9c58606c64e48a047"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_CrystalLotusGoblet_DenseMaster",
+    "rawObject": "crystal-lotus-goblet__raw_import",
+    "reviewObject": "crystal-lotus-goblet__normalized_review",
+    "meshData": "crystal-lotus-goblet__dense_mesh",
+    "material": "crystal-lotus-goblet__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "crystal-lotus-goblet__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "e21745d2dab81a8fefc7c3fb51b896be483258219e06cb602b6d79ff75217ab8",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "crystal-lotus-goblet__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "b6ba210bcc25739c90eb5037822256b488de1735f5c70f14624d92c07e243030",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "crystal-lotus-goblet__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "1f4d24f9030318fdaceb76bf2e7c3e9c977a419bd5971d4411410172404f9cd1",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "crystal-lotus-goblet__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "c08b94e61819801aab2113200798a021beeb0aec0864f8a1bd4dacf5e67ff28e",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/crystal-lotus-goblet/matched-clay-three-quarter.png",
+      "bytes": 304542,
+      "sha256": "bfbb202a59cd38e023946f3ea2638a0d91ae776bcc64a0c5571a214add34753c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/crystal-lotus-goblet/matched-clay-top.png",
+      "bytes": 1069322,
+      "sha256": "2f7bf744a91058470e2c95361e06d136607ca40f9eb74ebd0b087dc25f42b66b",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/crystal-lotus-goblet/matched-clay-side.png",
+      "bytes": 291396,
+      "sha256": "26239a89ff6f14d3210ea785be907356854c6866627a0521b44539608cb89fdd",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/crystal-lotus-goblet/matched-pbr-three-quarter.png",
+      "bytes": 328976,
+      "sha256": "fa2a4b243f4356aa3156c4221bb822677d5f8998ac94ef0688232da1c236db12",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/crystal-lotus-goblet/matched-pbr-top.png",
+      "bytes": 1498301,
+      "sha256": "4929bfd5251feeff6cceea090da8947573c6448b3ed12cc34c77687e7b1550ad",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/crystal-lotus-goblet/matched-pbr-side.png",
+      "bytes": 313805,
+      "sha256": "ff8f3a9a9bf972914e267377503b4b439fcf49a709208418b42435d99e47d1d4",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset crystal-lotus-goblet",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

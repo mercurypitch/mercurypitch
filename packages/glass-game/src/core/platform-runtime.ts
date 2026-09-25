@@ -10,6 +10,18 @@ const ZERO: Readonly<Vec3> = { x: 0, y: 0, z: 0 }
 const NO_MOTIONS: readonly MovingPlatformCollision[] = []
 const EPSILON = 1e-10
 
+type ScrollBehavior = Extract<PlatformBehaviorDefinition, { kind: 'scroll' }>
+type ScrollPhase = Extract<
+  PlatformPhase,
+  'extended' | 'retracting' | 'retracted' | 'extending'
+>
+
+interface ScrollState {
+  phase: ScrollPhase
+  phaseElapsed: number
+  lengthRatio: number
+}
+
 interface RuntimePlatformState {
   definition: PlatformDefinition
   offset: Vec3
@@ -17,6 +29,7 @@ interface RuntimePlatformState {
   elapsed: number
   phase: PlatformPhase
   phaseElapsed: number
+  lengthRatio: number
 }
 
 export interface PlatformRuntime {
@@ -34,6 +47,14 @@ export interface PlatformRuntime {
 
 function finitePositive(value: number, maximum: number): boolean {
   return Number.isFinite(value) && value > 0 && value <= maximum
+}
+
+function finiteInRange(
+  value: number,
+  minimum: number,
+  maximum: number,
+): boolean {
+  return Number.isFinite(value) && value >= minimum && value <= maximum
 }
 
 /** Returns an author-facing error instead of allowing malformed data into a clock. */
@@ -86,6 +107,38 @@ export function platformRuntimeDefinitionError(
       return 'glide translation speed exceeds the bounded movement budget'
     return undefined
   }
+  if (behavior.kind === 'scroll') {
+    if (
+      (behavior.axis !== 'x' && behavior.axis !== 'z') ||
+      (behavior.initialState !== 'extended' &&
+        behavior.initialState !== 'retracted') ||
+      !finiteInRange(
+        behavior.minLengthRatio,
+        PLATFORM_BEHAVIOR_LIMITS.minimumScrollLengthRatio,
+        PLATFORM_BEHAVIOR_LIMITS.maximumScrollLengthRatio,
+      )
+    )
+      return 'scroll axis, initial state and minimum length ratio must be valid and within runtime limits'
+    if (
+      !finiteInRange(
+        behavior.extendedSeconds,
+        PLATFORM_BEHAVIOR_LIMITS.minimumScrollRestSeconds,
+        PLATFORM_BEHAVIOR_LIMITS.maximumScrollRestSeconds,
+      ) ||
+      !finiteInRange(
+        behavior.retractedSeconds,
+        PLATFORM_BEHAVIOR_LIMITS.minimumScrollRestSeconds,
+        PLATFORM_BEHAVIOR_LIMITS.maximumScrollRestSeconds,
+      ) ||
+      !finiteInRange(
+        behavior.transitionSeconds,
+        PLATFORM_BEHAVIOR_LIMITS.minimumScrollTransitionSeconds,
+        PLATFORM_BEHAVIOR_LIMITS.maximumScrollTransitionSeconds,
+      )
+    )
+      return 'scroll rest and transition durations must be finite and within runtime limits'
+    return undefined
+  }
   if (
     !finitePositive(
       behavior.warningSeconds,
@@ -122,6 +175,74 @@ function glideProgress(
   return (1 + Math.cos(Math.PI * t)) / 2
 }
 
+function clampUnit(value: number): number {
+  return Math.max(0, Math.min(1, value))
+}
+
+function easedProgress(progress: number): number {
+  return (1 - Math.cos(Math.PI * clampUnit(progress))) / 2
+}
+
+function scrollCycleSeconds(behavior: ScrollBehavior): number {
+  return (
+    behavior.extendedSeconds +
+    behavior.retractedSeconds +
+    2 * behavior.transitionSeconds
+  )
+}
+
+function scrollStateAt(behavior: ScrollBehavior, elapsed: number): ScrollState {
+  const cycle = scrollCycleSeconds(behavior)
+  const initialOffset =
+    behavior.initialState === 'extended'
+      ? 0
+      : behavior.extendedSeconds + behavior.transitionSeconds
+  let cycleElapsed = (((elapsed + initialOffset) % cycle) + cycle) % cycle
+  if (cycleElapsed <= EPSILON || cycle - cycleElapsed <= EPSILON)
+    cycleElapsed = 0
+
+  let phase: ScrollPhase
+  let phaseElapsed: number
+  let phaseDuration: number
+  if (cycleElapsed + EPSILON < behavior.extendedSeconds) {
+    phase = 'extended'
+    phaseElapsed = cycleElapsed
+    phaseDuration = behavior.extendedSeconds
+  } else {
+    cycleElapsed = Math.max(0, cycleElapsed - behavior.extendedSeconds)
+    if (cycleElapsed + EPSILON < behavior.transitionSeconds) {
+      phase = 'retracting'
+      phaseElapsed = cycleElapsed
+      phaseDuration = behavior.transitionSeconds
+    } else {
+      cycleElapsed = Math.max(0, cycleElapsed - behavior.transitionSeconds)
+      if (cycleElapsed + EPSILON < behavior.retractedSeconds) {
+        phase = 'retracted'
+        phaseElapsed = cycleElapsed
+        phaseDuration = behavior.retractedSeconds
+      } else {
+        phase = 'extending'
+        phaseElapsed = Math.max(0, cycleElapsed - behavior.retractedSeconds)
+        phaseDuration = behavior.transitionSeconds
+      }
+    }
+  }
+  const phaseProgress = clampUnit(phaseElapsed / phaseDuration)
+  const retraction =
+    phase === 'extended'
+      ? 0
+      : phase === 'retracted'
+        ? 1
+        : phase === 'retracting'
+          ? easedProgress(phaseProgress)
+          : 1 - easedProgress(phaseProgress)
+  return {
+    phase,
+    phaseElapsed,
+    lengthRatio: 1 - (1 - behavior.minLengthRatio) * retraction,
+  }
+}
+
 function offsetFor(state: RuntimePlatformState): Vec3 {
   const behavior = state.definition.behavior
   if (behavior?.kind !== 'glide') return { ...ZERO }
@@ -139,10 +260,17 @@ function collisionEnabled(state: RuntimePlatformState): boolean {
 
 function phaseDuration(state: RuntimePlatformState): number | null {
   const behavior = state.definition.behavior
-  if (behavior?.kind !== 'crackle') return null
-  if (state.phase === 'warning') return behavior.warningSeconds
-  if (state.phase === 'released') return behavior.releaseSeconds
-  if (state.phase === 'resetting') return behavior.resetSeconds
+  if (behavior?.kind === 'crackle') {
+    if (state.phase === 'warning') return behavior.warningSeconds
+    if (state.phase === 'released') return behavior.releaseSeconds
+    if (state.phase === 'resetting') return behavior.resetSeconds
+  }
+  if (behavior?.kind === 'scroll') {
+    if (state.phase === 'extended') return behavior.extendedSeconds
+    if (state.phase === 'retracted') return behavior.retractedSeconds
+    if (state.phase === 'retracting' || state.phase === 'extending')
+      return behavior.transitionSeconds
+  }
   return null
 }
 
@@ -184,10 +312,53 @@ function translatedPlatform(
   }
 }
 
+function resizedScrollPlatform(
+  platform: PlatformDefinition,
+  behavior: ScrollBehavior,
+  lengthRatio: number,
+): PlatformDefinition {
+  if (lengthRatio === 1) return platform
+  if (behavior.axis === 'x') {
+    const center = (platform.minX + platform.maxX) / 2
+    const halfLength = ((platform.maxX - platform.minX) * lengthRatio) / 2
+    return {
+      ...platform,
+      minX: center - halfLength,
+      maxX: center + halfLength,
+    }
+  }
+  const center = (platform.minZ + platform.maxZ) / 2
+  const halfLength = ((platform.maxZ - platform.minZ) * lengthRatio) / 2
+  return {
+    ...platform,
+    minZ: center - halfLength,
+    maxZ: center + halfLength,
+  }
+}
+
+function materializedPlatform(
+  platform: PlatformDefinition,
+  state: RuntimePlatformState,
+): PlatformDefinition {
+  const behavior = state.definition.behavior
+  if (behavior?.kind === 'scroll')
+    return resizedScrollPlatform(platform, behavior, state.lengthRatio)
+  return translatedPlatform(platform, state.offset)
+}
+
 function initialPhase(platform: PlatformDefinition): PlatformPhase {
   if (platform.behavior?.kind === 'glide') return 'moving'
   if (platform.behavior?.kind === 'crackle') return 'intact'
+  if (platform.behavior?.kind === 'scroll')
+    return platform.behavior.initialState
   return 'stable'
+}
+
+function initialLengthRatio(platform: PlatformDefinition): number {
+  const behavior = platform.behavior
+  return behavior?.kind === 'scroll'
+    ? scrollStateAt(behavior, 0).lengthRatio
+    : 1
 }
 
 export function createPlatformRuntime(
@@ -205,6 +376,7 @@ export function createPlatformRuntime(
       elapsed: 0,
       phase: initialPhase(definition),
       phaseElapsed: 0,
+      lengthRatio: initialLengthRatio(definition),
     })
   }
   const clockedStates = [...states.values()].filter(
@@ -215,6 +387,7 @@ export function createPlatformRuntime(
     state.elapsed = 0
     state.phase = initialPhase(state.definition)
     state.phaseElapsed = 0
+    state.lengthRatio = initialLengthRatio(state.definition)
     state.offset = { ...ZERO }
     state.previousOffset = { ...ZERO }
   }
@@ -225,10 +398,17 @@ export function createPlatformRuntime(
       for (const state of clockedStates) {
         state.previousOffset = { ...state.offset }
         if (!activePlatformIds.has(state.definition.id)) continue
-        if (state.definition.behavior?.kind === 'glide') {
+        const behavior = state.definition.behavior
+        if (behavior?.kind === 'glide') {
           state.elapsed += dt
           state.offset = offsetFor(state)
-        } else if (state.definition.behavior?.kind === 'crackle') {
+        } else if (behavior?.kind === 'scroll') {
+          state.elapsed = (state.elapsed + dt) % scrollCycleSeconds(behavior)
+          const scroll = scrollStateAt(behavior, state.elapsed)
+          state.phase = scroll.phase
+          state.phaseElapsed = scroll.phaseElapsed
+          state.lengthRatio = scroll.lengthRatio
+        } else if (behavior?.kind === 'crackle') {
           advanceCrackle(state, dt)
         }
       }
@@ -253,7 +433,7 @@ export function createPlatformRuntime(
         if (state !== undefined && !collisionEnabled(state)) continue
         if (state === undefined) result.push(solid)
         else if (solid.kind !== 'prop')
-          result.push(translatedPlatform(solid, state.offset))
+          result.push(materializedPlatform(solid, state))
       }
       return result
     },
@@ -315,8 +495,11 @@ export function createPlatformRuntime(
               ? glideProgress(behavior, state.elapsed)
               : duration === null
                 ? 0
-                : Math.max(0, Math.min(1, state.phaseElapsed / duration)),
+                : clampUnit(state.phaseElapsed / duration),
           collisionEnabled: collisionEnabled(state),
+          ...(behavior?.kind === 'scroll'
+            ? { lengthRatio: state.lengthRatio }
+            : {}),
         }
       })
     },

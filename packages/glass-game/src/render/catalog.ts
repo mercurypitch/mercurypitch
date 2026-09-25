@@ -2,7 +2,9 @@
 // Render catalog — new exhibits and platform skins are data, not loader branches.
 // ============================================================
 
+import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
+import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
 import type { SurfaceTextures } from './texture-recipe'
 
 export interface BreakableRenderRecipe {
@@ -20,7 +22,9 @@ export interface BreakableRenderRecipe {
   thickness: number
   portraitTexture?: string
   portraitMaterial?: string
-  /** Separate art plane that remains after only the protective glazing breaks. */
+  /** Whether the image remains protected or travels on the authored shards. */
+  portraitFracture?: 'protective-glazing' | 'picture-bearing'
+  /** Separate art plane used before fracture and for the collected reward. */
   persistentPortrait?: {
     width: number
     height: number
@@ -48,10 +52,11 @@ function collectedPortrait(portraitTexture: string): BreakableRenderRecipe {
     shardPrefix: 'legend_cash_shard_',
     shardCount: 16,
     persistentPrefix: 'legend_cash_frame_',
-    displayHeight: 0.84,
+    displayHeight: PORTRAIT_EXHIBIT_ENVELOPE.height,
     fallbackShape: 'slab',
     portraitTexture,
     portraitMaterial: 'legend_portrait',
+    portraitFracture: 'picture-bearing',
     persistentPortrait: { width: 0.58, height: 0.78, centerY: 0.42, z: 0.032 },
     faceAnchor: true,
     fragmentBudget: 18,
@@ -157,7 +162,7 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     shardPrefix: 'legend_cash_shard_',
     shardCount: 16,
     persistentPrefix: 'legend_cash_frame_',
-    displayHeight: 0.84,
+    displayHeight: PORTRAIT_EXHIBIT_ENVELOPE.height,
     fallbackShape: 'slab',
     portraitTexture: 'legend-johnny-cash',
     portraitMaterial: 'legend_portrait',
@@ -171,10 +176,11 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     shardPrefix: 'legend_cash_shard_',
     shardCount: 16,
     persistentPrefix: 'legend_cash_frame_',
-    displayHeight: 0.84,
+    displayHeight: PORTRAIT_EXHIBIT_ENVELOPE.height,
     fallbackShape: 'slab',
     portraitTexture: 'painting-archive-v5',
     portraitMaterial: 'legend_portrait',
+    portraitFracture: 'protective-glazing',
     persistentPortrait: {
       width: 0.58,
       height: 0.78,
@@ -183,6 +189,13 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     },
     faceAnchor: true,
     fragmentBudget: 18,
+  },
+  'cloudway-lab-voice': {
+    ...CLEAR_GLASS,
+    shardCount: 0,
+    displayHeight: 0.62,
+    fallbackShape: 'rounded',
+    fragmentBudget: 14,
   },
 }
 
@@ -349,6 +362,30 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
     bundle: CLOUDWAY_PLATFORM_BUNDLE_ID,
     kitNode: CLOUDWAY_PLATFORM_NODES.crackleIntact,
     body: 'teal',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.pearlRest,
+    body: 'marble',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.scroll,
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.roseCrackle]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.roseCrackle,
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystCrackle]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.amethystCrackle,
+    body: 'glass',
     outline: false,
     suspendedHull: false,
   },

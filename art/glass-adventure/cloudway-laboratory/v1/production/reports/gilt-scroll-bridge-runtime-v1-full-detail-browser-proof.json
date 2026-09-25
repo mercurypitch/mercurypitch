@@ -1,0 +1,321 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge-runtime-v1",
+  "status": "real-gltfloader-adapter-webgl-full-detail-proof-passed",
+  "runtimeGlb": {
+    "file": "source-assets/runtime/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1-full-detail-reviewed.glb",
+    "bytes": 102050324,
+    "sha256": "6b372b90f7f8914c1b455b15cd6b2102ecaf24be8bf5d1cb8990f289d887fd3a"
+  },
+  "harness": {
+    "url": "http://127.0.0.1:5634/",
+    "loader": "three/addons/loaders/GLTFLoader.js",
+    "adapter": "packages/glass-game/src/render/cloudway-scroll-adapter.ts",
+    "renderer": "THREE.WebGLRenderer",
+    "rendererIdentity": {
+      "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "vendor": "Google Inc. (Google)",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "maxTextureSize": 8192
+    }
+  },
+  "sourceAfterGlTfLoader": {
+    "root": "Cloudway_GiltScrollBridge_RuntimeV1",
+    "colliderJson": "{\"shape\":\"box\",\"width\":0.757494056,\"depth\":2.205964088,\"height\":0.1,\"topY\":0,\"center\":[0,-0.05,0]}",
+    "platformAdapterJson": "{\"version\":1,\"coordinates\":{\"upAxis\":\"+Y\",\"units\":\"metres\",\"origin\":\"top-centre-of-fully-extended-support\"},\"support\":{\"state\":\"fully-extended\",\"topY\":0,\"width\":0.757494056,\"depth\":2.205964088},\"motion\":{\"kind\":\"scroll\",\"localExtensionAxis\":\"x\",\"roles\":{\"deck\":\"ScrollDeck\",\"negativeRoller\":\"ScrollRollerNegative\",\"positiveRoller\":\"ScrollRollerPositive\",\"persistent\":[]},\"rollerEdgeAnchors\":{\"negative\":[-0.378747028,0,0],\"positive\":[0.378747028,0,0]}}}",
+    "meshes": [
+      {
+        "mesh": "ScrollDeckFrostEtchDetailLayer",
+        "material": "CloudwayScroll_FrostEtch_v1",
+        "triangles": 6240,
+        "kind": "glass",
+        "isPhysical": true,
+        "transmission": 0.36000001430511475,
+        "metalness": 0,
+        "roughness": 0.3100000023841858,
+        "textureChannels": {
+          "baseColor": false,
+          "normal": false,
+          "metalness": false,
+          "roughness": false
+        }
+      },
+      {
+        "mesh": "ScrollDeckGeometry",
+        "material": "CloudwayScroll_DeckGlass_v1",
+        "triangles": 188,
+        "kind": "glass",
+        "isPhysical": true,
+        "transmission": 0.9850000143051147,
+        "metalness": 0,
+        "roughness": 0.07500000298023224,
+        "textureChannels": {
+          "baseColor": false,
+          "normal": false,
+          "metalness": false,
+          "roughness": false
+        }
+      },
+      {
+        "mesh": "ScrollDeckGoldStarDetailLayer",
+        "material": "CloudwayScroll_GoldDetail_v1",
+        "triangles": 960,
+        "kind": "opaque",
+        "isPhysical": true,
+        "transmission": 0,
+        "metalness": 0.8799999952316284,
+        "roughness": 0.20000000298023224,
+        "textureChannels": {
+          "baseColor": false,
+          "normal": false,
+          "metalness": false,
+          "roughness": false
+        }
+      },
+      {
+        "mesh": "ScrollRollerNegativeGeometry",
+        "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+        "triangles": 265104,
+        "kind": "opaque",
+        "isPhysical": false,
+        "transmission": 0,
+        "metalness": 1,
+        "roughness": 1,
+        "textureChannels": {
+          "baseColor": true,
+          "normal": true,
+          "metalness": true,
+          "roughness": true
+        }
+      },
+      {
+        "mesh": "ScrollRollerPositiveGeometry",
+        "material": "CloudwayScroll_RollerIvoryGoldPBR_v1",
+        "triangles": 254876,
+        "kind": "opaque",
+        "isPhysical": false,
+        "transmission": 0,
+        "metalness": 1,
+        "roughness": 1,
+        "textureChannels": {
+          "baseColor": true,
+          "normal": true,
+          "metalness": true,
+          "roughness": true
+        }
+      }
+    ]
+  },
+  "captures": [
+    {
+      "name": "full-play",
+      "ratio": 1,
+      "view": "normal-play",
+      "file": "source-assets/proofs/runtime/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1-full-detail-full-play.png",
+      "bytes": 313295,
+      "sha256": "e41d1b465d0117ff369d0883c70a0eb5494d9a7641dbe1cc2a44be853539fa4f",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "adapterState": {
+        "lengthRatio": 1,
+        "liveBounds": {
+          "min": [
+            -0.6233132353551131,
+            -0.18037056743005309,
+            -1.1999997705451089
+          ],
+          "max": [
+            0.6210344311719266,
+            0.08079948180164997,
+            1.1999997707198753
+          ],
+          "size": [
+            1.2443476665270397,
+            0.26117004923170306,
+            2.399999541264984
+          ]
+        },
+        "transforms": {
+          "deckScale": [
+            1,
+            1,
+            1
+          ],
+          "negativeRollerScale": [
+            1,
+            1,
+            1
+          ],
+          "positiveRollerScale": [
+            1,
+            1,
+            1
+          ],
+          "negativeRollerPosition": [
+            -0.37874701619148254,
+            0,
+            0
+          ],
+          "positiveRollerPosition": [
+            0.37874701619148254,
+            0,
+            0
+          ]
+        },
+        "render": {
+          "calls": 18,
+          "triangles": 1054812,
+          "geometries": 8,
+          "textures": 8
+        }
+      }
+    },
+    {
+      "name": "half-play",
+      "ratio": 0.625,
+      "view": "normal-play",
+      "file": "source-assets/proofs/runtime/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1-full-detail-half-play.png",
+      "bytes": 315686,
+      "sha256": "f7c5a18356ab3b2b9e1a1b68533bc59148a8367825aaf7b0e044a7d62ac61938",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "adapterState": {
+        "lengthRatio": 0.625,
+        "liveBounds": {
+          "min": [
+            -0.4812830998551131,
+            -0.18037056743005309,
+            -1.1999997705451089
+          ],
+          "max": [
+            0.4790042956719266,
+            0.08079948180164997,
+            1.1999997707198753
+          ],
+          "size": [
+            0.9602873955270397,
+            0.26117004923170306,
+            2.399999541264984
+          ]
+        },
+        "transforms": {
+          "deckScale": [
+            0.625,
+            1,
+            1
+          ],
+          "negativeRollerScale": [
+            1,
+            1,
+            1
+          ],
+          "positiveRollerScale": [
+            1,
+            1,
+            1
+          ],
+          "negativeRollerPosition": [
+            -0.23671688069148256,
+            0,
+            0
+          ],
+          "positiveRollerPosition": [
+            0.23671688069148256,
+            0,
+            0
+          ]
+        },
+        "render": {
+          "calls": 18,
+          "triangles": 1054812,
+          "geometries": 8,
+          "textures": 8
+        }
+      }
+    },
+    {
+      "name": "retracted-close",
+      "ratio": 0.25,
+      "view": "close-retracted",
+      "file": "source-assets/proofs/runtime/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1-full-detail-retracted-close.png",
+      "bytes": 510157,
+      "sha256": "394478810cecb4a59f6e91599b486448561ae0d54eff26e3dc37cbf8b40238af",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "adapterState": {
+        "lengthRatio": 0.25,
+        "liveBounds": {
+          "min": [
+            -0.3392529643551131,
+            -0.18037056743005309,
+            -1.1999997705451089
+          ],
+          "max": [
+            0.3369741601719266,
+            0.08079948180164997,
+            1.1999997707198753
+          ],
+          "size": [
+            0.6762271245270397,
+            0.26117004923170306,
+            2.399999541264984
+          ]
+        },
+        "transforms": {
+          "deckScale": [
+            0.25,
+            1,
+            1
+          ],
+          "negativeRollerScale": [
+            1,
+            1,
+            1
+          ],
+          "positiveRollerScale": [
+            1,
+            1,
+            1
+          ],
+          "negativeRollerPosition": [
+            -0.09468674519148257,
+            0,
+            0
+          ],
+          "positiveRollerPosition": [
+            0.09468674519148257,
+            0,
+            0
+          ]
+        },
+        "render": {
+          "calls": 18,
+          "triangles": 1054812,
+          "geometries": 8,
+          "textures": 8
+        }
+      }
+    }
+  ],
+  "assertions": {
+    "exactCertifiedRootLoaded": true,
+    "threeScrollStatesRendered": true,
+    "fullRatio": true,
+    "intermediateRatio": true,
+    "minimumRatio": true,
+    "deckRetracts": true,
+    "negativeRollerRigid": true,
+    "positiveRollerRigid": true,
+    "noConsoleErrors": true,
+    "noPageErrors": true
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "scope": "Actual GLTFLoader, production scroll adapter, and WebGLRenderer proof of the preserved full-detail source export. This is an art/contract checkpoint, not a device performance claim."
+}

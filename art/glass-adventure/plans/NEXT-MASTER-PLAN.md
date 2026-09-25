@@ -1,6 +1,6 @@
 # Glass adventure — current master plan
 
-Updated 24 September 2026. This is the current status and next-stage plan, not a
+Updated 25 September 2026. This is the current status and next-stage plan, not a
 chronological chat log. It supersedes the older “pending” labels in dated research
 and production notes for the items explicitly implemented below. Original sources,
 rejected experiments, detailed research and decision history remain preserved.
@@ -9,13 +9,54 @@ The Glassworks foundation was squash-merged through PR #807 into `main` at
 `3076872d5dca644682985f2bda70a84e18c2ff95` on 24 September 2026, after the
 required PR Gate passed again. The owner authorized roadmap **1–8**, including
 configurable melody, and asked us to **stop before 9** for testing. Items 10–11
-remain later. Current work is `feat/glass-native-preview-builds`: the owner
-explicitly approved games-enabled Android and TestFlight testing builds.
+remain later. Native testing builds were enabled through PR #860, merged at
+`ff7eae76082451febfe15d5ea5ebbccfb3a6bc38`. Current work is
+`feat/glass-mobile-playability`: the approved performance, guidance and collision
+follow-up on a new branch/PR.
 Public release remains a separate decision.
 The durable execution record is
 [APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md](./APPROVED-POLISH-AND-PROGRESSION-2026-09-23.md);
 its final integration/CI checkpoint is authoritative for this batch. Plans are
 mirrored under `<user-dotfiles>/personal/besidecue/glass-adventure/`.
+
+## Latest design decision — 25 September 2026
+
+The owner can now select the Scarlett input after the microphone recovery pass.
+Runtime head `c4632528` passed all 48 applicable checks (one expected skip).
+Physical-device acceptance of the whole batch remains open.
+
+New Cloudway feedback has been researched and saved in
+[Melody Cloudway level design](./MELODY-CLOUDWAY-LEVEL-DESIGN-2026-09-25.md).
+It contains the narration cause and correction contract, measured platform
+orientation, three route wireframes, the old 2D compiler comparison, and a
+five-note/two-frost-wall journey ending in a complete melodic portrait.
+
+**Recommendation awaiting selection:** one separately selectable candidate,
+The Thawing Song, using Sunlit steps (0, +2, +4, +2, 0). Keep current Cloudway
+as the comparison; do not create several playable levels. First audition is
+ungraded. Melodic target/challenge integration, attempt persistence and later
+grading/portrait registration are explicit work, not assumed existing features.
+The path-opening narration bug is diagnosed but not yet changed in this
+planning delivery. No new runtime level, asset generation or unlock changes.
+
+Next order: owner selects the route, correct narration semantics, block out the
+selected journey, integrate melody and resumable attempts, then inspect/playtest
+before producing missing art and choosing campaign placement. This design
+exercise does not waive PR #861 device acceptance or approve merging/releasing.
+
+## Approved final five passes before device tests
+
+The owner approved camera comfort, picture-bearing portrait shatter, matched
+Merc musical phrases, bounded mobile rendering quality, and the final museum
+art/pond/stair pass. Follow [FINAL-FIVE-PASSES-2026-09-24.md](./FINAL-FIVE-PASSES-2026-09-24.md).
+Implementation is complete: brief diagonal steering preserves camera yaw;
+portrait artwork rides the shards; Merc's 3/5/7-note phrases match the selected
+key and pace; stable mobile quality reduces measured render work; and per-island
+inspection corrected pond/plinth contact and curved bridge landings. Independent
+source review has cleared all five areas, including audio retry and close/reopen
+ownership. Final browser proof, combined gates and exact-head CI are recorded in
+the execution checklist. PR #861 stays open for physical-device acceptance; no
+new levels or public release in this batch.
 
 ## Current priority after mobile playtest
 
@@ -54,7 +95,9 @@ upload key is configured; Google Play internal upload remains manual.
 `bc-v*` public-release tags retain canonical games-off manifests/bundles and the
 existing 90/150 MiB warning/failure limits. The test profile has a separate
 300/340 MiB budget based on a real 378.07 MiB unpacked game-enabled web build
-and its 288.72 MiB ZIP estimate. Actual native package sizes still require CI.
+and its 288.72 MiB ZIP estimate. Native run 590 passed: signed Android AAB
+302.0 MiB / APK 302.8 MiB, and internal TestFlight 0.1.0 (590) uploaded
+successfully. All 43 PR checks passed before merging #860.
 This testing configuration supports physical-device measurement; it is not
 acceptance of current mobile frame rate or authorization for public release.
 
@@ -240,3 +283,30 @@ Detailed companions include `LEVEL-AUTHORING-PLAN.md`, `LONGER-LEVELS.md`,
 [friendly rivals](./FRIENDLY-RIVALS-AND-RESONANCE-DUELS.md).
 Dated proposal documents retain their historical wording; the approved execution
 record and this current master plan state what has now been implemented.
+
+### Android APK feedback — September 24, during mobile follow-up
+
+- Audit camera recentering when combining forward and lateral keys: reported side movement followed by a return to Merc. Reproduce before changing steering design.
+- Inspect the final Glassworks Journey portrait orientation (reported upside down), including runtime texture/UV orientation.
+- Inspect portrait fracture composition: the picture remains visible while glass behind it breaks. Present picture-bearing shard vs reveal alternatives before changing the effect.
+- Melody tracking received a positive device report. Next creative pass: short singable Merc phrases paired with matching reference melodies and configurable scoring, then repeat-after-Merc listening/singing acceptance.
+
+The first musical phrase audition proposal is saved in
+[MERC-MUSICAL-PHRASES-2026-09-24.md](./MERC-MUSICAL-PHRASES-2026-09-24.md).
+Camera and portrait findings were recorded in
+[the Android audit](../proofs/mobile-playability-2026-09-24/camera-portrait-audit.md).
+
+The approved final passes supersede the pending choices in that earlier Android
+audit: picture-bearing shards are implemented, the earned picture remains intact,
+and brief diagonal steering no longer earns an immediate camera swing. The final
+voice delivery contains 88 lazy-loaded variants (39 three-note, 39 five-note and
+10 seven-note), 3.22 MB total. Missing seven-note key/pace combinations use the
+exact instrumental guide. Every delivered reference completes the shared detector
+and judge at 24, 44.1 and 48 kHz; wrong key, constant tone, silence and missed
+anchors do not. Encore alone permits a 400 ms consonant gap, without unvoiced
+progress, and requires 120 ms fresh voiced evidence per anchor. Real singing and
+whether Merc's phrasing feels delightful remain owner listening decisions.
+
+## 25 September — Cloudway laboratory batch
+
+Current execution: [task list](../cloudway-laboratory/v1/TASKS.md). The owner requested fall-stall profiling, a two-row message queue, ten platform designs plus ten props, an exploratory second course (retracting scroll bridge and two-/four-second rose-glass steps) and a browser layout editor with JSON export. Bug fixes stay on #861; new assets/editor/course use `feat/glass-cloudway-laboratory`. The earlier melody-route choice remains unconfirmed.

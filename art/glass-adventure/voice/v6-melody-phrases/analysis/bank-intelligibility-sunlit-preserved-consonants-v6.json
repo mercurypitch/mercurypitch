@@ -1,0 +1,28 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "bankReport": "bank-pilot.json",
+  "gate": "hash-bound unprompted Whisper base.en transcript equals intended lyric after case/punctuation normalization",
+  "ownerListening": "pending",
+  "variantCount": 1,
+  "exactCount": 1,
+  "counts": {
+    "sunlit-steps": {
+      "total": 1,
+      "exact": 1
+    }
+  },
+  "variants": [
+    {
+      "id": "sunlit-steps-r50-p100",
+      "melodyId": "sunlit-steps",
+      "rootMidi": 50,
+      "pace": 1,
+      "sourceSha256": "841fca67027178d99059a0918241498a81992716b04609d965d4f6b50fb2a159",
+      "modelSha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "expected": "Tiny sparks can glow",
+      "transcript": "Tiny sparks can glow",
+      "exact": true,
+      "meanTokenProbability": 0.8613379999999999
+    }
+  ]
+}

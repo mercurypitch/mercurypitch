@@ -114,7 +114,19 @@ export function createBrowserMemoryPlayback(): MusicalMemoryPlayback {
   }
   return {
     play(audio, onEnded, beforePlayback) {
-      if (disposed || !audio.size || audio.size > MEMORY_MAX_BYTES)
+      const settledAudio = Promise.resolve(audio).then(
+        (value) => ({ kind: 'ready' as const, value }),
+        () => ({ kind: 'failed' as const }),
+      )
+      const settledBeforePlayback = Promise.resolve(beforePlayback).then(
+        () => true,
+        () => false,
+      )
+      if (
+        disposed ||
+        (audio instanceof Blob &&
+          (!audio.size || audio.size > MEMORY_MAX_BYTES))
+      )
         return Promise.resolve(false)
       const previous = stop()
       const run = ++generation
@@ -136,7 +148,17 @@ export function createBrowserMemoryPlayback(): MusicalMemoryPlayback {
         try {
           const decode = async (): Promise<AudioBuffer | null> => {
             if (!(await output.unlocked) || !output.context) return null
-            const bytes = await audio.arrayBuffer()
+            const settled = await settledAudio
+            if (settled.kind === 'failed') return null
+            const resolvedAudio = settled.value
+            if (
+              !resolvedAudio.size ||
+              resolvedAudio.size > MEMORY_MAX_BYTES ||
+              run !== generation ||
+              disposed
+            )
+              return null
+            const bytes = await resolvedAudio.arrayBuffer()
             if (run !== generation || disposed) return null
             return output.context.decodeAudioData(bytes)
           }
@@ -147,9 +169,13 @@ export function createBrowserMemoryPlayback(): MusicalMemoryPlayback {
               timeout = setTimeout(() => resolve(null), 5000)
             }),
           ])
-          await Promise.all([previous, beforePlayback])
+          const [, playbackReady] = await Promise.all([
+            previous,
+            settledBeforePlayback,
+          ])
           if (
             !buffer ||
+            !playbackReady ||
             run !== generation ||
             disposed ||
             !Number.isFinite(buffer.duration) ||

@@ -1,0 +1,129 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:06,000"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 6000
+			},
+			"text": " Another beautiful mess.",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 0.999989,
+					"t_dtw": -1
+				},
+				{
+					"text": " Another",
+					"timestamps": {
+						"from": "00:00:00,650",
+						"to": "00:00:01,820"
+					},
+					"offsets": {
+						"from": 650,
+						"to": 1820
+					},
+					"id": 6023,
+					"p": 0.999825,
+					"t_dtw": -1
+				},
+				{
+					"text": " beautiful",
+					"timestamps": {
+						"from": "00:00:01,820",
+						"to": "00:00:03,850"
+					},
+					"offsets": {
+						"from": 1820,
+						"to": 3850
+					},
+					"id": 4950,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": " mess",
+					"timestamps": {
+						"from": "00:00:04,360",
+						"to": "00:00:05,200"
+					},
+					"offsets": {
+						"from": 4360,
+						"to": 5200
+					},
+					"id": 2085,
+					"p": 1,
+					"t_dtw": -1
+				},
+				{
+					"text": ".",
+					"timestamps": {
+						"from": "00:00:05,200",
+						"to": "00:00:05,510"
+					},
+					"offsets": {
+						"from": 5200,
+						"to": 5510
+					},
+					"id": 13,
+					"p": 0.996238,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_300]",
+					"timestamps": {
+						"from": "00:00:06,000",
+						"to": "00:00:06,000"
+					},
+					"offsets": {
+						"from": 6000,
+						"to": 6000
+					},
+					"id": 50663,
+					"p": 0.407051,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

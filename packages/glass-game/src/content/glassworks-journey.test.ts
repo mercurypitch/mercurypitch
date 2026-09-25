@@ -2,9 +2,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { composeLevel } from '../authoring/compose-level'
-import type { Bounds3, GameEvent, GlassGame, MovementInput } from '../contracts'
+import type { Bounds3, BreakOutcome, GameEvent, GlassGame, MovementInput, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
+import { getRequiredRouteBreakableIds } from '../core/progress'
 import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
 import { ENCLOSED_CHAMBER_HALF, ENCLOSED_CHAMBER_ROOM, } from './enclosed-museum-kit'
 import { GLASSWORKS } from './glassworks'
@@ -101,7 +102,11 @@ function walkAxis(game: GlassGame, axis: 'x' | 'z', destination: number): void {
   steps(game, 24)
 }
 
-function sing(game: GlassGame, encounterId: string): void {
+function sing(
+  game: GlassGame,
+  encounterId: string,
+  outcome: BreakOutcome = 'path-opened',
+): void {
   expect(game.snapshot().nearbyBreakableId).toBe(encounterId)
   expect(game.beginEncounter(encounterId, 57)).toBe(true)
   const events: GameEvent[] = []
@@ -120,7 +125,7 @@ function sing(game: GlassGame, encounterId: string): void {
       ),
     )
   }
-  expect(events).toContainEqual({ type: 'break', id: encounterId })
+  expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
   steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
   expect(game.snapshot().phase).toBe('idle')
 }
@@ -205,6 +210,9 @@ describe('Glassworks Journey blockout', () => {
     expect(GLASSWORKS_JOURNEY.exit.requiresCompleted).toEqual([ids.portrait])
     expect(GLASSWORKS_JOURNEY.exit.requiresCompleted).not.toEqual(
       expect.arrayContaining([...optionalIds]),
+    )
+    expect(getRequiredRouteBreakableIds(GLASSWORKS_JOURNEY)).toEqual(
+      requiredIds,
     )
     expect(GLASSWORKS_JOURNEY.rewards).toMatchObject({
       revision: 1,
@@ -368,6 +376,7 @@ describe('Glassworks Journey blockout', () => {
 
   it('blocks each fresh gate, opens the four required route beats and exits without optional exhibits', () => {
     const game = createGlassGame(GLASSWORKS_JOURNEY)
+    expect(game.snapshot().nextRequiredBreakableId).toBe(ids.vestibule)
     expect(game.snapshot().activeSolidIds).toEqual(
       expect.arrayContaining([...gateIds]),
     )
@@ -379,6 +388,7 @@ describe('Glassworks Journey blockout', () => {
     walkAxis(game, 'x', 0)
     walkAxis(game, 'z', -0.05)
     sing(game, ids.vestibule)
+    expect(game.snapshot().nextRequiredBreakableId).toBe(ids.garden)
     expect(game.snapshot().activeSolidIds).not.toContain(ids.vestibuleGate)
 
     walkAxis(game, 'z', 0)
@@ -393,6 +403,7 @@ describe('Glassworks Journey blockout', () => {
       ids.garden,
       ids.gardenGate,
     )
+    expect(game.snapshot().nextRequiredBreakableId).toBe(ids.archive)
 
     walkAxis(game, 'z', GLASSWORKS_JOURNEY_ROUTE.eastTurn.z)
     walkAxis(game, 'x', GLASSWORKS_JOURNEY_ROUTE.northTurn.x)
@@ -406,6 +417,7 @@ describe('Glassworks Journey blockout', () => {
       ids.archive,
       ids.archiveGate,
     )
+    expect(game.snapshot().nextRequiredBreakableId).toBe(ids.portrait)
 
     walkAxis(game, 'z', GLASSWORKS_JOURNEY_ROUTE.portrait.z - 0.05)
     expect(game.snapshot().checkpointId).toBe(ids.portraitCheckpoint)
@@ -417,6 +429,7 @@ describe('Glassworks Journey blockout', () => {
       ids.portrait,
       ids.portraitGate,
     )
+    expect(game.snapshot().nextRequiredBreakableId).toBeNull()
 
     const completionEvents: GameEvent[] = []
     for (let index = 0; index < 2400 && !game.snapshot().complete; index++)

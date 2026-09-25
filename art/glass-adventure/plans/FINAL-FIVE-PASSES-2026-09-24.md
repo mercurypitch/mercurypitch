@@ -1,0 +1,152 @@
+# Final five passes before device acceptance
+
+The owner approved all five passes, then a combined review and polish before
+physical-device testing. This supersedes earlier pending design decisions for
+these five items. No new islands, public release or merge is included.
+
+Worktree: `feat/glass-mobile-playability`, PR #861, starting at `3eb1ccf5`.
+The foundation and native testing profile are already merged through #807/#860.
+Commit and push each coherent stage; keep #861 open for owner acceptance.
+
+## Execution checklist
+
+- [x] 1. Camera comfort: forward-biased follow during brief diagonal steering,
+     smooth sustained turns, stable zoom/manual orbit and keyboard/touch behavior.
+     Verify real input sequences and side-framed challenge transitions.
+- [x] 2. Portrait finale: the picture and glass shatter together, while the frame
+     remains and the earned collection portrait stays intact. Preserve protective
+     glazing for archive discoveries. Inspect before/during/after rendered frames.
+- [x] 3. Merc musical phrases: three attractive short original phrases in the
+     selected Gentle Whimsical D2 voice, configurable 3/5/7-note contours, reference
+     playback matching the same key and pace judged by the microphone exercise.
+     Preserve masters/receipts and a listenable audition; validate decoded references
+     and negative controls through the actual pitch/judge path.
+- [x] 4. Mobile rendering: measure pass and pixel costs, implement bounded quality
+     policy and avoid redundant work without blindly decimating accepted source art.
+     Compare matched frames and preserve shadows, glass and animation. Desktop
+     counters and screenshots do not establish physical-tablet FPS or heat.
+- [x] 5. Floating Museum: capture each island and both inter-island connections;
+     inspect water source ponds, architectural steps, bridge landings, intersections,
+     resting contact and focal silhouettes. Correct placement and improve stairs
+     with coherent curved treads and natural arrivals. Preserve raw asset lineage.
+- [x] Review all five changes together; resolve findings and inspect polished
+      phone/tablet/desktop layouts and actual rendered art at matched cameras.
+- [x] Run focused behavior/regression checks and required proportional pre-push
+      gates; commit/push coherent stages and update the PR description.
+- [ ] Review final exact-head CI after the cold-start rendering correction.
+- [ ] Provide the owner a current preview/build and concise device test route.
+      Device singing, sustained performance and camera feel remain owner acceptance.
+
+## Ownership and boundaries
+
+Astra/root owns the museum placements, per-island inspection, integration review,
+durable tasks, git and CI. Existing GPT 5.6 SOL max implementers own camera and
+portrait, musical production, and measured rendering respectively. Coordinate
+shared UI/runtime edits before touching them. Each uses an isolated test port and
+output folder. The owner's existing HTTPS preview is left running during work.
+
+## Acceptance details
+
+Camera: brief W+A/D chords must not cause a second surprise swing on release;
+manual orbit and zoom must remain predictable. Portrait: actual image-bearing
+shards are visible, upright before the effect, and the reward is never destroyed.
+Melodies: audible words, recognizable voice and comfortable musical contours;
+no claim that accurate pitch alone proves good singing. Lazy-loaded references
+must not play at a mismatched target key/pace. Mobile: record exact policies and
+pass counts, with high quality available and no software-FPS-driven auto changes.
+Museum: each pond has a readable source/lip, not a broad pool underneath stairs;
+bridges meet usable terraces with consistent tread orientation and height.
+
+Proofs live under `art/glass-adventure/proofs/final-pass-2026-09-24/` and source
+productions retain their original manifests and Blender projects. Final comparison
+images must come from the real runtime, not only offline render scenes.
+
+## Checkpoints
+
+- Started: clean worktree at `3eb1ccf5`; #861 had 42 passing applicable checks.
+  Three bounded implementation tasks dispatched. Museum baseline inspection
+  and shared plan started. None of this new batch is claimed complete yet.
+
+- Camera stage: brief W+A/D chords and 150 ms side taps now preserve yaw;
+  sustained lateral intent earns smooth follow after 240 ms. Root reviewed the
+  intent boundary and integration. 39 focused unit cases and two real keyboard/
+  touch browser cases passed; physical-device comfort remains owner acceptance.
+
+- Mobile quality stage: root reviewed the stable Auto/High/Balanced selection,
+  one-frame shadow reuse and immediate invalidation. 43 focused unit tests,
+  real touch/persistence/320–1280 px host checks, actual-raster comparison and a
+  production app build passed. Measured Balanced two-frame work fell 18.15% in
+  submitted triangles and 40.93% in target pixels; this is not device FPS.
+  UI copy was polished and the selector screenshot refreshed after review.
+- Portrait stage: twenty focused unit cases and the final actual-runtime browser
+  proof passed. All six desktop/tablet captures are populated and upright;
+  picture-bearing shards remain visible without the panorama banner, mirrors
+  reflect the room, and the earned image/save return intact. Independent review
+  found no remaining source or proof issue.
+- Museum implementation and matched per-island captures are complete; independent
+  review caught and resolved the imported Conservatory plinth overlap. All 38
+  focused tests and scoped lint pass, with refreshed screenshots and signoff.
+- Combined review: portrait raster proof now rejects blank captures and includes
+  a populated mirror; the banner/shard overlap is fixed. Sung
+  references exposed consonant-dropout resets. Experimental tone carriers are
+  excluded from delivery; the lyrical Encore will require real voiced evidence
+  at every anchor while permitting a bounded consonant gap. First-gesture audio
+  unlock, delayed-fetch cancellation and stale replay ownership are also under
+  regression review. The provisional voice-bank count is not a delivery receipt.
+- The required combined pre-push preparation/typecheck has not run for this new
+  five-pass batch yet. Earlier gate receipts belong to the starting `3eb1ccf5`
+  mobile-flow batch and must not be mistaken for final validation of these edits.
+
+- Final musical delivery: 88 references (39 First Arc, 39 Sunlit Steps, 10 Gallery
+  Arch), 3,219,104 bytes, with no detector tone carrier. Public filenames, sizes
+  and SHA-256 hashes match the delivery manifest exactly. All 88 pass the shared
+  YIN/judge at 24/44.1/48 kHz with no retries; wrong key, constant tone, silence,
+  missing middle and missing final anchors remain incomplete at each rate.
+  Natural words retain consonants; Encore alone allows a 400 ms gap and requires
+  120 ms fresh voiced evidence per anchor. Ordinary hold/melody defaults are
+  unchanged. Missing voice variants use the exact instrumental guide.
+- Final independent audio review signed off persistent parent-owned leases for
+  Adventure and Collection, concrete cleanup after the 120 ms fade, stale-request
+  isolation and corrupt-decode cache eviction. Closing/reopening a whole collection
+  cannot allow an old fade to unmute a new microphone session. Final browser
+  regression is now complete; packaging and exact-head CI follow.
+
+- Final phone Encore integration: three browser cases pass. The old per-dialog
+  owner was temporarily restored to prove the close/reopen regression fails
+  (two premature ambient requests); restoring the persistent owner passes. The
+  normal sing handoff stops the example before attaching microphone capture.
+  The artificial sub-120 ms reopen can acquire a stream during the old fade,
+  but remains in reference mode; fresh singing/recording starts after its guide.
+- Required workspace typecheck found one missing `shadowVisibilityChanged`
+  property in a renderer mock. The fixture now matches production. All earlier
+  shared workspace checks passed; targeted glass-game and BesideCue app typecheck
+  completed successfully, and all 19 renderer regression cases passed.
+
+- Combined `pnpm pr:prepare` passed (495 changed files, 71 source files); source
+  index is current. Its import/format changes were inspected, and the formatted
+  public manifest still matches all three decoded-audio verification receipts.
+  Stage commits preserve camera, rendering, portrait, museum and voice work
+  separately. Exact-head cloud CI and the fresh Android artifact are pending.
+- The first cloud pass on `dd6e2bfd` exposed a packaging import that Vite resolved
+  but Node type stripping could not. The voice catalogue now has an explicit
+  package export; the inventory uses that export without changing compiler flags.
+  A child-Node inventory test reproduces the old failure and passes after the fix;
+  Node 22 independently loads all 88 variants. Cloud checks will rerun on the fix.
+- The next cloud pass on `6e623f8f` passed web packaging, both native games builds,
+  all unit/type/lint/health gates and the new Encore and render-quality suites.
+  Full browser coverage found an obsolete camera assertion (a short side tap
+  was required to swing 90 degrees) and a real-raster phone startup error under
+  Balanced quality across controls/voice/journey. The camera test now checks
+  steady brief corrections and completed sustained turns at three zooms;
+  the prior assertion reproduced red and the updated case passes. The phone
+  startup cause is under investigation before the final CI/handoff checkpoint.
+- Cold-start root cause is confirmed: Balanced disabled automatic shadows before
+  the initial reflection probe, which then sampled an uninitialized shadow
+  texture. Asset requests all succeeded; real SwiftShader draws reported a
+  texture/sampler mismatch. Initializing the manual shadow update before the
+  first offscreen scene render fixes the cause without bypassing first-frame
+  validation. Probe/main-frame, fresh-renderer recovery and High-to-Balanced
+  cadence regressions pass (21 renderer tests); the old setup fails the new probe
+  assertion. All six controls browser tests pass, and both unchanged phone
+  voice/journey cases pass with real raster output. Source and scoped checks
+  are reviewed; exact-head CI follows this final correction.

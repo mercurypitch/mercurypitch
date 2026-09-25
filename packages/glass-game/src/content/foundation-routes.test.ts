@@ -1,7 +1,7 @@
 // Foundation route tests — both prefab placements remain playable through real controls and held notes.
 
 import { describe, expect, it } from 'vitest'
-import type { GameEvent, GlassGame, LevelDefinition, MovementInput, } from '../contracts'
+import type { BreakOutcome, GameEvent, GlassGame, LevelDefinition, MovementInput, } from '../contracts'
 import { createGlassGame } from '../core/game'
 import { MOVEMENT } from '../core/movement'
 import { SHATTER_LIFECYCLE_SECONDS } from '../core/shatter-presentation'
@@ -43,7 +43,11 @@ function walkAxis(game: GlassGame, axis: 'x' | 'z', destination: number): void {
   steps(game, 24)
 }
 
-function sing(game: GlassGame, encounterId: string): void {
+function sing(
+  game: GlassGame,
+  encounterId: string,
+  outcome: BreakOutcome,
+): void {
   expect(game.snapshot().nearbyBreakableId).toBe(encounterId)
   expect(game.beginEncounter(encounterId, 57)).toBe(true)
   const events: GameEvent[] = []
@@ -62,7 +66,7 @@ function sing(game: GlassGame, encounterId: string): void {
       ),
     )
   }
-  expect(events).toContainEqual({ type: 'break', id: encounterId })
+  expect(events).toContainEqual({ type: 'break', id: encounterId, outcome })
   expect(game.snapshot().phase).toBe('shattering')
   steps(game, Math.ceil(SHATTER_LIFECYCLE_SECONDS / MOVEMENT.fixedStep) + 1)
   expect(game.snapshot().phase).toBe('idle')
@@ -150,7 +154,7 @@ describe('foundation proof routes', () => {
     expect(blocked.snapshot().player.position.z).toBeLessThan(2.9)
     expect(game.snapshot().activeSolidIds).toContain(route.gate)
     walkAxis(game, 'z', 0.45)
-    sing(game, route.first)
+    sing(game, route.first, 'path-opened')
     expect(game.snapshot().activeSolidIds).not.toContain(route.gate)
     walkAxis(game, 'x', 1)
     walkAxis(game, 'z', 2.5)
@@ -158,7 +162,7 @@ describe('foundation proof routes', () => {
     walkAxis(game, 'z', 5.8)
     walkAxis(game, 'x', 1.25)
     walkAxis(game, 'z', 6.25)
-    sing(game, route.second)
+    sing(game, route.second, 'exit-opened')
     walkAxis(game, 'z', 6.4)
     walkAxis(game, 'x', 0)
     walkAxis(game, 'z', 8)
@@ -181,11 +185,11 @@ describe('foundation proof routes', () => {
     expect(game.snapshot().activeSolidIds).toContain(route.gate)
     walkAxis(game, 'x', -1.25)
     walkAxis(game, 'z', 0.25)
-    sing(game, route.first)
+    sing(game, route.first, 'path-opened')
     expect(game.snapshot().activeSolidIds).not.toContain(route.gate)
     walkAxis(game, 'z', 0)
     walkAxis(game, 'x', 6.45)
-    sing(game, route.second)
+    sing(game, route.second, 'exit-opened')
     walkAxis(game, 'z', 0.8)
     walkAxis(game, 'x', 8)
     walkAxis(game, 'z', 0)

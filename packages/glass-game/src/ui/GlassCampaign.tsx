@@ -13,6 +13,7 @@ import { resolveReplayProfile } from '../core/replay-profile'
 import { canEnterReplay, highestReplayTier } from '../core/replay-progress'
 import { evaluateTrialUnlock } from '../core/trial-unlock'
 import type { GlassGameHost } from '../host'
+import { createEncoreAudioLeaseOwner } from './encore-audio-lease'
 import { GlassAdventure } from './GlassAdventure'
 import { MuseumCollection } from './MuseumCollection'
 import type { MuseumJourneyAudio } from './MuseumJourney'
@@ -37,6 +38,10 @@ export function GlassCampaign(props: {
   const [collectionOpen, setCollectionOpen] = createSignal(false)
   let visitSequence = 0
   let mapAudio: MuseumJourneyAudio | undefined
+  const collectionEncoreAudioLeases = createEncoreAudioLeaseOwner(
+    () => mapAudio?.silenceForVoice() ?? Promise.resolve(),
+    () => mapAudio?.releaseVoice(),
+  )
   const [selectedStageId, setSelectedStageId] = createSignal(
     FLOATING_MUSEUM_JOURNEY.stages[0]!.id,
   )
@@ -315,10 +320,7 @@ export function GlassCampaign(props: {
             <MuseumCollection
               entries={collection()}
               host={props.host}
-              beforeCapture={() =>
-                mapAudio?.silenceForVoice() ?? Promise.resolve()
-              }
-              onReleaseVoice={() => mapAudio?.releaseVoice()}
+              audioLeases={collectionEncoreAudioLeases}
               assetUrl={props.host.assetUrl}
               onClose={() => setCollectionOpen(false)}
               onVisit={(levelId) => {

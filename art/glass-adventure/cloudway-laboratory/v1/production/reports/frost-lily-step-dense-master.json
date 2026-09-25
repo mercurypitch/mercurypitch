@@ -1,0 +1,441 @@
+{
+  "schema": 1,
+  "assetId": "frost-lily-step",
+  "label": "Frost Lily Step",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/frost-lily-step/dense-donor.glb",
+    "bytes": 59762456,
+    "sha256": "8ac87902a43f9be9e7735726b8504ccce6716eb3086d439d07a1f1dd8d0eb5f4",
+    "taskId": "01a0d88c-3b91-73b4-8eee-d587f6d77d76",
+    "receipt": {
+      "file": "source-assets/meshy/frost-lily-step/receipt.json",
+      "bytes": 6526,
+      "sha256": "c08ecca8019667e700104dc695b1583266b11fbd39b1f1e8239c9992f3f7fe20"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 194437,
+    "triangles": 355472,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "01b0898d334897b88c8439587b7ecb729d3d6ca8652069f207818fb7b5ec808a",
+    "triangleIndicesInt32Sha256": "f0e013ed48a6b1f7ae9bba8e2e64fc3efbb68a0fae7ac0c10398554d814920b3",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 646,
+      "largestVertexCounts": [
+        2384,
+        2115,
+        2047,
+        2043,
+        2030,
+        1829,
+        1812,
+        1789,
+        1655,
+        1513,
+        1512,
+        1504
+      ],
+      "largestVertexFractions": [
+        0.012261041,
+        0.010877559,
+        0.010527832,
+        0.010507259,
+        0.0104404,
+        0.009406646,
+        0.009319214,
+        0.009200924,
+        0.008511754,
+        0.007781441,
+        0.007776298,
+        0.007735153
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.259603857994,
+        0.0,
+        0.0,
+        0.000618456979
+      ],
+      [
+        0.0,
+        1.259603857994,
+        0.0,
+        -0.00057753938
+      ],
+      [
+        0.0,
+        0.0,
+        1.259603857994,
+        -0.152016997337
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.259603857994,
+        0.0,
+        0.0,
+        0.000618456979
+      ],
+      [
+        0.0,
+        1.259603857994,
+        0.0,
+        -0.00057753938
+      ],
+      [
+        0.0,
+        0.0,
+        1.259603857994,
+        -0.152016997337
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.903678829,
+        -1.200000031,
+        -0.353698474
+      ],
+      "max": [
+        0.903678829,
+        1.200000031,
+        0.035248312
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      1.807357658,
+      2.400000062,
+      0.388946785
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 2.4,
+      "sourceRawUnits": 1.905360996723175,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.717921972,
+        -0.95222199,
+        -0.160115004
+      ],
+      "max": [
+        0.716939986,
+        0.953139007,
+        0.148670003
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.434861958,
+      1.905360997,
+      0.308785006
+    ],
+    "landingRawZ": 0.120686362,
+    "heightToleranceRaw": 0.002412383,
+    "patchTriangles": 10218,
+    "patchAreaRawSquareUnits": 2.456928663,
+    "patchBoundsRaw": {
+      "min": [
+        -0.706759989,
+        -0.941444993,
+        0.116532996
+      ],
+      "max": [
+        0.705660999,
+        0.942884982,
+        0.124026999
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.412420988,
+      1.884329975,
+      0.007494003
+    ],
+    "horizontalCoverage": [
+      0.984360189,
+      0.988962185
+    ],
+    "relativePatchHeightSpread": 0.024269321,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "ice body",
+      "gold clasps",
+      "lily engraving"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Ice, clasps, and the faint top engraving are not authoring-separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-base_color.png",
+        "bytes": 69463380,
+        "sha256": "53572b70a100bb3b150c5f7c826fde44b8ecfe559a3ca34b8296ef6a944105d6",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-normal.png",
+        "bytes": 14372987,
+        "sha256": "30070a0b57f3833b9683134dc85c2a1833c749997a758123c495cdb515a11e20",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-metallic.png",
+        "bytes": 6596022,
+        "sha256": "f1b3339d39cb0b4f7bbbac3466bd8c0ba243fc3847be364d77df34f428453e93",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/frost-lily-step/textures/set-0-roughness.png",
+        "bytes": 6044298,
+        "sha256": "e0f6bddb8349488f450fc65f7aade3391bb99031c49406d3413d907599d294eb",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/frost-lily-step/matched-clay-three-quarter.png",
+          "bytes": 429788,
+          "sha256": "f31418300d781a40fb30430cc1ccd8775e63f3bf4675a551a551952c3c2d7412",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/frost-lily-step/matched-clay-top.png",
+          "bytes": 447775,
+          "sha256": "79f8a0fe3017ec3e923304903cad95f0f2446611cdcefbe548b1bd49b110825e",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/frost-lily-step/matched-clay-side.png",
+          "bytes": 289347,
+          "sha256": "ee3a5b10859b0de249e26c77046aac9dd6ecee98494d848463829b41663a7505",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/frost-lily-step/matched-pbr-three-quarter.png",
+          "bytes": 612033,
+          "sha256": "e054f71351c5326e180b2090be05a3e736986de74a6c6e20d6bfceb94dec9f92",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/frost-lily-step/matched-pbr-top.png",
+          "bytes": 1237712,
+          "sha256": "1fccbefa277f9090c563be0bd835cb6475d69dfbb03f321c6c4d2d66af3b8f05",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/frost-lily-step/matched-pbr-side.png",
+          "bytes": 444789,
+          "sha256": "33e35c002cc87cfbcc55a62d3991fbf06685a5e5090a28b33eef5a0ad9a8f3c2",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/frost-lily-step/frost-lily-step-dense-master.blend",
+    "bytes": 113318176,
+    "sha256": "23509d843bc518cdc721ed8e1f1ea986fb25b54add5fbeec462fc023b20c585b",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset frost-lily-step",
+  "contactCandidate": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.717921972,
+        -0.95222199,
+        -0.160115004
+      ],
+      "max": [
+        0.716939986,
+        0.953139007,
+        0.148670003
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.434861958,
+      1.905360997,
+      0.308785006
+    ],
+    "landingRawZ": 0.120686362,
+    "heightToleranceRaw": 0.002412383,
+    "patchTriangles": 10218,
+    "patchAreaRawSquareUnits": 2.456928663,
+    "patchBoundsRaw": {
+      "min": [
+        -0.706759989,
+        -0.941444993,
+        0.116532996
+      ],
+      "max": [
+        0.705660999,
+        0.942884982,
+        0.124026999
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.412420988,
+      1.884329975,
+      0.007494003
+    ],
+    "horizontalCoverage": [
+      0.984360189,
+      0.988962185
+    ],
+    "relativePatchHeightSpread": 0.024269321,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  }
+}

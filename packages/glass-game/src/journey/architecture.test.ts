@@ -1,7 +1,7 @@
 // Journey architecture tests — preserve landmark heights and progress-owned decoration seams.
 
 import type { BufferGeometry } from 'three'
-import { DoubleSide, Group, InstancedMesh, Mesh, MeshBasicMaterial, PlaneGeometry, Raycaster, Vector3, } from 'three'
+import { DoubleSide, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Raycaster, Vector3, } from 'three'
 import { describe, expect, it } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
 import type { JourneyArchitectureMaterials } from './architecture'
@@ -111,6 +111,51 @@ function createFixture(
 }
 
 describe('journey architecture', () => {
+  it('keeps every source pond clear of processional stairs', () => {
+    const fixture = createFixture(true, true, true)
+    try {
+      fixture.assembly.root.updateMatrixWorld(true)
+      const stairs: InstancedMesh[] = []
+      fixture.assembly.root.traverse((object) => {
+        if (object.name === 'ivory-processional-stairway')
+          stairs.push(object as InstancedMesh)
+      })
+      for (const spillway of FLOATING_MUSEUM_JOURNEY.spillways) {
+        const source = spillway.source
+        if (!source) continue
+        for (const stair of stairs) {
+          const matrix = new Matrix4()
+          for (let index = 0; index < stair.count; index++) {
+            stair.getMatrixAt(index, matrix)
+            matrix.premultiply(stair.matrixWorld).invert()
+            for (let point = 0; point < 65; point++) {
+              const angle = (point * Math.PI * 2) / 64
+              const across =
+                point === 64 ? 0 : Math.cos(angle) * source.width * 0.5
+              const along =
+                point === 64 ? 0 : Math.sin(angle) * source.length * 0.5
+              const local = new Vector3(
+                source.position[0] +
+                  across * Math.cos(spillway.yaw) +
+                  along * Math.sin(spillway.yaw),
+                source.position[1],
+                source.position[2] -
+                  across * Math.sin(spillway.yaw) +
+                  along * Math.cos(spillway.yaw),
+              ).applyMatrix4(matrix)
+              expect(
+                Math.abs(local.x) < 0.5 && Math.abs(local.z) < 0.5,
+                `${spillway.id} crosses stairs`,
+              ).toBe(false)
+            }
+          }
+        }
+      }
+    } finally {
+      fixture.dispose()
+    }
+  })
+
   it('keeps ornate medallions on the shared landmark heights', () => {
     const fixture = createFixture()
     try {

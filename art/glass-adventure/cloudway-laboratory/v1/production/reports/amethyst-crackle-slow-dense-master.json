@@ -1,0 +1,376 @@
+{
+  "schema": 1,
+  "assetId": "amethyst-crackle-slow",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/amethyst-crackle-slow/dense-donor.glb",
+    "bytes": 98866452,
+    "sha256": "886548878242005d9e7c39c72f5b1ddc6f62803aa61afaa8f43114c33250f489",
+    "taskId": "01a0d883-ae83-7169-acc1-b1d37cfa0578",
+    "receipt": {
+      "file": "source-assets/meshy/amethyst-crackle-slow/receipt.json",
+      "bytes": 6661,
+      "sha256": "63c3f5dee6fb151c266eb6ff9736b7fd0c11227bea05118971f6b2a5ba9d963b"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 787132,
+    "triangles": 1433588,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "6c910acef22fff723c30779aa20ae67e1ed9ec84669265a6e6042df368c4e7a3",
+    "triangleIndicesInt32Sha256": "d067276c1f3139978d0b7198dc6aad9ebdd226657bfdbc244e662abcb3f1c955",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 3244,
+      "largestVertexCounts": [
+        5462,
+        4099,
+        3405,
+        3029,
+        3011,
+        2644,
+        2613,
+        2575,
+        2571,
+        2562,
+        2479,
+        2327
+      ],
+      "largestVertexFractions": [
+        0.006939116,
+        0.005207513,
+        0.004325831,
+        0.003848147,
+        0.00382528,
+        0.00335903,
+        0.003319647,
+        0.00327137,
+        0.003266288,
+        0.003254854,
+        0.003149408,
+        0.002956302
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        0.892850100994,
+        0.0,
+        0.0,
+        0.000328115653
+      ],
+      [
+        0.0,
+        0.892850100994,
+        0.0,
+        -0.000514724641
+      ],
+      [
+        0.0,
+        0.0,
+        0.892850100994,
+        -0.123542584479
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        0.892850100994,
+        0.0,
+        0.0,
+        0.000328115653
+      ],
+      [
+        0.0,
+        0.892850100994,
+        0.0,
+        -0.000514724641
+      ],
+      [
+        0.0,
+        0.0,
+        0.892850100994,
+        -0.123542584479
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.849999995,
+        -0.58901367,
+        -0.267587874
+      ],
+      "max": [
+        0.849999995,
+        0.58901367,
+        0.018793795
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      1.699999989,
+      1.178027339,
+      0.286381668
+    ],
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "contactCandidate": {
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.952374995,
+        -0.659124017,
+        -0.161331996
+      ],
+      "max": [
+        0.95164001,
+        0.660277009,
+        0.159418002
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.904015005,
+      1.319401026,
+      0.320749998
+    ],
+    "landingRawZ": 0.138368783,
+    "heightToleranceRaw": 0.002505859,
+    "patchTriangles": 169348,
+    "patchAreaRawSquareUnits": 1.819959,
+    "patchBoundsRaw": {
+      "min": [
+        -0.937182009,
+        -0.640509009,
+        0.132826
+      ],
+      "max": [
+        0.93750602,
+        0.644311011,
+        0.147765994
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.874688029,
+      1.28482002,
+      0.014939994
+    ],
+    "horizontalCoverage": [
+      0.984597298,
+      0.973790375
+    ],
+    "relativePatchHeightSpread": 0.046578312,
+    "broadCandidate": true,
+    "flatCandidate": false,
+    "screeningStatus": "needs-review",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "crystal body",
+      "gold clasps"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "limitation": "The provider source is one opaque exported mesh and one material, with many unlabeled loose geometry components. Crystal, clasps, and any future shards are not authoring-separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-base_color.png",
+        "bytes": 69330482,
+        "sha256": "934761365e9323abb9873f123f647277e7629e72d5bd8492a731e2ec612e8664",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-normal.png",
+        "bytes": 14733299,
+        "sha256": "8064853e626ff45b5f54e31491df974205f6b91ef79fe091dfaf2a5cf3ed36f1",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-metallic.png",
+        "bytes": 12510048,
+        "sha256": "5c8252caa4f993855f6b6b25854de7ca0b8dc2b85471ff8e39b67d85bdfc49c9",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/amethyst-crackle-slow/textures/set-0-roughness.png",
+        "bytes": 6383406,
+        "sha256": "ab14a8fca0cb181ebb1a5a76e9e4afa6607f669175e858b14827b085c6024468",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-three-quarter.png",
+          "bytes": 489124,
+          "sha256": "551133ba801feb462ca5f83507cec36c141451aa5ec15dab95f3b38264ebba6d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-top.png",
+          "bytes": 775086,
+          "sha256": "745181e4a283ee7e0bbebe04607867ffd07da161b5d51ad7339e802be65c1379",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-clay-side.png",
+          "bytes": 394461,
+          "sha256": "a5e9122044cd96ceff92be60d14db2323de152069dffb4f9d78b8a61cf41728c",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-three-quarter.png",
+          "bytes": 662063,
+          "sha256": "cb6d1d4aad2627c756dc935cb853403c66f042aee76704da903479fe86ab5552",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-top.png",
+          "bytes": 1421579,
+          "sha256": "c0e053063b53f2b5ef7d925485f54f65d606990cdb8548ef5cb6d938cd78f64b",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/amethyst-crackle-slow/matched-pbr-side.png",
+          "bytes": 518959,
+          "sha256": "d946047623699b540936f93a5d7a0a4b19b4db7e69064f2f2d7449e6331816ac",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/amethyst-crackle-slow/amethyst-crackle-slow-dense-master.blend",
+    "bytes": 171247689,
+    "sha256": "bde6370fb1847686336d81b3c9073f535b9cd9a89ca8e130f0f1bd40a45a67a0",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset amethyst-crackle-slow"
+}

@@ -5,6 +5,7 @@ import { GLASSWORKS } from '../content/glassworks'
 import type { GameEvent, GlassGame, LevelDefinition, MovementInput, } from '../contracts'
 import { createGlassGame } from './game'
 import { MOVEMENT } from './movement'
+import { exitRequirementsMet, getRequiredRouteBreakableIds } from './progress'
 import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
 
 const idle: MovementInput = { moveX: 0, moveZ: 0, jumpDown: false }
@@ -186,7 +187,9 @@ describe('Glassworks simulation', () => {
     expect(game.beginEncounter(goblet, 57)).toBe(true)
     steps(game, 60, { moveX: 1, moveZ: -1, jumpDown: true })
     expect(game.snapshot().player.position).toEqual(parked)
-    expect(sing(game)).toEqual([{ type: 'break', id: goblet }])
+    expect(sing(game)).toEqual([
+      { type: 'break', id: goblet, outcome: 'path-opened' },
+    ])
     expect(game.snapshot().phase).toBe('shattering')
     expect(game.saveProgress().completedBreakableIds).toEqual([goblet])
     expect(game.snapshot().enabledPlatformIds).toContain('arch-bridge')
@@ -270,7 +273,7 @@ describe('Glassworks simulation', () => {
         completedSteps: 2,
         stepCount: 2,
       },
-      { type: 'break', id: goblet },
+      { type: 'break', id: goblet, outcome: 'path-opened' },
     ])
     expect(game.saveProgress().completedBreakableIds).toEqual([goblet])
   })
@@ -470,18 +473,111 @@ describe('Glassworks simulation', () => {
 
     expect(events.filter((event) => event.type === 'complete')).toEqual([])
     expect(game.snapshot().complete).toBe(false)
-    expect(game.snapshot().player.position.z).toBeLessThan(0.1)
+    expect(game.snapshot().player.position.z).toBeGreaterThan(0.49)
+    expect(game.snapshot().player.velocity.z).toBe(0)
+    expect(game.snapshot().nearLockedExit).toBe(true)
+  })
+
+  it('derives only the dependency-closed nonoptional route to the exit', () => {
+    const optional = GLASSWORKS.breakables.find((target) => target.optional)!
+    const routeLevel: LevelDefinition = {
+      ...GLASSWORKS,
+      id: 'dependency-closed-exit',
+      breakables: [
+        GLASSWORKS.breakables[0],
+        GLASSWORKS.breakables[1],
+        {
+          ...GLASSWORKS.breakables[2],
+          requiresCompleted: [vase, 'missing-route-requirement'],
+        },
+        optional,
+        {
+          ...optional,
+          id: 'unrelated-main-exhibit',
+          optional: false,
+          requiresCompleted: undefined,
+        },
+      ],
+      exit: {
+        ...GLASSWORKS.exit,
+        requiresCompleted: [hero, optional.id],
+      },
+    }
+
+    expect(getRequiredRouteBreakableIds(routeLevel)).toEqual([
+      goblet,
+      vase,
+      'missing-route-requirement',
+      hero,
+    ])
+    expect(exitRequirementsMet(routeLevel, new Set([goblet, vase, hero]))).toBe(
+      false,
+    )
+  })
+
+  it('blocks an airborne crossing until the required exhibit is complete', () => {
+    const game = createGlassGame({
+      ...AIRBORNE_EXIT_LEVEL,
+      id: 'locked-airborne-exit',
+      breakables: [GLASSWORKS.breakables[0]],
+      exit: {
+        ...AIRBORNE_EXIT_LEVEL.exit,
+        requiresCompleted: [goblet],
+      },
+    })
+    const events = game.step(
+      { ...idle, moveZ: -1, jumpDown: true },
+      MOVEMENT.fixedStep,
+    )
+    for (let step = 0; step < 180; step++)
+      events.push(...game.step({ ...idle, moveZ: -1 }, MOVEMENT.fixedStep))
+
+    expect(events.filter((event) => event.type === 'complete')).toEqual([])
+    expect(game.snapshot().player.position.z).toBeGreaterThan(0.49)
+  })
+
+  it('blocks the sealed veil from either side without moving a restored player', () => {
+    const reverse = createGlassGame({
+      ...AIRBORNE_EXIT_LEVEL,
+      id: 'locked-reverse-exit',
+      spawn: {
+        position: { x: 0, y: 0, z: -0.2 },
+        facingYaw: Math.PI,
+        checkpointId: 'far-side',
+      },
+      checkpoints: [
+        {
+          id: 'far-side',
+          position: { x: 0, y: 0, z: -0.2 },
+          radius: 0.3,
+          facingYaw: Math.PI,
+        },
+      ],
+      breakables: [GLASSWORKS.breakables[0]],
+      exit: {
+        ...AIRBORNE_EXIT_LEVEL.exit,
+        requiresCompleted: [goblet],
+      },
+    })
+
+    expect(reverse.snapshot().player.position.z).toBe(-0.2)
+    const events = steps(reverse, 180, { ...idle, moveZ: 1 })
+    expect(events.filter((event) => event.type === 'complete')).toEqual([])
+    expect(reverse.snapshot().player.position.z).toBeLessThan(0.21)
   })
 
   it('traverses both opened bridges and terraces, then an optional display before exiting', () => {
     const game = createGlassGame(GLASSWORKS)
-    const breakNearby = (id: string): void => {
+    const breakNearby = (
+      id: string,
+      outcome: 'celebration' | 'path-opened' | 'exit-opened',
+    ): void => {
       expect(game.beginEncounter(id, 57)).toBe(true)
-      expect(sing(game)).toEqual([{ type: 'break', id }])
+      expect(sing(game)).toEqual([{ type: 'break', id, outcome }])
       steps(game, 180)
     }
     walkToGoblet(game)
-    breakNearby(goblet)
+    breakNearby(goblet, 'path-opened')
     walkAxis(game, 'z', 3.65)
     walkAxis(game, 'x', 1.7)
     walkAxis(game, 'z', 5.15)
@@ -493,15 +589,15 @@ describe('Glassworks simulation', () => {
     expect(game.snapshot().checkpointId).toBe('jump-terrace')
     walkAxis(game, 'z', 5)
     walkAxis(game, 'z', 2.7)
-    breakNearby(vase)
+    breakNearby(vase, 'path-opened')
     walkAxis(game, 'x', 5.5)
     walkAxis(game, 'z', 1.8)
-    breakNearby(hero)
+    breakNearby(hero, 'exit-opened')
     expect(game.snapshot().complete).toBe(false)
     walkAxis(game, 'x', 4.6)
     walkAxis(game, 'z', 4.4)
     const optional = GLASSWORKS.breakables.find((target) => target.optional)!
-    breakNearby(optional.id)
+    breakNearby(optional.id, 'celebration')
     expect(game.saveProgress().completedBreakableIds).toEqual([
       goblet,
       vase,

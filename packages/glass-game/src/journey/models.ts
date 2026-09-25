@@ -1,16 +1,19 @@
 // Journey models — assemble three authored landmasses with four stable chapter medallions.
 
 import type { BufferGeometry, Material, Mesh, Object3D, Texture } from 'three'
-import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Vector2, Vector3, } from 'three'
-import type { MuseumJourneyBridge, MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
+import { CylinderGeometry, DoubleSide, Group, InstancedMesh, Matrix4, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Vector2, } from 'three'
+import type { MuseumJourneyDefinition, MuseumJourneyStage, } from '../content/museum-journey'
 import type { JourneyAuthoredUnit } from './architecture'
 import { createJourneyArchitecture, findJourneyPortraitInset, } from './architecture'
+import { createJourneyBridgePath } from './bridge-path'
 import { createJourneyMerc } from './merc'
+import { createJourneyPondBorders } from './ponds'
 import { disposeJourneyPortraitTexture, fitJourneyPortraitTexture, loadJourneyPortraitTexture, } from './portrait-texture'
 import type { JourneyGltfDocument } from './resources'
 import { loadJourneyGltf } from './resources'
 import type { JourneyMarbleTextures, JourneyMarbleTextureUrls, } from './surface-textures'
 import { loadJourneyMarbleTextures } from './surface-textures'
+import { JOURNEY_TERRACE_SURFACE_OFFSET } from './terrace-layout'
 import { createJourneyVegetation } from './vegetation'
 
 const REQUIRED_NODES = [
@@ -23,8 +26,6 @@ const REQUIRED_NODES = [
   'map_island_root',
 ] as const
 
-const MAP_BRIDGE_WIDTH = 1.1
-const MAP_BRIDGE_LENGTH = 3.323364
 // Normalize the sculpted 4.5 x 2.464 m top footprint to the original
 // 2.622 x 2.602 m kit unit before applying each authored landmass scale.
 const SCULPTED_CLIFF_SCALE_X = 2.621731 / 4.5
@@ -47,37 +48,6 @@ export interface JourneyMapModels {
   setSelected(stage: MuseumJourneyStage, immediate?: boolean): void
   update(dt: number, reducedMotion: boolean): void
   dispose(): void
-}
-
-export function journeyBridgeTransform(bridge: MuseumJourneyBridge) {
-  const dx = bridge.to[0] - bridge.from[0]
-  const dy = bridge.to[1] - bridge.from[1]
-  const dz = bridge.to[2] - bridge.from[2]
-  const horizontalLength = Math.hypot(dx, dz)
-  const length = Math.hypot(horizontalLength, dy)
-  const yaw = Math.atan2(dx, dz)
-  const pitch = -Math.atan2(dy, horizontalLength)
-  const yawRotation = new Quaternion().setFromAxisAngle(
-    new Vector3(0, 1, 0),
-    yaw,
-  )
-  const pitchRotation = new Quaternion().setFromAxisAngle(
-    new Vector3(1, 0, 0),
-    pitch,
-  )
-  return {
-    position: new Vector3(
-      (bridge.from[0] + bridge.to[0]) / 2,
-      (bridge.from[1] + bridge.to[1]) / 2,
-      (bridge.from[2] + bridge.to[2]) / 2,
-    ),
-    rotation: yawRotation.multiply(pitchRotation),
-    scale: new Vector3(
-      bridge.width / MAP_BRIDGE_WIDTH,
-      1,
-      length / MAP_BRIDGE_LENGTH,
-    ),
-  }
 }
 
 function authoredUnit(document: JourneyGltfDocument, name: string): Object3D {
@@ -163,7 +133,7 @@ function createLandmasses(
         : finish(mesh.material)
     })
     terrace.position.fromArray(island.position)
-    terrace.position.y += 0.035
+    terrace.position.y += JOURNEY_TERRACE_SURFACE_OFFSET
     terrace.rotation.y = island.yaw
     terrace.scale.fromArray(island.terraceScale)
     islandRoot.add(terrace)
@@ -178,28 +148,18 @@ function createGoldTrail(
   ownedGeometries: Set<BufferGeometry>,
 ): InstancedMesh {
   const points = definition.bridges.flatMap((bridge) => {
-    const distance = Math.hypot(
-      bridge.to[0] - bridge.from[0],
-      bridge.to[2] - bridge.from[2],
-    )
-    const count = Math.max(2, Math.floor(distance / 0.42))
+    const path = createJourneyBridgePath(bridge)
+    const count = Math.max(2, Math.floor(path.curve.getLength() / 0.42))
     return Array.from({ length: count }, (_, index) => {
       const t = (index + 0.5) / count
-      const bow = Math.sin(t * Math.PI)
-      const dx = bridge.to[0] - bridge.from[0]
-      const dz = bridge.to[2] - bridge.from[2]
-      const horizontalLength = Math.max(0.001, Math.hypot(dx, dz))
-      return new Vector3(
-        bridge.from[0] + dx * t + (-dz / horizontalLength) * bridge.curve * bow,
-        bridge.from[1] +
-          (bridge.to[1] - bridge.from[1]) * t +
-          (bridge.kind === 'skybridge' ? 0.2 : 0.035) * bow +
-          0.11,
-        bridge.from[2] + dz * t + (dx / horizontalLength) * bridge.curve * bow,
+      const point = path.point(
+        path.steps === 1 ? t : (Math.floor(t * path.steps) + 0.5) / path.steps,
       )
+      point.y += 0.008
+      return point
     })
   })
-  const geometry = new CylinderGeometry(0.052, 0.065, 0.026, 12)
+  const geometry = new CylinderGeometry(0.043, 0.046, 0.012, 12)
   ownedGeometries.add(geometry)
   const trail = new InstancedMesh(geometry, material, points.length)
   const matrix = new Matrix4()
@@ -372,6 +332,9 @@ function createAssembly(
     if (inset !== undefined) fitJourneyPortraitTexture(mysteryTexture, inset)
   }
   root.add(architecture.root)
+  root.add(
+    createJourneyPondBorders(definition, materials.ivory, ownedGeometries),
+  )
   root.add(
     createJourneyVegetation(
       definition,

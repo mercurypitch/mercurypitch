@@ -1,0 +1,159 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "id": "mess-playful",
+  "text": "Another beautiful mess.",
+  "sha256": "2b133d57f16c560d82d233d27c40131dca15f5d6343ece3c69800a67dd803b52",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": null,
+  "words": [
+    {
+      "text": "Another",
+      "start": 0.28,
+      "end": 0.92,
+      "loss": 0.9416443961007255
+    },
+    {
+      "text": " ",
+      "start": 0.92,
+      "end": 1.12,
+      "loss": 0.8239116668701172
+    },
+    {
+      "text": "beautiful",
+      "start": 1.12,
+      "end": 1.68,
+      "loss": 0.8134337531195747
+    },
+    {
+      "text": " ",
+      "start": 1.68,
+      "end": 1.8,
+      "loss": 0.8980941772460938
+    },
+    {
+      "text": "mess.",
+      "start": 1.8,
+      "end": 2.22,
+      "loss": 1.1190010070800782
+    }
+  ],
+  "characters": [
+    {
+      "text": "A",
+      "start": 0.28,
+      "end": 0.34
+    },
+    {
+      "text": "n",
+      "start": 0.42,
+      "end": 0.62
+    },
+    {
+      "text": "o",
+      "start": 0.62,
+      "end": 0.68
+    },
+    {
+      "text": "t",
+      "start": 0.68,
+      "end": 0.76
+    },
+    {
+      "text": "h",
+      "start": 0.76,
+      "end": 0.8
+    },
+    {
+      "text": "e",
+      "start": 0.8,
+      "end": 0.9
+    },
+    {
+      "text": "r",
+      "start": 0.9,
+      "end": 0.92
+    },
+    {
+      "text": " ",
+      "start": 0.92,
+      "end": 1.12
+    },
+    {
+      "text": "b",
+      "start": 1.12,
+      "end": 1.18
+    },
+    {
+      "text": "e",
+      "start": 1.18,
+      "end": 1.24
+    },
+    {
+      "text": "a",
+      "start": 1.24,
+      "end": 1.3
+    },
+    {
+      "text": "u",
+      "start": 1.3,
+      "end": 1.34
+    },
+    {
+      "text": "t",
+      "start": 1.34,
+      "end": 1.4
+    },
+    {
+      "text": "i",
+      "start": 1.4,
+      "end": 1.54
+    },
+    {
+      "text": "f",
+      "start": 1.54,
+      "end": 1.56
+    },
+    {
+      "text": "u",
+      "start": 1.56,
+      "end": 1.64
+    },
+    {
+      "text": "l",
+      "start": 1.66,
+      "end": 1.68
+    },
+    {
+      "text": " ",
+      "start": 1.68,
+      "end": 1.8
+    },
+    {
+      "text": "m",
+      "start": 1.8,
+      "end": 1.82
+    },
+    {
+      "text": "e",
+      "start": 1.82,
+      "end": 1.94
+    },
+    {
+      "text": "s",
+      "start": 1.94,
+      "end": 2.02
+    },
+    {
+      "text": "s",
+      "start": 2.14,
+      "end": 2.22
+    },
+    {
+      "text": ".",
+      "start": 2.22,
+      "end": 2.22
+    }
+  ],
+  "loss": 0.9230184969694718
+}

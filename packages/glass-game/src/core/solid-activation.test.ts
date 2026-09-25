@@ -153,7 +153,11 @@ describe('solid activation', () => {
     )
     const snapshot = game.snapshot()
 
-    expect(events).toContainEqual({ type: 'break', id: encounterId })
+    expect(events).toContainEqual({
+      type: 'break',
+      id: encounterId,
+      outcome: 'path-opened',
+    })
     expect(snapshot.phase).toBe('shattering')
     expect(snapshot.activeSolidIds).toContain(
       'activation-proof/platform/bridge',

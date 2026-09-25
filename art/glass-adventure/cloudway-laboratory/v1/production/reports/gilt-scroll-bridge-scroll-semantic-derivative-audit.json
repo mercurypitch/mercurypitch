@@ -1,0 +1,218 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge",
+  "status": "reopen-audit-passed",
+  "candidateBlend": {
+    "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-semantic-derivative.blend",
+    "bytes": 143606834,
+    "sha256": "721eb36a482a13f9f57509c0623f3c30c17aa644eabb5182629bad046838174b"
+  },
+  "sourceFingerprints": {
+    "vertexPositionsFloat32Sha256": "a95d44b8ebc708aeeafcc20d488be44c7812b25bcb50154a442102cce4bb5ecb",
+    "triangleIndicesInt32Sha256": "621e9a1077ecff85a440891c4d4314c12a0a9714fb1fccd62e22aeec9d501eae",
+    "cornerUvsFloat32Sha256": "8182be9e866c107d655cde099cc46d7ae05023cbca1014f9b5eff73194131566",
+    "customCornerNormalsInt16Sha256": "512702910fb25d5d28f808e10c5d748f54ccf8e81de611452475a9d4821b1d51",
+    "evaluatedCornerNormalsFloat32Sha256": "13f53393a9606ca57d1a365c3dc46e11079a6fc9825dd23843f75fbce05286fb"
+  },
+  "hierarchy": {
+    "candidateRoot": "Cloudway_GiltScrollBridge_SemanticDerivative",
+    "roleRootsAreExactDirectChildren": true,
+    "oneMeshfulDescendantPerRole": true,
+    "savedFullyExtendedWithIdentityRoleTransforms": true
+  },
+  "adapterGate": {
+    "platformAdapterJsonAbsent": true,
+    "runtimeReadyFalse": true,
+    "semanticMaterialSeparationCompleteFalse": true,
+    "rollerIvoryGoldSplitAcceptedFalse": true,
+    "deckGlassDetailSplitAcceptedFalse": true
+  },
+  "roles": {
+    "negativeRoller": {
+      "roleRoot": "ScrollRollerNegative",
+      "meshObject": "ScrollRollerNegativeGeometry",
+      "materials": [
+        "gilt-scroll-bridge__provider_full_pbr",
+        "GiltScrollCutCap_Diagnostic"
+      ],
+      "channelPreservation": {
+        "retainedSourceVertices": 150092,
+        "retainedSourceCorners": 786282,
+        "retainedSourceTriangles": 262094,
+        "clippedSurfaceTriangles": 1847,
+        "authoredCapTriangles": 1163,
+        "retainedPositionsFloat32Exact": true,
+        "retainedUvsFloat32Exact": true,
+        "retainedEncodedNormalCoefficientsExact": 656840,
+        "retainedEncodedNormalCoefficientsChangedAtNewTopology": 129442,
+        "retainedEvaluatedNormalMaxDelta": 0.013560725,
+        "retainedEvaluatedNormalP95Delta": 4.9116e-05,
+        "retainedExportedNormalMaxAngleDegrees": 0.777831852,
+        "retainedExportedNormalP95AngleDegrees": 0.034264021,
+        "retainedExportedNormalsOverOneDegree": 0,
+        "retainedFaceIdsUnique": true
+      },
+      "closure": {
+        "indexedVertices": 151261,
+        "triangles": 265104,
+        "exactWeldedPositions": 132426,
+        "exactWeldedEdges": 397656,
+        "weldedEdgesWithOneIncidentTriangle": 0,
+        "weldedEdgesWithTwoIncidentTriangles": 397656,
+        "weldedEdgesWithMoreThanTwoIncidentTriangles": 0,
+        "weldedConnectedComponents": 1,
+        "closedTwoManifoldAfterExactPositionWeld": true
+      },
+      "caps": {
+        "capTriangles": 1163,
+        "planes": {
+          "-0.3": {
+            "sourcePlaneY": -0.3,
+            "triangles": 1163,
+            "polygonNormalYMin": 1.0,
+            "polygonNormalYMax": 1.0
+          }
+        },
+        "finiteUvs": true,
+        "finiteNormals": true
+      }
+    },
+    "deck": {
+      "roleRoot": "ScrollDeck",
+      "meshObject": "ScrollDeckGeometry",
+      "materials": [
+        "gilt-scroll-bridge__provider_full_pbr",
+        "GiltScrollCutCap_Diagnostic"
+      ],
+      "channelPreservation": {
+        "retainedSourceVertices": 24737,
+        "retainedSourceCorners": 108468,
+        "retainedSourceTriangles": 36156,
+        "clippedSurfaceTriangles": 3983,
+        "authoredCapTriangles": 2663,
+        "retainedPositionsFloat32Exact": true,
+        "retainedUvsFloat32Exact": true,
+        "retainedEncodedNormalCoefficientsExact": 81878,
+        "retainedEncodedNormalCoefficientsChangedAtNewTopology": 26590,
+        "retainedEvaluatedNormalMaxDelta": 0.011328745,
+        "retainedEvaluatedNormalP95Delta": 4.958e-05,
+        "retainedExportedNormalMaxAngleDegrees": 0.649515271,
+        "retainedExportedNormalP95AngleDegrees": 0.034264021,
+        "retainedExportedNormalsOverOneDegree": 0,
+        "retainedFaceIdsUnique": true
+      },
+      "closure": {
+        "indexedVertices": 27412,
+        "triangles": 42802,
+        "exactWeldedPositions": 21411,
+        "exactWeldedEdges": 64203,
+        "weldedEdgesWithOneIncidentTriangle": 0,
+        "weldedEdgesWithTwoIncidentTriangles": 64203,
+        "weldedEdgesWithMoreThanTwoIncidentTriangles": 0,
+        "weldedConnectedComponents": 5,
+        "closedTwoManifoldAfterExactPositionWeld": true
+      },
+      "caps": {
+        "capTriangles": 2663,
+        "planes": {
+          "0.3": {
+            "sourcePlaneY": 0.3,
+            "triangles": 1500,
+            "polygonNormalYMin": 1.0,
+            "polygonNormalYMax": 1.0
+          },
+          "-0.3": {
+            "sourcePlaneY": -0.3,
+            "triangles": 1163,
+            "polygonNormalYMin": -1.0,
+            "polygonNormalYMax": -1.0
+          }
+        },
+        "finiteUvs": true,
+        "finiteNormals": true
+      }
+    },
+    "positiveRoller": {
+      "roleRoot": "ScrollRollerPositive",
+      "meshObject": "ScrollRollerPositiveGeometry",
+      "materials": [
+        "gilt-scroll-bridge__provider_full_pbr",
+        "GiltScrollCutCap_Diagnostic"
+      ],
+      "channelPreservation": {
+        "retainedSourceVertices": 143306,
+        "retainedSourceCorners": 753543,
+        "retainedSourceTriangles": 251181,
+        "clippedSurfaceTriangles": 2195,
+        "authoredCapTriangles": 1500,
+        "retainedPositionsFloat32Exact": true,
+        "retainedUvsFloat32Exact": true,
+        "retainedEncodedNormalCoefficientsExact": 640586,
+        "retainedEncodedNormalCoefficientsChangedAtNewTopology": 112957,
+        "retainedEvaluatedNormalMaxDelta": 0.01357198,
+        "retainedEvaluatedNormalP95Delta": 4.8336e-05,
+        "retainedExportedNormalMaxAngleDegrees": 0.777580261,
+        "retainedExportedNormalP95AngleDegrees": 0.034264021,
+        "retainedExportedNormalsOverOneDegree": 0,
+        "retainedFaceIdsUnique": true
+      },
+      "closure": {
+        "indexedVertices": 144812,
+        "triangles": 254876,
+        "exactWeldedPositions": 127340,
+        "exactWeldedEdges": 382314,
+        "weldedEdgesWithOneIncidentTriangle": 0,
+        "weldedEdgesWithTwoIncidentTriangles": 382314,
+        "weldedEdgesWithMoreThanTwoIncidentTriangles": 0,
+        "weldedConnectedComponents": 1,
+        "closedTwoManifoldAfterExactPositionWeld": true
+      },
+      "caps": {
+        "capTriangles": 1500,
+        "planes": {
+          "0.3": {
+            "sourcePlaneY": 0.3,
+            "triangles": 1500,
+            "polygonNormalYMin": -1.0,
+            "polygonNormalYMax": -1.0
+          }
+        },
+        "finiteUvs": true,
+        "finiteNormals": true
+      }
+    }
+  },
+  "motionBoundaryAudit": {
+    "negativeBoundaryPositions": 1169,
+    "positiveBoundaryPositions": 1506,
+    "states": {
+      "000": {
+        "progress": 0.0,
+        "lengthRatio": 0.25,
+        "negativeBoundaryMaxDeltaMetres": 3.975e-08,
+        "positiveBoundaryMaxDeltaMetres": 3.975e-08
+      },
+      "025": {
+        "progress": 0.25,
+        "lengthRatio": 0.4375,
+        "negativeBoundaryMaxDeltaMetres": 2.9812e-08,
+        "positiveBoundaryMaxDeltaMetres": 2.9812e-08
+      },
+      "100": {
+        "progress": 1.0,
+        "lengthRatio": 1.0,
+        "negativeBoundaryMaxDeltaMetres": 0.0,
+        "positiveBoundaryMaxDeltaMetres": 0.0
+      }
+    },
+    "coincidentAtAllProofStates": true
+  },
+  "packedFileImages": 4,
+  "unpackedFileImages": [],
+  "sourceRawAndReviewShareMesh": true,
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_scroll_semantic_derivative.py"
+}

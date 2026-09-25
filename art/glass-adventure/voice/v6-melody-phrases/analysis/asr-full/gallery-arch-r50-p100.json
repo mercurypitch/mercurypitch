@@ -1,0 +1,157 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:07,200"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 7200
+			},
+			"text": " ♪ Another beautiful mess. ♪",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 0.8944,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:00,190",
+						"to": "00:00:00,920"
+					},
+					"offsets": {
+						"from": 190,
+						"to": 920
+					},
+					"id": 20724,
+					"p": 0.081964,
+					"t_dtw": -1
+				},
+				{
+					"text": " Another",
+					"timestamps": {
+						"from": "00:00:00,920",
+						"to": "00:00:03,080"
+					},
+					"offsets": {
+						"from": 920,
+						"to": 3080
+					},
+					"id": 6023,
+					"p": 0.665431,
+					"t_dtw": -1
+				},
+				{
+					"text": " beautiful",
+					"timestamps": {
+						"from": "00:00:03,080",
+						"to": "00:00:05,860"
+					},
+					"offsets": {
+						"from": 3080,
+						"to": 5860
+					},
+					"id": 4950,
+					"p": 0.896319,
+					"t_dtw": -1
+				},
+				{
+					"text": " mess",
+					"timestamps": {
+						"from": "00:00:05,860",
+						"to": "00:00:06,930"
+					},
+					"offsets": {
+						"from": 5860,
+						"to": 6930
+					},
+					"id": 2085,
+					"p": 0.559253,
+					"t_dtw": -1
+				},
+				{
+					"text": ".",
+					"timestamps": {
+						"from": "00:00:07,180",
+						"to": "00:00:07,180"
+					},
+					"offsets": {
+						"from": 7180,
+						"to": 7180
+					},
+					"id": 13,
+					"p": 0.181924,
+					"t_dtw": -1
+				},
+				{
+					"text": " ♪",
+					"timestamps": {
+						"from": "00:00:07,180",
+						"to": "00:00:07,180"
+					},
+					"offsets": {
+						"from": 7180,
+						"to": 7180
+					},
+					"id": 20724,
+					"p": 0.894288,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_360]",
+					"timestamps": {
+						"from": "00:00:07,200",
+						"to": "00:00:07,200"
+					},
+					"offsets": {
+						"from": 7200,
+						"to": 7200
+					},
+					"id": 50723,
+					"p": 0.0353655,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

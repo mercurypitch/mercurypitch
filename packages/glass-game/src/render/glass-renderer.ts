@@ -5,6 +5,7 @@
 import type { Material, Texture } from 'three'
 import { ACESFilmicToneMapping, Box3, DirectionalLight, Fog, FogExp2, HemisphereLight, PCFShadowMap, Scene, SRGBColorSpace, Vector3, WebGLRenderer, } from 'three'
 import type { GameSnapshot, LevelDefinition, Vec3 } from '../contracts'
+import { getRequiredRouteBreakableIds } from '../core/progress'
 import type { LoadingProgress } from '../loading-progress'
 import { createLoadingProgressLedger } from '../loading-progress'
 import { loadMuseumAssets } from './asset-kit'
@@ -23,6 +24,8 @@ import { createGalleryInspection } from './gallery-inspection'
 import { createMuseumMaterials } from './materials'
 import { loadAdventureMerc } from './merc'
 import { createMuseum } from './museum'
+import type { GlassRenderQualityPreference, GlassRenderQualityProfile, } from './render-quality'
+import { createShadowUpdateCadence, effectiveGlassPixelRatio, resolveGlassRenderQuality, } from './render-quality'
 import { createResonancePortal } from './resonance-portal'
 import { getMuseumSceneFrame, getMuseumVisualRecipe } from './scene-catalog'
 import { fitSkyBackdrop } from './sky-backdrop'
@@ -32,6 +35,7 @@ import { canRenderViewport } from './viewport'
 export interface GlassRendererOptions {
   reducedMotion?: boolean
   followSmoothnessSeconds?: number
+  renderQuality?: GlassRenderQualityPreference
   onAssetError?: (id: string, error: unknown) => void
   onLoadingProgress?: (progress: LoadingProgress) => void
   onContextLost?: () => void
@@ -66,6 +70,13 @@ export interface GlassRenderer {
   /** Stable camera-relative movement basis for the current held input. */
   getMovementYaw(): number
   setFollowSmoothness(seconds: number): void
+  setRenderQuality(preference: GlassRenderQualityPreference): void
+  getRenderQuality(): {
+    preference: GlassRenderQualityPreference
+    profile: GlassRenderQualityProfile
+    pixelRatio: number
+    shadowFrameInterval: 1 | 2
+  }
   setMovementActive(active: boolean): void
   rebaseMovement(): void
   cancelHeadingFollow(): void
@@ -79,6 +90,8 @@ export interface GlassRenderer {
     geometries: number
     reflectionCaptures: number
     reflectionTargetPixels: number
+    shadowUpdates: number
+    shadowReuses: number
   }
   dispose(): void
 }
@@ -144,6 +157,36 @@ function createGlassRendererInstance(
   )
   registerPartialCleanup(() => loading.freeze())
   const sceneFrame = getMuseumSceneFrame(level)
+  const qualityEnvironment = {
+    cssWidth:
+      typeof window.innerWidth === 'number' && window.innerWidth > 0
+        ? window.innerWidth
+        : container.clientWidth,
+    cssHeight:
+      typeof window.innerHeight === 'number' && window.innerHeight > 0
+        ? window.innerHeight
+        : container.clientHeight,
+    coarsePointer:
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(any-pointer: coarse)').matches,
+    mobileHint:
+      typeof navigator !== 'undefined' &&
+      (
+        navigator as Navigator & {
+          userAgentData?: { readonly mobile?: boolean }
+        }
+      ).userAgentData?.mobile === true,
+  }
+  let renderQualityPreference = options.renderQuality ?? 'auto'
+  let renderQuality = resolveGlassRenderQuality(
+    renderQualityPreference,
+    qualityEnvironment,
+  )
+  const shadowCadence = createShadowUpdateCadence(
+    renderQuality.shadowFrameInterval,
+  )
+  let shadowUpdates = 0
+  let shadowReuses = 0
   const renderer = new WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -152,10 +195,19 @@ function createGlassRendererInstance(
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.9
-  renderer.transmissionResolutionScale = 0.5
+  renderer.transmissionResolutionScale =
+    renderQuality.transmissionResolutionScale
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = PCFShadowMap
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5)
+  renderer.shadowMap.autoUpdate = renderQuality.shadowFrameInterval === 1
+  // The reflection probe renders before the playable-frame cadence runs.
+  // Prime a manual shadow map so Balanced never samples Three's placeholder
+  // texture during that first offscreen pass.
+  if (!renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true
+  let pixelRatio = effectiveGlassPixelRatio(
+    window.devicePixelRatio,
+    renderQuality,
+  )
   renderer.setPixelRatio(pixelRatio)
   renderer.domElement.style.cssText =
     'display:block;width:100%;height:100%;touch-action:none;'
@@ -190,7 +242,7 @@ function createGlassRendererInstance(
   key.position.copy(sceneFrame.keyPosition)
   key.target.position.copy(sceneFrame.lightTarget)
   key.castShadow = true
-  const shadowMapSize = 1024
+  const shadowMapSize = renderQuality.shadowMapSize
   key.shadow.mapSize.set(shadowMapSize, shadowMapSize)
   key.shadow.camera.left = key.shadow.camera.bottom = -sceneFrame.shadowExtent
   key.shadow.camera.right = key.shadow.camera.top = sceneFrame.shadowExtent
@@ -230,7 +282,7 @@ function createGlassRendererInstance(
   })
   scene.add(museum.root)
   const portal = createResonancePortal(
-    level.exit,
+    { ...level.exit, requiresCompleted: getRequiredRouteBreakableIds(level) },
     materials,
     options.reducedMotion ?? false,
   )
@@ -273,6 +325,7 @@ function createGlassRendererInstance(
   let skyBackdrop: Texture | undefined
   let drawable = false
   let firstFrameVerified = false
+  let shadowTopology = ''
   const resize = () => {
     if (disposed) return
     const width = container.clientWidth
@@ -283,6 +336,7 @@ function createGlassRendererInstance(
     if (skyBackdrop) fitSkyBackdrop(skyBackdrop, width, height)
     camera.camera.aspect = width / height
     camera.camera.updateProjectionMatrix()
+    shadowCadence.invalidate()
   }
   resize()
   const observer = new ResizeObserver(resize)
@@ -385,6 +439,28 @@ function createGlassRendererInstance(
     getMercYaw: () => merc?.root.rotation.y ?? null,
     getMovementYaw: camera.movementYaw,
     setFollowSmoothness: camera.setFollowSmoothness,
+    setRenderQuality(preference) {
+      const next = resolveGlassRenderQuality(preference, qualityEnvironment)
+      renderQualityPreference = preference
+      if (next === renderQuality) return
+      renderQuality = next
+      pixelRatio = effectiveGlassPixelRatio(
+        window.devicePixelRatio,
+        renderQuality,
+      )
+      renderer.transmissionResolutionScale =
+        renderQuality.transmissionResolutionScale
+      renderer.shadowMap.autoUpdate = renderQuality.shadowFrameInterval === 1
+      shadowCadence.setInterval(renderQuality.shadowFrameInterval)
+      renderer.setPixelRatio(pixelRatio)
+      resize()
+    },
+    getRenderQuality: () => ({
+      preference: renderQualityPreference,
+      profile: renderQuality.profile,
+      pixelRatio,
+      shadowFrameInterval: renderQuality.shadowFrameInterval,
+    }),
     setMovementActive: camera.setMovementActive,
     rebaseMovement: camera.rebaseMovement,
     cancelHeadingFollow: camera.cancelHeadingFollow,
@@ -400,6 +476,8 @@ function createGlassRendererInstance(
       reflectionTargetPixels:
         museum.planarReflectionMetrics.targetWidth *
         museum.planarReflectionMetrics.targetHeight,
+      shadowUpdates,
+      shadowReuses,
     }),
     render(snapshot, delta, presentation) {
       if (disposed || contextLost || !drawable) return false
@@ -422,7 +500,7 @@ function createGlassRendererInstance(
               challengeDefinition.position.x - snapshot.player.position.x,
               challengeDefinition.position.z - snapshot.player.position.z,
             )
-      museum.update(snapshot)
+      const museumShadowVisibilityChanged = museum.update(snapshot)
       if (portal.update(snapshot, simulationDt))
         options.onExitCelebrationComplete?.()
       contact.update(snapshot)
@@ -463,11 +541,14 @@ function createGlassRendererInstance(
       }
       if (challengeId === null) boundsEncounterId = null
       camera.update(snapshot, cameraDt, presentationPaused)
-      museum.cullCloudwayPlatforms(camera.camera.position)
-      const visibleRooms = museum.updateRoomVisibility(
+      const cloudwaySelectionChanged = museum.cullCloudwayPlatforms(
+        camera.camera,
+      )
+      const roomSelection = museum.updateRoomVisibility(
         snapshot.player.position,
         camera.camera,
-      ).visibleRoomIds
+      )
+      const visibleRooms = roomSelection.visibleRoomIds
       vessels.forEach((vessel, id) => {
         const roomId = vesselRoomIds.get(id)
         vessel.root.visible = roomId === undefined || visibleRooms.has(roomId)
@@ -494,6 +575,34 @@ function createGlassRendererInstance(
           }
         },
       )
+      const nextShadowTopology = [
+        `${snapshot.player.grounded ? 'grounded' : 'airborne'}:${
+          Math.hypot(snapshot.player.velocity.x, snapshot.player.velocity.z) >
+          0.08
+            ? 'moving'
+            : 'stationary'
+        }`,
+        snapshot.activeSolidIds?.join('|') ?? '',
+        snapshot.enabledPlatformIds.join('|'),
+        snapshot.breakables
+          .map(
+            (state) =>
+              `${state.id}:${state.phase}:${state.brokenAt === null ? 'intact' : 'broken'}`,
+          )
+          .join('|'),
+      ].join('::')
+      if (
+        museumShadowVisibilityChanged ||
+        cloudwaySelectionChanged ||
+        roomSelection.shadowVisibilityChanged ||
+        nextShadowTopology !== shadowTopology
+      )
+        shadowCadence.invalidate()
+      shadowTopology = nextShadowTopology
+      const updateShadow = shadowCadence.next()
+      renderer.shadowMap.needsUpdate = updateShadow
+      if (updateShadow) shadowUpdates++
+      else shadowReuses++
       renderer.render(scene, camera.camera)
       if (!firstFrameVerified) {
         verifyFirstFrame(renderer.getContext())
@@ -511,14 +620,15 @@ function createGlassRendererInstance(
       merc?.dispose()
       vessels.forEach((vessel) => vessel.dispose())
       scene.environment = null
-      disposeObject(
-        scene,
-        new Set([
-          ...museum.materialLibrary.materials,
-          ...Object.values(materials),
-        ]),
-      )
+      const borrowedMaterials = new Set([
+        ...museum.materialLibrary.materials,
+        ...Object.values(materials),
+      ])
+      // Museum adapters own geometry and material variants that may borrow
+      // library textures. Remove those roots before generic scene disposal so
+      // the shared textures remain exclusively library-owned.
       museum.dispose()
+      disposeObject(scene, borrowedMaterials)
       museum.materialLibrary.dispose()
       disposeMaterials(Object.values(materials))
       environment.dispose()

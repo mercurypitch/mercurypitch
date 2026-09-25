@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "gilt-scroll-bridge",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "source-assets/references/gilt-scroll-bridge.png",
+    "sha256": "1f29ae707d1170293d37cda5e5981153ea6098b96ee5e8840d6d509e5960b8e5",
+    "bytes": 2188293,
+    "dimensions": [
+      1536,
+      1024
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "A rectangular pale aquamarine glass walking bridge, fully extended flat glass deck with TWO parallel polished warm gold scroll rollers along its left and right sides. Elegant rolled manuscript finials, restrained celestial engravings. End faces open for jumping. No legs, no rail across the ends. Clear mechanically distinct roller housings and center glass deck. Width 2.0 depth 3.0 thickness .25. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:21:05.744193+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3685,
+  "submissionStartedAtUtc": "2026-09-25T12:21:05.744211+00:00",
+  "taskId": "01a0d883-1ce4-766a-befc-22ff4bf72c86",
+  "submittedAtUtc": "2026-09-25T12:21:10.036752+00:00",
+  "balanceAfterSubmit": 3645,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d883-1ce4-766a-befc-22ff4bf72c86",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790338869850,
+    "started_at": 1790338869859,
+    "finished_at": 1790339103938,
+    "expires_at": 1790598303938,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T12:26:24.895410+00:00",
+  "finalStatus": {
+    "id": "01a0d883-1ce4-766a-befc-22ff4bf72c86",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790338869850,
+    "started_at": 1790338869859,
+    "finished_at": 1790339103938,
+    "expires_at": 1790598303938,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/gilt-scroll-bridge/dense-donor.glb",
+      "bytes": 62364592,
+      "sha256": "8e5f47431de52f70bb89984ca9d5d599a792ad4417e0d6c798653e81710f2e93",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 318135,
+      "triangles": 552106
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-base_color.png",
+        "bytes": 58101706,
+        "sha256": "7301e6accd7d56a99b22ec9239174185a6993e9d9739de8455d80f3baee83d76",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-metallic.png",
+        "bytes": 7848035,
+        "sha256": "e43cbe956ed8e02f20ac9b4b11143a11ef8c9a8a6d0d9db7a0884ea97fea4f68",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-normal.png",
+        "bytes": 11607872,
+        "sha256": "81c79037a11bad0f6bd96c23b9f7ab18ebc4ce6550ea33ffb1ecdbbe9d2fc122",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-roughness.png",
+        "bytes": 6376293,
+        "sha256": "b576de89e7bcb53725c3bd9c9788d6023b6b91fa662ab7d704a0b75074c16bd9",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/gilt-scroll-bridge/preview.png",
+      "bytes": 56842,
+      "sha256": "43c1134d05c7d0851fc7a7f7adeda9a2329d0af74daaff9897988d1c772655e7",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T12:26:33.419111+00:00",
+  "balanceAfterArchive": 3565,
+  "observedBalanceDeltaFinal": 120,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T12:26:34.236888+00:00"
+}

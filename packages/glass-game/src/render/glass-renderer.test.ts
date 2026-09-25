@@ -1,7 +1,7 @@
 // Renderer readiness — an optional reflection failure never hides a playable museum.
 import type * as ThreeTypes from 'three'
 import type { PerspectiveCamera, Scene } from 'three'
-import { DirectionalLight, Group } from 'three'
+import { BoxGeometry, DirectionalLight, Group, Mesh, MeshStandardMaterial, Texture, } from 'three'
 import { afterEach, expect, it, vi } from 'vitest'
 import { GLASSWORKS } from '../content/glassworks'
 import { createGlassGame } from '../core/game'
@@ -11,6 +11,10 @@ const state = vi.hoisted(() => {
   return {
     render: vi.fn(),
     setSize: vi.fn(),
+    setPixelRatio: vi.fn(),
+    reflectionProbeRender: Symbol('reflection-probe-render'),
+    shadowNeedsUpdateAtProbeRender: [] as boolean[],
+    shadowNeedsUpdateAtRender: [] as boolean[],
     getError: vi.fn((): number => 0),
     listeners: new Map<string, EventListener>(),
     loseContext: false,
@@ -18,6 +22,14 @@ const state = vi.hoisted(() => {
     assetCompletions: [] as string[],
     assetInstalled: null as ((taskId: string) => void) | null,
     museumFailure: null as Error | null,
+    museumOwnershipFixture: false,
+    museumDispose: vi.fn(),
+    museumLibraryDispose: vi.fn(),
+    museumGeometryDispose: vi.fn(),
+    museumWarningMaterialDispose: vi.fn(),
+    museumLibraryMaterialDispose: vi.fn(),
+    museumSharedTextureDispose: vi.fn(),
+    warningSharesLibraryTexture: false,
     environmentLoadFailure: null as Error | null,
     rendererDispose: vi.fn(),
     forceContextLoss: vi.fn(),
@@ -29,6 +41,7 @@ const state = vi.hoisted(() => {
     updateRoomVisibility: vi.fn(() => ({
       visibleRoomIds,
       fallbackAllVisible: false,
+      shadowVisibilityChanged: false,
     })),
     updatePlanarReflection: vi.fn(() => false),
   }
@@ -44,27 +57,42 @@ vi.mock('three', async (original) => ({
         state.listeners.set(name, listener),
       removeEventListener: (name: string) => state.listeners.delete(name),
     }
-    shadowMap = {}
+    shadowMap = {
+      autoUpdate: true,
+      enabled: false,
+      needsUpdate: false,
+      type: 0,
+    }
     info = { render: {}, memory: {} }
     setSize = state.setSize
-    setPixelRatio = vi.fn()
+    setPixelRatio = state.setPixelRatio
     getContext = () => ({
       drawingBufferWidth: 800,
       drawingBufferHeight: 600,
       getError: state.getError,
     })
-    render = state.render
+    render = (...args: unknown[]) => {
+      if (args[0] === state.reflectionProbeRender) {
+        state.shadowNeedsUpdateAtProbeRender.push(this.shadowMap.needsUpdate)
+        // Three consumes a requested shadow update inside the probe render.
+        this.shadowMap.needsUpdate = false
+        return
+      }
+      state.shadowNeedsUpdateAtRender.push(this.shadowMap.needsUpdate)
+      return state.render(...args)
+    }
     dispose = state.rendererDispose
     forceContextLoss = state.forceContextLoss
   },
 }))
 vi.mock('./environment', () => ({
-  createMuseumEnvironment: () => ({
+  createMuseumEnvironment: (renderer: { render: (scene: symbol) => void }) => ({
     load: () => {
       if (state.environmentLoadFailure) throw state.environmentLoadFailure
       return Promise.resolve()
     },
     capture: () => {
+      renderer.render(state.reflectionProbeRender)
       if (state.loseContext)
         state.listeners.get('webglcontextlost')?.(new Event('webglcontextlost'))
       throw new Error('optional cube allocation failed')
@@ -96,8 +124,43 @@ vi.mock('./contact-shadow', () => ({
 vi.mock('./museum', () => ({
   createMuseum: () => {
     if (state.museumFailure) throw state.museumFailure
+    const root = new Group()
+    const libraryMaterials = new Set<MeshStandardMaterial>()
+    let disposeMuseum = vi.fn()
+    let disposeLibrary = vi.fn()
+    if (state.museumOwnershipFixture) {
+      const sharedTexture = new Texture()
+      sharedTexture.dispose = state.museumSharedTextureDispose
+      const libraryMaterial = new MeshStandardMaterial({ map: sharedTexture })
+      libraryMaterial.dispose = state.museumLibraryMaterialDispose
+      libraryMaterials.add(libraryMaterial)
+      const warningMaterial = libraryMaterial.clone()
+      warningMaterial.dispose = state.museumWarningMaterialDispose
+      state.warningSharesLibraryTexture = warningMaterial.map === sharedTexture
+      const geometry = new BoxGeometry()
+      geometry.dispose = state.museumGeometryDispose
+      const adapterRoot = new Group()
+      adapterRoot.add(new Mesh(geometry, warningMaterial))
+      root.add(adapterRoot)
+      let adapterDisposed = false
+      disposeMuseum = state.museumDispose.mockImplementation(() => {
+        if (adapterDisposed) return
+        adapterDisposed = true
+        geometry.dispose()
+        warningMaterial.dispose()
+        adapterRoot.removeFromParent()
+      })
+      let libraryDisposed = false
+      disposeLibrary = state.museumLibraryDispose.mockImplementation(() => {
+        if (libraryDisposed) return
+        libraryDisposed = true
+        libraryMaterial.dispose()
+        sharedTexture.dispose()
+        libraryMaterials.clear()
+      })
+    }
     return {
-      root: new Group(),
+      root,
       update: vi.fn(),
       cameraOccluders: () => [],
       cullCloudwayPlatforms: state.cullCloudwayPlatforms,
@@ -109,8 +172,8 @@ vi.mock('./museum', () => ({
         targetWidth: 160,
         targetHeight: 256,
       },
-      dispose: vi.fn(),
-      materialLibrary: { materials: new Set(), dispose: vi.fn() },
+      dispose: disposeMuseum,
+      materialLibrary: { materials: libraryMaterials, dispose: disposeLibrary },
     }
   },
 }))
@@ -144,17 +207,34 @@ afterEach(() => {
   state.assetCompletions = []
   state.assetInstalled = null
   state.museumFailure = null
+  state.museumOwnershipFixture = false
+  state.museumDispose.mockReset()
+  state.museumLibraryDispose.mockReset()
+  state.museumGeometryDispose.mockReset()
+  state.museumWarningMaterialDispose.mockReset()
+  state.museumLibraryMaterialDispose.mockReset()
+  state.museumSharedTextureDispose.mockReset()
+  state.warningSharesLibraryTexture = false
   state.environmentLoadFailure = null
   state.render.mockClear()
   state.setSize.mockClear()
+  state.setPixelRatio.mockClear()
+  state.shadowNeedsUpdateAtProbeRender.length = 0
+  state.shadowNeedsUpdateAtRender.length = 0
   state.getError.mockReset().mockReturnValue(0)
   state.rendererDispose.mockClear()
   state.forceContextLoss.mockClear()
   state.canvasRemove.mockClear()
   state.mercDispose.mockClear()
   state.updateRoomVisibility.mockClear()
+  state.updateRoomVisibility.mockReturnValue({
+    visibleRoomIds: state.visibleRoomIds,
+    fallbackAllVisible: false,
+    shadowVisibilityChanged: false,
+  })
   state.updatePlanarReflection.mockClear()
   state.cullCloudwayPlatforms.mockClear()
+  state.cullCloudwayPlatforms.mockReturnValue(false)
   state.runtimeRoomId = undefined
   state.visibleRoomIds.clear()
 })
@@ -208,6 +288,169 @@ it('checks the first frame without polling the GPU on every game frame', async (
   renderer.render(snapshot, 0.016)
   renderer.render(snapshot, 0.016)
   expect(state.getError).toHaveBeenCalledOnce()
+  renderer.dispose()
+})
+
+it('applies balanced pixels and reuses at most one shadow frame', async () => {
+  const container = browserFixture()
+  vi.stubGlobal('window', {
+    devicePixelRatio: 3,
+    innerWidth: 390,
+    innerHeight: 844,
+    matchMedia: () => ({ matches: true }),
+  })
+  const renderer = createGlassRenderer(container, GLASSWORKS, (id) => id, {
+    renderQuality: 'balanced',
+  })
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  expect(renderer.getRenderQuality()).toEqual({
+    preference: 'balanced',
+    profile: 'balanced',
+    pixelRatio: 1.25,
+    shadowFrameInterval: 2,
+  })
+  expect(state.setPixelRatio).toHaveBeenLastCalledWith(1.25)
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, false, true])
+  expect(renderer.getMetrics()).toMatchObject({
+    shadowUpdates: 2,
+    shadowReuses: 1,
+  })
+
+  renderer.dispose()
+})
+
+it('initializes a balanced shadow for probe and playable frames after each renderer attempt', async () => {
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const renderer = createGlassRenderer(
+      browserFixture(),
+      GLASSWORKS,
+      (id) => id,
+      { renderQuality: 'balanced' },
+    )
+    await renderer.ready
+    expect(state.shadowNeedsUpdateAtProbeRender.at(-1)).toBe(true)
+
+    renderer.render(snapshot, 0.016)
+    renderer.render(snapshot, 0.016)
+    expect(state.shadowNeedsUpdateAtRender.slice(-2)).toEqual([true, false])
+    renderer.dispose()
+  }
+
+  expect(state.shadowNeedsUpdateAtProbeRender).toEqual([true, true])
+})
+
+it('invalidates the first manual shadow after switching high to balanced', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'high' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  renderer.render(snapshot, 0.016)
+  renderer.setRenderQuality('balanced')
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, true, false])
+  renderer.dispose()
+})
+
+it('invalidates a balanced shadow immediately when rendered visibility changes', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'balanced' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  state.cullCloudwayPlatforms.mockReturnValueOnce(true)
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, false, true])
+
+  state.updateRoomVisibility.mockReturnValueOnce({
+    visibleRoomIds: state.visibleRoomIds,
+    fallbackAllVisible: false,
+    shadowVisibilityChanged: true,
+  })
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender.at(-1)).toBe(true)
+  renderer.dispose()
+})
+
+it('invalidates a balanced shadow when Merc starts moving or glass starts shattering', async () => {
+  const renderer = createGlassRenderer(
+    browserFixture(),
+    GLASSWORKS,
+    (id) => id,
+    { renderQuality: 'balanced' },
+  )
+  await renderer.ready
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  const movingSnapshot = {
+    ...snapshot,
+    player: {
+      ...snapshot.player,
+      velocity: { ...snapshot.player.velocity, x: 1 },
+    },
+  }
+  renderer.render(movingSnapshot, 0.016)
+  renderer.render(movingSnapshot, 0.016)
+  const shatteringSnapshot = {
+    ...movingSnapshot,
+    breakables: movingSnapshot.breakables.map((breakable, index) =>
+      index === 0 ? { ...breakable, phase: 'shattering' as const } : breakable,
+    ),
+  }
+  renderer.render(shatteringSnapshot, 0.016)
+
+  expect(state.shadowNeedsUpdateAtRender).toEqual([
+    true,
+    false,
+    true,
+    false,
+    true,
+  ])
+  renderer.dispose()
+})
+
+it('switches an explicit quality choice without changing the accepted high profile', async () => {
+  const container = browserFixture()
+  vi.stubGlobal('window', { devicePixelRatio: 3 })
+  const renderer = createGlassRenderer(container, GLASSWORKS, (id) => id, {
+    renderQuality: 'balanced',
+  })
+  await renderer.ready
+
+  renderer.setRenderQuality('high')
+  expect(renderer.getRenderQuality()).toEqual({
+    preference: 'high',
+    profile: 'high',
+    pixelRatio: 1.5,
+    shadowFrameInterval: 1,
+  })
+  expect(state.setPixelRatio).toHaveBeenLastCalledWith(1.5)
+
+  const snapshot = createGlassGame(GLASSWORKS).snapshot()
+  renderer.render(snapshot, 0.016)
+  renderer.render(snapshot, 0.016)
+  expect(state.shadowNeedsUpdateAtRender).toEqual([true, true])
   renderer.dispose()
 })
 
@@ -335,6 +578,23 @@ it('releases a partial renderer and its canvas when scene construction throws', 
   expect(state.rendererDispose).toHaveBeenCalledTimes(1)
   expect(state.forceContextLoss).toHaveBeenCalledTimes(1)
   expect(state.canvasRemove).toHaveBeenCalledTimes(1)
+})
+
+it('disposes museum adapter resources before shared library textures exactly once', async () => {
+  state.museumOwnershipFixture = true
+  const renderer = createGlassRenderer(browserFixture(), GLASSWORKS, (id) => id)
+  await renderer.ready
+
+  expect(state.warningSharesLibraryTexture).toBe(true)
+  renderer.dispose()
+  renderer.dispose()
+
+  expect(state.museumDispose).toHaveBeenCalledOnce()
+  expect(state.museumGeometryDispose).toHaveBeenCalledOnce()
+  expect(state.museumWarningMaterialDispose).toHaveBeenCalledOnce()
+  expect(state.museumLibraryDispose).toHaveBeenCalledOnce()
+  expect(state.museumLibraryMaterialDispose).toHaveBeenCalledOnce()
+  expect(state.museumSharedTextureDispose).toHaveBeenCalledOnce()
 })
 
 it('marks a partial scene unavailable before a late Merc resolves', async () => {

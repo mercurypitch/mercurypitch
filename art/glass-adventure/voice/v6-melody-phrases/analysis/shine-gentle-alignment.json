@@ -1,0 +1,109 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "id": "shine-gentle",
+  "text": "Let it shine.",
+  "sha256": "a28d2b2df53afdaf0dd563be52027c9dde52d87b3f57f0b4eeac8e20bc0c53c0",
+  "status": "complete",
+  "http_status": 200,
+  "request_id": null,
+  "words": [
+    {
+      "text": "Let",
+      "start": 0.24,
+      "end": 0.68,
+      "loss": 1.2817344665527344
+    },
+    {
+      "text": " ",
+      "start": 0.68,
+      "end": 0.76,
+      "loss": 0.9688873291015625
+    },
+    {
+      "text": "it",
+      "start": 0.76,
+      "end": 0.94,
+      "loss": 1.0471954345703125
+    },
+    {
+      "text": " ",
+      "start": 0.94,
+      "end": 1.02,
+      "loss": 1.3125343322753906
+    },
+    {
+      "text": "shine.",
+      "start": 1.02,
+      "end": 1.66,
+      "loss": 1.0655256907145183
+    }
+  ],
+  "characters": [
+    {
+      "text": "L",
+      "start": 0.24,
+      "end": 0.34
+    },
+    {
+      "text": "e",
+      "start": 0.34,
+      "end": 0.52
+    },
+    {
+      "text": "t",
+      "start": 0.52,
+      "end": 0.68
+    },
+    {
+      "text": " ",
+      "start": 0.68,
+      "end": 0.76
+    },
+    {
+      "text": "i",
+      "start": 0.76,
+      "end": 0.84
+    },
+    {
+      "text": "t",
+      "start": 0.84,
+      "end": 0.94
+    },
+    {
+      "text": " ",
+      "start": 0.94,
+      "end": 1.02
+    },
+    {
+      "text": "s",
+      "start": 1.02,
+      "end": 1.08
+    },
+    {
+      "text": "h",
+      "start": 1.08,
+      "end": 1.22
+    },
+    {
+      "text": "i",
+      "start": 1.22,
+      "end": 1.36
+    },
+    {
+      "text": "n",
+      "start": 1.36,
+      "end": 1.48
+    },
+    {
+      "text": "e",
+      "start": 1.48,
+      "end": 1.66
+    },
+    {
+      "text": ".",
+      "start": 1.66,
+      "end": 1.66
+    }
+  ],
+  "loss": 1.1241669288048377
+}

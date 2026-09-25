@@ -1,0 +1,1153 @@
+{
+  "schema": "cloudway-amethyst-crackle-runtime-hybrid-candidate/v1",
+  "assetId": "amethyst-crackle-slow",
+  "status": "geometry and pale-glass material checkpoint complete; runtime proof tracked separately",
+  "source": {
+    "denseMaster": {
+      "file": "source-assets/blender/amethyst-crackle-slow/amethyst-crackle-slow-dense-master.blend",
+      "bytes": 171247689,
+      "sha256": "bde6370fb1847686336d81b3c9073f535b9cd9a89ca8e130f0f1bd40a45a67a0",
+      "allFileImagesPacked": true,
+      "rawAndReviewCollectionsRetained": true
+    },
+    "reference": {
+      "file": "source-assets/references/amethyst-crackle-slow.png",
+      "bytes": 1952442,
+      "sha256": "1316c16bf53f7b88adfae55d25cce726456a9d3791a0b7abaf4f9e4a77f6fd66"
+    },
+    "visibleExteriorDimensionsMetres": [
+      1.7,
+      1.178027339,
+      0.286381668
+    ],
+    "denseMasterUnchangedAfterBuild": true,
+    "fullPbrMapsPacked": true,
+    "decimation": false
+  },
+  "runtimeContract": {
+    "logicalId": "cloudway-lab-amethyst-crackle-v1",
+    "root": "CloudwayLab_AmethystCrackleSlow",
+    "metadata": {
+      "version": 1,
+      "coordinates": {
+        "upAxis": "+Y",
+        "units": "metres",
+        "origin": "top-centre-of-fully-extended-support"
+      },
+      "support": {
+        "state": "intact",
+        "topY": 0,
+        "width": 1.64,
+        "depth": 1.1
+      },
+      "motion": {
+        "kind": "crackle",
+        "roles": {
+          "persistent": [
+            "CloudwayLab_AmethystCrackleSlow__persistent"
+          ],
+          "intactGlass": "CloudwayLab_AmethystCrackleSlow__intact",
+          "contact": "CloudwayLab_AmethystCrackleSlow__contact",
+          "shards": [
+            "CloudwayLab_AmethystCrackleSlow__shard_000",
+            "CloudwayLab_AmethystCrackleSlow__shard_001",
+            "CloudwayLab_AmethystCrackleSlow__shard_002",
+            "CloudwayLab_AmethystCrackleSlow__shard_003",
+            "CloudwayLab_AmethystCrackleSlow__shard_004",
+            "CloudwayLab_AmethystCrackleSlow__shard_005",
+            "CloudwayLab_AmethystCrackleSlow__shard_006",
+            "CloudwayLab_AmethystCrackleSlow__shard_007",
+            "CloudwayLab_AmethystCrackleSlow__shard_008",
+            "CloudwayLab_AmethystCrackleSlow__shard_009",
+            "CloudwayLab_AmethystCrackleSlow__shard_010",
+            "CloudwayLab_AmethystCrackleSlow__shard_011",
+            "CloudwayLab_AmethystCrackleSlow__shard_012",
+            "CloudwayLab_AmethystCrackleSlow__shard_013",
+            "CloudwayLab_AmethystCrackleSlow__shard_014",
+            "CloudwayLab_AmethystCrackleSlow__shard_015",
+            "CloudwayLab_AmethystCrackleSlow__shard_016",
+            "CloudwayLab_AmethystCrackleSlow__shard_017"
+          ]
+        },
+        "materials": {
+          "glass": "CloudwayLab_Amethyst__glass",
+          "framework": "CloudwayLab_Amethyst__framework",
+          "internalDetail": "CloudwayLab_Amethyst__internal_detail",
+          "cornerDetail": "CloudwayLab_Amethyst__corner_provider_pbr",
+          "accent": "CloudwayLab_Amethyst__luminous_accent"
+        }
+      }
+    },
+    "collider": {
+      "shape": "box",
+      "width": 1.64,
+      "depth": 1.1,
+      "height": 0.25,
+      "topY": 0,
+      "center": [
+        0,
+        -0.125,
+        0
+      ]
+    },
+    "coordinateConversion": "Blender Z-up source exports to glTF +Y; origin remains contact top-centre"
+  },
+  "contact": {
+    "node": "CloudwayLab_AmethystCrackleSlow__contact",
+    "shape": "rectangle",
+    "widthMetres": 1.64,
+    "depthMetres": 1.1,
+    "topBlenderZ": 0.0,
+    "topRuntimeY": 0.0,
+    "ornamentalFaces": 0,
+    "sourceRayEvidence": {
+      "method": "A 31x31 vertical-ray grid over the inset 86% of the source XY bounds. Top offsets include raised ornament and are not a collider definition.",
+      "samples": 961,
+      "topHits": 961,
+      "topCoverage": 1.0,
+      "misses": 0,
+      "pairedTopBottomHits": 961,
+      "unpairedTopHits": 0,
+      "topOffsetFromLandingPlaneMillimetres": {
+        "min": -12.488566,
+        "p05": -5.939715,
+        "median": -0.202417,
+        "p95": 1.670934,
+        "max": 2.34548
+      },
+      "topHitsWithin2mmOfLandingPlaneFraction": 0.901145,
+      "topHitsWithin5mmOfLandingPlaneFraction": 0.941727,
+      "visualThicknessMillimetres": {
+        "min": 228.245482,
+        "p05": 239.141494,
+        "median": 246.144459,
+        "p95": 250.076123,
+        "max": 250.739269
+      }
+    },
+    "certification": "Conservative 1.64 x 1.10 m rectangle inside the measured broad top patch. The 1.64 m square proposal was rejected because the donor is only 1.178 m deep."
+  },
+  "intact": {
+    "root": "CloudwayLab_AmethystCrackleSlow__intact",
+    "shell": {
+      "object": "AmethystRuntimeCrystalShell",
+      "dimensionsMetres": [
+        1.64,
+        1.1,
+        0.2
+      ],
+      "topBlenderZ": -0.025,
+      "newClosedGeometry": true,
+      "material": "CloudwayLab_Amethyst__glass",
+      "materialDecision": {
+        "baseColorLinear": [
+          0.58,
+          0.4,
+          0.72
+        ],
+        "emissionLinear": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "emissionStrength": 0.0,
+        "reason": "pale non-emissive lavender keeps new cut faces subordinate to the exact provider exterior under Three lighting"
+      },
+      "placement": "optical underlay 0.025 m below the contact datum, inside the exact source exterior; separation prevents coincident-face artefacts while the independent contact proxy remains the gameplay support authority"
+    },
+    "internalDetail": {
+      "object": "AmethystRuntimeSourceIntactBody",
+      "sourcePreserved": true,
+      "subordinate": true,
+      "collision": false,
+      "material": "CloudwayLab_Amethyst__internal_detail",
+      "runtimeMaterialPolicy": "exact opaque provider PBR accepted for intact fidelity",
+      "sourceVertices": 787132,
+      "retainedVertices": 628763,
+      "sourcePolygons": 1433588,
+      "retainedPolygons": 1149701,
+      "retainedTriangles": 1149701,
+      "uvLayers": [
+        "UVMap"
+      ],
+      "transform": {
+        "sourceNormalizationMatrixApplied": true,
+        "additionalScale": [
+          1,
+          1,
+          1
+        ],
+        "additionalTranslation": [
+          0,
+          0,
+          0
+        ]
+      },
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.846827686,
+          -0.584139585,
+          -0.266088784
+        ],
+        "max": [
+          0.846755326,
+          0.583669007,
+          0.018035762
+        ]
+      }
+    }
+  },
+  "persistent": {
+    "root": "CloudwayLab_AmethystCrackleSlow__persistent",
+    "perimeter": {
+      "object": "AmethystRuntimePersistentPerimeter",
+      "material": "CloudwayLab_Amethyst__framework"
+    },
+    "sourceCorners": {
+      "object": "AmethystRuntimeSourceCornerFiligree",
+      "material": "CloudwayLab_Amethyst__corner_provider_pbr",
+      "collision": false,
+      "fractures": false,
+      "method": "face-centroid absolute world X/Y thresholds",
+      "thresholdMetres": {
+        "x": 0.69,
+        "y": 0.455
+      },
+      "selectedSourceFaces": 283887,
+      "selectedVertices": 160114,
+      "quadrants": 4,
+      "transform": "source normalized world positions retained exactly",
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.849999964,
+          -0.589013696,
+          -0.26758787
+        ],
+        "max": [
+          0.850000024,
+          0.589013636,
+          0.018793799
+        ]
+      },
+      "topology": "open static decoration by design; never fracture or collision"
+    },
+    "geometry": {
+      "method": "quiet authored perimeter plus sparse source-referenced light catches",
+      "persistentPerimeterVertices": 64,
+      "persistentPerimeterPolygons": 40,
+      "accentVertices": 140,
+      "accentPolygons": 84,
+      "fracturePolicy": "source top lattice and luminous accents are under intactGlass and vanish on release",
+      "accentPolicy": "sparse opaque emissive geometry at reviewed lattice junctions"
+    },
+    "sourceCornerDecision": "Four geometry-selected donor corner regions retain exact original PBR as open, non-collision persistent filigree. The complementary intact body retains every other source face, including the original top lattice and faceted crystal sides. No semantic region was inferred from metallic pixels."
+  },
+  "intactDecoration": {
+    "accent": {
+      "object": "AmethystRuntimeLuminousAccents",
+      "material": "CloudwayLab_Amethyst__luminous_accent",
+      "fractureBehavior": "child of intactGlass; hidden when shards release"
+    }
+  },
+  "fracture": {
+    "prefix": "CloudwayLab_AmethystCrackleSlow__shard_",
+    "count": 18,
+    "seedLayout": "fixed irregular 18-cell rectangular Voronoi; no grid or runtime randomness",
+    "closed": true,
+    "material": "CloudwayLab_Amethyst__glass",
+    "rootOrigin": "each assembled AABB centre",
+    "verticalExtentMetres": [
+      -0.25,
+      -0.027500000000000004
+    ],
+    "closedGlassInset": {
+      "plan": "1.64 x 1.10 m shard union remains inside the 1.70 x 1.178027339 m provider exterior",
+      "capTopBlenderZ": -0.035,
+      "maximumBevelTopBlenderZ": -0.027500000000000004,
+      "reason": "keep the closed glass volumes below the retained provider exterior; glass remains visible on new inner cut faces without depth-fighting the top"
+    },
+    "surfaceDetailPolicy": "Every complementary provider-body face is assigned exactly once by nearest deterministic shard seed. Open UV- and custom-corner-normal-preserving detail rides the matching closed glass shard; corner filigree remains persistent.",
+    "shards": [
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_000",
+        "geometry": "AmethystRuntimeShardGlass_000",
+        "assembledTranslationBlenderZUp": [
+          -0.678645849,
+          -0.420415372,
+          -0.140230283
+        ],
+        "localBounds": {
+          "min": [
+            -0.141354159,
+            -0.12958461,
+            -0.109769717
+          ],
+          "max": [
+            0.141354159,
+            0.12958461,
+            0.109769717
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_000",
+          "sourceFaces": 39204,
+          "vertices": 21625,
+          "polygons": 39204,
+          "loops": 117612,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_001",
+        "geometry": "AmethystRuntimeShardGlass_001",
+        "assembledTranslationBlenderZUp": [
+          -0.377084225,
+          -0.412170768,
+          -0.139418125
+        ],
+        "localBounds": {
+          "min": [
+            -0.175370157,
+            -0.137829214,
+            -0.110581875
+          ],
+          "max": [
+            0.175370157,
+            0.137829214,
+            0.110581875
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_001",
+          "sourceFaces": 61750,
+          "vertices": 34433,
+          "polygons": 61750,
+          "loops": 185250,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_002",
+        "geometry": "AmethystRuntimeShardGlass_002",
+        "assembledTranslationBlenderZUp": [
+          -0.05541116,
+          -0.38643834,
+          -0.13882421
+        ],
+        "localBounds": {
+          "min": [
+            -0.181186706,
+            -0.163561657,
+            -0.11117579
+          ],
+          "max": [
+            0.181186706,
+            0.163561657,
+            0.11117579
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_002",
+          "sourceFaces": 61318,
+          "vertices": 34460,
+          "polygons": 61318,
+          "loops": 183954,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_003",
+        "geometry": "AmethystRuntimeShardGlass_003",
+        "assembledTranslationBlenderZUp": [
+          0.303076237,
+          -0.400052398,
+          -0.140031606
+        ],
+        "localBounds": {
+          "min": [
+            -0.206920713,
+            -0.149947584,
+            -0.109968401
+          ],
+          "max": [
+            0.206920713,
+            0.149947584,
+            0.109968401
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_003",
+          "sourceFaces": 62282,
+          "vertices": 35021,
+          "polygons": 62282,
+          "loops": 186846,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_004",
+        "geometry": "AmethystRuntimeShardGlass_004",
+        "assembledTranslationBlenderZUp": [
+          0.640898526,
+          -0.331528872,
+          -0.139822036
+        ],
+        "localBounds": {
+          "min": [
+            -0.179101437,
+            -0.21847111,
+            -0.110177971
+          ],
+          "max": [
+            0.179101437,
+            0.21847111,
+            0.110177971
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_004",
+          "sourceFaces": 68014,
+          "vertices": 37344,
+          "polygons": 68014,
+          "loops": 204042,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_005",
+        "geometry": "AmethystRuntimeShardGlass_005",
+        "assembledTranslationBlenderZUp": [
+          -0.655093312,
+          -0.124304853,
+          -0.1387541
+        ],
+        "localBounds": {
+          "min": [
+            -0.16490671,
+            -0.170740604,
+            -0.1112459
+          ],
+          "max": [
+            0.16490671,
+            0.170740604,
+            0.1112459
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_005",
+          "sourceFaces": 49343,
+          "vertices": 26489,
+          "polygons": 49343,
+          "loops": 148029,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_006",
+        "geometry": "AmethystRuntimeShardGlass_006",
+        "assembledTranslationBlenderZUp": [
+          -0.301307172,
+          -0.160600603,
+          -0.139674351
+        ],
+        "localBounds": {
+          "min": [
+            -0.211707219,
+            -0.187134087,
+            -0.110325649
+          ],
+          "max": [
+            0.211707219,
+            0.187134087,
+            0.110325649
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_006",
+          "sourceFaces": 57446,
+          "vertices": 32268,
+          "polygons": 57446,
+          "loops": 172338,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_007",
+        "geometry": "AmethystRuntimeShardGlass_007",
+        "assembledTranslationBlenderZUp": [
+          0.109993927,
+          -0.186995178,
+          -0.140129879
+        ],
+        "localBounds": {
+          "min": [
+            -0.215581864,
+            -0.196671456,
+            -0.109870121
+          ],
+          "max": [
+            0.215581864,
+            0.196671456,
+            0.109870121
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_007",
+          "sourceFaces": 74195,
+          "vertices": 41989,
+          "polygons": 74195,
+          "loops": 222585,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_008",
+        "geometry": "AmethystRuntimeShardGlass_008",
+        "assembledTranslationBlenderZUp": [
+          0.555138171,
+          -0.093355678,
+          -0.138906479
+        ],
+        "localBounds": {
+          "min": [
+            -0.264861822,
+            -0.231582642,
+            -0.111093514
+          ],
+          "max": [
+            0.264861822,
+            0.231582642,
+            0.111093514
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_008",
+          "sourceFaces": 84980,
+          "vertices": 47741,
+          "polygons": 84980,
+          "loops": 254940,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_009",
+        "geometry": "AmethystRuntimeShardGlass_009",
+        "assembledTranslationBlenderZUp": [
+          -0.629742742,
+          0.17461203,
+          -0.13926509
+        ],
+        "localBounds": {
+          "min": [
+            -0.190257251,
+            -0.174081177,
+            -0.11073491
+          ],
+          "max": [
+            0.190257251,
+            0.174081177,
+            0.11073491
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_009",
+          "sourceFaces": 39368,
+          "vertices": 21082,
+          "polygons": 39368,
+          "loops": 118104,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_010",
+        "geometry": "AmethystRuntimeShardGlass_010",
+        "assembledTranslationBlenderZUp": [
+          -0.234911397,
+          0.139001369,
+          -0.140249848
+        ],
+        "localBounds": {
+          "min": [
+            -0.227665126,
+            -0.191680819,
+            -0.109750159
+          ],
+          "max": [
+            0.227665126,
+            0.191680819,
+            0.109750159
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_010",
+          "sourceFaces": 73673,
+          "vertices": 40959,
+          "polygons": 73673,
+          "loops": 221019,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_011",
+        "geometry": "AmethystRuntimeShardGlass_011",
+        "assembledTranslationBlenderZUp": [
+          0.213881388,
+          0.111341104,
+          -0.139255375
+        ],
+        "localBounds": {
+          "min": [
+            -0.236172765,
+            -0.210051745,
+            -0.110744625
+          ],
+          "max": [
+            0.236172765,
+            0.210051745,
+            0.110744625
+          ]
+        },
+        "vertices": 42,
+        "polygons": 45,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_011",
+          "sourceFaces": 89029,
+          "vertices": 49842,
+          "polygons": 89029,
+          "loops": 267087,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_012",
+        "geometry": "AmethystRuntimeShardGlass_012",
+        "assembledTranslationBlenderZUp": [
+          0.635027051,
+          0.138893992,
+          -0.138957664
+        ],
+        "localBounds": {
+          "min": [
+            -0.184972927,
+            -0.215273082,
+            -0.111042336
+          ],
+          "max": [
+            0.184972927,
+            0.215273082,
+            0.111042336
+          ]
+        },
+        "vertices": 34,
+        "polygons": 38,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_012",
+          "sourceFaces": 66452,
+          "vertices": 36099,
+          "polygons": 66452,
+          "loops": 199356,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_013",
+        "geometry": "AmethystRuntimeShardGlass_013",
+        "assembledTranslationBlenderZUp": [
+          -0.666611552,
+          0.422909707,
+          -0.140146136
+        ],
+        "localBounds": {
+          "min": [
+            -0.15338847,
+            -0.127090305,
+            -0.109853864
+          ],
+          "max": [
+            0.15338847,
+            0.127090305,
+            0.109853864
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_013",
+          "sourceFaces": 44622,
+          "vertices": 24237,
+          "polygons": 44622,
+          "loops": 133866,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_014",
+        "geometry": "AmethystRuntimeShardGlass_014",
+        "assembledTranslationBlenderZUp": [
+          -0.327569336,
+          0.391814262,
+          -0.139644116
+        ],
+        "localBounds": {
+          "min": [
+            -0.198226005,
+            -0.15818575,
+            -0.110355884
+          ],
+          "max": [
+            0.198226005,
+            0.15818575,
+            0.110355884
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_014",
+          "sourceFaces": 69295,
+          "vertices": 38630,
+          "polygons": 69295,
+          "loops": 207885,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_015",
+        "geometry": "AmethystRuntimeShardGlass_015",
+        "assembledTranslationBlenderZUp": [
+          0.041483738,
+          0.394922227,
+          -0.138757959
+        ],
+        "localBounds": {
+          "min": [
+            -0.202326089,
+            -0.155077785,
+            -0.111242041
+          ],
+          "max": [
+            0.202326089,
+            0.155077785,
+            0.111242041
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_015",
+          "sourceFaces": 71408,
+          "vertices": 38686,
+          "polygons": 71408,
+          "loops": 214224,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_016",
+        "geometry": "AmethystRuntimeShardGlass_016",
+        "assembledTranslationBlenderZUp": [
+          0.378187835,
+          0.348468602,
+          -0.139849693
+        ],
+        "localBounds": {
+          "min": [
+            -0.196253121,
+            -0.20153141,
+            -0.110150307
+          ],
+          "max": [
+            0.196253121,
+            0.20153141,
+            0.110150307
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_016",
+          "sourceFaces": 88888,
+          "vertices": 48407,
+          "polygons": 88888,
+          "loops": 266664,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_AmethystCrackleSlow__shard_017",
+        "geometry": "AmethystRuntimeShardGlass_017",
+        "assembledTranslationBlenderZUp": [
+          0.671794176,
+          0.438887179,
+          -0.140009329
+        ],
+        "localBounds": {
+          "min": [
+            -0.148205847,
+            -0.111112811,
+            -0.109990671
+          ],
+          "max": [
+            0.148205847,
+            0.111112811,
+            0.109990671
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "AmethystRuntimeShardSurfaceDetail_017",
+          "sourceFaces": 48434,
+          "vertices": 26601,
+          "polygons": 48434,
+          "loops": 145302,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "customCornerNormals": true,
+          "closed": false,
+          "collision": false
+        }
+      }
+    ],
+    "runtimeTimerSeconds": 4
+  },
+  "candidateBlend": {
+    "file": "source-assets/blender/amethyst-crackle-slow/amethyst-crackle-slow-runtime-hybrid-candidate.blend",
+    "bytes": 290113013,
+    "sha256": "183597d8fcf8df58547391edbeaa909747e65e215850c29c702160c3bc1cf662"
+  },
+  "proofMethod": {
+    "views": [
+      "matched game camera",
+      "orthographic top",
+      "matched low side"
+    ],
+    "beauty": "448 Eevee samples, pastel field, no post blur",
+    "transmissionWitness": "separate blue/coral checker render",
+    "exploded": "persistent framework fixed; 18 deterministic closed shard roots displaced",
+    "renderIsolation": [
+      {
+        "render": "provider-pbr-game-camera",
+        "visibleMeshes": [
+          "Amethyst_Hybrid_Proof_Field",
+          "amethyst-crackle-slow__normalized_review"
+        ]
+      },
+      {
+        "render": "hybrid-beauty-game-camera",
+        "visibleMeshes": [
+          "AmethystRuntimeCrystalShell",
+          "AmethystRuntimeLuminousAccents",
+          "AmethystRuntimePersistentPerimeter",
+          "AmethystRuntimeSourceCornerFiligree",
+          "AmethystRuntimeSourceIntactBody",
+          "Amethyst_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "provider-pbr-top",
+        "visibleMeshes": [
+          "Amethyst_Hybrid_Proof_Field",
+          "amethyst-crackle-slow__normalized_review"
+        ]
+      },
+      {
+        "render": "hybrid-beauty-top",
+        "visibleMeshes": [
+          "AmethystRuntimeCrystalShell",
+          "AmethystRuntimeLuminousAccents",
+          "AmethystRuntimePersistentPerimeter",
+          "AmethystRuntimeSourceCornerFiligree",
+          "AmethystRuntimeSourceIntactBody",
+          "Amethyst_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "provider-pbr-side",
+        "visibleMeshes": [
+          "Amethyst_Hybrid_Proof_Field",
+          "amethyst-crackle-slow__normalized_review"
+        ]
+      },
+      {
+        "render": "hybrid-beauty-side",
+        "visibleMeshes": [
+          "AmethystRuntimeCrystalShell",
+          "AmethystRuntimeLuminousAccents",
+          "AmethystRuntimePersistentPerimeter",
+          "AmethystRuntimeSourceCornerFiligree",
+          "AmethystRuntimeSourceIntactBody",
+          "Amethyst_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-semantic-game-camera",
+        "visibleMeshes": [
+          "AmethystRuntimeCrystalShell",
+          "AmethystRuntimeLuminousAccents",
+          "AmethystRuntimePersistentPerimeter",
+          "AmethystRuntimeSourceCornerFiligree",
+          "AmethystRuntimeSourceIntactBody",
+          "Amethyst_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-transmission-game-camera",
+        "visibleMeshes": [
+          "AmethystRuntimeCrystalShell",
+          "AmethystRuntimeLuminousAccents",
+          "AmethystRuntimePersistentPerimeter",
+          "AmethystRuntimeSourceCornerFiligree",
+          "AmethystRuntimeSourceIntactBody",
+          "Amethyst_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-shards-exploded-game-camera",
+        "visibleMeshes": [
+          "AmethystRuntimePersistentPerimeter",
+          "AmethystRuntimeShardGlass_000",
+          "AmethystRuntimeShardGlass_001",
+          "AmethystRuntimeShardGlass_002",
+          "AmethystRuntimeShardGlass_003",
+          "AmethystRuntimeShardGlass_004",
+          "AmethystRuntimeShardGlass_005",
+          "AmethystRuntimeShardGlass_006",
+          "AmethystRuntimeShardGlass_007",
+          "AmethystRuntimeShardGlass_008",
+          "AmethystRuntimeShardGlass_009",
+          "AmethystRuntimeShardGlass_010",
+          "AmethystRuntimeShardGlass_011",
+          "AmethystRuntimeShardGlass_012",
+          "AmethystRuntimeShardGlass_013",
+          "AmethystRuntimeShardGlass_014",
+          "AmethystRuntimeShardGlass_015",
+          "AmethystRuntimeShardGlass_016",
+          "AmethystRuntimeShardGlass_017",
+          "AmethystRuntimeShardSurfaceDetail_000",
+          "AmethystRuntimeShardSurfaceDetail_001",
+          "AmethystRuntimeShardSurfaceDetail_002",
+          "AmethystRuntimeShardSurfaceDetail_003",
+          "AmethystRuntimeShardSurfaceDetail_004",
+          "AmethystRuntimeShardSurfaceDetail_005",
+          "AmethystRuntimeShardSurfaceDetail_006",
+          "AmethystRuntimeShardSurfaceDetail_007",
+          "AmethystRuntimeShardSurfaceDetail_008",
+          "AmethystRuntimeShardSurfaceDetail_009",
+          "AmethystRuntimeShardSurfaceDetail_010",
+          "AmethystRuntimeShardSurfaceDetail_011",
+          "AmethystRuntimeShardSurfaceDetail_012",
+          "AmethystRuntimeShardSurfaceDetail_013",
+          "AmethystRuntimeShardSurfaceDetail_014",
+          "AmethystRuntimeShardSurfaceDetail_015",
+          "AmethystRuntimeShardSurfaceDetail_016",
+          "AmethystRuntimeShardSurfaceDetail_017",
+          "AmethystRuntimeSourceCornerFiligree",
+          "Amethyst_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "saved-candidate-state",
+        "visibleMeshes": [
+          "AmethystRuntimeCrystalShell",
+          "AmethystRuntimeLuminousAccents",
+          "AmethystRuntimePersistentPerimeter",
+          "AmethystRuntimeSourceCornerFiligree",
+          "AmethystRuntimeSourceIntactBody"
+        ]
+      }
+    ]
+  },
+  "proofs": [
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/provider-pbr-game-camera.png",
+      "bytes": 379822,
+      "sha256": "3f4fcd18fca8d729be9963c91967746d9e8ed304ed1beb117cece46ff2531517",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/hybrid-beauty-game-camera.png",
+      "bytes": 379350,
+      "sha256": "f60d9c6f0d60bc4f8864d658b1b5ce4933577aa8c107d26ebccb598c8cf68146",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/provider-pbr-top.png",
+      "bytes": 931234,
+      "sha256": "5d4002efd2b3976c9f9a87a75bf519fd4294a0a6dbc556cf9b7f49ac423d06de",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/hybrid-beauty-top.png",
+      "bytes": 929200,
+      "sha256": "0135e0069d7954757f3e4346ec817c428ffe27a6287d2590fc92758f82e880f6",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/provider-pbr-side.png",
+      "bytes": 679862,
+      "sha256": "1e98f218355975036477477148ef633809c6386364e5a084d8acacce7c7d92c2",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/hybrid-beauty-side.png",
+      "bytes": 673893,
+      "sha256": "f381037da2d7f57c245be3d9ebce72b85e6dad31b2bebdbda791ce49e53e0709",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/hybrid-semantic-game-camera.png",
+      "bytes": 121679,
+      "sha256": "5f20e666c2aaf5c27985c5495f1bfe5839f3c84d4a7f34d2ac92eea91b5f2e36",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/hybrid-transmission-game-camera.png",
+      "bytes": 493444,
+      "sha256": "d95f86769ca5b6ee6c8a0bd4405b415b099dffac822026679698a13a43202cf7",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/amethyst-crackle-slow/runtime-hybrid-candidate/hybrid-shards-exploded-game-camera.png",
+      "bytes": 555397,
+      "sha256": "6fb80906a6bfc15dea7e04a7dd2ec3f83365d3fa1ffa4096332aaf28cf7e6bcd",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "rebuild": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_amethyst_crackle_runtime_candidate.py"
+}

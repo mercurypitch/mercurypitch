@@ -46,7 +46,13 @@ export interface FrostSurfaceDefinition {
 
 export type PlatformSurfaceDefinition = FrostSurfaceDefinition
 
-/** First-pilot platform behaviors are translation-only and deterministic. */
+export type PlatformScrollAxis = 'x' | 'z'
+
+export const PLATFORM_RENDER_QUARTER_TURNS = [0, 1, 2, 3] as const
+export type PlatformRenderQuarterTurns =
+  (typeof PLATFORM_RENDER_QUARTER_TURNS)[number]
+
+/** Deterministic runtime behaviors; axes are world-space after compilation. */
 export type PlatformBehaviorDefinition =
   | {
       kind: 'glide'
@@ -60,6 +66,16 @@ export type PlatformBehaviorDefinition =
       releaseSeconds: number
       resetSeconds: number
     }
+  | {
+      kind: 'scroll'
+      /** World axis after any authoring-space quarter turn is applied. */
+      axis: PlatformScrollAxis
+      minLengthRatio: number
+      extendedSeconds: number
+      retractedSeconds: number
+      transitionSeconds: number
+      initialState: 'extended' | 'retracted'
+    }
 
 export const PLATFORM_BEHAVIOR_LIMITS = {
   maximumTranslation: 20,
@@ -67,6 +83,12 @@ export const PLATFORM_BEHAVIOR_LIMITS = {
   maximumDwellSeconds: 10,
   maximumPhaseSeconds: 30,
   minimumSurfaceMultiplier: 0.05,
+  minimumScrollLengthRatio: 0.1,
+  maximumScrollLengthRatio: 0.95,
+  minimumScrollRestSeconds: 0.25,
+  maximumScrollRestSeconds: 60,
+  minimumScrollTransitionSeconds: 0.25,
+  maximumScrollTransitionSeconds: 30,
 } as const
 
 /** A deliberately authored void that fixed-step floor contact must not bridge. */
@@ -83,6 +105,12 @@ export interface PlatformDefinition extends BoundsXZ {
   material: 'stone' | 'brass'
   /** Optional renderer catalog recipe; has no effect on this solid proxy. */
   renderId?: string
+  /**
+   * Cardinal art orientation around +Y. Prefabs store local turns; room
+   * compilation adds the placement turn so runtime values are world-space.
+   * Collision remains defined exclusively by the axis-aligned bounds.
+   */
+  renderQuarterTurns?: PlatformRenderQuarterTurns
   activation?: SolidActivation
   presentation?: SolidPresentation
   /** Legacy single-encounter bridge activation retained for Glassworks saves. */
@@ -391,6 +419,10 @@ export interface PlayerState {
 export type PlatformPhase =
   | 'stable'
   | 'moving'
+  | 'extended'
+  | 'retracting'
+  | 'retracted'
+  | 'extending'
   | 'intact'
   | 'warning'
   | 'released'
@@ -403,6 +435,8 @@ export interface PlatformRuntimeSnapshot {
   phase: PlatformPhase
   phaseProgress: number
   collisionEnabled: boolean
+  /** Current centered walkable length divided by its authored full length. */
+  lengthRatio?: number
 }
 
 export type EncounterPhase =
@@ -443,6 +477,12 @@ export interface GameSnapshot {
   paused: boolean
   checkpointId: string
   nearbyBreakableId: string | null
+  /** Current required encounter whose own prerequisites are complete. */
+  nextRequiredBreakableId?: string | null
+  /** Nearby encounter that cannot start until its prerequisites are complete. */
+  nearbyLockedBreakableId?: string | null
+  /** The player is approaching an exit whose required encounters remain. */
+  nearLockedExit?: boolean
   elapsedSeconds: number
   complete: boolean
   rewardSummary?: LevelRewardSummary
@@ -496,6 +536,8 @@ export interface SavedProgress {
   rewards?: SavedRewardProgress
 }
 
+export type BreakOutcome = 'celebration' | 'path-opened' | 'exit-opened'
+
 export type GameEvent =
   | { type: 'landed' }
   | { type: 'jumped' }
@@ -508,7 +550,7 @@ export type GameEvent =
       stepCount: number
     }
   | { type: 'challenge-reset'; id: string; reason: 'wrong-order' }
-  | { type: 'break'; id: string }
+  | { type: 'break'; id: string; outcome: BreakOutcome }
   | { type: 'complete' }
 
 export interface GlassGame {

@@ -3,12 +3,14 @@
 // ============================================================
 
 import type { Material, Object3D, PerspectiveCamera, Scene, Texture, WebGLRenderer, } from 'three'
-import { Box3, BoxGeometry, CircleGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry, TorusGeometry, Vector3, } from 'three'
+import { Box3, BoxGeometry, ConeGeometry, CylinderGeometry, Group, Mesh, SphereGeometry, TorusGeometry, Vector3, } from 'three'
 import { EXHIBIT_PLINTH } from '../content/solid-props'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, Vec3, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
 import { getPlatformRenderRecipe } from './catalog'
+import { createCloudwayLaboratoryPlatformRenderer } from './cloudway-laboratory-platforms'
 import { createCloudwayPlatformRenderer } from './cloudway-platforms'
+import { createExhibitApproachPads } from './exhibit-approach-pads'
 import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import { createMaterialLibrary } from './material-library'
@@ -287,7 +289,14 @@ export function createMuseum(
     materials,
     materialLibrary,
   )
-  const pads = new Map<string, Mesh>()
+  const cloudwayLaboratoryPlatforms = createCloudwayLaboratoryPlatformRenderer(
+    level,
+    root,
+    floors,
+    materials,
+    materialLibrary,
+  )
+  const pads = createExhibitApproachPads(level, renderParent, materials.gold)
   for (const target of level.breakables) {
     const parent = renderParent(target.id)
     if (target.mount === undefined) {
@@ -315,29 +324,6 @@ export function createMuseum(
         target.position.z,
       )
     }
-    const pad = new Mesh(
-      new CircleGeometry(0.23, 48),
-      new MeshBasicMaterial({
-        color: 0x68d9d3,
-        transparent: true,
-        opacity: 0.2,
-        depthWrite: false,
-      }),
-    )
-    pad.rotation.x = -Math.PI / 2
-    pad.position.copy(target.anchor)
-    pad.position.y += 0.02
-    parent.add(pad)
-    pads.set(target.id, pad)
-    ring(
-      parent,
-      materials.gold,
-      0.24,
-      0.012,
-      target.anchor.x,
-      target.anchor.y + 0.018,
-      target.anchor.z,
-    )
   }
   // Tall dressing is beyond the playable rectangles, leaving orbit and jumps open.
   for (const platform of level.platforms.filter((item) =>
@@ -365,9 +351,13 @@ export function createMuseum(
     parent.add(arch)
   }
   const setVisibleRooms = (visibleRoomIds: ReadonlySet<string>) => {
+    let changed = false
     roomGroups.forEach((group, id) => {
-      group.visible = visibleRoomIds.has(id)
+      const visible = visibleRoomIds.has(id)
+      if (group.visible !== visible) changed = true
+      group.visible = visible
     })
+    return changed
   }
   return {
     root,
@@ -381,6 +371,7 @@ export function createMuseum(
         object.traverseVisible((candidate) => {
           const mesh = candidate as Mesh
           if (!mesh.isMesh || !mesh.visible) return
+          if (mesh.userData.excludeFromCameraCollision === true) return
           const material = Array.isArray(mesh.material)
             ? mesh.material[0]
             : mesh.material
@@ -401,6 +392,10 @@ export function createMuseum(
     setKit(scene: Object3D, bundle: string) {
       cameraMeshCache = undefined
       const cloudwayPlatformIds = cloudwayPlatforms.install(scene, bundle)
+      const cloudwayLaboratoryPlatformIds = cloudwayLaboratoryPlatforms.install(
+        scene,
+        bundle,
+      )
       for (const { solid, mesh } of solidProxies)
         if (
           solid.fallback?.replacedByBundle === bundle &&
@@ -423,7 +418,11 @@ export function createMuseum(
         }
       })
       for (const platform of level.platforms) {
-        if (cloudwayPlatformIds.has(platform.id)) continue
+        if (
+          cloudwayPlatformIds.has(platform.id) ||
+          cloudwayLaboratoryPlatformIds.has(platform.id)
+        )
+          continue
         const recipe = getPlatformRenderRecipe(
           platform.renderId ?? platform.kind,
         )
@@ -520,6 +519,7 @@ export function createMuseum(
           if (proxy !== undefined) proxy.mesh.visible = false
         }
       }
+      cloudwayPlatforms.refreshShadowReceivers()
       roomRenderBoundsDirty = true
     },
     update(snapshot: GameSnapshot) {
@@ -539,7 +539,8 @@ export function createMuseum(
           coveredSolidIds.length === 0 ||
           coveredSolidIds.some((id) => active.has(id))
       const enabled = activeSolidIds.join('|')
-      if (enabled !== lastActive) {
+      const shadowVisibilityChanged = enabled !== lastActive
+      if (shadowVisibilityChanged) {
         cameraMeshCache = undefined
         lastActive = enabled
       }
@@ -547,14 +548,12 @@ export function createMuseum(
         floor.visible = active.has(id)
       })
       cloudwayPlatforms.update(snapshot)
-      pads.forEach((pad, id) => {
-        pad.visible = !snapshot.completedBreakableIds.includes(id)
-        ;(pad.material as MeshBasicMaterial).opacity =
-          snapshot.nearbyBreakableId === id ? 0.55 : 0.18
-      })
+      cloudwayLaboratoryPlatforms.update(snapshot)
+      pads.update(snapshot)
+      return shadowVisibilityChanged
     },
-    cullCloudwayPlatforms(viewpoint: Vec3) {
-      cloudwayPlatforms.cullForView(viewpoint)
+    cullCloudwayPlatforms(camera: PerspectiveCamera | undefined) {
+      return cloudwayPlatforms.cullForView(camera)
     },
     roomIdForRuntimeId: roomVisibility.roomIdForRuntimeId,
     setDecorationTexture(assetId: string, texture: Texture) {
@@ -569,8 +568,10 @@ export function createMuseum(
         roomRenderBoundsDirty = false
       }
       const selection = roomVisibility.select(player, camera)
-      setVisibleRooms(selection.visibleRoomIds)
-      return selection
+      return {
+        ...selection,
+        shadowVisibilityChanged: setVisibleRooms(selection.visibleRoomIds),
+      }
     },
     planarReflectionMetrics: planarReflections.metrics,
     updatePlanarReflection(
@@ -606,6 +607,7 @@ export function createMuseum(
     },
     setVisibleRooms,
     dispose() {
+      cloudwayLaboratoryPlatforms.dispose()
       cloudwayPlatforms.dispose()
       decorations.dispose()
     },

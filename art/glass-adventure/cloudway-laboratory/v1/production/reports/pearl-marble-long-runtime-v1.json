@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "assetId": "pearl-marble-long",
+  "status": "accepted for Crystal Promenade first-slice rendering; device performance validation pending",
+  "scope": "Dense topology is preserved. Runtime textures are bounded derivatives; archived full maps and packed master remain unchanged.",
+  "acceptance": {
+    "decision": "accepted for the compact first-slice arrival, approach, catch and exit rests",
+    "proofs": [
+      "source-assets/proofs/runtime/crystal-promenade-first-slice/2026-09-25-a60d0a23/browser-proof.json",
+      "source-assets/proofs/runtime/crystal-promenade-first-slice/2026-09-25-final-pair/accepted-pair-route.png"
+    ],
+    "scope": "Actual GLTFLoader, Meshopt and WebGL course renders matched the reviewed Pearl derivative and placement. The software-renderer captures prove visual integration only; device performance remains a separate crossing check."
+  },
+  "source": {
+    "denseMaster": "source-assets/blender/pearl-marble-long/pearl-marble-long-dense-master.blend",
+    "denseMasterSha256": "d8f879a18ca1b3483d94a15fdaee4c15ddce24c99790810aa5db682857af18e2",
+    "donorSha256": "311736f3b8d645d715adffb87ef6102bf867f655c80f4bf13335e9dff300bf14"
+  },
+  "runtime": {
+    "file": "source-assets/runtime/pearl-marble-long/pearl-marble-long-runtime-v1.glb",
+    "bytes": 1401472,
+    "sha256": "dda126cc3c9ea41a326fd06299f1bdf89e1a7e2789b1c2eceb83380c0f9ca861",
+    "bundleId": "cloudway-lab-pearl-marble-long-v1",
+    "rootNode": "CloudwayLab_PearlMarbleLong",
+    "requiredExtensions": [
+      "EXT_meshopt_compression",
+      "EXT_texture_webp",
+      "KHR_mesh_quantization"
+    ],
+    "materialNames": [
+      "CloudwayLab_PearlMarbleLong__provider_pbr"
+    ],
+    "resourceBudget": {
+      "embeddedImageBytes": 573380,
+      "meshoptDecodedBufferBytes": 2719028,
+      "otherBufferBytes": 0,
+      "estimatedRgba8BaseLevelTextureBytes": 25165824,
+      "estimatedRgba8MipmappedTextureBytes": 33554432,
+      "scope": "Texture estimates include base color, normal and packed metallic/roughness. Browser residency is measured separately."
+    }
+  },
+  "geometry": {
+    "vertices": 68577,
+    "triangles": 112284,
+    "polygons": 112284,
+    "runtimeBoundsMetres": {
+      "minimum": [
+        -1.75,
+        -0.390328825,
+        -0.481177747
+      ],
+      "maximum": [
+        1.75,
+        0.023264632,
+        0.481177777
+      ]
+    },
+    "positionQuantizationStepUpperBoundMetres": 5.3407e-05,
+    "decimated": false,
+    "remeshed": false
+  },
+  "textures": {
+    "policy": {
+      "color": 2048,
+      "data": 1024,
+      "quality": 90
+    },
+    "images": [
+      {
+        "role": "base_color",
+        "sourceDimensions": [
+          8192,
+          8192
+        ],
+        "runtimeDimensions": [
+          2048,
+          2048
+        ]
+      },
+      {
+        "role": "normal",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "metallic",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      },
+      {
+        "role": "roughness",
+        "sourceDimensions": [
+          4096,
+          4096
+        ],
+        "runtimeDimensions": [
+          1024,
+          1024
+        ]
+      }
+    ],
+    "sourceMapsUnchanged": true
+  },
+  "compression": {
+    "method": "EXT_meshopt_compression",
+    "level": "high",
+    "quantizationVolume": "mesh",
+    "positionBits": 16,
+    "normalBits": 12,
+    "texcoordBits": 14,
+    "triangleCountPreserved": true
+  },
+  "contact": {
+    "declaration": {
+      "kind": "rectangle",
+      "width": 3.2,
+      "depth": 0.72,
+      "topY": 0,
+      "height": 0.34
+    },
+    "audit": {
+      "status": "certified-from-dense-runtime-geometry",
+      "sampleCount": 49,
+      "gridPerRectangle": [
+        7,
+        7
+      ],
+      "edgeInsetFraction": 0.01,
+      "maximumHeightErrorMetres": 0.001834303,
+      "minimumUpNormal": 0.977945805,
+      "upNormalMinimum": 0.82,
+      "maximumVisibleRiseAboveContactMetres": 0.000141934,
+      "heightToleranceMetres": 0.035,
+      "maximumOrnamentRiseMetres": 0.12,
+      "scope": "The declared rectangle union has upward-facing dense support near its contact datum across the sampled extent. Ornament may rise above the authored gameplay collider within the reported bound; visible overhangs remain non-colliding."
+    }
+  },
+  "rebuild": "rtk proxy flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_static_runtime.py -- --asset pearl-marble-long"
+}

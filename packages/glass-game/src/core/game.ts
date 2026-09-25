@@ -1,20 +1,22 @@
 // Glass adventure coordinator — pure movement, encounter ownership and durable route progress.
 
 import type { BreakableDefinition, EncounterPhase, GameEvent, GameSnapshot, GlassGame, LevelDefinition, PitchAccuracyGradingPolicy, PlatformDefinition, } from '../contracts'
+import { deriveBreakOutcome } from './break-outcome'
 import type { ChallengeJudge } from './challenge'
 import { createChallengeJudge } from './challenge'
 import type { CourseCollider } from './collision'
 import { containsBody, findSupport, FLAT_COURSE_COLLIDER, intentionalGapDefinitionError, } from './collision'
-import { crossesExitPortal, deriveExitPortalGeometry } from './exit-portal'
+import { blockExitPortalCrossing, crossesExitPortal, deriveExitPortalGeometry, } from './exit-portal'
 import { createMovement, MOVEMENT, releaseMovement, stepMovement, } from './movement'
 import { createPlatformRuntime } from './platform-runtime'
-import { findCheckpoint, readProgress, requirementsMet } from './progress'
+import { findCheckpoint, getRequiredRouteBreakableIds, readProgress, requirementsMet, } from './progress'
 import type { SingingQualityAttempt } from './rewards'
 import { applyEncounterRewards, createSingingQualityAttempt, emptyRewardProgress, readRewardProgress, summarizeRewards, ungradedQualityResult, } from './rewards'
 import { SHATTER_LIFECYCLE_SECONDS } from './shatter-presentation'
 import { getActiveCourseSolids } from './solid-activation'
 
-const INTERACTION_RADIUS = 0.75
+const INTERACTION_RADIUS = 1.1
+const EXIT_GUIDANCE_RADIUS = 1.35
 
 interface ActiveEncounter {
   target: BreakableDefinition
@@ -95,6 +97,7 @@ export function createGlassGame(
   let accumulator = 0
   const brokenAt = new Map<string, number>()
   const exitPortal = deriveExitPortalGeometry(level.exit)
+  const requiredRouteIds = getRequiredRouteBreakableIds(level)
 
   const platforms = () =>
     activeCourseSolids().filter(
@@ -109,9 +112,8 @@ export function createGlassGame(
     return 'idle'
   }
 
-  const eligible = (target: BreakableDefinition): boolean =>
+  const withinSafeInteractionArea = (target: BreakableDefinition): boolean =>
     !completed.has(target.id) &&
-    requirementsMet(target.requiresCompleted, completed) &&
     Math.abs(player.position.y - target.anchor.y) < 0.05 &&
     Math.hypot(
       player.position.x - target.anchor.x,
@@ -121,6 +123,10 @@ export function createGlassGame(
     platforms().some(
       (p) => p.kind === 'deck' && containsBody(player.position, MOVEMENT, p),
     )
+
+  const eligible = (target: BreakableDefinition): boolean =>
+    withinSafeInteractionArea(target) &&
+    requirementsMet(target.requiresCompleted, completed)
 
   const nearby = (): string | null => {
     if (paused || complete || active !== null || shattering !== null)
@@ -139,6 +145,61 @@ export function createGlassGame(
       }
     }
     return chosen?.id ?? null
+  }
+
+  const nearbyLocked = (): string | null => {
+    if (paused || complete || active !== null || shattering !== null)
+      return null
+    let chosen: BreakableDefinition | undefined
+    let distance = Infinity
+    for (const target of level.breakables) {
+      if (
+        !withinSafeInteractionArea(target) ||
+        requirementsMet(target.requiresCompleted, completed)
+      )
+        continue
+      const nextDistance = Math.hypot(
+        player.position.x - target.anchor.x,
+        player.position.z - target.anchor.z,
+      )
+      if (nextDistance < distance) {
+        chosen = target
+        distance = nextDistance
+      }
+    }
+    return chosen?.id ?? null
+  }
+
+  const nextRequired = (): string | null => {
+    if (complete) return null
+    for (const id of requiredRouteIds) {
+      if (completed.has(id)) continue
+      const target = level.breakables.find((candidate) => candidate.id === id)
+      if (
+        target !== undefined &&
+        requirementsMet(target.requiresCompleted, completed)
+      )
+        return id
+    }
+    return null
+  }
+
+  const nearLockedExit = (): boolean => {
+    if (complete || requirementsMet(requiredRouteIds, completed)) return false
+    const normalDistance = Math.abs(
+      player.position[exitPortal.normalAxis] -
+        exitPortal.center[exitPortal.normalAxis],
+    )
+    const lateral = player.position[exitPortal.lateralAxis]
+    const verticallyNear =
+      player.position.y < exitPortal.top &&
+      player.position.y + MOVEMENT.height > exitPortal.bottom - 0.1
+    return (
+      normalDistance <= EXIT_GUIDANCE_RADIUS &&
+      lateral >= exitPortal.minLateral - EXIT_GUIDANCE_RADIUS &&
+      lateral <= exitPortal.maxLateral + EXIT_GUIDANCE_RADIUS &&
+      verticallyNear
+    )
   }
 
   const cancel = (): void => {
@@ -214,6 +275,19 @@ export function createGlassGame(
             platformMotions: platformRuntime.motions(enabledPlatforms),
           },
         )
+        const exitOpen = requirementsMet(requiredRouteIds, completed)
+        if (!exitOpen) {
+          const blockedPosition = blockExitPortalCrossing(
+            previousPosition,
+            player.position,
+            exitPortal,
+            MOVEMENT,
+          )
+          if (blockedPosition !== null) {
+            player.position = blockedPosition
+            player.velocity[exitPortal.normalAxis] = 0
+          }
+        }
         if (step.crushed) {
           respawn(undefined, events)
           break
@@ -259,7 +333,7 @@ export function createGlassGame(
           }
         }
         if (
-          requirementsMet(level.exit.requiresCompleted, completed) &&
+          exitOpen &&
           crossesExitPortal(
             previousPosition,
             player.position,
@@ -318,6 +392,9 @@ export function createGlassGame(
         paused,
         checkpointId,
         nearbyBreakableId: nearby(),
+        nextRequiredBreakableId: nextRequired(),
+        nearbyLockedBreakableId: nearbyLocked(),
+        nearLockedExit: nearLockedExit(),
         elapsedSeconds,
         complete,
         rewardSummary: summarizeRewards(level, rewardProgress),
@@ -391,7 +468,9 @@ export function createGlassGame(
           ? undefined
           : (encounter.qualityAttempt?.finish() ??
             ungradedQualityResult(level, encounter.qualityPolicy))
+      const completedBefore = new Set(completed)
       completed.add(id)
+      const outcome = deriveBreakOutcome(level, completedBefore, completed)
       refreshActiveBaseSolids()
       rewardProgress = applyEncounterRewards(
         level,
@@ -405,7 +484,7 @@ export function createGlassGame(
         id,
         until: elapsedSeconds + SHATTER_LIFECYCLE_SECONDS,
       }
-      events.push({ type: 'break', id })
+      events.push({ type: 'break', id, outcome })
       return events
     },
     cancelEncounter: cancel,

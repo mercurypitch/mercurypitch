@@ -266,6 +266,23 @@ final mic mix. Missing baseline voices do not make a sampled engine a synth kit.
 **Rule:** tolerate that suspended event only while the new unlock is pending and no sources have started. Native suspension preparation and genuine interruption must still cancel. Reproduce the ordering with an actual AudioContext, not only synchronous mocks.
 **See:** `packages/glass-game/src/browser/museum-output.ts`, `art/glass-adventure/audio/v1/verify_runtime.mjs`
 
+### Verify sung references at the live capture sample rates
+
+**Symptom:** a generated reference passed offline melody checks, but those checks did not match the microphone pipeline.
+**Cause:** testing a 24 kHz file with a fixed 2048/1024 YIN window/hop doubles the time window relative to the same live worklet at 48 kHz. Consonant gaps and pitch confidence can differ.
+**Rule:** decode/resample delivery audio to common AudioContext rates (44.1/48 kHz), run the production detector and judge with every unvoiced frame, and test wrong-note controls. Keep source-rate analysis separately labelled; never add hidden tones to force a reference through the judge.
+**See:** `packages/pitch-engine/src/pitch-f0-stream.ts`, `packages/glass-game/src/browser/voice-session.ts`.
+
+### Keep the game asset inventory loadable by plain Node
+
+**Symptom:** Browser play works, but native packaging and root Vite startup fail
+with `ERR_MODULE_NOT_FOUND` after the inventory imports another TypeScript file.
+**Cause:** Those scripts load the package export using Node type stripping,
+which does not resolve extensionless relative imports like Vite does.
+**Do instead:** Use an explicit, script-safe package export for shared catalogue
+data and keep its runtime dependencies Node-loadable. The asset contract test
+must import the inventory in a child Node process as well as through Vitest.
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
@@ -766,6 +783,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Cause:** the generated ornate primitive contained a solid slab in front of its separately named inset. Material replacement and ready-state tests could not reveal the occlusion.
 **Rule:** raycast the delivered donor from the actual viewing side and inspect a rendered earned state. Preserve the inset silhouette/UVs and derive front clearance from geometry; do not substitute a rectangle or trust texture-install diagnostics as visual proof.
 **See:** `packages/glass-game/src/journey/architecture.ts`, `art/glass-adventure/journey-map/v4/proofs/runtime/`.
+
+### Initialize manual shadows before offscreen startup renders
+
+**Symptom:** phone assets loaded successfully, then first-frame validation reported a graphics failure; desktop High quality worked.
+**Cause:** Balanced disabled automatic shadows, but the reflection probe rendered before the main cadence requested its first shadow update. Three sampled a placeholder texture with the wrong sampler type.
+**Rule:** prime manual shadows before any scene render, including startup probes. Test cold startup in each automatic profile with real pixels; a High-to-Balanced switch or no-raster input test misses this boundary.
+**See:** `packages/glass-game/src/render/glass-renderer.ts`, `apps/beside-cue/e2e/glass-adventure-controls.e2e.ts`.
 
 ## Data and billing
 
@@ -1364,6 +1388,13 @@ keep the test's timing buffer small so a history-based counter cannot return unn
 If local and CI counts differ, compare the exact tested merge revision with the feature head: newly landed main tests are included by CI even before a local rebase. An absence query can assert its null result explicitly instead of being mislabeled by the collector as a presence-only document-membership assertion.
 **See:** `scripts/code-metrics.mjs:testShapeMetrics`, `packages/glass-game/src/ui/voice-challenge.test.ts`.
 
+### Isolate every renderable mesh in Blender comparison proofs
+
+**Symptom:** both the original crystal and its replacement showed polygonal holes, while intact glass looked rough and opaque.
+**Cause:** hiding fracture parent empties left their assembled mesh children visible through source and intact comparison renders.
+**Rule:** apply an explicit renderable-mesh allowlist for each view and save that inventory with the proof. Do not infer child visibility from a hidden parent or change materials until the isolated source comparison is clean.
+**See:** `art/glass-adventure/cloudway-laboratory/v1/production/rose_crackle_runtime_visuals.py`.
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
@@ -1471,3 +1502,34 @@ recomputing each side independently can introduce a seam without changing the si
 **Cause:** its selected node's scale decoded integer vertex positions, but the authored-unit loader reset that scale to place the object.
 **Rule:** place decode transforms below a stable, unscaled semantic root. Reopen the final export and measure bounds through the actual game adapter; a source-editor view cannot prove the placement contract.
 **See:** `art/glass-adventure/journey-map/v10/production/package_botanical.mjs`, `packages/glass-game/src/journey/models.ts`.
+
+### Recheck formatting after import-sort fixes
+
+**Symptom:** `pr:prepare` passed locally, but changed-file CI rejected one import line.
+**Cause:** preparation formats before ESLint fixes; the import sorter then moved a
+named import inside the one-line-import plugin's output without restoring its spaces.
+**Rule:** after lint changes an import list, run Prettier on that file and verify
+that scoped formatting and lint both pass. Do not rerun every local gate.
+**See:** `scripts/pr-prepare.mjs`, `.prettierrc.json`,
+`packages/glass-game/src/content/cloudway-layouts.ts`.
+
+### Measure evaluated glass clearance beneath source detail
+
+**Symptom:** a beautiful provider crystal became a dark slab or developed triangular dark patches after adding an optical interior; material changes did not restore its source appearance.
+**Cause:** the new glass shell or shard cap occupied the same depth as the retained provider surface. A nominal inset was insufficient when bevel evaluation raised the cap back into the source relief.
+**Rule:** compare source-only, interior-only and combined views with explicit mesh allowlists. Measure clearance after modifiers against the full range of retained surface relief; keep the closed interior inside that envelope. Preserve the original exterior vertices, UVs and split normals when they already provide the approved appearance. Repeat the comparison through the actual GLTFLoader and production adapter before accepting a material change.
+**See:** `art/glass-adventure/cloudway-laboratory/v1/production/prepare_amethyst_crackle_runtime_candidate.py`, `packages/glass-game/src/render/cloudway-crackle-adapter.ts`.
+
+### Dispose specialized scene owners before generic traversal
+
+**Symptom:** an adapter's isolated resource tests passed, but full renderer teardown disposed its material and shared textures twice.
+**Cause:** a material clone owned by the adapter still referenced textures owned by the material library. Generic scene disposal ran first and treated that unlisted clone as owning its textures; the adapter and library then performed their own cleanup.
+**Rule:** specialized owners must detach and dispose their scene objects before generic traversal, while shared material ownership remains available. Dispose the library last. Test the complete teardown path with a real shared texture and repeated disposal, rather than only testing an adapter with texture-free fixture materials.
+**See:** `packages/glass-game/src/render/glass-renderer.ts`, `packages/glass-game/src/render/cloudway-crackle-adapter.ts`, `packages/glass-game/src/render/dispose.ts`.
+
+### Meshopt's decoder needs lazy loading and a WebAssembly CSP permission
+
+**Symptom:** unrelated legacy Glass3D browser cases reported CSP page errors after a compressed museum asset was added.
+**Cause:** a static Meshopt decoder import immediately initializes WebAssembly, even when the current level never uses compressed geometry. Beside Cue's `script-src 'self'` forbade that initialization.
+**Rule:** initialize the decoder on the first compressed-buffer request and permit the narrow `wasm-unsafe-eval` source in the application's CSP. Do not add JavaScript `unsafe-eval`. Verify a real compressed GLB under the actual app policy as well as the unaffected legacy route. Preserve concurrent asset downloads and retry a failed dynamic-import request without masking decoder failures.
+**See:** `apps/beside-cue/index.html`, `packages/glass-game/src/render/asset-kit.ts`, `apps/beside-cue/e2e/glass-adventure-authoring.e2e.ts`.

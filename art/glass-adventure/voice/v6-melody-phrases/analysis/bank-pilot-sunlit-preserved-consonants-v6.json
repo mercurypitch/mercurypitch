@@ -1,0 +1,144 @@
+{
+  "revision": "merc-melody-phrases-v6-2026-09-24",
+  "status": "pilot",
+  "codec": "mono 24 kHz MP3 64k",
+  "synthesis": {
+    "pitchSource": "authored contour on naturally voiced WORLD frames",
+    "detectorCarrier": "none",
+    "defaultMaximumMappedConsonantEdgeSeconds": 0.11,
+    "preservedConsonantSyllables": [
+      {
+        "phraseId": "tiny-sparks-can-glow",
+        "syllable": "sparks"
+      }
+    ],
+    "defaultNucleusSelection": "full aligned vowel",
+    "specialNucleusWindows": [
+      {
+        "phraseId": "another-beautiful-mess",
+        "syllable": "ti",
+        "seconds": 0.04,
+        "selection": "fully voiced WORLD window, then periodicity and energy"
+      }
+    ]
+  },
+  "variantFilter": "sunlit-steps-r50-p100",
+  "roots": [
+    50
+  ],
+  "paces": [
+    1
+  ],
+  "variantCount": 1,
+  "totalBytes": 41324,
+  "maximumBytes": 41324,
+  "pyinMedianAbsoluteCentsMaximum": 1.0261345133756095,
+  "pyinP95AbsoluteCentsMaximum": 6.620075548153039,
+  "maximumSampleDelta": 0.256805419921875,
+  "variants": [
+    {
+      "id": "sunlit-steps-r50-p100",
+      "phraseId": "tiny-sparks-can-glow",
+      "melodyId": "sunlit-steps",
+      "rootMidi": 50,
+      "pace": 1,
+      "source": "sparks-gentle",
+      "asset": "adventure-voice-v6/sunlit-steps/r50-p100.mp3",
+      "bytes": 41324,
+      "sha256": "841fca67027178d99059a0918241498a81992716b04609d965d4f6b50fb2a159",
+      "timeMap": {
+        "sourceSeconds": [
+          0.0,
+          0.3,
+          0.355,
+          0.36,
+          0.54,
+          0.64,
+          0.7,
+          1.04,
+          1.1,
+          1.52,
+          1.6,
+          1.66,
+          1.8,
+          2.02,
+          2.1,
+          2.48
+        ],
+        "targetSeconds": [
+          0,
+          0.11,
+          1.045,
+          1.05,
+          1.1600000000000001,
+          2.04,
+          2.1,
+          2.4400000000000004,
+          2.73,
+          3.15,
+          3.23,
+          4.09,
+          4.2,
+          4.308,
+          4.692,
+          4.8
+        ],
+        "nucleusSelections": [
+          {
+            "syllable": "Ti",
+            "start": 0.3,
+            "end": 0.355,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.0050000000000000044,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "ny",
+            "start": 0.54,
+            "end": 0.64,
+            "mappedAttackSeconds": 0.11,
+            "mappedReleaseSeconds": 0.05999999999999994,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "sparks",
+            "start": 1.04,
+            "end": 1.1,
+            "mappedAttackSeconds": 0.3400000000000001,
+            "mappedReleaseSeconds": 0.41999999999999993,
+            "consonantPolicy": "preserve source duration around mapped vowel",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "can",
+            "start": 1.6,
+            "end": 1.66,
+            "mappedAttackSeconds": 0.08000000000000007,
+            "mappedReleaseSeconds": 0.11,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          },
+          {
+            "syllable": "glow",
+            "start": 2.02,
+            "end": 2.1,
+            "mappedAttackSeconds": 0.10799999999999993,
+            "mappedReleaseSeconds": 0.10799999999999993,
+            "consonantPolicy": "bounded natural edge",
+            "policy": "full aligned vowel"
+          }
+        ]
+      },
+      "sampleRate": 24000,
+      "durationSeconds": 5.085,
+      "peakDb": -6.128354762463662,
+      "maximumSampleDelta": 0.256805419921875,
+      "pyinVoicedFrames": 739,
+      "pyinMedianAbsoluteCents": 1.0261345133756095,
+      "pyinP95AbsoluteCents": 6.620075548153039,
+      "pyinMaximumAbsoluteCents": 30.637058500630587
+    }
+  ]
+}

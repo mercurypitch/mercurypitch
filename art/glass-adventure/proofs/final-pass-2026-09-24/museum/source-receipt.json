@@ -1,0 +1,98 @@
+{
+  "scope": "No model topology, baked textures, source Blender projects or runtime GLB payloads changed in this placement pass.",
+  "assets": [
+    {
+      "file": "apps/beside-cue/public/games/journey-map-v1/floating-museum-map-kit-v1.glb",
+      "bytes": 6831200,
+      "sha256": "17294f9ccec6aa5fb18c9a3a3c31ce501750fd4375d0a2abbfdcdb33c7a00709",
+      "nodes": 8,
+      "meshes": 7,
+      "platformLocalBounds": [
+        {
+          "min": [
+            -1.6285512447357178,
+            -1.2277582883834839,
+            -1.6285512447357178
+          ],
+          "max": [
+            1.6285512447357178,
+            -0.0885000005364418,
+            1.6285512447357178
+          ]
+        },
+        {
+          "min": [
+            -1.6037672758102417,
+            -0.2753923237323761,
+            -1.6037672758102417
+          ],
+          "max": [
+            1.6037672758102417,
+            -0.2546077072620392,
+            1.6037672758102417
+          ]
+        },
+        {
+          "min": [
+            -1.5895745754241943,
+            -0.12250000238418579,
+            -1.5895745754241943
+          ],
+          "max": [
+            1.5895745754241943,
+            -0.07750000059604645,
+            1.5895745754241943
+          ]
+        },
+        {
+          "min": [
+            -1.6440867185592651,
+            -0.20000000298023224,
+            -1.6440867185592651
+          ],
+          "max": [
+            1.6440867185592651,
+            0,
+            1.6440867185592651
+          ]
+        },
+        {
+          "min": [
+            -1.4067937135696411,
+            -1.222000002861023,
+            -1.4067937135696411
+          ],
+          "max": [
+            1.4067937135696411,
+            -0.2800000011920929,
+            1.4067937135696411
+          ]
+        }
+      ],
+      "platformNodeTransform": {}
+    },
+    {
+      "file": "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+      "bytes": 25448308,
+      "sha256": "b7d17474c24f352bf22803a33ade7b8f802a3a71ba2369c73f2f838d39c2e615",
+      "nodes": 5,
+      "meshes": 2
+    },
+    {
+      "file": "apps/beside-cue/public/games/journey-map-v10/floating-museum-botanical-kit-v10.glb",
+      "bytes": 25596100,
+      "sha256": "bac1a83183a86397d1c46e1cc1cda1802d664739edfdfbe326eddbcfbd75498f",
+      "nodes": 13,
+      "meshes": 6
+    }
+  ],
+  "conservatoryPondReview": {
+    "geometry": "apps/beside-cue/public/games/journey-map-v8/floating-museum-architecture-kit-v8.glb",
+    "node": "map_conservatory_geometry",
+    "measuredVerticesAtOrBelowLocalY": 0.18,
+    "plinthRadiusLocal": 1.1533654457521276,
+    "stageScale": 0.76,
+    "minimumSampledBorderClearanceMetres": 0.1410390088848387,
+    "method": "128 perimeter points against the conservative imported plinth circle, including the widest stone/coping border; see journey/ponds.test.ts."
+  }
+}

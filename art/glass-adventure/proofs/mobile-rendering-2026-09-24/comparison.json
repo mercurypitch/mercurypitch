@@ -1,0 +1,64 @@
+{
+  "measurement": {
+    "date": "2026-09-24",
+    "harness": "apps/beside-cue/e2e/glass-adventure-cloudway-platform-kit.e2e.ts",
+    "runtime": "Chromium with ANGLE SwiftShader",
+    "rasterization": "suppressed after Three.js submitted each draw",
+    "interpretation": "Actual Three.js/WebGL submissions; software-renderer wall times are not hardware FPS."
+  },
+  "algorithms": {
+    "before": "16 m bounds-to-camera radius",
+    "after": "camera frustum with 1.25 m guard, 16 m fog bound, and authored directional-shadow sweep against visible installed receiver-part AABBs"
+  },
+  "arrival": {
+    "result": "unchanged at default, closest zoom, widest zoom, and challenge cameras",
+    "default": {
+      "screen": { "drawCalls": 14, "triangles": 5038692 },
+      "offscreen-1": { "drawCalls": 14, "triangles": 5038692 },
+      "offscreen-12": { "drawCalls": 9, "triangles": 3772676 }
+    },
+    "closestZoomAndChallenge": {
+      "screen": { "drawCalls": 25, "triangles": 5185942 },
+      "offscreen-1": { "drawCalls": 25, "triangles": 5185942 },
+      "offscreen-12": { "drawCalls": 15, "triangles": 3773804 }
+    },
+    "widestZoom": {
+      "screen": { "drawCalls": 14, "triangles": 3782136 },
+      "offscreen-1": { "drawCalls": 14, "triangles": 3782136 },
+      "offscreen-12": { "drawCalls": 9, "triangles": 2516120 }
+    }
+  },
+  "firstRecoveryForward": {
+    "cameraPosition": {
+      "x": -1.9159196976524018,
+      "y": 1.8654664655538071,
+      "z": 5.721980981889638
+    },
+    "cameraTarget": {
+      "x": -1.231477997054157,
+      "y": 0.45636953245344747,
+      "z": 9.40246809524968
+    },
+    "before": {
+      "marbleInstances": 4,
+      "screen": { "drawCalls": 27, "triangles": 6444970 },
+      "offscreen-1": { "drawCalls": 27, "triangles": 6444970 },
+      "offscreen-12": { "drawCalls": 17, "triangles": 5032832 }
+    },
+    "after": {
+      "marbleInstances": 3,
+      "screen": { "drawCalls": 27, "triangles": 4553902 },
+      "offscreen-1": { "drawCalls": 27, "triangles": 4553902 },
+      "offscreen-12": { "drawCalls": 17, "triangles": 3774772 }
+    },
+    "delta": {
+      "marbleInstances": -1,
+      "screenTriangles": -1891068,
+      "screenTrianglesPercent": -29.341765749103565,
+      "offscreen1Triangles": -1891068,
+      "offscreen1TrianglesPercent": -29.341765749103565,
+      "offscreen12Triangles": -1258060,
+      "offscreen12TrianglesPercent": -24.99705930974847
+    }
+  }
+}

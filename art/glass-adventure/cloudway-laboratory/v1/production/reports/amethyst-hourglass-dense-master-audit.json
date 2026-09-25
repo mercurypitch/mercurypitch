@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "amethyst-hourglass",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/amethyst-hourglass/amethyst-hourglass-dense-master.blend",
+    "bytes": 98884033,
+    "sha256": "a8149d8bda1c86e21e440a42360298b1def5d879da2879e6855edb37fd5e93d4",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "1742ebe03267bd4c142bf7da537894cf7b24d9f297981b3c53a7dfa449dfb662",
+  "topology": {
+    "vertices": 218634,
+    "triangles": 392452,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "f3c7bbe465cd469f193397238d0d4049ac55c0d70e49a7f19cdb84fcbe5679a5",
+    "triangleIndicesInt32Sha256": "561128687d50d305af704d7e7110134253d5804da5d4bb65a2a753c4a6a80e42"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_AmethystHourglass_DenseMaster",
+    "rawObject": "amethyst-hourglass__raw_import",
+    "reviewObject": "amethyst-hourglass__normalized_review",
+    "meshData": "amethyst-hourglass__dense_mesh",
+    "material": "amethyst-hourglass__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "amethyst-hourglass__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "da8daae98d564e81dddcd969ce6dc6ffcd7310a829017d101e890fce2421d9e1",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "amethyst-hourglass__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "59609fe2deb940caa6520b8b12378a3712a0b836ec61fba0db10f19eeb36cc13",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "amethyst-hourglass__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "84a40b3a9e82ea668e68e0aaaf77b328fceb33b04f0968d93cdfc97f767a392c",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "amethyst-hourglass__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "51734b3bc4b5f8c8d82d89ef97e9b0c122fca78f7b7878696ef73891e97b59e0",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/amethyst-hourglass/matched-clay-three-quarter.png",
+      "bytes": 446976,
+      "sha256": "f0200df5c3daea6638124dc6d5907e3ae246426b066ede46fdca2214ef56521e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/amethyst-hourglass/matched-clay-top.png",
+      "bytes": 698395,
+      "sha256": "4197d4040bc83312718d602edbeed696e16446472d9d923e6cf5472e30590462",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/amethyst-hourglass/matched-clay-side.png",
+      "bytes": 436120,
+      "sha256": "91422bf648be3cbbf211bfba7b14ceeac208bf0e74daba25990908f08f5fad12",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/amethyst-hourglass/matched-pbr-three-quarter.png",
+      "bytes": 484127,
+      "sha256": "28c5a3e1c1db9c1072d9100dc4d0d8192a8ca5b4209567ef1c036e18952b3b8c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/amethyst-hourglass/matched-pbr-top.png",
+      "bytes": 1214307,
+      "sha256": "5224e03bf87ef668223cf529df8e691617aac18b9906cd2041827a05e9928012",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/amethyst-hourglass/matched-pbr-side.png",
+      "bytes": 472376,
+      "sha256": "b1d19f3ac6de6fc6b09df2e2615337a26dcdf6105bca78cea9447479d4aaeed6",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset amethyst-hourglass",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "provider": "Meshy direct API",
+  "assetId": "crystal-lotus-goblet",
+  "operation": "image-to-3d",
+  "state": "archived",
+  "source": {
+    "file": "source-assets/references/crystal-lotus-goblet.png",
+    "sha256": "2f3b53f25eeb2dd0e07a102ba784769e5099fa0348b2ee2fa51463070ed27ec4",
+    "bytes": 2112373,
+    "dimensions": [
+      1024,
+      1536
+    ],
+    "mimeType": "image/png"
+  },
+  "request": {
+    "model_type": "standard",
+    "ai_model": "meshy-7.1",
+    "geometry_resolution": "4k",
+    "should_remesh": false,
+    "should_texture": true,
+    "texture_resolution": "8k",
+    "enable_pbr": true,
+    "texture_prompt": "An exquisite tall wine goblet with a wide clear sky-blue crystal bowl cut like overlapping lotus petals, slim warm gold stem, round flat crystalline foot with gold ring, delicately etched star pattern around lip. Hollow open drinking bowl, no liquid, no plinth. Preserve clean PBR materials and crisp ornaments without baked shadows, extra scene, text or highlights.",
+    "image_enhancement": false,
+    "target_formats": [
+      "glb"
+    ],
+    "alpha_thumbnail": true
+  },
+  "imageTransport": {
+    "method": "base64 PNG data URI created in memory at submission",
+    "payloadPersisted": false
+  },
+  "apiContract": {
+    "create": "POST /openapi/v1/image-to-3d",
+    "retrieve": "GET /openapi/v1/image-to-3d/:id",
+    "balance": "GET /openapi/v1/balance",
+    "checkedAtUtc": "2026-09-25",
+    "officialDocs": "https://docs.meshy.ai/en/api/image-to-3d"
+  },
+  "estimatedCredits": {
+    "baseImageTo3dWith8kTextures": 35,
+    "ultraGeometry4kSurcharge": 5,
+    "expectedTotal": 40,
+    "actualSourceOfTruth": "provider consumed_credits"
+  },
+  "authorization": {
+    "source": "Owner explicitly authorized this 20-asset batch and Meshy credits in this conversation",
+    "asserted": true,
+    "appliedAtUtc": "2026-09-25T12:54:45.082839+00:00"
+  },
+  "credentialsPersisted": false,
+  "signedArtifactUrlsPersisted": false,
+  "readiness": "Dense source files are archived, but requested provider quality needs review: Provider did not confirm the requested Meshy 7.1 model. Do not resubmit automatically.",
+  "balanceBefore": 3125,
+  "submissionStartedAtUtc": "2026-09-25T12:54:45.082850+00:00",
+  "taskId": "01a0d8a1-ecb1-74cc-a830-b2e723162d09",
+  "submittedAtUtc": "2026-09-25T12:54:49.082177+00:00",
+  "balanceAfterSubmit": 3085,
+  "observedBalanceDeltaAtSubmit": 40,
+  "lastStatus": {
+    "id": "01a0d8a1-ecb1-74cc-a830-b2e723162d09",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340888910,
+    "started_at": 1790340888922,
+    "finished_at": 1790341253476,
+    "expires_at": 1790600453476,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "lastCheckedAtUtc": "2026-09-25T13:02:49.211458+00:00",
+  "finalStatus": {
+    "id": "01a0d8a1-ecb1-74cc-a830-b2e723162d09",
+    "type": "image-to-3d",
+    "status": "SUCCEEDED",
+    "progress": 100,
+    "created_at": 1790340888910,
+    "started_at": 1790340888922,
+    "finished_at": 1790341253476,
+    "expires_at": 1790600453476,
+    "consumed_credits": 40,
+    "geometry_resolution": "4k"
+  },
+  "providerConfirmation": {
+    "requestedAiModel": "meshy-7.1",
+    "returnedAiModel": null,
+    "requestedGeometryResolution": "4k",
+    "returnedGeometryResolution": "4k",
+    "explicitRequestRecorded": true
+  },
+  "archiveDownload": {
+    "sourceHost": "assets.meshy.ai",
+    "signedUrlsPersisted": false,
+    "model": {
+      "file": "source-assets/meshy/crystal-lotus-goblet/dense-donor.glb",
+      "bytes": 149532964,
+      "sha256": "26f970c2acc6e990cb82fdac0d6ed4dad8b160ce8c6b4c564e18d50858901ff8",
+      "glbVersion": 2,
+      "meshes": 1,
+      "materials": 1,
+      "images": 3,
+      "referencedVertices": 1735113,
+      "triangles": 3138730
+    },
+    "textures": [
+      {
+        "role": "base_color",
+        "setIndex": 0,
+        "file": "source-assets/meshy/crystal-lotus-goblet/textures/set-0-base_color.png",
+        "bytes": 71262090,
+        "sha256": "e21745d2dab81a8fefc7c3fb51b896be483258219e06cb602b6d79ff75217ab8",
+        "format": "PNG",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "metallic",
+        "setIndex": 0,
+        "file": "source-assets/meshy/crystal-lotus-goblet/textures/set-0-metallic.png",
+        "bytes": 7082240,
+        "sha256": "1f4d24f9030318fdaceb76bf2e7c3e9c977a419bd5971d4411410172404f9cd1",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "normal",
+        "setIndex": 0,
+        "file": "source-assets/meshy/crystal-lotus-goblet/textures/set-0-normal.png",
+        "bytes": 15030382,
+        "sha256": "b6ba210bcc25739c90eb5037822256b488de1735f5c70f14624d92c07e243030",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      },
+      {
+        "role": "roughness",
+        "setIndex": 0,
+        "file": "source-assets/meshy/crystal-lotus-goblet/textures/set-0-roughness.png",
+        "bytes": 6206598,
+        "sha256": "c08b94e61819801aab2113200798a021beeb0aec0864f8a1bd4dacf5e67ff28e",
+        "format": "PNG",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "missingRequestedPbrMaps": [],
+    "missingRequestedPbrMapsBySet": [],
+    "preview": {
+      "file": "source-assets/meshy/crystal-lotus-goblet/preview.png",
+      "bytes": 137698,
+      "sha256": "834dc77a75735c3d9de91c02f7b65fe8d10ed770631adf9477eb5e190d95518e",
+      "format": "PNG",
+      "dimensions": [
+        512,
+        512
+      ],
+      "mode": "RGBA"
+    }
+  },
+  "archivedAtUtc": "2026-09-25T13:03:00.066256+00:00",
+  "balanceAfterArchive": 3125,
+  "observedBalanceDeltaFinal": 0,
+  "providerQuality": {
+    "status": "needs-review",
+    "requested": {
+      "aiModel": "meshy-7.1",
+      "geometryResolution": "4k",
+      "textureResolution": "8k",
+      "pbr": true,
+      "remesh": false
+    },
+    "observed": {
+      "aiModel": null,
+      "geometryResolution": "4k",
+      "baseColorDimensions": [
+        [
+          8192,
+          8192
+        ]
+      ]
+    },
+    "issues": [
+      "Provider did not confirm the requested Meshy 7.1 model."
+    ],
+    "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+  },
+  "previewArchivedAtUtc": "2026-09-25T13:03:00.883462+00:00"
+}

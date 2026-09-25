@@ -6,6 +6,9 @@
 // currently live under Beside Cue's public/games directory; web hosts may stage
 // only this allowlist elsewhere without changing the IDs authored in levels.
 
+// The export resolves to an explicit .ts path for Node's native-build scripts.
+import { MERC_ENCORE_VARIANTS } from '@irchiinnuss/glass-game/encore-examples'
+
 const MATERIALS = [
   'warm-carrara',
   'verde-marble',
@@ -70,11 +73,22 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   // Authored IDs stay stable while runtime paths invalidate older cached art.
   'cloudway-platform-kit-v1': 'cloudway-v7/cloudway-platform-kit-v7.gltf',
   'cloudway-ribbon-preview': 'cloudway-v3/cloudway-ribbon-preview.webp',
+  'cloudway-lab-pearl-marble-long-v1':
+    'cloudway-laboratory-v1/pearl-marble-long/pearl-marble-long-runtime-v1.glb',
+  'gilt-scroll-bridge-runtime-v1':
+    'cloudway-laboratory-v1/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.glb',
+  'cloudway-lab-rose-crackle-v1':
+    'cloudway-laboratory-v1/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-v1.glb',
+  'cloudway-lab-amethyst-crackle-v1':
+    'cloudway-laboratory-v1/amethyst-crackle-slow/amethyst-crackle-slow-runtime-v1.glb',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',
   'merc-encore-light-v5': 'adventure-voice/merc-encore-light-v5.mp3',
   'merc-encore-home-v5': 'adventure-voice/merc-encore-home-v5.mp3',
+  ...Object.fromEntries(
+    MERC_ENCORE_VARIANTS.map((variant) => [variant.assetId, variant.assetPath]),
+  ),
   ...Object.fromEntries(
     REACTION_CUES.map((cue) => [
       `merc-voice-${cue}`,
@@ -111,6 +125,7 @@ const MANIFEST_FILES = [
   'cloudway-v3/manifest.json',
   'adventure-voice-v1/manifest.json',
   'adventure-voice-v2/manifest.json',
+  'adventure-voice-v6/manifest.json',
 ] as const
 
 // Standard glTF external buffers preserve the accepted source bytes while
@@ -123,10 +138,9 @@ const DEPENDENCY_FILES = [
 ] as const
 
 /** Explicit-listen examples are loaded on demand by the practice UI. */
-export const GLASS_GAME_ON_DEMAND_ASSET_IDS = [
-  'merc-encore-light-v5',
-  'merc-encore-home-v5',
-] as const
+export const GLASS_GAME_ON_DEMAND_ASSET_IDS = MERC_ENCORE_VARIANTS.map(
+  (variant) => variant.assetId,
+)
 
 /** Delivery inventory for web and native, including on-demand audio. This is
  * a packaging list, not a runtime preload list; world load plans stay separate. */

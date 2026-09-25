@@ -1,0 +1,442 @@
+{
+  "schema": 1,
+  "assetId": "aurora-glide-raft",
+  "label": "Aurora Glide Raft",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/aurora-glide-raft/dense-donor.glb",
+    "bytes": 53867572,
+    "sha256": "f498f437f77eb68975affe6190faae0c78931a890a7563ace6c3946f7adaa17a",
+    "taskId": "01a0d893-c2a8-751d-a175-e0e07f27244f",
+    "receipt": {
+      "file": "source-assets/meshy/aurora-glide-raft/receipt.json",
+      "bytes": 6523,
+      "sha256": "0aed7ce9a1359d1b4ded97a2ff00d00226a4a225b845a1aabe3abd79a9feddb0"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 175986,
+    "triangles": 302054,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "e4aa3d3c85c6628264b133e0bd0af4bb004eadfa0dbf1c6bcbb93f8e4e7788d5",
+    "triangleIndicesInt32Sha256": "42c624e7c11852693a476d4e6a3345ee2c07cbf30ed5c72ca2ee7f9c4c6c2865",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 1535,
+      "largestVertexCounts": [
+        897,
+        857,
+        833,
+        803,
+        749,
+        746,
+        741,
+        740,
+        739,
+        702,
+        681,
+        668
+      ],
+      "largestVertexFractions": [
+        0.005096996,
+        0.004869706,
+        0.004733331,
+        0.004562863,
+        0.00425602,
+        0.004238974,
+        0.004210562,
+        0.00420488,
+        0.004199198,
+        0.003988954,
+        0.003869626,
+        0.003795756
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.419634461403,
+        0.0,
+        0.0,
+        0.000603360124
+      ],
+      [
+        0.0,
+        1.419634461403,
+        0.0,
+        -0.000359156053
+      ],
+      [
+        0.0,
+        0.0,
+        1.419634461403,
+        -0.14917948842
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.419634461403,
+        0.0,
+        0.0,
+        0.000603360124
+      ],
+      [
+        0.0,
+        1.419634461403,
+        0.0,
+        -0.000359156053
+      ],
+      [
+        0.0,
+        0.0,
+        1.419634461403,
+        -0.14917948842
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.349999948,
+        -0.78118512,
+        -0.302822267
+      ],
+      "max": [
+        1.349999948,
+        0.781185119,
+        0.009768468
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      2.699999896,
+      1.562370239,
+      0.312590734
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 2.7,
+      "sourceRawUnits": 1.9018979668617249,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.951373994,
+        -0.550019026,
+        -0.108227
+      ],
+      "max": [
+        0.950523973,
+        0.55052501,
+        0.111964002
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.901897967,
+      1.100544035,
+      0.220191002
+    ],
+    "landingRawZ": 0.105083033,
+    "heightToleranceRaw": 0.001720242,
+    "patchTriangles": 10692,
+    "patchAreaRawSquareUnits": 1.723450357,
+    "patchBoundsRaw": {
+      "min": [
+        -0.94332999,
+        -0.539709985,
+        0.101411
+      ],
+      "max": [
+        0.94214499,
+        0.539578974,
+        0.107804999
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.88547498,
+      1.07928896,
+      0.006393999
+    ],
+    "horizontalCoverage": [
+      0.991364948,
+      0.980686756
+    ],
+    "relativePatchHeightSpread": 0.02903842,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "opal deck",
+      "gold wave inlays",
+      "corner fittings",
+      "faceted underside"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Deck, fittings, inlays, and future motion anchors are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-base_color.png",
+        "bytes": 61082002,
+        "sha256": "8ae5c368ebaa9a05670a7671456388e858af8368299a518a8b6b44065312ea56",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-normal.png",
+        "bytes": 12523489,
+        "sha256": "1c00bdd82ca620ef0dade93c3a343a7776d19041e918de6b0a50cae9a4e74958",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-metallic.png",
+        "bytes": 6422414,
+        "sha256": "47d1e5b2bed9faea8583720da27a4835a593a8cf05a3aec51bbcf7c16fe79893",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/aurora-glide-raft/textures/set-0-roughness.png",
+        "bytes": 5795904,
+        "sha256": "2c57f993a8669f77c9d894f1e0c1c779e8af4c959b3a6a4b876e2dcd314a4b72",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/aurora-glide-raft/matched-clay-three-quarter.png",
+          "bytes": 395661,
+          "sha256": "73018a83d538ed613075318437d53a7c4f4040b100b48a0411828c9dd14a2906",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/aurora-glide-raft/matched-clay-top.png",
+          "bytes": 534251,
+          "sha256": "cd8c7d255d6a22ec68f903934a4276473f98e5106156fe34ec19f33a1d8ef878",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/aurora-glide-raft/matched-clay-side.png",
+          "bytes": 330500,
+          "sha256": "776dae65012f75b69b9e5bf1593bc88635e735c672dbce22afe7247e50060907",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/aurora-glide-raft/matched-pbr-three-quarter.png",
+          "bytes": 547713,
+          "sha256": "ef14ade45cc8b4e26b9ec14dc005560b3f3a662f93f2e1030f635b1421ecb936",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/aurora-glide-raft/matched-pbr-top.png",
+          "bytes": 1244039,
+          "sha256": "b378739d0f25f044bc975c0b07eec527186d6c28a1d8511a6d917b10a138c076",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/aurora-glide-raft/matched-pbr-side.png",
+          "bytes": 420072,
+          "sha256": "dfd1cd14de913e7761ac0bffebe13cd3fdb868e40c7c7cace59633995ac8d45d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-dense-master.blend",
+    "bytes": 100163229,
+    "sha256": "e64ae128be996d8b41d5b0215d1788a05eab050b0aa2dec7a7fe4b21052ab607",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset aurora-glide-raft",
+  "contactCandidate": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.951373994,
+        -0.550019026,
+        -0.108227
+      ],
+      "max": [
+        0.950523973,
+        0.55052501,
+        0.111964002
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.901897967,
+      1.100544035,
+      0.220191002
+    ],
+    "landingRawZ": 0.105083033,
+    "heightToleranceRaw": 0.001720242,
+    "patchTriangles": 10692,
+    "patchAreaRawSquareUnits": 1.723450357,
+    "patchBoundsRaw": {
+      "min": [
+        -0.94332999,
+        -0.539709985,
+        0.101411
+      ],
+      "max": [
+        0.94214499,
+        0.539578974,
+        0.107804999
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.88547498,
+      1.07928896,
+      0.006393999
+    ],
+    "horizontalCoverage": [
+      0.991364948,
+      0.980686756
+    ],
+    "relativePatchHeightSpread": 0.02903842,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  }
+}

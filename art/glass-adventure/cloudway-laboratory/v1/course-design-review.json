@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "design": "crystal-promenade.design.json",
+  "designSha256": "cba0349d8c290922dab45bff3948241ccd3f52f387e35f41fb50bbc8cbd364e6",
+  "pieceCount": 27,
+  "schemaErrors": [],
+  "topViewWarnings": [],
+  "topViewInformation": [
+    "Moving-raft crossing creates two separated groups in static top view."
+  ],
+  "proof": {
+    "path": "source-assets/proofs/course-design-2026-09-25/crystal-promenade-top-view.png",
+    "sha256": "7c024be4a8821985c9239d35152cfdbe0c83acdffd040c5c00d9efefa7f7a3e9"
+  },
+  "runtimeTraversalVerified": false,
+  "note": "Schema and top-view proof only. Contact, jump timing, runtime rendering and device playability remain unverified."
+}

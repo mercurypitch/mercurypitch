@@ -1,15 +1,16 @@
 // Cloudway platform presentation — instanced donor art follows authoritative simulation transforms and phases.
 
-import type { Mesh, Object3D } from 'three'
+import type { Mesh, Object3D, PerspectiveCamera } from 'three'
 import { Box3, Color, DynamicDrawUsage, Euler, Group, InstancedMesh, MathUtils, Matrix4, Quaternion, Vector3, } from 'three'
-import type { GameSnapshot, LevelDefinition, PlatformDefinition, PlatformRuntimeSnapshot, Vec3, } from '../contracts'
+import type { GameSnapshot, LevelDefinition, PlatformDefinition, PlatformRuntimeSnapshot, } from '../contracts'
 import type { CloudwayPlatformRenderId } from './cloudway-catalog'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, isCloudwayPlatformRenderId, } from './cloudway-catalog'
-import { CLOUDWAY_FOG_FAR } from './cloudway-scene'
+import { collectShadowReceiverBounds, createCloudwayPlatformViewSelector, } from './cloudway-platform-culling'
 import { disposeObject } from './dispose'
 import { createKitInstance, kitFloorDimensions, removeKitGeometry, } from './kit-instance'
 import type { MaterialLibrary } from './material-library'
 import type { MuseumMaterials } from './materials'
+import { getMuseumSceneFrame } from './scene-catalog'
 
 type CloudwayVisualState = 'stable' | 'intact' | 'warning' | 'release'
 
@@ -30,9 +31,20 @@ interface InstancedPart {
 interface InstalledDonor {
   dimensions: Vector3
   platforms: readonly PlatformDefinition[]
+  prepared: readonly PreparedPlatform[]
+  receivesShadow: boolean
   renderId: CloudwayPlatformRenderId
   state: CloudwayVisualState
   parts: readonly InstancedPart[]
+}
+
+interface PreparedPlatform {
+  active: boolean
+  bounds: Box3
+  color: Color
+  partBounds: readonly Box3[]
+  partMatrices: readonly Matrix4[]
+  selectedForView: boolean
 }
 
 const DONORS: readonly DonorSpec[] = [
@@ -71,9 +83,6 @@ const DONORS: readonly DonorSpec[] = [
 const WARNING_TURNS = 2
 const WARNING_YAW_RADIANS = 0.012
 const RELEASE_HIDE_PROGRESS = 0.96
-export const CLOUDWAY_PLATFORM_FOG_CULL_MARGIN = 2
-const CLOUDWAY_PLATFORM_CULL_DISTANCE =
-  CLOUDWAY_FOG_FAR + CLOUDWAY_PLATFORM_FOG_CULL_MARGIN
 
 function visualState(
   platform: PlatformDefinition,
@@ -128,6 +137,15 @@ function createInstancedDonor(
   return {
     dimensions,
     platforms,
+    prepared: platforms.map(() => ({
+      active: false,
+      bounds: new Box3(),
+      color: new Color(),
+      partBounds: parts.map(() => new Box3()),
+      partMatrices: parts.map(() => new Matrix4()),
+      selectedForView: false,
+    })),
+    receivesShadow: parts.some((part) => part.mesh.receiveShadow),
     renderId: spec.renderId,
     state: spec.state,
     parts,
@@ -188,19 +206,30 @@ export function createCloudwayPlatformRenderer(
   const runtimeById = new Map<string, PlatformRuntimeSnapshot>()
   const rootMatrix = new Matrix4()
   const motionMatrix = new Matrix4()
-  const partBounds = new Box3()
-  const platformBounds = new Box3()
   const scale = new Vector3()
   const position = new Vector3()
   const motionOffset = new Vector3()
   const motionRotation = new Euler()
   const motionQuaternion = new Quaternion()
   const motionScale = new Vector3()
-  const viewPosition = new Vector3()
   const warningColor = new Color()
+  const sceneFrame = getMuseumSceneFrame(level)
+  const shadowDirection = new Vector3(
+    sceneFrame.lightTarget.x - sceneFrame.keyPosition.x,
+    sceneFrame.lightTarget.y - sceneFrame.keyPosition.y,
+    sceneFrame.lightTarget.z - sceneFrame.keyPosition.z,
+  )
+  const fallbackReceiverMinimumY =
+    level.presentation?.worldBounds.minY ?? Number.NEGATIVE_INFINITY
+  const viewSelector = createCloudwayPlatformViewSelector({
+    shadowDirection,
+    shadowReceiverMinimumY: fallbackReceiverMinimumY,
+  })
   let installedRoot: Group | undefined
   let installedDonors: readonly InstalledDonor[] = []
-  let latestSnapshot: GameSnapshot | undefined
+  const staticReceiverBounds: Box3[] = []
+  const platformReceiverBounds: Box3[] = []
+  const shadowReceiverBounds: Box3[] = []
 
   function install(sourceScene: Object3D, bundle: string): ReadonlySet<string> {
     if (bundle !== CLOUDWAY_PLATFORM_BUNDLE_ID || platforms.length === 0)
@@ -249,27 +278,53 @@ export function createCloudwayPlatformRenderer(
     platforms.forEach((platform) => removeKitGeometry(floors.get(platform.id)!))
     installedRoot = stagedRoot
     installedDonors = stagedDonors
+    collectShadowReceiverBounds(sceneRoot, stagedRoot, staticReceiverBounds)
     return platformIds
   }
 
-  function writeInstances(snapshot: GameSnapshot, viewpoint?: Vec3): void {
+  function writePreparedInstances(
+    donor: InstalledDonor,
+    include: (prepared: PreparedPlatform) => boolean,
+  ): void {
+    let instanceIndex = 0
+    for (const prepared of donor.prepared) {
+      if (!prepared.active || !include(prepared)) continue
+      for (const part of donor.parts) {
+        part.mesh.setMatrixAt(instanceIndex, prepared.partMatrices[part.index]!)
+        if (donor.state === 'warning')
+          part.mesh.setColorAt(instanceIndex, prepared.color)
+      }
+      instanceIndex++
+    }
+    for (const part of donor.parts) {
+      part.mesh.count = instanceIndex
+      part.mesh.instanceMatrix.needsUpdate = true
+      if (part.mesh.instanceColor !== null)
+        part.mesh.instanceColor.needsUpdate = true
+      // Raycasting uses the cached sphere even with frustum culling disabled.
+      // Refresh it so the moving raft and falling shards remain camera blockers.
+      part.mesh.computeBoundingSphere()
+    }
+  }
+
+  function prepareInstances(snapshot: GameSnapshot): void {
     if (installedRoot === undefined) return
-    if (viewpoint !== undefined)
-      viewPosition.set(viewpoint.x, viewpoint.y, viewpoint.z)
+    platformReceiverBounds.length = 0
     runtimeById.clear()
     for (const state of snapshot.platformStates ?? [])
       runtimeById.set(state.id, state)
 
     for (const donor of installedDonors) {
-      let instanceIndex = 0
-      for (const platform of donor.platforms) {
+      donor.platforms.forEach((platform, platformIndex) => {
+        const prepared = donor.prepared[platformIndex]!
+        prepared.active = false
         const runtime = runtimeById.get(platform.id)
         const active = snapshot.enabledPlatformIds.includes(platform.id)
-        if (!active || visualState(platform, runtime) !== donor.state) continue
+        if (!active || visualState(platform, runtime) !== donor.state) return
 
         const released = donor.state === 'release'
         const release = released ? releaseProgress(runtime) : 0
-        if (released && release >= RELEASE_HIDE_PROGRESS) continue
+        if (released && release >= RELEASE_HIDE_PROGRESS) return
 
         position.set(
           (platform.minX + platform.maxX) / 2 + (runtime?.offset.x ?? 0),
@@ -290,7 +345,7 @@ export function createCloudwayPlatformRenderer(
         )
         rootMatrix.scale(scale)
         rootMatrix.setPosition(position)
-        platformBounds.makeEmpty()
+        prepared.bounds.makeEmpty()
         for (const part of donor.parts) {
           if (released) {
             fragmentMotion(
@@ -307,38 +362,28 @@ export function createCloudwayPlatformRenderer(
           } else {
             part.worldMatrix.multiplyMatrices(rootMatrix, part.localMatrix)
           }
-          partBounds.copy(part.localBounds).applyMatrix4(part.worldMatrix)
-          platformBounds.union(partBounds)
+          prepared.partMatrices[part.index]!.copy(part.worldMatrix)
+          prepared.partBounds[part.index]!.copy(part.localBounds).applyMatrix4(
+            prepared.partMatrices[part.index]!,
+          )
+          prepared.bounds.union(prepared.partBounds[part.index]!)
         }
-        if (
-          viewpoint !== undefined &&
-          platformBounds.distanceToPoint(viewPosition) >
-            CLOUDWAY_PLATFORM_CULL_DISTANCE
-        )
-          continue
-
-        for (const part of donor.parts) {
-          part.mesh.setMatrixAt(instanceIndex, part.worldMatrix)
-          if (donor.state !== 'warning') continue
+        if (donor.state === 'warning') {
           const pulse = 0.5 + 0.5 * Math.sin(warning * Math.PI * 4)
           warningColor.setRGB(
             1.06 + pulse * 0.12,
             0.9 + pulse * 0.08,
             0.72 + pulse * 0.14,
           )
-          part.mesh.setColorAt(instanceIndex, warningColor)
+          prepared.color.copy(warningColor)
         }
-        instanceIndex++
-      }
-      for (const part of donor.parts) {
-        part.mesh.count = instanceIndex
-        part.mesh.instanceMatrix.needsUpdate = true
-        if (part.mesh.instanceColor !== null)
-          part.mesh.instanceColor.needsUpdate = true
-        // Raycasting uses the cached sphere even with frustum culling disabled.
-        // Refresh it so the moving raft and falling shards remain camera blockers.
-        part.mesh.computeBoundingSphere()
-      }
+        prepared.active = true
+        if (donor.receivesShadow)
+          for (const part of donor.parts)
+            if (part.mesh.receiveShadow)
+              platformReceiverBounds.push(prepared.partBounds[part.index]!)
+      })
+      writePreparedInstances(donor, () => true)
     }
   }
 
@@ -347,15 +392,38 @@ export function createCloudwayPlatformRenderer(
       return platformIds.has(platformId)
     },
     install,
-    update(snapshot: GameSnapshot): void {
-      latestSnapshot = snapshot
-      // Camera occlusion needs every current transform before its raycasts.
-      // The final presentation pass compacts fully fogged instances afterward.
-      writeInstances(snapshot)
+    refreshShadowReceivers(): void {
+      collectShadowReceiverBounds(
+        sceneRoot,
+        installedRoot,
+        staticReceiverBounds,
+      )
     },
-    cullForView(viewpoint: Vec3): void {
-      if (latestSnapshot !== undefined)
-        writeInstances(latestSnapshot, viewpoint)
+    update(snapshot: GameSnapshot): void {
+      // Camera occlusion needs every current transform before its raycasts.
+      // The final presentation pass compacts these cached transforms afterward.
+      prepareInstances(snapshot)
+    },
+    cullForView(camera: PerspectiveCamera | undefined): boolean {
+      shadowReceiverBounds.length = 0
+      for (const bounds of staticReceiverBounds)
+        shadowReceiverBounds.push(bounds)
+      for (const bounds of platformReceiverBounds)
+        shadowReceiverBounds.push(bounds)
+      viewSelector.update(camera, shadowReceiverBounds)
+      let selectionChanged = false
+      for (const donor of installedDonors) {
+        for (const prepared of donor.prepared) {
+          const selectedForView =
+            prepared.active && viewSelector.includes(prepared.bounds)
+          if (selectedForView !== prepared.selectedForView) {
+            prepared.selectedForView = selectedForView
+            selectionChanged = true
+          }
+        }
+        writePreparedInstances(donor, (prepared) => prepared.selectedForView)
+      }
+      return selectionChanged
     },
     dispose(): void {
       disposeDonors(installedDonors)
@@ -365,7 +433,9 @@ export function createCloudwayPlatformRenderer(
       }
       installedRoot = undefined
       installedDonors = []
-      latestSnapshot = undefined
+      staticReceiverBounds.length = 0
+      platformReceiverBounds.length = 0
+      shadowReceiverBounds.length = 0
     },
   }
 }

@@ -99,10 +99,12 @@
 }
 .collection {
   margin-left: auto;
+  flex-shrink: 0;
   color: #fffbee;
   text-shadow: 0 2px 10px #183e45;
   display: grid;
   text-align: right;
+  white-space: nowrap;
 }
 .collection span:first-child {
   font-size: 24px;
@@ -134,37 +136,42 @@
   width: 20px;
   height: 20px;
 }
-.notice {
+.messageStack {
   position: absolute;
-  top: calc(max(18px, env(safe-area-inset-top)) + 70px);
   left: 50%;
+  bottom: max(48px, calc(env(safe-area-inset-bottom) + 38px));
   transform: translateX(-50%);
+  width: min(440px, calc(100% - 32px));
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+.messageStack p {
   margin: 0;
-  max-width: min(70%, 520px);
+  max-width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 20px #102f3940;
+}
+.messageStackWithOffer {
+  bottom: max(180px, calc(env(safe-area-inset-bottom) + 170px));
+}
+.notice {
+  width: fit-content;
   padding: 9px 17px;
   border-radius: 18px;
   background: #eff6efeb;
-  text-align: center;
   font-size: 14px;
-  box-shadow: 0 3px 16px #143d4b15;
-  pointer-events: none;
 }
 .narrationCaption {
-  position: absolute;
-  left: 50%;
-  bottom: max(88px, calc(env(safe-area-inset-bottom) + 76px));
-  transform: translateX(-50%);
-  margin: 0;
-  max-width: min(72%, 460px);
+  width: fit-content;
   padding: 9px 16px;
   border: 1px solid #fff4;
   border-radius: 18px;
   background: #173f49e8;
   color: #fff9e6;
-  text-align: center;
   font-size: 14px;
-  box-shadow: 0 4px 20px #102f3940;
-  pointer-events: none;
 }
 .narrationCaption strong {
   margin-right: 0.55em;
@@ -172,19 +179,34 @@
   font-weight: 600;
 }
 .error {
+  --error-top: 150px;
   position: absolute;
-  top: 150px;
+  top: var(--error-top);
   left: 50%;
   transform: translateX(-50%);
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   justify-items: center;
   gap: 12px;
   width: min(440px, 80%);
+  max-height: calc(100% - var(--error-top) - 16px);
+  box-sizing: border-box;
   border-radius: 18px;
   background: #fff1dc;
   padding: 18px;
   text-align: center;
   z-index: 5;
+}
+.errorBody {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  box-sizing: border-box;
 }
 .error p {
   margin: 0;
@@ -215,7 +237,7 @@
 @media (max-width: 600px) {
   .error {
     /* Clear the complete utility rail, including the development Tune action. */
-    top: calc(max(18px, env(safe-area-inset-top)) + 220px);
+    --error-top: calc(max(18px, env(safe-area-inset-top)) + 220px);
   }
 }
 .primary {
@@ -260,6 +282,24 @@
   color: #fffbe7;
   text-shadow: 0 2px 5px #153d48;
   font-size: 14px;
+}
+.progressGuidance {
+  width: 100%;
+  padding: 10px 15px;
+  border: 1px solid #fff5;
+  border-radius: 18px;
+  background: #173f49e8;
+  color: #fff9e6;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.progressGuidance strong {
+  color: #f0cd7e;
+  font-weight: 600;
+}
+.progressGuidance[data-guidance-kind='locked'],
+.progressGuidance[data-guidance-kind='exit'] {
+  border-color: #e0bd7288;
 }
 .encounter {
   position: absolute;
@@ -606,6 +646,18 @@
     display: none;
   }
 }
+@media (hover: none), (pointer: coarse) {
+  .desktopHint,
+  .primary kbd {
+    display: none;
+  }
+  .messageStack {
+    bottom: max(168px, calc(env(safe-area-inset-bottom) + 156px));
+  }
+  .messageStackWithOffer {
+    bottom: max(190px, calc(env(safe-area-inset-bottom) + 178px));
+  }
+}
 @media (max-width: 900px) {
   .topbarArtwork .identity {
     display: none;
@@ -638,18 +690,26 @@
     display: none;
   }
   .notice {
-    max-width: 75%;
     font-size: 12px;
     padding: 8px 12px;
   }
+  .messageStack {
+    bottom: max(168px, calc(env(safe-area-inset-bottom) + 156px));
+    width: min(420px, calc(100% - 28px));
+    gap: 6px;
+  }
+  .messageStackWithOffer {
+    bottom: max(272px, calc(env(safe-area-inset-bottom) + 260px));
+  }
   .narrationCaption {
-    bottom: max(156px, calc(env(safe-area-inset-bottom) + 144px));
-    max-width: 70%;
     padding: 8px 12px;
     font-size: 12px;
   }
   .encounterOffer {
     bottom: max(180px, calc(env(safe-area-inset-bottom) + 165px));
+  }
+  .progressGuidance {
+    width: 100%;
   }
   .encounter {
     bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
@@ -667,6 +727,13 @@
   }
 }
 @media (max-width: 360px) {
+  .identity p {
+    display: none;
+  }
+  .progressGuidance {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
   .encounter {
     width: calc(100% - 20px);
     padding: 12px 14px 10px;
@@ -694,6 +761,10 @@
   }
 }
 @media (max-height: 500px) {
+  .error {
+    --error-top: max(92px, calc(env(safe-area-inset-top) + 80px));
+    width: min(440px, calc(100% - 150px));
+  }
   .tutorialDrawing {
     display: none;
   }

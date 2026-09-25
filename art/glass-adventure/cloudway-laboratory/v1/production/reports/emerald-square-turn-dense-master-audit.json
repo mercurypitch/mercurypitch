@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "emerald-square-turn",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/emerald-square-turn/emerald-square-turn-dense-master.blend",
+    "bytes": 173115725,
+    "sha256": "8e3958862276d21ab90729bb35b51e7d2dbf406c7a73e5ffd393e44128c2df6a",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "16f208c8727647170ccabb5807c8f5c2aabd396cde4363fe0e815edb6439d426",
+  "topology": {
+    "vertices": 794451,
+    "triangles": 1413282,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "dc6a274222bfd98a69b7e9ef2c451acd1197fb50c15e48c6b4a691092bfc68d0",
+    "triangleIndicesInt32Sha256": "0fd2ef504452921b4ed31f895d76465ed48578f3742867bece2b2904bc14619a"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_EmeraldSquareTurn_DenseMaster",
+    "rawObject": "emerald-square-turn__raw_import",
+    "reviewObject": "emerald-square-turn__normalized_review",
+    "meshData": "emerald-square-turn__dense_mesh",
+    "material": "emerald-square-turn__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "emerald-square-turn__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "dfce01ff3942936b78d122b0841a67891a7c68bf6f1cfc25e95c1796c527e417",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "emerald-square-turn__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "d80c4eaebe7a5055728654ca32c9e853b8868ef2e77a33b32253a30e92a3fc58",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "emerald-square-turn__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "5dc276a71dd260c32712bcd6d464e93dcf0a28b49bda8ec0214bac56e92e8b21",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "emerald-square-turn__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "f3bcf5c6fd1a65a509416de4dc10fdb1a892f2848c0ec39301e47ad4d8b19965",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/emerald-square-turn/matched-clay-three-quarter.png",
+      "bytes": 498963,
+      "sha256": "ab2e008cc46904410d0daf5486ad4d9b9ccde12b27b5b4d2ef466da2020ba44d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/emerald-square-turn/matched-clay-top.png",
+      "bytes": 568103,
+      "sha256": "2c4f934fc74a01a7ccec3c2b565717e49c49c4f5a4aedbd546ec5ea68c3ae82f",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/emerald-square-turn/matched-clay-side.png",
+      "bytes": 391937,
+      "sha256": "49c48e08265a73bad5797d84547b50d5b2572783dbda5b07c09d45b4a5d44808",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/emerald-square-turn/matched-pbr-three-quarter.png",
+      "bytes": 715809,
+      "sha256": "f5ac33208aa0652e84855f1bce5301dad95a1f86cd1b1f9f8b396d925c7d6406",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/emerald-square-turn/matched-pbr-top.png",
+      "bytes": 1656285,
+      "sha256": "688b367be362276ea82c93c6a76ef61deb60d2e35b15f9f8d6d358f4f33a9977",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/emerald-square-turn/matched-pbr-side.png",
+      "bytes": 513540,
+      "sha256": "02908f67bfcfe0483f196a574395e9aa630ad8d6ea249f9fc622c809a9cbcaac",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset emerald-square-turn",
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

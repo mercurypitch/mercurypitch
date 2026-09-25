@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "singing-fountain-basin",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/singing-fountain-basin/singing-fountain-basin-dense-master.blend",
+    "bytes": 139676959,
+    "sha256": "6b123e570269480970c99be14bb555e169f421bb2f32a266277698c3ef6ebe62",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "34f9348c4fd05fc933877fc5521534850b0f57bc484955abcef4ab293e0c8fb1",
+  "topology": {
+    "vertices": 410632,
+    "triangles": 776356,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "4d5527c69f95fc9402255540c242c1a607f4678b4c64c47176bf75b46f51c4f7",
+    "triangleIndicesInt32Sha256": "773208a44897f87806800217b629a4cabb06b960d99674d03e5a4f6b1952ce85"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_SingingFountainBasin_DenseMaster",
+    "rawObject": "singing-fountain-basin__raw_import",
+    "reviewObject": "singing-fountain-basin__normalized_review",
+    "meshData": "singing-fountain-basin__dense_mesh",
+    "material": "singing-fountain-basin__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "singing-fountain-basin__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "7921bd34cb94b23a65106b551f03a7c648fec900958a6371db17023aeb417680",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "singing-fountain-basin__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "553f66aaeb2cca1ed27271f2afbee0bcc30efe35d94019770a54a36cfb39ed7a",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "singing-fountain-basin__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "860b7c6d5f36c3282b32ed78a37d2a44f37e88c7adb3d93972245aff7923b97c",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "singing-fountain-basin__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "54fe9496b9097bbea9c9881122ed3269ac33c5781f5120a221a80782d2e2a8cc",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/singing-fountain-basin/matched-clay-three-quarter.png",
+      "bytes": 570550,
+      "sha256": "bb893f17fe5a80df827246579183db53baace8a0dab724acea8e787b00ea0c30",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/singing-fountain-basin/matched-clay-top.png",
+      "bytes": 951177,
+      "sha256": "26a7c853cfa01ee59ba50c823205fdc515976ebb94c97396daed886777bcd557",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/singing-fountain-basin/matched-clay-side.png",
+      "bytes": 430171,
+      "sha256": "c3b4503cd055449a3e3e7d9885b80cdddfb0ef34e48734afbcfcb5b02d33bebb",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/singing-fountain-basin/matched-pbr-three-quarter.png",
+      "bytes": 689412,
+      "sha256": "71de1fc2ce743a2bbeaa09f49de90ffc3010e8cbd8d64f1355f70248c2e3281d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/singing-fountain-basin/matched-pbr-top.png",
+      "bytes": 1410570,
+      "sha256": "bb6dc396915a9ad7acb19b418eb32e568852b00e125d8e298c2164b9ea426949",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/singing-fountain-basin/matched-pbr-side.png",
+      "bytes": 536770,
+      "sha256": "09b4ff3912779908d13a3ce27dd3b008e85776d24fd980e24a4741b2784fb5be",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset singing-fountain-basin",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

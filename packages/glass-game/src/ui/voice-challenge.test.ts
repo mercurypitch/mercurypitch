@@ -351,7 +351,7 @@ describe('voice challenge controller', () => {
         ),
       )
     expect(fixture.events.filter((event) => event.type === 'break')).toEqual([
-      { type: 'break', id: 'vessel' },
+      { type: 'break', id: 'vessel', outcome: 'exit-opened' },
     ])
   })
 
@@ -389,7 +389,7 @@ describe('voice challenge controller', () => {
     }
 
     expect(fixture.events.filter((event) => event.type === 'break')).toEqual([
-      { type: 'break', id: 'vessel' },
+      { type: 'break', id: 'vessel', outcome: 'exit-opened' },
     ])
     expect(fixture.game.saveProgress().completedBreakableIds).toEqual([
       'vessel',
@@ -443,7 +443,9 @@ describe('voice challenge controller', () => {
         fixture.voices[0],
         observation(sequence, 57, 1025 + sequence * 25),
       )
-    expect(fixture.events).toEqual([{ type: 'break', id: 'vessel' }])
+    expect(fixture.events).toEqual([
+      { type: 'break', id: 'vessel', outcome: 'exit-opened' },
+    ])
     fixture.controller.completeBreak()
     expect(fixture.controller.snapshot().mode).toBe('off')
     expect(fixture.sounds[0].shatterCount).toBe(1)
@@ -591,7 +593,11 @@ describe('voice challenge controller', () => {
         fixture.voices[0],
         observation(sequence, 60, 1025 + sequence * 25),
       )
-    expect(fixture.events).toContainEqual({ type: 'break', id: 'vessel' })
+    expect(fixture.events).toContainEqual({
+      type: 'break',
+      id: 'vessel',
+      outcome: 'exit-opened',
+    })
   })
 
   it('does not resurrect after late permission or reference completion', async () => {
@@ -684,7 +690,11 @@ describe('voice challenge controller', () => {
     expect(fixture.events).toEqual([])
     expect(fixture.game.snapshot().activeEncounter?.charge).toBeCloseTo(0.75)
     fixture.emit(voice, observation(105, 57, 1225))
-    expect(fixture.events).toContainEqual({ type: 'break', id: 'vessel' })
+    expect(fixture.events).toContainEqual({
+      type: 'break',
+      id: 'vessel',
+      outcome: 'exit-opened',
+    })
   })
 
   it('replays a partial pair through the same microphone and clears its core step', async () => {

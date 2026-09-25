@@ -1,0 +1,143 @@
+{
+	"systeminfo": "WHISPER : COREML = 0 | OPENVINO = 0 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | OPENMP = 1 | REPACK = 1 | ",
+	"model": {
+		"type": "base",
+		"multilingual": false,
+		"vocab": 51864,
+		"audio": {
+			"ctx": 1500,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"text": {
+			"ctx": 448,
+			"state": 512,
+			"head": 8,
+			"layer": 6
+		},
+		"mels": 80,
+		"ftype": 1
+	},
+	"params": {
+		"model": "/home/maff/Documents/root/local_data/models/whisper/ggml-base.en.bin",
+		"language": "en",
+		"translate": false
+	},
+	"result": {
+		"language": "en"
+	},
+	"transcription": [
+		{
+			"timestamps": {
+				"from": "00:00:00,000",
+				"to": "00:00:04,000"
+			},
+			"offsets": {
+				"from": 0,
+				"to": 4000
+			},
+			"text": " Tiny sparks can glow.",
+			"tokens": [
+				{
+					"text": "[_BEG_]",
+					"timestamps": {
+						"from": "00:00:00,000",
+						"to": "00:00:00,000"
+					},
+					"offsets": {
+						"from": 0,
+						"to": 0
+					},
+					"id": 50363,
+					"p": 0.734901,
+					"t_dtw": -1
+				},
+				{
+					"text": " Tiny",
+					"timestamps": {
+						"from": "00:00:00,330",
+						"to": "00:00:00,940"
+					},
+					"offsets": {
+						"from": 330,
+						"to": 940
+					},
+					"id": 20443,
+					"p": 0.457991,
+					"t_dtw": -1
+				},
+				{
+					"text": " sparks",
+					"timestamps": {
+						"from": "00:00:00,940",
+						"to": "00:00:02,350"
+					},
+					"offsets": {
+						"from": 940,
+						"to": 2350
+					},
+					"id": 38306,
+					"p": 0.889832,
+					"t_dtw": -1
+				},
+				{
+					"text": " can",
+					"timestamps": {
+						"from": "00:00:02,350",
+						"to": "00:00:03,050"
+					},
+					"offsets": {
+						"from": 2350,
+						"to": 3050
+					},
+					"id": 460,
+					"p": 0.913924,
+					"t_dtw": -1
+				},
+				{
+					"text": " glow",
+					"timestamps": {
+						"from": "00:00:03,050",
+						"to": "00:00:03,780"
+					},
+					"offsets": {
+						"from": 3050,
+						"to": 3780
+					},
+					"id": 19634,
+					"p": 0.97899,
+					"t_dtw": -1
+				},
+				{
+					"text": ".",
+					"timestamps": {
+						"from": "00:00:03,950",
+						"to": "00:00:04,000"
+					},
+					"offsets": {
+						"from": 3950,
+						"to": 4000
+					},
+					"id": 13,
+					"p": 0.560691,
+					"t_dtw": -1
+				},
+				{
+					"text": "[_TT_200]",
+					"timestamps": {
+						"from": "00:00:04,000",
+						"to": "00:00:04,000"
+					},
+					"offsets": {
+						"from": 4000,
+						"to": 4000
+					},
+					"id": 50563,
+					"p": 0.0622079,
+					"t_dtw": -1
+				}
+			]
+		}
+	]
+}

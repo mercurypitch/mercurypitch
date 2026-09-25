@@ -1,0 +1,1150 @@
+{
+  "schema": "cloudway-rose-crackle-runtime-hybrid-candidate/v1",
+  "assetId": "rose-quartz-crackle-fast",
+  "status": "visual checkpoint; GLB export and runtime integration pending root acceptance",
+  "source": {
+    "denseMaster": {
+      "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-dense-master.blend",
+      "bytes": 120956906,
+      "sha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+      "allFileImagesPacked": true,
+      "rawAndReviewCollectionsRetained": true
+    },
+    "reference": {
+      "file": "source-assets/references/rose-quartz-crackle-fast.png",
+      "bytes": 2041088,
+      "sha256": "7d8f0b7d89fdd85266996efe8420542f686955e355ec4699375d22365c6a2cdf"
+    },
+    "denseMasterUnchangedAfterBuild": true,
+    "fullPbrMapsPacked": true,
+    "decimation": false
+  },
+  "runtimeContract": {
+    "logicalId": "cloudway-lab-rose-crackle-v1",
+    "root": "CloudwayLab_RoseQuartzCrackleFast",
+    "metadata": {
+      "version": 1,
+      "coordinates": {
+        "upAxis": "+Y",
+        "units": "metres",
+        "origin": "top-centre-of-fully-extended-support"
+      },
+      "support": {
+        "state": "intact",
+        "topY": 0,
+        "width": 1.64,
+        "depth": 1.64
+      },
+      "motion": {
+        "kind": "crackle",
+        "roles": {
+          "persistent": [
+            "CloudwayLab_RoseQuartzCrackleFast__persistent"
+          ],
+          "intactGlass": "CloudwayLab_RoseQuartzCrackleFast__intact",
+          "contact": "CloudwayLab_RoseQuartzCrackleFast__contact",
+          "shards": [
+            "CloudwayLab_RoseQuartzCrackleFast__shard_000",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_001",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_002",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_003",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_004",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_005",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_006",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_007",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_008",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_009",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_010",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_011",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_012",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_013",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_014",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_015",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_016",
+            "CloudwayLab_RoseQuartzCrackleFast__shard_017"
+          ]
+        },
+        "materials": {
+          "glass": "CloudwayLab_RoseQuartz__glass",
+          "framework": "CloudwayLab_RoseQuartz__framework",
+          "internalDetail": "CloudwayLab_RoseQuartz__internal_detail",
+          "ivory": "CloudwayLab_RoseQuartz__ivory",
+          "cornerDetail": "CloudwayLab_RoseQuartz__corner_provider_pbr"
+        }
+      }
+    },
+    "collider": {
+      "shape": "box",
+      "width": 1.64,
+      "depth": 1.64,
+      "height": 0.24,
+      "topY": 0,
+      "center": [
+        0,
+        -0.12,
+        0
+      ]
+    },
+    "coordinateConversion": "Blender Z-up source exports to glTF +Y; origin remains contact top-centre"
+  },
+  "contact": {
+    "node": "CloudwayLab_RoseQuartzCrackleFast__contact",
+    "shape": "rectangle",
+    "widthMetres": 1.64,
+    "depthMetres": 1.64,
+    "topBlenderZ": 0.0,
+    "topRuntimeY": 0.0,
+    "ornamentalFaces": 0,
+    "sourceRayEvidence": {
+      "method": "A 31x31 vertical-ray grid over the inset 86% of the source XY bounds. Top offsets include raised ornament and are not a collider definition.",
+      "samples": 961,
+      "topHits": 961,
+      "topCoverage": 1.0,
+      "misses": 0,
+      "pairedTopBottomHits": 961,
+      "unpairedTopHits": 0,
+      "topOffsetFromLandingPlaneMillimetres": {
+        "min": 0.214204,
+        "p05": 0.254691,
+        "median": 0.31735,
+        "p95": 0.740498,
+        "max": 4.001096
+      },
+      "topHitsWithin2mmOfLandingPlaneFraction": 0.995838,
+      "topHitsWithin5mmOfLandingPlaneFraction": 1.0,
+      "visualThicknessMillimetres": {
+        "min": 250.219151,
+        "p05": 250.260636,
+        "median": 250.323102,
+        "p95": 250.747368,
+        "max": 254.010901
+      }
+    },
+    "scope": "authored gameplay proxy only; decorative relief and rails are excluded"
+  },
+  "intact": {
+    "root": "CloudwayLab_RoseQuartzCrackleFast__intact",
+    "shell": {
+      "object": "RoseRuntimeCrystalShell",
+      "extentMetres": 1.56,
+      "bottomBeforeOffsetMetres": -0.2,
+      "objectOffsetBlenderZMetres": -0.02,
+      "newClosedGeometry": true,
+      "subordinateToOpaqueExterior": true,
+      "material": "CloudwayLab_RoseQuartz__glass"
+    },
+    "internalDetail": {
+      "object": "RoseRuntimeProviderIntactExterior",
+      "sourcePreserved": true,
+      "visibleIntactExterior": true,
+      "fullProviderPbr": true,
+      "collision": false,
+      "material": "CloudwayLab_RoseQuartz__internal_detail",
+      "sourceVertices": 277628,
+      "sourcePolygons": 518742,
+      "transform": "normalized review matrix baked exactly; no visual scaling or inset",
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.849023521,
+          -0.850000024,
+          -0.254047483
+        ],
+        "max": [
+          0.849023521,
+          0.850000024,
+          0.006514043
+        ]
+      }
+    },
+    "goldLattice": {
+      "source": "exact dense provider exterior",
+      "material": "CloudwayLab_RoseQuartz__internal_detail",
+      "releasePolicy": "part of intact exterior; vanishes atomically before collision is removed"
+    }
+  },
+  "persistent": {
+    "root": "CloudwayLab_RoseQuartzCrackleFast__persistent",
+    "gold": {
+      "object": "RoseRuntimeGoldFramework",
+      "material": "CloudwayLab_RoseQuartz__framework"
+    },
+    "ivory": {
+      "object": "RoseRuntimeIvoryInlays",
+      "material": "CloudwayLab_RoseQuartz__ivory"
+    },
+    "sourceCorners": {
+      "object": "RoseRuntimeSourceCornerFiligree",
+      "material": "CloudwayLab_RoseQuartz__corner_provider_pbr",
+      "collision": false,
+      "fractures": false,
+      "method": "face-centroid absolute world X/Y threshold",
+      "thresholdMetres": 0.705,
+      "selectedSourceFaces": 133900,
+      "selectedVertices": 73207,
+      "outwardScaleAboutOrigin": 1.004,
+      "upOffsetMetres": 0.003,
+      "boundsBlenderZUpMetres": {
+        "min": [
+          -0.852419615,
+          -0.853400052,
+          -0.251047492
+        ],
+        "max": [
+          0.852419615,
+          0.853400052,
+          0.009514042
+        ]
+      },
+      "topology": "open static decoration by design; never fracture or collision"
+    },
+    "geometry": {
+      "persistentPerimeterFaces": 120,
+      "ivoryDisconnectedClosedParts": 512,
+      "intactTopLattice": "provided by exact dense donor and hidden atomically with intact"
+    },
+    "sourceCornerDecision": "Reviewed world-space corner faces preserve the dense donor's original filigree and provider PBR as open, non-collision persistent decoration. The selection is geometric, not a metallic-pixel classifier. Persistent rails and restrained ivory inlays remain separate semantic materials and are offset from the intact donor to avoid coplanar faces. The provider's own top lattice lives under intact and vanishes on release."
+  },
+  "fracture": {
+    "prefix": "CloudwayLab_RoseQuartzCrackleFast__shard_",
+    "count": 18,
+    "seedLayout": "fixed irregular 18-cell Voronoi; no grid or runtime randomness",
+    "closed": true,
+    "material": "CloudwayLab_RoseQuartz__glass",
+    "surfaceDetailMaterial": "CloudwayLab_RoseQuartz__internal_detail",
+    "surfaceDetailPolicy": "all dense provider faces partition once by deterministic nearest Voronoi seed; open UV-preserving detail rides the matching closed glass shard",
+    "rootOrigin": "each assembled AABB centre",
+    "verticalExtentMetres": [
+      -0.24,
+      -0.027500000000000004
+    ],
+    "capClearance": {
+      "closedVolumeMaximumAfterBevelBlenderZ": -0.027500004,
+      "minimumRayAuditedProviderTopBlenderZ": 0.000214204,
+      "minimumSeparationMetres": 0.027714208,
+      "policy": "closed glass remains inward of the exact provider PBR surface"
+    },
+    "shards": [
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_000",
+        "geometry": "RoseRuntimeShardGlass_000",
+        "assembledTranslationBlenderZUp": [
+          -0.665408432,
+          -0.619669199,
+          -0.133750007
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027500004,
+        "localBounds": {
+          "min": [
+            -0.15459156,
+            -0.200330809,
+            -0.106250003
+          ],
+          "max": [
+            0.15459156,
+            0.200330809,
+            0.106250003
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_000",
+          "sourceFaces": 63078,
+          "vertices": 34021,
+          "polygons": 63078,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_001",
+        "geometry": "RoseRuntimeShardGlass_001",
+        "assembledTranslationBlenderZUp": [
+          -0.376357496,
+          -0.624724329,
+          -0.134749562
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029499114,
+        "localBounds": {
+          "min": [
+            -0.204680592,
+            -0.195275649,
+            -0.105250448
+          ],
+          "max": [
+            0.204680592,
+            0.195275649,
+            0.105250448
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_001",
+          "sourceFaces": 21706,
+          "vertices": 11715,
+          "polygons": 21706,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_002",
+        "geometry": "RoseRuntimeShardGlass_002",
+        "assembledTranslationBlenderZUp": [
+          -0.025903122,
+          -0.585481524,
+          -0.135083929
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030167863,
+        "localBounds": {
+          "min": [
+            -0.224775717,
+            -0.234518468,
+            -0.104916066
+          ],
+          "max": [
+            0.224775717,
+            0.234518468,
+            0.104916066
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_002",
+          "sourceFaces": 15508,
+          "vertices": 8233,
+          "polygons": 15508,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_003",
+        "geometry": "RoseRuntimeShardGlass_003",
+        "assembledTranslationBlenderZUp": [
+          0.390575349,
+          -0.614004254,
+          -0.133861855
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027723715,
+        "localBounds": {
+          "min": [
+            -0.280171275,
+            -0.205995768,
+            -0.10613814
+          ],
+          "max": [
+            0.280171275,
+            0.205995768,
+            0.10613814
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_003",
+          "sourceFaces": 30843,
+          "vertices": 16488,
+          "polygons": 30843,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_004",
+        "geometry": "RoseRuntimeShardGlass_004",
+        "assembledTranslationBlenderZUp": [
+          0.609829187,
+          -0.520591617,
+          -0.134341598
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.028683186,
+        "localBounds": {
+          "min": [
+            -0.210170805,
+            -0.299408346,
+            -0.105658412
+          ],
+          "max": [
+            0.210170805,
+            0.299408346,
+            0.105658412
+          ]
+        },
+        "vertices": 34,
+        "polygons": 38,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_004",
+          "sourceFaces": 65394,
+          "vertices": 35167,
+          "polygons": 65394,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_005",
+        "geometry": "RoseRuntimeShardGlass_005",
+        "assembledTranslationBlenderZUp": [
+          -0.668827891,
+          -0.223662585,
+          -0.135244131
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030488253,
+        "localBounds": {
+          "min": [
+            -0.151172131,
+            -0.21239683,
+            -0.104755878
+          ],
+          "max": [
+            0.151172131,
+            0.21239683,
+            0.104755878
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_005",
+          "sourceFaces": 28521,
+          "vertices": 15242,
+          "polygons": 28521,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_006",
+        "geometry": "RoseRuntimeShardGlass_006",
+        "assembledTranslationBlenderZUp": [
+          -0.301652759,
+          -0.241612822,
+          -0.134164065
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.028328136,
+        "localBounds": {
+          "min": [
+            -0.217712596,
+            -0.236381918,
+            -0.10583593
+          ],
+          "max": [
+            0.217712596,
+            0.236381918,
+            0.10583593
+          ]
+        },
+        "vertices": 43,
+        "polygons": 50,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_006",
+          "sourceFaces": 3171,
+          "vertices": 1783,
+          "polygons": 3171,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_007",
+        "geometry": "RoseRuntimeShardGlass_007",
+        "assembledTranslationBlenderZUp": [
+          0.145571589,
+          -0.290875703,
+          -0.133980662
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027961321,
+        "localBounds": {
+          "min": [
+            -0.254086822,
+            -0.234536171,
+            -0.10601934
+          ],
+          "max": [
+            0.254086822,
+            0.234536171,
+            0.10601934
+          ]
+        },
+        "vertices": 46,
+        "polygons": 52,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_007",
+          "sourceFaces": 4337,
+          "vertices": 2341,
+          "polygons": 4337,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_008",
+        "geometry": "RoseRuntimeShardGlass_008",
+        "assembledTranslationBlenderZUp": [
+          0.559125006,
+          -0.15576309,
+          -0.135182366
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030364722,
+        "localBounds": {
+          "min": [
+            -0.260874987,
+            -0.247513711,
+            -0.104817644
+          ],
+          "max": [
+            0.260874987,
+            0.247513711,
+            0.104817644
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_008",
+          "sourceFaces": 11331,
+          "vertices": 6119,
+          "polygons": 11331,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_009",
+        "geometry": "RoseRuntimeShardGlass_009",
+        "assembledTranslationBlenderZUp": [
+          -0.603567898,
+          0.154701263,
+          -0.134566486
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029132962,
+        "localBounds": {
+          "min": [
+            -0.216432065,
+            -0.233665049,
+            -0.105433524
+          ],
+          "max": [
+            0.216432065,
+            0.233665049,
+            0.105433524
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_009",
+          "sourceFaces": 17777,
+          "vertices": 9708,
+          "polygons": 17777,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_010",
+        "geometry": "RoseRuntimeShardGlass_010",
+        "assembledTranslationBlenderZUp": [
+          -0.182056755,
+          0.118805684,
+          -0.133773401
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027546793,
+        "localBounds": {
+          "min": [
+            -0.229410022,
+            -0.251027286,
+            -0.106226608
+          ],
+          "max": [
+            0.229410022,
+            0.251027286,
+            0.106226608
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_010",
+          "sourceFaces": 4964,
+          "vertices": 2636,
+          "polygons": 4964,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_011",
+        "geometry": "RoseRuntimeShardGlass_011",
+        "assembledTranslationBlenderZUp": [
+          0.254308611,
+          0.108415246,
+          -0.134917051
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029834099,
+        "localBounds": {
+          "min": [
+            -0.231503248,
+            -0.247138202,
+            -0.105082951
+          ],
+          "max": [
+            0.231503248,
+            0.247138202,
+            0.105082951
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_011",
+          "sourceFaces": 3040,
+          "vertices": 1609,
+          "polygons": 3040,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_012",
+        "geometry": "RoseRuntimeShardGlass_012",
+        "assembledTranslationBlenderZUp": [
+          0.63600117,
+          0.207985416,
+          -0.134949058
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029898122,
+        "localBounds": {
+          "min": [
+            -0.183998823,
+            -0.241588041,
+            -0.105050936
+          ],
+          "max": [
+            0.183998823,
+            0.241588041,
+            0.105050936
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_012",
+          "sourceFaces": 23570,
+          "vertices": 12601,
+          "polygons": 23570,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_013",
+        "geometry": "RoseRuntimeShardGlass_013",
+        "assembledTranslationBlenderZUp": [
+          -0.637072682,
+          0.576112866,
+          -0.133784115
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.027568221,
+        "localBounds": {
+          "min": [
+            -0.182927296,
+            -0.243887126,
+            -0.106215894
+          ],
+          "max": [
+            0.182927296,
+            0.243887126,
+            0.106215894
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_013",
+          "sourceFaces": 84449,
+          "vertices": 45540,
+          "polygons": 84449,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_014",
+        "geometry": "RoseRuntimeShardGlass_014",
+        "assembledTranslationBlenderZUp": [
+          -0.259023726,
+          0.549919605,
+          -0.134527341
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.029054679,
+        "localBounds": {
+          "min": [
+            -0.245894015,
+            -0.270080388,
+            -0.105472662
+          ],
+          "max": [
+            0.245894015,
+            0.270080388,
+            0.105472662
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_014",
+          "sourceFaces": 19442,
+          "vertices": 10577,
+          "polygons": 19442,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_015",
+        "geometry": "RoseRuntimeShardGlass_015",
+        "assembledTranslationBlenderZUp": [
+          0.106625222,
+          0.581804693,
+          -0.135197699
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.030395396,
+        "localBounds": {
+          "min": [
+            -0.293213487,
+            -0.2381953,
+            -0.104802303
+          ],
+          "max": [
+            0.293213487,
+            0.2381953,
+            0.104802303
+          ]
+        },
+        "vertices": 37,
+        "polygons": 43,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_015",
+          "sourceFaces": 43426,
+          "vertices": 23648,
+          "polygons": 43426,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_016",
+        "geometry": "RoseRuntimeShardGlass_016",
+        "assembledTranslationBlenderZUp": [
+          0.357729316,
+          0.47603786,
+          -0.134008363
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.028016724,
+        "localBounds": {
+          "min": [
+            -0.254916012,
+            -0.273639083,
+            -0.105991639
+          ],
+          "max": [
+            0.254916012,
+            0.273639083,
+            0.105991639
+          ]
+        },
+        "vertices": 25,
+        "polygons": 29,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_016",
+          "sourceFaces": 2073,
+          "vertices": 1185,
+          "polygons": 2073,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      },
+      {
+        "root": "CloudwayLab_RoseQuartzCrackleFast__shard_017",
+        "geometry": "RoseRuntimeShardGlass_017",
+        "assembledTranslationBlenderZUp": [
+          0.609331608,
+          0.628124833,
+          -0.13412948
+        ],
+        "evaluatedCapMaximumWorldZMetres": -0.02825895,
+        "localBounds": {
+          "min": [
+            -0.21066837,
+            -0.19187513,
+            -0.10587053
+          ],
+          "max": [
+            0.21066837,
+            0.19187513,
+            0.10587053
+          ]
+        },
+        "vertices": 31,
+        "polygons": 36,
+        "surfaceDetail": {
+          "object": "RoseRuntimeShardSurfaceDetail_017",
+          "sourceFaces": 76112,
+          "vertices": 40870,
+          "polygons": 76112,
+          "uvLayers": [
+            "UVMap"
+          ],
+          "closed": false,
+          "collision": false
+        }
+      }
+    ]
+  },
+  "candidateBlend": {
+    "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-runtime-hybrid-candidate.blend",
+    "bytes": 174176717,
+    "sha256": "c176e4dae5e9938c3bb562299b8fe9f14d10dc3b8b522cee31ea9ee2f3a64b0a"
+  },
+  "proofMethod": {
+    "views": [
+      "matched 48-degree game camera",
+      "orthographic top",
+      "matched low side"
+    ],
+    "beauty": "512 Eevee samples, pastel field, no post blur",
+    "detailProof": "matched top and side with the exact provider exterior toggled off",
+    "transmissionWitness": "separate checker render; beauty remains a lighting judgment",
+    "exploded": "persistent perimeter and corners fixed; intact body absent; 18 closed glass shards and matching provider surface partitions displaced",
+    "renderIsolation": [
+      {
+        "render": "provider-pbr-game-camera",
+        "visibleMeshes": [
+          "Rose_Hybrid_Proof_Field",
+          "rose-quartz-crackle-fast__normalized_review"
+        ]
+      },
+      {
+        "render": "hybrid-beauty-game-camera",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeProviderIntactExterior",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "provider-pbr-top",
+        "visibleMeshes": [
+          "Rose_Hybrid_Proof_Field",
+          "rose-quartz-crackle-fast__normalized_review"
+        ]
+      },
+      {
+        "render": "hybrid-beauty-top",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeProviderIntactExterior",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-detail-off-top",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "provider-pbr-side",
+        "visibleMeshes": [
+          "Rose_Hybrid_Proof_Field",
+          "rose-quartz-crackle-fast__normalized_review"
+        ]
+      },
+      {
+        "render": "hybrid-beauty-side",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeProviderIntactExterior",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-detail-off-side",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-clay-game-camera",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeProviderIntactExterior",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-semantic-game-camera",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeProviderIntactExterior",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-transmission-game-camera",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeProviderIntactExterior",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "hybrid-shards-exploded-game-camera",
+        "visibleMeshes": [
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeShardGlass_000",
+          "RoseRuntimeShardGlass_001",
+          "RoseRuntimeShardGlass_002",
+          "RoseRuntimeShardGlass_003",
+          "RoseRuntimeShardGlass_004",
+          "RoseRuntimeShardGlass_005",
+          "RoseRuntimeShardGlass_006",
+          "RoseRuntimeShardGlass_007",
+          "RoseRuntimeShardGlass_008",
+          "RoseRuntimeShardGlass_009",
+          "RoseRuntimeShardGlass_010",
+          "RoseRuntimeShardGlass_011",
+          "RoseRuntimeShardGlass_012",
+          "RoseRuntimeShardGlass_013",
+          "RoseRuntimeShardGlass_014",
+          "RoseRuntimeShardGlass_015",
+          "RoseRuntimeShardGlass_016",
+          "RoseRuntimeShardGlass_017",
+          "RoseRuntimeShardSurfaceDetail_000",
+          "RoseRuntimeShardSurfaceDetail_001",
+          "RoseRuntimeShardSurfaceDetail_002",
+          "RoseRuntimeShardSurfaceDetail_003",
+          "RoseRuntimeShardSurfaceDetail_004",
+          "RoseRuntimeShardSurfaceDetail_005",
+          "RoseRuntimeShardSurfaceDetail_006",
+          "RoseRuntimeShardSurfaceDetail_007",
+          "RoseRuntimeShardSurfaceDetail_008",
+          "RoseRuntimeShardSurfaceDetail_009",
+          "RoseRuntimeShardSurfaceDetail_010",
+          "RoseRuntimeShardSurfaceDetail_011",
+          "RoseRuntimeShardSurfaceDetail_012",
+          "RoseRuntimeShardSurfaceDetail_013",
+          "RoseRuntimeShardSurfaceDetail_014",
+          "RoseRuntimeShardSurfaceDetail_015",
+          "RoseRuntimeShardSurfaceDetail_016",
+          "RoseRuntimeShardSurfaceDetail_017",
+          "RoseRuntimeSourceCornerFiligree",
+          "Rose_Hybrid_Proof_Field"
+        ]
+      },
+      {
+        "render": "saved-candidate-state",
+        "visibleMeshes": [
+          "RoseRuntimeCrystalShell",
+          "RoseRuntimeGoldFramework",
+          "RoseRuntimeIvoryInlays",
+          "RoseRuntimeProviderIntactExterior",
+          "RoseRuntimeSourceCornerFiligree"
+        ]
+      }
+    ]
+  },
+  "proofs": [
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/provider-pbr-game-camera.png",
+      "bytes": 409068,
+      "sha256": "e77211159fdf4a6b13cbe0d85b4c62f6ee4539cc6a69141f9a14fe5079fec26c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-beauty-game-camera.png",
+      "bytes": 420044,
+      "sha256": "17be452ee5a71873de63c69f76437c72e6cc50bc5b051221da40b5cfd06f189f",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/provider-pbr-top.png",
+      "bytes": 968969,
+      "sha256": "5a982855e8da97940e65c8c257aa7609b83331e4587f2fcd37938b3590fac0f7",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-beauty-top.png",
+      "bytes": 971497,
+      "sha256": "22d68f5f41a36e30ca2060b43640f5b16613e0ef87286c2e141739b634a419b3",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-detail-off-top.png",
+      "bytes": 1089123,
+      "sha256": "23baa9b347c880194818c8d5dc6058f907850a0b72aa696a57568af5bb522a60",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/provider-pbr-side.png",
+      "bytes": 670678,
+      "sha256": "9f838fbf9c9baaa4b9183e22d7c38749ab6a5062f2e3ae25b36c84e9725b42ee",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-beauty-side.png",
+      "bytes": 674633,
+      "sha256": "3d5c67a0a14d7e4130d722e1859f43f056c0b8df60f4fc953ca32fee8a1ec8e3",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-detail-off-side.png",
+      "bytes": 558769,
+      "sha256": "cb6149ec05448ccc9a33849413378f6e3abb3bf86b762db920c14d0a9958d44b",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-clay-game-camera.png",
+      "bytes": 245585,
+      "sha256": "e1db598bb540c7df3312893f656fed37ab9df960d752822c1ebe541e7b5ef209",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-semantic-game-camera.png",
+      "bytes": 198808,
+      "sha256": "259d203c1129874b89b57e7a44b0ee298c9266cafa2e6f8306c1af5ccd5b9659",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-transmission-game-camera.png",
+      "bytes": 543544,
+      "sha256": "c772b3d57217b6b33088ac637e997ee860c2786b3f7a5c1eb296a0b0b107a52a",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/runtime-hybrid-candidate/hybrid-shards-exploded-game-camera.png",
+      "bytes": 622433,
+      "sha256": "c9d4bc0e63a30c84beb1c9d664ddb7cd9b80f8a0b37d43e8ba883c69470e6d80",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "rebuild": "flock -w 1200 /tmp/glass-cloudway-blender.lock timeout 1200 /usr/bin/blender --background --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_rose_crackle_runtime_candidate.py"
+}

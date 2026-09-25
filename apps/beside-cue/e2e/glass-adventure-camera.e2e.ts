@@ -254,6 +254,7 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
       lookSensitivity: 1.2,
       followSmoothnessSeconds: 0.12,
     },
+    renderQuality: 'auto',
   })
   await panel.getByRole('button', { name: 'Gentle', exact: true }).click()
   await panel.getByRole('button', { name: 'Close camera tuning' }).click()
@@ -293,6 +294,45 @@ test('camera presets persist and scale real mouse orbit while keyboard turns sta
     'data-follow-smoothness',
     '0.2',
   )
+})
+
+test('real keyboard chords and brief side taps steer without swinging the view @smoke', async ({
+  page,
+}) => {
+  await openComfortMuseum(page)
+  const viewport = page.getByLabel('Glass museum; drag to look around')
+  await viewport.hover()
+  await page.mouse.wheel(0, -500)
+  await page.clock.install()
+
+  await page.keyboard.down('KeyW')
+  await page.clock.runFor(400)
+  const forwardYaw = await numericAttribute(page, 'camera-yaw')
+  await page.keyboard.down('KeyA')
+  await page.clock.runFor(600)
+  expect(
+    Math.abs(
+      angleDelta(forwardYaw, await numericAttribute(page, 'camera-yaw')),
+    ),
+  ).toBeLessThan(0.04)
+  await page.keyboard.up('KeyA')
+  await page.clock.runFor(500)
+  expect(
+    Math.abs(
+      angleDelta(forwardYaw, await numericAttribute(page, 'camera-yaw')),
+    ),
+  ).toBeLessThan(0.04)
+  await page.keyboard.up('KeyW')
+  await page.clock.runFor(100)
+
+  const beforeTap = await numericAttribute(page, 'camera-yaw')
+  await page.keyboard.down('KeyD')
+  await page.clock.runFor(150)
+  await page.keyboard.up('KeyD')
+  await page.clock.runFor(700)
+  expect(
+    Math.abs(angleDelta(beforeTap, await numericAttribute(page, 'camera-yaw'))),
+  ).toBeLessThan(0.04)
 })
 
 test('phone tuner fits the viewport and real touch orbit and steering stay smooth @smoke', async ({
@@ -341,6 +381,7 @@ test('phone tuner fits the viewport and real touch orbit and steering stay smoot
   })
   await page.waitForTimeout(450)
   const settledYaw = await numericAttribute(page, 'merc-yaw')
+  const settledCameraYaw = await numericAttribute(page, 'camera-yaw')
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchMove',
     touchPoints: [{ id: 20, x: centre.x + 38, y: centre.y }],
@@ -348,6 +389,11 @@ test('phone tuner fits the viewport and real touch orbit and steering stay smoot
   await page.waitForTimeout(50)
   const firstYaw = await numericAttribute(page, 'merc-yaw')
   const firstTurn = Math.abs(angleDelta(settledYaw, firstYaw))
+  expect(
+    Math.abs(
+      angleDelta(settledCameraYaw, await numericAttribute(page, 'camera-yaw')),
+    ),
+  ).toBeLessThan(0.04)
   const firstError = Math.abs(
     angleDelta(
       firstYaw,
@@ -365,6 +411,11 @@ test('phone tuner fits the viewport and real touch orbit and steering stay smoot
       ),
     ),
   ).toBeLessThan(firstError)
+  expect(
+    Math.abs(
+      angleDelta(settledCameraYaw, await numericAttribute(page, 'camera-yaw')),
+    ),
+  ).toBeGreaterThan(0.03)
   await cdp.send('Input.dispatchTouchEvent', {
     type: 'touchEnd',
     touchPoints: [],

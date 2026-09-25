@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "ivory-stair-terrace",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/ivory-stair-terrace/ivory-stair-terrace-dense-master.blend",
+    "bytes": 120741482,
+    "sha256": "6f9720dc4b14f164a8c21e91c63a75806c806b207fffc60b070ade54828e696b",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "3599382711d8fc7625ad66a03169db547b80466322ce1f1d0599fb9de0057ce1",
+  "topology": {
+    "vertices": 223394,
+    "triangles": 407456,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "723c00679df48d5b39732d19960670cdfd6edd2dd3972766f775616e1647a6bd",
+    "triangleIndicesInt32Sha256": "c0db2d4ad6f95539059649f57cde4ac71504c5775f56f2ea6196c92422096ae7"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_IvoryStairTerrace_DenseMaster",
+    "rawObject": "ivory-stair-terrace__raw_import",
+    "reviewObject": "ivory-stair-terrace__normalized_review",
+    "meshData": "ivory-stair-terrace__dense_mesh",
+    "material": "ivory-stair-terrace__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "ivory-stair-terrace__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "de0e1c575dfd884fe1686039131eae1885a34c19c67d3896623e28ac11ade4bf",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "ivory-stair-terrace__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "7022aeaf2cbda1ddd68a789b3704e3ac1dee4d4591fdc29b0b6d311bfb96b18f",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "ivory-stair-terrace__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "f77c0b5f777543cab0fcfd07cd72d168206e1b4a79439df370b36a3565748952",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "ivory-stair-terrace__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "656fcb76e0129705115631264a05929c064a2ce112404b9833a7165c073bd2fb",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-clay-three-quarter.png",
+      "bytes": 559383,
+      "sha256": "241e07d027444fd9be17b98cbe4b6345a8c64cc97a41673cf1f2f027c063b664",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-clay-top.png",
+      "bytes": 646246,
+      "sha256": "550a4d1aa481cb1e22ed25b7bca1d9d09100ba704a061d58e41f3f80ac3ec79d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-clay-side.png",
+      "bytes": 444926,
+      "sha256": "c9d781806bbd92498fafe3ddfeca085f8742565678769a7e2fa22bac149daee9",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-pbr-three-quarter.png",
+      "bytes": 671096,
+      "sha256": "5eadebd7a145d19d7f327c02c3800ad7e29053a912c7e400ad744aa7b99282ff",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-pbr-top.png",
+      "bytes": 1033556,
+      "sha256": "022ec9785af95df94cccad59b9826767ba600307cc69135b16feb8ca7277ba94",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/ivory-stair-terrace/matched-pbr-side.png",
+      "bytes": 540972,
+      "sha256": "99e16d4fc5b6b145684d156058d9a27407c4b1cb571831ed37a16c2a7997f721",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset ivory-stair-terrace",
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

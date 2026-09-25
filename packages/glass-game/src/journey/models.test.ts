@@ -1,10 +1,10 @@
-// Journey model tests — partial loads retire resources and bridge transforms meet endpoints.
+// Journey model tests — partial loads retire resources.
 
 import type { MeshStandardMaterial } from 'three'
-import { AnimationClip, BoxGeometry, BufferGeometry, Group, Material, Matrix4, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, Vector3, } from 'three'
+import { AnimationClip, BoxGeometry, BufferGeometry, Group, Material, Mesh, MeshBasicMaterial, PlaneGeometry, Texture, } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { FLOATING_MUSEUM_JOURNEY } from '../content/museum-journey'
-import { journeyBridgeTransform, loadJourneyMapModels } from './models'
+import { loadJourneyMapModels } from './models'
 import type { JourneyGltfDocument } from './resources'
 
 function createKitScene(
@@ -394,25 +394,5 @@ describe('journey map model loading', () => {
     expect(merc.dispose).toHaveBeenCalledOnce()
     expect(architecture.dispose).toHaveBeenCalledOnce()
     expect(marbleTextures.dispose).toHaveBeenCalledOnce()
-  })
-
-  it('maps the final bridge dimensions onto both authored endpoints', () => {
-    for (const bridge of FLOATING_MUSEUM_JOURNEY.bridges) {
-      const transform = journeyBridgeTransform(bridge)
-      const matrix = new Matrix4().compose(
-        transform.position,
-        transform.rotation,
-        transform.scale,
-      )
-      const localHalfLength = 3.323364 / 2
-      const start = new Vector3(0, 0, -localHalfLength).applyMatrix4(matrix)
-      const end = new Vector3(0, 0, localHalfLength).applyMatrix4(matrix)
-      expect(start.toArray()).toEqual(
-        bridge.from.map((value) => expect.closeTo(value, 6)),
-      )
-      expect(end.toArray()).toEqual(
-        bridge.to.map((value) => expect.closeTo(value, 6)),
-      )
-    }
   })
 })
