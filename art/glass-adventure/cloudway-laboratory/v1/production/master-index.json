@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "stage": "dense-source-proof-not-game-art-acceptance",
+  "assets": [
+    "gilt-scroll-bridge",
+    "rose-quartz-crackle-fast",
+    "amethyst-crackle-slow"
+  ]
+}
