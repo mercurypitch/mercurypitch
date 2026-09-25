@@ -875,6 +875,29 @@ jobs:
           security list-keychain -d user -s "$keychain" login.keychain-db
           security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
           rm -f "$RUNNER_TEMP/cert.p12"
+          # Apple names the certificate after the account holder, and xcodebuild
+          # prints that name on every CodeSign line, and again shell-escaped
+          # (First\ Last) wherever it dumps a script phase's environment. The
+          # team ID is a secret and already masked; mask every holder name in
+          # this keychain, in both forms, before a later step can print one.
+          # No -v: an untrusted identity is printed too. A name can itself hold
+          # a quote, so it runs from the first quote to the last. No identity
+          # at all means signing cannot work, so stop here.
+          security find-identity -p codesigning "$keychain" | awk -v q="'" '
+            /"/ {
+              s = $0; sub(/^[^"]*"/, "", s); sub(/"[^"]*$/, "", s)
+              sub(/^[^:]*: /, "", s); sub(/ \([^()]*\)$/, "", s)
+              if (s == "") next
+              print "::add-mask::" s; n++
+              e = ""
+              for (i = 1; i <= length(s); i++) {
+                c = substr(s, i, 1)
+                if (index(" ()\"\\$&;|<>*?!#~`" q, c)) e = e "\\"
+                e = e c
+              }
+              if (e != s) print "::add-mask::" e
+            }
+            END { if (!n) { print "::error::No signing identity found to mask"; exit 1 } }'
 
       - name: Write App Store Connect API key
         if: env.HAS_ASC == 'true'
@@ -1197,6 +1220,30 @@ jobs:
           # Lets codesign use the key without an interactive prompt.
           security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
           rm -f "$RUNNER_TEMP/cert.p12"
+
+          # Apple names the certificate after the account holder, and xcodebuild
+          # prints that name on every CodeSign line, and again shell-escaped
+          # (First\ Last) wherever it dumps a script phase's environment. The
+          # team ID is a secret and already masked; mask every holder name in
+          # this keychain, in both forms, before a later step can print one.
+          # No -v: an untrusted identity is printed too. A name can itself hold
+          # a quote, so it runs from the first quote to the last. No identity
+          # at all means signing cannot work, so stop here.
+          security find-identity -p codesigning "$keychain" | awk -v q="'" '
+            /"/ {
+              s = $0; sub(/^[^"]*"/, "", s); sub(/"[^"]*$/, "", s)
+              sub(/^[^:]*: /, "", s); sub(/ \([^()]*\)$/, "", s)
+              if (s == "") next
+              print "::add-mask::" s; n++
+              e = ""
+              for (i = 1; i <= length(s); i++) {
+                c = substr(s, i, 1)
+                if (index(" ()\"\\$&;|<>*?!#~`" q, c)) e = e "\\"
+                e = e c
+              }
+              if (e != s) print "::add-mask::" e
+            }
+            END { if (!n) { print "::error::No signing identity found to mask"; exit 1 } }'
 
           profiles="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$profiles"
