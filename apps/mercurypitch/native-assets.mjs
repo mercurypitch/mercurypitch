@@ -52,21 +52,15 @@ import { join } from 'node:path'
 
 /** @type {readonly NativeAssetEntry[]} */
 export const NATIVE_ASSETS = [
-  // ── Boot and onboarding ──────────────────────────────────────
-  {
-    glob: 'opening/first-light-*.webp',
-    reason:
-      'The cold-start plate behind the boot screen, wide and tall (src/App.tsx) — the first frame the app draws.',
-  },
+  // ── Boot ─────────────────────────────────────────────────────
+  //
+  // The app has no opening curtain and no First Light (S4): it launches on
+  // its own ground with the mark, and the alley is the welcome. The curtain's
+  // first-light plates and First Light's sky are therefore not listed.
   {
     glob: 'brand-mark.svg',
     reason:
-      'The Meniscus mark in the boot lockup (src/App.tsx); the shipped master, never an inlined copy.',
-  },
-  {
-    glob: 'onboarding/sky-*.webp',
-    reason:
-      "First Light's sky, wide and tall (src/features/onboarding/onboarding.module.css) — the backdrop every beat sits on.",
+      'The Meniscus mark in the boot lockup (src/App.tsx) and the alley top (apps/mercurypitch/src/alley/RoomsAlley.tsx); the shipped master, never an inlined copy.',
   },
 
   // ── The twin, and the voiceprint art that carries it ─────────
@@ -121,11 +115,6 @@ export const NATIVE_ASSETS = [
       'Home rail and the onboarding Map: the Jam cover (src/features/home/DestinationGallery.module.css).',
   },
   {
-    glob: 'home/hear-yourself-tease.webp',
-    reason:
-      'Home rail: the veiled Hear Yourself cover (src/features/home/DestinationGallery.module.css).',
-  },
-  {
     glob: 'piano-night/afterglow-studio-landscape.webp',
     reason:
       'Home rail: the Piano Night room photo (src/features/home/DestinationGallery.tsx).',
@@ -146,28 +135,35 @@ export const NATIVE_ASSETS = [
       'Home rail: the Drum Night room photo (src/features/home/DestinationGallery.tsx).',
   },
 
-  // ── The Sing room's covers ───────────────────────────────────
+  // ── The Sing room's cover ────────────────────────────────────
   //
-  // Three candidates ship for the test period (device round 2, R5): the room
-  // picker offers all three and the owner is choosing between them, so every
-  // one has to be in the binary — there is no network in the room to fetch
-  // the other two from. The first glob is a family and covers the other two
-  // as well; the entries below it are what make each PAIR its own tripwire,
-  // so a rename of the B or the mock art fails the build that ships it.
+  // One cover since S4 (23 Sep 2026): the owner chose it over the B and mock
+  // takes that shipped for the test period, and those two families are gone
+  // from public/sing/ and the catalogue.
   {
     glob: 'sing/retro-analog-studio*.webp',
     reason:
-      "Every Retro Analog Studio cover, in all four variants each — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one.",
+      "The Retro Analog Studio cover in all four variants — the Sing room IS this photograph, and the trace is drawn on a transparent canvas over it (src/features/sing-room/SingRoomStage.tsx via the 'sing' surface in src/lib/backgrounds/background-catalog.ts). Portrait and landscape both ship: a phone held sideways picks the other one.",
+  },
+
+  // ── The alley: the Rooms tab and the welcome (S4) ───────────
+  //
+  // Bundled at full quality on purpose (owner, 23 Sep 2026): the alley is the
+  // first thing a fresh install draws, so it cannot wait on a network.
+  {
+    glob: 'rooms/alley/night-rooms-hero*.webp',
+    reason:
+      'The night alley plate at 1x and 2x — the Rooms tab and the first-run welcome ARE this picture, and every door quad is measured on it (apps/mercurypitch/src/alley/alley-plate.ts).',
   },
   {
-    glob: 'sing/retro-analog-studio-b*.webp',
+    glob: 'rooms/alley/retro-analog-studio-portrait-loop.mp4',
     reason:
-      "The second candidate, 'Retro Analog Studio B' — the same room rendered warmer with the desk further back, offered by the room picker (src/features/sing-room/SingRoomPicker.tsx) and catalogued as sing-retro-analog-studio-b.",
+      'The tape-reel loop the Sing door plays inside its doorway when it is selected, and carries into the room on Enter (apps/mercurypitch/src/alley/RoomsAlley.tsx).',
   },
   {
-    glob: 'sing/retro-analog-studio-mock*.webp',
+    glob: 'rooms/alley/*-ambient-take2-loop.m4a',
     reason:
-      "The third candidate, 'Retro Analog Studio (mock)' — the approved mock tile upscaled, which is the photograph the owner asked to see beside the other two (catalogued as sing-retro-analog-studio-mock).",
+      'The two room ambients a selected Sing or Ear Lab door fades in, decoded into a looping buffer (apps/mercurypitch/src/alley/alley-audio.ts).',
   },
 ]
 

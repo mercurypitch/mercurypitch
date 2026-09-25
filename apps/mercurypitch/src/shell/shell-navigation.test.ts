@@ -9,7 +9,7 @@ import { setPlaybackState } from '@/stores/playback-state-store'
 import { setActiveTab } from '@/stores/ui-store'
 import { canGoBack, installHistoryDepth } from './history-depth'
 import { openColumn, openMore, pushed, pushScreen, requestEnd, resetRunShell, } from './run-shell-store'
-import { goToTab, performBack, railItems, resolveBack, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
+import { cancelDoorOpen, goToTab, performBack, railItems, registerDoorClear, registerDoorOpen, resolveBack, returnToRun, selectedRailItem, shellBackHost, stageLabelFor, stageTabFor, } from './shell-navigation'
 
 // Only for the ORDER of the first four outcomes, which never reach history.
 // Everything about leaving the room is driven through the real host below:
@@ -117,6 +117,116 @@ describe('going somewhere', () => {
     goToTab(TAB_EAR_LAB)
 
     expect(controls.park).not.toHaveBeenCalled()
+  })
+})
+
+describe('a door open in flight', () => {
+  afterEach(() => {
+    cancelDoorOpen()
+  })
+
+  it('Back calls it off and reports the press handled, at the root too', () => {
+    const cancel = vi.fn(() => true)
+    registerDoorOpen(cancel)
+    const back = host(false)
+
+    expect(performBack(back)).toBe('door-open')
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(back.minimize).not.toHaveBeenCalled()
+    expect(back.back).not.toHaveBeenCalled()
+    // Once: the next press is an ordinary one.
+    expect(performBack(back)).toBe('minimize')
+  })
+
+  it('a rail tab calls it off and still goes where it was pointed', () => {
+    const cancel = vi.fn(() => true)
+    registerDoorOpen(cancel)
+
+    goToTab(TAB_PROGRESS)
+
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(window.location.hash).toContain('progress')
+  })
+
+  it('the pill calls it off and still goes back to the run', () => {
+    // A keyboard press on the pill fires no pointerdown, and the grow's last
+    // frame could cover and navigate to the door's room over the run's.
+    unregister = registerRunControls({
+      tab: TAB_SINGING,
+      roomLabel: 'Sing',
+      isPlaying: () => true,
+      isPaused: () => false,
+      pause: vi.fn(),
+      resume: vi.fn(),
+      stop: vi.fn(),
+      park: vi.fn(),
+    })
+    setPlaybackState('playing')
+    setActiveTab(TAB_HOME)
+    const cancel = vi.fn(() => true)
+    registerDoorOpen(cancel)
+
+    returnToRun()
+
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(window.location.hash).toContain('singing')
+  })
+
+  it('an open that has covered is not in flight any more', () => {
+    const cancel = vi.fn(() => true)
+    const done = registerDoorOpen(cancel)
+    done()
+
+    expect(performBack(host(false))).toBe('minimize')
+    expect(cancel).not.toHaveBeenCalled()
+  })
+
+  it('an open that refuses the cancel is not a handled press', () => {
+    registerDoorOpen(() => false)
+    expect(performBack(host(false))).toBe('minimize')
+  })
+})
+
+describe('a door picked on the alley', () => {
+  // The card, its Enter and the dim are the alley's overlay. Back fell
+  // through to 'history' (leaving Rooms) or 'minimize' (backgrounding the
+  // app) with the card still up, while Escape put the door back.
+  it('Back puts it back and reports the press handled, at the root', () => {
+    const clear = vi.fn(() => true)
+    unregister = registerDoorClear(clear)
+    const back = host(false)
+
+    expect(performBack(back)).toBe('door-cleared')
+    expect(clear).toHaveBeenCalledTimes(1)
+    expect(back.minimize).not.toHaveBeenCalled()
+    expect(back.back).not.toHaveBeenCalled()
+  })
+
+  it('Back puts it back rather than leaving Rooms, with history behind', () => {
+    unregister = registerDoorClear(() => true)
+    const back = host(true)
+
+    expect(performBack(back)).toBe('door-cleared')
+    expect(back.back).not.toHaveBeenCalled()
+  })
+
+  it('with no door picked, the press goes on down the order', () => {
+    unregister = registerDoorClear(() => false)
+    expect(performBack(host(false))).toBe('minimize')
+  })
+
+  it('the More sheet outranks it', () => {
+    const clear = vi.fn(() => true)
+    unregister = registerDoorClear(clear)
+    openMore()
+
+    expect(performBack(host(false))).toBe('sheet')
+    expect(clear).not.toHaveBeenCalled()
+  })
+
+  it('an alley that has gone takes its door with it', () => {
+    registerDoorClear(() => true)()
+    expect(performBack(host(false))).toBe('minimize')
   })
 })
 

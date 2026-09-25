@@ -25,9 +25,11 @@ import { createEffect, createMemo, createSignal, lazy, onCleanup, onMount, Show,
 import { Portal } from 'solid-js/web'
 import './shell.css'
 import { SettingsPanel } from '@/components/SettingsPanel'
+import { TAB_HOME } from '@/features/tabs/constants'
 import { exposeForE2E } from '@/lib/test-utils'
 import { nativeRunControls, registerShellApi, setShellOwnsTransport, } from '@/stores/native-shell-store'
 import { practiceScope } from '@/stores/settings-store'
+import { RoomsAlley } from '../alley/RoomsAlley'
 import { registerShellBackHandler } from '../infrastructure/native-shell'
 import { CornerTabs } from './CornerTabs'
 import { Dock } from './Dock'
@@ -206,6 +208,14 @@ export const NativeShell: Component = () => {
     <>
       <Portal>
         <ShellRoot>
+          {/* The Rooms tab under the native build is the alley (S4), drawn
+              here rather than by the app's HomePage because it steers the
+              shell's own navigation and haptics, which the shared tree
+              cannot import. Under the rail, like a stage. */}
+          <Show when={currentTab() === TAB_HOME}>
+            <RoomsAlley />
+          </Show>
+
           <Show when={room()}>
             {(controls) => (
               <RoomHeader

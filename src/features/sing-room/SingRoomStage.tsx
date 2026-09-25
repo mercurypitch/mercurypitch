@@ -43,7 +43,7 @@ import { exposeForE2E } from '@/lib/test-utils'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { keyName, scaleType, setActiveTab, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import { nativeShellApi, registerRunControls, } from '@/stores/native-shell-store'
+import { nativeShellApi, registerRunControls, roomArrivalHeld, } from '@/stores/native-shell-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { VOCAL_RANGES, vocalRangePreset } from '@/stores/settings-store'
 import { keepSingTake, lastSingTake, removeSingTake, singTakes, } from '@/stores/sing-takes-store'
@@ -356,7 +356,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     // The run is over by a decision, so nothing about it can "run out" any
     // more — and the next run has to be seen running again before it can.
     // Without this the latch survived a Stop, and the first frames of the
-    // run after it read (live, stopped) with the latch already set.
+    // run after it read (live, stopped) with the latch already set — which
+    // ends the next take the moment it starts. Load-bearing, not a belt over
+    // the settle: `SingRoomStage.test.tsx` ("Stop, then the next melody run")
+    // goes red without this line (review N1).
     runOut.cancel()
     dispatchSingRoom({ type: 'stop', hasTake: endTake() })
   }
@@ -498,8 +501,21 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
     return false
   }
 
+  // The arrival — which, with a remembered grant, is the microphone opening
+  // on its own — waits while the shell holds it. The alley's Enter mounts
+  // this room UNDER a clone of the door it opened, with that door's ambient
+  // still fading (S4 brief §2); the room starts once the clone is gone and
+  // the alley is silent. Nothing holds it on the web, or on any other way in,
+  // so everywhere else this is the `enterSingRoom()` it always was, run in
+  // the same place: before the rest of the mount below.
+  let arrived = false
+  createEffect(() => {
+    if (arrived || roomArrivalHeld()) return
+    arrived = true
+    untrack(enterSingRoom)
+  })
+
   onMount(() => {
-    enterSingRoom()
     onCleanup(props.subscribeFrames(onFrame))
 
     // What the room thinks is happening, for the walk that drives it.
@@ -688,6 +704,10 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
   }
 
   const onCapsule = (): void => {
+    // Not until the room has arrived. Under an alley door the room is
+    // mounted beneath the growing clone, and a tap in that window started a
+    // take whose microphone only opened when the arrival was released.
+    if (!ctx().active) return
     haptics.tapLight()
     // Still inside the tap: iOS un-suspends a context, and promotes the page
     // to the audible session, only from a gesture. Before any await.
@@ -707,7 +727,9 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
         [SING_GLASS_VAR]: String(glass()),
       }}
     >
-      <div class={styles.cover} data-testid="sing-cover" />
+      {/* data-room-background: the picture a door's clone waits on before it
+          fades (apps/mercurypitch alley-entry.ts). */}
+      <div class={styles.cover} data-testid="sing-cover" data-room-background />
       {/* The veil the room sheet's slider moves (R5). Named for the walk: its
           computed opacity IS the setting, and nothing else on screen says
           what the slider just did. */}
@@ -727,6 +749,8 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
             setOptionsOpen(true)
           }}
           onToggleMic={() => {
+            // The chip is the capsule while resting: same rule, same reason.
+            if (!ctx().active) return
             dismissCoachMark()
             // Resting: the chip IS the capsule, gesture and all.
             if (micChipAction(ctx()) === 'start') {
@@ -801,6 +825,7 @@ export const SingRoomStage: Component<SingRoomStageProps> = (props) => {
               type="button"
               class={styles.capsule}
               onClick={onCapsule}
+              aria-disabled={ctx().active ? undefined : 'true'}
               data-testid="sing-capsule"
             >
               {ctx().melodyLoaded ? 'Continue' : 'Sing a note'}

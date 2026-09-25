@@ -28,8 +28,11 @@
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
+import { parseRoomNames } from './room-names-source.mjs'
+import { selfTestUploadDenial, UPLOAD_DENIAL } from './upload-denial.mjs'
 
 /** Every frame the walk is repeated at. The lab's, and the owner's phone. */
 const FRAMES = [
@@ -37,6 +40,23 @@ const FRAMES = [
   { width: 390, height: 844 },
 ]
 const BOOT_TIMEOUT_MS = 15_000
+
+/**
+ * The names the app gives its rooms, read from the module that owns them
+ * (`src/features/rooms/room-names.ts`) rather than copied here, so the walk
+ * measures the strings that ship. Parsed rather than imported because this
+ * script runs under bare node, and every key must be read or it throws
+ * (room-names-source.mjs).
+ */
+const ROOM_NAMES = parseRoomNames(
+  readFileSync(
+    resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      '../../../src/features/rooms/room-names.ts',
+    ),
+    'utf8',
+  ),
+)
 const STEP_TIMEOUT_MS = 10_000
 
 /** Console noise a browser cannot avoid, and that says nothing about the shell. */
@@ -131,6 +151,22 @@ async function repaintRate(page, ms = 1000) {
   return ((after - before) * 1000) / ms
 }
 
+/**
+ * The db-worker is not part of what this walks, so no request reaches one.
+ *
+ * The bundle compiles the dev worker in (apps/mercurypitch/api-base.mjs), and
+ * a walk that keeps takes would otherwise provision an anonymous identity on
+ * it every run and leave rows behind. Refused at the network, so the app sees
+ * what it sees offline — which is also the state a first run on a phone with
+ * no signal has to survive.
+ */
+const API_HOSTS = /^https:\/\/api(?:-dev)?\.mercurypitch\.com\//u
+
+async function isolate(context) {
+  await context.route(API_HOSTS, (route) => route.abort('internetdisconnected'))
+  return context
+}
+
 const RAIL_ITEMS = ['rooms', 'stage', 'ear', 'progress']
 
 /**
@@ -148,9 +184,22 @@ const RAIL_ITEMS = ['rooms', 'stage', 'ear', 'progress']
  * matched on them would go green the day the hash changed.
  */
 const WEB_PAGE_HEADER = {
+  // The web's card gallery and its page band are gone under the shell: the
+  // Rooms tab is the alley (S4). What must stay is the alley's own way in —
+  // its tap surface and the six door buttons a screen reader walks.
   rooms: {
-    gone: ['[data-testid="home-learn"]', '[data-testid="home-whats-new"]'],
-    kept: ['[data-testid="home-heading"]'],
+    gone: [
+      '[data-testid="home-learn"]',
+      '[data-testid="home-whats-new"]',
+      '[data-testid="home-heading"]',
+      '[data-destination]',
+    ],
+    kept: [
+      '[data-testid="rooms-alley"]',
+      '[data-testid="alley-hit"]',
+      '[data-testid="alley-door-ear"]',
+      '[data-testid="alley-door-sing"]',
+    ],
   },
   ear: {
     gone: ['[data-testid="ear-session-copy"]'],
@@ -1745,6 +1794,53 @@ async function walkRound2(page, ctx, steps) {
       `the grabber's target is ${grabber.width}x${grabber.height}, under 44`,
     )
   }
+  // Whose element is under the thumb, asked of the page rather than the box.
+  // The grabber answers at the band's centre; the sheet's first content row
+  // answers 2 px into itself. Hung from the panel's top edge (0143fe56) the
+  // 44 px target reached 16 px down over the first row of every sheet, and a
+  // tap there closed the web More-tabs sheet instead of switching tab
+  // (PR 859 review, item 7): the pre-PR placement, centred on the band and
+  // clipped by the panel, is back.
+  const reach = await page.evaluate(() => {
+    const panel = document.querySelector('[data-testid="sheet-panel"]')
+    const hit = document.querySelector('[data-testid="sheet-handle"]')
+    const first = panel?.children[1]
+    if (panel === null || hit === null || first === undefined) return null
+    const band = hit.parentElement.getBoundingClientRect()
+    const box = hit.getBoundingClientRect()
+    const x = box.left + box.width / 2
+    const at = (y) => {
+      const node = document.elementFromPoint(x, y)
+      return {
+        grabber: node !== null && hit.contains(node),
+        row: node !== null && first.contains(node),
+        what:
+          node === null
+            ? 'nothing'
+            : (node.getAttribute('data-testid') ?? node.tagName.toLowerCase()),
+      }
+    }
+    const rowTop = first.getBoundingClientRect().top
+    const r = (b) => [b.top, b.bottom].map((n) => Math.round(n * 10) / 10)
+    return {
+      boxes: {
+        panel: r(panel.getBoundingClientRect()),
+        band: r(band),
+        hit: r(box),
+        row: r(first.getBoundingClientRect()),
+      },
+      centre: at(band.top + band.height / 2),
+      row: at(rowTop + 2),
+      hitBottom: Math.round((box.bottom - rowTop) * 10) / 10,
+    }
+  })
+  if (reach === null)
+    throw new Error('no sheet panel to measure the grabber in')
+  if (!reach.centre.grabber || !reach.row.row) {
+    throw new Error(
+      `the grabber's centre line: band centre ${reach.centre.what}, first row +2px ${reach.row.what} (target bottom ${reach.hitBottom}px from the row; ${JSON.stringify(reach.boxes)})`,
+    )
+  }
   // …and it costs the sheet nothing. R7 first shipped the target as the
   // band's own height, which pushed this sheet's content 28px down the
   // screen and every other sheet in the app with it (review F6). The number
@@ -1777,7 +1873,7 @@ async function walkRound2(page, ctx, steps) {
     'the sheet after a tap on its grabber',
   )
   steps.push(
-    `sheet: the grabber is ${grabber.width}x${grabber.height} over a ${band.height}px band, content still ${contentTop}px down, and a tap closes`,
+    `sheet: the grabber is ${grabber.width}x${grabber.height} over a ${band.height}px band, the grabber answers at the band's centre and the first row 2px into itself, content still ${contentTop}px down, and a tap closes`,
   )
 
   // ── R4: the pill opens Your takes, and Remove removes one ──
@@ -1828,28 +1924,37 @@ async function walkRound2(page, ctx, steps) {
     'the room picker',
   )
   await shoot(page, ctx, 'r2-room-picker')
-  await page
-    .locator('[data-testid="sing-room-picker"] button', {
-      hasText: 'Retro Analog Studio B',
-    })
-    .first()
-    .click()
-  await page.waitForFunction(
-    (was) =>
-      getComputedStyle(document.querySelector('[data-testid="sing-cover"]'))
-        .backgroundImage !== was,
-    coverBefore,
-    { timeout: RUN_TIMEOUT_MS },
-  )
-  const coverAfter = await page.evaluate(
+  // One cover since S4: the B and mock takes are gone from the catalogue and
+  // the binary. The picker and its veil slider stay, with the one entry in
+  // them — asserted as a list, because "B is not offered" and "nothing is
+  // offered" read the same to a check that only looks for B.
+  const covers = await page
+    .locator('[data-testid="sing-room-picker"] button[aria-pressed]')
+    .allTextContents()
+  if (covers.length !== 1 || !covers[0].includes('Retro Analog Studio')) {
+    throw new Error(
+      `the picker offers ${covers.length} cover(s): ${covers.map((text) => text.trim().slice(0, 40)).join(' / ')}`,
+    )
+  }
+  if (covers.some((text) => /Studio B|\(mock\)/u.test(text))) {
+    throw new Error('a retired Sing cover is still offered')
+  }
+  const coverNow = await page.evaluate(
     () =>
       getComputedStyle(document.querySelector('[data-testid="sing-cover"]'))
         .backgroundImage,
   )
-  if (!coverAfter.includes('retro-analog-studio-b')) {
-    throw new Error(`choosing B left the cover at ${coverAfter}`)
+  if (
+    coverNow !== coverBefore ||
+    !/\/sing\/retro-analog-studio(?:-portrait(?:-2x)?|-4k)?\.webp/u.test(
+      coverNow,
+    )
+  ) {
+    throw new Error(`the room's cover is ${coverNow}`)
   }
-  steps.push('room: the header chip opens the picker, and B changes the cover')
+  steps.push(
+    'room: the header chip opens the picker, which offers the one Retro Analog Studio cover',
+  )
 
   // …and the veil slider moves the scrim it is for.
   const veil = async () =>
@@ -2099,56 +2204,149 @@ async function walkRound2(page, ctx, steps) {
     page.locator('[data-testid="shell-session-pill"]'),
     'the session pill',
   )
-  // A name long enough to overflow, written into the element the layout is
-  // meant to protect. The rooms this shell will hold are not all called
-  // "Retro Analog Studio", and the squeeze the owner reported needs a name
-  // that does not fit.
-  await page
-    .locator('[data-testid="shell-session-pill-name"]')
-    .evaluate((node) => {
-      node.textContent = 'The Very Long Retro Analog Studio Room Name'
-    })
-  const pillMetrics = await page.evaluate(() => {
+  // ── The pill as the room writes it (review F13) ──
+  //
+  // This step used to write "The Very Long Retro Analog Studio Room Name"
+  // into the pill and then assert it ellipsized: a test of the stylesheet
+  // against a string the walk made up, blind to the production path and to
+  // any real name that does not fit. It now measures the parked pill exactly
+  // as the room left it, with the name the room registered, and then asks
+  // the same question of every name the app can put there — so a future room
+  // whose name overflows fails here, instead of shipping as "Retro Analog…".
+  const readPill = () => {
     const round = (n) => Math.round(n * 100) / 100
     const at = (sel) => document.querySelector(sel)
     const button = at('[data-testid="shell-session-pill"]')
     const name = at('[data-testid="shell-session-pill-name"]')
     const state = at('[data-testid="shell-session-pill-state"]')
     const control = at('.mp-pill__btn')
+    const rail = at('[data-testid="shell-rail"]')
     const box = (el) => {
       const rect = el.getBoundingClientRect()
       return {
+        left: round(rect.left),
+        top: round(rect.top),
         width: round(rect.width),
         height: round(rect.height),
         right: round(rect.right),
+        bottom: round(rect.bottom),
       }
     }
     return {
       pill: box(button),
       control: box(control),
+      railTop: rail === null ? null : round(rail.getBoundingClientRect().top),
+      name: name.textContent,
       nameClipped: name.scrollWidth > name.clientWidth + 1,
       stateClipped: state.scrollWidth > state.clientWidth + 1,
       stateText: state.textContent,
       viewport: window.innerWidth,
     }
-  })
-  await shoot(page, ctx, 'r2-session-pill-long-name')
-  if (pillMetrics.control.width < 44 || pillMetrics.control.height < 44) {
+  }
+  const real = await page.evaluate(readPill)
+  await shoot(page, ctx, 'r2-session-pill')
+  if (real.name !== ROOM_NAMES.sing) {
     throw new Error(
-      `the return control is ${pillMetrics.control.width}x${pillMetrics.control.height} under a long name`,
+      `the pill names "${real.name}", not the room's own "${ROOM_NAMES.sing}"`,
     )
   }
-  if (pillMetrics.stateClipped) {
-    throw new Error('the state word is clipped under a long name')
+  if (real.nameClipped) {
+    throw new Error(
+      `the room's real name "${real.name}" is clipped in the pill`,
+    )
   }
-  if (!pillMetrics.nameClipped) {
-    throw new Error('the long name was not ellipsized — it did not overflow')
+  if (real.stateClipped) throw new Error('the state word is clipped')
+  if (real.control.width < 44 || real.control.height < 44) {
+    throw new Error(
+      `the return control is ${real.control.width}x${real.control.height}`,
+    )
   }
-  if (pillMetrics.pill.right > pillMetrics.viewport) {
+  if (
+    real.control.left < real.pill.left - 0.5 ||
+    real.control.right > real.pill.right + 0.5 ||
+    real.control.top < real.pill.top - 0.5 ||
+    real.control.bottom > real.pill.bottom + 0.5
+  ) {
+    throw new Error('the return control is not inside the pill')
+  }
+  if (real.pill.left < 0 || real.pill.right > real.viewport) {
     throw new Error('the pill runs off the side of the screen')
   }
+  if (real.railTop !== null && real.pill.bottom > real.railTop) {
+    throw new Error(
+      `the pill's bottom (${real.pill.bottom}) runs into the rail (${real.railTop})`,
+    )
+  }
+
+  // Every name the app can put in the pill, measured in the pill.
+  const names = Object.entries(ROOM_NAMES)
+  const fits = await page
+    .locator('[data-testid="shell-session-pill-name"]')
+    .evaluate((node, list) => {
+      const original = node.textContent
+      const clipped = []
+      for (const [id, name] of list) {
+        node.textContent = name
+        if (node.scrollWidth > node.clientWidth + 1)
+          clipped.push(`${id} "${name}"`)
+      }
+      node.textContent = original
+      return clipped
+    }, names)
+  if (fits.length > 0) {
+    throw new Error(
+      `room name(s) that do not fit the session pill at ${real.viewport}: ${fits.join(', ')}`,
+    )
+  }
   steps.push(
-    `pill: a long name ellipsizes, "${pillMetrics.stateText.trim()}" stays whole, and the control keeps ${pillMetrics.control.width}x${pillMetrics.control.height}`,
+    `pill: the real "${real.name} ·${real.stateText.replace(/^\s*·/u, '')}" at ${real.pill.width}x${real.pill.height}, the control ${real.control.width}x${real.control.height} inside it, ${real.railTop === null ? '' : `${Math.round((real.railTop - real.pill.bottom) * 10) / 10} px clear of the rail, `}and all ${names.length} room names fit whole`,
+  )
+
+  // And the stylesheet's own promise, labelled as exactly that: a name longer
+  // than any room has today still leaves the state word whole and the control
+  // at 44. Written by the walk, so it proves the CSS and nothing about names —
+  // the check above is the one about names.
+  const squeezed = await page
+    .locator('[data-testid="shell-session-pill-name"]')
+    .evaluate((node, longest) => {
+      const original = node.textContent
+      node.textContent = longest
+      const state = document.querySelector(
+        '[data-testid="shell-session-pill-state"]',
+      )
+      const control = document
+        .querySelector('.mp-pill__btn')
+        .getBoundingClientRect()
+      const pill = document
+        .querySelector('[data-testid="shell-session-pill"]')
+        .getBoundingClientRect()
+      const out = {
+        nameClipped: node.scrollWidth > node.clientWidth + 1,
+        stateClipped: state.scrollWidth > state.clientWidth + 1,
+        control: { width: control.width, height: control.height },
+        pillRight: pill.right,
+      }
+      node.textContent = original
+      return out
+    }, Object.values(ROOM_NAMES).join(' '))
+  if (!squeezed.nameClipped) {
+    throw new Error(
+      'stylesheet: an over-long name did not overflow, so nothing was tested',
+    )
+  }
+  if (squeezed.stateClipped) {
+    throw new Error('stylesheet: an over-long name clips the state word')
+  }
+  if (squeezed.control.width < 44 || squeezed.control.height < 44) {
+    throw new Error(
+      `stylesheet: an over-long name squeezes the control to ${squeezed.control.width}x${squeezed.control.height}`,
+    )
+  }
+  if (squeezed.pillRight > real.viewport) {
+    throw new Error('stylesheet: an over-long name pushes the pill off screen')
+  }
+  steps.push(
+    'pill (stylesheet, a name the walk wrote): an over-long name ellipsizes, the state word and the 44 pt control stay whole',
   )
 
   // Put the room back the way the rest of the walk expects it.
@@ -2182,14 +2380,16 @@ async function walkRound2(page, ctx, steps) {
  */
 async function walkDenied(browser, args, frame) {
   const ctx = { ...args, frame }
-  const context = await browser.newContext({
-    viewport: frame,
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-    colorScheme: args.theme,
-    permissions: [],
-  })
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+      permissions: [],
+    }),
+  )
   const page = await context.newPage()
   await page.addInitScript(seed, args.theme)
   await page.addInitScript(() => {
@@ -2278,14 +2478,16 @@ async function walkSuspended(args, frame) {
   const ctx = { ...args, frame }
   const steps = []
   try {
-    const context = await browser.newContext({
-      viewport: frame,
-      deviceScaleFactor: 2,
-      isMobile: true,
-      hasTouch: true,
-      colorScheme: args.theme,
-      permissions: ['microphone'],
-    })
+    const context = await isolate(
+      await browser.newContext({
+        viewport: frame,
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
+        colorScheme: args.theme,
+        permissions: ['microphone'],
+      }),
+    )
     const page = await context.newPage()
     await page.addInitScript(seed, args.theme)
     await page.addInitScript(() => {
@@ -2408,6 +2610,1489 @@ async function walkSuspended(args, frame) {
  * be asserted by inference, and the bug it hides is exactly that: a press
  * that reports itself handled while doing nothing.
  */
+// ── The alley (S4) ───────────────────────────────────────────
+//
+// The Rooms tab under the native build, walked the way a first-time singer
+// meets it: a fresh context, so the welcome flag is unset and nothing has
+// ever been tapped. Every step asserts what must be GONE and what must be
+// KEPT — a screenshot of an alley whose doors lost their buttons looks
+// exactly like one that kept them.
+
+const ALLEY_DOORS = ['ear', 'piano', 'drums', 'karaoke', 'sing', 'guitar']
+
+async function alleyNow(page) {
+  return page.evaluate(() =>
+    typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+  )
+}
+
+/** Assert both lists; the returned note goes into the step line. */
+async function goneKept(page, where, { gone = [], kept = [] }) {
+  for (const selector of gone) {
+    if ((await page.locator(selector).count()) !== 0) {
+      throw new Error(`${where}: ${selector} should be gone`)
+    }
+  }
+  for (const selector of kept) {
+    if ((await page.locator(selector).count()) === 0) {
+      throw new Error(`${where}: ${selector} should be kept`)
+    }
+  }
+  return `gone [${gone.join(' ')}] kept [${kept.join(' ')}]`
+}
+
+/** The middle of a door, from its key button (sized to the quad's box). */
+async function doorCentre(page, key) {
+  const door = page.locator(`[data-testid="alley-door-${key}"]`)
+  await door.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+  const box = await door.boundingBox()
+  if (box === null) {
+    const where = await page.evaluate(() => ({
+      hash: window.location.hash,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    throw new Error(`door ${key} has no box (${JSON.stringify(where)})`)
+  }
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+}
+
+async function tapDoor(page, key, x = null) {
+  const centre = await doorCentre(page, key)
+  const at = { x: x ?? centre.x, y: centre.y }
+  // Where the tap was aimed and where its click landed, for the failure
+  // message: a door that did not answer is otherwise a bare phase mismatch.
+  await page.evaluate(
+    ([door, aim]) => {
+      window.__mpTap = { door, aim, click: null }
+      if (window.__mpTapWatch) return
+      window.__mpTapWatch = true
+      document.addEventListener(
+        'click',
+        (event) => {
+          if (window.__mpTap?.click !== null) return
+          const target = event.target
+          window.__mpTap.click = {
+            x: event.clientX,
+            y: event.clientY,
+            target:
+              target instanceof Element
+                ? (target.dataset.testid ?? target.className)
+                : String(target),
+          }
+        },
+        true,
+      )
+    },
+    [key, at],
+  )
+  await page.touchscreen.tap(at.x, at.y)
+}
+
+/** What a failed door step needs to say: the tap, the doors, the viewport. */
+async function tapReport(page) {
+  return page.evaluate(() => {
+    const box = (selector) => {
+      const element = document.querySelector(selector)
+      if (element === null) return null
+      const b = element.getBoundingClientRect()
+      return [b.left, b.top, b.width, b.height].map(
+        (n) => Math.round(n * 10) / 10,
+      )
+    }
+    const tapped = window.__mpTap ?? null
+    const vv = window.visualViewport
+    return {
+      tap: tapped,
+      door: tapped ? box(`[data-testid="alley-door-${tapped.door}"]`) : null,
+      alley: box('[data-testid="rooms-alley"]'),
+      band: box('[data-testid="alley-hit"]'),
+      viewport: [window.innerWidth, window.innerHeight],
+      scroll: [window.scrollX, window.scrollY],
+      visual: vv ? [vv.offsetLeft, vv.offsetTop, vv.scale] : null,
+      alleys: document.querySelectorAll('[data-testid="rooms-alley"]').length,
+      alleyScroll: (() => {
+        const root = document.querySelector('[data-testid="rooms-alley"]')
+        return root === null ? null : [root.scrollLeft, root.scrollTop]
+      })(),
+    }
+  })
+}
+
+async function waitPhase(page, phase, door, what) {
+  await page
+    .waitForFunction(
+      ([p, d]) => {
+        const s = typeof window.mpAlley === 'function' ? window.mpAlley() : null
+        return s !== null && s.phase === p && (d === null || s.door === d)
+      },
+      [phase, door],
+      { timeout: STEP_TIMEOUT_MS },
+    )
+    .catch(async () => {
+      throw new Error(
+        `${what}: expected ${phase}/${door}, alley says ${JSON.stringify(await alleyNow(page))}; ${JSON.stringify(await tapReport(page))}`,
+      )
+    })
+}
+
+/**
+ * At rest the alley composites one picture: no door carries a transform, the
+ * dim is not visible, and the plate is the 1x file at DPR 2 (S4 fix F5).
+ * Null when all of that holds, otherwise what did not.
+ */
+async function restLayers(page) {
+  return page.evaluate(() => {
+    const doors = [...document.querySelectorAll('.mp-alley__door')]
+    const moved = doors
+      .filter((d) => getComputedStyle(d).transform !== 'none')
+      .map((d) => d.dataset.door)
+    const dim = getComputedStyle(
+      document.querySelector('.mp-alley__dim'),
+    ).visibility
+    const plate = document
+      .querySelector('[data-testid="alley-plate"]')
+      .getAttribute('src')
+    const problems = []
+    if (doors.length !== 6) problems.push(`${doors.length} doors`)
+    if (moved.length > 0) problems.push(`transformed at rest: ${moved}`)
+    if (dim !== 'hidden') problems.push(`dim is ${dim}`)
+    if (!plate.endsWith('/night-rooms-hero.webp'))
+      problems.push(`plate ${plate}`)
+    return problems.length === 0 ? null : problems.join(', ')
+  })
+}
+
+/** Nothing on the page is making a sound or moving a picture. */
+async function mediaPlaying(page) {
+  return page.evaluate(
+    () =>
+      [...document.querySelectorAll('audio, video')].filter((m) => !m.paused)
+        .length,
+  )
+}
+
+/** The door opens: the clone is up, then the room is, and the clone goes. */
+async function walkOpen(page, ctx, name) {
+  await page.locator('[data-testid="alley-enter"]').tap()
+  const mid = await page.evaluate(() => {
+    const clone = document.querySelector('[data-testid="alley-morph"]')
+    if (clone === null) return null
+    return {
+      motion: clone.dataset.motion,
+      content: clone.dataset.content,
+      inline: clone.style.transform,
+      computed: getComputedStyle(clone).transform,
+    }
+  })
+  if (mid === null) throw new Error(`${name}: no clone after Enter`)
+  await shoot(page, ctx, `${name}-mid`)
+  await page
+    .waitForFunction(
+      () =>
+        document.querySelector('[data-testid="alley-morph"]') === null &&
+        document.querySelector('[data-testid="sing-room"]') !== null,
+      null,
+      { timeout: 8000 },
+    )
+    .catch(() => {
+      throw new Error(`${name}: the room never replaced the clone`)
+    })
+  return mid
+}
+
+async function walkAlley(browser, args, frame) {
+  const ctx = { ...args, frame }
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  const steps = []
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    const alleyRoot = page.locator('[data-testid="rooms-alley"]')
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.waitForTimeout(600)
+
+    // ── First run ─────────────────────────────────────────────
+    const doorKeys = ALLEY_DOORS.map((k) => `[data-testid="alley-door-${k}"]`)
+    let note = await goneKept(page, 'first run', {
+      gone: [
+        '[data-testid="alley-title"]',
+        '.mp-alley__panel.is-shown',
+        '[data-onboarding-flow]',
+        '[data-destination]',
+        '[data-testid="home-heading"]',
+      ],
+      kept: [
+        '[data-testid="alley-headline"]',
+        '[data-testid="alley-plate"]',
+        '[data-testid="alley-hit"]',
+        ...doorKeys,
+      ],
+    })
+    const first = await page.evaluate(() => ({
+      headline: document.querySelector('[data-testid="alley-headline"]')
+        ?.textContent,
+      firstHeading: document.querySelector('.mp-alley h1')?.textContent,
+      labels: [...document.querySelectorAll('.mp-alley__key')].map((k) =>
+        k.getAttribute('aria-label'),
+      ),
+      plate: (() => {
+        const b = document
+          .querySelector('[data-testid="alley-plate"]')
+          .getBoundingClientRect()
+        return [b.left, b.top, b.right, b.bottom]
+      })(),
+      earLeft: document
+        .querySelector('[data-testid="alley-door-ear"]')
+        .getBoundingClientRect().left,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }))
+    if (first.headline !== 'Pick a room. Make a sound.') {
+      throw new Error(`first run: the headline reads "${first.headline}"`)
+    }
+    if (first.labels.length !== 6 || first.labels.some((l) => !l)) {
+      throw new Error(`first run: door labels ${JSON.stringify(first.labels)}`)
+    }
+    const singLabel = 'Sing, Retro Analog Studio. A live stage for your voice.'
+    const karaokeLabel =
+      'Karaoke, Broadway Theater. Coming soon. Sing your favorite songs.'
+    if (
+      !first.labels.includes(singLabel) ||
+      !first.labels.includes(karaokeLabel)
+    ) {
+      throw new Error(`first run: door labels ${JSON.stringify(first.labels)}`)
+    }
+    // Cover-fit in portrait, and the Ear Lab's jamb on screen (S4 fix F6).
+    const [pl, pt, pr, pb] = first.plate
+    if (
+      pl > 0.5 ||
+      pt > 0.5 ||
+      pr < first.width - 0.5 ||
+      pb < first.height - 0.5
+    ) {
+      throw new Error(
+        `first run: the plate does not cover ${JSON.stringify(first)}`,
+      )
+    }
+    if (first.earLeft < 0) {
+      throw new Error(`first run: the Ear Lab jamb is at x ${first.earLeft}`)
+    }
+    const quiet = await alleyNow(page)
+    if (quiet.sources !== 0 || (await mediaPlaying(page)) !== 0) {
+      throw new Error('first run: something is playing on arrival')
+    }
+    const atRest = await restLayers(page)
+    if (atRest !== null) throw new Error(`first run: ${atRest}`)
+    await shoot(page, ctx, 'alley-first-run')
+    steps.push(
+      `alley first run: headline, six labelled doors, plate covers, Ear Lab jamb at x ${first.earLeft.toFixed(1)}, silent, 1x plate, no door transformed, dim hidden; ${note}`,
+    )
+
+    // ── Select Sing ───────────────────────────────────────────
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'select Sing')
+    const levels = []
+    for (let i = 0; i < 24; i++) {
+      levels.push((await alleyNow(page)).level)
+      await page.waitForTimeout(50)
+    }
+    const rising = levels.some(
+      (l, i) => i > 0 && l > levels[i - 1] && l > 0 && l < 0.85,
+    )
+    const top = Math.max(...levels)
+    if (!rising || top < 0.8) {
+      throw new Error(
+        `select Sing: ambient gain did not rise to its level (${levels.map((l) => l.toFixed(3)).join(' ')})`,
+      )
+    }
+    await page
+      .waitForFunction(
+        () => {
+          const v = document.querySelector('[data-testid="alley-clip"]')
+          return v !== null && v.readyState >= 2 && !v.paused
+        },
+        null,
+        { timeout: STEP_TIMEOUT_MS },
+      )
+      .catch(() => {
+        throw new Error('select Sing: the clip is not playing')
+      })
+    note = await goneKept(page, 'select Sing', {
+      gone: ['[data-testid="alley-eyebrow"]'],
+      kept: [
+        '[data-testid="alley-enter"]',
+        '.mp-alley__panel.is-shown',
+        '.mp-alley__door.is-alive[data-door="sing"]',
+        '[data-testid="alley-headline"]',
+      ],
+    })
+    await expectText(
+      page,
+      '[data-testid="alley-name"]',
+      'Sing · Retro Analog Studio',
+      'the Sing card',
+    )
+    await page.waitForTimeout(300)
+    await shoot(page, ctx, 'alley-sing-alive')
+    steps.push(
+      `alley select Sing: clip playing, ambient rising to ${top.toFixed(2)}, Enter; ${note}`,
+    )
+
+    // ── A resize while Sing is alive ──────────────────────────
+    // The doors move; the Sing door's <video> is the same node and keeps
+    // playing. A rebuilt door is a new, paused, unloaded clip.
+    await page.evaluate(() => {
+      const clip = document.querySelector('[data-testid="alley-clip"]')
+      window.__mpClip = clip
+      window.__mpClipAt = clip.currentTime
+    })
+    const grown = { width: frame.width + 19, height: frame.height + 63 }
+    await page.setViewportSize(grown)
+    await page.waitForTimeout(700)
+    const resized = await page.evaluate(() => {
+      const clip = document.querySelector('[data-testid="alley-clip"]')
+      return {
+        same: clip === window.__mpClip,
+        connected: window.__mpClip.isConnected,
+        paused: clip?.paused ?? null,
+        advanced: (clip?.currentTime ?? 0) > window.__mpClipAt,
+        width: document.querySelector('[data-testid="rooms-alley"]')
+          ?.clientWidth,
+        phase:
+          typeof window.mpAlley === 'function' ? window.mpAlley().phase : null,
+      }
+    })
+    await page.setViewportSize(frame)
+    await page.waitForTimeout(400)
+    const restored = await page.evaluate(
+      () =>
+        document.querySelector('[data-testid="alley-clip"]') ===
+          window.__mpClip && !window.__mpClip.paused,
+    )
+    if (
+      !resized.same ||
+      !resized.connected ||
+      resized.paused !== false ||
+      !resized.advanced ||
+      resized.width !== grown.width ||
+      resized.phase !== 'alive' ||
+      !restored
+    ) {
+      throw new Error(
+        `resize while alive: ${JSON.stringify({ ...resized, restored })}`,
+      )
+    }
+    steps.push(
+      `alley resize to ${grown.width}x${grown.height} and back while Sing is alive: the same <video>, still playing, still alive`,
+    )
+
+    // ── Open ──────────────────────────────────────────────────
+    const mid = await walkOpen(page, ctx, 'alley-open')
+    if (mid.motion !== 'grow' || mid.content !== 'clip') {
+      throw new Error(`open: the clone was ${JSON.stringify(mid)}`)
+    }
+    const afterOpen = await alleyNow(page)
+    if (afterOpen.level !== 0 || afterOpen.sounding !== null) {
+      throw new Error(
+        `open: the ambient is still up ${JSON.stringify(afterOpen)}`,
+      )
+    }
+    note = await goneKept(page, 'open', {
+      gone: ['[data-testid="rooms-alley"]', '[data-testid="alley-morph"]'],
+      kept: ['[data-testid="sing-room"]', '[data-testid="sing-cover"]'],
+    })
+    await page.waitForTimeout(300)
+    await shoot(page, ctx, 'alley-sing-room')
+    steps.push(
+      `alley open: clone grew (${mid.content}), then the Sing room, clone gone, ambient 0; ${note}`,
+    )
+
+    // ── Back ──────────────────────────────────────────────────
+    const outcome = await pressBack(page)
+    if (outcome !== 'history') throw new Error(`Back answered '${outcome}'`)
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await waitPhase(page, 'rest', null, 'back')
+    const flag = await page.evaluate(() =>
+      localStorage.getItem('pitchperfect_native_welcome_seen'),
+    )
+    if (flag !== 'true') throw new Error(`back: the welcome flag is ${flag}`)
+    note = await goneKept(page, 'back', {
+      gone: [
+        '[data-testid="alley-headline"]',
+        '[data-testid="alley-morph"]',
+        '[data-testid="sing-room"]',
+      ],
+      kept: ['[data-testid="alley-title"]', ...doorKeys],
+    })
+    await page.waitForTimeout(500)
+    const settled = await restLayers(page)
+    if (settled !== null) throw new Error(`back: ${settled}`)
+    await shoot(page, ctx, 'alley-return')
+    steps.push(
+      `alley back: the alley at rest, no headline, flag set, doors untransformed once settled; ${note}`,
+    )
+
+    // ── Ear Lab at x = 8 ──────────────────────────────────────
+    await tapDoor(page, 'ear', 8)
+    await waitPhase(page, 'alive', 'ear', 'Ear Lab at x = 8')
+    note = await goneKept(page, 'Ear Lab', {
+      gone: ['[data-testid="alley-eyebrow"]'],
+      kept: [
+        '[data-testid="alley-enter"]',
+        '.mp-alley__door.is-alive[data-door="ear"]',
+      ],
+    })
+    await expectText(
+      page,
+      '[data-testid="alley-name"]',
+      'Ear Lab · Workshop',
+      'the Ear Lab card',
+    )
+    await page.waitForTimeout(400)
+    await shoot(page, ctx, 'alley-ear-alive')
+    steps.push(`alley Ear Lab at x = 8: selected, no eyebrow, Enter; ${note}`)
+
+    // ── Karaoke: locked ───────────────────────────────────────
+    await tapDoor(page, 'karaoke')
+    await waitPhase(page, 'selected', 'karaoke', 'Karaoke')
+    await page.waitForTimeout(600)
+    await expectText(
+      page,
+      '[data-testid="alley-eyebrow"]',
+      'Coming soon',
+      'the Karaoke eyebrow',
+    )
+    await expectText(
+      page,
+      '[data-testid="alley-line"]',
+      'Sing your favorite songs.',
+      'the Karaoke line',
+    )
+    const locked = await alleyNow(page)
+    if (locked.sounding !== null || locked.level !== 0) {
+      throw new Error(`Karaoke: sound is up ${JSON.stringify(locked)}`)
+    }
+    if ((await mediaPlaying(page)) !== 0) {
+      throw new Error('Karaoke: a media element is still playing')
+    }
+    note = await goneKept(page, 'Karaoke', {
+      gone: ['[data-testid="alley-enter"]', '.mp-alley__door.is-alive'],
+      kept: [
+        '[data-testid="alley-eyebrow"]',
+        '.mp-alley__door.is-selected[data-door="karaoke"]',
+      ],
+    })
+    await shoot(page, ctx, 'alley-karaoke-locked')
+    steps.push(
+      `alley Karaoke: Coming soon, its line, no Enter, nothing playing; ${note}`,
+    )
+
+    // ── An open called off: a rail tab at +150 ms ─────────────
+    // The tab the user pointed at wins; the grow does not finish under it
+    // and navigate to Sing (S4 fix F1).
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'rail mid-open: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(150)
+    await page.locator('[data-rail-item="progress"]').click()
+    await page.waitForTimeout(1200)
+    const railMid = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    if (
+      railMid.hash !== '#/progress' ||
+      railMid.clone ||
+      railMid.alley?.held !== false ||
+      railMid.alley?.phase !== 'rest'
+    ) {
+      throw new Error(`rail mid-open: ${JSON.stringify(railMid)}`)
+    }
+    note = await goneKept(page, 'rail mid-open', {
+      gone: [
+        '[data-testid="alley-morph"]',
+        '[data-testid="sing-room"]',
+        '[data-testid="rooms-alley"]',
+      ],
+      kept: ['[data-rail-item="progress"][aria-current="page"]'],
+    })
+    steps.push(
+      `alley Enter then rail Progress at +150 ms: on ${railMid.hash}, no clone, hold ${railMid.alley.held}; ${note}`,
+    )
+    await page.locator('[data-rail-item="rooms"]').click()
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await waitPhase(page, 'rest', null, 'rail mid-open: back to Rooms')
+
+    // ── An open called off: Back ──────────────────────────────
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'Back mid-open: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(150)
+    const midBack = await pressBack(page)
+    if (midBack !== 'door-open') {
+      throw new Error(`Back mid-open answered '${midBack}'`)
+    }
+    await page.waitForTimeout(1200)
+    const backMid = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    if (
+      backMid.clone ||
+      backMid.alley?.held !== false ||
+      backMid.alley?.phase !== 'rest' ||
+      backMid.alley?.sounding !== null ||
+      (await mediaPlaying(page)) !== 0
+    ) {
+      throw new Error(`Back mid-open: ${JSON.stringify(backMid)}`)
+    }
+    note = await goneKept(page, 'Back mid-open', {
+      gone: [
+        '[data-testid="alley-morph"]',
+        '[data-testid="sing-room"]',
+        '.mp-alley__panel.is-shown',
+      ],
+      kept: [
+        '[data-testid="rooms-alley"]',
+        '[data-testid="alley-clip"]',
+        ...doorKeys,
+      ],
+    })
+    steps.push(
+      `alley Enter then Back at +150 ms: '${midBack}', the alley at rest, nothing playing, hold ${backMid.alley.held}; ${note}`,
+    )
+
+    // ── The alley does not scroll ─────────────────────────────
+    // The Guitar spill makes .mp-alley wider than the screen. Under overflow:
+    // hidden it is still a scroll container, and a scrollIntoView (Playwright's
+    // own actionability retry calls one) moves every door while the plate tap
+    // is mapped against the unscrolled box: the next tap picks the door to the
+    // left.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'no scroll: select Sing')
+    const shifted = await page.evaluate(() => {
+      document
+        .querySelector('[data-testid="alley-enter"]')
+        ?.scrollIntoView({ block: 'start', inline: 'start' })
+      const root = document.querySelector('[data-testid="rooms-alley"]')
+      return root === null ? null : [root.scrollLeft, root.scrollTop]
+    })
+    if (shifted === null || shifted[0] !== 0 || shifted[1] !== 0) {
+      throw new Error(
+        `no scroll: a scrollIntoView on Enter moved the alley to ${JSON.stringify(shifted)}`,
+      )
+    }
+    await page.keyboard.press('Escape')
+    await waitPhase(page, 'rest', null, 'no scroll: Escape')
+    steps.push(
+      'alley no scroll: a scrollIntoView on Enter leaves the alley at 0,0',
+    )
+
+    // ── An open called off: More at +150 ms ───────────────────
+    // More is not a tab, so goToTab never sees it: the capture-phase press
+    // outside the alley is what calls the open off. The sheet opens over the
+    // alley at rest, not over a room the grow went on to open.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'More mid-open: select Sing')
+    const homeHash = await page.evaluate(() => window.location.hash)
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(150)
+    await page.locator('[data-rail-item="more"]').click()
+    await page.waitForTimeout(1200)
+    const moreMid = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+      sheet: document.querySelector('[data-more-item="developer"]') !== null,
+      alley: typeof window.mpAlley === 'function' ? window.mpAlley() : null,
+    }))
+    if (
+      moreMid.hash !== homeHash ||
+      !moreMid.sheet ||
+      moreMid.clone ||
+      moreMid.alley?.phase !== 'rest' ||
+      moreMid.alley?.held !== false
+    ) {
+      throw new Error(
+        `More mid-open: ${JSON.stringify({ homeHash, ...moreMid })}`,
+      )
+    }
+    note = await goneKept(page, 'More mid-open', {
+      gone: ['[data-testid="alley-morph"]', '[data-testid="sing-room"]'],
+      kept: ['[data-testid="rooms-alley"]', '[data-more-item="developer"]'],
+    })
+    const closed = await pressBack(page)
+    if (closed !== 'sheet')
+      throw new Error(`More mid-open: Back answered '${closed}'`)
+    steps.push(
+      `alley Enter then More at +150 ms: stays on ${moreMid.hash} with the sheet open, the alley at rest, hold ${moreMid.alley.held}; ${note}`,
+    )
+
+    // ── A door picked, then More (PR 859 review, items 5 and 38) ─
+    // The alley stays mounted under the sheet: only a tab change unmounts it.
+    // A picked door's ambient and clip once played on under More and under
+    // Settings. Covered, the door goes back into the plate and falls silent,
+    // and the clip lets go of its source.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'More over a door: select Sing')
+    await page
+      .waitForFunction(() => window.mpAlley().level > 0.1, null, {
+        timeout: STEP_TIMEOUT_MS,
+      })
+      .catch(async () => {
+        throw new Error(
+          `More over a door: the ambient never rose (${JSON.stringify(await alleyNow(page))})`,
+        )
+      })
+    await page.locator('[data-rail-item="more"]').click()
+    await page.waitForTimeout(700)
+    const under = await page.evaluate(() => {
+      const clip = document.querySelector('[data-testid="alley-clip"]')
+      return {
+        alley: window.mpAlley(),
+        sheet: document.querySelector('[data-more-item="developer"]') !== null,
+        clipPaused: clip?.paused ?? null,
+        clipSrc: clip?.getAttribute('src') ?? null,
+      }
+    })
+    const playingUnder = await mediaPlaying(page)
+    if (
+      !under.sheet ||
+      under.alley.phase !== 'rest' ||
+      under.alley.level !== 0 ||
+      under.alley.sounding !== null ||
+      under.clipPaused !== true ||
+      under.clipSrc !== null ||
+      playingUnder !== 0
+    ) {
+      throw new Error(
+        `More over a door: ${JSON.stringify({ ...under, playingUnder })}`,
+      )
+    }
+    const shut = await pressBack(page)
+    if (shut !== 'sheet')
+      throw new Error(`More over a door: Back answered '${shut}'`)
+    await page.waitForTimeout(300)
+    const back = await alleyNow(page)
+    if (back.phase !== 'rest' || back.level !== 0) {
+      throw new Error(`More over a door, closed: ${JSON.stringify(back)}`)
+    }
+    steps.push(
+      `alley Sing picked then More: ambient ${under.alley.level}, clip paused with no source, alley ${under.alley.phase}; More closed, alley ${back.phase} at ${back.level}`,
+    )
+
+    // ── Back with a door picked (PR 859 review, item 6) ────────
+    // The card is the alley's overlay: Back puts the door back, as Escape
+    // does. It once fell through to 'history' or, at the root, 'minimize'.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'Back over a door: select Sing')
+    const pickedHash = await page.evaluate(() => window.location.hash)
+    const backAnswer = await pressBack(page)
+    const afterBack = await page.evaluate(() => ({
+      hash: window.location.hash,
+      alley: window.mpAlley(),
+      card: document.querySelector('[data-testid="alley-card"]') !== null,
+    }))
+    if (
+      backAnswer !== 'door-cleared' ||
+      afterBack.hash !== pickedHash ||
+      afterBack.alley.phase !== 'rest' ||
+      afterBack.card
+    ) {
+      throw new Error(
+        `Back over a door: answered '${backAnswer}', ${JSON.stringify({ pickedHash, ...afterBack })}`,
+      )
+    }
+    steps.push(
+      `alley Sing picked then Back: answered '${backAnswer}', still on ${afterBack.hash}, alley ${afterBack.alley.phase}, no card`,
+    )
+
+    // ── A rail tab after the cover (PR 859 review, items 21 and 29) ─
+    // Covered, the open cannot be called off: the room is being mounted. A
+    // rail tab in the wait for the room's background once left Progress under
+    // an opaque clone for up to 1.7 s. The clone has to get out of the way.
+    // The room's background never shows up here (its mark is taken off as
+    // it mounts, as for a room still loading), so the clone is still waiting
+    // on it when Progress is tapped. A room that draws fast would reveal on
+    // its own, and one that mounts and then unmounts ends the wait by being
+    // gone: only the open's own watch on the tab can end this one.
+    await page.evaluate(() => {
+      const strip = (root) => {
+        for (const el of root.querySelectorAll('[data-room-background]')) {
+          el.removeAttribute('data-room-background')
+        }
+      }
+      strip(document)
+      window.__mpUnmark = new MutationObserver(() => strip(document))
+      window.__mpUnmark.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-room-background'],
+      })
+    })
+    await tapDoor(page, 'sing')
+    await waitPhase(
+      page,
+      'alive',
+      'sing',
+      'Progress after the cover: select Sing',
+    )
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(600)
+    const coveredAt = await page.evaluate(() => ({
+      clone:
+        document.querySelector('[data-testid="alley-morph"]')?.dataset.phase ??
+        null,
+      alley: window.mpAlley?.().phase ?? null,
+    }))
+    await page.locator('[data-rail-item="progress"]').click()
+    await page.waitForTimeout(200)
+    const progressAfter = await page.evaluate(() => ({
+      hash: window.location.hash,
+      clone: document.querySelector('[data-testid="alley-morph"]') !== null,
+    }))
+    await page.evaluate(() => {
+      window.__mpUnmark.disconnect()
+    })
+    if (
+      coveredAt.clone !== 'covered' ||
+      !progressAfter.hash.includes('progress') ||
+      progressAfter.clone
+    ) {
+      throw new Error(
+        `Progress after the cover: ${JSON.stringify({ coveredAt, ...progressAfter })}`,
+      )
+    }
+    await page.locator('[data-rail-item="rooms"]').click()
+    await waitPhase(page, 'rest', null, 'Progress after the cover: Rooms again')
+    steps.push(
+      `alley Enter, room not drawn, rail Progress at +600 ms (clone ${coveredAt.clone}): on ${progressAfter.hash}, no clone 200 ms later`,
+    )
+
+    // ── Reduced motion ────────────────────────────────────────
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page
+      .locator('.mp-shell[data-reduced="on"]')
+      .waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS })
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'reduced: select Sing')
+    await page.waitForTimeout(300)
+    const still = await walkOpen(page, ctx, 'alley-reduced-open')
+    if (
+      still.motion !== 'crossfade' ||
+      still.inline !== '' ||
+      still.computed !== 'none'
+    ) {
+      throw new Error(`reduced: the clone moved ${JSON.stringify(still)}`)
+    }
+    note = await goneKept(page, 'reduced open', {
+      gone: ['[data-testid="alley-morph"]', '[data-testid="rooms-alley"]'],
+      kept: ['[data-testid="sing-room"]'],
+    })
+    steps.push(
+      `alley reduced motion: a crossfade, no transform on the clone; ${note}`,
+    )
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('reduced: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+
+    // ── Reduced motion: the crossfade runs (PR 859 review, item 31) ─
+    // Sampled every frame from the frame after the clone is appended, and
+    // never read before then: a style read in that window is what made a
+    // transition start and hid the hard cut. Under the OS setting app.css
+    // cuts every CSS transition to 0.001 ms, so only an animation that is
+    // not a transition shows a value between 0 and 1 here.
+    await waitPhase(page, 'rest', null, 'reduced fade: back at rest')
+    await page.evaluate(() => {
+      window.__mpFade = []
+      const seen = new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (!(node instanceof HTMLElement)) continue
+            if (node.dataset.testid !== 'alley-morph') continue
+            seen.disconnect()
+            let frames = 0
+            const sample = () => {
+              window.__mpFade.push(Number(getComputedStyle(node).opacity))
+              frames += 1
+              if (frames < 16 && node.isConnected) requestAnimationFrame(sample)
+            }
+            requestAnimationFrame(sample)
+          }
+        }
+      })
+      seen.observe(document.body, { childList: true })
+    })
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'reduced fade: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(500)
+    const fades = await page.evaluate(() => window.__mpFade)
+    const between = fades.filter((o) => o > 0 && o < 1)
+    if (between.length === 0) {
+      throw new Error(
+        `reduced fade: no frame between 0 and 1 (${fades.map((o) => o.toFixed(2)).join(' ')})`,
+      )
+    }
+    await page
+      .locator('[data-testid="sing-room"]')
+      .waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS })
+    steps.push(
+      `alley reduced motion crossfade: ${between.length} frames mid-fade (${fades
+        .slice(0, 8)
+        .map((o) => o.toFixed(2))
+        .join(' ')})`,
+    )
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('reduced fade: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+
+    // ── The clip's first frame (PR 859 review, item 12) ────────
+    // In its door the loop is cover-fit to the art box; the clone's box is
+    // cover-fit to the screen, and both are warped onto the same quad at the
+    // start of the grow. The clone has to start on the door's crop, or the
+    // first frame after Enter shows 2.7 times as much of the loop, squeezed.
+    // The grow is held at that frame (no animation frame runs) for the shot.
+    await waitPhase(page, 'rest', null, 'clip crop: back at rest')
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'clip crop: select Sing')
+    await page
+      .waitForFunction(
+        () => {
+          const v = document.querySelector('[data-testid="alley-clip"]')
+          return v !== null && !v.paused && v.videoWidth > 0
+        },
+        null,
+        { timeout: STEP_TIMEOUT_MS },
+      )
+      .catch(() => {
+        throw new Error('clip crop: the Sing clip never played')
+      })
+    await page.waitForTimeout(400)
+    const doorCrop = await page.evaluate(() => {
+      const v = document.querySelector('[data-testid="alley-clip"]')
+      const art = v.parentElement
+      const w = Number.parseFloat(art.style.width)
+      const h = Number.parseFloat(art.style.height)
+      const k = Math.max(w / v.videoWidth, h / v.videoHeight)
+      return {
+        x: (v.videoWidth - w / k) / 2,
+        y: (v.videoHeight - h / k) / 2,
+        w: w / k,
+        h: h / k,
+      }
+    })
+    await shoot(page, ctx, 'alley-clip-before-enter')
+    // Item 14: a lifted door is its own box, not the screen's, so it is
+    // composited door-sized (CDP layer tree: 393x852 before, 130x362 after).
+    const lifted = await page.evaluate(() => {
+      const door = document.querySelector('.mp-alley__door.is-selected')
+      const key = document.querySelector('[data-testid="alley-door-sing"]')
+      const a = door.getBoundingClientRect()
+      const k = key.getBoundingClientRect()
+      return {
+        w: door.offsetWidth,
+        h: door.offsetHeight,
+        screen: window.innerWidth * window.innerHeight,
+        holdsKey:
+          a.left <= k.left + 1 &&
+          a.top <= k.top + 1 &&
+          a.right >= k.right - 1 &&
+          a.bottom >= k.bottom - 1,
+      }
+    })
+    if (lifted.w * lifted.h * 2 > lifted.screen || !lifted.holdsKey) {
+      throw new Error(`lifted door box: ${JSON.stringify(lifted)}`)
+    }
+    await page.evaluate(() => {
+      window.__mpRaf = window.requestAnimationFrame
+      window.requestAnimationFrame = () => 0
+      window.__mpClipFirst = null
+      const seen = new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (!(node instanceof HTMLElement)) continue
+            if (node.dataset.testid !== 'alley-morph') continue
+            seen.disconnect()
+            window.__mpClipFirst = {
+              transform: node.querySelector('video')?.style.transform ?? '',
+              w: node.style.width,
+              h: node.style.height,
+            }
+          }
+        }
+      })
+      seen.observe(document.body, { childList: true })
+    })
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await shoot(page, ctx, 'alley-clip-first-frame')
+    const clipFirst = await page.evaluate(() => {
+      window.requestAnimationFrame = window.__mpRaf
+      return window.__mpClipFirst
+    })
+    const [kx, , , ky, tx, ty] = (clipFirst?.transform ?? '')
+      .replace(/^matrix\(|\)$/gu, '')
+      .split(',')
+      .map(Number)
+    const cloneCrop = {
+      x: -tx / kx,
+      y: -ty / ky,
+      w: Number.parseFloat(clipFirst?.w) / kx,
+      h: Number.parseFloat(clipFirst?.h) / ky,
+    }
+    const off = Math.max(
+      ...['x', 'y', 'w', 'h'].map((k) => Math.abs(cloneCrop[k] - doorCrop[k])),
+    )
+    if (!(off <= 1)) {
+      throw new Error(
+        `clip crop: door ${JSON.stringify(doorCrop)}, clone's first frame ${JSON.stringify({ ...cloneCrop, clipFirst })}`,
+      )
+    }
+    await page
+      .waitForFunction(
+        () =>
+          document.querySelector('[data-testid="alley-morph"]') === null &&
+          document.querySelector('[data-testid="sing-room"]') !== null,
+        null,
+        { timeout: 8000 },
+      )
+      .catch(() => {
+        throw new Error('clip crop: the room never replaced the clone')
+      })
+    if ((await pressBack(page)) !== 'history') {
+      throw new Error('clip crop: Back did not return to the alley')
+    }
+    await alleyRoot.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    const r = (v) => Math.round(v * 10) / 10
+    steps.push(
+      `alley clip first frame: the door showed source ${r(doorCrop.x)},${r(doorCrop.y)} ${r(doorCrop.w)}x${r(doorCrop.h)}, the clone's first frame ${r(cloneCrop.x)},${r(cloneCrop.y)} ${r(cloneCrop.w)}x${r(cloneCrop.h)} (${r(off)} source px apart); shots alley-clip-before-enter, alley-clip-first-frame; the lifted door's own box ${lifted.w}x${lifted.h}`,
+    )
+
+    // ── Developer: Replay the welcome ─────────────────────────
+    await page.locator('[data-rail-item="more"]').click()
+    const developerTile = page.locator('[data-more-item="developer"]')
+    await developerTile.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await developerTile.click()
+    const replay = page.locator('[data-testid="dev-replay-welcome"]')
+    await replay.waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await replay.click()
+    await page
+      .locator('[data-testid="alley-headline"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    const cleared = await page.evaluate(() =>
+      localStorage.getItem('pitchperfect_native_welcome_seen'),
+    )
+    if (cleared !== 'false') {
+      throw new Error(`replay: the welcome flag is ${cleared}`)
+    }
+    note = await goneKept(page, 'replay', {
+      gone: ['[data-testid="shell-developer"]', '[data-testid="alley-title"]'],
+      kept: ['[data-testid="alley-headline"]', ...doorKeys],
+    })
+    await page.waitForTimeout(400)
+    await shoot(page, ctx, 'alley-replayed')
+    steps.push(
+      `alley Developer "Replay the welcome": flag cleared, headline back; ${note}`,
+    )
+
+    // ── The keyboard ──────────────────────────────────────────
+    // The skip link lands on the alley (<main> is empty on this tab), a door
+    // picked from the keyboard shows its card with a ring, and Escape puts
+    // it back with its sound (S4 fix F8).
+    const hashBefore = await page.evaluate(() => window.location.hash)
+    await page.locator('.skip-link').focus()
+    await page.keyboard.press('Enter')
+    const skipped = await page.evaluate(() => ({
+      focus: document.activeElement?.dataset?.testid ?? null,
+      hash: window.location.hash,
+    }))
+    if (skipped.focus !== 'rooms-alley' || skipped.hash !== hashBefore) {
+      throw new Error(`skip link: ${JSON.stringify(skipped)}`)
+    }
+    await page.keyboard.press('Tab')
+    const firstKey = await page.evaluate(
+      () => document.activeElement?.dataset?.testid ?? null,
+    )
+    if (firstKey !== 'alley-door-ear') {
+      throw new Error(`skip link, then Tab: focus on ${firstKey}`)
+    }
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Tab')
+    await page.keyboard.press('Enter')
+    await waitPhase(page, 'alive', 'sing', 'keyboard: Sing')
+    await page.waitForTimeout(500)
+    const ring = await page.evaluate(() => {
+      const card = document.querySelector('[data-testid="alley-card"]')
+      const style = getComputedStyle(card)
+      return {
+        focused: document.activeElement === card,
+        outline: `${style.outlineStyle} ${style.outlineWidth}`,
+      }
+    })
+    if (!ring.focused || !ring.outline.startsWith('solid')) {
+      throw new Error(
+        `keyboard: the card shows no focus ${JSON.stringify(ring)}`,
+      )
+    }
+    const keyLevel = (await alleyNow(page)).level
+    await page.keyboard.press('Escape')
+    await waitPhase(page, 'rest', null, 'keyboard: Escape')
+    const refocused = await page.evaluate(
+      () => document.activeElement?.dataset?.testid ?? null,
+    )
+    if (refocused !== 'alley-door-sing') {
+      throw new Error(`Escape: focus went to ${refocused}, not the Sing door`)
+    }
+    await page.waitForTimeout(700)
+    const hushed = await alleyNow(page)
+    if (hushed.level !== 0 || hushed.sounding !== null) {
+      throw new Error(
+        `Escape: the ambient is still up ${JSON.stringify(hushed)}`,
+      )
+    }
+    note = await goneKept(page, 'Escape', {
+      gone: ['.mp-alley__panel.is-shown', '.mp-alley__door.is-alive'],
+      kept: doorKeys,
+    })
+    steps.push(
+      `alley keyboard: skip link focuses the alley (hash kept), Tab reaches the Ear Lab, Enter on Sing shows the card with a ${ring.outline} ring, Escape puts it back (ambient ${keyLevel.toFixed(2)} to 0, focus on the Sing door); ${note}`,
+    )
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  const at = `${frame.width}x${frame.height}`
+  return steps.map((step) => `[${at}] ${step}`)
+}
+
+// ── The headline block takes no door taps ───────────────────
+//
+// Under a tall safe area (59 px on a Dynamic Island phone) the headline
+// block reaches down over the tops of the doors. The tap band starts at the
+// block's measured bottom, so a tap on the subline opens nothing, and it
+// clears a door that was out.
+const SAFE_TOP_FRAMES = [
+  { width: 393, height: 852, safeTop: 59 },
+  { width: 375, height: 667, safeTop: 20 },
+]
+
+async function walkAlleySafeTop(browser, args, frame) {
+  const context = await isolate(
+    await browser.newContext({
+      viewport: { width: frame.width, height: frame.height },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  let step = null
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="alley-subline"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.evaluate((px) => {
+      document.documentElement.style.setProperty('--safe-top', `${px}px`)
+    }, frame.safeTop)
+    await page.waitForTimeout(500)
+    const measure = () =>
+      page.evaluate(() => {
+        const box = (id) =>
+          document
+            .querySelector(`[data-testid="${id}"]`)
+            .getBoundingClientRect()
+        const doors = [...document.querySelectorAll('.mp-alley__key')].map(
+          (k) => k.getBoundingClientRect().top,
+        )
+        return {
+          sublineBottom: box('alley-subline').bottom,
+          topBottom: box('alley-top').bottom,
+          bandTop: box('alley-hit').top,
+          highestDoor: Math.min(...doors),
+        }
+      })
+    const m = await measure()
+    const subline = await page
+      .locator('[data-testid="alley-subline"]')
+      .boundingBox()
+    // Its last line, where it comes closest to the doors.
+    const at = {
+      x: subline.x + subline.width / 2,
+      y: subline.y + subline.height - 4,
+    }
+
+    // A door out, then the subline: the door goes back, nothing else comes out.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'safe top: select Sing')
+    await page.touchscreen.tap(at.x, at.y)
+    await waitPhase(page, 'rest', null, 'safe top: a tap on the subline')
+    // From rest: the subline selects nothing.
+    await page.touchscreen.tap(at.x, at.y)
+    await page.waitForTimeout(400)
+    const after = await alleyNow(page)
+    if (after.phase !== 'rest' || after.door !== null) {
+      throw new Error(`a tap on the subline selected ${JSON.stringify(after)}`)
+    }
+    if (m.bandTop < m.topBottom - 0.5) {
+      throw new Error(
+        `the band starts inside the headline block ${JSON.stringify(m)}`,
+      )
+    }
+    step = `alley safe top ${frame.safeTop} px: subline bottom ${Math.round(m.sublineBottom)}, block bottom ${Math.round(m.topBottom)}, band top ${Math.round(m.bandTop)} (highest door ${Math.round(m.highestDoor)}); a subline tap cleared Sing, then selected nothing`
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  return [`[${frame.width}x${frame.height}] ${step}`]
+}
+
+// ── The alley on its side ────────────────────────────────────
+//
+// Orientation is unlocked (owner decision Q-4). Turned on its side the plate
+// is sized by the door band, which sits between the headline block and the
+// dock, every door whole; and a rotation in the middle of an open ends with
+// the room on the new screen and no clone left behind.
+const LANDSCAPE_FRAMES = [{ width: 852, height: 393 }]
+
+async function walkAlleyLandscape(browser, args, frame) {
+  const ctx = { ...args, frame }
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  const steps = []
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="alley-headline"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.waitForTimeout(600)
+    const m = await page.evaluate(() => {
+      const rect = (el) => el.getBoundingClientRect()
+      const keys = [...document.querySelectorAll('.mp-alley__key')].map((k) => {
+        const b = rect(k)
+        return {
+          door: k.dataset.door,
+          l: b.left,
+          t: b.top,
+          r: b.right,
+          b: b.bottom,
+        }
+      })
+      const block = rect(document.querySelector('[data-testid="alley-top"]'))
+      const band = rect(document.querySelector('[data-testid="alley-hit"]'))
+      return {
+        keys,
+        blockRight: block.right,
+        blockBottom: block.bottom,
+        bandLeft: band.left,
+        bandTop: band.top,
+        bandHeight: band.height,
+        dock: document.querySelector('.mp-dock')
+          ? rect(document.querySelector('.mp-dock')).top
+          : window.innerHeight,
+        width: window.innerWidth,
+      }
+    })
+    // The block stands beside the doors (S4 round 2, V3 option b): every
+    // door right of it, whole, between the top and the dock, and the band
+    // taller than the 116 px it had with the block above it.
+    const doorTop = Math.min(...m.keys.map((k) => k.t))
+    const doorBottom = Math.max(...m.keys.map((k) => k.b))
+    const doorLeft = Math.min(...m.keys.map((k) => k.l))
+    const widths = m.keys.map((k) => k.r - k.l)
+    const cut = m.keys.filter((k) => k.l < -0.5 || k.r > m.width + 0.5)
+    if (
+      m.keys.length !== 6 ||
+      cut.length > 0 ||
+      doorLeft < m.blockRight - 0.5 ||
+      m.bandLeft < m.blockRight - 0.5 ||
+      doorTop < 0 ||
+      doorBottom > m.dock + 0.5 ||
+      m.bandHeight < 232
+    ) {
+      throw new Error(`landscape layout: ${JSON.stringify(m)}`)
+    }
+    await shoot(page, ctx, 'alley-landscape')
+    steps.push(
+      `alley landscape: headline block beside the doors (right edge ${Math.round(m.blockRight)}), doors ${Math.round(doorLeft)}..${Math.round(Math.max(...m.keys.map((k) => k.r)))} x ${Math.round(doorTop)}..${Math.round(doorBottom)}, band ${Math.round(m.bandHeight)} px tall, dock ${Math.round(m.dock)}, door widths ${Math.min(...widths).toFixed(1)}-${Math.max(...widths).toFixed(1)} px, all six whole`,
+    )
+
+    // Select Sing on its side, open it, and turn the phone upright mid-grow.
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'landscape: select Sing')
+    await shoot(page, ctx, 'alley-landscape-sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page.waitForTimeout(120)
+    const upright = { width: frame.height, height: frame.width }
+    await page.setViewportSize(upright)
+    await page.waitForTimeout(450)
+    const covered = await page.evaluate(() => {
+      const clone = document.querySelector('[data-testid="alley-morph"]')
+      if (clone === null) return null
+      const b = clone.getBoundingClientRect()
+      return {
+        phase: clone.dataset.phase,
+        box: [b.left, b.top, b.width, b.height].map((n) => Math.round(n)),
+      }
+    })
+    await page
+      .waitForFunction(
+        () =>
+          document.querySelector('[data-testid="alley-morph"]') === null &&
+          document.querySelector('[data-testid="sing-room"]') !== null,
+        null,
+        { timeout: 8000 },
+      )
+      .catch(() => {
+        throw new Error('rotation mid-open: the room never replaced the clone')
+      })
+    if (
+      covered !== null &&
+      (covered.box[2] !== upright.width || covered.box[3] !== upright.height)
+    ) {
+      throw new Error(
+        `rotation mid-open: the clone was ${JSON.stringify(covered)}`,
+      )
+    }
+    steps.push(
+      `alley rotation mid-open: clone ${covered === null ? 'already gone' : `${covered.phase} at ${covered.box.join(',')}`} on the ${upright.width}x${upright.height} screen, then the Sing room, no clone left`,
+    )
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  const at = `${frame.width}x${frame.height}`
+  return steps.map((step) => `[${at}] ${step}`)
+}
+
+// ── The room's microphone waits for the hand-over ───────────
+//
+// A context that has granted the microphone, and a device that remembers it
+// did, so the Sing room starts listening on arrival by itself. Its
+// getUserMedia must come after the door's clone is gone AND after the
+// alley's ambient stopped its source: the arrival hold is what orders them,
+// and a hold that did nothing would open the microphone under the clone.
+async function walkAlleyMic(browser, args, frame) {
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+      permissions: ['microphone'],
+    }),
+  )
+  const failures = []
+  let step = null
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.addInitScript(() => {
+      localStorage.setItem('pitchperfect_sing_mic_granted', 'true')
+      const times = { gumAt: null, clonedAt: null, cloneGoneAt: null }
+      window.__mpMic = times
+      const devices = navigator.mediaDevices
+      const real = devices.getUserMedia.bind(devices)
+      devices.getUserMedia = (constraints) => {
+        times.gumAt ??= performance.now()
+        return real(constraints)
+      }
+      new MutationObserver(() => {
+        const clone = document.querySelector('[data-testid="alley-morph"]')
+        if (clone !== null) times.clonedAt ??= performance.now()
+        else if (times.clonedAt !== null)
+          times.cloneGoneAt ??= performance.now()
+      }).observe(document, { childList: true, subtree: true })
+    })
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="rooms-alley"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    await page.waitForTimeout(400)
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'mic: select Sing')
+    await page.waitForTimeout(700)
+    await page.locator('[data-testid="alley-enter"]').tap()
+    await page
+      .waitForFunction(() => window.__mpMic.gumAt !== null, null, {
+        timeout: 10_000,
+      })
+      .catch(() => {
+        throw new Error('mic: the Sing room never asked for the microphone')
+      })
+    const t = await page.evaluate(() => ({
+      ...window.__mpMic,
+      silentAt: window.mpAlley().silentAt,
+      held: window.mpAlley().held,
+      room: document.querySelector('[data-testid="sing-room"]') !== null,
+    }))
+    const ms = (v) => (v === null ? 'null' : `${Math.round(v)}`)
+    if (
+      t.clonedAt === null ||
+      t.cloneGoneAt === null ||
+      t.silentAt === null ||
+      t.gumAt < t.cloneGoneAt ||
+      t.gumAt < t.silentAt ||
+      t.held ||
+      !t.room
+    ) {
+      throw new Error(`mic: out of order ${JSON.stringify(t)}`)
+    }
+    step = `alley mic on arrival: clone up ${ms(t.clonedAt)} ms, ambient source stopped ${ms(t.silentAt)}, clone gone ${ms(t.cloneGoneAt)}, getUserMedia ${ms(t.gumAt)} (after both)`
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  return [`[${frame.width}x${frame.height}] ${step}`]
+}
+
+// ── A door under a practice scope that hides its room (item 9) ──
+//
+// "I practice" = Guitar hides the Sing tab from the WEB bar, and the web's App
+// Mode guard bounced a hidden tab back home with a toast. Under the native
+// build the doors reach their rooms whatever the scope says: the Sing door
+// once opened, covered, reached Sing and was sent straight back to the alley.
+async function walkAlleyScope(browser, args, frame) {
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+    }),
+  )
+  const failures = []
+  let step = null
+  try {
+    const page = await context.newPage()
+    page.on('pageerror', (error) => {
+      failures.push(`page error: ${error.message}`)
+    })
+    await page.addInitScript(seed, args.theme)
+    await page.addInitScript(() => {
+      // Stored bare: a string setting is not JSON, and '"guitar"' fails the
+      // validator and reads back as 'all', which no guard ever bounces.
+      localStorage.setItem('pitchperfect_practice_scope', 'guitar')
+    })
+    await page.goto(args.baseUrl, { waitUntil: 'domcontentloaded' })
+    await page.locator('#root.loaded').waitFor({
+      state: 'attached',
+      timeout: BOOT_TIMEOUT_MS,
+    })
+    await page
+      .locator('[data-testid="rooms-alley"]')
+      .waitFor({ state: 'visible', timeout: STEP_TIMEOUT_MS })
+    // Past the guard's start-up grace, so a bounce would say so in a toast.
+    await page.waitForTimeout(2500)
+    // The scope has to have taken: the rail's stage slot follows it.
+    const stage = (
+      await page.locator('[data-rail-item="stage"]').innerText()
+    ).trim()
+    if (!stage.includes('Guitar')) {
+      throw new Error(
+        `scope guitar: not applied, the rail's stage reads "${stage}"`,
+      )
+    }
+    await tapDoor(page, 'sing')
+    await waitPhase(page, 'alive', 'sing', 'scope guitar: select Sing')
+    await page.locator('[data-testid="alley-enter"]').tap()
+    // Not thrown on: a bounced room never attaches, and the state below says
+    // where it went instead.
+    await page
+      .locator('[data-testid="sing-room"]')
+      .waitFor({ state: 'attached', timeout: STEP_TIMEOUT_MS })
+      .catch(() => undefined)
+    await page.waitForTimeout(1500)
+    const after = await page.evaluate(() => ({
+      hash: window.location.hash,
+      room: document.querySelector('[data-testid="sing-room"]') !== null,
+      alley: document.querySelector('[data-testid="rooms-alley"]') !== null,
+      toast: document.body.innerText.includes('hidden by your App Mode'),
+      scope: localStorage.getItem('pitchperfect_practice_scope'),
+    }))
+    if (
+      !after.hash.includes('singing') ||
+      !after.room ||
+      after.alley ||
+      after.toast
+    ) {
+      throw new Error(`scope guitar: ${JSON.stringify(after)}`)
+    }
+    step = `alley under "I practice" = ${after.scope} (rail stage "${stage}"): the Sing door reached ${after.hash} and stayed, no App Mode toast`
+  } catch (error) {
+    failures.push(error.message)
+  } finally {
+    await context.close()
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '))
+  return [`[${frame.width}x${frame.height}] ${step}`]
+}
+
 async function pressBack(page) {
   return page.evaluate(() => {
     const back = window.mpShellBack
@@ -2425,21 +4110,25 @@ async function walkBack(page) {
     .waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
   const roomsHash = await page.evaluate(() => window.location.hash)
 
-  // A room cover navigates with `setActiveTab`, whose sync pushes with
-  // `history.pushState` — which fires no hashchange and no popstate. A depth
-  // that only learned from events never moved, so this press minimized the
-  // app instead of returning to the gallery.
-  const cover = page.locator('[data-destination]').first()
-  await cover.waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
-  await cover.click()
+  // A room entered from Rooms must push an entry Back can return to: the web
+  // gallery's covers once pushed with `history.pushState`, which fires no
+  // hashchange, and a depth that only learned from events minimized the app
+  // instead. Rooms is the alley now, and its way into a room is a door.
+  await page
+    .locator('[data-testid="rooms-alley"]')
+    .waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
+  await tapDoor(page, 'sing')
+  const enter = page.locator('[data-testid="alley-enter"]')
+  await enter.waitFor({ state: 'visible', timeout: RUN_TIMEOUT_MS })
+  await enter.tap()
   await page.waitForFunction((was) => window.location.hash !== was, roomsHash, {
     timeout: RUN_TIMEOUT_MS,
   })
-  steps.push('back: a room cover pushed an entry')
+  steps.push('back: a door opened into its room and pushed an entry')
 
   const outcome = await pressBack(page)
   if (outcome !== 'history') {
-    throw new Error(`Back after a room cover answered '${outcome}'`)
+    throw new Error(`Back after a door answered '${outcome}'`)
   }
   await page.waitForFunction((was) => window.location.hash === was, roomsHash, {
     timeout: RUN_TIMEOUT_MS,
@@ -2465,14 +4154,16 @@ async function walkBackRoot(page) {
 /** One frame's whole walk, in its own context so nothing carries over. */
 async function walkFrame(browser, args, frame) {
   const ctx = { ...args, frame }
-  const context = await browser.newContext({
-    viewport: frame,
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-    colorScheme: args.theme,
-    permissions: ['microphone'],
-  })
+  const context = await isolate(
+    await browser.newContext({
+      viewport: frame,
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: args.theme,
+      permissions: ['microphone'],
+    }),
+  )
 
   const failures = []
   context.on('page', (page) => {
@@ -2527,33 +4218,8 @@ async function walkFrame(browser, args, frame) {
   }
 }
 
-/**
- * The copy R6 took out, checked against the bundle that ships it.
- *
- * NOT a blanket grep for "uploaded": other surfaces in this binary say it
- * legitimately (the onboarding beat, the karaoke rail, the transcription
- * bench), and a check that failed on those would be deleted by the first
- * person it stopped. The four dead sentences are named, and so are the three
- * that replaced them — without the second half this would pass just as
- * happily against a bundle with no Sing room in it at all.
- */
-/**
- * Saying an upload does not happen is the one thing the UI may never do.
- *
- * The owner's rule, twice now (device round 2, R6): never name the thing that
- * does not happen — "Nothing is uploaded" puts the idea of an upload in front
- * of somebody who was not thinking about one. What is banned is the
- * REASSURANCE BY DENIAL, not the word: a feature that really does upload a
- * file the singer chose is allowed to say so, and several do.
- *
- * NO ALLOWLIST. Every `.js` in the bundle is read, including the app chunk
- * everything the singer can reach is compiled into. The first version of this
- * check named four dead sentences instead, which is how R6 shipped with
- * "Nothing is uploaded." still in the onboarding sky beat and the karaoke
- * rail: a tripwire scoped to the directory the author was editing.
- */
-const UPLOAD_DENIAL =
-  /\b(?:nothing|no audio|no recording|none of it)\b[^<>{};]{0,40}?\bupload(?:ed|s|ing)?\b|\bnever\s+upload(?:ed|s)?\b/giu
+// UPLOAD_DENIAL, and the sentences it must and must not catch, live in
+// ./upload-denial.mjs: the walk runs its self-test before it trusts it.
 
 /**
  * Chunks that may contain the WORD at all, and why.
@@ -2608,6 +4274,9 @@ function chunkName(file) {
 }
 
 function checkNativeCopy(dir) {
+  // A tripwire that has stopped catching is worse than none: it reports
+  // clean. Its own positives and negatives first.
+  const selfTest = selfTestUploadDenial()
   const files = listJs(dir)
   if (files.length === 0) {
     throw new Error(`no .js under ${dir} to read the room's copy out of`)
@@ -2665,7 +4334,7 @@ function checkNativeCopy(dir) {
   }
 
   const words = (source.match(/upload/giu) ?? []).length
-  return `dist: nothing in ${files.length} chunks denies an upload; the word appears ${words} times, all in the ${UPLOAD_CHUNKS.length} chunks that say why`
+  return `${selfTest}; dist: nothing in ${files.length} chunks denies an upload; the word appears ${words} times, all in the ${UPLOAD_CHUNKS.length} chunks that say why`
 }
 
 /** Every .js under `dir`, recursively. */
@@ -2734,6 +4403,47 @@ async function main() {
         failures.push(
           `[${frame.width}x${frame.height}] suspended: ${error.message}`,
         )
+      }
+      try {
+        steps.push(...(await walkAlley(browser, args, frame)))
+      } catch (error) {
+        failures.push(
+          `[${frame.width}x${frame.height}] alley: ${error.message}`,
+        )
+      }
+      try {
+        steps.push(...(await walkAlleyMic(browser, args, frame)))
+      } catch (error) {
+        failures.push(
+          `[${frame.width}x${frame.height}] alley mic: ${error.message}`,
+        )
+      }
+      try {
+        steps.push(...(await walkAlleyScope(browser, args, frame)))
+      } catch (error) {
+        failures.push(
+          `[${frame.width}x${frame.height}] alley scope: ${error.message}`,
+        )
+      }
+    }
+    if (!args.chromeOnly) {
+      for (const frame of LANDSCAPE_FRAMES) {
+        try {
+          steps.push(...(await walkAlleyLandscape(browser, args, frame)))
+        } catch (error) {
+          failures.push(
+            `[${frame.width}x${frame.height}] alley landscape: ${error.message}`,
+          )
+        }
+      }
+      for (const frame of SAFE_TOP_FRAMES) {
+        try {
+          steps.push(...(await walkAlleySafeTop(browser, args, frame)))
+        } catch (error) {
+          failures.push(
+            `[${frame.width}x${frame.height}] alley safe top: ${error.message}`,
+          )
+        }
       }
     }
   } finally {

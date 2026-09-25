@@ -19,6 +19,7 @@ import { TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_SETTINGS, } from 
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, pushHash, replaceHash } from '@/lib/hash-router'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { setSyncCodeToJoin } from '@/stores/sync-store'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 import { setDeviceLinkCode } from '@/stores/ui-store'
@@ -236,8 +237,12 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'guide') {
       deps.setShowGuideSelection(true)
     } else if (route.type === 'onboarding-map') {
-      deps.dismissWelcome()
-      deps.openOnboardingMap()
+      // Inert under the native build: First Light is folded out of it, and
+      // opening its map there left flowOpen() true with nothing on screen.
+      if (!IS_NATIVE_BUILD) {
+        deps.dismissWelcome()
+        deps.openOnboardingMap()
+      }
     } else if (route.type === 'voice-constellation') {
       // The state write above is the route action. The underlying tab remains
       // mounted so closing the portalled surface returns to the exact context.

@@ -68,12 +68,63 @@ export function selectedRailItem(
   return match?.id ?? 'more'
 }
 
+// ── A door open in flight ────────────────────────────────────
+//
+// The alley's open is a clone growing over the screen for about 420 ms, and
+// at the end of it the door's room is navigated to. Anything the user does
+// in that window wins over the door: Back puts the alley back at rest, a
+// rail tab goes where it was pointed. Both have to call the open off FIRST,
+// or the grow finishes under them and navigates away from where they went.
+
+let doorOpenCancel: (() => boolean) | null = null
+
+/**
+ * Register the open's cancel for as long as it can be called off. The
+ * returned function unregisters it (the open does, once it has covered).
+ */
+export function registerDoorOpen(cancel: () => boolean): () => void {
+  doorOpenCancel = cancel
+  return () => {
+    if (doorOpenCancel === cancel) doorOpenCancel = null
+  }
+}
+
+/** Call off an open in flight. True when there was one and it stopped. */
+export function cancelDoorOpen(): boolean {
+  const cancel = doorOpenCancel
+  doorOpenCancel = null
+  return cancel?.() === true
+}
+
+// ── A door picked ────────────────────────────────────────────
+//
+// A door selected on the alley puts up its card, its Enter and a dim over
+// everything else: the alley's own overlay. Back puts the door back into the
+// plate, exactly as Escape does. Without this the press fell through to
+// 'history' (leaving Rooms) or, at the root, 'minimize' (backgrounding the
+// app) — with the card still up.
+
+let doorClear: (() => boolean) | null = null
+
+/**
+ * Register the alley's "put the picked door back". It answers true when a
+ * door was picked and is now back; the returned function unregisters it.
+ */
+export function registerDoorClear(clear: () => boolean): () => void {
+  doorClear = clear
+  return () => {
+    if (doorClear === clear) doorClear = null
+  }
+}
+
 /**
  * Go to a tab, parking a run on the way out if this is the room it belongs
  * to. Sound stops and the microphone is released on the same frame, with
  * nothing asked (REQ-NHR-017).
  */
 export function goToTab(tab: ActiveTab): void {
+  // A door still growing would otherwise navigate on top of this one.
+  cancelDoorOpen()
   closeColumn()
   closeMore()
   // A pushed screen covers the whole viewport. Leaving it up while the hash
@@ -91,6 +142,8 @@ export function goToTab(tab: ActiveTab): void {
 export function returnToRun(): void {
   const owner = runOwner()
   if (owner === null) return
+  // As for a rail tab: a door still growing would navigate on top of this.
+  cancelDoorOpen()
   closeColumn()
   closeMore()
   popScreen()
@@ -98,6 +151,8 @@ export function returnToRun(): void {
 }
 
 export type BackOutcome =
+  | 'door-open'
+  | 'door-cleared'
   | 'column'
   | 'sheet'
   | 'alert'
@@ -160,6 +215,17 @@ export function shellBackHost(): BackHost {
 
 /** Performs `resolveBack`'s answer and reports which one it was. */
 export function performBack(host: BackHost): BackOutcome {
+  // A door mid-open is the topmost thing there is: the press calls it off and
+  // the alley stays. Never 'minimize' — the app is not at its root, it is
+  // half-way into a room.
+  if (cancelDoorOpen()) return 'door-open'
+  // A door picked is the alley's overlay: the press puts it back. Never
+  // 'history' or 'minimize' while the card is up. Only with nothing of the
+  // shell's over it — a sheet or a pushed screen covering the alley has
+  // already put the door back (`shellCovered`), and outranks it anyway.
+  if (!shellOverlayOpen() && pushed() === null && doorClear?.() === true) {
+    return 'door-cleared'
+  }
   // The room's overlay, between the More sheet and a pushed screen. Asked
   // only once nothing the shell owns wants the press, and asking is closing.
   if (

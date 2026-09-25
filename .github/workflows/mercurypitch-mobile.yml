@@ -45,13 +45,11 @@ on:
       - 'public/ear-lab/regulator-room-landscape.webp'
       - 'public/exercises/examples/**'
       - 'public/guitar-night/velvet-rehearsal.webp'
-      - 'public/home/**'
       - 'public/jam/room-stage.webp'
       - 'public/legends/**'
-      - 'public/onboarding/**'
-      - 'public/opening/**'
       - 'public/piano-night/afterglow-studio-landscape.webp'
       - 'public/sing/retro-analog-studio*.webp'
+      - 'public/rooms/alley/**'
       - 'gradle/signing.gradle'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -69,6 +67,28 @@ on:
     branches: [main]
     tags: ['mp-v*']
   workflow_dispatch:
+    inputs:
+      # Which db-worker the build compiles in (apps/mercurypitch/api-base.mjs).
+      # `dev` for everything that is tested -- and every push, pull request
+      # and tag builds `dev`, because only a dispatch has inputs. `production`
+      # is picked by hand, for the build that goes to a store, and nothing
+      # else in this repository can set it.
+      #
+      # A TAG PUSH THEREFORE UPLOADS A DEV BUILD to TestFlight. The store
+      # binary is a dispatch run ON THE TAG REF with api-target=production,
+      # and production reaches ONLY the store binaries of that run (the
+      # Android release rebuild and the App Store archive): the debug APK,
+      # the simulator app and the ad-hoc IPA are dev whatever was picked. A
+      # production dispatch on anything but a tag fails before it builds.
+      # See apps/mercurypitch/.env.example, "Which db-worker the build
+      # talks to".
+      api-target:
+        description: 'db-worker to compile in: dev for every test build, production only for a store submission'
+        type: choice
+        options:
+          - dev
+          - production
+        default: dev
 
 permissions:
   contents: read
@@ -78,7 +98,29 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # A production build that is not the store submission is a production
+  # binary nobody meant to make: refused before anything is built.
+  target-guard:
+    name: API target
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Production only on a tag
+        shell: bash
+        env:
+          API_TARGET: ${{ inputs.api-target || 'dev' }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$API_TARGET" == "production" && "$REF_TYPE" != "tag" ]]; then
+            echo "::error::api-target=production builds the store binary, and a store binary comes from an mp-v tag. This run is on the $REF_TYPE '$REF_NAME'. Dispatch it on the tag, or pick dev."
+            exit 1
+          fi
+          echo "api-target $API_TARGET on the $REF_TYPE '$REF_NAME'"
+
   build:
+    needs: target-guard
     uses: ./.github/workflows/capacitor-app.yml
     permissions:
       contents: read
@@ -92,7 +134,16 @@ jobs:
       signing-env-prefix: MERCURYPITCH
       profile-build-setting: MERCURYPITCH_PROFILE
       # Kept in step with the pull_request `paths:` filter above.
-      changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|home|legends|onboarding|opening)/|public/exercises/examples/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/regulator-room-landscape|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|public/sing/retro-analog-studio[^/]*\.webp$|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
+      changed-paths-regex: '^(apps/mercurypitch/|packages/(audio-io|mobile-runtime|pitch-engine|ios-audio-session)/|src/|public/(models|characters|legends)/|public/exercises/examples/|public/(brand-mark\.svg|favicon\.svg|karaoke-night-stage\.webp)$|public/(drum-night/pocket-console-landscape|ear-lab/regulator-room-landscape|guitar-night/velvet-rehearsal|jam/room-stage|piano-night/afterglow-studio-landscape)\.webp$|public/sing/retro-analog-studio[^/]*\.webp$|public/rooms/alley/|gradle/signing\.gradle$|package\.json$|pnpm-lock\.yaml$|\.github/scripts/|\.github/workflows/(mercurypitch-mobile|capacitor-app)\.yml$)'
+      # Exported to the build and to assert-bundle alike, so the check reads
+      # the same answer the build compiled in. Every build is dev -- the debug
+      # APK, the simulator app, the ad-hoc IPA -- and the store binaries take
+      # the dispatch's pick on top (store-build-env). `inputs` is empty outside
+      # a dispatch, which is what makes every other trigger a dev build.
+      web-build-env: |
+        MERCURYPITCH_API_TARGET=dev
+      store-build-env: |
+        MERCURYPITCH_API_TARGET=${{ inputs.api-target || 'dev' }}
       distribution-env-name: VITE_MERCURYPITCH_DISTRIBUTION
       platform-env-name: VITE_MERCURYPITCH_NATIVE_PLATFORM
       testflight-upload-from: tags

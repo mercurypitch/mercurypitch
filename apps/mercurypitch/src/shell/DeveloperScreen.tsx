@@ -25,10 +25,38 @@
 
 import type { Component } from 'solid-js'
 import { For } from 'solid-js'
+import { TAB_HOME } from '@/features/tabs/constants'
 import { developerSections } from '@/lib/developer-sections'
+import { resetWelcome, WELCOME_SEEN_KEY } from '../alley/alley-welcome'
+import { goToTab } from './shell-navigation'
+
+/**
+ * "Replay the welcome": the first run is the alley with its headline, and
+ * the headline goes for good on the first door opened. This is the only way
+ * to see it again on a phone that has opened one.
+ */
+const replayWelcome = (): void => {
+  resetWelcome()
+  goToTab(TAB_HOME)
+}
 
 export const DeveloperScreen: Component = () => (
   <div class="mp-dev" data-testid="shell-developer">
+    <section class="mp-dev__section" data-developer-section="welcome">
+      <h3 class="mp-dev__title">Welcome</h3>
+      <button
+        type="button"
+        class="mp-dev__row"
+        data-testid="dev-replay-welcome"
+        onClick={replayWelcome}
+      >
+        <span class="mp-dev__row-title">Replay the welcome</span>
+        <span class="mp-dev__row-sub">
+          Clears {WELCOME_SEEN_KEY} and opens Rooms, so the alley shows its
+          first-run headline again until a door is opened.
+        </span>
+      </button>
+    </section>
     <For each={developerSections()}>
       {(section) => (
         <section class="mp-dev__section" data-developer-section={section.id}>

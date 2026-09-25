@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Android 12+ splash icon. The system draws it in a 288 dp box and
+     masks it to the middle 192 dp circle, so the 96 dp mark is inset 96 dp
+     on every side: centred, whole, and the size the iOS launch screen uses. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/launch_mark"
+    android:inset="96dp" />

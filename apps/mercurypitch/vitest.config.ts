@@ -12,16 +12,26 @@ const ROOT_SRC = resolve(
   '../../src',
 )
 
-// The shell's own suites, and the only ones that need a document. Everything
-// else this package tests — the bundle manifest, the storage port, the back
+// The shell's own suites and the alley's `*.dom.test.*` files: the only ones
+// that need a document. Everything else this package tests — the bundle manifest, the storage port, the back
 // button, define parity — is plumbing with no DOM in it, and every jsdom
 // instance costs real time (the root config's split is measured: more than
 // half its CPU was spent building documents for suites that never used one).
 //
 // The two projects below are exact complements, so no file runs twice and
 // none is dropped.
-const SHELL_TESTS = ['src/shell/**/*.test.ts', 'src/shell/**/*.test.tsx']
-const ALL_TESTS = ['src/**/*.test.ts', 'src/**/*.test.tsx']
+const DOM_TESTS = [
+  'src/shell/**/*.test.ts',
+  'src/shell/**/*.test.tsx',
+  'src/alley/**/*.dom.test.ts',
+  'src/alley/**/*.dom.test.tsx',
+]
+// The scripts' own rules (the probe's copy tripwire) are tested as well.
+const ALL_TESTS = [
+  'src/**/*.test.ts',
+  'src/**/*.test.tsx',
+  'scripts/**/*.test.mjs',
+]
 const SHARED_EXCLUDE = ['**/node_modules/**', '**/dist/**']
 
 export default defineConfig({
@@ -38,7 +48,11 @@ export default defineConfig({
     // The shell is developed against a TEST build, which is the one with the
     // developer screen in it. Without this the suites would run as a store
     // build and every case that pushes that screen would assert a no-op.
-    env: { VITE_PORTABLE_CONSOLE: 'true' },
+    //
+    // No API base, as in the root config: the committed .env names the live
+    // dev worker, Vitest serves import.meta.env from Vite's env, and a test
+    // that reached getDb() would otherwise talk to it instead of Dexie.
+    env: { VITE_PORTABLE_CONSOLE: 'true', VITE_API_BASE_URL: '' },
     projects: [
       {
         extends: true,
@@ -46,7 +60,7 @@ export default defineConfig({
           name: 'node',
           environment: 'node',
           include: ALL_TESTS,
-          exclude: [...SHARED_EXCLUDE, ...SHELL_TESTS],
+          exclude: [...SHARED_EXCLUDE, ...DOM_TESTS],
         },
       },
       {
@@ -54,7 +68,7 @@ export default defineConfig({
         test: {
           name: 'jsdom',
           environment: 'jsdom',
-          include: SHELL_TESTS,
+          include: DOM_TESTS,
           exclude: SHARED_EXCLUDE,
         },
       },

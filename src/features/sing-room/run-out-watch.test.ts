@@ -164,6 +164,51 @@ describe('the run-out watch', () => {
     expect(h.watch.sawRunning).toBe(false)
   })
 
+  it('says nothing over the first frames of the run after a Stop', () => {
+    // The Stop in `SingRoomStage.handleStop`, in its order: the transport is
+    // told, the watch is cancelled, the machine ends the take. The latch the
+    // first run set has to go with it, because the NEXT melody run starts the
+    // same way the first one did — `live` before the transport has reported a
+    // single frame. Review N1: with the cancel removed the whole suite stayed
+    // green, because the pair of cases below was never written down.
+    const h = harness()
+    h.frame(PLAYING)
+    h.frameThen(STOPPED, { type: 'stop', hasTake: true })
+    h.watch.cancel()
+    h.send({ type: 'take-decided' })
+    h.send({ type: 'melody-play' })
+    expect(h.ctx().state).toBe('live')
+
+    h.frame(STOPPED)
+    h.frame(STOPPED)
+    expect(h.ranOut).not.toHaveBeenCalled()
+    expect(h.watch.sawRunning).toBe(false)
+
+    // …and the new run can still run out, once it has been seen running.
+    h.frame(PLAYING)
+    h.frame(STOPPED)
+    expect(h.ranOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('ends the next take on its first frame when a Stop leaves the latch set', () => {
+    // The same sequence without the cancel, which is what `handleStop` would
+    // be if the line went: the latch survives the Stop, and the next run's
+    // first (live, stopped) frame reads exactly like a melody that finished.
+    // This is the case that makes the cancel load-bearing rather than
+    // belt-and-braces over the settle: the settle re-asks, and a transport
+    // that has not reported yet is still stopped when it does.
+    const h = harness()
+    h.frame(PLAYING)
+    h.frame(PLAYING)
+    h.send({ type: 'stop', hasTake: true })
+    h.send({ type: 'take-decided' })
+    h.send({ type: 'melody-play' })
+    expect(h.watch.sawRunning).toBe(true)
+
+    h.frame(STOPPED)
+    expect(h.ranOut).toHaveBeenCalledTimes(1)
+  })
+
   it('ends the take when the melody plays itself out', () => {
     const h = harness()
     h.frame(PLAYING)

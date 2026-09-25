@@ -18,7 +18,9 @@ import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { setCurrentMelody } from '@/stores/melody-store'
+import { holdRoomArrival, nativeRunControls, resetRoomArrivalHolds, } from '@/stores/native-shell-store'
 import type { MelodyItem, NoteName } from '@/types'
+import { setSingCoachMarkSeen, singCoachMarkSeen } from './sing-room-settings'
 import { dispatchSingRoom, singRoomContext } from './sing-room-store'
 import type { SingRoomCanvasOptions } from './SingRoomStage'
 import { SingRoomStage } from './SingRoomStage'
@@ -197,6 +199,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   dispatchSingRoom({ type: 'leave' })
+  // A case that throws between a hold and its release leaves no hold behind.
+  resetRoomArrivalHolds()
 })
 
 describe('the room when the melody runs out', () => {
@@ -242,6 +246,34 @@ describe('the room when the melody runs out', () => {
 
     expect(room.picker.trackModalSong()).toBeNull()
     expect(room.picker.isModalOpen()).toBe(false)
+  })
+})
+
+describe('Stop, then the next melody run', () => {
+  it('lets the next run start before its transport reports', async () => {
+    // Review N1: `handleStop` cancels the run-out watch, and deleting that
+    // line left the whole suite green. This is the sequence it is for. The
+    // first run is seen running, so the watch is latched; Stop ends it; the
+    // next `melody-play` puts the room in `live` a frame before the app's
+    // transport says anything, which is the (live, stopped) pair a finished
+    // melody also reads as. With the latch left set, that frame ends the new
+    // take the moment it was asked for.
+    const room = mountRoom()
+    startMelodyRun(room)
+    const controls = nativeRunControls()
+    if (controls === null) throw new Error('the room registered no controls')
+    controls.stop()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(singRoomContext().state).not.toBe('live')
+
+    // The next run, as the song sheet starts one — minus the transport,
+    // which has not reported yet.
+    dispatchSingRoom({ type: 'melody-play' })
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(singRoomContext().state).toBe('live')
   })
 })
 
@@ -325,5 +357,56 @@ describe('"Remove" on the song sheet', () => {
     expect(singRoomContext().melody).toBe(false)
     expect(singRoomContext().melodyLoaded).toBe(false)
     expect(singRoomContext().state).not.toBe('live')
+  })
+})
+
+describe('arriving through an alley door', () => {
+  // `active` is what the arrival sets, and what every automatic start —
+  // the remembered grant reaching for the microphone — is gated on.
+  it('marks the picture a door waits on before it fades', () => {
+    // The native alley's clone waits on `[data-room-background]` and nothing
+    // else; a room without it is waited on for the whole deadline.
+    mountRoom()
+    const marked = document.querySelectorAll('[data-room-background]')
+    expect(marked).toHaveLength(1)
+    expect((marked[0] as HTMLElement).dataset.testid).toBe('sing-cover')
+  })
+
+  it('waits for the shell to release the arrival', async () => {
+    const release = holdRoomArrival()
+    mountRoom()
+    await Promise.resolve()
+    expect(singRoomContext().active).toBe(false)
+
+    release()
+    await Promise.resolve()
+    expect(singRoomContext().active).toBe(true)
+  })
+
+  it('takes no tap that would start a take until it has arrived', async () => {
+    const release = holdRoomArrival()
+    mountRoom()
+    await Promise.resolve()
+    const capsule = screen.getByTestId('sing-capsule')
+    expect(capsule.getAttribute('aria-disabled')).toBe('true')
+
+    fireEvent.click(capsule)
+    setSingCoachMarkSeen(false)
+    fireEvent.click(screen.getByTestId('sing-state-chip'))
+    expect(singRoomContext().state).toBe('resting')
+    // The chip did nothing at all: not even the coach mark counts it as use.
+    expect(singCoachMarkSeen()).toBe(false)
+
+    release()
+    await Promise.resolve()
+    expect(capsule.getAttribute('aria-disabled')).toBeNull()
+    fireEvent.click(capsule)
+    expect(singRoomContext().state).not.toBe('resting')
+  })
+
+  it('arrives at once when nothing holds it', async () => {
+    mountRoom()
+    await Promise.resolve()
+    expect(singRoomContext().active).toBe(true)
   })
 })

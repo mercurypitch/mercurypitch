@@ -1,0 +1,570 @@
+/* ============================================================
+   The alley — the Rooms tab and the welcome, native only
+   ============================================================
+
+   The lab's stylesheet (native-s4-alley-lab.html, `.s4-*`) carried over for
+   one real screen. Every number that is not a token here is the lab's.
+
+   A NIGHT PHOTOGRAPH IN BOTH THEMES. The alley is a cover surface, like the
+   Sing room: the text on it is the kit's on-cover white whatever the app's
+   theme, because the picture under it does not change with the theme.
+
+   TRANSFORMS AND OPACITY ONLY, and no filter on anything that moves: the rim
+   is two stroked polygons, not a blur (lab §5 measured what costs frames).
+
+   Loaded by the native bundle alone: RoomsAlley imports it, and only the
+   shell imports RoomsAlley. */
+
+.mp-alley {
+  --alley-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --alley-sel: 280ms;
+  --alley-persp: 900px;
+  --alley-lift: 96px;
+  --alley-lift-locked: 48px;
+  --alley-yaw: 2.5deg;
+  --alley-settle: 360ms;
+  --alley-ink: #e6edf3;
+  --alley-ink-2: #a8b3bf;
+  --alley-ink-3: #8b949e;
+  --alley-blue: #58a6ff;
+
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-stage, 450);
+  overflow: hidden;
+  /* Clip, not merely hide. The Guitar spill makes the alley wider than the
+     screen, and under overflow: hidden it is still a scroll container: a
+     scrollIntoView (Playwright's actionability retry calls one on Enter)
+     slid it up to 99 px while door taps are mapped against the unscrolled
+     box, so the next tap picked the door to the left. A clipped box has no
+     scroll position at all. Hidden stays as the fallback before iOS 16. */
+  overflow: clip;
+  background: #0b0d12;
+  color: var(--alley-ink);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Reduced motion: every step a 120 ms crossfade, nothing lifts or drifts.
+   The shell's class (what a test can set) and the OS query, the same tokens
+   either way, as shell.css does it. */
+.mp-shell.mp-reduced .mp-alley,
+.mp-shell[data-reduced='on'] .mp-alley {
+  --alley-ease: linear;
+  --alley-sel: 120ms;
+  --alley-lift: 0px;
+  --alley-lift-locked: 0px;
+  --alley-yaw: 0deg;
+  --alley-settle: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mp-alley {
+    --alley-ease: linear;
+    --alley-sel: 120ms;
+    --alley-lift: 0px;
+    --alley-lift-locked: 0px;
+    --alley-yaw: 0deg;
+    --alley-settle: 120ms;
+  }
+}
+
+/* ---------- the plate ---------- */
+
+.mp-alley__plate {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Placed by `alleyFit` (left, top, width and height inline): cover-fit in
+   portrait, sized by the door band on a screen turned on its side. */
+.mp-alley__plate img,
+.mp-alley__paint img {
+  position: absolute;
+  display: block;
+  max-width: none;
+  max-height: none;
+}
+
+/* The kit's top scrim, so the headline reads over the fog. */
+.mp-alley__scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0) 32%
+  );
+}
+
+/* ---------- the top: mark, headline, or the compact title ---------- */
+
+.mp-alley__top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: calc(var(--safe-top, 0px) + 8px) max(16px, var(--safe-right, 0px)) 0
+    max(16px, var(--safe-left, 0px));
+  pointer-events: none;
+  transition: opacity 240ms var(--alley-ease);
+}
+
+.mp-alley[data-phase='opening'] .mp-alley__top,
+.mp-alley[data-phase='open'] .mp-alley__top {
+  opacity: 0;
+}
+
+.mp-alley__mark {
+  display: block;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+/* The mark and the title share one 44 px row on a return. */
+.mp-alley[data-first='off'] .mp-alley__top {
+  flex-direction: row;
+  align-items: center;
+  min-height: 44px;
+  gap: 8px;
+}
+
+/* On its side the block stands beside the doors, left of them, and the door
+   band keeps the full height from the safe top to the dock (alleyFit reads
+   the block's right edge). The compact title shrinks to its own width. */
+@media (orientation: landscape) {
+  .mp-alley__top {
+    right: auto;
+    width: min(36vw, 300px);
+  }
+
+  .mp-alley[data-first='off'] .mp-alley__top {
+    width: auto;
+  }
+}
+
+.mp-alley__intro {
+  max-width: 300px;
+}
+
+.mp-alley__headline,
+.mp-alley__title {
+  /* Nothing of the web's heading treatment: plain on-cover ink. */
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--alley-ink);
+}
+
+.mp-alley__headline {
+  margin: 0;
+  font: 600 34px/40px
+    var(--font-display, 'Outfit Variable', 'Outfit', 'Inter', sans-serif);
+  letter-spacing: -0.015em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.mp-alley__subline {
+  margin: 8px 0 0;
+  font: 400 17px/24px var(--font-body, 'Inter', sans-serif);
+  color: var(--alley-ink-2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.mp-alley__title {
+  margin: 0;
+  font: 600 17px/1.2 var(--font-body, 'Inter', sans-serif);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- the stage: six doors, then the dim over them ---------- */
+
+.mp-alley__stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mp-alley__door {
+  /* Placed and sized inline to the door's own box (doorBox): a full-screen
+     door was a full-screen composited layer each time one was lifted. */
+  position: absolute;
+  z-index: 1;
+  transform-origin: var(--cx) var(--cy);
+  /* None at rest, not a zero lift: six full-screen layers each promoted to
+     the compositor for a transform that does nothing. The lift interpolates
+     from none as it does from zero. */
+  transform: none;
+  transition: transform var(--alley-sel) var(--alley-ease);
+}
+
+.mp-alley__door.is-selected {
+  z-index: 3;
+  transform: perspective(var(--alley-persp)) translateZ(var(--alley-lift))
+    rotateY(var(--alley-yaw));
+}
+
+.mp-alley__door.is-selected[data-locked='yes'] {
+  transform: perspective(var(--alley-persp))
+    translateZ(var(--alley-lift-locked)) rotateY(var(--alley-yaw));
+}
+
+/* Back from a room: the door comes down into the plate again. */
+@keyframes mp-alley-settle {
+  from {
+    transform: perspective(var(--alley-persp))
+      translateZ(var(--alley-lift-locked)) rotateY(var(--alley-yaw));
+  }
+  to {
+    transform: perspective(var(--alley-persp)) translateZ(0px);
+  }
+}
+
+.mp-alley__door.is-settling {
+  z-index: 3;
+  animation: mp-alley-settle var(--alley-settle) var(--alley-ease) both;
+}
+
+/* The painted bay: the plate's own pixels, drawn only while the door is out
+   — at rest the plate under it already is the door. */
+.mp-alley__paint {
+  position: absolute;
+  inset: 0;
+  display: none;
+  /* The plate-sized img inside is cut to the quad by clip-path; this keeps
+     its drifting copy's layer to the door's box as well. */
+  overflow: hidden;
+}
+
+.mp-alley__door.is-lifted .mp-alley__paint {
+  display: block;
+}
+
+/* The Ear Lab has no clip: its own pixels drift instead, 8 s and back,
+   about the door's own centre so the bay stays in its frame. */
+@keyframes mp-alley-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06) translate3d(-1.4%, 1.1%, 0);
+  }
+}
+
+/* In the img's own box, not the screen's: the img is drawn from (-ox, -oy),
+   and a screen-space origin put the pivot that far from the door, so the
+   bay slid sideways instead of breathing (--px/--py, AlleyDoor.tsx). */
+.mp-alley__door.is-drifting .mp-alley__paint img {
+  transform-origin: var(--px) var(--py);
+}
+
+.mp-alley__door.is-alive.is-drifting .mp-alley__paint img {
+  animation: mp-alley-drift 8s ease-in-out infinite alternate;
+}
+
+.mp-shell.mp-reduced .mp-alley__door .mp-alley__paint img,
+.mp-shell[data-reduced='on'] .mp-alley__door .mp-alley__paint img {
+  animation: none;
+}
+
+/* The clip: one rectangle carrying the quad's homography. */
+.mp-alley__art {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  transform-origin: 0 0;
+  backface-visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--alley-sel) var(--alley-ease);
+}
+
+.mp-alley__door.is-alive .mp-alley__art {
+  opacity: 1;
+}
+
+.mp-alley__clip {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The rim and the spill. */
+.mp-alley__rim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity var(--alley-sel) var(--alley-ease);
+}
+
+.mp-alley__door.is-selected .mp-alley__rim {
+  opacity: 1;
+}
+
+.mp-alley__rim-halo,
+.mp-alley__rim-line {
+  fill: none;
+  stroke: var(--alley-blue);
+  stroke-linejoin: round;
+}
+
+.mp-alley__rim-halo {
+  stroke-width: 6;
+  opacity: 0.16;
+}
+
+.mp-alley__rim-line {
+  stroke-width: 1.5;
+  opacity: 0.62;
+}
+
+.mp-alley__door[data-locked='yes'] .mp-alley__rim-halo {
+  opacity: 0.08;
+}
+
+.mp-alley__door[data-locked='yes'] .mp-alley__rim-line {
+  opacity: 0.34;
+}
+
+.mp-alley__spill {
+  position: absolute;
+  left: var(--sx);
+  top: var(--sy);
+  width: var(--sw);
+  height: 72px;
+  transform: translate(-50%, -26%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--spill), rgba(0, 0, 0, 0) 72%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity var(--alley-sel) var(--alley-ease);
+}
+
+.mp-alley__door.is-selected .mp-alley__spill {
+  opacity: 1;
+}
+
+.mp-alley__dim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  /* Hidden at rest, so a full-screen layer is not composited at opacity 0;
+     it goes hidden only once its fade out has finished. */
+  visibility: hidden;
+  transition:
+    opacity var(--alley-sel) var(--alley-ease),
+    visibility 0s linear var(--alley-sel);
+}
+
+.mp-alley[data-phase='selected'] .mp-alley__dim,
+.mp-alley[data-phase='alive'] .mp-alley__dim,
+.mp-alley[data-phase='opening'] .mp-alley__dim {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--alley-sel) var(--alley-ease),
+    visibility 0s linear 0s;
+}
+
+/* ---------- the tap surface, and the doors a keyboard reaches ---------- */
+
+.mp-alley__hit {
+  position: absolute;
+  z-index: 5;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mp-alley__keys {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.mp-alley__key {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mp-alley__key:focus-visible {
+  outline: 2px solid var(--alley-blue);
+  outline-offset: 3px;
+}
+
+/* ---------- the card under a selected door, and Enter under that ---------- */
+
+.mp-alley__panel {
+  position: absolute;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition:
+    opacity var(--alley-sel) var(--alley-ease),
+    transform var(--alley-sel) var(--alley-ease),
+    visibility 0s linear var(--alley-sel);
+}
+
+.mp-alley__panel.is-shown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity var(--alley-sel) var(--alley-ease),
+    transform var(--alley-sel) var(--alley-ease),
+    visibility 0s linear 0s;
+}
+
+.mp-alley[data-phase='opening'] .mp-alley__panel {
+  opacity: 0;
+}
+
+.mp-shell.mp-reduced .mp-alley__panel,
+.mp-shell[data-reduced='on'] .mp-alley__panel {
+  transform: none;
+}
+
+/* The kit's .plate: glass over the alley. */
+.mp-alley__card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(230, 237, 243, 0.1);
+  /* The same fill for iOS 16.0 and 16.1, which drop color-mix() at parse
+     time and would leave the card with no fill behind its text. */
+  background: rgba(22, 27, 34, 0.72);
+  background: color-mix(in srgb, #161b22 72%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
+  color: var(--alley-ink);
+  outline: none;
+}
+
+/* Focus lands here as a reading position for a screen reader after a door
+   tap; it is not a tab stop, and a ring on it after a thumb tap is noise. */
+.mp-alley__card:focus {
+  outline: none;
+}
+
+/* A keyboard that picked a door lands on its card, and must see it did. */
+.mp-alley__card:focus-visible {
+  outline: 2px solid var(--alley-blue);
+  outline-offset: 2px;
+}
+
+/* The skip link's landing: the alley itself, which needs no ring. */
+.mp-alley:focus {
+  outline: none;
+}
+
+.mp-alley__eyebrow {
+  margin-bottom: 4px;
+  font: 500 11px/14px var(--font-body, 'Inter', sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--alley-ink-3);
+}
+
+.mp-alley__name {
+  font: 600 15px/20px
+    var(--font-display, 'Outfit Variable', 'Outfit', 'Inter', sans-serif);
+}
+
+.mp-alley__line {
+  margin-top: 2px;
+  font: 400 13px/18px var(--font-body, 'Inter', sans-serif);
+  color: var(--alley-ink-2);
+}
+
+/* The kit's capsule. */
+.mp-alley__enter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--alley-blue);
+  color: #0d1117;
+  font: 600 17px/1 var(--font-body, 'Inter', sans-serif);
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s var(--alley-ease);
+}
+
+.mp-alley__enter:active {
+  transform: scale(0.98);
+}
+
+.mp-alley__enter:focus-visible {
+  outline: 2px solid var(--alley-ink);
+  outline-offset: 3px;
+}
+
+/* ---------- the shared element (on <body>, outside the shell) ---------- */
+
+.mp-alley-morph {
+  position: fixed;
+  left: 0;
+  top: 0;
+  /* Over a stage, under the rail: the room mounts beneath it. */
+  z-index: 460;
+  overflow: hidden;
+  transform-origin: 0 0;
+  backface-visibility: hidden;
+  background: #0b0d12;
+  pointer-events: none;
+}
+
+.mp-alley-morph > .mp-alley-morph__clip,
+.mp-alley-morph__paint {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The plate where the alley drew it (inline), so the bay does not jump. */
+.mp-alley-morph__paint img {
+  position: absolute;
+  display: block;
+  max-width: none;
+  max-height: none;
+}
+
+.mp-alley-morph__paint {
+  transform-origin: 0 0;
+}

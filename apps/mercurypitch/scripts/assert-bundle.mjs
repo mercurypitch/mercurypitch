@@ -31,6 +31,14 @@
 //            failure takes now, and it is a red check rather than a blank
 //            screen on a phone.
 //
+//   WORKER   The built JS names exactly the db-worker this build asked for
+//            (../api-base.mjs): the dev one unless MERCURYPITCH_API_TARGET=
+//            production was set on purpose, and never the other one. The
+//            native bundle used to compile VITE_API_BASE_URL in as undefined,
+//            so every sign-in on a phone failed with "not configured" and
+//            nothing in CI noticed; a test build carrying the production
+//            worker would be the same silence the other way round.
+//
 //   UNSOLD   No built file offers a way to pay. The web app sells credit
 //            packs through Stripe and links out to Ko-fi and Sponsors, and
 //            `@` aliases to that same source tree; App Store guideline 3.1.1
@@ -52,13 +60,15 @@
 // tree that is stale rather than absent -- which the PRESENT checks alone
 // cannot tell apart from a good one.
 //
-// Dependency-free on purpose: it runs on a bare runner before any workspace
-// install has necessarily happened, and inside the reusable Capacitor
-// workflow, which knows nothing about this app.
+// It needs only Node and `vite` (through ../api-base.mjs, which reads the env
+// files with Vite's own loader): every job that runs it -- the PR gate and
+// the reusable Capacitor workflow, which knows nothing about this app -- has
+// installed the workspace first.
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { API_BASES, readEnvFiles, resolveApiBase } from '../api-base.mjs'
 import { resolveNativeAssets, totalBytes } from '../native-assets.mjs'
 
 /** The files sync-ort-assets.mjs vendors, relative to a bundle root. */
@@ -79,6 +89,9 @@ const WEB_PUBLIC = join(
   dirname(fileURLToPath(import.meta.url)),
   '../../../public',
 )
+
+/** This app's own directory, where the env files the build read live. */
+const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Must appear in the bundle: the wasm base the engine really reads. */
 const WASM_BASE = '/ort/'
@@ -155,6 +168,22 @@ function main(argv) {
   }
 
   console.log(`assert-bundle: ${distDir}`)
+
+  // WORKER -- what this build ASKED for, resolved the way vite.config.ts
+  // resolved it: the same env files for mode production, the same process.
+  let api
+  try {
+    api = resolveApiBase(readEnvFiles(APP_DIR, 'production'), process.env)
+    console.log(
+      `      API base requested: ${api.base === '' ? '(none)' : api.base} [${api.target}; ${api.source}]`,
+    )
+  } catch (error) {
+    record(
+      false,
+      'the requested API base resolves',
+      error instanceof Error ? error.message : String(error),
+    )
+  }
 
   // Every root gets every check. The Android copy is what `cap sync` left
   // behind, and a sync that did not overwrite the previous build leaves the
@@ -235,6 +264,31 @@ function main(argv) {
           `        ${String(totalBytes(root, entry.files)).padStart(9)} B  ${entry.glob}`,
         )
       }
+    }
+
+    // WORKER -- the requested base is in the JS, and no other known one is.
+    if (api !== undefined) {
+      const chunks = assets.filter((file) => file.endsWith('.js'))
+      const named = (needle) => chunks.some((file) => contains(file, needle))
+      if (api.base === '') {
+        console.log(
+          `warn  ${label}: no API base compiled in -- a local-only build, sign-in and sync are off (apps/mercurypitch/.env names the dev worker; see .env.example)`,
+        )
+      } else {
+        record(
+          named(api.base),
+          `${label}: the built JS names the requested API base ${api.base}`,
+          `No chunk carries ${api.base}, so auth-service throws "VITE_API_BASE_URL is not configured" on the phone. Check that vite.config.ts still compiles api-base.mjs's answer in through \`define\`${synced ? ', or this is a stale bundle cap sync did not overwrite' : ''}.`,
+        )
+      }
+      const others = Object.values(API_BASES).filter(
+        (base) => base !== api.base && named(base),
+      )
+      record(
+        others.length === 0,
+        `${label}: no other db-worker is compiled in`,
+        `Found ${others.join(', ')} beside the requested ${api.base === '' ? '(none)' : api.base}. A test build must not carry the production worker, and a store build must not carry the dev one${synced ? '; or this is a stale bundle' : ''}.`,
+      )
     }
 
     // UNSOLD

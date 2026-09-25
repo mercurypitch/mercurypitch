@@ -6,8 +6,19 @@ import { useHashRouter } from '@/features/routing/useHashRouter'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
+import type * as NativeBuild from '@/lib/native-build'
 import type { AdminSection } from '@/stores/ui-store'
 import { adminContentSection, registerAdminContentCloseGuard, requestAdminContentSection, requestCloseAdminContentStudio, setAdminContentSection, setShowAdminContentStudio, showAdminContentStudio, } from '@/stores/ui-store'
+
+// The build flag, per case: the route table is shared, and one route must be
+// inert under the native build.
+const build = vi.hoisted(() => ({ native: false }))
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<typeof NativeBuild>()),
+  get IS_NATIVE_BUILD() {
+    return build.native
+  },
+}))
 
 function mountRouter(options: {
   closeAdminContent: () => boolean
@@ -36,6 +47,8 @@ function mountRouter(options: {
   const setVoiceConstellationOpen = vi.fn<(open: boolean) => void>()
   const handleShareMelody = vi.fn()
   const setInitialUvrView = vi.fn()
+  const openOnboardingMap = vi.fn()
+  const dismissWelcome = vi.fn()
 
   const Fixture = () => {
     const [voiceConstellationOpen, setVoiceOpen] = createSignal(false)
@@ -51,7 +64,7 @@ function mountRouter(options: {
       startWalkthrough: vi.fn(),
       setShowGuideSelection: vi.fn(),
       setJamRoomToJoin: vi.fn(),
-      dismissWelcome: vi.fn(),
+      dismissWelcome,
       handleShareMelody,
       handleShareExercise: vi.fn(),
       handleShareRoutine: vi.fn(),
@@ -66,7 +79,7 @@ function mountRouter(options: {
       openResetPassword: vi.fn(),
       showResetPassword: () => false,
       closeResetPassword,
-      openOnboardingMap: vi.fn(),
+      openOnboardingMap,
       setVoiceConstellationOpen: (open) => {
         setVoiceOpen(open)
         setVoiceConstellationOpen(open)
@@ -96,8 +109,34 @@ function mountRouter(options: {
     closeResetPassword,
     handleShareMelody,
     setInitialUvrView,
+    openOnboardingMap,
+    dismissWelcome,
   }
 }
+
+describe('the First Light map route', () => {
+  afterEach(() => {
+    build.native = false
+  })
+
+  it('opens the map on the web', async () => {
+    history.replaceState(null, '', '#/map')
+    const router = mountRouter({ closeAdminContent: () => true })
+    await waitFor(() => expect(router.openOnboardingMap).toHaveBeenCalled())
+  })
+
+  it('is inert under the native build: no map, no flow left open', async () => {
+    // First Light is folded out of the native build: opening its map there
+    // left flowOpen() true for the session with nothing on screen.
+    build.native = true
+    history.replaceState(null, '', '#/map')
+    const router = mountRouter({ closeAdminContent: () => true })
+    // The web case sees its call inside this; give the route the same time.
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(router.openOnboardingMap).not.toHaveBeenCalled()
+    expect(router.dismissWelcome).not.toHaveBeenCalled()
+  })
+})
 
 describe('tab hash navigation guard', () => {
   it('restores the current tab hash when browser navigation is cancelled', async () => {

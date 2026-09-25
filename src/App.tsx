@@ -31,10 +31,11 @@ import { SingingControlBar } from '@/components/singing/SingingControlBar'
 import { SingingStatusBar } from '@/components/singing/SingingStatusBar'
 import { SingingCanvasHud } from '@/components/SingingCanvasHud'
 import { SyncHost } from '@/components/sync/SyncHost'
+import type { FirstLight as FirstLightFlow } from '@/features/onboarding/FirstLight'
 import type { SingRoomCanvasOptions } from '@/features/sing-room/SingRoomStage'
 import { SingRoomStage } from '@/features/sing-room/SingRoomStage'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { consumeRunParked } from '@/stores/native-shell-store'
+import { consumeRunParked, nativeSkipTarget } from '@/stores/native-shell-store'
 import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
@@ -83,12 +84,20 @@ const ChallengeResultCard = lazy(async () =>
   })),
 )
 // First Light onboarding — lazy so a returning visitor pays nothing for a
-// flow they have already walked.
-const FirstLight = lazy(async () =>
-  import('@/features/onboarding/FirstLight').then((m) => ({
-    default: m.FirstLight,
-  })),
-)
+// flow they have already walked. Not in the native bundle at all: the app's
+// first run is the alley (S4), and a `lazy()` call is a side effect Rollup
+// keeps, chunk and all, whether or not anything mounts it — so the constant
+// picks a stub before the call is ever written.
+type LazyFirstLight = ReturnType<typeof lazy<typeof FirstLightFlow>>
+const FirstLight: LazyFirstLight = IS_NATIVE_BUILD
+  ? (Object.assign(() => null, {
+      preload: async () => ({ default: () => null }),
+    }) as unknown as LazyFirstLight)
+  : lazy(async () =>
+      import('@/features/onboarding/FirstLight').then((m) => ({
+        default: m.FirstLight,
+      })),
+    )
 const VoiceConstellationSurface = lazy(async () =>
   import('@/features/voice-constellation/VoiceConstellationSurface').then(
     (m) => ({ default: m.VoiceConstellationSurface }),
@@ -248,7 +257,8 @@ import type { RoutineTemplate } from '@/features/routines/types'
 import { loadSharedRoutine } from '@/features/routines/use-daily-routine'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import { useSessionSequencer } from '@/features/session/useSessionSequencer'
-import { isTabVisible, PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, scopeHomeTab, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
+import { appModeBounce } from '@/features/tabs/app-mode-guard'
+import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_ANALYSIS, TAB_CHALLENGES, TAB_COMMUNITY, TAB_COMPOSE, TAB_EAR_LAB, TAB_EXERCISES, TAB_GUITAR, TAB_HOME, TAB_JAM, TAB_KARAOKE, TAB_LAB, TAB_LAB_DIFF, TAB_LAB_TRANSCRIBE, TAB_LEADERBOARD, TAB_PATH, TAB_PIANO, TAB_PITCH_ALGO, TAB_PITCH_TEST, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, tabLabel, visibleTabOrder, } from '@/features/tabs/constants'
 import { usePageTourOffer } from '@/features/tours/usePageTourOffer'
 import { leaveVoiceConstellation } from '@/features/voice-constellation/navigation'
 import { useVoiceConstellationIsolation } from '@/features/voice-constellation/useVoiceConstellationIsolation'
@@ -729,7 +739,10 @@ const AppShell: Component<AppProps> = (props) => {
   const OPENING_HOLD_FIRST_RUN_MS = 2000
   const OPENING_HOLD_RETURNING_MS = 750
   const OPENING_FADE_MS = 400
+  // Never under the native build: its launch frame is the storyboard and
+  // the splash theme, and its first run is the alley (S4 decision 10).
   const openingDue =
+    !IS_NATIVE_BUILD &&
     navigator.webdriver !== true &&
     parseHash(window.location.hash).type !== 'voice-constellation'
   const firstRunBoot = openingDue && showWelcome()
@@ -805,8 +818,9 @@ const AppShell: Component<AppProps> = (props) => {
   // What's New: the release page. Announced once per release line to a
   // visitor who was already here for the last one, and reachable from the
   // sidebar afterwards. `welcomeSeen` is the returning-visitor test — a
-  // first-ever arrival is mid-onboarding and has no "new" to be shown.
-  const whatsNew = createWhatsNewController()
+  // first-ever arrival is mid-onboarding and has no "new" to be shown. Not
+  // under the native build, which has no What's New (use-whats-new.ts).
+  const whatsNew = createWhatsNewController({ native: IS_NATIVE_BUILD })
   onMount(() => whatsNew.announceIfNew(welcomeSeen() !== ''))
 
   const closeVoiceConstellation = () => {
@@ -1934,18 +1948,22 @@ const AppShell: Component<AppProps> = (props) => {
   })
 
   const appMountedAt = performance.now()
+  // Never under the native build (app-mode-guard.ts says why).
   createEffect(() => {
     const scope = practiceScope()
     const mode = uiMode()
     if (walkthroughActive()) return
     if (labTab() !== null) return
-    if (isTabVisible(activeTab(), scope, mode)) return
+    if (appModeBounce(activeTab(), scope, mode, IS_NATIVE_BUILD) === null) {
+      return
+    }
     queueMicrotask(() => {
       const s = untrack(practiceScope)
       const m = untrack(uiMode)
       if (untrack(walkthroughActive)) return
       if (untrack(labTab) !== null) return
-      if (isTabVisible(untrack(activeTab), s, m)) return
+      const target = appModeBounce(untrack(activeTab), s, m, IS_NATIVE_BUILD)
+      if (target === null) return
       // Drop one-shot intents aimed at the hidden tab.
       setJamRoomToJoin(null)
       setPendingDrill(null)
@@ -1962,7 +1980,7 @@ const AppShell: Component<AppProps> = (props) => {
           { channel: 'app-mode-guard' },
         )
       }
-      void handleTabChange(scopeHomeTab(s))
+      void handleTabChange(target)
     })
   })
 
@@ -3114,7 +3132,18 @@ const AppShell: Component<AppProps> = (props) => {
       loadAndPlayMelodyForSession={loadAndPlayMelodyForSession}
     >
       <div id="app" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        <a class="skip-link" href="#main-content">
+        <a
+          class="skip-link"
+          href="#main-content"
+          onClick={(event) => {
+            // Under the native build the Rooms tab is the alley, which the
+            // shell draws outside <main>: the link goes there instead.
+            const target = IS_NATIVE_BUILD ? nativeSkipTarget() : null
+            if (target === null) return
+            event.preventDefault()
+            target.focus()
+          }}
+        >
           Skip to main content
         </a>
         {/* The opening — MercuryPitch's curtain-up. Sits above the flow
@@ -3123,89 +3152,97 @@ const AppShell: Component<AppProps> = (props) => {
             art rides in when its file lands (the obsidian ground and
             the lockup carry the frame until then); the hint appears
             only when the wait outlives the minimum hold. */}
-        <Show when={opening() !== 'gone'}>
-          <div
-            class={styles.appOpening}
-            classList={{
-              [styles.appOpeningLeaving]: opening() === 'fading',
-              [styles.appOpeningFirstRun]: firstRunBoot,
-            }}
-            data-onboarding-flow
-            role="status"
-            aria-live="polite"
-          >
-            {/* Wide and tall are separate recompositions, not crops —
-                covering a 9:19.5 phone with the 16:9 plate meant a ~2.2x
-                upscale of the middle quarter, which is what read as
-                mushy. Both tiers are sized so an ordinary screen scales
-                them DOWN. Same wide/tall split as the onboarding sky. */}
-            <picture class={styles.appOpeningArtLayer}>
-              <source
-                srcset="/opening/first-light-tall.webp"
-                media="(max-aspect-ratio: 1/1)"
-              />
-              <img
-                class={styles.appOpeningArt}
-                classList={{ [styles.appOpeningArtReady]: openingArtReady() }}
-                src="/opening/first-light-wide.webp"
-                alt=""
-                decoding="async"
-                ref={(el) => {
-                  if (el.complete && el.naturalWidth > 0)
-                    setOpeningArtReady(true)
-                }}
-                onLoad={() => setOpeningArtReady(true)}
-              />
-            </picture>
-            {/* First light itself, blooming along the horizon — first
-                arrival only, and only once the plate is actually there
-                to bloom over. */}
-            <Show when={firstRunBoot && openingArtReady()}>
-              <div class={styles.appOpeningBloom} aria-hidden="true" />
-            </Show>
-            {/* The mark is the shipped brand asset, never a copy pasted
-                into JSX: this opening first went out carrying the
-                superseded pre-meniscus mark because it was hand-inlined.
-                public/brand-mark.svg is the Meniscus v2 master. */}
-            <div class={styles.appOpeningLockup}>
-              <img
-                class={styles.appOpeningMark}
-                src="/brand-mark.svg"
-                alt=""
-                decoding="async"
-              />
-              <span class={styles.appOpeningWordmark}>
-                Mercury<span>Pitch</span>
-              </span>
+        {/* Folded out of the native bundle, art and all: see openingDue. */}
+        {IS_NATIVE_BUILD ? null : (
+          <Show when={opening() !== 'gone'}>
+            <div
+              class={styles.appOpening}
+              classList={{
+                [styles.appOpeningLeaving]: opening() === 'fading',
+                [styles.appOpeningFirstRun]: firstRunBoot,
+              }}
+              data-onboarding-flow
+              role="status"
+              aria-live="polite"
+            >
+              {/* Wide and tall are separate recompositions, not crops —
+                  covering a 9:19.5 phone with the 16:9 plate meant a ~2.2x
+                  upscale of the middle quarter, which is what read as
+                  mushy. Both tiers are sized so an ordinary screen scales
+                  them DOWN. Same wide/tall split as the onboarding sky. */}
+              <picture class={styles.appOpeningArtLayer}>
+                <source
+                  srcset="/opening/first-light-tall.webp"
+                  media="(max-aspect-ratio: 1/1)"
+                />
+                <img
+                  class={styles.appOpeningArt}
+                  classList={{ [styles.appOpeningArtReady]: openingArtReady() }}
+                  src="/opening/first-light-wide.webp"
+                  alt=""
+                  decoding="async"
+                  ref={(el) => {
+                    if (el.complete && el.naturalWidth > 0)
+                      setOpeningArtReady(true)
+                  }}
+                  onLoad={() => setOpeningArtReady(true)}
+                />
+              </picture>
+              {/* First light itself, blooming along the horizon — first
+                  arrival only, and only once the plate is actually there
+                  to bloom over. */}
+              <Show when={firstRunBoot && openingArtReady()}>
+                <div class={styles.appOpeningBloom} aria-hidden="true" />
+              </Show>
+              {/* The mark is the shipped brand asset, never a copy pasted
+                  into JSX: this opening first went out carrying the
+                  superseded pre-meniscus mark because it was hand-inlined.
+                  public/brand-mark.svg is the Meniscus v2 master. */}
+              <div class={styles.appOpeningLockup}>
+                <img
+                  class={styles.appOpeningMark}
+                  src="/brand-mark.svg"
+                  alt=""
+                  decoding="async"
+                />
+                <span class={styles.appOpeningWordmark}>
+                  Mercury<span>Pitch</span>
+                </span>
+              </div>
+              <p class={styles.appOpeningHint}>Preparing your first note…</p>
             </div>
-            <p class={styles.appOpeningHint}>Preparing your first note…</p>
-          </div>
-        </Show>
+          </Show>
+        )}
         {/* First Light — the whole first run. A fresh visitor lands
             straight on beat 1; Settings → "Replay the intro" reopens it
             through the same `showWelcome` flag. */}
-        <Show when={flowOpen()}>
-          <ErrorBoundary
-            fallback={() => {
-              // A dead chunk (offline, or a deploy swapped the hashed
-              // assets) used to take the whole app down with it — and
-              // would now also strand the opening backdrop. Give up on the flow
-              // for this session only: the seen-flag in localStorage is
-              // untouched, so the next visit offers it again. Deferred a
-              // tick — these are writes, not render work.
-              queueMicrotask(() => {
-                closeOnboarding()
-                setShowWelcome(false)
-              })
-              return null
-            }}
-          >
-            <FirstLight
-              replay={onboardingReplay()}
-              onReady={dropOpeningAfterHold}
-            />
-          </ErrorBoundary>
-        </Show>
+        {/* Never under the native build, whose first run is the alley
+            (S4 decision 10): the ternary folds, so the flow's chunk is not
+            in the phone's bundle at all. */}
+        {IS_NATIVE_BUILD ? null : (
+          <Show when={flowOpen()}>
+            <ErrorBoundary
+              fallback={() => {
+                // A dead chunk (offline, or a deploy swapped the hashed
+                // assets) used to take the whole app down with it — and
+                // would now also strand the opening backdrop. Give up on the flow
+                // for this session only: the seen-flag in localStorage is
+                // untouched, so the next visit offers it again. Deferred a
+                // tick — these are writes, not render work.
+                queueMicrotask(() => {
+                  closeOnboarding()
+                  setShowWelcome(false)
+                })
+                return null
+              }}
+            >
+              <FirstLight
+                replay={onboardingReplay()}
+                onReady={dropOpeningAfterHold}
+              />
+            </ErrorBoundary>
+          </Show>
+        )}
 
         <Show when={whatsNew.open()}>
           <Suspense fallback={null}>
@@ -3447,7 +3484,9 @@ const AppShell: Component<AppProps> = (props) => {
               <VerifyEmailBanner placement="inline" />
               <Show when={activeTab() === TAB_HOME}>
                 <TabErrorBoundary tabName={tabLabel(TAB_HOME)}>
-                  <HomePage />
+                  {/* The app draws the alley here instead, from its own
+                      shell (apps/mercurypitch/src/alley, S4). */}
+                  {IS_NATIVE_BUILD ? null : <HomePage />}
                 </TabErrorBoundary>
               </Show>
 
