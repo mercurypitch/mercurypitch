@@ -214,12 +214,18 @@ or material slots before integration:
 
 The existing material library clones the imported material class. Applying a
 glass palette to an opaque standard material therefore does not create physical
-transmission. The future laboratory adapter needs an explicit material
-replacement policy. Glass begins from a physical transmissive material, forces
+transmission. The laboratory adapter uses explicit per-mesh material bindings independent of
+motion roles. Every exported mesh has a unique name and exactly one reviewed
+binding. A glass deck can therefore carry opaque gold stars and frosted etching
+without those details inheriting the glass material. Mixed ivory/gold rollers
+retain a reviewed PBR atlas rather than receiving a uniform gold override. Glass begins from a physical transmissive material, forces
 metalness to zero and accepts only audited glass-region colour, normal,
-roughness and ambient-occlusion maps. Gold uses its own metallic material and
-audited gold-region maps. That work remains pending and is outside the cardinal
-orientation prerequisite.
+roughness and ambient-occlusion maps. Opaque ornament may use a standard or physical PBR material with its audited
+region maps; a mixed atlas must retain its reviewed metallic channel. Borrowed
+materials and textures are never disposed by the adapter. The deck must contain
+at least one physical glass binding; missing, duplicate or unknown mesh bindings
+reject installation. Final Blender materials, export and real-host acceptance
+remain pending.
 
 Dense geometry and original high-resolution maps remain source masters. Runtime
 topology, texture container and resolution decisions follow measurements from

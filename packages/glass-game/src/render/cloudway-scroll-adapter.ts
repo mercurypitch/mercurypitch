@@ -1,6 +1,6 @@
 // Cloudway semantic scroll adapter — validated donor roles follow authoritative centered-extent snapshots.
 
-import type { Material, Matrix4, Mesh, MeshPhysicalMaterial, Object3D, } from 'three'
+import type { Material, Matrix4, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Object3D, } from 'three'
 import { Box3, Group, Vector3 } from 'three'
 import type { PlatformDefinition, PlatformRenderQuarterTurns, PlatformRuntimeSnapshot, } from '../contracts'
 import { PLATFORM_RENDER_QUARTER_TURNS } from '../contracts'
@@ -16,11 +16,12 @@ export {
   type CloudwayScrollColliderMetadataV1,
 } from './cloudway-scroll-contract'
 
-export interface CloudwayScrollSemanticMaterials {
-  /** Borrowed physical glass. Texture channels must already be region-approved. */
-  readonly glass: MeshPhysicalMaterial
-  /** Borrowed gold used only by roller and persistent semantic roles. */
-  readonly gold: MeshPhysicalMaterial
+export interface CloudwayScrollMaterialBinding {
+  /** Exact mesh name in the reviewed export, independent of its motion role. */
+  readonly mesh: string
+  readonly kind: 'glass' | 'opaque'
+  /** Borrowed material; texture channels must already be region-approved. */
+  readonly material: MeshStandardMaterial
 }
 
 export interface CloudwayScrollAdapter {
@@ -36,7 +37,7 @@ export interface CloudwayScrollAdapter {
 export interface CreateCloudwayScrollAdapterOptions {
   readonly source: Object3D
   readonly platform: PlatformDefinition
-  readonly materials: CloudwayScrollSemanticMaterials
+  readonly materials: readonly CloudwayScrollMaterialBinding[]
 }
 
 interface InstalledRole {
@@ -79,21 +80,80 @@ function exactNamedDescendant(source: Object3D, name: string): Object3D {
 
 function validateMaterials(
   source: Object3D,
-  materials: CloudwayScrollSemanticMaterials,
-): void {
-  if (!materials.glass?.isMeshPhysicalMaterial)
-    fail(source, 'glass semantic slot must use MeshPhysicalMaterial.')
-  if (materials.glass.transmission <= 0 || materials.glass.metalness !== 0)
-    fail(
-      source,
-      'glass semantic slot must be transmissive with metalness equal to zero.',
+  bindings: readonly CloudwayScrollMaterialBinding[],
+  deckName: string,
+): ReadonlyMap<string, MeshStandardMaterial> {
+  const meshes = new Map<string, Mesh>()
+  source.traverse((object) => {
+    const mesh = object as Mesh
+    if (!mesh.isMesh) return
+    if (!mesh.name || meshes.has(mesh.name))
+      fail(source, 'Every material-bound mesh needs a unique nonempty name.')
+    meshes.set(mesh.name, mesh)
+  })
+  const materials = new Map<string, MeshStandardMaterial>()
+  for (const binding of bindings) {
+    if (!meshes.has(binding.mesh) || materials.has(binding.mesh))
+      fail(
+        source,
+        `Material binding "${binding.mesh}" is unknown or duplicated.`,
+      )
+    const material = binding.material
+    if (!material?.isMeshStandardMaterial)
+      fail(source, `Material binding "${binding.mesh}" needs a PBR material.`)
+    const physical = material as MeshPhysicalMaterial
+    const transmission = physical.isMeshPhysicalMaterial
+      ? physical.transmission
+      : 0
+    if (
+      !Number.isFinite(transmission) ||
+      transmission < 0 ||
+      transmission > 1 ||
+      !Number.isFinite(material.metalness) ||
+      material.metalness < 0 ||
+      material.metalness > 1
     )
-  if (!materials.gold?.isMeshPhysicalMaterial)
-    fail(source, 'gold semantic slot must use MeshPhysicalMaterial.')
-  if (materials.gold.metalness <= 0 || materials.gold.transmission !== 0)
-    fail(source, 'gold semantic slot must be metallic and non-transmissive.')
-  if (materials.glass === materials.gold)
-    fail(source, 'glass and gold semantic slots must use distinct materials.')
+      fail(
+        source,
+        `Material binding "${binding.mesh}" has invalid transmission or metalness.`,
+      )
+    if (binding.kind === 'glass') {
+      if (
+        !physical.isMeshPhysicalMaterial ||
+        transmission <= 0 ||
+        material.metalness !== 0
+      )
+        fail(
+          source,
+          `Glass binding "${binding.mesh}" needs transmissive MeshPhysicalMaterial with zero metalness.`,
+        )
+    } else if (
+      binding.kind !== 'opaque' ||
+      transmission !== 0 ||
+      material.transparent ||
+      material.opacity !== 1
+    ) {
+      fail(
+        source,
+        `Opaque binding "${binding.mesh}" must be non-transmissive and fully opaque.`,
+      )
+    }
+    materials.set(binding.mesh, material)
+  }
+  for (const name of meshes.keys())
+    if (!materials.has(name))
+      fail(source, `Mesh "${name}" has no reviewed material binding.`)
+  const deckMeshes = new Set<string>()
+  exactNamedDescendant(source, deckName).traverse((object) => {
+    if ((object as Mesh).isMesh) deckMeshes.add(object.name)
+  })
+  if (
+    !bindings.some(
+      (binding) => binding.kind === 'glass' && deckMeshes.has(binding.mesh),
+    )
+  )
+    fail(source, 'The scroll deck needs at least one reviewed glass mesh.')
+  return materials
 }
 
 function worldAxisFor(turns: PlatformRenderQuarterTurns): 'x' | 'z' {
@@ -168,7 +228,7 @@ function cloneRole(
   sourceClone: Object3D,
   sourceCloneInverse: Matrix4,
   roleName: string,
-  material: MeshPhysicalMaterial,
+  materials: ReadonlyMap<string, MeshStandardMaterial>,
   ownedMeshes: Mesh[],
 ): InstalledRole {
   const role = exactNamedDescendant(sourceClone, roleName)
@@ -210,7 +270,7 @@ function cloneRole(
   }
   for (const item of staged) {
     item.mesh.geometry = item.geometry
-    item.mesh.material = material
+    item.mesh.material = materials.get(item.mesh.name)!
     ownedMeshes.push(item.mesh)
   }
   const motion = new Group()
@@ -228,7 +288,11 @@ export function createCloudwayScrollAdapter(
 ): CloudwayScrollAdapter {
   const { source, platform, materials } = options
   const validated = validateCloudwayScrollDonor(source)
-  validateMaterials(source, materials)
+  const reviewedMaterials = validateMaterials(
+    source,
+    materials,
+    validated.metadata.motion.roles.deck,
+  )
   const validatedPlatform = validatePlatform(source, platform, validated)
 
   const root = new Group()
@@ -241,7 +305,7 @@ export function createCloudwayScrollAdapter(
   root.setRotationFromAxisAngle(Y_AXIS, validatedPlatform.turns * (Math.PI / 2))
   root.visible = false
   const ownedMeshes: Mesh[] = []
-  const borrowedMaterials = new Set<Material>([materials.glass, materials.gold])
+  const borrowedMaterials = new Set<Material>(reviewedMaterials.values())
   let deck: InstalledRole
   let negativeRoller: InstalledRole
   let positiveRoller: InstalledRole
@@ -253,7 +317,7 @@ export function createCloudwayScrollAdapter(
       sourceClone,
       sourceCloneInverse,
       validated.metadata.motion.roles.deck,
-      materials.glass,
+      reviewedMaterials,
       ownedMeshes,
     )
     root.add(deck.motion)
@@ -261,7 +325,7 @@ export function createCloudwayScrollAdapter(
       sourceClone,
       sourceCloneInverse,
       validated.metadata.motion.roles.negativeRoller,
-      materials.gold,
+      reviewedMaterials,
       ownedMeshes,
     )
     root.add(negativeRoller.motion)
@@ -269,7 +333,7 @@ export function createCloudwayScrollAdapter(
       sourceClone,
       sourceCloneInverse,
       validated.metadata.motion.roles.positiveRoller,
-      materials.gold,
+      reviewedMaterials,
       ownedMeshes,
     )
     root.add(positiveRoller.motion)
@@ -278,7 +342,7 @@ export function createCloudwayScrollAdapter(
         sourceClone,
         sourceCloneInverse,
         roleName,
-        materials.gold,
+        reviewedMaterials,
         ownedMeshes,
       )
       root.add(persistent.motion)
