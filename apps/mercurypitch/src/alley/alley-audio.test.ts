@@ -6,6 +6,13 @@ import { AMBIENT_URL } from './alley-plate'
 
 type Call = [string, ...unknown[]]
 
+/** What the app's `fetchAssetRead` hands back: the bytes and their status. */
+const read = (status = 200) => ({
+  bytes: new ArrayBuffer(8),
+  status,
+  ok: status === 200,
+})
+
 /** A context that records what is scheduled on it, and nothing else. */
 function fakeContext(log: Call[]) {
   let sources = 0
@@ -86,7 +93,7 @@ describe('the alley ambient', () => {
       },
       load: async (url) => {
         loads.push(url)
-        return new ArrayBuffer(8)
+        return read()
       },
       activate: async (target: AmbientActivation) => {
         activations += 1
@@ -254,7 +261,7 @@ describe("the ambient's context over its life", () => {
       },
       load: async () => {
         loads += 1
-        return new ArrayBuffer(8)
+        return read()
       },
       activate: async (target: AmbientActivation) => {
         const init = target.init()
@@ -402,7 +409,7 @@ describe('an ambient that does not start', () => {
         createContext: () => ctx as unknown as AudioContext,
         load: async () => {
           if (stage === 'load') throw failure
-          return new ArrayBuffer(8)
+          return read()
         },
         activate: async (target: AmbientActivation) => {
           await target.init()
@@ -439,7 +446,7 @@ describe('an ambient that does not start', () => {
         createContext: () => {
           throw refused
         },
-        load: async () => new ArrayBuffer(8),
+        load: async () => read(),
         // The app's own activation, so the rejection has the app's shape.
         activate: (target) => activateAudioPlayback(target),
       })
@@ -456,5 +463,153 @@ describe('an ambient that does not start', () => {
     } finally {
       process.off('unhandledRejection', onUnhandled)
     }
+  })
+})
+
+describe("the ambient's report to the device's audio diagnostics", () => {
+  type Reported = [string, Record<string, unknown>, boolean]
+  let log: Call[]
+  let events: Reported[]
+
+  const make = (ctx: ReturnType<typeof fakeContext>, status = 0) =>
+    createAlleyAmbient({
+      createContext: () => ctx as unknown as AudioContext,
+      load: async () => read(status),
+      activate: async (target: AmbientActivation) => {
+        await target.init()
+        await target.resume()
+      },
+      report: (event, detail = {}, failed = false) =>
+        void events.push([event, detail, failed]),
+    })
+
+  const named = (event: string) => events.filter(([e]) => e === event)
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    log = []
+    events = []
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('reports each step of a start, with the facts that tell them apart', async () => {
+    const ctx = fakeContext(log)
+    const ambient = make(ctx)
+    expect(ambient.context()).toBeNull()
+    ambient.start('sing', 600)
+    await settle()
+
+    expect(events[0]?.[0]).toBe('context')
+    expect(events[0]?.[1]).toMatchObject({ state: 'suspended' })
+    expect(named('activated')).toEqual([
+      ['activated', { state: 'running', currentTime: 1 }, false],
+    ])
+    // The iOS shape, said out loud: status 0, not ok, and every byte.
+    expect(named('fetched')).toEqual([
+      [
+        'fetched',
+        {
+          url: AMBIENT_URL.sing,
+          status: 0,
+          ok: false,
+          bytes: 8,
+          ms: expect.any(Number),
+        },
+        false,
+      ],
+    ])
+    expect(named('decoded')).toHaveLength(1)
+    expect(named('decoded')[0]?.[1]).toMatchObject({ url: AMBIENT_URL.sing })
+    expect(events.at(-1)).toEqual([
+      'started',
+      { kind: 'sing', state: 'running', currentTime: 1 },
+      false,
+    ])
+    expect(events.some(([, , failed]) => failed)).toBe(false)
+    expect(ambient.context()).toEqual({
+      state: 'running',
+      sampleRate: undefined,
+      currentTime: 1,
+    })
+  })
+
+  it('reports the stop, an interruption, the stale context and its retirement', async () => {
+    const contexts: Array<ReturnType<typeof fakeContext>> = []
+    const ambient = createAlleyAmbient({
+      createContext: () => {
+        const made = fakeContext(log)
+        contexts.push(made)
+        return made as unknown as AudioContext
+      },
+      load: async () => read(),
+      activate: async (target: AmbientActivation) => {
+        await target.init()
+        await target.resume()
+      },
+      report: (event, detail = {}, failed = false) =>
+        void events.push([event, detail, failed]),
+    })
+    ambient.start('ear', 600)
+    await settle()
+    const stopped = ambient.stop(120)
+    vi.advanceTimersByTime(120 + RELEASE_SLACK_MS)
+    await stopped
+    expect(named('stopped')).toEqual([['stopped', { kind: 'ear' }, false]])
+
+    contexts[0]?.interrupt()
+    expect(named('statechange').at(-1)?.[1]).toEqual({ state: 'interrupted' })
+    expect(named('stale')).toEqual([
+      ['stale', { reason: 'interrupted' }, false],
+    ])
+    ambient.start('sing', 600)
+    expect(named('retired')).toEqual([
+      ['retired', { state: 'interrupted' }, false],
+    ])
+    expect(named('context')).toHaveLength(2)
+  })
+
+  it('reports a failed decode as a failure, with the error', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const ctx = fakeContext(log)
+    const broken = new DOMException(
+      'Unable to decode audio data',
+      'EncodingError',
+    )
+    ctx.decodeAudioData = vi.fn(async () => {
+      throw broken
+    })
+    make(ctx).start('sing', 600)
+    await settle()
+    expect(named('decode-failed')).toEqual([
+      [
+        'decode-failed',
+        { url: AMBIENT_URL.sing, error: broken, ms: expect.any(Number) },
+        true,
+      ],
+    ])
+    expect(named('started')).toEqual([])
+  })
+
+  it('reports a context that could not be made', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const refused = new Error('too many contexts')
+    const ambient = createAlleyAmbient({
+      createContext: () => {
+        throw refused
+      },
+      load: async () => read(),
+      activate: async (target: AmbientActivation) => {
+        await target.init()
+      },
+      report: (event, detail = {}, failed = false) =>
+        void events.push([event, detail, failed]),
+    })
+    ambient.start('sing', 600)
+    await settle()
+    expect(events).toEqual([['context-failed', { error: refused }, true]])
   })
 })

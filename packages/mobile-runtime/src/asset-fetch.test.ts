@@ -6,9 +6,9 @@
 // used to sit in both audio loaders -- `if (!response.ok) throw` -- is
 // gone for good, and cannot come back without one of these failing.
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AssetResponse } from './asset-fetch'
-import { assetResponseFailed, readAssetBytes } from './asset-fetch'
+import { assetResponseFailed, fetchAssetRead, readAssetBytes, } from './asset-fetch'
 
 const bytes = (length: number): ArrayBuffer => new ArrayBuffer(length)
 
@@ -70,4 +70,33 @@ describe('reading the bytes', () => {
       ).rejects.toThrow(/empty/)
     },
   )
+})
+
+describe('a read that reports what the response said', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  // The alley's ambient reports this to the device's audio diagnostics, so
+  // a pasted log can say "status 0, ok false" beside a buffer that decoded.
+  it('keeps the status and ok of a status-0 read alongside its bytes', async () => {
+    const body = bytes(2048)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ ok: false, status: 0, body })),
+    )
+    await expect(
+      fetchAssetRead('capacitor://localhost/score.m4a'),
+    ).resolves.toEqual({ bytes: body, status: 0, ok: false })
+  })
+
+  it('still throws, naming the status, when the read really failed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => response({ ok: false, status: 404 })),
+    )
+    await expect(
+      fetchAssetRead('capacitor://localhost/score.m4a'),
+    ).rejects.toThrow(/404.*score\.m4a/)
+  })
 })

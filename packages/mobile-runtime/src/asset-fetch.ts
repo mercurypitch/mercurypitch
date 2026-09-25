@@ -70,3 +70,27 @@ export const fetchAssetBytes = async (
   url: string,
   init?: RequestInit,
 ): Promise<ArrayBuffer> => readAssetBytes(url, await fetch(url, init))
+
+/** A packaged read, with what the response said about itself. */
+export interface AssetRead {
+  readonly bytes: ArrayBuffer
+  /** 0 on iOS for a packaged media file, 200 everywhere else. */
+  readonly status: number
+  readonly ok: boolean
+}
+
+/**
+ * `fetchAssetBytes`, keeping the status the bytes arrived with.
+ *
+ * For a loader that reports its reads (the alley's ambient does, to the
+ * device's audio diagnostics): "status 0, ok false, 266161 bytes" beside a
+ * decoded buffer is the one line that tells the iOS shape apart from a 200.
+ */
+export const fetchAssetRead = async (
+  url: string,
+  init?: RequestInit,
+): Promise<AssetRead> => {
+  const response = await fetch(url, init)
+  const bytes = await readAssetBytes(url, response)
+  return { bytes, status: response.status, ok: response.ok }
+}

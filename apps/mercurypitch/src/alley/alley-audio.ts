@@ -22,6 +22,14 @@
 //
 // Injectable end to end — the context, the fetch and the activation — so the
 // schedule is tested against a fake context rather than trusted.
+//
+// IT REPORTS EVERY STEP through an optional `report` dep: the context made
+// (state, rate, latencies), the activation, the read (url, status, ok,
+// bytes, ms), the decode (duration, channels, rate, ms, or the error), the
+// start (state, clock), every state change including WebKit's
+// 'interrupted', and stale, retired and stopped. The app hands it the
+// device's audio recorder (src/lib/audio-diagnostics.ts), so the next time a
+// door is silent on a phone, the Developer screen says at which step.
 
 import type { AmbientKind } from './alley-plate'
 import { AMBIENT_URL } from './alley-plate'
@@ -39,12 +47,35 @@ export interface AmbientActivation {
   resume: () => Promise<void>
 }
 
+/** A read, with the status the bytes came with: 0 is iOS's packaged shape. */
+export interface AmbientRead {
+  bytes: ArrayBuffer
+  status: number
+  ok: boolean
+}
+
+/** Where each step goes: the app's audio recorder, or nowhere. */
+export type AmbientReport = (
+  event: string,
+  detail?: Record<string, unknown>,
+  failed?: boolean,
+) => void
+
+/** The live context, read, not handed out: it stays this module's own. */
+export interface AmbientContextView {
+  state: string
+  sampleRate: number
+  currentTime: number
+}
+
 export interface AmbientDeps {
   createContext: () => AudioContext | null
-  load: (url: string) => Promise<ArrayBuffer>
+  /** `fetchAssetRead` in the app: the shared packaged-asset rule. */
+  load: (url: string) => Promise<AmbientRead>
   /** `activateAudioPlayback` in the app; the gesture's half of iOS. */
   activate: (target: AmbientActivation) => Promise<void>
   setTimer?: (fn: () => void, ms: number) => unknown
+  report?: AmbientReport
 }
 
 export interface AlleyAmbient {
@@ -80,6 +111,8 @@ export interface AlleyAmbient {
    * door tap rebuilds both. A start in between keeps them.
    */
   dispose: () => void
+  /** The context's state, rate and clock, or null before the first tap. */
+  context: () => AmbientContextView | null
 }
 
 interface Voice {
@@ -93,6 +126,9 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
   const timer =
     deps.setTimer ??
     ((fn: () => void, ms: number) => globalThis.setTimeout(fn, ms))
+  const report: AmbientReport = deps.report ?? (() => {})
+  const clock = (): number => globalThis.performance.now()
+  const since = (began: number): number => Math.round(clock() - began)
   let ctx: AudioContext | null = null
   let current: Voice | null = null
   /** The last voice that got a source, until that source is stopped. */
@@ -113,9 +149,38 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     const old = ctx
     ctx = null
     stale = false
+    if (old !== null) report('retired', { state: old.state })
     if (old !== null && old.state !== 'closed') {
       void old.close().catch(() => {})
     }
+  }
+
+  const makeContext = (): AudioContext | null => {
+    let made: AudioContext | null
+    try {
+      made = deps.createContext()
+    } catch (error) {
+      report('context-failed', { error }, true)
+      throw error
+    }
+    if (made === null) {
+      report('context-failed', { error: 'no AudioContext on this page' }, true)
+      return null
+    }
+    report('context', {
+      state: made.state,
+      sampleRate: made.sampleRate,
+      baseLatency: made.baseLatency,
+      outputLatency: made.outputLatency,
+    })
+    made.addEventListener('statechange', () => {
+      report('statechange', { state: made.state })
+      if ((made.state as string) === 'interrupted' && ctx === made) {
+        stale = true
+        report('stale', { reason: 'interrupted' })
+      }
+    })
+    return made
   }
 
   const ensureContext = (): AudioContext | null => {
@@ -123,15 +188,7 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     // suspended on iOS. 'interrupted' is WebKit's own state, not in the type.
     const interrupted = (ctx?.state as string | undefined) === 'interrupted'
     if (ctx !== null && (stale || interrupted)) retire()
-    if (ctx === null || ctx.state === 'closed') {
-      const made = deps.createContext()
-      made?.addEventListener('statechange', () => {
-        if ((made.state as string) === 'interrupted' && ctx === made) {
-          stale = true
-        }
-      })
-      ctx = made
-    }
+    if (ctx === null || ctx.state === 'closed') ctx = makeContext()
     return ctx
   }
 
@@ -145,12 +202,47 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     )
   }
 
+  const read = async (url: string): Promise<ArrayBuffer> => {
+    const began = clock()
+    try {
+      const got = await deps.load(url)
+      const { status, ok } = got
+      const bytes = got.bytes.byteLength
+      report('fetched', { url, status, ok, bytes, ms: since(began) })
+      return got.bytes
+    } catch (error) {
+      report('fetch-failed', { url, error, ms: since(began) }, true)
+      throw error
+    }
+  }
+
+  const decode = async (
+    context: AudioContext,
+    url: string,
+    bytes: ArrayBuffer,
+  ): Promise<AudioBuffer> => {
+    const began = clock()
+    try {
+      const decoded = await context.decodeAudioData(bytes)
+      report('decoded', {
+        url,
+        duration: decoded.duration,
+        channels: decoded.numberOfChannels,
+        sampleRate: decoded.sampleRate,
+        ms: since(began),
+      })
+      return decoded
+    } catch (error) {
+      report('decode-failed', { url, error, ms: since(began) }, true)
+      throw error
+    }
+  }
+
   const buffer = (context: AudioContext, kind: AmbientKind) => {
     let pending = buffers.get(kind)
     if (pending === undefined) {
-      pending = deps
-        .load(AMBIENT_URL[kind])
-        .then((bytes) => context.decodeAudioData(bytes))
+      const url = AMBIENT_URL[kind]
+      pending = read(url).then((bytes) => decode(context, url, bytes))
       // A failed decode is not cached: the next tap may be on a better day.
       pending.catch(() => buffers.delete(kind))
       buffers.set(kind, pending)
@@ -175,7 +267,10 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
         } catch {
           /* never started, or already stopped */
         }
-        if (voice.source !== null) lastStop = globalThis.performance.now()
+        if (voice.source !== null) {
+          lastStop = globalThis.performance.now()
+          report('stopped', { kind: voice.kind })
+        }
         voice.source?.disconnect()
         voice.gain.disconnect()
         voice.source = null
@@ -234,11 +329,27 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     const voice: Voice = { kind, gain, source: null, releasing: false }
     current = voice
 
-    void Promise.all([activation.catch(() => {}), buffer(live, kind)])
+    const activated = activation.then(
+      () =>
+        report('activated', {
+          state: live.state,
+          currentTime: live.currentTime,
+        }),
+      (error: unknown) =>
+        report('activation-failed', { state: live.state, error }, true),
+    )
+
+    void Promise.all([activated, buffer(live, kind)])
       .then(([, decoded]) => {
         // Resumed inside the tap and still not running: this one is not
         // coming back, and the next tap makes another.
-        if (live.state !== 'running' && ctx === live) stale = true
+        if (live.state !== 'running' && ctx === live) {
+          stale = true
+          report('stale', {
+            reason: 'not running after resume',
+            state: live.state,
+          })
+        }
         if (mine !== token || voice.releasing) return
         const source = live.createBufferSource()
         source.buffer = decoded
@@ -249,6 +360,7 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
         gain.gain.setValueAtTime(GAIN_FLOOR, now)
         source.start(now)
         started += 1
+        report('started', { kind, state: live.state, currentTime: now })
         voice.source = source
         audible = voice
         gain.gain.exponentialRampToValueAtTime(
@@ -276,7 +388,9 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
   }
 
   const recover = (): void => {
-    if (ctx !== null) stale = true
+    if (ctx === null) return
+    stale = true
+    report('stale', { reason: 'page came back', state: ctx.state })
   }
 
   const dispose = (): void => {
@@ -297,6 +411,14 @@ export function createAlleyAmbient(deps: AmbientDeps): AlleyAmbient {
     sounding: () => (current?.releasing === false ? current.kind : null),
     level: () => (audible?.source ? audible.gain.gain.value : 0),
     sourcesStarted: () => started,
+    context: () =>
+      ctx === null
+        ? null
+        : {
+            state: ctx.state,
+            sampleRate: ctx.sampleRate,
+            currentTime: ctx.currentTime,
+          },
     stoppedAt: () => lastStop,
   }
 }
