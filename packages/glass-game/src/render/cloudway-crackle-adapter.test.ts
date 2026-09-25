@@ -123,7 +123,11 @@ describe('authored crackle art', () => {
     adapter.update(snapshot('intact'))
     adapter.root.updateMatrixWorld(true)
     const intact = adapter.root.getObjectByName('intact-mesh') as Mesh
-    expect(intact.material).toBe(f.provider)
+    const intactMaterial = intact.material as MeshStandardMaterial
+    expect(intactMaterial).not.toBe(f.provider)
+    expect(intactMaterial.color.equals(f.provider.color)).toBe(true)
+    expect(intactMaterial.roughness).toBe(f.provider.roughness)
+    expect(intactMaterial.map).toBe(f.provider.map)
     expect(intact.geometry.getAttribute('position').array).toEqual(
       (f.groups.get('intact')!.children[0] as Mesh).geometry.getAttribute(
         'position',
@@ -193,7 +197,38 @@ describe('authored crackle art', () => {
     adapter.dispose()
   })
 
-  it('owns only copied geometry, including idempotent disposal', () => {
+  it('warns on first contact without changing another platform or the borrowed finish', () => {
+    const f = fixture()
+    f.provider.emissive.setRGB(0.01, 0.02, 0.03)
+    f.provider.emissiveIntensity = 0.4
+    const sourceEmission = f.provider.emissive.clone()
+    const adapter = createCloudwayCrackleAdapter(f)
+    const other = createCloudwayCrackleAdapter(f)
+    const material = (adapter.root.getObjectByName('intact-mesh') as Mesh)
+      .material as MeshStandardMaterial
+    const otherMaterial = (other.root.getObjectByName('intact-mesh') as Mesh)
+      .material as MeshStandardMaterial
+    adapter.update(snapshot('warning'))
+    expect(material.emissive.r).toBeGreaterThan(sourceEmission.r * 0.4)
+    const firstContact = material.emissive.clone()
+    adapter.update(snapshot('warning', 0.8))
+    expect(material.emissive.r).toBeGreaterThan(firstContact.r)
+    const paused = material.emissive.clone()
+    for (let n = 0; n < 20; n++) adapter.update(snapshot('warning', 0.8))
+    expect(material.emissive.equals(paused)).toBe(true)
+    expect(f.provider.emissive.equals(sourceEmission)).toBe(true)
+    expect(f.provider.emissiveIntensity).toBe(0.4)
+    expect(otherMaterial.emissive.equals(sourceEmission)).toBe(true)
+    for (const phase of ['released', 'resetting', 'intact'] as const) {
+      adapter.update(snapshot(phase))
+      expect(material.emissive.equals(sourceEmission)).toBe(true)
+      expect(material.emissiveIntensity).toBe(0.4)
+    }
+    adapter.dispose()
+    other.dispose()
+  })
+
+  it('owns copied geometry and warning materials, including idempotent disposal', () => {
     const f = fixture()
     const sourceMesh = f.groups.get('intact')!.children[0] as Mesh
     const sourceDispose = vi.spyOn(sourceMesh.geometry, 'dispose')
@@ -201,9 +236,14 @@ describe('authored crackle art', () => {
     const adapter = createCloudwayCrackleAdapter(f)
     const copied = adapter.root.getObjectByName('intact-mesh') as Mesh
     const copiedDispose = vi.spyOn(copied.geometry, 'dispose')
+    const warningDispose = vi.spyOn(
+      copied.material as MeshStandardMaterial,
+      'dispose',
+    )
     adapter.dispose()
     adapter.dispose()
     expect(copiedDispose).toHaveBeenCalledOnce()
+    expect(warningDispose).toHaveBeenCalledOnce()
     expect(sourceDispose).not.toHaveBeenCalled()
     expect(materialDispose).not.toHaveBeenCalled()
   })
