@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   isTwofaChallenge: (outcome: unknown) =>
     (outcome as { twofaRequired?: boolean } | null)?.twofaRequired === true,
   takeGoogleTwofaChallenge: vi.fn((): string | null => null),
+  takeNativeTwofaChallenge: vi.fn((): string | null => null),
 }))
 
 const mfaMocks = vi.hoisted(() => ({ verifyTwofa: vi.fn() }))
@@ -114,6 +115,7 @@ beforeEach(() => {
   resetGoogleSignInPending()
   vi.clearAllMocks()
   mocks.takeGoogleTwofaChallenge.mockReturnValue(null)
+  mocks.takeNativeTwofaChallenge.mockReturnValue(null)
   passkeyMocks.passkeysAvailable.mockResolvedValue(false)
   passkeyMocks.platformAuthenticatorAvailable.mockResolvedValue(false)
   passkeyMocks.conditionalMediationAvailable.mockResolvedValue(false)
@@ -613,6 +615,27 @@ describe('the second factor', () => {
     openAuthModal('login')
 
     expect(await screen.findByTestId('auth-twofa-form')).toBeTruthy()
+  })
+
+  it('spends a challenge a native sheet parked on the code', async () => {
+    // The Home strip has no code field: it parks the ceremony its sheet came
+    // back with and opens this modal, which must start on the code pane.
+    mocks.takeNativeTwofaChallenge.mockReturnValue('native-ceremony')
+    mfaMocks.verifyTwofa.mockResolvedValue({ token: 'jwt' })
+    render(() => <AuthModal />)
+
+    openAuthModal('login')
+    fireEvent.input(await screen.findByTestId('auth-twofa-code'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByTestId('auth-twofa-submit'))
+
+    await waitFor(() =>
+      expect(mfaMocks.verifyTwofa).toHaveBeenCalledWith(
+        'native-ceremony',
+        '123456',
+      ),
+    )
   })
 })
 

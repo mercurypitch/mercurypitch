@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   isTwofaChallenge: (outcome: unknown) =>
     (outcome as { twofaRequired?: boolean } | null)?.twofaRequired === true,
   takeGoogleTwofaChallenge: vi.fn((): string | null => null),
+  takeNativeTwofaChallenge: vi.fn((): string | null => null),
 }))
 
 vi.mock('@/db/services/auth-service', () => mocks)

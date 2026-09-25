@@ -918,6 +918,26 @@ export function takeGoogleTwofaChallenge(): string | null {
   return ceremony
 }
 
+let pendingNativeTwofa: string | null = null
+
+/**
+ * Park the ceremony a native sheet came back owing a code for.
+ *
+ * For a surface with no code field of its own (the Home strip): it parks the
+ * ceremony and opens the modal, which takes it on opening and starts on its
+ * code pane, the way it picks up a Google redirect's.
+ */
+export function parkNativeTwofaChallenge(ceremony: string): void {
+  pendingNativeTwofa = ceremony
+}
+
+/** The parked native ceremony, if any. One-shot, like the Google one. */
+export function takeNativeTwofaChallenge(): string | null {
+  const ceremony = pendingNativeTwofa
+  pendingNativeTwofa = null
+  return ceremony
+}
+
 /** One-shot result of the redirect sign-in, for UI notifications. */
 export function takeGoogleRedirectResult(): GoogleRedirectResult | null {
   const result = googleRedirectResult

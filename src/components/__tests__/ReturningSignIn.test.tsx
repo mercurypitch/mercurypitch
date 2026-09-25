@@ -14,7 +14,9 @@ import type * as LastSignIn from '@/lib/last-sign-in'
 
 const mocks = vi.hoisted(() => ({
   appleSignInOffered: vi.fn(() => false),
+  nativeGoogleSignInOffered: vi.fn(() => false),
   signInWithApple: vi.fn(),
+  signInWithGoogle: vi.fn(),
   restoreAuth: vi.fn(async () => undefined),
   fetchMe: vi.fn(),
   signInWithPasskey: vi.fn(),
@@ -30,31 +32,38 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
 
-vi.mock('@/db/services/auth-service', async (importOriginal) => ({
-  // Real, because which providers count as signed in is under test here.
-  isRegisteredProvider: (await importOriginal<typeof AuthService>())
-    .isRegisteredProvider,
-  restoreAuth: () => mocks.restoreAuth(),
-  fetchMe: () => mocks.fetchMe(),
-}))
+vi.mock('@/db/services/auth-service', async (importOriginal) => {
+  const actual = await importOriginal<typeof AuthService>()
+  return {
+    // Real, because which providers count as signed in is under test here,
+    // and so is handing a second factor on to the modal.
+    isRegisteredProvider: actual.isRegisteredProvider,
+    isTwofaChallenge: actual.isTwofaChallenge,
+    parkNativeTwofaChallenge: actual.parkNativeTwofaChallenge,
+    takeNativeTwofaChallenge: actual.takeNativeTwofaChallenge,
+    restoreAuth: () => mocks.restoreAuth(),
+    fetchMe: () => mocks.fetchMe(),
+  }
+})
 
-// Whether this platform has the Apple sheet. Defaulted to the web, so every
-// spec below keeps describing a browser; the iPhone cases set it. Google stays
-// real, and real is false here: no plugin bridge is registered.
+// Which sheets this platform has. Defaulted to the web, so every spec below
+// keeps describing a browser; the app-shell cases set them.
 vi.mock('@/features/account/sign-in-methods', async () => ({
   ...(await vi.importActual<typeof SignInMethods>(
     '@/features/account/sign-in-methods',
   )),
   appleSignInOffered: () => mocks.appleSignInOffered(),
+  nativeGoogleSignInOffered: () => mocks.nativeGoogleSignInOffered(),
 }))
 
 vi.mock('@/features/account/native-sign-in', async () => ({
-  // Real apart from the Apple sheet, so `NativeSignInError` is the class the
+  // Real apart from the two sheets, so `NativeSignInError` is the class the
   // strip branches on with `instanceof`.
   ...(await vi.importActual<typeof NativeSignIn>(
     '@/features/account/native-sign-in',
   )),
   signInWithApple: () => mocks.signInWithApple(),
+  signInWithGoogle: () => mocks.signInWithGoogle(),
 }))
 
 vi.mock('@/db/services/auth-passkey-service', () => ({
@@ -98,6 +107,7 @@ vi.mock('@/lib/webauthn', () => ({
 }))
 
 import { ReturningSignIn } from '@/components/account/ReturningSignIn'
+import { takeNativeTwofaChallenge } from '@/db/services/auth-service'
 
 /** A signed-out probe: an anonymous device identity, not a real account. */
 const SIGNED_OUT = { user: { authProvider: 'anonymous' }, profile: null }
@@ -111,6 +121,7 @@ beforeEach(() => {
   mocks.returningPromptDismissed.mockReturnValue(false)
   mocks.passkeysSupported.mockReturnValue(true)
   mocks.appleSignInOffered.mockReturnValue(false)
+  mocks.nativeGoogleSignInOffered.mockReturnValue(false)
 })
 
 afterEach(() => {
@@ -346,5 +357,42 @@ describe('when it offers a way back in', () => {
       ),
     )
     expect(screen.getByTestId('returning-signin')).toBeTruthy()
+  })
+})
+
+// A native sheet can come back with a challenge instead of a session. Nothing
+// is signed in until the code is in, and the strip has no field for one, so it
+// parks the ceremony and opens the modal, which starts on its code pane.
+describe('when the account still owes a second factor', () => {
+  const CHALLENGE = { twofaRequired: true, ceremony: 'ceremony-token' }
+
+  it('hands an Apple challenge to the code pane', async () => {
+    mocks.lastSignInMethod.mockReturnValue('apple')
+    mocks.appleSignInOffered.mockReturnValue(true)
+    mocks.signInWithApple.mockResolvedValue(CHALLENGE)
+    render(() => <ReturningSignIn />)
+
+    fireEvent.click(await screen.findByTestId('returning-signin-action'))
+
+    await waitFor(() =>
+      expect(mocks.openAuthModal).toHaveBeenCalledWith('login'),
+    )
+    expect(mocks.showNotification).not.toHaveBeenCalled()
+    expect(takeNativeTwofaChallenge()).toBe('ceremony-token')
+  })
+
+  it('hands a Google challenge to the code pane', async () => {
+    mocks.lastSignInMethod.mockReturnValue('google')
+    mocks.nativeGoogleSignInOffered.mockReturnValue(true)
+    mocks.signInWithGoogle.mockResolvedValue(CHALLENGE)
+    render(() => <ReturningSignIn />)
+
+    fireEvent.click(await screen.findByTestId('returning-signin-action'))
+
+    await waitFor(() =>
+      expect(mocks.openAuthModal).toHaveBeenCalledWith('login'),
+    )
+    expect(mocks.showNotification).not.toHaveBeenCalled()
+    expect(takeNativeTwofaChallenge()).toBe('ceremony-token')
   })
 })

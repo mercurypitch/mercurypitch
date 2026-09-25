@@ -22,8 +22,8 @@ import type { Component } from 'solid-js'
 import { createEffect, createSignal, Match, Show, Switch } from 'solid-js'
 import { Key, X } from '@/components/icons'
 import { signInWithPasskey } from '@/db/services/auth-passkey-service'
-import type { MeResponse } from '@/db/services/auth-service'
-import { fetchMe, isRegisteredProvider, restoreAuth, } from '@/db/services/auth-service'
+import type { MeResponse, SignInOutcome } from '@/db/services/auth-service'
+import { fetchMe, isRegisteredProvider, isTwofaChallenge, parkNativeTwofaChallenge, restoreAuth, } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { appleSignInOffered, nativeGoogleSignInOffered, } from '@/features/account/sign-in-methods'
@@ -84,6 +84,20 @@ export const ReturningSignIn: Component = () => {
 
   const visible = (): boolean => eligible() && resolved() && !signedIn()
 
+  /**
+   * What a native sheet answered. A second factor still owed is not a sign-in:
+   * nothing is signed in until the code is in, and this strip has no field for
+   * one, so the modal opens on its code pane with the ceremony parked for it.
+   */
+  function landNativeSignIn(outcome: SignInOutcome): void {
+    if (isTwofaChallenge(outcome)) {
+      parkNativeTwofaChallenge(outcome.ceremony)
+      openAuthModal('login')
+      return
+    }
+    showNotification('Signed in', 'info')
+  }
+
   async function act(): Promise<void> {
     const current = method()
     if (current === '' || busy()) return
@@ -100,8 +114,7 @@ export const ReturningSignIn: Component = () => {
           // Inside a shell the redirect has nowhere to come back to, and
           // Google refuses an embedded WebView anyway. Same button, the
           // platform's own sheet behind it.
-          await signInWithGoogle()
-          showNotification('Signed in', 'info')
+          landNativeSignIn(await signInWithGoogle())
         } else {
           const failure = await startGoogleSignIn()
           if (failure !== null) setError(failure)
@@ -109,8 +122,7 @@ export const ReturningSignIn: Component = () => {
       } else if (current === 'apple') {
         // The iPhone's own sheet. Only reached where that sheet exists (see
         // methodBlocked), so there is no web fallback to choose here.
-        await signInWithApple()
-        showNotification('Signed in', 'info')
+        landNativeSignIn(await signInWithApple())
       } else {
         // Password and mailed code both need a form, and the modal already is
         // that form — including the pane that asks for a code.
