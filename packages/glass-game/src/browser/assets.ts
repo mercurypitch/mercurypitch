@@ -73,6 +73,10 @@ export const GLASS_GAME_ASSET_FILES: Readonly<Record<string, string>> = {
   // Authored IDs stay stable while runtime paths invalidate older cached art.
   'cloudway-platform-kit-v1': 'cloudway-v7/cloudway-platform-kit-v7.gltf',
   'cloudway-ribbon-preview': 'cloudway-v3/cloudway-ribbon-preview.webp',
+  'cloudway-lab-pearl-marble-long-v1':
+    'cloudway-laboratory-v1/pearl-marble-long/pearl-marble-long-runtime-v1.glb',
+  'gilt-scroll-bridge-runtime-v1':
+    'cloudway-laboratory-v1/gilt-scroll-bridge/gilt-scroll-bridge-runtime-v1.glb',
   'merc-voice-welcome': 'adventure-voice-v1/merc-d2-welcome.mp3',
   'merc-voice-path-open': 'adventure-voice-v1/merc-d2-path-open.mp3',
   'merc-voice-optional-break': 'adventure-voice-v1/merc-d2-optional-break.mp3',

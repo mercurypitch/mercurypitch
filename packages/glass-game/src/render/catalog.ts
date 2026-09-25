@@ -4,6 +4,7 @@
 
 import { PORTRAIT_EXHIBIT_ENVELOPE } from '../content/solid-props'
 import { CLOUDWAY_PLATFORM_BUNDLE_ID, CLOUDWAY_PLATFORM_NODES, CLOUDWAY_PLATFORM_RENDER_IDS, } from './cloudway-catalog'
+import { CLOUDWAY_LAB_BUNDLE_IDS, CLOUDWAY_LAB_PLATFORM_RENDER_IDS, } from './cloudway-laboratory-catalog'
 import type { SurfaceTextures } from './texture-recipe'
 
 export interface BreakableRenderRecipe {
@@ -189,6 +190,13 @@ export const BREAKABLE_RENDER_CATALOG: Readonly<
     faceAnchor: true,
     fragmentBudget: 18,
   },
+  'cloudway-lab-voice': {
+    ...CLEAR_GLASS,
+    shardCount: 0,
+    displayHeight: 0.62,
+    fallbackShape: 'rounded',
+    fragmentBudget: 14,
+  },
 }
 
 export interface PlatformRenderRecipe {
@@ -354,6 +362,28 @@ export const PLATFORM_RENDER_CATALOG: Readonly<
     bundle: CLOUDWAY_PLATFORM_BUNDLE_ID,
     kitNode: CLOUDWAY_PLATFORM_NODES.crackleIntact,
     body: 'teal',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.pearlRest,
+    body: 'marble',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll]: {
+    bundle: CLOUDWAY_LAB_BUNDLE_IDS.scroll,
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.rosePending]: {
+    body: 'glass',
+    outline: false,
+    suspendedHull: false,
+  },
+  [CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystPending]: {
+    body: 'glass',
     outline: false,
     suspendedHull: false,
   },
