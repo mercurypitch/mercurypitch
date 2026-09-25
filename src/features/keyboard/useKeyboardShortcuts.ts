@@ -17,6 +17,7 @@ import { onCleanup, onMount } from 'solid-js'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_COMPOSE, TAB_EXERCISES, TAB_GUITAR, TAB_KARAOKE, TAB_PIANO, TAB_SINGING, } from '@/features/tabs/constants'
 import { PLAYBACK_MODE_SESSION, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import * as notifStore from '@/stores/notifications-store'
 import * as transportStore from '@/stores/transport-store'
 import * as uiStore from '@/stores/ui-store'
@@ -188,7 +189,17 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers): void {
     // Shift+/, so a second "?" binding here could never fire) — the voice
     // command center gets the V family instead: V toggles the ear,
     // Shift+V shows what it answers to.
-    if (e.code === 'KeyV' && !isTyping && !e.ctrlKey && !e.metaKey) {
+    //
+    // Not in the native app. Voice control has no place there yet (no pill,
+    // and no header for one to dock in), so V would open a recognizer that
+    // nothing on screen shows or can stop. Both keys are left to the page.
+    if (
+      !IS_NATIVE_BUILD &&
+      e.code === 'KeyV' &&
+      !isTyping &&
+      !e.ctrlKey &&
+      !e.metaKey
+    ) {
       e.preventDefault()
       if (e.shiftKey) {
         handlers.onShowVoiceCommands?.()
