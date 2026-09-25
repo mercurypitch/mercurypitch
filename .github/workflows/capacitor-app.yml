@@ -1323,6 +1323,15 @@ jobs:
       # the TestFlight job hands its archive straight to App Store Connect
       # with destination=upload and never writes one. The Android row above
       # is what watches size on an ordinary pull request.
+      #
+      # This is where the IPA stops: it is never uploaded. The repository is
+      # public, so anyone signed in to GitHub can download a run's artifacts,
+      # and a signed ad-hoc IPA carries the account holder's name (in the
+      # signing certificate and the profile's TeamName) and the UDID of every
+      # registered device. The mask on the signing step reaches only the log.
+      # Installs come from TestFlight, which the same tag uploads; the export
+      # stays because it proves the ad-hoc profile still signs, and this check
+      # needs the file.
       - name: Check the IPA download size
         if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
         shell: bash
@@ -1335,15 +1344,6 @@ jobs:
           bash .github/scripts/artifact-size.sh \
             "iOS - ${APP_NAME}" "$WARN_MB" "$FAIL_MB" \
             "$RUNNER_TEMP/export/*.ipa"
-
-      - name: Upload IPA
-        if: env.HAS_SIGNING == 'true' && env.IS_RELEASE == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.app-slug }}-ios-release
-          path: ${{ runner.temp }}/export/*.ipa
-          if-no-files-found: error
-          retention-days: 90
 
       - name: Report signing state
         if: always()
