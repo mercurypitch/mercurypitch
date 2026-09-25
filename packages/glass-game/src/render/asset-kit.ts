@@ -5,6 +5,7 @@
 import type { Object3D, Texture } from 'three'
 import { LoadingManager, TextureLoader } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import type { LevelDefinition } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { getBreakableRenderRecipe } from './catalog'
@@ -55,7 +56,11 @@ export async function loadMuseumAssets(
     const failedDependencies: string[] = []
     const manager = new LoadingManager()
     manager.onError = (url) => failedDependencies.push(url)
-    const scene = (await new GLTFLoader(manager).loadAsync(assetUrl(id))).scene
+    const scene = (
+      await new GLTFLoader(manager)
+        .setMeshoptDecoder(MeshoptDecoder)
+        .loadAsync(assetUrl(id))
+    ).scene
     if (failedDependencies.length === 0) return scene
     disposeObject(scene)
     throw new Error(

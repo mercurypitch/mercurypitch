@@ -8,6 +8,7 @@ import { EXHIBIT_PLINTH } from '../content/solid-props'
 import type { GameSnapshot, LevelDefinition, PlatformDefinition, SolidMaterialRole, Vec3, } from '../contracts'
 import { getActiveSolidIds } from '../core/solid-activation'
 import { getPlatformRenderRecipe } from './catalog'
+import { createCloudwayLaboratoryPlatformRenderer } from './cloudway-laboratory-platforms'
 import { createCloudwayPlatformRenderer } from './cloudway-platforms'
 import { createExhibitApproachPads } from './exhibit-approach-pads'
 import { createPlatformFloorArt, removeEmbeddedFloorInlay } from './floor-art'
@@ -288,6 +289,13 @@ export function createMuseum(
     materials,
     materialLibrary,
   )
+  const cloudwayLaboratoryPlatforms = createCloudwayLaboratoryPlatformRenderer(
+    level,
+    root,
+    floors,
+    materials,
+    materialLibrary,
+  )
   const pads = createExhibitApproachPads(level, renderParent, materials.gold)
   for (const target of level.breakables) {
     const parent = renderParent(target.id)
@@ -363,6 +371,7 @@ export function createMuseum(
         object.traverseVisible((candidate) => {
           const mesh = candidate as Mesh
           if (!mesh.isMesh || !mesh.visible) return
+          if (mesh.userData.excludeFromCameraCollision === true) return
           const material = Array.isArray(mesh.material)
             ? mesh.material[0]
             : mesh.material
@@ -383,6 +392,10 @@ export function createMuseum(
     setKit(scene: Object3D, bundle: string) {
       cameraMeshCache = undefined
       const cloudwayPlatformIds = cloudwayPlatforms.install(scene, bundle)
+      const cloudwayLaboratoryPlatformIds = cloudwayLaboratoryPlatforms.install(
+        scene,
+        bundle,
+      )
       for (const { solid, mesh } of solidProxies)
         if (
           solid.fallback?.replacedByBundle === bundle &&
@@ -405,7 +418,11 @@ export function createMuseum(
         }
       })
       for (const platform of level.platforms) {
-        if (cloudwayPlatformIds.has(platform.id)) continue
+        if (
+          cloudwayPlatformIds.has(platform.id) ||
+          cloudwayLaboratoryPlatformIds.has(platform.id)
+        )
+          continue
         const recipe = getPlatformRenderRecipe(
           platform.renderId ?? platform.kind,
         )
@@ -531,6 +548,7 @@ export function createMuseum(
         floor.visible = active.has(id)
       })
       cloudwayPlatforms.update(snapshot)
+      cloudwayLaboratoryPlatforms.update(snapshot)
       pads.update(snapshot)
       return shadowVisibilityChanged
     },
@@ -589,6 +607,7 @@ export function createMuseum(
     },
     setVisibleRooms,
     dispose() {
+      cloudwayLaboratoryPlatforms.dispose()
       cloudwayPlatforms.dispose()
       decorations.dispose()
     },

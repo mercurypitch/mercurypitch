@@ -40,7 +40,7 @@ async function mountAt(development: boolean, layout: string) {
 describe('standalone development route', () => {
   it('opens the distinct Promenade save identity directly in development', async () => {
     const level = await mountAt(true, 'cloudway-laboratory')
-    expect(level?.id).toBe('cloudway-crystal-promenade-laboratory')
+    expect(level?.id).toBe('cloudway-crystal-promenade-first-slice')
     expect(level?.exit.requiresCompleted).toEqual([
       'voice-home',
       'voice-third',

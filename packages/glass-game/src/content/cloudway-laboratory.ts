@@ -1,10 +1,33 @@
-// Crystal Promenade simulation study — static singing rests, a scroll crossing and a two-speed crystal duet.
-// The visual catalogue is not bound yet. This unregistered development level proves
-// traversal before accepted Blender assets replace its simple support geometry.
-// Relative melody notes remain in the design spec until range-aware exemplars are approved.
+// Crystal Promenade first slice — a bounded developer route proves the accepted scroll while crackle art remains explicit fallback.
 
 import type { BreakableDefinition, LevelDefinition, PlatformDefinition, SolidPropDefinition, } from '../contracts'
-import { DEFAULT_EXHIBIT_MOUNT_HEIGHT, EXHIBIT_PLINTH, PORTRAIT_EXHIBIT_ENVELOPE, } from './solid-props'
+import { CLOUDWAY_LAB_PLATFORM_RENDER_IDS } from '../render/cloudway-laboratory-catalog'
+import { EXHIBIT_PLINTH } from './solid-props'
+
+const PEARL_WIDTH = 3.2
+const PEARL_DEPTH = 0.72
+const SCROLL_LOCAL_WIDTH = 0.757494056
+const SCROLL_LOCAL_DEPTH = 2.205964088
+const ROSE_WIDTH = 1.64
+const ROSE_DEPTH = 1.64
+const AMETHYST_WIDTH = 1.64
+const AMETHYST_DEPTH = 1.1
+const AMETHYST_HEIGHT = 0.25
+const PLATFORM_GAP = 0.25
+
+const ARRIVAL_Z = -10
+const SCROLL_APPROACH_Z = -8.14
+// The scroll seams touch the pearl rests so the controller can walk onto the
+// dynamic support. Only the dynamic retraction and crackle jumps make gaps.
+const SCROLL_Z = SCROLL_APPROACH_Z + PEARL_DEPTH / 2 + SCROLL_LOCAL_WIDTH / 2
+const SCROLL_CATCH_Z = SCROLL_Z + SCROLL_LOCAL_WIDTH / 2 + PEARL_DEPTH / 2
+const ROSE_Z = SCROLL_CATCH_Z + PEARL_DEPTH / 2 + ROSE_DEPTH / 2 + PLATFORM_GAP
+const AMETHYST_Z = ROSE_Z + ROSE_DEPTH / 2 + PLATFORM_GAP + AMETHYST_DEPTH / 2
+const FINAL_CATCH_Z =
+  AMETHYST_Z + AMETHYST_DEPTH / 2 + PEARL_DEPTH / 2 + PLATFORM_GAP
+// Keep the gate's original approach/crossing window attached to the final rest.
+const EXIT_MIN_Z = FINAL_CATCH_Z - 0.137494056
+const EXIT_MAX_Z = FINAL_CATCH_Z + 0.362505944
 
 function deck(
   id: string,
@@ -13,7 +36,13 @@ function deck(
   width: number,
   depth: number,
   top: number,
-  extra: Partial<Pick<PlatformDefinition, 'behavior' | 'surface'>> = {},
+  thickness: number,
+  extra: Partial<
+    Pick<
+      PlatformDefinition,
+      'behavior' | 'renderId' | 'renderQuarterTurns' | 'surface'
+    >
+  > = {},
 ): PlatformDefinition {
   return {
     id,
@@ -22,7 +51,7 @@ function deck(
     minZ: z - depth / 2,
     maxZ: z + depth / 2,
     top,
-    thickness: 0.28,
+    thickness,
     kind: 'deck',
     material: 'stone',
     ...extra,
@@ -30,31 +59,44 @@ function deck(
 }
 
 const PLATFORMS: readonly PlatformDefinition[] = [
-  deck('arrival', -4, -20, 4, 4, 0),
-  deck('frost-bend', -5, -16.8, 2.4, 1.9, 0, {
-    surface: {
-      kind: 'frost',
-      controlMultiplier: 0.62,
-      brakingMultiplier: 0.38,
-      maximumSpeed: 2.45,
+  deck('arrival', 0, ARRIVAL_Z, 4, 3, 0, 0.3, { renderId: 'catch' }),
+  deck(
+    'scroll-approach',
+    0,
+    SCROLL_APPROACH_Z,
+    PEARL_WIDTH,
+    PEARL_DEPTH,
+    0,
+    0.34,
+    { renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest },
+  ),
+  deck(
+    'scroll-deck',
+    0,
+    SCROLL_Z,
+    SCROLL_LOCAL_DEPTH,
+    SCROLL_LOCAL_WIDTH,
+    0,
+    0.1,
+    {
+      renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll,
+      renderQuarterTurns: 1,
+      behavior: {
+        kind: 'scroll',
+        axis: 'z',
+        minLengthRatio: 0.25,
+        extendedSeconds: 4,
+        retractedSeconds: 3,
+        transitionSeconds: 1.5,
+        initialState: 'extended',
+      },
     },
+  ),
+  deck('scroll-catch', 0, SCROLL_CATCH_Z, PEARL_WIDTH, PEARL_DEPTH, 0, 0.34, {
+    renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
   }),
-  deck('emerald-turn', -6, -13.9, 3, 3, 0),
-  deck('opal-passage', -6, -10.6, 1.8, 2.2, 0),
-  deck('scroll-approach', -5, -7.4, 4, 3.4, 0),
-  deck('scroll-deck', -0.8, -7.4, 3, 1.8, 0, {
-    behavior: {
-      kind: 'scroll',
-      axis: 'x',
-      minLengthRatio: 0.25,
-      extendedSeconds: 4,
-      retractedSeconds: 3,
-      transitionSeconds: 1.5,
-      initialState: 'extended',
-    },
-  }),
-  deck('scroll-catch', 3.4, -7.4, 4, 3.4, 0),
-  deck('rose-step', 4.1, -4.2, 2.4, 1.9, 0, {
+  deck('rose-step', 0, ROSE_Z, ROSE_WIDTH, ROSE_DEPTH, 0, 0.24, {
+    renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.rosePending,
     behavior: {
       kind: 'crackle',
       warningSeconds: 2,
@@ -62,170 +104,96 @@ const PLATFORMS: readonly PlatformDefinition[] = [
       resetSeconds: 2,
     },
   }),
-  deck('amethyst-step', 4.7, -1.8, 2.4, 1.9, 0, {
-    behavior: {
-      kind: 'crackle',
-      warningSeconds: 4,
-      releaseSeconds: 1.15,
-      resetSeconds: 2,
+  deck(
+    'amethyst-step',
+    0,
+    AMETHYST_Z,
+    AMETHYST_WIDTH,
+    AMETHYST_DEPTH,
+    0,
+    AMETHYST_HEIGHT,
+    {
+      renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystPending,
+      behavior: {
+        kind: 'crackle',
+        warningSeconds: 4,
+        releaseSeconds: 1.15,
+        resetSeconds: 2,
+      },
     },
+  ),
+  deck('final-catch', 0, FINAL_CATCH_Z, PEARL_WIDTH, PEARL_DEPTH, 0, 0.34, {
+    renderId: CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
   }),
-  deck('garden-centre', 4, 1.6, 2.4, 4.4, 0),
-  deck('garden-west', 2.2, 1.6, 1.2, 2.4, 0),
-  deck('garden-east', 5.8, 1.6, 1.2, 2.4, 0),
-  deck('aurora-raft', 4, 5.8, 2.6, 2.4, 0, {
-    behavior: {
-      kind: 'glide',
-      translation: { x: 0, y: 0, z: 1.8 },
-      travelSeconds: 4,
-      dwellSeconds: 1.5,
-    },
-  }),
-  deck('terrace-dock', 4, 11, 4, 3, 0),
-  deck('stair-one', 3, 13.5, 3, 1.8, 0.16),
-  deck('stair-two', 2.5, 15.3, 3, 1.8, 0.32),
-  deck('stair-three', 2, 17.1, 3, 1.8, 0.48),
-  deck('final-salon', 1, 20.2, 4, 4.4, 0.48),
 ]
 
+function holdTarget(
+  id: string,
+  label: string,
+  x: number,
+  z: number,
+  anchorX: number,
+  requiresCompleted: readonly string[],
+): BreakableDefinition {
+  return {
+    id,
+    label,
+    variant: 'cloudway-lab-voice',
+    optional: false,
+    position: { x, y: 0, z },
+    anchor: { x: anchorX, y: 0, z },
+    requiresCompleted,
+    challenge: {
+      kind: 'hold',
+      step: {
+        target: 'comfortable',
+        hold: {
+          requiredSeconds: 1.2,
+          toleranceCents: 150,
+          confidenceFloor: 0.5,
+          dropoutGraceSeconds: 0.15,
+          decayPerSecond: 0.25,
+          maximumSampleGapSeconds: 0.1,
+          maximumSampleAgeMs: 150,
+        },
+      },
+    },
+  }
+}
+
 const BREAKABLES = [
-  {
-    id: 'voice-home',
-    label: 'The arrival camellia',
-    variant: 'goblet',
-    optional: false,
-    position: {
-      x: -4.8,
-      y: 0,
-      z: -18.7,
-    },
-    anchor: {
-      x: -4.8,
-      y: 0,
-      z: -19.6,
-    },
-    requiresCompleted: [],
-    challenge: {
-      kind: 'hold',
-      step: {
-        target: 'comfortable',
-        hold: {
-          requiredSeconds: 1.2,
-          toleranceCents: 150,
-          confidenceFloor: 0.5,
-          dropoutGraceSeconds: 0.15,
-          decayPerSecond: 0.25,
-          maximumSampleGapSeconds: 0.1,
-          maximumSampleAgeMs: 150,
-        },
-      },
-    },
-  },
-  {
-    id: 'voice-third',
-    label: 'The garden urn',
-    variant: 'vase',
-    optional: false,
-    position: {
-      x: 4,
-      y: 0,
-      z: 1.3,
-    },
-    anchor: {
-      x: 4,
-      y: 0,
-      z: 0.4,
-    },
-    requiresCompleted: ['voice-home'],
-    challenge: {
-      kind: 'hold',
-      step: {
-        target: 'comfortable',
-        hold: {
-          requiredSeconds: 1.2,
-          toleranceCents: 150,
-          confidenceFloor: 0.5,
-          dropoutGraceSeconds: 0.15,
-          decayPerSecond: 0.25,
-          maximumSampleGapSeconds: 0.1,
-          maximumSampleAgeMs: 150,
-        },
-      },
-    },
-  },
-  {
-    id: 'voice-fifth',
-    label: 'The promenade portrait',
-    variant: 'portrait',
-    optional: false,
-    position: {
-      x: 0.3,
-      y: 0.48,
-      z: 21.2,
-    },
-    anchor: {
-      x: 0.3,
-      y: 0.48,
-      z: 20.3,
-    },
-    requiresCompleted: ['voice-third'],
-    challenge: {
-      kind: 'hold',
-      step: {
-        target: 'comfortable',
-        hold: {
-          requiredSeconds: 1.2,
-          toleranceCents: 150,
-          confidenceFloor: 0.5,
-          dropoutGraceSeconds: 0.15,
-          decayPerSecond: 0.25,
-          maximumSampleGapSeconds: 0.1,
-          maximumSampleAgeMs: 150,
-        },
-      },
-    },
-  },
+  holdTarget('voice-home', 'The arrival camellia', -1.35, ARRIVAL_Z, -0.55, []),
+  holdTarget(
+    'voice-third',
+    'The scroll-court urn',
+    -1.15,
+    SCROLL_CATCH_Z,
+    -0.45,
+    ['voice-home'],
+  ),
+  holdTarget('voice-fifth', 'The promenade bell', -1.15, FINAL_CATCH_Z, -0.45, [
+    'voice-third',
+  ]),
 ] as const satisfies readonly BreakableDefinition[]
 
-const SOLIDS: SolidPropDefinition[] = BREAKABLES.flatMap((target) => {
-  const plinth: SolidPropDefinition = {
-    id: `plinth:${target.id}`,
-    kind: 'prop',
-    shape: 'cylinder',
-    x: target.position.x,
-    z: target.position.z,
-    top: target.position.y + EXHIBIT_PLINTH.height,
-    thickness: EXHIBIT_PLINTH.height,
-    radiusTop: EXHIBIT_PLINTH.radiusTop,
-    radiusBottom: EXHIBIT_PLINTH.radiusBottom,
-  }
-  if (target.variant !== 'portrait') return [plinth]
-  return [
-    plinth,
-    {
-      id: `intact:${target.id}`,
-      kind: 'prop',
-      shape: 'box',
-      minX: target.position.x - PORTRAIT_EXHIBIT_ENVELOPE.width / 2,
-      maxX: target.position.x + PORTRAIT_EXHIBIT_ENVELOPE.width / 2,
-      minZ: target.position.z - PORTRAIT_EXHIBIT_ENVELOPE.depth / 2,
-      maxZ: target.position.z + PORTRAIT_EXHIBIT_ENVELOPE.depth / 2,
-      top:
-        target.position.y +
-        DEFAULT_EXHIBIT_MOUNT_HEIGHT +
-        PORTRAIT_EXHIBIT_ENVELOPE.height,
-      thickness: PORTRAIT_EXHIBIT_ENVELOPE.height,
-      activation: { noneCompleted: [target.id] },
-    },
-  ]
-})
+const SOLIDS: readonly SolidPropDefinition[] = BREAKABLES.map((target) => ({
+  id: `plinth:${target.id}`,
+  kind: 'prop',
+  shape: 'cylinder',
+  x: target.position.x,
+  z: target.position.z,
+  top: target.position.y + EXHIBIT_PLINTH.height,
+  thickness: EXHIBIT_PLINTH.height,
+  radiusTop: EXHIBIT_PLINTH.radiusTop,
+  radiusBottom: EXHIBIT_PLINTH.radiusBottom,
+}))
 
 export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
-  id: 'cloudway-crystal-promenade-laboratory',
+  id: 'cloudway-crystal-promenade-first-slice',
   title: 'The Crystal Promenade',
   authored: {
-    levelId: 'cloudway-crystal-promenade-laboratory',
-    layoutId: 'crystal-promenade',
+    levelId: 'cloudway-crystal-promenade-first-slice',
+    layoutId: 'crystal-promenade-first-slice',
     contentRevision: 1,
   },
   movement: {
@@ -235,127 +203,143 @@ export const CLOUDWAY_CRYSTAL_PROMENADE_STUDY: LevelDefinition = {
     runRampSeconds: 0.8,
   },
   guidance: {
-    subtitle: 'A crystal crossing study',
-    openingNotice: 'Sing on the safe marble landing.',
-    completionTitle: 'The promenade shines.',
-    completionNext: 'Return to the museum.',
+    subtitle: 'The first Crystal Promenade crossing',
+    openingNotice: 'Sing on the safe arrival before crossing the scroll.',
+    completionTitle: 'The first promenade passage shines.',
+    completionNext: 'Return while the remaining gallery art is prepared.',
   },
   spawn: {
-    position: {
-      x: -4,
-      y: 0,
-      z: -21,
-    },
-    facingYaw: 3.141592653589793,
+    position: { x: 0, y: 0, z: -10.9 },
+    facingYaw: Math.PI,
     checkpointId: 'arrival-save',
   },
   checkpoints: [
     {
       id: 'arrival-save',
-      position: {
-        x: -4,
-        y: 0,
-        z: -21,
-      },
-      radius: 0.72,
-      facingYaw: 3.141592653589793,
+      position: { x: 0, y: 0, z: -10.9 },
+      radius: 0.65,
+      facingYaw: Math.PI,
     },
     {
       id: 'scroll-save',
-      position: {
-        x: -5,
-        y: 0,
-        z: -7.7,
-      },
-      radius: 0.72,
-      facingYaw: 3.141592653589793,
-    },
-    {
-      id: 'garden-save',
-      position: {
-        x: 4,
-        y: 0,
-        z: 2.6,
-      },
-      radius: 0.72,
-      facingYaw: 3.141592653589793,
+      position: { x: 0, y: 0, z: SCROLL_APPROACH_Z },
+      radius: 0.42,
+      facingYaw: Math.PI,
+      requiresCompleted: ['voice-home'],
     },
     {
       id: 'final-save',
-      position: {
-        x: 1,
-        y: 0.48,
-        z: 19,
-      },
-      radius: 0.72,
-      facingYaw: 3.141592653589793,
+      position: { x: 0, y: 0, z: FINAL_CATCH_Z },
+      radius: 0.36,
+      facingYaw: Math.PI,
+      requiresCompleted: ['voice-third'],
     },
   ],
   exit: {
-    minX: 0.5,
-    maxX: 1.5,
-    minZ: 21.3,
-    maxZ: 21.5,
-    top: 0.48,
+    minX: 0.45,
+    maxX: 1.35,
+    minZ: EXIT_MIN_Z,
+    maxZ: EXIT_MAX_Z,
+    top: 0,
     requiresCompleted: ['voice-home', 'voice-third', 'voice-fifth'],
   },
   fallBelow: -3.5,
   intentionalGaps: [
     {
-      id: 'frost-entry',
-      minX: -6.2,
-      maxX: -3.8,
-      minZ: -18,
-      maxZ: -17.75,
+      id: 'rose-entry',
+      minX: -ROSE_WIDTH / 2,
+      maxX: ROSE_WIDTH / 2,
+      minZ: SCROLL_CATCH_Z + PEARL_DEPTH / 2,
+      maxZ: ROSE_Z - ROSE_DEPTH / 2,
       top: 0,
     },
-    {
-      id: 'frost-exit',
-      minX: -6.2,
-      maxX: -4.5,
-      minZ: -15.85,
-      maxZ: -15.4,
-      top: 0,
-    },
-    {
-      id: 'opal-entry',
-      minX: -6.9,
-      maxX: -5.1,
-      minZ: -12.4,
-      maxZ: -11.7,
-      top: 0,
-    },
-    { id: 'opal-exit', minX: -6.9, maxX: -5.1, minZ: -9.5, maxZ: -9.1, top: 0 },
-    {
-      id: 'scroll-entry',
-      minX: -3,
-      maxX: -2.3,
-      minZ: -8.3,
-      maxZ: -6.5,
-      top: 0,
-    },
-    { id: 'scroll-exit', minX: 0.7, maxX: 1.4, minZ: -8.3, maxZ: -6.5, top: 0 },
-    { id: 'rose-entry', minX: 2.9, maxX: 5.3, minZ: -5.7, maxZ: -5.15, top: 0 },
     {
       id: 'crystal-duet',
-      minX: 3.5,
-      maxX: 5.3,
-      minZ: -3.25,
-      maxZ: -2.75,
+      minX: -Math.min(ROSE_WIDTH, AMETHYST_WIDTH) / 2,
+      maxX: Math.min(ROSE_WIDTH, AMETHYST_WIDTH) / 2,
+      minZ: ROSE_Z + ROSE_DEPTH / 2,
+      maxZ: AMETHYST_Z - AMETHYST_DEPTH / 2,
       top: 0,
     },
     {
-      id: 'garden-entry',
-      minX: 3.5,
-      maxX: 5.2,
-      minZ: -0.85,
-      maxZ: -0.6,
+      id: 'duet-exit',
+      minX: -AMETHYST_WIDTH / 2,
+      maxX: AMETHYST_WIDTH / 2,
+      minZ: AMETHYST_Z + AMETHYST_DEPTH / 2,
+      maxZ: FINAL_CATCH_Z - PEARL_DEPTH / 2,
       top: 0,
     },
-    { id: 'raft-entry', minX: 2.8, maxX: 5.2, minZ: 3.8, maxZ: 4.6, top: 0 },
-    { id: 'raft-exit', minX: 2.7, maxX: 5.3, minZ: 8.8, maxZ: 9.5, top: 0 },
   ],
   platforms: PLATFORMS,
   breakables: BREAKABLES,
   solids: SOLIDS,
+  presentation: {
+    theme: 'cloudway',
+    worldBounds: {
+      minX: -5,
+      maxX: 5,
+      minY: -5,
+      maxY: 5,
+      minZ: -13,
+      maxZ: 1,
+    },
+    lightBounds: {
+      minX: -3,
+      maxX: 3,
+      minY: -1,
+      maxY: 4,
+      minZ: -11,
+      maxZ: -1,
+    },
+    rooms: [],
+    audioRegions: [
+      {
+        id: 'crystal-promenade-audio',
+        bounds: {
+          minX: -5,
+          maxX: 5,
+          minY: -5,
+          maxY: 5,
+          minZ: -13,
+          maxZ: 1,
+        },
+        sceneId: 'garden',
+      },
+    ],
+    visuals: [],
+    assetRecipeIds: [
+      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.pearlRest,
+      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.scroll,
+      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.rosePending,
+      CLOUDWAY_LAB_PLATFORM_RENDER_IDS.amethystPending,
+      'cloudway-lab-voice',
+    ],
+  },
 }
+
+export const CLOUDWAY_CRYSTAL_PROMENADE_MEASUREMENTS = {
+  crackle: {
+    rose: { width: ROSE_WIDTH, depth: ROSE_DEPTH, height: 0.24 },
+    amethyst: {
+      width: AMETHYST_WIDTH,
+      depth: AMETHYST_DEPTH,
+      height: AMETHYST_HEIGHT,
+    },
+  },
+  gap: PLATFORM_GAP,
+  platformCentres: {
+    arrival: ARRIVAL_Z,
+    scrollApproach: SCROLL_APPROACH_Z,
+    scroll: SCROLL_Z,
+    scrollCatch: SCROLL_CATCH_Z,
+    rose: ROSE_Z,
+    amethyst: AMETHYST_Z,
+    finalCatch: FINAL_CATCH_Z,
+  },
+  scroll: {
+    localWidth: SCROLL_LOCAL_WIDTH,
+    localDepth: SCROLL_LOCAL_DEPTH,
+  },
+} as const
+
+export { CLOUDWAY_CRYSTAL_PROMENADE_FULL_STUDY } from './cloudway-laboratory-full-study'

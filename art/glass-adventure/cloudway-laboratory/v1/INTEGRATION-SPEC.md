@@ -140,7 +140,7 @@ interface PlatformAdapterMetadataV1 {
     origin: 'top-centre-of-fully-extended-support'
   }
   support: {
-    state: 'fully-extended'
+    state: 'fully-extended' | 'intact'
     topY: 0
     width: number
     depth: number
@@ -165,9 +165,18 @@ interface PlatformAdapterMetadataV1 {
         roles: {
           persistent: readonly string[]
           intactGlass: string
-          warningGlass: string
+          contact: string
           shards: readonly string[]
         }
+        materials: {
+          glass: string
+          framework: string
+          internalDetail: string
+          cornerDetail: string
+        } & (
+          | { ivory: string; accent?: never }
+          | { accent: string; ivory?: never }
+        )
       }
 }
 ```
@@ -185,10 +194,21 @@ ornament does not stretch. The rendered extent and the materialized collision
 extent must agree on every update, including both endpoints and a paused frame.
 
 For a crackle snapshot, persistent gold or frame nodes remain fixed through all
-phases. Intact and warning glass have identical support bounds. Release swaps
-the glass atomically to the exact shard set while collision is removed by the
-same authoritative platform state. Shards are closed volumes with independent
-centroid pivots. Respawn restores the intact set and platform timer.
+phases. The contact role certifies support but is never rendered. Warning is a
+runtime material pulse on `intactGlass`; there is no separate warning role.
+Release swaps the intact role atomically to the exact shard set while collision
+is removed by the same authoritative platform state. Shards are closed volumes
+with independent centroid pivots. Respawn restores the intact set and platform
+timer.
+
+Material bindings are independent of motion-role containment. Framework,
+internal-detail and accent meshes may be children of `intactGlass` when they
+must disappear with the unbroken shell, or children of a persistent role when
+they must survive fracture. `glass` is the only primary closed-shell and shard
+transmissive material and has zero metalness. `framework`, `cornerDetail` and
+the asset-specific `ivory` or `accent` binding remain opaque. The contact role
+has no rendered material. Rose uses `ivory`; Amethyst uses `accent`; every other
+material key is shared and every material node name is nonempty and unique.
 
 The runtime manifest records the metadata version, exact roots and roles,
 source lineage, asset hashes, required extensions, decoder policy, texture
@@ -207,8 +227,8 @@ The runtime Blender derivative must split glass and gold into explicit geometry
 or material slots before integration:
 
 - scroll deck glass, each roller and persistent ornament are separate roles;
-- crackle glass, persistent clasps/frame, warning treatment and shards are
-  separate roles; and
+- crackle glass, contact, persistent ornament and shards are separate roles;
+  warning is a runtime pulse on the intact-glass material; and
 - region-specific maps retain the accepted source detail without stretching
   gold ornament across a changing deck.
 
