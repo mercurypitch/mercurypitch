@@ -32,7 +32,7 @@ Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a secon
 
 ## Acceptance
 
-No blanket decimation to hit a polygon number. Provider completion means donor available, not art accepted. Keep generated references, dense originals, PBR maps, packed Blender masters and delivery hashes. Glass transmission and fractures require actual engine material/geometry work, not a painted opaque Meshy texture. The scroll mechanism is deterministic, not physics simulated every frame. Mobile visual/performance claims require device confirmation.
+No blanket decimation to hit a polygon number. Provider completion means donor available, not art accepted. Keep generated references, dense originals, PBR maps, packed Blender masters and delivery hashes. Material claims must match the renderer: provider PBR can preserve the approved intact surface, while true transmission requires a separately reviewed physical material. Fractures use closed interior geometry and matching source surface details; an opaque donor is never described as optical glass. The scroll mechanism is deterministic, not physics simulated every frame. Mobile visual/performance claims require device confirmation.
 
 ## Production status
 
@@ -61,3 +61,11 @@ The scroll's first chart-component partition was rejected: UV/hard-normal seams 
 - Rose preview isolation was wrong: hiding fracture parent empties did not hide their mesh children. Explicit per-view mesh allowlists fixed the polygonal contamination. Its final material/ornament pass remains under visual review; no accepted fracture GLB yet.
 - Amethyst preparation runs independently. Its source is rectangular; the course will fit certified source proportions rather than stretch the model to a provisional square.
 - Mixed-material static sources retain provider PBR until glass regions are separately audited. Global transmission is rejected because it also affects gold and ivory. Original masters remain unchanged.
+
+### First crossing checkpoint — 25 September, 17:40 local
+
+- Real LFS runtime files now include the accepted scroll and pearl rest; the preview is not dependent on a private source symlink. Repeated rests use instancing and unchanged active membership avoids per-frame matrix uploads.
+- Certified rectangular Amethyst contact is 1.64 × 1.10 × 0.25 metres. The course follows these dimensions. Traversal tests caught and fixed an exit marker left at the old centre; route, voice anchor, checkpoint and exit now agree. Five controller cases pass.
+- A shared crackle contract/adapter has thirteen passing cases for source appearance, contact/rotation, disjoint roles, material classification, independent shard pivots, snapshot-only pause/reset and resource ownership. No live fracture physics is introduced.
+- Blender art review rejected synthetic lavender/navy shells that obscured the originals. The selected approach preserves provider exterior geometry/PBR for intact surfaces and prepares closed shards with source surface details. Amethyst intact fidelity is restored; fracture and actual browser acceptance are still in progress.
+- Chrome/ANGLE capture on this PC reproduces the previously reported corruption in both the new route and an unchanged museum. It is not evidence of a new source-model regression. Isolated renderer proof and physical-device acceptance remain separate.

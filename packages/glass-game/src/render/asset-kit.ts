@@ -4,8 +4,8 @@
 
 import type { Object3D, Texture } from 'three'
 import { LoadingManager, TextureLoader } from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import type { LevelDefinition } from '../contracts'
 import { createMuseumAssetLoadPlan } from './asset-load-plan'
 import { getBreakableRenderRecipe } from './catalog'

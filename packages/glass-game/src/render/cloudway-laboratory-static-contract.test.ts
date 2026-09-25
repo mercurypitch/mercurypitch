@@ -2,8 +2,8 @@
 
 import { BoxGeometry, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, } from 'three'
 import { describe, expect, it } from 'vitest'
-import { disposeObject } from './dispose'
 import { validateCloudwayLaboratoryStaticDonor } from './cloudway-laboratory-static-contract'
+import { disposeObject } from './dispose'
 
 function donor(material = new MeshStandardMaterial()): Group {
   const source = new Group()
