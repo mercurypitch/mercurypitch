@@ -1,0 +1,480 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge",
+  "status": "semantic-derivative-review-required",
+  "scope": "A deliberate two-plane cut creates three closed review roles while retaining every unaffected source triangle, position, and UV, and reapplying its exported corner-normal direction with a measured error below one degree. New cap triangles are explicit. This is not a runtime GLB, accepted material treatment, collider, or gameplay proof.",
+  "source": {
+    "denseMaster": {
+      "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-dense-master.blend",
+      "bytes": 110514860,
+      "sha256": "b7ecb32cd9fcfc5cf2010f7cad283b4968efb6560604aba41068fe1d5c85187d"
+    },
+    "modelSha256": "8e5f47431de52f70bb89984ca9d5d599a792ad4417e0d6c798653e81710f2e93",
+    "fingerprints": {
+      "vertexPositionsFloat32Sha256": "a95d44b8ebc708aeeafcc20d488be44c7812b25bcb50154a442102cce4bb5ecb",
+      "triangleIndicesInt32Sha256": "621e9a1077ecff85a440891c4d4314c12a0a9714fb1fccd62e22aeec9d501eae",
+      "cornerUvsFloat32Sha256": "8182be9e866c107d655cde099cc46d7ae05023cbca1014f9b5eff73194131566",
+      "customCornerNormalsInt16Sha256": "512702910fb25d5d28f808e10c5d748f54ccf8e81de611452475a9d4821b1d51",
+      "evaluatedCornerNormalsFloat32Sha256": "13f53393a9606ca57d1a365c3dc46e11079a6fc9825dd23843f75fbce05286fb"
+    },
+    "feasibilityReport": {
+      "file": "art/glass-adventure/cloudway-laboratory/v1/production/reports/gilt-scroll-bridge-scroll-separation-feasibility.json",
+      "bytes": 13255,
+      "sha256": "9e7647e7b9b1e380e105a260725ea848fe15f21f532eff372fbcc66fa32fe7d5"
+    },
+    "sourceMasterUnchanged": true
+  },
+  "axesAndScale": {
+    "source": {
+      "extension": "+Y",
+      "roller": "+X",
+      "up": "+Z",
+      "cutPlanesY": [
+        -0.3,
+        0.3
+      ]
+    },
+    "candidateBlender": {
+      "extension": "+X",
+      "roller": "-Y",
+      "up": "+Z",
+      "sourceToCanonicalRotationZDegrees": -90.0,
+      "sourceToCanonicalMatrix": [
+        [
+          -5.5185e-08,
+          1.262490034103,
+          0.0,
+          0.0
+        ],
+        [
+          -1.262490034103,
+          -5.5185e-08,
+          0.0,
+          -0.000450071937
+        ],
+        [
+          0.0,
+          0.0,
+          1.262490034103,
+          -0.049938935786
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "uniformScale": 1.262490034103,
+      "nonUniformScaleUsed": false,
+      "walkableTopZMetres": 0.0,
+      "fullBoundsMetres": {
+        "min": [
+          -0.623312861,
+          -1.199999974,
+          -0.180370567
+        ],
+        "max": [
+          0.621033958,
+          1.199999974,
+          0.080799482
+        ],
+        "dimensions": [
+          1.244346819,
+          2.399999948,
+          0.261170049
+        ]
+      }
+    },
+    "runtimeConventionAfterAcceptance": {
+      "localExtensionAxis": "x",
+      "upAxis": "+Y",
+      "note": "The future export converts Blender +Z to runtime +Y without changing the accepted local +X extension axis."
+    }
+  },
+  "hierarchy": {
+    "candidateRoot": "Cloudway_GiltScrollBridge_SemanticDerivative",
+    "roleRoots": {
+      "negativeRoller": "ScrollRollerNegative",
+      "deck": "ScrollDeck",
+      "positiveRoller": "ScrollRollerPositive"
+    },
+    "meshObjects": {
+      "negativeRoller": "ScrollRollerNegativeGeometry",
+      "deck": "ScrollDeckGeometry",
+      "positiveRoller": "ScrollRollerPositiveGeometry"
+    },
+    "roleRootsAreDirectChildren": true,
+    "persistentRoles": []
+  },
+  "geometry": {
+    "method": "BMesh plane bisect on source copies; weld only the new cut boundary, fill each closed boundary loop, triangulate caps, and retain the raw source/master objects unchanged.",
+    "sourceTriangles": 552106,
+    "unaffectedSourceTrianglesRetainedExactlyOnce": 549431,
+    "sourceTrianglesIntersectedByCuts": 2675,
+    "normalPolicy": "Unchanged source corners receive their original evaluated exported normal direction. Blender re-encodes those directions against the new cut topology, so INT16 basis coefficients may change; every retained direction is independently audited below one degree and the 95th-percentile error is reported per role.",
+    "roles": {
+      "negativeRoller": {
+        "cuts": [
+          {
+            "sourcePlaneY": -0.3,
+            "keptHalfSpace": "below",
+            "initialBoundaryEdges": 1169,
+            "boundaryVerticesWelded": 99,
+            "closedBoundaryEdges": 1169,
+            "closedBoundaryVertices": 1169,
+            "closedBoundaryLoops": 3,
+            "boundaryLoopEdgeCounts": [
+              94,
+              113,
+              962
+            ],
+            "capTriangles": 1163,
+            "desiredOutwardNormalSourceY": 1.0
+          }
+        ],
+        "faceCounts": {
+          "retainedSourceTriangles": 262094,
+          "clippedSurfaceTriangles": 1847,
+          "capTriangles": 1163
+        },
+        "channelPreservation": {
+          "retainedSourceVertices": 150092,
+          "retainedSourceCorners": 786282,
+          "retainedSourceTriangles": 262094,
+          "clippedSurfaceTriangles": 1847,
+          "authoredCapTriangles": 1163,
+          "retainedPositionsFloat32Exact": true,
+          "retainedUvsFloat32Exact": true,
+          "retainedEncodedNormalCoefficientsExact": 656840,
+          "retainedEncodedNormalCoefficientsChangedAtNewTopology": 129442,
+          "retainedEvaluatedNormalMaxDelta": 0.013560725,
+          "retainedEvaluatedNormalP95Delta": 4.9116e-05,
+          "retainedExportedNormalMaxAngleDegrees": 0.777831852,
+          "retainedExportedNormalP95AngleDegrees": 0.034264021,
+          "retainedExportedNormalsOverOneDegree": 0,
+          "retainedFaceIdsUnique": true
+        },
+        "closure": {
+          "indexedVertices": 151261,
+          "triangles": 265104,
+          "exactWeldedPositions": 132426,
+          "exactWeldedEdges": 397656,
+          "weldedEdgesWithOneIncidentTriangle": 0,
+          "weldedEdgesWithTwoIncidentTriangles": 397656,
+          "weldedEdgesWithMoreThanTwoIncidentTriangles": 0,
+          "weldedConnectedComponents": 1,
+          "closedTwoManifoldAfterExactPositionWeld": true
+        },
+        "materialSlots": [
+          "gilt-scroll-bridge__provider_full_pbr",
+          "GiltScrollCutCap_Diagnostic"
+        ]
+      },
+      "deck": {
+        "cuts": [
+          {
+            "sourcePlaneY": -0.3,
+            "keptHalfSpace": "above",
+            "initialBoundaryEdges": 1169,
+            "boundaryVerticesWelded": 99,
+            "closedBoundaryEdges": 1169,
+            "closedBoundaryVertices": 1169,
+            "closedBoundaryLoops": 3,
+            "boundaryLoopEdgeCounts": [
+              94,
+              113,
+              962
+            ],
+            "capTriangles": 1163,
+            "desiredOutwardNormalSourceY": -1.0
+          },
+          {
+            "sourcePlaneY": 0.3,
+            "keptHalfSpace": "below",
+            "initialBoundaryEdges": 1506,
+            "boundaryVerticesWelded": 101,
+            "closedBoundaryEdges": 1506,
+            "closedBoundaryVertices": 1506,
+            "closedBoundaryLoops": 3,
+            "boundaryLoopEdgeCounts": [
+              91,
+              117,
+              1298
+            ],
+            "capTriangles": 1500,
+            "desiredOutwardNormalSourceY": 1.0
+          }
+        ],
+        "faceCounts": {
+          "retainedSourceTriangles": 36156,
+          "clippedSurfaceTriangles": 3983,
+          "capTriangles": 2663
+        },
+        "channelPreservation": {
+          "retainedSourceVertices": 24737,
+          "retainedSourceCorners": 108468,
+          "retainedSourceTriangles": 36156,
+          "clippedSurfaceTriangles": 3983,
+          "authoredCapTriangles": 2663,
+          "retainedPositionsFloat32Exact": true,
+          "retainedUvsFloat32Exact": true,
+          "retainedEncodedNormalCoefficientsExact": 81878,
+          "retainedEncodedNormalCoefficientsChangedAtNewTopology": 26590,
+          "retainedEvaluatedNormalMaxDelta": 0.011328745,
+          "retainedEvaluatedNormalP95Delta": 4.958e-05,
+          "retainedExportedNormalMaxAngleDegrees": 0.649515271,
+          "retainedExportedNormalP95AngleDegrees": 0.034264021,
+          "retainedExportedNormalsOverOneDegree": 0,
+          "retainedFaceIdsUnique": true
+        },
+        "closure": {
+          "indexedVertices": 27412,
+          "triangles": 42802,
+          "exactWeldedPositions": 21411,
+          "exactWeldedEdges": 64203,
+          "weldedEdgesWithOneIncidentTriangle": 0,
+          "weldedEdgesWithTwoIncidentTriangles": 64203,
+          "weldedEdgesWithMoreThanTwoIncidentTriangles": 0,
+          "weldedConnectedComponents": 5,
+          "closedTwoManifoldAfterExactPositionWeld": true
+        },
+        "materialSlots": [
+          "gilt-scroll-bridge__provider_full_pbr",
+          "GiltScrollCutCap_Diagnostic"
+        ]
+      },
+      "positiveRoller": {
+        "cuts": [
+          {
+            "sourcePlaneY": 0.3,
+            "keptHalfSpace": "above",
+            "initialBoundaryEdges": 1506,
+            "boundaryVerticesWelded": 101,
+            "closedBoundaryEdges": 1506,
+            "closedBoundaryVertices": 1506,
+            "closedBoundaryLoops": 3,
+            "boundaryLoopEdgeCounts": [
+              91,
+              117,
+              1298
+            ],
+            "capTriangles": 1500,
+            "desiredOutwardNormalSourceY": -1.0
+          }
+        ],
+        "faceCounts": {
+          "retainedSourceTriangles": 251181,
+          "clippedSurfaceTriangles": 2195,
+          "capTriangles": 1500
+        },
+        "channelPreservation": {
+          "retainedSourceVertices": 143306,
+          "retainedSourceCorners": 753543,
+          "retainedSourceTriangles": 251181,
+          "clippedSurfaceTriangles": 2195,
+          "authoredCapTriangles": 1500,
+          "retainedPositionsFloat32Exact": true,
+          "retainedUvsFloat32Exact": true,
+          "retainedEncodedNormalCoefficientsExact": 640586,
+          "retainedEncodedNormalCoefficientsChangedAtNewTopology": 112957,
+          "retainedEvaluatedNormalMaxDelta": 0.01357198,
+          "retainedEvaluatedNormalP95Delta": 4.8336e-05,
+          "retainedExportedNormalMaxAngleDegrees": 0.777580261,
+          "retainedExportedNormalP95AngleDegrees": 0.034264021,
+          "retainedExportedNormalsOverOneDegree": 0,
+          "retainedFaceIdsUnique": true
+        },
+        "closure": {
+          "indexedVertices": 144812,
+          "triangles": 254876,
+          "exactWeldedPositions": 127340,
+          "exactWeldedEdges": 382314,
+          "weldedEdgesWithOneIncidentTriangle": 0,
+          "weldedEdgesWithTwoIncidentTriangles": 382314,
+          "weldedEdgesWithMoreThanTwoIncidentTriangles": 0,
+          "weldedConnectedComponents": 1,
+          "closedTwoManifoldAfterExactPositionWeld": true
+        },
+        "materialSlots": [
+          "gilt-scroll-bridge__provider_full_pbr",
+          "GiltScrollCutCap_Diagnostic"
+        ]
+      }
+    },
+    "motionBoundaryAudit": {
+      "negativeBoundaryPositions": 1169,
+      "positiveBoundaryPositions": 1506,
+      "states": {
+        "000": {
+          "progress": 0.0,
+          "lengthRatio": 0.25,
+          "negativeBoundaryMaxDeltaMetres": 3.975e-08,
+          "positiveBoundaryMaxDeltaMetres": 3.975e-08
+        },
+        "025": {
+          "progress": 0.25,
+          "lengthRatio": 0.4375,
+          "negativeBoundaryMaxDeltaMetres": 2.9812e-08,
+          "positiveBoundaryMaxDeltaMetres": 2.9812e-08
+        },
+        "100": {
+          "progress": 1.0,
+          "lengthRatio": 1.0,
+          "negativeBoundaryMaxDeltaMetres": 0.0,
+          "positiveBoundaryMaxDeltaMetres": 0.0
+        }
+      },
+      "coincidentAtAllProofStates": true
+    }
+  },
+  "materials": {
+    "retainedSourceSurface": "gilt-scroll-bridge__provider_full_pbr",
+    "authoredCutCaps": "GiltScrollCutCap_Diagnostic",
+    "providerAlphaMode": "OPAQUE",
+    "glassAccepted": false,
+    "goldAccepted": false,
+    "semanticMaterialInferenceUsed": false,
+    "semanticRegions": {
+      "rollerIvoryBody": {
+        "current": "preserved inside the single opaque provider PBR slot",
+        "acceptedSeparateMaskOrSubmesh": false
+      },
+      "rollerGoldTrim": {
+        "current": "preserved inside the single opaque provider PBR slot",
+        "acceptedSeparateMaskOrSubmesh": false
+      },
+      "deckGlassSubstrate": {
+        "current": "opaque ivory provider surface; not accepted as glass",
+        "acceptedSeparateMaskOrSubmesh": false
+      },
+      "deckStarAndEtchedDetail": {
+        "current": "visible source geometry and PBR detail retained; future glass treatment must preserve it as reviewed geometry, detail layer, or decal",
+        "acceptedSeparateMaskOrSubmesh": false
+      },
+      "cutCaps": {
+        "current": "amber diagnostic provenance material",
+        "acceptedAsGoldOrGlass": false
+      }
+    },
+    "limitation": "The derivative preserves the opaque provider PBR on retained surfaces, including ivory roller bodies, gold trim, and visible deck star/etching. Cap amber is diagnostic provenance. No pixel or texture inferred semantic split is claimed."
+  },
+  "motion": {
+    "minLengthRatio": 0.25,
+    "fullyExtendedCutDistanceFromCentreMetres": 0.378747028,
+    "rule": "Only ScrollDeck scales along local X. Both roller roots translate to the live deck edges and retain unit scale.",
+    "savedState": "fully-extended",
+    "wholeDecoratedModelScaled": false,
+    "rollerScaleAtEveryProof": [
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "adapterGate": {
+    "platformAdapterJsonPresent": false,
+    "runtimeReady": false,
+    "reason": "A blanket gold replacement on either roller would erase its ivory body, and a blanket glass replacement on the deck could erase its star and etched detail. Accepted ivory/gold/glass/detail mapping, strict support dimensions, collider/contact metadata, and runtime export remain separate gates."
+  },
+  "proofs": {
+    "resolution": [
+      1100,
+      820
+    ],
+    "semanticMotion": {
+      "000": {
+        "progress": 0.0,
+        "lengthRatio": 0.25,
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/semantic-derivative/semantic-motion-000.png",
+        "bytes": 433026,
+        "sha256": "788c24bd7e0b14f469a02bb070af2f6a97f0127101a0b69151949e8667c3489c",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "025": {
+        "progress": 0.25,
+        "lengthRatio": 0.4375,
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/semantic-derivative/semantic-motion-025.png",
+        "bytes": 438400,
+        "sha256": "b2fa49f4bc35d72f09f3766e56814abbc74ca7f4fa990e9f4d02800268ced29e",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "100": {
+        "progress": 1.0,
+        "lengthRatio": 1.0,
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/semantic-derivative/semantic-motion-100.png",
+        "bytes": 451670,
+        "sha256": "ccddb4a10d75b0d3e4e106f286d68c4a497700eebec3a0fca04b5c598fe73b85",
+        "dimensions": [
+          1100,
+          820
+        ]
+      }
+    },
+    "semanticTop": {
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/semantic-derivative/semantic-regions-top.png",
+      "bytes": 590426,
+      "sha256": "78f3a6c1f813833113f71102fd9bb87dc1ead4ce99cad737bf1791e1fa3e7890",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    "explodedCapInspection": {
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/semantic-derivative/semantic-cut-caps-exploded.png",
+      "bytes": 472980,
+      "sha256": "1a0e4b4f9d236a32c94fab1142df9a52497b710b69bbd575cd733c282f66703b",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    "providerPbrMotion": {
+      "100": {
+        "progress": 1.0,
+        "lengthRatio": 1.0,
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/semantic-derivative/provider-pbr-motion-100.png",
+        "bytes": 508580,
+        "sha256": "665ef2f9fa6ac68ffc5d2c3d7cd27f8416453eba38648fff9a5650a899f3f60b",
+        "dimensions": [
+          1100,
+          820
+        ]
+      },
+      "000": {
+        "progress": 0.0,
+        "lengthRatio": 0.25,
+        "file": "source-assets/proofs/blender/gilt-scroll-bridge/semantic-derivative/provider-pbr-motion-000.png",
+        "bytes": 459387,
+        "sha256": "bf49f7f0ff3bcb24ad16f9fb95fdb4f0bc3077dd1e5e0bd2128263c65192c18a",
+        "dimensions": [
+          1100,
+          820
+        ]
+      }
+    },
+    "legend": {
+      "negativeRoller": "orange",
+      "deck": "blue",
+      "positiveRoller": "magenta",
+      "authoredCutCaps": "amber"
+    }
+  },
+  "candidateBlend": {
+    "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-semantic-derivative.blend",
+    "bytes": 143606834,
+    "sha256": "721eb36a482a13f9f57509c0623f3c30c17aa644eabb5182629bad046838174b",
+    "packed": true,
+    "sourceRawAndDenseReviewRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_scroll_semantic_derivative.py"
+}
