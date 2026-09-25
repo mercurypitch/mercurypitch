@@ -15,7 +15,7 @@ import { EXIT_CELEBRATION_SECONDS, EXIT_REDUCED_CELEBRATION_SECONDS, } from '../
 import { initialAdventureNotice } from './adventure-notice'
 import type { CameraComfortSettings } from './camera-comfort'
 import { CAMERA_COMFORT_PREFERENCE, normalizeCameraComfort, parseCameraComfort, serializeCameraComfort, } from './camera-comfort'
-import { createAdventureInput } from './input'
+import { createAdventureInput, isAdventureEditableTarget } from './input'
 import type { AdventureLoadingPhase } from './loading-lifecycle'
 import { createAdventureLoadingLifecycle } from './loading-lifecycle'
 import type { MicrophoneIssue, MicrophoneRecoveryAction } from './mic-error'
@@ -620,6 +620,7 @@ export function useAdventure(
     const keyDown = (event: KeyboardEvent): void => {
       if (!ready()) return
       if (game.snapshot().complete) return
+      if (isAdventureEditableTarget(event.target)) return
       if (event.code === 'Escape') {
         event.preventDefault()
         if (inspection()) closeInspection()
@@ -634,11 +635,6 @@ export function useAdventure(
         gameplayGesture()
         return
       }
-      if (
-        event.target instanceof HTMLElement &&
-        event.target.closest('input, textarea, select')
-      )
-        return
       if (event.code === 'KeyF' && !event.repeat) {
         event.preventDefault()
         void start()

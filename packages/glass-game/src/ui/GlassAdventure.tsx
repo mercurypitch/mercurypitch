@@ -12,6 +12,7 @@ import { createFreshVisitHost } from './fresh-visit-host'
 import styles from './GlassAdventure.module.css'
 import type { LoadingScreenPhase } from './LoadingScreen'
 import { LoadingScreen } from './LoadingScreen'
+import { MicrophoneInputRecovery } from './MicrophoneInputRecovery'
 import { ReplayCompletion, RewardSummary } from './RewardSummary'
 import { TouchControls } from './TouchControls'
 import { Tutorial } from './Tutorial'
@@ -96,6 +97,10 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
     adventure.silenceForEncore,
     adventure.releaseEncore,
   )
+  const retryableMicrophoneIssue = createMemo(() => {
+    const issue = adventure.microphoneIssue()
+    return issue?.action === 'retry' ? issue : null
+  })
   const loadingPresentationPhase = createMemo<LoadingScreenPhase>(() => {
     const phase = adventure.loadingPhase()
     return phase === 'ready' ? 'awaiting-first-frame' : phase
@@ -438,7 +443,17 @@ function AdventureVisit(props: GlassAdventureProps & { onRestart(): void }) {
         </Show>
         <Show when={adventure.error()}>
           <div class={styles.error} role="alert">
-            <p>{adventure.error()}</p>
+            <div class={styles.errorBody}>
+              <p>{adventure.error()}</p>
+              <Show when={retryableMicrophoneIssue()}>
+                {(issue) => (
+                  <MicrophoneInputRecovery
+                    microphoneInput={props.host.microphoneInput}
+                    issue={issue()}
+                  />
+                )}
+              </Show>
+            </div>
             <Show when={adventure.microphoneRecoveryAction() !== 'none'}>
               <button
                 class={styles.errorAction}

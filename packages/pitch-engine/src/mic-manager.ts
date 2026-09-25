@@ -21,6 +21,11 @@ import { claimMicLock, micLockStatus, releaseMicLock, requestMicHandoff, setMicY
 
 export type MicErrorKind =
   | 'permission-denied'
+  /**
+   * Historical API name for a browser capture startup failure. Browsers use
+   * this family for several device and driver failures, so it is not proof
+   * that another application is holding the microphone.
+   */
   | 'device-busy'
   | 'no-device'
   /** Another MercuryPitch tab holds the mic. Offer a hand-off, not a retry. */
@@ -36,6 +41,11 @@ export type MicErrorKind =
 export interface MicError {
   kind: MicErrorKind
   message: string
+  /** The browser's original failure, for optional technical details. */
+  diagnostic?: {
+    name: string
+    message: string
+  }
 }
 
 export interface MicState {
@@ -124,33 +134,46 @@ function mediaDevicesUnavailable(): MicError | null {
 function classifyError(err: unknown): MicError {
   const name = (err as { name?: string } | null | undefined)?.name
   const rawMessage = (err as { message?: string } | null | undefined)?.message
+  // Keep this deliberately narrow: callers may show it as technical detail,
+  // so do not add constraints, selected device ids, lock records or any other
+  // application state. The native browser error name/message are sufficient.
+  const diagnostic =
+    typeof name === 'string' && typeof rawMessage === 'string'
+      ? { name, message: rawMessage }
+      : undefined
+  const withDiagnostic = (error: Omit<MicError, 'diagnostic'>): MicError =>
+    diagnostic === undefined ? error : { ...error, diagnostic }
   switch (name) {
     case 'NotAllowedError':
     case 'PermissionDeniedError':
     case 'SecurityError':
-      return {
+      return withDiagnostic({
         kind: 'permission-denied',
         message:
           'Microphone access was denied. Allow microphone access in your browser to continue.',
-      }
+      })
     case 'NotReadableError':
     case 'AbortError':
     case 'TrackStartError':
-      return {
+      return withDiagnostic({
         kind: 'device-busy',
-        message: 'The microphone is in use by another app or browser tab.',
-      }
+        message:
+          'The microphone could not start. Check the selected input and try again.',
+      })
     case 'NotFoundError':
     case 'DevicesNotFoundError':
-      return { kind: 'no-device', message: 'No microphone was found.' }
+      return withDiagnostic({
+        kind: 'no-device',
+        message: 'No microphone was found.',
+      })
     default:
-      return {
+      return withDiagnostic({
         kind: 'unknown',
         message:
           rawMessage !== undefined && rawMessage.length > 0
             ? rawMessage
             : 'The microphone is unavailable.',
-      }
+      })
   }
 }
 
@@ -237,10 +260,14 @@ export class MicManager {
    */
   async setPreferredDevice(deviceId: string | null): Promise<void> {
     const next = deviceId !== null && deviceId !== '' ? deviceId : null
-    if (this.preferredDeviceId === next) return
-    this.preferredDeviceId = next
-    this.resolvedDeviceId = null
     await this.enqueue(async () => {
+      // The preference and its teardown are one queued operation. An older
+      // in-flight exact-device open may fall back to the default before this
+      // task runs; assigning here prevents that fallback from erasing a newer
+      // route that was already requested.
+      if (this.preferredDeviceId === next) return
+      this.preferredDeviceId = next
+      this.resolvedDeviceId = null
       this.teardown()
     })
   }
