@@ -25,6 +25,33 @@ rtk proxy timeout 18000 "$GLASS_REPO/node_modules/.bin/vite" "$GLASS_REPO" --con
 Open `/art/glass-adventure/cloudway-laboratory/v1/review.html`. The process stops
 after five hours, terminal closure or Ctrl+C; an occupied port fails explicitly.
 
+## First crossing playtest
+
+The development route is `/glass-game/?layout=cloudway-laboratory`. It has its own
+save identity and opens the compact first crossing directly. Production builds
+ignore this development query. The longer 27-piece course study is retained as
+authoring material, rather than presenting unfinished donors as accepted art.
+
+When the accepted platform bundles are installed, check the following on a real
+device:
+
+1. Walk across the tiled arrival court and sing at the first vase. The marble
+   seams should support Merc continuously; singing takes place on a static rest.
+2. Watch the scroll bridge extend and retract, then cross it. Its visible deck
+   and available footing must agree, including while Merc stands on the deck.
+3. Use the safe rest before the crystal pair. The pink platform loses support
+   two seconds after first contact; the purple platform allows four seconds.
+   Jump over the deliberate gap between them. The ornate exterior should be
+   replaced by matching separate shards when each platform breaks.
+4. Fall once and retry. The checkpoint should recover Merc on safe footing and
+   restore the moving and cracking platforms without a stall.
+5. Break all three voice targets and use the marked exit. Approaching the exit
+   before completing them must not finish the course.
+
+Inspect the scroll etching, pink/gold surface and purple/gold surface at normal
+play distance and the nearest camera. Report both appearance and responsiveness;
+isolated desktop WebGL screenshots are not a claim about phone frame rate.
+
 ## Provider production
 
 The owner authorized uploads and credits. Scoped Proton Pass access was restored on 25 September 2026; the balance read 3,685 credits before this batch. Set `MESHY_CREDENTIAL_TEMPLATE` to the existing private scoped credential-template path (`<user-dotfiles>/irchiinnuss/secrets/meshy-mcp.env.tmpl`); never print its contents or export the key into the parent session. Per-asset receipts are the live production authority.
@@ -53,7 +80,30 @@ Inspect dense donors before reducing anything. The marble/opal tops must have a 
 - Basin: model is intentionally dry; water is a runtime surface/effect.
 - Repeated props: batch compatible geometry/materials by visible region; retain picking identities.
 
-The scroll adapter is bound to its accepted semantic GLB in the development-only first crossing. The pearl rests use an instanced, source-preserving GLB. Both are real Git LFS files under `apps/beside-cue/public/games/cloudway-laboratory-v1/`; a clean checkout does not need the private source archive to run them. The shared crackle adapter is implemented and tested; final Rose/Amethyst art remains under review. The review page includes matched Blender material and clay source proofs. No production asset is approved merely because its provider job succeeds.
+The development-only first crossing binds four reviewed GLBs: the scroll bridge,
+instanced pearl rests, Rose Quartz and Amethyst. All are real Git LFS files under
+`apps/beside-cue/public/games/cloudway-laboratory-v1/`; a clean checkout does not
+need the private source archive to run them. Their full-resolution and bounded
+exports have matched actual GLTFLoader/adapter/WebGL proofs. The cracking pair
+preserves its original opaque exterior while intact; closed physical-glass shards
+carry matching source surface detail when released. The review page also includes
+matched Blender material and clay source proofs for all twenty donors. The other
+sixteen donors remain source artwork awaiting their own finalization and runtime
+acceptance. No production asset is approved merely because its provider job
+succeeds.
+
+| First-crossing delivery |      Bytes | Geometry triangles, including alternate states |
+| ----------------------- | ---------: | ---------------------------------------------: |
+| Scroll bridge           |  4,951,124 |                                        527,368 |
+| Pearl rest              |  1,401,472 |                                        112,284 |
+| Rose Quartz             |  9,491,080 |                                      1,173,816 |
+| Amethyst                | 19,673,144 |                                      2,585,165 |
+
+Triangle totals include the mutually exclusive intact/fractured meshes, not just
+what one frame draws. The current exports retain their complete prepared topology
+and use separately reviewed 2K WebP maps with Meshopt encoding. Original 8K color,
+4K data maps, dense donors and full-detail exports remain in the source archive.
+Hash and material inventories are in `production/reports/*-runtime-v1.json`.
 
 ## Source storage
 
