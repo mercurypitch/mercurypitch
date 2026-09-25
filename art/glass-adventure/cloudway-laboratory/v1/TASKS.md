@@ -12,11 +12,13 @@ Owner authorized two bug fixes, 10 new platform designs, 10 new objects, a secon
 
 - [x] Profile and fix falling stalls; verify repeated falls and respawns. Camera queried dense decorative triangles below every support; skip that path while falling below the world.
 - [x] Two-row message queue; actual path-open events only; mobile/tablet/desktop proof. Includes modal/pause/tutorial visibility review.
-- [x] Review and push bug fixes to #861 (`fc09fe06`, pushed 25 September 2026). CI is running.
+- [x] Review and push bug fixes to #861 (`a9544afb`, pushed 25 September 2026), including accessibility-contract and module-size CI repairs. CI is running.
 - [x] Browser level studio: grid placement, transforms, undo, validation, JSON export/import and local drafts. Four real mouse/touch/import/geometry browser cases pass; source and proofs reviewed.
 - [x] Generate and inspect 10 platform reference images (catalogue tracks each).
 - [x] Generate and inspect 10 object reference images.
-- [ ] Meshy 7.1 4K geometry / 8K texture / PBR originals: receipt before each paid job; archive IDs, outputs, hashes.
+- [ ] Meshy 7.1 4K geometry / 8K texture / PBR originals (9/20 archived at this checkpoint): receipt before each paid job; archive IDs, outputs, hashes.
+- [x] Pilot three packed Blender masters and matched clay/PBR review: original topology and full maps preserved, fresh-process reopen audits pass. These are source masters, not finished glass.
+- [x] Editable 27-piece Crystal Promenade course study: schema/top-view checks, desktop import proof, explicit cross/stair contact regions. Runtime traversal remains pending.
 - [ ] Blender finalization: material separation, contact planes, preserved silhouettes, runtime maps, packed source.
 - [ ] Scroll bridge extension has matching visual and walkable deck.
 - [ ] Beautiful rose and lavender timed platforms, 2s/4s with a real gap and safe approach.
@@ -38,3 +40,7 @@ No blanket decimation to hit a polygon number. Provider completion means donor a
 [The Crystal Promenade](COURSE-SPEC.md) defines the second course, the role of all 20 designs, safe singing/checkpoint locations, scroll and crackle timing, and the art/runtime acceptance sequence. Implementation remains pending the dense donor and Blender review.
 
 - [x] Scroll core: deterministic four-phase clock, bounded ratios, actual resizing support bounds, quarter-turn authoring transform, pause/reset behavior. Targeted tests plus 784 shared-game tests pass after hydrating the exact LFS assets. The visible split-deck adapter still requires a reviewed donor.
+
+## Remote checkpoint
+
+Draft PR [#863](https://github.com/mercurypitch/mercurypitch/pull/863) contains the editor, scroll simulation, reference catalogue, production recipes and receipt mirrors. It is stacked on the open #861 fixes; neither PR has merge approval in this batch. Current playtest art is not replaced by these unaccepted donors.

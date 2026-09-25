@@ -7,12 +7,12 @@ game code and does not claim a layout is playable.
 
 ## Start the studio
 
-From any directory:
+From any directory, after setting `GLASS_REPO` to the absolute checkout path:
 
 ```bash
-rtk /home/maff/foss/worktrees/mercurypitch/glass-cloudway-laboratory/node_modules/.bin/vite \
-  /home/maff/foss/worktrees/mercurypitch/glass-cloudway-laboratory \
-  --config /home/maff/foss/worktrees/mercurypitch/glass-cloudway-laboratory/art/glass-adventure/level-studio/v1/vite.config.mjs \
+rtk proxy timeout 18000 "$GLASS_REPO/node_modules/.bin/vite" \
+  "$GLASS_REPO" \
+  --config "$GLASS_REPO/art/glass-adventure/level-studio/v1/vite.config.mjs" \
   --host 0.0.0.0 --port 5633 --strictPort
 ```
 
@@ -22,7 +22,7 @@ Open:
 http://127.0.0.1:5633/art/glass-adventure/level-studio/v1/index.html
 ```
 
-The process runs until its terminal closes or receives `Ctrl+C`. `--strictPort`
+The process stops after five hours, when its terminal closes, or on `Ctrl+C`. `--strictPort`
 stops with an error if another process already owns port 5633. Binding to
 `0.0.0.0` also makes the studio available to a tablet on the same network at
 the host computer's LAN address. Set `CLOUDWAY_ASSET_ROOT` to override the
@@ -75,7 +75,7 @@ The dedicated Playwright config starts the same strict Vite server on port
 5633:
 
 ```bash
-cd /home/maff/foss/worktrees/mercurypitch/glass-cloudway-laboratory
+cd "$GLASS_REPO"
 rtk node_modules/.bin/playwright test \
   --config art/glass-adventure/level-studio/v1/playwright.config.mjs
 ```

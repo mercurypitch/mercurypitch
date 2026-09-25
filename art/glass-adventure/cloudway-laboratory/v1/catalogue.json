@@ -225,7 +225,7 @@
   ],
   "productionStatus": "Meshy blocked: Proton Pass CLI session expired; no paid jobs submitted.",
   "sourceStorage": {
-    "privateAlias": "~/.dotfiles/personal/besidecue/assets/glass-adventure/cloudway-laboratory/v1",
+    "privateAlias": "<user-dotfiles>/besidecue/assets/glass-adventure/cloudway-laboratory/v1",
     "syncRelative": "5-Creative/besidecue/assets/glass-adventure/cloudway-laboratory/v1",
     "note": "Large originals, meshes, PBR, Blender masters and renders belong here. Git keeps metadata and small preview derivatives. Local presence is verified; remote sync completion is not asserted."
   }
