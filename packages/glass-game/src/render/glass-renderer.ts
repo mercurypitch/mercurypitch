@@ -620,14 +620,15 @@ function createGlassRendererInstance(
       merc?.dispose()
       vessels.forEach((vessel) => vessel.dispose())
       scene.environment = null
-      disposeObject(
-        scene,
-        new Set([
-          ...museum.materialLibrary.materials,
-          ...Object.values(materials),
-        ]),
-      )
+      const borrowedMaterials = new Set([
+        ...museum.materialLibrary.materials,
+        ...Object.values(materials),
+      ])
+      // Museum adapters own geometry and material variants that may borrow
+      // library textures. Remove those roots before generic scene disposal so
+      // the shared textures remain exclusively library-owned.
       museum.dispose()
+      disposeObject(scene, borrowedMaterials)
       museum.materialLibrary.dispose()
       disposeMaterials(Object.values(materials))
       environment.dispose()
