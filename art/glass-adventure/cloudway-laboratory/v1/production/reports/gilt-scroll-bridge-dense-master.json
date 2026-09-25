@@ -1,0 +1,377 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/gilt-scroll-bridge/dense-donor.glb",
+    "bytes": 62364592,
+    "sha256": "8e5f47431de52f70bb89984ca9d5d599a792ad4417e0d6c798653e81710f2e93",
+    "taskId": "01a0d883-1ce4-766a-befc-22ff4bf72c86",
+    "receipt": {
+      "file": "source-assets/meshy/gilt-scroll-bridge/receipt.json",
+      "bytes": 6653,
+      "sha256": "545cd913a3734d859a62b1494c13708607f5833b1adeb9db6a0d288fd4a97804"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 318135,
+    "triangles": 552106,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "a95d44b8ebc708aeeafcc20d488be44c7812b25bcb50154a442102cce4bb5ecb",
+    "triangleIndicesInt32Sha256": "621e9a1077ecff85a440891c4d4314c12a0a9714fb1fccd62e22aeec9d501eae",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 3083,
+      "largestVertexCounts": [
+        3123,
+        2978,
+        2896,
+        2563,
+        2463,
+        2331,
+        2330,
+        2258,
+        2028,
+        1922,
+        1889,
+        1878
+      ],
+      "largestVertexFractions": [
+        0.009816587,
+        0.009360806,
+        0.009103054,
+        0.008056328,
+        0.007741996,
+        0.007327078,
+        0.007323935,
+        0.007097616,
+        0.006374652,
+        0.00604146,
+        0.005937731,
+        0.005903154
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.262490034103,
+        0.0,
+        0.0,
+        0.000450071879
+      ],
+      [
+        0.0,
+        1.262490034103,
+        0.0,
+        0.001139401924
+      ],
+      [
+        0.0,
+        0.0,
+        1.262490034103,
+        -0.049938935786
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.262490034103,
+        0.0,
+        0.0,
+        0.000450071879
+      ],
+      [
+        0.0,
+        1.262490034103,
+        0.0,
+        0.001139401924
+      ],
+      [
+        0.0,
+        0.0,
+        1.262490034103,
+        -0.049938935786
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.199999952,
+        -0.622173409,
+        -0.180370567
+      ],
+      "max": [
+        1.199999952,
+        0.622173409,
+        0.080799482
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      2.399999905,
+      1.244346818,
+      0.261170049
+    ],
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "contactCandidate": {
+    "method": "Largest upper upward-facing area bin, followed by a bounded local height patch. This is geometric screening, not a certified collider.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.95085901,
+        -0.493717015,
+        -0.103312999
+      ],
+      "max": [
+        0.950146019,
+        0.491912007,
+        0.103556
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.90100503,
+      0.985629022,
+      0.206868999
+    ],
+    "landingRawZ": 0.039555903,
+    "heightToleranceRaw": 0.001616164,
+    "patchTriangles": 15257,
+    "patchAreaRawSquareUnits": 1.019314294,
+    "patchBoundsRaw": {
+      "min": [
+        -0.945038021,
+        -0.434119999,
+        0.036766998
+      ],
+      "max": [
+        0.942970991,
+        0.447676986,
+        0.042082999
+      ]
+    },
+    "patchDimensionsRaw": [
+      1.888009012,
+      0.881796986,
+      0.005316
+    ],
+    "horizontalCoverage": [
+      0.993163607,
+      0.894654039
+    ],
+    "relativePatchHeightSpread": 0.025697424,
+    "broadCandidate": true,
+    "flatCandidate": true,
+    "screeningStatus": "broad-flat-candidate",
+    "landingReviewZMetres": 0.0,
+    "warning": "The measured patch is a review candidate. It is not a collider or proof that a player can stand on every visible upper surface."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "retracting deck",
+      "left roller",
+      "right roller"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "limitation": "The provider source is one opaque exported mesh and one material, with many unlabeled loose geometry components. Deck and roller separation remains unproved until deliberate authoring."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-base_color.png",
+        "bytes": 58101706,
+        "sha256": "7301e6accd7d56a99b22ec9239174185a6993e9d9739de8455d80f3baee83d76",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-normal.png",
+        "bytes": 11607872,
+        "sha256": "81c79037a11bad0f6bd96c23b9f7ab18ebc4ce6550ea33ffb1ecdbbe9d2fc122",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-metallic.png",
+        "bytes": 7848035,
+        "sha256": "e43cbe956ed8e02f20ac9b4b11143a11ef8c9a8a6d0d9db7a0884ea97fea4f68",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/gilt-scroll-bridge/textures/set-0-roughness.png",
+        "bytes": 6376293,
+        "sha256": "b576de89e7bcb53725c3bd9c9788d6023b6b91fa662ab7d704a0b75074c16bd9",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-three-quarter.png",
+          "bytes": 425078,
+          "sha256": "1814ae645c3767c34a20b5df511ec26dded2f4fbc7922e4a4f680ba9fa85b1e8",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-top.png",
+          "bytes": 604131,
+          "sha256": "974ddcf52fa926452355372c1e4a9e78cf342d5c7bd10958120b47a6ddbb2800",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-side.png",
+          "bytes": 338259,
+          "sha256": "4e5151a251ff224f824cd2e3f44f51d4ea5c2b7f2db1fd37d6ea36e1d19a6595",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-three-quarter.png",
+          "bytes": 505134,
+          "sha256": "ae095e4ff01ec9585b428517b7f8fbbb8a12aacd022f258841b9cde49d01dceb",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-top.png",
+          "bytes": 977817,
+          "sha256": "4557fcb04a0f276d87d7486cd65fffd5d89f137869bab2d63400cf796c16f918",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-side.png",
+          "bytes": 398815,
+          "sha256": "46834301fe21b4f5cd6e3d01d88a777687da30dc05252c3a7d0002f0a6f90a3d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-dense-master.blend",
+    "bytes": 110514860,
+    "sha256": "b7ecb32cd9fcfc5cf2010f7cad283b4968efb6560604aba41068fe1d5c85187d",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset gilt-scroll-bridge"
+}

@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "assetId": "gilt-scroll-bridge",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/gilt-scroll-bridge/gilt-scroll-bridge-dense-master.blend",
+    "bytes": 110514860,
+    "sha256": "b7ecb32cd9fcfc5cf2010f7cad283b4968efb6560604aba41068fe1d5c85187d",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "8e5f47431de52f70bb89984ca9d5d599a792ad4417e0d6c798653e81710f2e93",
+  "topology": {
+    "vertices": 318135,
+    "triangles": 552106,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "a95d44b8ebc708aeeafcc20d488be44c7812b25bcb50154a442102cce4bb5ecb",
+    "triangleIndicesInt32Sha256": "621e9a1077ecff85a440891c4d4314c12a0a9714fb1fccd62e22aeec9d501eae"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_GiltScrollBridge_DenseMaster",
+    "rawObject": "gilt-scroll-bridge__raw_import",
+    "reviewObject": "gilt-scroll-bridge__normalized_review",
+    "meshData": "gilt-scroll-bridge__dense_mesh",
+    "material": "gilt-scroll-bridge__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "gilt-scroll-bridge__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "7301e6accd7d56a99b22ec9239174185a6993e9d9739de8455d80f3baee83d76",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "gilt-scroll-bridge__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "81c79037a11bad0f6bd96c23b9f7ab18ebc4ce6550ea33ffb1ecdbbe9d2fc122",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "gilt-scroll-bridge__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "e43cbe956ed8e02f20ac9b4b11143a11ef8c9a8a6d0d9db7a0884ea97fea4f68",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "gilt-scroll-bridge__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "b576de89e7bcb53725c3bd9c9788d6023b6b91fa662ab7d704a0b75074c16bd9",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-three-quarter.png",
+      "bytes": 425078,
+      "sha256": "1814ae645c3767c34a20b5df511ec26dded2f4fbc7922e4a4f680ba9fa85b1e8",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-top.png",
+      "bytes": 604131,
+      "sha256": "974ddcf52fa926452355372c1e4a9e78cf342d5c7bd10958120b47a6ddbb2800",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-clay-side.png",
+      "bytes": 338259,
+      "sha256": "4e5151a251ff224f824cd2e3f44f51d4ea5c2b7f2db1fd37d6ea36e1d19a6595",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-three-quarter.png",
+      "bytes": 505134,
+      "sha256": "ae095e4ff01ec9585b428517b7f8fbbb8a12aacd022f258841b9cde49d01dceb",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-top.png",
+      "bytes": 977817,
+      "sha256": "4557fcb04a0f276d87d7486cd65fffd5d89f137869bab2d63400cf796c16f918",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/gilt-scroll-bridge/matched-pbr-side.png",
+      "bytes": 398815,
+      "sha256": "46834301fe21b4f5cd6e3d01d88a777687da30dc05252c3a7d0002f0a6f90a3d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset gilt-scroll-bridge"
+}

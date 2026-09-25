@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "assetId": "rose-quartz-crackle-fast",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/rose-quartz-crackle-fast/rose-quartz-crackle-fast-dense-master.blend",
+    "bytes": 120956906,
+    "sha256": "003da033ab9abc908ebd4549f79615e25a22961957b38ed61e08edd789cb5df7",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "832d0624ba0e95ced733822f82ff58c96ecd479c4bb3ef6db540e4f4f32a6255",
+  "topology": {
+    "vertices": 277628,
+    "triangles": 518742,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "320c4f16dda145ca1419a4dea98d6b7b5cd882f487a88efffd9e5e9374eaba42",
+    "triangleIndicesInt32Sha256": "cdb8470be3f8788e871a1adca19218fa9d8a9d0264b1379d35e55a10fc7bb027"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_RoseQuartzCrackleFast_DenseMaster",
+    "rawObject": "rose-quartz-crackle-fast__raw_import",
+    "reviewObject": "rose-quartz-crackle-fast__normalized_review",
+    "meshData": "rose-quartz-crackle-fast__dense_mesh",
+    "material": "rose-quartz-crackle-fast__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "rose-quartz-crackle-fast__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "c887dbe9d154df63360357af6ef9a84762e501cfff4ad0eef18493a841292187",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "rose-quartz-crackle-fast__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "ca6742f8497b4059173fc94a58a4fe97da0886e5350ae7bac90426ab0b80c5ec",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "rose-quartz-crackle-fast__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "ef50939b6b7e6907796ff3dd71165b22d21d0ab866b9a12c4bdaf4a0526b4738",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "rose-quartz-crackle-fast__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "1af2372ee0fca5a2bd32c7d01102cb16ddcaec9604440f06c60974c3db56f606",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-three-quarter.png",
+      "bytes": 429615,
+      "sha256": "dbf64d1ca189a004491467ba7aac697fcd7362cd4081b7df247d975af11beeab",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-top.png",
+      "bytes": 317680,
+      "sha256": "a55dea6277eb8e272b5ba42f48d2b59275f026e76f66daa06ccbe7a8a6b2b20e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-clay-side.png",
+      "bytes": 290032,
+      "sha256": "13601bd939dff020143bd37cfbc1c57a3fb47ac6c109b9dfd581483ed7a2ae6c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-three-quarter.png",
+      "bytes": 660678,
+      "sha256": "18639ec0461d9c366d05bccd4096cf147c74f7bea0448919813e8e25b835ef0e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-top.png",
+      "bytes": 1169101,
+      "sha256": "51e55b8454bf66537d3d398bf30853116cfb31b2d851d277171b84cbb7dfe893",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/rose-quartz-crackle-fast/matched-pbr-side.png",
+      "bytes": 482168,
+      "sha256": "999ea6b12c62c3d62652a4958a3d8644a8203507044ec167a8164f3b2ed7c544",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset rose-quartz-crackle-fast"
+}
