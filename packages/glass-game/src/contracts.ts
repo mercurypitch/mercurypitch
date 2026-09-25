@@ -46,7 +46,9 @@ export interface FrostSurfaceDefinition {
 
 export type PlatformSurfaceDefinition = FrostSurfaceDefinition
 
-/** First-pilot platform behaviors are translation-only and deterministic. */
+export type PlatformScrollAxis = 'x' | 'z'
+
+/** Deterministic runtime behaviors; axes are world-space after compilation. */
 export type PlatformBehaviorDefinition =
   | {
       kind: 'glide'
@@ -60,6 +62,16 @@ export type PlatformBehaviorDefinition =
       releaseSeconds: number
       resetSeconds: number
     }
+  | {
+      kind: 'scroll'
+      /** World axis after any authoring-space quarter turn is applied. */
+      axis: PlatformScrollAxis
+      minLengthRatio: number
+      extendedSeconds: number
+      retractedSeconds: number
+      transitionSeconds: number
+      initialState: 'extended' | 'retracted'
+    }
 
 export const PLATFORM_BEHAVIOR_LIMITS = {
   maximumTranslation: 20,
@@ -67,6 +79,12 @@ export const PLATFORM_BEHAVIOR_LIMITS = {
   maximumDwellSeconds: 10,
   maximumPhaseSeconds: 30,
   minimumSurfaceMultiplier: 0.05,
+  minimumScrollLengthRatio: 0.1,
+  maximumScrollLengthRatio: 0.95,
+  minimumScrollRestSeconds: 0.25,
+  maximumScrollRestSeconds: 60,
+  minimumScrollTransitionSeconds: 0.25,
+  maximumScrollTransitionSeconds: 30,
 } as const
 
 /** A deliberately authored void that fixed-step floor contact must not bridge. */
@@ -391,6 +409,10 @@ export interface PlayerState {
 export type PlatformPhase =
   | 'stable'
   | 'moving'
+  | 'extended'
+  | 'retracting'
+  | 'retracted'
+  | 'extending'
   | 'intact'
   | 'warning'
   | 'released'
@@ -403,6 +425,8 @@ export interface PlatformRuntimeSnapshot {
   phase: PlatformPhase
   phaseProgress: number
   collisionEnabled: boolean
+  /** Current centered walkable length divided by its authored full length. */
+  lengthRatio?: number
 }
 
 export type EncounterPhase =

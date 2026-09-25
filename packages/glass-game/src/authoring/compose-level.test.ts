@@ -382,6 +382,59 @@ describe('composeLevel', () => {
     })
   })
 
+  it('maps a local scroll axis onto compiled world bounds after a quarter turn', () => {
+    const { source, catalog } = transformedFixture()
+    const room = catalog.rooms['asymmetric-room']!
+    const level = composeLevel(source, {
+      ...catalog,
+      rooms: {
+        ...catalog.rooms,
+        [room.id]: {
+          ...room,
+          platforms: [
+            ...room.platforms,
+            {
+              id: 'scroll',
+              kind: 'bridge',
+              minX: -1,
+              maxX: 1,
+              minZ: -0.5,
+              maxZ: 0.5,
+              top: 0,
+              thickness: 0.2,
+              material: 'brass',
+              behavior: {
+                kind: 'scroll',
+                axis: 'x',
+                minLengthRatio: 0.25,
+                extendedSeconds: 4,
+                retractedSeconds: 3,
+                transitionSeconds: 1.5,
+                initialState: 'retracted',
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    expect(
+      level.platforms.find((platform) => platform.id.endsWith('/scroll')),
+    ).toMatchObject({
+      minX: 9.5,
+      maxX: 10.5,
+      minZ: -5,
+      maxZ: -3,
+      top: 2,
+      behavior: {
+        kind: 'scroll',
+        axis: 'z',
+        minLengthRatio: 0.25,
+        initialState: 'retracted',
+      },
+    })
+  })
+
   it('keeps runtime identity and authored spawn selection independent of array order', () => {
     const room = FOUNDATION_AUTHORING_CATALOG.rooms['foundation-gallery']
     if (room === undefined)
