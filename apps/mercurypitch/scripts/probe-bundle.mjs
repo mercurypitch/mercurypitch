@@ -170,8 +170,43 @@ async function repaintRate(page, ms = 1000) {
  */
 const API_HOSTS = /^https:\/\/api(?:-dev)?\.mercurypitch\.com\//u
 
+/**
+ * Packaged media, answered the way the iPhone answers it (device round 4).
+ *
+ * Capacitor's iOS scheme handler answers a non-Range GET for a bundled media
+ * file with a bare URLResponse, so WebKit hands the page `ok: false, status:
+ * 0` and the whole body. Chromium answers 200, which is how a loader that
+ * threw on `!response.ok` walked green here while the phone played no
+ * ambient. So a same-origin, non-Range fetch of one of the handler's media
+ * extensions gets the real response behind a Proxy reporting status 0. Only
+ * a success is re-dressed: a missing file on iOS is a network error, never a
+ * status-0 body. Runs in the page, so it cannot close over anything here.
+ */
+function emulateIosPackagedMedia() {
+  const MEDIA = /\.(m4v|mov|mp4|aac|ac3|aiff|au|flac|m4a|mp3|wav)$/iu
+  const realFetch = window.fetch.bind(window)
+  window.fetch = async (input, init) => {
+    const response = await realFetch(input, init)
+    const request = input instanceof Request ? input : null
+    const url = new URL(request?.url ?? String(input), window.location.href)
+    const headers = new Headers(init?.headers ?? request?.headers)
+    const packaged =
+      url.origin === window.location.origin && MEDIA.test(url.pathname)
+    if (!packaged || headers.has('range') || !response.ok) return response
+    return new Proxy(response, {
+      get(target, key) {
+        if (key === 'status') return 0
+        if (key === 'ok') return false
+        const value = Reflect.get(target, key, target)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    })
+  }
+}
+
 async function isolate(context) {
   await context.route(API_HOSTS, (route) => route.abort('internetdisconnected'))
+  await context.addInitScript(emulateIosPackagedMedia)
   return context
 }
 
