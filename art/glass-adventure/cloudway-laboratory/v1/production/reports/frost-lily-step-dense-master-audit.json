@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "frost-lily-step",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/frost-lily-step/frost-lily-step-dense-master.blend",
+    "bytes": 113318176,
+    "sha256": "23509d843bc518cdc721ed8e1f1ea986fb25b54add5fbeec462fc023b20c585b",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "8ac87902a43f9be9e7735726b8504ccce6716eb3086d439d07a1f1dd8d0eb5f4",
+  "topology": {
+    "vertices": 194437,
+    "triangles": 355472,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "01b0898d334897b88c8439587b7ecb729d3d6ca8652069f207818fb7b5ec808a",
+    "triangleIndicesInt32Sha256": "f0e013ed48a6b1f7ae9bba8e2e64fc3efbb68a0fae7ac0c10398554d814920b3"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_FrostLilyStep_DenseMaster",
+    "rawObject": "frost-lily-step__raw_import",
+    "reviewObject": "frost-lily-step__normalized_review",
+    "meshData": "frost-lily-step__dense_mesh",
+    "material": "frost-lily-step__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "frost-lily-step__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "53572b70a100bb3b150c5f7c826fde44b8ecfe559a3ca34b8296ef6a944105d6",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "frost-lily-step__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "30070a0b57f3833b9683134dc85c2a1833c749997a758123c495cdb515a11e20",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "frost-lily-step__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "f1b3339d39cb0b4f7bbbac3466bd8c0ba243fc3847be364d77df34f428453e93",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "frost-lily-step__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "e0f6bddb8349488f450fc65f7aade3391bb99031c49406d3413d907599d294eb",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/frost-lily-step/matched-clay-three-quarter.png",
+      "bytes": 429788,
+      "sha256": "f31418300d781a40fb30430cc1ccd8775e63f3bf4675a551a551952c3c2d7412",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/frost-lily-step/matched-clay-top.png",
+      "bytes": 447775,
+      "sha256": "79f8a0fe3017ec3e923304903cad95f0f2446611cdcefbe548b1bd49b110825e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/frost-lily-step/matched-clay-side.png",
+      "bytes": 289347,
+      "sha256": "ee3a5b10859b0de249e26c77046aac9dd6ecee98494d848463829b41663a7505",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/frost-lily-step/matched-pbr-three-quarter.png",
+      "bytes": 612033,
+      "sha256": "e054f71351c5326e180b2090be05a3e736986de74a6c6e20d6bfceb94dec9f92",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/frost-lily-step/matched-pbr-top.png",
+      "bytes": 1237712,
+      "sha256": "1fccbefa277f9090c563be0bd835cb6475d69dfbb03f321c6c4d2d66af3b8f05",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/frost-lily-step/matched-pbr-side.png",
+      "bytes": 444789,
+      "sha256": "33e35c002cc87cfbcc55a62d3991fbf06685a5e5090a28b33eef5a0ad9a8f3c2",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset frost-lily-step",
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

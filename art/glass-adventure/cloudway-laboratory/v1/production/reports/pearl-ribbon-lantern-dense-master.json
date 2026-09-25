@@ -1,0 +1,363 @@
+{
+  "schema": 1,
+  "assetId": "pearl-ribbon-lantern",
+  "label": "Pearl Ribbon Lantern",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/pearl-ribbon-lantern/dense-donor.glb",
+    "bytes": 107069252,
+    "sha256": "b4021d2f018ef8866f61bd6180a4482e33e948c0a7357acbf61fd49dd3d3d789",
+    "taskId": "01a0d8aa-9737-72ef-9482-83fec0787072",
+    "receipt": {
+      "file": "source-assets/meshy/pearl-ribbon-lantern/receipt.json",
+      "bytes": 6531,
+      "sha256": "1bee17d57f163a04f7af15e2ae4aff3d6540c7195b9c7ad42c3ea70072caf9f5"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 973625,
+    "triangles": 1825540,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "5a2ed5ba296a5bd312b2db910e9fae9065ea0cc2af1f2b51add2e8f7c390ea6b",
+    "triangleIndicesInt32Sha256": "89b44170a6172d930420ad2ddc28923d7bc6bd82f55a726efb2e32675844d3ca",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 1367,
+      "largestVertexCounts": [
+        6461,
+        6318,
+        5643,
+        5357,
+        5201,
+        5130,
+        4856,
+        4805,
+        4162,
+        3994,
+        3937,
+        3877
+      ],
+      "largestVertexFractions": [
+        0.006636025,
+        0.006489151,
+        0.005795866,
+        0.005502118,
+        0.005341892,
+        0.005268969,
+        0.004987547,
+        0.004935165,
+        0.004274746,
+        0.004102195,
+        0.004043651,
+        0.003982026
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        0.737228155136,
+        0.0,
+        0.0,
+        0.000519748603
+      ],
+      [
+        0.0,
+        0.737228155136,
+        0.0,
+        -0.000214910426
+      ],
+      [
+        0.0,
+        0.0,
+        0.737228155136,
+        0.702021837234
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        0.737228155136,
+        0.0,
+        0.0,
+        0.000519748603
+      ],
+      [
+        0.0,
+        0.737228155136,
+        0.0,
+        -0.000214910426
+      ],
+      [
+        0.0,
+        0.0,
+        0.737228155136,
+        0.702021837234
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.338678197,
+        -0.316302213,
+        1.5e-08
+      ],
+      "max": [
+        0.338678197,
+        0.316302213,
+        1.399999965
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      0.677356394,
+      0.632604426,
+      1.39999995
+    ],
+    "reviewScale": {
+      "basis": "source-height-z",
+      "targetMetres": 1.4,
+      "sourceRawUnits": 1.8990049958229065,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.460099012,
+        -0.428750992,
+        -0.952244997
+      ],
+      "max": [
+        0.458689004,
+        0.429334015,
+        0.946759999
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      0.918788016,
+      0.858085006,
+      1.899004996
+    ],
+    "baseRawZ": -0.952244997,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "pearl glass body",
+      "gold ribbon ribs",
+      "stem and marble foot",
+      "lotus finial"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Glass, ribbons, stem, foot, finial, and any light region are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/pearl-ribbon-lantern/textures/set-0-base_color.png",
+        "bytes": 78582870,
+        "sha256": "24f8b904c1bf6a06fee5f6de8f543b7392241b201dddde9fc7dd60abdc89d956",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/pearl-ribbon-lantern/textures/set-0-normal.png",
+        "bytes": 16068157,
+        "sha256": "b8497e4a88981d96689e87976a29df09e06be0c0a25f34e9ff290b7cd4137423",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/pearl-ribbon-lantern/textures/set-0-metallic.png",
+        "bytes": 8667440,
+        "sha256": "2ad21aa55eeca27238a2b3af50977889892dc789e5a283e77d986b56cfe8a958",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/pearl-ribbon-lantern/textures/set-0-roughness.png",
+        "bytes": 5541558,
+        "sha256": "a4f4b5463a4ef8be758a59e819197c1a03f06f338aa0cf0942717962fee6998c",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-clay-three-quarter.png",
+          "bytes": 443698,
+          "sha256": "894cc9deddfd17d03b59337faefd4dd66586f2cf0db0b1ed8dbf6e31582931c3",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-clay-top.png",
+          "bytes": 1089977,
+          "sha256": "0f0ab4306573706686f847367e346706864f24d0af0adb9898125aa96a461580",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-clay-side.png",
+          "bytes": 412378,
+          "sha256": "13b4702e2ebe8b5865844019051e985e8f0a3049b7e05391e071e041eb6d8170",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-pbr-three-quarter.png",
+          "bytes": 459075,
+          "sha256": "7225fa5e054454752c3a8bb20ed61e47922641b64076fe604be00776acdc0007",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-pbr-top.png",
+          "bytes": 1440950,
+          "sha256": "a12f03f2d7b3dd0f6cade34e158894f85028815b4d036f9cd63ce3d02f8595d9",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/pearl-ribbon-lantern/matched-pbr-side.png",
+          "bytes": 424775,
+          "sha256": "70515b67e8fae2d2424696568229eca7486d3a95724960b666a876966647252a",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/pearl-ribbon-lantern/pearl-ribbon-lantern-dense-master.blend",
+    "bytes": 197627807,
+    "sha256": "41fde09a62f445d58ca037808e92b2aa5aef09c0f781f50c55787a505e6253bb",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset pearl-ribbon-lantern"
+}

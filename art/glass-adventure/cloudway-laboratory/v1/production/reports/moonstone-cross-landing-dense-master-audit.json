@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "moonstone-cross-landing",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/moonstone-cross-landing/moonstone-cross-landing-dense-master.blend",
+    "bytes": 110764084,
+    "sha256": "40b86274f6e9129a95f6af045da37924d6fb0b0f2f960ae87a8ad5f31dcf1628",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "b7059f9901012e28d3aa99ef0ab5753b65553eb295055c4aefccb5cd7f4581ca",
+  "topology": {
+    "vertices": 203885,
+    "triangles": 373820,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "b627c9c1e694883fa132c364bdf999db2a8a9cc3617333c91748e4c3a1c5805c",
+    "triangleIndicesInt32Sha256": "be0257fb2fe545abd19358413f3df35931123a3a95b121ff03f0a9338de8355e"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_MoonstoneCrossLanding_DenseMaster",
+    "rawObject": "moonstone-cross-landing__raw_import",
+    "reviewObject": "moonstone-cross-landing__normalized_review",
+    "meshData": "moonstone-cross-landing__dense_mesh",
+    "material": "moonstone-cross-landing__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "moonstone-cross-landing__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "d18cc920837892cf27030d253bbc4c9af005b03b09e365ff81c32a53034bd103",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "moonstone-cross-landing__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "a3e8ede426bc494dcb920a10374e07c4e7158ce0352962be3bc65e479c67129d",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "moonstone-cross-landing__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "6f6a78a102e5268c89baa770bf9add32ed5afc2316b8b679c9dbb23340e9695b",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "moonstone-cross-landing__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "b40ec6b837ec686ae1990c2235b8d06e46e4e3c50ab65d4ec2cb923016872fd4",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-clay-three-quarter.png",
+      "bytes": 477754,
+      "sha256": "b364455af94e406ba7cb707c0c73c6d7f167168252571edf5b8fb75491673ab9",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-clay-top.png",
+      "bytes": 498757,
+      "sha256": "3d0e0db5b06e4d29b12f8dfd195211aaf8cb85ffeca4926008710147d82ee2de",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-clay-side.png",
+      "bytes": 339747,
+      "sha256": "afe46473c401adc5bd55b6e3423964baea982f9c029c8fd6552ce14948b83e7e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-pbr-three-quarter.png",
+      "bytes": 653860,
+      "sha256": "0e635d24e369fd2cd8a4bbbbb59555c5a4efea41252eac719c7461d75c66089d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-pbr-top.png",
+      "bytes": 1256168,
+      "sha256": "6a7598dd14751e5cc7d513d2496a0e7ca70e1d9f56b5dfe7fd7f0263e964887c",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/moonstone-cross-landing/matched-pbr-side.png",
+      "bytes": 479818,
+      "sha256": "4c6e21f552d7e5c9a0349ff0614d45db6b47765935f672f7dd1189f8e150abba",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset moonstone-cross-landing",
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

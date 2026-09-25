@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "aurora-glide-raft",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/aurora-glide-raft/aurora-glide-raft-dense-master.blend",
+    "bytes": 100163229,
+    "sha256": "e64ae128be996d8b41d5b0215d1788a05eab050b0aa2dec7a7fe4b21052ab607",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "f498f437f77eb68975affe6190faae0c78931a890a7563ace6c3946f7adaa17a",
+  "topology": {
+    "vertices": 175986,
+    "triangles": 302054,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "e4aa3d3c85c6628264b133e0bd0af4bb004eadfa0dbf1c6bcbb93f8e4e7788d5",
+    "triangleIndicesInt32Sha256": "42c624e7c11852693a476d4e6a3345ee2c07cbf30ed5c72ca2ee7f9c4c6c2865"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_AuroraGlideRaft_DenseMaster",
+    "rawObject": "aurora-glide-raft__raw_import",
+    "reviewObject": "aurora-glide-raft__normalized_review",
+    "meshData": "aurora-glide-raft__dense_mesh",
+    "material": "aurora-glide-raft__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "aurora-glide-raft__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "8ae5c368ebaa9a05670a7671456388e858af8368299a518a8b6b44065312ea56",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "aurora-glide-raft__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "1c00bdd82ca620ef0dade93c3a343a7776d19041e918de6b0a50cae9a4e74958",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "aurora-glide-raft__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "47d1e5b2bed9faea8583720da27a4835a593a8cf05a3aec51bbcf7c16fe79893",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "aurora-glide-raft__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "2c57f993a8669f77c9d894f1e0c1c779e8af4c959b3a6a4b876e2dcd314a4b72",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/aurora-glide-raft/matched-clay-three-quarter.png",
+      "bytes": 395661,
+      "sha256": "73018a83d538ed613075318437d53a7c4f4040b100b48a0411828c9dd14a2906",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/aurora-glide-raft/matched-clay-top.png",
+      "bytes": 534251,
+      "sha256": "cd8c7d255d6a22ec68f903934a4276473f98e5106156fe34ec19f33a1d8ef878",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/aurora-glide-raft/matched-clay-side.png",
+      "bytes": 330500,
+      "sha256": "776dae65012f75b69b9e5bf1593bc88635e735c672dbce22afe7247e50060907",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/aurora-glide-raft/matched-pbr-three-quarter.png",
+      "bytes": 547713,
+      "sha256": "ef14ade45cc8b4e26b9ec14dc005560b3f3a662f93f2e1030f635b1421ecb936",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/aurora-glide-raft/matched-pbr-top.png",
+      "bytes": 1244039,
+      "sha256": "b378739d0f25f044bc975c0b07eec527186d6c28a1d8511a6d917b10a138c076",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/aurora-glide-raft/matched-pbr-side.png",
+      "bytes": 420072,
+      "sha256": "dfd1cd14de913e7761ac0bffebe13cd3fdb868e40c7c7cace59633995ac8d45d",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset aurora-glide-raft",
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "pearl-marble-long",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/pearl-marble-long/pearl-marble-long-dense-master.blend",
+    "bytes": 69079228,
+    "sha256": "d8f879a18ca1b3483d94a15fdaee4c15ddce24c99790810aa5db682857af18e2",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "311736f3b8d645d715adffb87ef6102bf867f655c80f4bf13335e9dff300bf14",
+  "topology": {
+    "vertices": 68577,
+    "triangles": 112284,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "d776f9671950271bd1f6868ca548340c93e9d8651af612902167ec434bc2a878",
+    "triangleIndicesInt32Sha256": "9b207c14417e6528e4710126bb1fcdbdc8df5e4eb3b923d2be9e8defafa54125"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_PearlMarbleLong_DenseMaster",
+    "rawObject": "pearl-marble-long__raw_import",
+    "reviewObject": "pearl-marble-long__normalized_review",
+    "meshData": "pearl-marble-long__dense_mesh",
+    "material": "pearl-marble-long__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "pearl-marble-long__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "7e79e1fdb13dc82ef36ec68a14f60a983b770a452e313350f2494617ecf65361",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "pearl-marble-long__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "d539aafd1a6597813a1be6800c2f24e47d30782a09356db9c542adc3d0693233",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "pearl-marble-long__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "c5c79150be27c7c0c2ef2f70907165a33cf275206009527d516e200f19c09764",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "pearl-marble-long__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "0cc24627d11eb4920d86d693e6a5ab64aceecc6c3c16109bc6e9640eb6d7362e",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/pearl-marble-long/matched-clay-three-quarter.png",
+      "bytes": 369301,
+      "sha256": "6f4774378d948572d922f0135e2b2e5ac85e0553475b2ac3eb83ba78bd31050f",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/pearl-marble-long/matched-clay-top.png",
+      "bytes": 450563,
+      "sha256": "2234fb600b768f9d2e0d593370ce9c8fc39b60206b387c1afaafc746a25c2901",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/pearl-marble-long/matched-clay-side.png",
+      "bytes": 318546,
+      "sha256": "80123ad14c0c428a4eec14ca0ff38eeb80a99ddf556610424726be8ffdf29047",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/pearl-marble-long/matched-pbr-three-quarter.png",
+      "bytes": 421246,
+      "sha256": "02e23f3d70273318ab73c505f5c4bcaa5b32aeee8791334a9a534086cd963263",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/pearl-marble-long/matched-pbr-top.png",
+      "bytes": 658715,
+      "sha256": "58d28a42d541978cc6ed795e2e2f7960d72f766cb5727a496c9ec406bb6a5711",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/pearl-marble-long/matched-pbr-side.png",
+      "bytes": 345711,
+      "sha256": "e256d65642e519c95d270b765d9e45a2d3a31e094e3c256f3772f8c047c3dc96",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset pearl-marble-long",
+  "placement": {
+    "contactKind": "landing-candidate",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

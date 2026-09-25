@@ -1,0 +1,365 @@
+{
+  "schema": 1,
+  "assetId": "singing-fountain-basin",
+  "label": "Singing Fountain Basin",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/singing-fountain-basin/dense-donor.glb",
+    "bytes": 72130496,
+    "sha256": "34f9348c4fd05fc933877fc5521534850b0f57bc484955abcef4ab293e0c8fb1",
+    "taskId": "01a0d8b1-0249-72e0-a39d-03547a518e33",
+    "receipt": {
+      "file": "source-assets/meshy/singing-fountain-basin/receipt.json",
+      "bytes": 6604,
+      "sha256": "49ad7897e770e1cfb122587ad901b7d92246bdc5c8dae9a0e82debd7c2fa5906"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 410632,
+    "triangles": 776356,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "4d5527c69f95fc9402255540c242c1a607f4678b4c64c47176bf75b46f51c4f7",
+    "triangleIndicesInt32Sha256": "773208a44897f87806800217b629a4cabb06b960d99674d03e5a4f6b1952ce85",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 629,
+      "largestVertexCounts": [
+        6071,
+        5857,
+        5599,
+        4886,
+        4746,
+        4213,
+        4012,
+        3851,
+        3688,
+        3610,
+        3554,
+        3394
+      ],
+      "largestVertexFractions": [
+        0.014784527,
+        0.014263379,
+        0.01363508,
+        0.011898732,
+        0.011557794,
+        0.010259795,
+        0.009770305,
+        0.009378227,
+        0.008981278,
+        0.008791327,
+        0.008654951,
+        0.008265308
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.263559579849,
+        0.0,
+        0.0,
+        8.9736655e-05
+      ],
+      [
+        0.0,
+        1.263559579849,
+        0.0,
+        -0.000667169224
+      ],
+      [
+        0.0,
+        0.0,
+        1.263559579849,
+        0.3264747262
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.263559579849,
+        0.0,
+        0.0,
+        8.9736655e-05
+      ],
+      [
+        0.0,
+        1.263559579849,
+        0.0,
+        -0.000667169224
+      ],
+      [
+        0.0,
+        0.0,
+        1.263559579849,
+        0.3264747262
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -1.198865326,
+        -1.200000007,
+        1.1e-08
+      ],
+      "max": [
+        1.198865326,
+        1.200000007,
+        0.657157123
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      2.397730653,
+      2.400000015,
+      0.657157113
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 2.4,
+      "sourceRawUnits": 1.899396002292633,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.948871017,
+        -0.949169993,
+        -0.258376986
+      ],
+      "max": [
+        0.948728979,
+        0.950226009,
+        0.261707008
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.897599995,
+      1.899396002,
+      0.520083994
+    ],
+    "baseRawZ": -0.258376986,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "dry marble basin",
+      "gold rim",
+      "central lotus bowl",
+      "teal mosaic",
+      "shell spouts",
+      "stable base"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Basin, rim, bowl, mosaic, spouts, base, and any interaction regions are not separated."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/singing-fountain-basin/textures/set-0-base_color.png",
+        "bytes": 75523465,
+        "sha256": "7921bd34cb94b23a65106b551f03a7c648fec900958a6371db17023aeb417680",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/singing-fountain-basin/textures/set-0-normal.png",
+        "bytes": 14774485,
+        "sha256": "553f66aaeb2cca1ed27271f2afbee0bcc30efe35d94019770a54a36cfb39ed7a",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/singing-fountain-basin/textures/set-0-metallic.png",
+        "bytes": 6318840,
+        "sha256": "860b7c6d5f36c3282b32ed78a37d2a44f37e88c7adb3d93972245aff7923b97c",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/singing-fountain-basin/textures/set-0-roughness.png",
+        "bytes": 6410419,
+        "sha256": "54fe9496b9097bbea9c9881122ed3269ac33c5781f5120a221a80782d2e2a8cc",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/singing-fountain-basin/matched-clay-three-quarter.png",
+          "bytes": 570550,
+          "sha256": "bb893f17fe5a80df827246579183db53baace8a0dab724acea8e787b00ea0c30",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/singing-fountain-basin/matched-clay-top.png",
+          "bytes": 951177,
+          "sha256": "26a7c853cfa01ee59ba50c823205fdc515976ebb94c97396daed886777bcd557",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/singing-fountain-basin/matched-clay-side.png",
+          "bytes": 430171,
+          "sha256": "c3b4503cd055449a3e3e7d9885b80cdddfb0ef34e48734afbcfcb5b02d33bebb",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/singing-fountain-basin/matched-pbr-three-quarter.png",
+          "bytes": 689412,
+          "sha256": "71de1fc2ce743a2bbeaa09f49de90ffc3010e8cbd8d64f1355f70248c2e3281d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/singing-fountain-basin/matched-pbr-top.png",
+          "bytes": 1410570,
+          "sha256": "bb6dc396915a9ad7acb19b418eb32e568852b00e125d8e298c2164b9ea426949",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/singing-fountain-basin/matched-pbr-side.png",
+          "bytes": 536770,
+          "sha256": "09b4ff3912779908d13a3ce27dd3b008e85776d24fd980e24a4741b2784fb5be",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/singing-fountain-basin/singing-fountain-basin-dense-master.blend",
+    "bytes": 139676959,
+    "sha256": "6b123e570269480970c99be14bb555e169f421bb2f32a266277698c3ef6ebe62",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset singing-fountain-basin"
+}

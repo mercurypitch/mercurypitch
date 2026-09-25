@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "assetId": "frosted-scroll-wall",
+  "status": "passed fresh packed-master reopen audit",
+  "scope": "Structural, topology, packed-map, proof-hash, and non-mutation checks. This does not certify runtime cost, motion, collision, fracture, or transparent glass.",
+  "packedBlend": {
+    "file": "source-assets/blender/frosted-scroll-wall/frosted-scroll-wall-dense-master.blend",
+    "bytes": 136599619,
+    "sha256": "336c030768c557b5d72bdc22dee12669f21d3d534331f92e3d879c421ef357a7",
+    "reopenMutatedFile": false
+  },
+  "sourceSha256": "7cfb07546a0f42880029b52ca17baa5001b04a3455b221a173e8a88fc28df855",
+  "topology": {
+    "vertices": 410265,
+    "triangles": 701756,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "d4e6bb57ae5731394991984708728f251382f12fa1084bac64766d692551e6c4",
+    "triangleIndicesInt32Sha256": "6cc0751af3d81b310397f29021071ad9313cdf1489dc3595297f3dd89050e9e2"
+  },
+  "rawAndReviewShareMeshData": true,
+  "objectMaterialTopology": {
+    "semanticRoot": "Cloudway_FrostedScrollWall_DenseMaster",
+    "rawObject": "frosted-scroll-wall__raw_import",
+    "reviewObject": "frosted-scroll-wall__normalized_review",
+    "meshData": "frosted-scroll-wall__dense_mesh",
+    "material": "frosted-scroll-wall__provider_full_pbr",
+    "materialSlots": 1,
+    "rawSourceHidden": true
+  },
+  "packedMaps": [
+    {
+      "role": "base_color",
+      "name": "frosted-scroll-wall__base_color",
+      "dimensions": [
+        8192,
+        8192
+      ],
+      "sha256": "85f96252008814b40de7fe7f633b5ba10c36aeebd4d07861ae51478e98ef4d01",
+      "colorSpace": "sRGB",
+      "packed": true
+    },
+    {
+      "role": "normal",
+      "name": "frosted-scroll-wall__normal",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "38e5ed82b51e210850921bff6c28bbbbd03936dcf3272d8a633a6a5e2821abe3",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "metallic",
+      "name": "frosted-scroll-wall__metallic",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "561376db1db1187e2c33ee7b111f6203e789220ccf31cff7d8a3030e181d7aa9",
+      "colorSpace": "Non-Color",
+      "packed": true
+    },
+    {
+      "role": "roughness",
+      "name": "frosted-scroll-wall__roughness",
+      "dimensions": [
+        4096,
+        4096
+      ],
+      "sha256": "cb7341982d5d6bfcdabc7884b3d009e7502234a432c4a03746dcc19370ad4eb6",
+      "colorSpace": "Non-Color",
+      "packed": true
+    }
+  ],
+  "proofs": [
+    {
+      "mode": "clay",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-clay-three-quarter.png",
+      "bytes": 359177,
+      "sha256": "9e67b1a809956302abad4dc2c6829908190c86dbc88605e4e4485a0538976c0b",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "top",
+      "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-clay-top.png",
+      "bytes": 582197,
+      "sha256": "3eb5ced2ab4d1a3c07fa7e40a0dd5a1099a794d27956a026514a4ebd462bdd50",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "clay",
+      "view": "side",
+      "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-clay-side.png",
+      "bytes": 416116,
+      "sha256": "64bab868592fcdb489751ac27d63b306d8e460a42a509827b253f4b38b5557a1",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "three-quarter",
+      "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-pbr-three-quarter.png",
+      "bytes": 380465,
+      "sha256": "bef06d456aed00f2e7fc1a78a2a2e741773ff3e5cf0a69a40767b5bc8e67a548",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "top",
+      "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-pbr-top.png",
+      "bytes": 655653,
+      "sha256": "c45ce647e540f51f3bde826e88086a8d02063f579d9ef31a3db2fef67810b9db",
+      "dimensions": [
+        1100,
+        820
+      ]
+    },
+    {
+      "mode": "pbr",
+      "view": "side",
+      "file": "source-assets/proofs/blender/frosted-scroll-wall/matched-pbr-side.png",
+      "bytes": 444127,
+      "sha256": "29f179cb1941a3717b0a0dbfc3dab2b0ce175e0bd3d2d3b47281f71601dfd35e",
+      "dimensions": [
+        1100,
+        820
+      ]
+    }
+  ],
+  "limitationsRetained": {
+    "opaqueProviderPbr": true,
+    "semanticPartSeparation": false,
+    "runtimeReadiness": false
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "numpy": "2.5.3"
+  },
+  "command": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/audit_dense_master.py -- --asset frosted-scroll-wall",
+  "placement": {
+    "contactKind": "resting-base",
+    "walkableSurfaceCertified": false,
+    "mountContactCertified": false,
+    "reviewAnchorZMetres": 0.0
+  }
+}

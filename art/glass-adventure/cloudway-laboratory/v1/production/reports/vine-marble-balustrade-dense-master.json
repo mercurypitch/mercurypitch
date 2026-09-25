@@ -1,0 +1,364 @@
+{
+  "schema": 1,
+  "assetId": "vine-marble-balustrade",
+  "label": "Vine Marble Balustrade",
+  "status": "packed dense source review master; runtime adaptation pending",
+  "scope": "Immutable dense-source preservation, geometric screening, and matched clay/provider-PBR renders. This does not certify gameplay collision, motion, fracture, transparent glass, runtime cost, or final materials.",
+  "source": {
+    "file": "source-assets/meshy/vine-marble-balustrade/dense-donor.glb",
+    "bytes": 60679192,
+    "sha256": "452d2ac9efc2a6f11706e949c6a166da4276bf31fb15826a580a28de166a484c",
+    "taskId": "01a0d8aa-f424-7661-aa3b-67e4a699441e",
+    "receipt": {
+      "file": "source-assets/meshy/vine-marble-balustrade/receipt.json",
+      "bytes": 6566,
+      "sha256": "93765bfd86f7e0660d944af62fcc9bee8305ef2347de9fb9d72992c9eeb537ea"
+    },
+    "providerQuality": {
+      "status": "needs-review",
+      "requested": {
+        "aiModel": "meshy-7.1",
+        "geometryResolution": "4k",
+        "textureResolution": "8k",
+        "pbr": true,
+        "remesh": false
+      },
+      "observed": {
+        "aiModel": null,
+        "geometryResolution": "4k",
+        "baseColorDimensions": [
+          [
+            8192,
+            8192
+          ]
+        ]
+      },
+      "issues": [
+        "Provider did not confirm the requested Meshy 7.1 model."
+      ],
+      "scope": "Provider response and archive evidence only; Blender and runtime art acceptance remain pending."
+    }
+  },
+  "geometry": {
+    "vertices": 174749,
+    "triangles": 300086,
+    "nonFinitePositionValues": 0,
+    "degenerateTriangles": 0,
+    "vertexPositionsFloat32Sha256": "7b2acbe42dab4ff667429e7ee74a92340525a5f49a68399b5c3b68c69c8d4ba3",
+    "triangleIndicesInt32Sha256": "56e05685cc83ae4e6a1aa3e1207a329a415cf2b919742c67810256257577e31e",
+    "meshObjects": 1,
+    "primitives": 1,
+    "materialSlots": 1,
+    "connectedComponents": {
+      "count": 2758,
+      "largestVertexCounts": [
+        2385,
+        2209,
+        2112,
+        1953,
+        1878,
+        1778,
+        1679,
+        1606,
+        1599,
+        1585,
+        1549,
+        1545
+      ],
+      "largestVertexFractions": [
+        0.013648147,
+        0.012640988,
+        0.012085906,
+        0.01117603,
+        0.010746843,
+        0.010174593,
+        0.009608066,
+        0.009190324,
+        0.009150267,
+        0.009070152,
+        0.008864142,
+        0.008841252
+      ],
+      "interpretation": "Connectivity measures loose geometry only; it does not assign semantic labels or prove safe part separation."
+    },
+    "rawObjectMatrix": [
+      [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "normalizationMatrix": [
+      [
+        1.050967693329,
+        0.0,
+        0.0,
+        0.000367837085
+      ],
+      [
+        0.0,
+        1.050967693329,
+        0.0,
+        -0.000329476345
+      ],
+      [
+        0.0,
+        0.0,
+        1.050967693329,
+        0.463974893093
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewObjectMatrix": [
+      [
+        1.050967693329,
+        0.0,
+        0.0,
+        0.000367837085
+      ],
+      [
+        0.0,
+        1.050967693329,
+        0.0,
+        -0.000329476345
+      ],
+      [
+        0.0,
+        0.0,
+        1.050967693329,
+        0.463974893093
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "reviewBoundsBlenderZUpMetres": {
+      "min": [
+        -0.999999956,
+        -0.158999328,
+        -9e-09
+      ],
+      "max": [
+        0.999999956,
+        0.158999328,
+        0.950236638
+      ]
+    },
+    "reviewDimensionsBlenderZUpMetres": [
+      1.999999912,
+      0.317998656,
+      0.950236647
+    ],
+    "reviewScale": {
+      "basis": "source-horizontal-long-dimension",
+      "targetMetres": 2.0,
+      "sourceRawUnits": 1.903007984161377,
+      "runtimeScaleCertified": false
+    },
+    "uniformScaleOnly": true,
+    "decimation": false,
+    "remesh": false,
+    "sourceAndReviewShareMeshData": true
+  },
+  "placement": {
+    "contactKind": "resting-base",
+    "walkable": false,
+    "method": "Normalize the lowest source-space bound to Z=0 for review placement. No inferred upper patch or gameplay landing surface is produced.",
+    "rawBoundsBlenderZUp": {
+      "min": [
+        -0.951853991,
+        -0.150975004,
+        -0.441473991
+      ],
+      "max": [
+        0.951153994,
+        0.151602,
+        0.462680012
+      ]
+    },
+    "rawDimensionsBlenderZUp": [
+      1.903007984,
+      0.302577004,
+      0.904154003
+    ],
+    "baseRawZ": -0.441473991,
+    "baseReviewZMetres": 0.0,
+    "screeningStatus": "uncertified-resting-base",
+    "contactCertification": "not-established",
+    "warning": "Z=0 is a review placement anchor only. Support footprint, stability, mount points, collision, and runtime placement remain unverified."
+  },
+  "semanticRegions": {
+    "expectedVisibleRegions": [
+      "end posts",
+      "three balusters",
+      "top rail",
+      "ivy sprig",
+      "flat architectural base"
+    ],
+    "providerOrganization": "one exported mesh, one primitive, one material; loose geometry components have no semantic labels",
+    "separationStatus": "not-established",
+    "materialRegionStatus": "not-separated",
+    "contactOrMountStatus": "not-certified",
+    "limitation": "The provider source is one opaque exported mesh and one material. Posts, balusters, rail, base, and accents are not separated; the preview does not visibly confirm the requested ivy sprig."
+  },
+  "appearance": {
+    "sourceMode": "opaque provider PBR reconstructed from full archived maps",
+    "alphaMode": "OPAQUE",
+    "doubleSidedSource": true,
+    "glassTransmissionAuthored": false,
+    "maps": [
+      {
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-base_color.png",
+        "bytes": 66613834,
+        "sha256": "5ab8d20868a6216ce37cbb57c950e835fe91b7cfce5c85799f86b2b359ee1145",
+        "dimensions": [
+          8192,
+          8192
+        ],
+        "role": "base_color",
+        "colorSpace": "sRGB"
+      },
+      {
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-normal.png",
+        "bytes": 14938755,
+        "sha256": "53cbac56f0b81050efab033fc1cb5f8af444d13edb263c804bc51c2bd1cfec87",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "normal",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-metallic.png",
+        "bytes": 4611815,
+        "sha256": "b21f24a336b7c71e0f032ca1af6e597b88a4998459e194be93f37b47dbfe94f3",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "metallic",
+        "colorSpace": "Non-Color"
+      },
+      {
+        "file": "source-assets/meshy/vine-marble-balustrade/textures/set-0-roughness.png",
+        "bytes": 4541888,
+        "sha256": "da7439b6c23df07859ff83af97245742440e4ef2c2d8e8771d37c0be8660159b",
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "role": "roughness",
+        "colorSpace": "Non-Color"
+      }
+    ],
+    "limitation": "The source proof intentionally preserves opaque provider appearance. True refractive/transmissive glass and region-specific shaders require a separate reviewed finalization pass."
+  },
+  "proofs": {
+    "method": "Clay and provider PBR use the same dense geometry, normalization, camera, lighting, exposure, resolution, and view per matched pair.",
+    "resolution": [
+      1100,
+      820
+    ],
+    "views": {
+      "clay": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/vine-marble-balustrade/matched-clay-three-quarter.png",
+          "bytes": 581904,
+          "sha256": "06f6ace9ed4a61b23ed464b1f5e04486ce9079e1a2a039d7377edf83227068bf",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/vine-marble-balustrade/matched-clay-top.png",
+          "bytes": 874051,
+          "sha256": "01e7890c11d86f06670ddac256846e7cb85285247a6b00a0e67abea17230a1d1",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/vine-marble-balustrade/matched-clay-side.png",
+          "bytes": 568927,
+          "sha256": "1eb8d71754ede5eacdfb02391e506c8e0340505625cd7c8037fc8573f1e6d865",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      },
+      "pbr": {
+        "three-quarter": {
+          "file": "source-assets/proofs/blender/vine-marble-balustrade/matched-pbr-three-quarter.png",
+          "bytes": 646771,
+          "sha256": "cda3b39e2cc89c3fc678d89aa156719689d22b0e1f5906c51d6e62b81e8f5408",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "top": {
+          "file": "source-assets/proofs/blender/vine-marble-balustrade/matched-pbr-top.png",
+          "bytes": 946896,
+          "sha256": "4fd51e7571b0876e7a285e9483d697dab16c9b6ad72c551838d4d6a1a3c0186d",
+          "dimensions": [
+            1100,
+            820
+          ]
+        },
+        "side": {
+          "file": "source-assets/proofs/blender/vine-marble-balustrade/matched-pbr-side.png",
+          "bytes": 629487,
+          "sha256": "d291a6b6c81741612d5303fb3b32257b9ef0242a71c9aeac5ec386fcb7826161",
+          "dimensions": [
+            1100,
+            820
+          ]
+        }
+      }
+    }
+  },
+  "packedBlend": {
+    "file": "source-assets/blender/vine-marble-balustrade/vine-marble-balustrade-dense-master.blend",
+    "bytes": 104846179,
+    "sha256": "0915fffd773f38b4eca986eed7042c582ea4362de51acb77a2abbd736b1b8e78",
+    "allFileImagesPacked": true,
+    "rawAndReviewCollectionsRetained": true
+  },
+  "tool": {
+    "blender": "5.2.2 LTS",
+    "blenderExecutable": "/usr/bin/blender",
+    "numpy": "2.5.3"
+  },
+  "rebuild": "rtk proxy timeout 1200 env ALSOFT_DRIVERS=null /usr/bin/blender --background --factory-startup --python-exit-code 1 --python art/glass-adventure/cloudway-laboratory/v1/production/prepare_dense_master.py -- --asset vine-marble-balustrade"
+}
