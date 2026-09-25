@@ -80,16 +80,27 @@ describe('signInWithApple', () => {
 
     await signInWithApple()
 
-    const sent = login.mock.calls[0] as unknown as [
-      string,
-      { nonce?: string; scopes?: string[] },
-    ]
+    const sent = login.mock.calls[0] as unknown as [string, { nonce?: string }]
     const posted = mocks.loginWithApple.mock.calls[0][0] as { nonce?: string }
     expect(sent[0]).toBe('apple')
     expect(sent[1].nonce).toMatch(/^[A-Za-z0-9_-]{43}$/)
     // Not "both present" — the SAME string. Apple puts the plugin's value in
     // the token and the worker compares it to the body's.
     expect(posted.nonce).toBe(sent[1].nonce)
+  })
+
+  it('leaves the scopes to the plugin', async () => {
+    // Its default asks Apple for [.fullName, .email]. A list passed here is
+    // cast unchecked to Apple's scope type, and 'name' is not known to be
+    // the full-name scope: the sheet might then never offer the name.
+    const login = bridgeReturning({
+      result: { idToken: 'apple-jwt', profile: { user: 'a' } },
+    })
+
+    await signInWithApple()
+
+    const sent = login.mock.calls[0] as unknown as [string, object]
+    expect(sent[1]).toEqual({ nonce: expect.any(String) })
   })
 
   it('forwards the name and email Apple only ever sends once', async () => {

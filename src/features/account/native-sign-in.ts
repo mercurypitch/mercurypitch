@@ -227,7 +227,8 @@ export async function signInWithApple(): Promise<SignInOutcome> {
   const nonce = randomNonce()
   let answer: unknown
   try {
-    answer = await plugin.login('apple', { scopes: ['name', 'email'], nonce })
+    // No scopes: the plugin casts them unchecked; its default asks for both.
+    answer = await plugin.login('apple', { nonce })
   } catch (error) {
     throw asFailure(error)
   }
