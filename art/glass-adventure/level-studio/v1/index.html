@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>Cloudway Level Studio</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#level-stage">Skip to level grid</a>
+    <div class="studio" data-testid="studio">
+      <header class="app-header">
+        <div class="brand-lockup">
+          <svg class="brand-mark" viewBox="0 0 36 36" aria-hidden="true">
+            <path d="M7 24.5h22M10 19h16M13 13.5h10" />
+            <circle cx="8" cy="24.5" r="2.5" />
+            <circle cx="28" cy="24.5" r="2.5" />
+            <circle cx="18" cy="13.5" r="3.5" />
+          </svg>
+          <div>
+            <h1>Cloudway Level Studio</h1>
+            <p>Draft routes, timing, and musical targets.</p>
+          </div>
+        </div>
+
+        <div class="header-actions" aria-label="Level actions">
+          <div class="button-cluster" aria-label="History">
+            <button
+              id="undoButton"
+              class="icon-button"
+              type="button"
+              aria-label="Undo"
+              title="Undo"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 7 4 12l5 5M5 12h8a6 6 0 0 1 6 6" />
+              </svg>
+            </button>
+            <button
+              id="redoButton"
+              class="icon-button"
+              type="button"
+              aria-label="Redo"
+              title="Redo"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m15 7 5 5-5 5M19 12h-8a6 6 0 0 0-6 6" />
+              </svg>
+            </button>
+          </div>
+          <button id="saveDraftButton" class="quiet-button" type="button">
+            Save draft
+          </button>
+          <button id="loadDraftButton" class="quiet-button" type="button">
+            Load draft
+          </button>
+          <button id="importButton" class="quiet-button" type="button">
+            Import JSON
+          </button>
+          <button id="exportButton" class="primary-button" type="button">
+            Export JSON
+          </button>
+        </div>
+      </header>
+
+      <div class="truth-strip" role="note">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3.5 21 8v8l-9 4.5L3 16V8l9-4.5Z" />
+          <path d="m3 8 9 4.5L21 8M12 12.5v8" />
+        </svg>
+        <span>
+          This studio checks a top-view design spec. Movement, camera,
+          collision, and physics still need runtime playtesting.
+        </span>
+      </div>
+
+      <div class="workspace">
+        <aside class="palette-panel" aria-labelledby="paletteHeading">
+          <div class="panel-heading">
+            <div>
+              <h2 id="paletteHeading">Place pieces</h2>
+              <p>Choose one, then tap the grid.</p>
+            </div>
+          </div>
+
+          <section class="palette-section" aria-labelledby="platformHeading">
+            <h3 id="platformHeading">Platforms</h3>
+            <div class="palette-list">
+              <button
+                class="palette-item stable"
+                type="button"
+                data-create-kind="platform"
+                data-create-subtype="stable"
+              >
+                <span class="palette-swatch" aria-hidden="true"></span>
+                <span
+                  ><strong>Stable pad</strong><small>Plain footing</small></span
+                >
+              </button>
+              <button
+                class="palette-item crackle"
+                type="button"
+                data-create-kind="platform"
+                data-create-subtype="crackle"
+              >
+                <span class="palette-swatch" aria-hidden="true"></span>
+                <span
+                  ><strong>Crackle step</strong><small>2s or 4s</small></span
+                >
+              </button>
+              <button
+                class="palette-item frost"
+                type="button"
+                data-create-kind="platform"
+                data-create-subtype="frost"
+              >
+                <span class="palette-swatch" aria-hidden="true"></span>
+                <span
+                  ><strong>Frost sheet</strong
+                  ><small>Slippery route</small></span
+                >
+              </button>
+              <button
+                class="palette-item glide"
+                type="button"
+                data-create-kind="platform"
+                data-create-subtype="glide"
+              >
+                <span class="palette-swatch" aria-hidden="true"></span>
+                <span
+                  ><strong>Glide platform</strong
+                  ><small>Travels on an axis</small></span
+                >
+              </button>
+              <button
+                class="palette-item scroll"
+                type="button"
+                data-create-kind="platform"
+                data-create-subtype="scroll"
+              >
+                <span class="palette-swatch" aria-hidden="true"></span>
+                <span
+                  ><strong>Scroll bridge</strong
+                  ><small>Extends and retracts</small></span
+                >
+              </button>
+            </div>
+          </section>
+
+          <section class="palette-section" aria-labelledby="markerHeading">
+            <h3 id="markerHeading">Route markers</h3>
+            <div class="palette-list compact-list">
+              <button
+                class="palette-item spawn"
+                type="button"
+                data-create-kind="marker"
+                data-create-subtype="spawn"
+              >
+                <span class="palette-symbol" aria-hidden="true">S</span>
+                <span><strong>Spawn</strong><small>Start</small></span>
+              </button>
+              <button
+                class="palette-item checkpoint"
+                type="button"
+                data-create-kind="marker"
+                data-create-subtype="checkpoint"
+              >
+                <span class="palette-symbol" aria-hidden="true">C</span>
+                <span><strong>Checkpoint</strong><small>Recovery</small></span>
+              </button>
+              <button
+                class="palette-item exit"
+                type="button"
+                data-create-kind="marker"
+                data-create-subtype="exit"
+              >
+                <span class="palette-symbol" aria-hidden="true">E</span>
+                <span><strong>Exit</strong><small>Finish</small></span>
+              </button>
+              <button
+                class="palette-item voice"
+                type="button"
+                data-create-kind="voiceTarget"
+                data-create-subtype="voiceTarget"
+              >
+                <span class="palette-symbol" aria-hidden="true">V</span>
+                <span
+                  ><strong>Voice target</strong><small>Melody note</small></span
+                >
+              </button>
+            </div>
+          </section>
+
+          <div class="palette-help">
+            <button id="newLevelButton" class="text-button" type="button">
+              New blank level
+            </button>
+            <button id="demoLevelButton" class="text-button" type="button">
+              Restore demo
+            </button>
+            <button id="shortcutsButton" class="text-button" type="button">
+              Keyboard shortcuts
+            </button>
+          </div>
+        </aside>
+
+        <main class="stage-panel" id="level-stage">
+          <div class="stage-toolbar">
+            <div class="tool-switch" role="group" aria-label="Grid tool">
+              <button
+                id="selectToolButton"
+                class="tool-button is-active"
+                type="button"
+                aria-pressed="true"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m7 4 10 8-6 1.5L9 19 7 4Z" />
+                </svg>
+                Select
+              </button>
+              <button
+                id="panToolButton"
+                class="tool-button"
+                type="button"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M9.5 11V6.5a1.5 1.5 0 0 1 3 0V10m0-3.5a1.5 1.5 0 0 1 3 0V10m0-2a1.5 1.5 0 0 1 3 0v5c0 4-2 7-7 7-3.5 0-5-2-7.5-5.5a1.6 1.6 0 0 1 2.4-2.1L9.5 15V8a1.5 1.5 0 0 1 3 0"
+                  />
+                </svg>
+                Pan
+              </button>
+            </div>
+
+            <div
+              id="selectionActions"
+              class="selection-actions"
+              aria-label="Selected piece actions"
+              hidden
+            >
+              <button id="rotateButton" class="toolbar-button" type="button">
+                Rotate 90°
+              </button>
+              <button id="duplicateButton" class="toolbar-button" type="button">
+                Duplicate
+              </button>
+              <button
+                id="deleteButton"
+                class="toolbar-button danger"
+                type="button"
+              >
+                Delete
+              </button>
+            </div>
+
+            <div class="zoom-controls" aria-label="Grid zoom">
+              <button
+                id="zoomOutButton"
+                class="icon-button"
+                type="button"
+                aria-label="Zoom out"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 12h12" />
+                </svg>
+              </button>
+              <output id="zoomOutput" aria-live="polite">100%</output>
+              <button
+                id="zoomInButton"
+                class="icon-button"
+                type="button"
+                aria-label="Zoom in"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 6v12M6 12h12" />
+                </svg>
+              </button>
+              <button id="fitButton" class="toolbar-button" type="button">
+                Fit
+              </button>
+            </div>
+          </div>
+
+          <div id="stageViewport" class="stage-viewport" data-tool="select">
+            <svg
+              id="stageSvg"
+              class="stage-svg"
+              viewBox="0 0 1280 820"
+              role="application"
+              aria-label="Cloudway top-view level grid"
+              tabindex="0"
+            >
+              <defs>
+                <pattern
+                  id="minorGrid"
+                  width="40"
+                  height="40"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <path d="M40 0H0V40" class="minor-grid-line" />
+                </pattern>
+                <pattern
+                  id="majorGrid"
+                  width="200"
+                  height="200"
+                  patternUnits="userSpaceOnUse"
+                >
+                  <rect width="200" height="200" fill="url(#minorGrid)" />
+                  <path d="M200 0H0V200" class="major-grid-line" />
+                </pattern>
+                <filter
+                  id="selectionGlow"
+                  x="-40%"
+                  y="-40%"
+                  width="180%"
+                  height="180%"
+                >
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <g id="cameraGroup">
+                <g id="gridLayer"></g>
+                <g id="piecesLayer"></g>
+                <g id="overlayLayer"></g>
+              </g>
+            </svg>
+            <div
+              id="placementHint"
+              class="placement-hint"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></div>
+            <div class="stage-key">
+              <span><i class="key-swatch stable"></i>Stable</span>
+              <span><i class="key-swatch crackle"></i>Crackle</span>
+              <span><i class="key-swatch frost"></i>Frost</span>
+              <span><i class="key-swatch moving"></i>Moving</span>
+            </div>
+          </div>
+
+          <section class="checks-panel" aria-labelledby="checksHeading">
+            <div class="checks-heading-row">
+              <div>
+                <h2 id="checksHeading">Geometry notes</h2>
+                <p id="checksSummary">Checking layout…</p>
+              </div>
+              <button
+                id="toggleChecksButton"
+                class="text-button"
+                type="button"
+                aria-expanded="true"
+              >
+                Hide notes
+              </button>
+            </div>
+            <ul id="checksList" class="checks-list"></ul>
+          </section>
+        </main>
+
+        <aside class="inspector-panel" aria-labelledby="inspectorHeading">
+          <div class="panel-heading inspector-heading">
+            <div>
+              <h2 id="inspectorHeading">Inspector</h2>
+              <p id="inspectorSubhead">Level settings</p>
+            </div>
+            <span id="selectionKind" class="kind-chip" hidden></span>
+          </div>
+
+          <form id="levelForm" class="inspector-form" autocomplete="off">
+            <fieldset>
+              <legend>Level</legend>
+              <label>
+                Title
+                <input id="levelTitleInput" name="levelTitle" maxlength="80" />
+              </label>
+              <label>
+                Level ID
+                <input
+                  id="levelIdInput"
+                  name="levelId"
+                  maxlength="48"
+                  pattern="[a-z0-9][a-z0-9-]*"
+                />
+              </label>
+              <div class="field-row three-fields">
+                <label>
+                  Width
+                  <input
+                    id="gridWidthInput"
+                    name="gridWidth"
+                    type="number"
+                    min="8"
+                    max="96"
+                    step="1"
+                  />
+                </label>
+                <label>
+                  Depth
+                  <input
+                    id="gridDepthInput"
+                    name="gridDepth"
+                    type="number"
+                    min="8"
+                    max="72"
+                    step="1"
+                  />
+                </label>
+                <label>
+                  Snap
+                  <select id="gridCellInput" name="gridCell">
+                    <option value="0.25">0.25</option>
+                    <option value="0.5">0.5</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Melody</legend>
+              <label>
+                Melody title
+                <input
+                  id="melodyTitleInput"
+                  name="melodyTitle"
+                  maxlength="80"
+                />
+              </label>
+              <label>
+                Melody ID
+                <input
+                  id="melodyIdInput"
+                  name="melodyId"
+                  maxlength="48"
+                  pattern="[a-z0-9][a-z0-9-]*"
+                />
+              </label>
+              <div id="notesEditor" class="notes-editor"></div>
+              <button id="addNoteButton" class="secondary-button" type="button">
+                Add melody note
+              </button>
+            </fieldset>
+          </form>
+
+          <form id="pieceForm" class="inspector-form" autocomplete="off" hidden>
+            <fieldset>
+              <legend>Selected piece</legend>
+              <label>
+                Name
+                <input id="pieceNameInput" name="pieceName" maxlength="64" />
+              </label>
+              <label>
+                Piece ID
+                <input
+                  id="pieceIdInput"
+                  name="pieceId"
+                  maxlength="48"
+                  pattern="[a-z0-9][a-z0-9-]*"
+                />
+              </label>
+              <div class="field-row three-fields">
+                <label>
+                  X
+                  <input
+                    id="pieceXInput"
+                    name="pieceX"
+                    type="number"
+                    min="-96"
+                    max="96"
+                    step="0.25"
+                  />
+                </label>
+                <label>
+                  Y
+                  <input
+                    id="pieceYInput"
+                    name="pieceY"
+                    type="number"
+                    min="-12"
+                    max="48"
+                    step="0.25"
+                  />
+                </label>
+                <label>
+                  Z
+                  <input
+                    id="pieceZInput"
+                    name="pieceZ"
+                    type="number"
+                    min="-96"
+                    max="96"
+                    step="0.25"
+                  />
+                </label>
+              </div>
+              <div class="field-row three-fields">
+                <label>
+                  Width
+                  <input
+                    id="pieceWidthInput"
+                    name="pieceWidth"
+                    type="number"
+                    min="0.5"
+                    max="24"
+                    step="0.25"
+                  />
+                </label>
+                <label>
+                  Depth
+                  <input
+                    id="pieceDepthInput"
+                    name="pieceDepth"
+                    type="number"
+                    min="0.5"
+                    max="24"
+                    step="0.25"
+                  />
+                </label>
+                <label>
+                  Rotation
+                  <select id="pieceRotationInput" name="pieceRotation">
+                    <option value="0">0°</option>
+                    <option value="90">90°</option>
+                    <option value="180">180°</option>
+                    <option value="270">270°</option>
+                  </select>
+                </label>
+              </div>
+            </fieldset>
+            <fieldset id="behaviorFields">
+              <legend>Behavior</legend>
+              <div id="behaviorContent"></div>
+            </fieldset>
+          </form>
+        </aside>
+      </div>
+
+      <footer class="status-bar">
+        <span id="pieceCount">0 pieces</span>
+        <span id="cursorPosition">X 0 · Z 0</span>
+        <span id="saveStatus" role="status" aria-live="polite"
+          >Demo loaded</span
+        >
+      </footer>
+    </div>
+
+    <dialog id="importDialog" class="studio-dialog">
+      <form method="dialog" class="dialog-card" id="importForm">
+        <div class="dialog-heading">
+          <div>
+            <h2>Import level JSON</h2>
+            <p>Paste a v1 Cloudway design spec or choose a local JSON file.</p>
+          </div>
+          <button
+            class="icon-button dialog-close"
+            type="submit"
+            value="cancel"
+            aria-label="Close import dialog"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <label class="file-picker">
+          Choose JSON file
+          <input
+            id="importFileInput"
+            type="file"
+            accept="application/json,.json"
+          />
+        </label>
+        <label>
+          JSON text
+          <textarea
+            id="importText"
+            spellcheck="false"
+            maxlength="300000"
+          ></textarea>
+        </label>
+        <div id="importErrors" class="import-errors" role="alert" hidden></div>
+        <div class="dialog-actions">
+          <button class="quiet-button" type="submit" value="cancel">
+            Cancel
+          </button>
+          <button id="confirmImportButton" class="primary-button" type="button">
+            Import level
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="exportDialog" class="studio-dialog">
+      <form method="dialog" class="dialog-card">
+        <div class="dialog-heading">
+          <div>
+            <h2>Export level JSON</h2>
+            <p>
+              Give this design spec to an agent or save it for a future
+              authoring adapter.
+            </p>
+          </div>
+          <button
+            class="icon-button dialog-close"
+            type="submit"
+            aria-label="Close export dialog"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <label>
+          Validated JSON
+          <textarea id="exportText" readonly spellcheck="false"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button id="copyExportButton" class="quiet-button" type="button">
+            Copy JSON
+          </button>
+          <button
+            id="downloadExportButton"
+            class="primary-button"
+            type="button"
+          >
+            Download JSON
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="shortcutsDialog" class="studio-dialog shortcuts-dialog">
+      <form method="dialog" class="dialog-card">
+        <div class="dialog-heading">
+          <div>
+            <h2>Keyboard shortcuts</h2>
+            <p>The grid keeps browser-standard shortcuts where possible.</p>
+          </div>
+          <button
+            class="icon-button dialog-close"
+            type="submit"
+            aria-label="Close shortcuts dialog"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <dl class="shortcut-list">
+          <div>
+            <dt>Delete</dt>
+            <dd>Remove the selected piece</dd>
+          </div>
+          <div>
+            <dt>R</dt>
+            <dd>Rotate the selected piece by 90°</dd>
+          </div>
+          <div>
+            <dt>Ctrl / Cmd + D</dt>
+            <dd>Duplicate the selected piece</dd>
+          </div>
+          <div>
+            <dt>Ctrl / Cmd + Z</dt>
+            <dd>Undo</dd>
+          </div>
+          <div>
+            <dt>Ctrl / Cmd + Shift + Z</dt>
+            <dd>Redo</dd>
+          </div>
+          <div>
+            <dt>Space + drag</dt>
+            <dd>Pan the grid</dd>
+          </div>
+          <div>
+            <dt>Escape</dt>
+            <dd>Cancel placement or clear selection</dd>
+          </div>
+        </dl>
+        <div class="dialog-actions">
+          <button class="primary-button" type="submit">Done</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

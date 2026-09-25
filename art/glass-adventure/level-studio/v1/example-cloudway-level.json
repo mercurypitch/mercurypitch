@@ -1,0 +1,160 @@
+{
+  "schema": "mercurypitch.cloudway-level",
+  "schemaVersion": 1,
+  "id": "rose-step-study",
+  "title": "Rose Step Study",
+  "grid": {
+    "width": 28,
+    "depth": 18,
+    "cellSize": 1
+  },
+  "melody": {
+    "id": "three-note-study",
+    "title": "Three-note study",
+    "notes": [
+      { "id": "home", "label": "Home", "semitones": 0 },
+      { "id": "third", "label": "Third", "semitones": 4 },
+      { "id": "fifth", "label": "Fifth", "semitones": 7 }
+    ]
+  },
+  "pieces": [
+    {
+      "id": "arrival",
+      "kind": "platform",
+      "name": "Arrival rest",
+      "x": -8,
+      "y": 0,
+      "z": 3,
+      "width": 4,
+      "depth": 4,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "emerald-square-turn"
+    },
+    {
+      "id": "quick-step",
+      "kind": "platform",
+      "name": "Quick rose step",
+      "x": -4.5,
+      "y": 0,
+      "z": 2,
+      "width": 2,
+      "depth": 2,
+      "rotation": 0,
+      "surface": "crackle",
+      "crackleSeconds": 2,
+      "assetId": "rose-quartz-crackle-fast"
+    },
+    {
+      "id": "middle-rest",
+      "kind": "platform",
+      "name": "Middle rest",
+      "x": -1,
+      "y": 0,
+      "z": 0,
+      "width": 4,
+      "depth": 4,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "moonstone-cross-landing"
+    },
+    {
+      "id": "patient-step",
+      "kind": "platform",
+      "name": "Patient amethyst step",
+      "x": 2.5,
+      "y": 0,
+      "z": -2,
+      "width": 2,
+      "depth": 2,
+      "rotation": 90,
+      "surface": "crackle",
+      "crackleSeconds": 4,
+      "assetId": "amethyst-crackle-slow"
+    },
+    {
+      "id": "scroll-finish",
+      "kind": "platform",
+      "name": "Scroll bridge approach",
+      "x": 7,
+      "y": 0,
+      "z": -2,
+      "width": 6,
+      "depth": 2,
+      "rotation": 0,
+      "surface": "scroll",
+      "motion": {
+        "axis": "x",
+        "minLengthRatio": 0.25,
+        "extendedSeconds": 4,
+        "retractedSeconds": 3,
+        "transitionSeconds": 1.5,
+        "initialState": "retracted"
+      },
+      "assetId": "gilt-scroll-bridge"
+    },
+    {
+      "id": "finish-rest",
+      "kind": "platform",
+      "name": "Stable finish landing",
+      "x": 12,
+      "y": 0,
+      "z": -2,
+      "width": 4,
+      "depth": 4,
+      "rotation": 0,
+      "surface": "stable",
+      "assetId": "pearl-marble-long"
+    },
+    {
+      "id": "spawn-main",
+      "kind": "marker",
+      "name": "Spawn",
+      "x": -8,
+      "y": 0,
+      "z": 3,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "spawn"
+    },
+    {
+      "id": "checkpoint-middle",
+      "kind": "marker",
+      "name": "Middle checkpoint",
+      "x": -1,
+      "y": 0,
+      "z": 0,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "checkpoint"
+    },
+    {
+      "id": "exit-main",
+      "kind": "marker",
+      "name": "Exit",
+      "x": 12.75,
+      "y": 0,
+      "z": -2,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "marker": "exit"
+    },
+    {
+      "id": "voice-fifth",
+      "kind": "voiceTarget",
+      "name": "Final fifth",
+      "x": 11.25,
+      "y": 0,
+      "z": -2,
+      "width": 1,
+      "depth": 1,
+      "rotation": 0,
+      "melodyNoteId": "fifth",
+      "holdSeconds": 1.2,
+      "requiresCompletedIds": ["checkpoint-middle"]
+    }
+  ]
+}
