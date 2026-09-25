@@ -5,6 +5,7 @@ import { createBrowserGlassSound } from './glass-sound'
 import { createBrowserMelodyReference } from './melody-reference'
 import { createBrowserMemoryPlayback } from './memory-playback'
 import { createBrowserMercNarration } from './merc-narration'
+import { createBrowserMicrophoneInput } from './microphone-input'
 import { createBrowserMuseumAudio } from './museum-audio'
 import { createBrowserMemoryStore } from './musical-memory-store'
 import { createBrowserVoice } from './voice-session'
@@ -12,12 +13,18 @@ import { createBrowserVoice } from './voice-session'
 export interface BrowserHostOptions {
   assetUrl(id: string): string
   storagePrefix: string
+  /** Reuse a product's existing input preference when opening Glassworks directly. */
+  microphonePreferenceKey?: string
   onExit(): void
   subscribeForeground?: GlassGameHost['subscribeForeground']
 }
 export function createBrowserGlassHost(
   options: BrowserHostOptions,
 ): GlassGameHost {
+  const microphone = createBrowserMicrophoneInput(
+    options.microphonePreferenceKey ??
+      `${options.storagePrefix}:microphone-device`,
+  )
   const read = (key: string): string | null => {
     try {
       return localStorage.getItem(`${options.storagePrefix}:${key}`)
@@ -34,7 +41,8 @@ export function createBrowserGlassHost(
   }
   return {
     assetUrl: options.assetUrl,
-    createVoice: createBrowserVoice,
+    createVoice: () => createBrowserVoice(microphone.forStart()),
+    microphoneInput: microphone.input,
     takeOverMicrophone: () => micManager.takeOverFromOtherTab(),
     releaseUnusedMicrophoneTakeover: () => micManager.releaseTakeoverIfUnused(),
     createSound: createBrowserGlassSound,

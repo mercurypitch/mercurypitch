@@ -7,7 +7,12 @@ import type { GlassVoiceSession, GlassVoiceTake } from '../host'
 import { createBrowserVoiceTake } from './voice-take'
 
 let nextSession = 0
-export function createBrowserVoice(): GlassVoiceSession {
+export function createBrowserVoice(
+  options: {
+    prepareMicrophone?(): Promise<void>
+    microphoneOpened?(): void
+  } = {},
+): GlassVoiceSession {
   const id = `glass-adventure:${++nextSession}`
   const lease = acquireSharedAudioContext(id)
   let stream: F0Stream | null = null
@@ -80,17 +85,23 @@ export function createBrowserVoice(): GlassVoiceSession {
         () => ({ ok: true as const }),
         (error: unknown) => ({ ok: false as const, error }),
       )
-      // Both acquisitions begin inside the Start gesture. A cancelled permission
-      // request may still succeed later, but it only releases this session's id.
-      const microphone = micManager.acquire(id)
+      // Unlock Web Audio above in the gesture, then serialize the remembered
+      // route ahead of acquisition. A cancelled preparation must not open a mic.
+      const microphone = options.prepareMicrophone
+        ? Promise.resolve()
+            .then(() => (stopped ? undefined : options.prepareMicrophone?.()))
+            .then(() => (stopped ? null : micManager.acquire(id)))
+        : micManager.acquire(id)
       starting = (async () => {
         try {
           const acquired = await microphone
+          if (acquired === null) return
           holding = true
           if (stopped) {
             releaseMic()
             return
           }
+          options.microphoneOpened?.()
           const available = await unlocked
           if (stopped) {
             releaseMic()

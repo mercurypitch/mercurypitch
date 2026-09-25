@@ -8,6 +8,16 @@ interface MovementAxes {
   forward: number
 }
 
+export function isAdventureEditableTarget(target: EventTarget | null): boolean {
+  if (target === null || typeof target !== 'object') return false
+  const element = target as HTMLElement
+  return (
+    element.isContentEditable === true ||
+    (typeof element.closest === 'function' &&
+      element.closest('input, textarea, select') !== null)
+  )
+}
+
 function hasMovementIntent(axes: MovementAxes): boolean {
   return Math.hypot(axes.x, axes.forward) > MOVEMENT_INTENT_THRESHOLD
 }
@@ -69,40 +79,43 @@ export function createAdventureInput(): AdventureInput {
   }
   return {
     key(event, down) {
-      const target = event.target as HTMLElement | null
+      const supported = [
+        'KeyW',
+        'KeyA',
+        'KeyS',
+        'KeyD',
+        'ArrowUp',
+        'ArrowDown',
+        'ArrowLeft',
+        'ArrowRight',
+        'Space',
+      ].includes(event.code)
+      if (!supported) return false
+      const target = event.target
+      const editable = isAdventureEditableTarget(target)
       if (
-        event.defaultPrevented ||
-        (event.code === 'Space' &&
-          target !== null &&
-          target.closest('button, a[href], [role="button"]') !== null) ||
-        target?.isContentEditable === true ||
-        target?.closest('input, textarea, select') ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey
+        down &&
+        (event.defaultPrevented ||
+          (event.code === 'Space' &&
+            target !== null &&
+            typeof target === 'object' &&
+            typeof (target as Element).closest === 'function' &&
+            (target as Element).closest('button, a[href], [role="button"]') !==
+              null) ||
+          editable ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.altKey)
       )
         return false
-      if (
-        ![
-          'KeyW',
-          'KeyA',
-          'KeyS',
-          'KeyD',
-          'ArrowUp',
-          'ArrowDown',
-          'ArrowLeft',
-          'ArrowRight',
-          'Space',
-        ].includes(event.code)
-      )
-        return false
+      if (!down && !held.has(event.code)) return false
       const before = movementAxes()
       if (down) held.add(event.code)
       else held.delete(event.code)
       const after = movementAxes()
       if (!hasMovementIntent(after)) referenceChange = null
       else if (changesDirection(before, after)) referenceChange = 'keyboard'
-      event.preventDefault()
+      if (!editable) event.preventDefault()
       return true
     },
     read: movementInput,
