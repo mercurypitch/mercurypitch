@@ -4,7 +4,7 @@ import type { PlatformDefinition, SolidPropDefinition } from '../contracts'
 import type { AuthoredLevelSource, LevelAuthoringDiagnostic, RoomPlacement, RoomPrefab, } from './contracts'
 import type { CompiledRoom } from './internal'
 import { mapActivation, mapEncounterRefs, runtimeRoomId, sortedById, } from './internal'
-import { transformBoundsXZ, transformPlatformScrollAxis, transformPoint, transformYaw, } from './transform'
+import { transformBoundsXZ, transformPlatformRenderQuarterTurns, transformPlatformScrollAxis, transformPoint, transformYaw, } from './transform'
 
 function transformPlatform(
   source: AuthoredLevelSource,
@@ -14,6 +14,10 @@ function transformPlatform(
   runtimeEncounterIds: ReadonlyMap<string, string>,
   diagnostics: LevelAuthoringDiagnostic[],
 ): PlatformDefinition {
+  const renderQuarterTurns = transformPlatformRenderQuarterTurns(
+    platform.renderQuarterTurns,
+    placement.yawQuarterTurns,
+  )
   const behavior =
     platform.behavior?.kind === 'glide'
       ? {
@@ -35,6 +39,7 @@ function transformPlatform(
   return {
     ...platform,
     ...transformBoundsXZ(platform, placement),
+    ...(renderQuarterTurns === undefined ? {} : { renderQuarterTurns }),
     id: runtimeRoomId(source, placement.id, 'platform', platform.id),
     top: platform.top + placement.translate.y,
     activation: mapActivation(

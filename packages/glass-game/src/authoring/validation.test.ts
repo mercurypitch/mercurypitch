@@ -434,6 +434,24 @@ describe('authoring validation', () => {
     )
   })
 
+  it('rejects a non-cardinal platform render orientation', () => {
+    const room = foundationRoom()
+    const catalog = replaceFoundationRoom({
+      platforms: room.platforms.map((platform, index) =>
+        index === 0 ? { ...platform, renderQuarterTurns: 4 as 0 } : platform,
+      ),
+    })
+
+    const diagnostics = diagnosticsFrom(FOUNDATION_STRAIGHT_SOURCE, catalog)
+
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'invalid-transform',
+        path: `roomPrefabs.${room.id}.platforms.${room.platforms[0]?.id}.renderQuarterTurns`,
+      }),
+    )
+  })
+
   it('rejects a solid prop owned by a behavioral platform until transform parenting exists', () => {
     const room = foundationRoom()
     const catalog = replaceFoundationRoom({

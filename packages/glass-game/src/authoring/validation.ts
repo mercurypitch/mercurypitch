@@ -1,6 +1,7 @@
 // Authoring validation — actionable structural checks without claiming physical route reachability.
 
 import type { Bounds3, LevelDefinition, PlatformDefinition, SolidPropDefinition, Vec3, } from '../contracts'
+import { PLATFORM_RENDER_QUARTER_TURNS } from '../contracts'
 import { containsBody } from '../core/collision'
 import { MOVEMENT } from '../core/movement'
 import { platformRuntimeDefinitionError } from '../core/platform-runtime'
@@ -159,6 +160,16 @@ export function validatePrefab(
         'non-monotonic-platform',
         `${path}.platforms.${platform.id}.activation.noneCompleted`,
         'Platforms may only enable permanently after completion; disappearing floors are unsupported.',
+      )
+    if (
+      platform.renderQuarterTurns !== undefined &&
+      !PLATFORM_RENDER_QUARTER_TURNS.includes(platform.renderQuarterTurns)
+    )
+      diagnostic(
+        diagnostics,
+        'invalid-transform',
+        `${path}.platforms.${platform.id}.renderQuarterTurns`,
+        'Platform renderQuarterTurns must be 0, 1, 2 or 3.',
       )
     if (
       platform.catchCheckpointId !== undefined &&
