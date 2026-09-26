@@ -103,6 +103,13 @@ export interface DoorOpenPlan {
    * no longer coming.
    */
   readonly away: () => boolean
+  /**
+   * The clone starts to go, once covered: `shown` when it goes to show the
+   * room (its picture drawn, or waited on to the deadline), not when the
+   * user went elsewhere first or the room unmounted under it. Never called
+   * for an open called off before it covered.
+   */
+  readonly onReveal: (shown: boolean) => void
   /** Hold the room's own arrival; the returned function lets it start. */
   readonly holdArrival: () => () => void
 }
@@ -570,6 +577,7 @@ function startOpen(
     const fade = !drawn ? LEAVE_MS : plan.reduced ? REDUCED_MS : REVEAL_MS
     revealing = true
     clone.dataset.phase = 'revealing'
+    plan.onReveal(drawn)
     fadeOpacity(clone, 1, 0, fade)
     await wait(fade + 20)
     if (plan.video !== null) {

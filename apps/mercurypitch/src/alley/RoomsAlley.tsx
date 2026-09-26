@@ -400,15 +400,22 @@ export const RoomsAlley: Component = () => {
         onCovered: () => {
           finishOpen()
           dispatch({ type: 'covered' })
-          // The welcome is over when a room is reached, not when Enter is
-          // pressed: an open called off leaves it to be seen again.
-          markWelcomeSeen()
           goToTab(tab)
           arrivedHash = window.location.hash
         },
         away: () =>
           untrack(shellCovered) ||
           (untrack(currentTab) !== tab && window.location.hash !== arrivedHash),
+        onReveal: (shown) => {
+          // The welcome is over when a room is reached, not when Enter is
+          // pressed: an open called off leaves it to be seen again. Nor at
+          // the cover: the room is reached once it is shown, or when it is
+          // still the tab under More, a pushed screen or the chip's column.
+          // Gone to another tab before it showed, nobody saw it: the open
+          // ends as one called off (PR 859 final review, NB6).
+          if (shown || untrack(currentTab) === tab) markWelcomeSeen()
+          else dispatch({ type: 'left' })
+        },
         holdArrival: holdRoomArrival,
       })
     } catch (error) {

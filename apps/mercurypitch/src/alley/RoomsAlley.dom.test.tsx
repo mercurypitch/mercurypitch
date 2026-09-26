@@ -145,10 +145,16 @@ describe('entering a room from the alley', () => {
     expect(store.roomArrivalHeld()).toBe(true)
     expect(welcome.welcomeSeen()).toBe(false)
 
+    // Covered: the room is mounted under the clone, and not yet shown.
     await vi.advanceTimersByTimeAsync(700)
     expect(nav.goToTab).toHaveBeenCalledWith(TAB_SINGING)
-    expect(welcome.welcomeSeen()).toBe(true)
+    expect(welcome.welcomeSeen()).toBe(false)
     expect(store.roomArrivalHeld()).toBe(true)
+
+    // The clone goes to show it (here after waiting out a picture jsdom
+    // never draws).
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(welcome.welcomeSeen()).toBe(true)
   })
 
   it('leaves the welcome unseen when the open is called off', async () => {
@@ -212,6 +218,33 @@ describe('somewhere else, after the clone has covered', () => {
     expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
   })
 
+  it('a rail tab before the room showed: as an open called off', async () => {
+    // PR 859 final review, NB6: the welcome was marked seen at the cover and
+    // the alley stayed 'open', so the next visit settled the door as if
+    // back from a room nobody saw, and the welcome was gone.
+    // Not the hash an earlier case left: the open takes it as the room's.
+    window.location.hash = '#/home'
+    const { el, welcome } = await mountAlley()
+    const ui = await import('@/stores/ui-store')
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    expect(document.querySelector('[data-testid="alley-morph"]')).not.toBeNull()
+
+    window.location.hash = '#/progress'
+    ui.setActiveTab(TAB_PROGRESS)
+    await vi.advanceTimersByTimeAsync(120)
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(welcome.welcomeSeen()).toBe(false)
+    expect(el('rooms-alley').dataset.phase).toBe('rest')
+
+    // The next visit: the door in the plate, and the welcome still due.
+    view?.unmount()
+    const again = await mountAlley()
+    expect(again.el('rooms-alley').dataset.phase).toBe('rest')
+    expect(again.el('rooms-alley').dataset.first).toBe('on')
+  })
+
   it('More over the room: the clone is gone within 120 ms', async () => {
     const { el, shell } = await mountAlley()
     el('alley-door-sing').click()
@@ -222,6 +255,25 @@ describe('somewhere else, after the clone has covered', () => {
     shell.openMore()
     await vi.advanceTimersByTimeAsync(120)
     expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+  })
+
+  it('More over the room: the room was reached, and the welcome is over', async () => {
+    const { el, shell, welcome } = await mountAlley()
+    const ui = await import('@/stores/ui-store')
+    el('alley-door-sing').click()
+    el('alley-enter').click()
+    await vi.advanceTimersByTimeAsync(700)
+    // What goToTab(TAB_SINGING) and the router did at the cover.
+    window.location.hash = '#/singing'
+    ui.setActiveTab(TAB_SINGING)
+
+    shell.openMore()
+    onTestFinished(() => shell.closeMore())
+    await vi.advanceTimersByTimeAsync(120)
+    expect(document.querySelector('[data-testid="alley-morph"]')).toBeNull()
+    expect(welcome.welcomeSeen()).toBe(true)
+    // Back from the room, later, the door settles as after any room.
+    expect(el('rooms-alley').dataset.phase).toBe('open')
   })
 })
 

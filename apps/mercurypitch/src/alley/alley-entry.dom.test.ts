@@ -35,6 +35,7 @@ function plan(over: Partial<DoorOpenPlan> = {}): DoorOpenPlan {
     ambientSilent: Promise.resolve(),
     onCovered: () => undefined,
     away: () => false,
+    onReveal: () => undefined,
     holdArrival: held,
     ...over,
   }
@@ -253,6 +254,41 @@ describe('somewhere else, once the clone has covered', () => {
     room.remove()
     await vi.advanceTimersByTimeAsync(120)
     expect(open.clone.isConnected).toBe(false)
+  })
+
+  it('says, as the clone goes, that it went to show the room', async () => {
+    // What the alley makes of the open turns on this, not on the cover (PR
+    // 859 final review, NB6): the room is reached once it is shown.
+    const room = document.createElement('div')
+    room.dataset.roomBackground = ''
+    room.style.backgroundImage = 'url(/sing/room.webp)'
+    document.body.appendChild(room)
+    const onReveal = vi.fn()
+    openDoor(plan({ onReveal }))
+    await vi.advanceTimersByTimeAsync(700)
+    expect(onReveal).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(onReveal.mock.calls).toEqual([[true]])
+  })
+
+  it('and that it did not, when the user went elsewhere first', async () => {
+    let elsewhere = false
+    const onReveal = vi.fn()
+    openDoor(plan({ away: () => elsewhere, onReveal }))
+    await vi.advanceTimersByTimeAsync(700)
+    elsewhere = true
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(onReveal.mock.calls).toEqual([[false]])
+  })
+
+  it('and nothing for an open called off before it covered', async () => {
+    const onReveal = vi.fn()
+    const open = openDoor(plan({ onReveal }))
+    await vi.advanceTimersByTimeAsync(150)
+    expect(open.cancel()).toBe(true)
+    await vi.advanceTimersByTimeAsync(2500)
+    expect(onReveal).not.toHaveBeenCalled()
   })
 
   it('a room that stays waits out its background as before', async () => {

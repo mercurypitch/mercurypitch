@@ -4,8 +4,10 @@
 //
 // The first run IS the alley with its headline (owner decision 10); there is
 // no separate welcome screen. The flag says whether the headline is due, and
-// it flips on the first door OPENED, not on arrival — a singer who looks at
-// the alley and leaves has not been welcomed into anything, and sees it again.
+// it flips on the first door OPENED into a room the singer saw, not on
+// arrival — a singer who looks at the alley and leaves has not been welcomed
+// into anything, and sees it again. Nor does one who left before the room
+// showed (PR 859 final review, NB6).
 //
 // BUILT ON FIRST READ, not at import, like the Sing room's flags
 // (`src/features/sing-room/sing-room-settings.ts`): a persisted signal made at
@@ -33,7 +35,7 @@ export function welcomeSeen(): boolean {
   return resolve()[0]()
 }
 
-/** The first door open. Idempotent. */
+/** The first door opened into a room. Idempotent. */
 export function markWelcomeSeen(): void {
   if (resolve()[0]()) return
   resolve()[1](true)
